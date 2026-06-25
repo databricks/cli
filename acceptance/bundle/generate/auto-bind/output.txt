@@ -23,6 +23,9 @@ test.py
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/tmp/[UNIQUE_NAME]/files...
 Deploying resources...
+updated jobs.test_job
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 Updating deployment state...
 Deployment complete!
 

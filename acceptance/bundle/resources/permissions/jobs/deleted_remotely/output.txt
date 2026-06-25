@@ -3,9 +3,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-deleted-remotely/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_with_permissions
+created jobs.job_with_permissions.permissions
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //jobs/
 
@@ -107,9 +108,9 @@ Deployment complete!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-deleted-remotely/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated jobs.job_with_permissions.permissions
+
+Deploy: 0 created, 1 changed, 0 deleted, 1 unchanged.
 
 >>> print_requests.py //jobs/
 

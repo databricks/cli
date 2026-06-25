@@ -2,9 +2,10 @@
 === Deploy bundle with catalog and schema
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created catalogs.test_catalog
+created schemas.test_schema
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Assert the catalog is created
 >>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
@@ -29,9 +30,9 @@ Deployment complete!
 === Redeploy with updated catalog
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated catalogs.test_catalog
+
+Deploy: 0 created, 1 changed, 0 deleted, 1 unchanged.
 
 === Assert catalog comment is updated
 >>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
@@ -57,8 +58,7 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.
 
 === Assert schema is deleted
 === Assert the catalog is deleted

@@ -1,5 +1,4 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bad-role-ref-[UNIQUE_NAME]/default/files...
-Deploying resources...
 Error: cannot create resources.postgres_databases.my_database: role not found; role_id:"does-not-exist" [TraceId: [TRACE_ID]] (404 NOT_FOUND)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases?database_id=my-database
@@ -7,7 +6,6 @@ HTTP Status: 404 Not Found
 API error_code: NOT_FOUND
 API message: role not found; role_id:"does-not-exist" [TraceId: [TRACE_ID]]
 
-Updating deployment state...
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -24,5 +22,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bad-role-ref-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

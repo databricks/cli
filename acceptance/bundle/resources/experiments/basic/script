@@ -9,7 +9,7 @@ trace export EXPERIMENT_ARTIFACT_LOCATION="s3://original-${UNIQUE_NAME}"
 trace export EXPERIMENT_NAME_PREFIX="original"
 trace envsubst < templates/one_tag.tmpl > databricks.yml
 trace $CLI bundle plan
-trace $CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 experiment_id=$($CLI bundle summary --output json | jq -r '.resources.experiments.my_experiment.id')
 trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags}'
 
@@ -17,7 +17,7 @@ title "update the name"
 trace export EXPERIMENT_NAME_PREFIX="new-name"
 trace envsubst < templates/one_tag.tmpl > databricks.yml
 trace $CLI bundle plan
-trace $CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 experiment_id=$($CLI bundle summary --output json | jq -r '.resources.experiments.my_experiment.id')
 trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags}'
 
@@ -25,13 +25,13 @@ title "updating the artifact location should cause a recreation"
 trace export EXPERIMENT_ARTIFACT_LOCATION="s3://new-${UNIQUE_NAME}"
 trace envsubst < templates/one_tag.tmpl > databricks.yml
 trace $CLI bundle plan
-trace $CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 experiment_id=$($CLI bundle summary --output json | jq -r '.resources.experiments.my_experiment.id')
 trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags}'
 
 title "adding a new tag should be a no-op"
 trace envsubst < templates/two_tag.tmpl > databricks.yml
 trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
-trace $CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 experiment_id=$($CLI bundle summary --output json | jq -r '.resources.experiments.my_experiment.id')
 trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags}'

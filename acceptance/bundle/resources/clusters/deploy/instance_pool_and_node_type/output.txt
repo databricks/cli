@@ -1,9 +1,9 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-instance-pool/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created clusters.cluster1
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //clusters/create
 {

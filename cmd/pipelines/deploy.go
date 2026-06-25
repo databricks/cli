@@ -28,10 +28,12 @@ func deployCommand() *cobra.Command {
 	var failOnActiveRuns bool
 	var autoApprove bool
 	var verbose bool
+	var quiet bool
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 	cmd.Flags().BoolVar(&failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running pipelines in the deployment.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
+	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Only print the summary line, not the per-resource actions.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
 	cmd.Flags().MarkHidden("verbose")
 
@@ -40,6 +42,7 @@ func deployCommand() *cobra.Command {
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 				b.AutoApprove = autoApprove
+				b.Quiet = quiet
 
 				if cmd.Flag("fail-on-active-runs").Changed {
 					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns

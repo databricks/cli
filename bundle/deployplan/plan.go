@@ -22,8 +22,44 @@ type Plan struct {
 	Serial      int                   `json:"serial,omitempty"`
 	Plan        map[string]*PlanEntry `json:"plan,omitzero"`
 
+	// NotSelected is the number of resources removed by FilterToSelected via the
+	// --select flag. Serialized so the summary survives a deploy from a plan file
+	// (--plan); used only for summary reporting.
+	NotSelected int `json:"not_selected,omitempty"`
+
 	mutex   sync.Mutex `json:"-"`
 	lockmap lockmap    `json:"-"`
+}
+
+// ActionCounts summarizes a plan's actions by category. A recreate counts as
+// both a create and a delete, matching how plan and deploy report changes.
+type ActionCounts struct {
+	Create    int
+	Change    int
+	Delete    int
+	Unchanged int
+}
+
+// CountActions tallies the plan's actions by category.
+func (p *Plan) CountActions() ActionCounts {
+	var c ActionCounts
+	for _, action := range p.GetActions() {
+		switch action.ActionType {
+		case Create:
+			c.Create++
+		case Update, UpdateWithID, Resize:
+			c.Change++
+		case Delete:
+			c.Delete++
+		case Recreate:
+			// A recreate counts as both a delete and a create.
+			c.Delete++
+			c.Create++
+		case Skip, Undefined:
+			c.Unchanged++
+		}
+	}
+	return c
 }
 
 // NewPlanDirect creates a new Plan for direct engine with plan_version set.
@@ -208,6 +244,8 @@ func (p *Plan) RemoveEntry(resourceKey string) {
 // e.g. "jobs.my_job") plus their transitive dependencies as recorded in each
 // entry's DependsOn field. Nodes not reachable from the selected set are removed.
 func (p *Plan) FilterToSelected(selected []string) {
+	before := len(p.Plan)
+
 	// Convert "type.name" → "resources.type.name" (plan key format).
 	queue := make([]string, 0, len(selected))
 	reachable := make(map[string]struct{}, len(selected))
@@ -238,6 +276,8 @@ func (p *Plan) FilterToSelected(selected []string) {
 			delete(p.Plan, key)
 		}
 	}
+
+	p.NotSelected = before - len(p.Plan)
 }
 
 type lockmap struct {

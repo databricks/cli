@@ -1,7 +1,8 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_one
+created jobs.job_two
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Modify job_one: max_concurrent_runs, rename c_task
 === Add synced_task to job_one (notebook in sync root, resource in subdirectory)
@@ -110,5 +111,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

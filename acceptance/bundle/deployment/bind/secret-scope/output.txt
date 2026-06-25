@@ -2,15 +2,11 @@
 >>> [CLI] secrets create-scope test-secret-scope-[UNIQUE_NAME]
 
 >>> [CLI] bundle deployment bind secret_scope1 test-secret-scope-[UNIQUE_NAME] --auto-approve
-Updating deployment state...
 Successfully bound secret_scope with an id 'test-secret-scope-[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-secret-scope-test-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
 >>> [CLI] secrets list-scopes -o json
 {
@@ -19,13 +15,11 @@ Deployment complete!
 }
 
 >>> [CLI] bundle deployment unbind secret_scope1
-Updating deployment state...
 
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-secret-scope-test-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 0 deleted.
 
 >>> [CLI] secrets list-scopes -o json
 {

@@ -9,9 +9,10 @@
 Warn: Skipping corrupted WAL entry at [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal:4: unexpected end of JSON input
 Warn: Saved 1 corrupted WAL entries to [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal.corrupted
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.another_valid
+created jobs.valid_job
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle summary
 Name: wal-corrupted-test

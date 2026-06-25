@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === After the initial deploy the python_file exists
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py
@@ -18,9 +18,7 @@ Deployment complete!
 === Redeploy reuses the stale snapshot, so the python_file is NOT re-uploaded
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py
 Error: Path (/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py) doesn't exist.
@@ -30,9 +28,7 @@ Error: Path (/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/file
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py
 {

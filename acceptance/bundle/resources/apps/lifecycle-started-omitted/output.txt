@@ -2,9 +2,9 @@
 === (started omitted) -> deploy: app created with no_compute=true, no start/stop requests
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created apps.mykey
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_app_requests
 {
@@ -22,27 +22,23 @@ Deployment complete!
 === (started omitted) -> started: false -> deploy: no start/stop requests
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> print_app_requests
 
 === started: false -> (started omitted) -> deploy: no start/stop requests
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> print_app_requests
 
 === (started omitted) -> started: true -> deploy: app started
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated apps.mykey
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_app_requests
 {
@@ -62,9 +58,9 @@ Deployment complete!
 === started: true -> (started omitted) -> deploy: no start/stop requests (compute stays as-is)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated apps.mykey
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_app_requests
 
@@ -76,5 +72,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

@@ -2,8 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading whl/source.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Expecting wheel to be uploaded
 >>> jq .path

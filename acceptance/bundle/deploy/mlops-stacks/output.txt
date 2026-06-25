@@ -79,6 +79,16 @@ Warning: unknown field: description
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
 Deploying resources...
+created experiments.experiment
+created experiments.experiment.permissions
+created jobs.batch_inference_job
+created jobs.batch_inference_job.permissions
+created jobs.model_training_job
+created jobs.model_training_job.permissions
+created models.model
+created models.model.permissions
+
+Deploy: 8 created, 0 changed, 0 deleted, 0 unchanged.
 Updating deployment state...
 Deployment complete!
 

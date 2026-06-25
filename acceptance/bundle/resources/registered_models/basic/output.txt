@@ -26,9 +26,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created registered_models.my_registered_model
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] registered-models get main.default.my-registered-model-[UNIQUE_NAME]
 {
@@ -46,9 +46,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated registered_models.my_registered_model
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] registered-models get main.default.my-registered-model-[UNIQUE_NAME]
 {
@@ -66,9 +66,9 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+recreated registered_models.my_registered_model
+
+Deploy: 1 created, 0 changed, 1 deleted, 0 unchanged.
 
 >>> [CLI] registered-models get main.default.my-registered-model-updated-[UNIQUE_NAME]
 {
@@ -86,9 +86,9 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+recreated registered_models.my_registered_model
+
+Deploy: 1 created, 0 changed, 1 deleted, 0 unchanged.
 
 >>> [CLI] registered-models get mycatalog-[UNIQUE_NAME].default.my-registered-model-updated-[UNIQUE_NAME]
 {
@@ -106,9 +106,9 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+recreated registered_models.my_registered_model
+
+Deploy: 1 created, 0 changed, 1 deleted, 0 unchanged.
 
 >>> [CLI] registered-models get mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME].my-registered-model-updated-[UNIQUE_NAME]
 {
@@ -124,8 +124,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.
 
 >>> [CLI] schemas delete mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME] --force
 

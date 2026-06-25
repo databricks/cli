@@ -6,9 +6,11 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.test_job
+created pipelines.test_pipeline
+created volumes.test_volume
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deployment migrate
 Success! Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
@@ -30,9 +32,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 3 unchanged.
 
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate
@@ -73,9 +73,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 3 unchanged.
 
 >>> print_requests.py --get //jobs/get
 "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
@@ -110,16 +108,20 @@ Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated jobs.test_job
+updated pipelines.test_pipeline
+
+Deploy: 0 created, 2 changed, 0 deleted, 1 unchanged.
 
 === Different target, still on terraform
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.test_job
+created pipelines.test_pipeline
+created schemas.test_schema
+created volumes.test_volume
+
+Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod
 [TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"

@@ -5,8 +5,8 @@ Warning: unknown field: unknown_property
   in databricks.yml:8:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/render-diagnostics-warning-pipeline/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.test-pipeline
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 View your pipeline test-pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 <EOL>

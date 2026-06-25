@@ -7,15 +7,12 @@
 
 === Create a pre-defined volume:
 >>> [CLI] bundle deployment bind volume1 main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME] --auto-approve
-Updating deployment state...
 Successfully bound volume with an id 'main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> [CLI] volumes read main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
 {
@@ -26,13 +23,11 @@ Deployment complete!
 }
 
 >>> [CLI] bundle deployment unbind volume1
-Updating deployment state...
 
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 0 deleted.
 
 >>> [CLI] volumes read main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
 {

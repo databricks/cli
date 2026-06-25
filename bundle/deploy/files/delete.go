@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -21,8 +20,6 @@ func (m *delete) Name() string {
 }
 
 func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	cmdio.LogString(ctx, "Deleting files...")
-
 	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspace.Delete{
 		Path:      b.Config.Workspace.RootPath,
 		Recursive: true,

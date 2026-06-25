@@ -14,15 +14,13 @@ Pipeline configuration successfully saved to resources/out.pipeline.yml
 === Deploy the generated bundle
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Destroy the deployed bundle
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 0 deleted.
 
 === Cleanup: delete the original pipeline and files
 >>> errcode [CLI] pipelines delete [PIPELINE_ID]

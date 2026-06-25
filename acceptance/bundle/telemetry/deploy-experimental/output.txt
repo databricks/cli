@@ -5,9 +5,9 @@ Warning: You are using the legacy mode of run_as. The support for this mode is e
   in databricks.yml:5:22
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> cat out.requests.txt
 {

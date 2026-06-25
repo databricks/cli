@@ -1,5 +1,5 @@
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Warning: app "my_app" references jobs "my_job" which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the jobs permissions
   at resources.apps.my_app
   in databricks.yml:24:7
@@ -15,15 +15,12 @@ Add the following section to the jobs permissions:
 
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
 === After first deploy
 >>> has_manage_run
 
 === After second deploy
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Warning: app "my_app" references jobs "my_job" which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the jobs permissions
   at resources.apps.my_app
   in databricks.yml:24:7
@@ -39,19 +36,13 @@ Add the following section to the jobs permissions:
 
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
 >>> has_manage_run
 false
 
 === Apply fix and redeploy
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
 >>> has_manage_run
 true
@@ -63,5 +54,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

@@ -1,6 +1,5 @@
 
 >>> [CLI] bundle deployment bind database_instance1 [UUID] --auto-approve
-Updating deployment state...
 Successfully bound database_instance with an id '[UUID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
@@ -17,7 +16,6 @@ Resources:
       URL:  [DATABRICKS_URL]/compute/database-instances/test-instance-02?w=[NUMID]
 
 >>> [CLI] bundle deployment unbind database_instance1
-Updating deployment state...
 
 >>> [CLI] bundle summary
 Name: test-bundle

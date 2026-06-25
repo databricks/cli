@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created dashboards.dashboard1
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] lakeview get [DASHBOARD1_ID]
 {
@@ -27,7 +27,6 @@ json.plan.resources.dashboards.dashboard1.changes.serialized_dashboard.reason = 
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
-Deploying resources...
 Error: cannot update resources.dashboards.dashboard1: updating id=[DASHBOARD1_ID]: Fault injected by test. (400 INJECTED)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published
@@ -35,7 +34,6 @@ HTTP Status: 400 Bad Request
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Updating deployment state...
 
 Exit code: 1
 
@@ -124,9 +122,9 @@ Exit code: 1
 
 >>> [CLI] bundle deploy --force
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated dashboards.dashboard1
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //lakeview/dashboards
 {
@@ -168,5 +166,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

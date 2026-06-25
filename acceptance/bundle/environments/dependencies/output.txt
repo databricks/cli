@@ -11,9 +11,10 @@ Validation OK!
 >>> [CLI] bundle deploy
 Uploading dist/test.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.test_job
+created pipelines.test_pipeline
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt
 [

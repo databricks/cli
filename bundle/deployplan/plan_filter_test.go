@@ -27,6 +27,7 @@ func TestFilterToSelected_Direct(t *testing.T) {
 	assert.Contains(t, p.Plan, "resources.jobs.bar")
 	assert.Contains(t, p.Plan, "resources.jobs.baz")
 	assert.NotContains(t, p.Plan, "resources.jobs.independent")
+	assert.Equal(t, 1, p.NotSelected)
 }
 
 func TestFilterToSelected_NoDeps(t *testing.T) {
@@ -36,6 +37,7 @@ func TestFilterToSelected_NoDeps(t *testing.T) {
 	assert.NotContains(t, p.Plan, "resources.jobs.foo")
 	assert.NotContains(t, p.Plan, "resources.jobs.bar")
 	assert.NotContains(t, p.Plan, "resources.jobs.independent")
+	assert.Equal(t, 3, p.NotSelected)
 }
 
 func TestFilterToSelected_Multiple(t *testing.T) {
@@ -45,4 +47,5 @@ func TestFilterToSelected_Multiple(t *testing.T) {
 	assert.Contains(t, p.Plan, "resources.jobs.independent")
 	assert.NotContains(t, p.Plan, "resources.jobs.foo")
 	assert.NotContains(t, p.Plan, "resources.jobs.bar")
+	assert.Equal(t, 2, p.NotSelected)
 }

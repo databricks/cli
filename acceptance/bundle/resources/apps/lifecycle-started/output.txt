@@ -2,9 +2,9 @@
 === Deploy with started=true: app created with compute running
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created apps.myapp
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //apps
 {
@@ -32,9 +32,9 @@ Deployment complete!
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated apps.myapp
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //deployments
 {
@@ -58,9 +58,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 === Deploy fixes the drift: compute restarted
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated apps.myapp
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 === Stop app externally, then deploy with started=false: app stays stopped
 >>> errcode [CLI] apps stop [UNIQUE_NAME]
@@ -72,9 +72,9 @@ Deployment complete!
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated apps.myapp
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //apps
 {
@@ -104,9 +104,9 @@ Deployment complete!
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated apps.myapp
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //apps
 {
@@ -143,5 +143,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

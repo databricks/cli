@@ -43,9 +43,10 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   recreate resources.pipelines.my_pipelines
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+recreated pipelines.my_pipelines
+recreated schemas.my_schema
+
+Deploy: 2 created, 0 changed, 2 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle plan
 delete pipelines.my_pipelines
@@ -64,6 +65,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   delete resources.pipelines.my_pipelines
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+deleted pipelines.my_pipelines
+deleted schemas.my_schema
+
+Deploy: 0 created, 0 changed, 2 deleted, 0 unchanged.

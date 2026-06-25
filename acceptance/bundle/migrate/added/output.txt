@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-added-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_a
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deployment migrate
 Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
@@ -22,9 +22,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-added-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_b
+
+Deploy: 1 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> print_requests.py //jobs/create
 {

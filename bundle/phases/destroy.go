@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/databricks/cli/bundle"
@@ -102,7 +103,15 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	bundle.ApplyContext(ctx, b, files.Delete())
 
 	if !logdiag.HasError(ctx) {
-		cmdio.LogString(ctx, "Destroy complete!")
+		// Count top-level resources only, matching the approval list above (which
+		// skips children); this also keeps the count stable across engines.
+		deleted := 0
+		for _, a := range plan.GetActions() {
+			if a.ActionType == deployplan.Delete && !a.IsChildResource() {
+				deleted++
+			}
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("Destroy: %d deleted.", deleted))
 	}
 }
 

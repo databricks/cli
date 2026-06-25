@@ -1,7 +1,13 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created clusters.test_cluster
+created experiments.test_experiment
+created jobs.job_one
+created jobs.job_two
+created registered_models.test_model
+created sql_warehouses.test_warehouse
+created volumes.test_volume
+
+Deploy: 7 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Modify both jobs
 === Detect and save changes
@@ -65,5 +71,4 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 7 deleted.

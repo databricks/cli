@@ -1,4 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo
+created pipelines.my
+created volumes.volume1
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.

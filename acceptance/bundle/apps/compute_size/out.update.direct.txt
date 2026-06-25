@@ -1,9 +1,9 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-compute-size-[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated apps.my_app
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] apps get app-[UNIQUE_NAME]
 {

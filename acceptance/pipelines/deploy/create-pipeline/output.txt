@@ -1,9 +1,9 @@
 
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> [CLI] pipelines get [UUID]

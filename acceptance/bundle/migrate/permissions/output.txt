@@ -1,9 +1,12 @@
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.test_job
+created jobs.test_job.permissions
+created pipelines.test_pipeline
+created pipelines.test_pipeline.permissions
+
+Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deployment migrate
 Success! Migrated 4 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
@@ -49,9 +52,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 4 unchanged.
 
 >>> print_requests.py --get //jobs/get
 "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"

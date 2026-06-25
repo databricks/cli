@@ -7,9 +7,9 @@ Exit code: 1
 
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipelines-open/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.test-pipelines-open
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 View your pipeline test-pipelines-open here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Modify PATH so that real open is not run

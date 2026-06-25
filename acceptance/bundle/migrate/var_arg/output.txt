@@ -1,9 +1,9 @@
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy --var=job_name=Custom Job Name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.test_job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deployment migrate --var=job_name=Custom Job Name
 Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
@@ -27,14 +27,13 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy --var job_name=Custom Job Name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.test_job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deployment migrate --var job_name=Custom Job Name
 Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
@@ -58,5 +57,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.
