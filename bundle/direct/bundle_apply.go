@@ -105,7 +105,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
-
 			if err != nil {
 				b.deployErrs.add(fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
