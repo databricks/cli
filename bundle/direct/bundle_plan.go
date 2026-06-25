@@ -1088,12 +1088,10 @@ func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map
 		// the state and must not be treated as a dependency here. Such references are
 		// still made available to other resources that read the field (for example
 		// ${resources.volumes.x.volume_path}) earlier during initialize.
-		if structaccess.ValidatePath(stateType, fieldPath) != nil {
-			return nil
+		if structaccess.ValidatePath(stateType, fieldPath) == nil {
+			// Store the original string that contains references, not individual references.
+			refs[fieldPath.String()] = ref.Str
 		}
-
-		// Store the original string that contains references, not individual references.
-		refs[fieldPath.String()] = ref.Str
 		return nil
 	})
 	if err != nil {
