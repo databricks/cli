@@ -792,9 +792,6 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
-        "job_settings":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             PLACEHOLDER

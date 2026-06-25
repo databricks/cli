@@ -1025,9 +1025,6 @@
                         "description": "Job-level parameters used in the run. for example `\"param\": \"overriding_val\"`",
                         "$ref": "#/$defs/map/string"
                       },
-                      "job_settings": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobSettings"
-                      },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
@@ -7182,124 +7179,6 @@
                     "user_name": {
                       "description": "The email of an active workspace user. Non-admin users can only set this field to their own email.",
                       "$ref": "#/$defs/string"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "jobs.JobSettings": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "budget_policy_id": {
-                      "description": "[Public Preview] The id of the user specified budget policy to use for this job.\nIf not specified, a default budget policy may be applied when creating or modifying the job.\nSee `effective_budget_policy_id` for the budget policy used by this workload.",
-                      "$ref": "#/$defs/string"
-                    },
-                    "continuous": {
-                      "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Continuous"
-                    },
-                    "deployment": {
-                      "description": "Deployment information for jobs managed by external sources.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobDeployment"
-                    },
-                    "description": {
-                      "description": "An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.",
-                      "$ref": "#/$defs/string"
-                    },
-                    "edit_mode": {
-                      "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEditMode"
-                    },
-                    "email_notifications": {
-                      "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEmailNotifications"
-                    },
-                    "environments": {
-                      "description": "A list of task execution environment specifications that can be referenced by serverless tasks of this job.\nFor serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.\nFor other serverless tasks, the task environment is required to be specified using environment_key in the task settings.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment"
-                    },
-                    "format": {
-                      "description": "Used to tell what is the format of the job. This field is ignored in Create/Update/Reset calls. When using the Jobs API 2.1 this value is always set to `\"MULTI_TASK\"`.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Format",
-                      "deprecationMessage": "This field is deprecated",
-                      "deprecated": true
-                    },
-                    "git_source": {
-                      "description": "An optional specification for a remote Git repository containing the source code used by tasks. Version-controlled source code is supported by notebook, dbt, Python script, and SQL File tasks.\n\nIf `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.\n\nNote: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GitSource"
-                    },
-                    "health": {
-                      "description": "An optional set of health rules that can be defined for this job.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules"
-                    },
-                    "job_clusters": {
-                      "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobCluster"
-                    },
-                    "max_concurrent_runs": {
-                      "description": "An optional maximum allowed number of concurrent runs of the job.\nSet this value if you want to be able to execute multiple runs of the same job concurrently.\nThis is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs.\nHowever, from then on, new runs are skipped unless there are fewer than 3 active runs.\nThis value cannot exceed 1000. Setting this value to `0` causes all new runs to be skipped.",
-                      "$ref": "#/$defs/int"
-                    },
-                    "name": {
-                      "description": "An optional name for the job. The maximum length is 4096 bytes in UTF-8 encoding.",
-                      "$ref": "#/$defs/string"
-                    },
-                    "notification_settings": {
-                      "description": "Optional notification settings that are used when sending notifications to each of the `email_notifications` and `webhook_notifications` for this job.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings"
-                    },
-                    "parameters": {
-                      "description": "Job-level parameter definitions",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition"
-                    },
-                    "performance_target": {
-                      "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget"
-                    },
-                    "queue": {
-                      "description": "The queue settings of the job.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.QueueSettings"
-                    },
-                    "run_as": {
-                      "description": "The user or service principal that the job runs as, if specified in the request.\nThis field indicates the explicit configuration of `run_as` for the job.\nTo find the value in all cases, explicit or implicit, use `run_as_user_name`.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs"
-                    },
-                    "schedule": {
-                      "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.CronSchedule"
-                    },
-                    "tags": {
-                      "description": "A map of tags associated with the job. These are forwarded to the cluster as cluster tags for jobs clusters, and are subject to the same limitations as cluster tags. A maximum of 25 tags can be added to the job.",
-                      "$ref": "#/$defs/map/string"
-                    },
-                    "tasks": {
-                      "description": "A list of task specifications to be executed by this job.\nIt supports up to 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset, :method:jobs/update, :method:jobs/submit).\nRead endpoints return only 100 tasks. If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.Task"
-                    },
-                    "timeout_seconds": {
-                      "description": "An optional timeout applied to each run of this job. A value of `0` means no timeout.",
-                      "$ref": "#/$defs/int"
-                    },
-                    "trigger": {
-                      "description": "A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings"
-                    },
-                    "usage_policy_id": {
-                      "description": "[Private Preview] The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_usage_policy_id` for the usage policy used by this workload.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications"
                     }
                   },
                   "additionalProperties": false

@@ -11,15 +11,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// JobRunState is what we persist for a triggered run: the RunNow request plus a
-// snapshot of the targeted job's settings. The snapshot is what lets a change to
-// the job re-trigger the run (RunNow only carries the stable job_id). A custom
-// marshaler is required because the embedded jobs.RunNow has its own MarshalJSON
-// which would otherwise take over and drop JobSettings.
+// JobRunState is what we persist for a triggered run: the RunNow request that
+// launched it.
 type JobRunState struct {
 	jobs.RunNow
-
-	JobSettings *jobs.JobSettings `json:"job_settings,omitempty"`
 }
 
 func (s *JobRunState) UnmarshalJSON(b []byte) error {
@@ -32,10 +27,10 @@ func (s JobRunState) MarshalJSON() ([]byte, error) {
 
 // JobRunRemote is the return type for DoRead. It embeds JobRunState so that every
 // path in StateType is also a valid path in RemoteType (required by the
-// framework). DoRead fills the embedded state from the GetRun response, mapping
-// the run's job-level and overriding parameters back into the RunNow shape so the
-// framework can diff them against the desired config. RunId is the remote
-// identity, kept here for the detailed plan.
+// framework). DoRead records only the run's identity; RunId is the remote
+// identity, kept here for the detailed plan. The explicit marshaler is required
+// because the embedded jobs.RunNow has its own MarshalJSON that would otherwise
+// take over and drop RunId.
 type JobRunRemote struct {
 	JobRunState
 
@@ -62,8 +57,7 @@ func (*ResourceJobRun) New(client *databricks.WorkspaceClient) *ResourceJobRun {
 
 func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	return &JobRunState{
-		RunNow:      input.RunNow,
-		JobSettings: input.JobSettings,
+		RunNow: input.RunNow,
 	}
 }
 
@@ -86,35 +80,20 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 	if err != nil {
 		return nil, err
 	}
-	// Record the remote state as what we actually created: the fields GetRun
-	// echoes back faithfully, namely the run's job_id and the overriding
-	// parameters it was launched with. This is what the out-of-band diff compares
-	// against the state saved by DoCreate.
-	//
-	// We deliberately do NOT map run.JobParameters here: GetRun resolves it to the
-	// job's full parameter set (including defaults the run never overrode), which
-	// is not what we created. Mapping it would only feed a diff we then have to
-	// suppress, so job_parameters (along with the request-only fields and the
-	// synthetic job_settings snapshot, none of which GetRun returns) is handled
-	// via ignore_remote_changes in resources.yml.
+	// A run is immutable and fire-once: nothing about it changes on the backend
+	// after launch, so the run must only be re-triggered when its own RunNow
+	// config changes, never from remote drift. We therefore record only the run's
+	// identity (job_id) to confirm it still targets the expected job; every
+	// settable input is ignored for remote changes in resources.yml and
+	// re-triggered solely by a local change via recreate_on_changes. Reading the
+	// run's overriding parameters back here would only feed a remote diff we then
+	// have to suppress, so we don't.
 	var state JobRunState
 	state.JobId = run.JobId
-	if p := run.OverridingParameters; p != nil {
-		state.DbtCommands = p.DbtCommands
-		state.JarParams = p.JarParams
-		state.NotebookParams = p.NotebookParams
-		state.PipelineParams = p.PipelineParams
-		state.PythonNamedParams = p.PythonNamedParams
-		state.PythonParams = p.PythonParams
-		state.SparkSubmitParams = p.SparkSubmitParams
-		state.SqlParams = p.SqlParams
-	}
 	return &JobRunRemote{JobRunState: state, RunId: run.RunId}, nil
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
-	// Only the RunNow request is sent to the backend; JobSettings is a local-only
-	// snapshot used to detect job changes, not part of the run-now payload.
 	// RunNow returns immediately with the new run id; waiting for completion is
 	// a later milestone.
 	wait, err := r.client.Jobs.RunNow(ctx, config.RunNow)
@@ -123,8 +102,7 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 	}
 	// RunNow's response carries only the run id, so we reconstruct the remote
 	// state from the request we just sent (the faithful record of what we
-	// created) plus the new run id. This lets the framework compute the
-	// out-of-band diff against what DoRead later reads back.
+	// created) plus the new run id.
 	remote := &JobRunRemote{JobRunState: *config, RunId: wait.RunId}
 	return strconv.FormatInt(wait.RunId, 10), remote, nil
 }

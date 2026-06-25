@@ -117,30 +117,39 @@ resources:
       - field: job_clusters[*].new_cluster.data_security_mode
 
   job_runs:
-    # GetRun echoes the run's overriding parameters, so DoRead maps those back
-    # (see RemapState) and the framework diffs them directly. Ignored here are the
-    # fields GetRun does NOT return faithfully: the request-only inputs that never
-    # appear in the run, the synthetic job_settings snapshot, and job_parameters
-    # (GetRun resolves the job's full parameter set, including defaults the run
-    # never overrode, so a direct diff would look like perpetual remote drift).
+    # A run is immutable and fire-once, so it must only be re-triggered when the
+    # local config changes, never from remote drift. Every settable run input is
+    # therefore ignored for remote changes here (ignore_remote_changes only
+    # suppresses a purely-remote difference, i.e. when local state still equals
+    # config), while a local change to any of them re-triggers the run via the
+    # recreate_on_changes list below. DoRead records only the run's identity
+    # (job_id), which it confirms but does not re-trigger on.
     ignore_remote_changes:
+      - field: dbt_commands
+        reason: input_only
       - field: idempotency_token
         reason: input_only
-      # GetRun returns every parameter the job defines with its resolved value,
-      # not just the ones the run overrode, so a direct diff against the RunNow
-      # request would always show drift. A local change still re-triggers the run
-      # via recreate_on_changes below.
+      - field: jar_params
+        reason: input_only
       - field: job_parameters
         reason: input_only
-      # Local-only snapshot of the targeted job's settings; GetRun never returns
-      # it, so it always looks like remote drift unless ignored here.
-      - field: job_settings
+      - field: notebook_params
         reason: input_only
       - field: only
         reason: input_only
       - field: performance_target
         reason: input_only
+      - field: pipeline_params
+        reason: input_only
+      - field: python_named_params
+        reason: input_only
+      - field: python_params
+        reason: input_only
       - field: queue
+        reason: input_only
+      - field: spark_submit_params
+        reason: input_only
+      - field: sql_params
         reason: input_only
     # There is no API to modify a run in place, so any change to the request must
     # re-trigger a fresh run. With no DoUpdate, recreate (no-op delete + RunNow)
@@ -155,10 +164,6 @@ resources:
       - field: job_id
         reason: immutable
       - field: job_parameters
-        reason: immutable
-      # A change to the targeted job's settings snapshot must re-trigger the run;
-      # prefix matching means any nested job field counts as a change.
-      - field: job_settings
         reason: immutable
       - field: notebook_params
         reason: immutable

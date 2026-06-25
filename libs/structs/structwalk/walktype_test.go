@@ -136,7 +136,7 @@ func TestTypeJobSettings(t *testing.T) {
 func TestTypeRoot(t *testing.T) {
 	testStruct(t,
 		reflect.TypeFor[config.Root](),
-		5000, 8000, // 7767 after job_runs resource added (snapshots a full job_settings)
+		5000, 8000, // 6027 with the job_runs resource (RunNow request fields only)
 		map[string]any{
 			"bundle.target":                "",
 			`variables.*.lookup.dashboard`: "",
