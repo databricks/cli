@@ -181,7 +181,23 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 
 			// Set enable_elastic_disk to false (server-side default)
 			task.NewCluster.ForceSendFields = append(task.NewCluster.ForceSendFields, "EnableElasticDisk")
+
+			// The real Jobs API consumes apply_policy_default_values but does not
+			// return it in GET responses; clear it so testserver matches cloud.
+			task.NewCluster.ApplyPolicyDefaultValues = false
 		}
+
+		// Handle for_each_task inner cluster.
+		if task.ForEachTask != nil && task.ForEachTask.Task.NewCluster != nil {
+			// Same as above: not returned in GET responses.
+			task.ForEachTask.Task.NewCluster.ApplyPolicyDefaultValues = false
+		}
+	}
+
+	// Handle job cluster new_clusters.
+	for i := range jobSettings.JobClusters {
+		// Same as above: not returned in GET responses.
+		jobSettings.JobClusters[i].NewCluster.ApplyPolicyDefaultValues = false
 	}
 }
 
