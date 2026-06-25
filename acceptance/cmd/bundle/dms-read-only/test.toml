@@ -1,9 +1,23 @@
-# Local-only acceptance test for the read-only DMS commands under
-# `databricks bundle {deployment,version,resource,operation}`. The DMS APIs
-# aren't on test workspaces yet, so we stub the eight read endpoints with
-# fixed response bodies and assert the CLI renders them as expected.
+# Local-only acceptance test for the read-only verbs of the auto-generated
+# `databricks bundle-deployments` command (DMS). The DMS APIs aren't on test
+# workspaces yet, so we stub the eight read endpoints with fixed response
+# bodies and assert the generated command renders them as expected.
+#
+# The deployment/version stubs include git_info: it is the field of interest
+# for this service and is silently dropped by older CLI releases whose SDK
+# model predates it, so we assert it round-trips through the generated command.
 Local = true
 Cloud = false
+
+# bundle-deployments is a workspace-service command independent of the bundle
+# deploy engine, so opt out of the inherited terraform/direct matrix.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+
+# Normalize the git commit SHA so the golden output isn't tied to a specific
+# commit value.
+[[Repls]]
+Old = '\b[0-9a-f]{40}\b'
+New = '[COMMIT_SHA]'
 
 [[Server]]
 Pattern = "GET /api/2.0/bundle/deployments"
@@ -34,7 +48,12 @@ Response.Body = '''
   "display_name": "first deployment",
   "target_name": "dev",
   "status": "DEPLOYMENT_STATUS_ACTIVE",
-  "last_version_id": "v1"
+  "last_version_id": "v1",
+  "git_info": {
+    "branch": "main",
+    "commit": "b3ceef677c3edbc098de4e38578e008f08dc0df1",
+    "origin_url": "https://github.com/databricks/cli"
+  }
 }
 '''
 
@@ -58,7 +77,12 @@ Response.Body = '''
 {
   "name": "deployments/abc/versions/v1",
   "cli_version": "0.0.0-dev",
-  "status": "VERSION_STATUS_COMPLETED"
+  "status": "VERSION_STATUS_COMPLETED",
+  "git_info": {
+    "branch": "main",
+    "commit": "b3ceef677c3edbc098de4e38578e008f08dc0df1",
+    "origin_url": "https://github.com/databricks/cli"
+  }
 }
 '''
 

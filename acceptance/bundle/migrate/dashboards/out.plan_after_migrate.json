@@ -21,11 +21,31 @@
         "warehouse_id": "123456"
       },
       "changes": {
+        "create_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
+        },
+        "dashboard_id": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[DASHBOARD1_ID]"
+        },
         "etag": {
           "action": "skip",
           "reason": "custom",
           "old": "[NUMID]",
           "remote": "[NUMID]"
+        },
+        "lifecycle_state": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "ACTIVE"
+        },
+        "path": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "/Users/[USERNAME]/my dashboard.lvdash.json"
         },
         "serialized_dashboard": {
           "action": "skip",
@@ -33,6 +53,11 @@
           "old": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
           "new": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
           "remote": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
+        },
+        "update_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
         }
       }
     }

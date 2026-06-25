@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -363,10 +364,36 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 			},
 		}
 	} else {
+		// Match the real Workspace API wording, which echoes the requested path.
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": "Workspace path not found"},
+			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", path)},
 		}
+	}
+}
+
+func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
+	defer s.LockUnlock()()
+
+	var objects []workspace.ObjectInfo
+
+	for filePath, entry := range s.files {
+		if path.Dir(filePath) == listPath {
+			objects = append(objects, entry.Info)
+		}
+	}
+	for dirPath, dirInfo := range s.directories {
+		if dirPath != listPath && path.Dir(dirPath) == listPath {
+			objects = append(objects, dirInfo)
+		}
+	}
+
+	slices.SortFunc(objects, func(a, b workspace.ObjectInfo) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+
+	return Response{
+		Body: workspace.ListResponse{Objects: objects},
 	}
 }
 
