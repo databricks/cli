@@ -11,8 +11,8 @@ RequiresWarehouse = true
 # Setting this environment variable prevents that conversion on windows.
 MSYS_NO_PATHCONV = "1"
 
-# Simulate eventual consistency on the direct engine: the first GET of a dashboard
-# after it is created returns 404. This reproduces, deterministically, the cloud
-# behaviour these tests are exposed to (Cloud = true), so reads right after deploy
-# must be retried (retry.py) rather than assumed to succeed. Ignored on terraform.
+# Direct-engine eventual consistency: the first GET of a freshly created dashboard
+# returns 404, so reads right after deploy must be retried (retry.py). Skipped on
+# terraform, which reads the dashboard back during apply without retrying and so
+# can't tolerate the 404.
 TESTS_STALE_ONCE = "1"
