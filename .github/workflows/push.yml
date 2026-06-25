@@ -452,7 +452,7 @@ jobs:
           EOF
           )
 
-          existing=$(gh issue list --state open --label fuzz-nightly --json number --jq '.[0].number')
+          existing=$(gh issue list --state open --label fuzz-nightly --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --body "$body"
           else
