@@ -5,21 +5,24 @@ bundle:
 # This is the motivating use case from databricks/cli#4233: other resources can
 # refer to ${resources.volumes.<key>.volume_path} instead of hardcoding the UC
 # path.
+#
+# Here the volume's schema_name and name are themselves references to another
+# job's remote creator_user_name, which is only known after deploy. So
+# volume_path is computed at initialize with those references embedded and the
+# whole chain (foo -> data.volume_path -> process) resolves at deploy.
 resources:
-  schemas:
-    my:
-      catalog_name: main
-      name: myschema-${UNIQUE_NAME}
-
-  volumes:
-    data:
-      catalog_name: main
-      schema_name: myschema-${UNIQUE_NAME}
-      name: data-${UNIQUE_NAME}
-
   jobs:
+    foo:
+      name: foo-${UNIQUE_NAME}
+
     process:
       name: process-${UNIQUE_NAME}
       parameters:
         - name: data_path
           default: ${resources.volumes.data.volume_path}
+
+  volumes:
+    data:
+      catalog_name: main
+      schema_name: ${resources.jobs.foo.creator_user_name}
+      name: ${resources.jobs.foo.creator_user_name}
