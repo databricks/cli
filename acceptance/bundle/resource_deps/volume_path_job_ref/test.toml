@@ -1,1 +1,8 @@
 RecordRequests = true
+
+# Direct-engine only: this scenario embeds a reference to a remote field
+# (jobs.foo.creator_user_name, known only after deploy) into volume_path. The
+# direct engine resolves it at deploy; Terraform cannot export that attribute,
+# so the case is unsupported there (see NEXT_CHANGELOG.md). Direct is the
+# default engine, so the motivating use case works out of the box.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
