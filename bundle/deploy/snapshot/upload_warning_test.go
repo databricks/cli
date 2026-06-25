@@ -59,7 +59,7 @@ func TestUploadWarnsAboveFileLimit(t *testing.T) {
 
 	diags := m.Apply(testContext(t), b)
 
-	require.Equal(t, 1, len(diags))
+	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Contains(t, diags[0].Summary, fmt.Sprintf("%d files", fileLimitWarning+1))
 	assert.Equal(t, "/snapshots/test", b.Config.Workspace.SnapshotPath)
