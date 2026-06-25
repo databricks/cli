@@ -30,3 +30,10 @@ EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml
 # migrate deploys via Terraform first, and the TF provider rejects an uppercase
 # volume schema_name ("inconsistent final plan"). Covered by no_drift on direct.
 EnvMatrixExclude.no_volume_uppercase = ["INPUT_CONFIG=volume_uppercase_name.yml.tmpl"]
+
+# volume_path embeds ${resources.jobs.foo.creator_user_name}; the terraform
+# interpolator converts it to ${databricks_job.foo.creator_user_name}, but the
+# terraform databricks_job resource does not export creator_user_name, so the
+# terraform seed deploy fails. Same class as no_cross_resource_ref above.
+# Covered by no_drift on direct.
+EnvMatrixExclude.no_volume_path_job_ref = ["INPUT_CONFIG=volume_path_job_ref.yml.tmpl"]
