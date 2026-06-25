@@ -10,6 +10,10 @@ bundle:
 # job's remote creator_user_name, which is only known after deploy. So
 # volume_path is computed at initialize with those references embedded and the
 # whole chain (foo -> data.volume_path -> process) resolves at deploy.
+#
+# This is direct-engine only (the default): Terraform cannot export
+# creator_user_name as an attribute, so the embedded reference is unsupported
+# there. See test.toml for the engine restriction.
 resources:
   jobs:
     foo:
