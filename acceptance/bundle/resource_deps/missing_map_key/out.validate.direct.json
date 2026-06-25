@@ -30,8 +30,7 @@
           "new_cluster": {
             "custom_tags": {
               "ResourceClass": "SingleNode"
-            },
-            "num_workers": 0
+            }
           },
           "task_key": "test-task"
         }

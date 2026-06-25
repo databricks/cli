@@ -18,17 +18,18 @@ const defaultParitySeeds = 20
 
 // regressionSeeds are seeds that previously surfaced a terraform/direct create
 // payload divergence. They are always checked (in addition to the rotating
-// nightly window) so a fixed divergence can never silently regress, even though
-// the nightly window moves on every run and would otherwise never revisit them.
+// nightly window) so the divergence keeps being exercised even though the
+// nightly window moves on every run and would otherwise never revisit them.
 //
-// When the nightly job reports a new failing FUZZ_SEED, add it here in the same
-// PR that fixes the divergence.
+// When the nightly job reports a new failing FUZZ_SEED, add it here.
 //
-//   - 29: first seed that generates a single-node task-level new_cluster
-//     (num_workers 0, no autoscale). The direct engine omitted num_workers on
-//     task clusters while terraform force-sent num_workers:0, so the create
-//     payloads diverged. Fixed by applying initializeNumWorkers to task clusters
-//     in resourcemutator.prepareJobSettingsForUpdate.
+//   - 29: generates a single-node task-level new_cluster (num_workers 0, no
+//     autoscale). The direct engine omits num_workers on task clusters while
+//     terraform force-sends num_workers:0, so the create payloads diverge. This
+//     divergence is documented and currently suppressed via DefaultIgnorePaths
+//     (tasks[*].new_cluster.num_workers), not fixed in this PR; tracked under
+//     DECO-25361. The seed stays here so that once the divergence is fixed and
+//     its ignore entry removed, this seed guards against regression.
 var regressionSeeds = []int64{29}
 
 // TestJobCreateParity is the first DECO-25361 technique: for many random job

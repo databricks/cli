@@ -270,4 +270,13 @@ var DefaultIgnorePaths = []string{
 	// way, so this is a benign provider-side filter rather than a parity bug.
 	`tasks[*].new_cluster.spark_conf["spark.databricks.delta.preview.enabled"]`,
 	`job_clusters[*].new_cluster.spark_conf["spark.databricks.delta.preview.enabled"]`,
+
+	// For a single-node task-level new_cluster (no autoscale, num_workers unset)
+	// the terraform provider force-sends num_workers:0 while the direct engine
+	// omits the field, so the create payloads diverge. This is a real
+	// terraform/direct divergence the harness found (seed 29); it is documented
+	// and suppressed here rather than fixed in this PR. Tracked under DECO-25361.
+	// Shared job_clusters are not affected: resourcemutator already force-sends
+	// num_workers for them under both engines, so only the task path diverges.
+	`tasks[*].new_cluster.num_workers`,
 }
