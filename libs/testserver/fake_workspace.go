@@ -34,10 +34,13 @@ import (
 const (
 	UserNameTokenPrefix         = "dbapi0"
 	ServicePrincipalTokenPrefix = "dbapi1"
-	UserID                      = "1000012345"
-	TestDefaultClusterId        = "0123-456789-cluster0"
-	TestDefaultWarehouseId      = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId   = "0123-456789-pool0"
+	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
+	// consistency: the first GET after a create returns 404 (not yet visible).
+	EventualConsistencyTokenPrefix = "dbapi2"
+	UserID                         = "1000012345"
+	TestDefaultClusterId           = "0123-456789-cluster0"
+	TestDefaultWarehouseId         = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId      = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -125,6 +128,9 @@ type FakeWorkspace struct {
 	mu                 sync.Mutex
 	url                string
 	isServicePrincipal bool
+	// EventualConsistency enables eventual-consistency simulation: the first
+	// GET after a create returns 404 (resource not yet visible).
+	EventualConsistency bool
 
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
@@ -140,7 +146,7 @@ type FakeWorkspace struct {
 	Schemas               map[string]catalog.SchemaInfo
 	Grants                map[string][]catalog.PrivilegeAssignment
 	Volumes               map[string]catalog.VolumeInfo
-	Dashboards            map[string]fakeDashboard
+	Dashboards            map[string]*EventualValue[*fakeDashboard]
 	PublishedDashboards   map[string]dashboards.PublishedDashboard
 	GenieSpaces           map[string]dashboards.GenieSpace
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
@@ -250,8 +256,9 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 
 func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	return &FakeWorkspace{
-		url:                url,
-		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		url:                 url,
+		isServicePrincipal:  strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		EventualConsistency: strings.HasPrefix(token, EventualConsistencyTokenPrefix),
 		directories: map[string]workspace.ObjectInfo{
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
@@ -290,7 +297,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Schemas:             map[string]catalog.SchemaInfo{},
 		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
 		Volumes:             map[string]catalog.VolumeInfo{},
-		Dashboards:          map[string]fakeDashboard{},
+		Dashboards:          map[string]*EventualValue[*fakeDashboard]{},
 		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
 		GenieSpaces:         map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{

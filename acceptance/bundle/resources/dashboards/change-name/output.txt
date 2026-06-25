@@ -10,7 +10,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] lakeview get [DASHBOARD_ID]
+>>> retry.py [CLI] lakeview get [DASHBOARD_ID]
 {
   "display_name": "dashboard1",
   "lifecycle_state": "ACTIVE",
@@ -31,7 +31,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] lakeview get [DASHBOARD_ID]
+>>> retry.py [CLI] lakeview get [DASHBOARD_ID]
 {
   "display_name": "dashboard2",
   "lifecycle_state": "ACTIVE",

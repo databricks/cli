@@ -14,7 +14,7 @@ DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.
 echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
 
 # Verify dashboard was deployed
-trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path}'
+trace retry.py $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path}'
 
 trace $CLI bundle destroy --auto-approve
 
