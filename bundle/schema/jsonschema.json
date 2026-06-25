@@ -1060,6 +1060,7 @@
                         "$ref": "#/$defs/map/string"
                       },
                       "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "notebook_params": {
@@ -3071,6 +3072,7 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace"
                     },
                     "job_runs": {
+                      "description": "The job run definitions for the bundle, where each key is the name of the job run. Each job run triggers a run of an existing job as part of bundle deployment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.JobRun"
                     },
                     "jobs": {
