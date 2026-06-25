@@ -1,7 +1,7 @@
-# This test is using a workspace import API to load a notebook file.
-# This API has a logic on how to accept notebook files and distinguishes them from regular python files.
-# To succeed locally we would need to replicate this logic in the fake_workspace
-Local = false
+# This test uses the workspace import API to load a notebook file. The testserver
+# models the SOURCE import format (notebook with an explicit language), so it runs
+# locally in addition to cloud.
+Local = true
 Cloud = true
 
 Ignore = [

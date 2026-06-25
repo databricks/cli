@@ -143,13 +143,6 @@ func AddDefaultHandlers(server *Server) {
 			}
 		}
 
-		if request.Format != workspace.ImportFormatAuto {
-			return Response{
-				Body:       "internal error: The test server only supports auto format.",
-				StatusCode: http.StatusInternalServerError,
-			}
-		}
-
 		// The /workspace/import endpoint expects the content as base64 encoded string.
 		// We need to decode it to get the actual content.
 		decoded, err := base64.StdEncoding.DecodeString(request.Content)
@@ -160,7 +153,21 @@ func AddDefaultHandlers(server *Server) {
 			}
 		}
 
-		return req.Workspace.WorkspaceFilesImportFile(request.Path, decoded, request.Overwrite)
+		switch request.Format {
+		case workspace.ImportFormatAuto:
+			return req.Workspace.WorkspaceFilesImportFile(request.Path, decoded, request.Overwrite)
+		case workspace.ImportFormatSource, "":
+			// SOURCE imports a single notebook with an explicit language, e.g.
+			// `databricks workspace import --language PYTHON`. The CLI leaves the
+			// format empty in that case and treats empty as SOURCE (see
+			// cmd/workspace/workspace/overrides.go).
+			return req.Workspace.WorkspaceImportNotebook(request.Path, decoded, request.Language, request.Overwrite)
+		default:
+			return Response{
+				Body:       "internal error: The test server only supports auto and source formats.",
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
 	})
 
 	server.Handle("GET", "/api/2.0/workspace-files/{path...}", func(req Request) any {
