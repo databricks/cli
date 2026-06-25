@@ -14,7 +14,6 @@ echo "$CLUSTER_ID:CLUSTER_ID" >> ACC_REPLS
 title "Create a plan while cluster is running: should show resize\n"
 update_file.py databricks.yml "num_workers: 2" "num_workers: 3"
 trace $CLI bundle plan -o json > plan.json
-trace $CLI bundle plan
 
 title "Terminate the cluster before applying the saved plan\n"
 trace $CLI clusters delete "$CLUSTER_ID"
