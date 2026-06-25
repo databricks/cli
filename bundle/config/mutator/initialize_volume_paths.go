@@ -23,9 +23,12 @@ type initializeVolumePaths struct{}
 //
 // A component that cannot be resolved locally (for example a remote field only known at plan or
 // deploy time) is left as a ${...} reference and embedded into volume_path. The embedded
-// reference is then carried through ${resources.volumes.<key>.volume_path} interpolation and
-// resolved later by the engine during plan or deploy, the same way any other resource reference
-// is. This enables ${resources.volumes.<key>.volume_path} interpolation during initialize.
+// reference is then carried into any ${resources.volumes.<key>.volume_path} referrer (resolved
+// by ResolveVolumePathReferencesOnlyResources) and ultimately resolved by the engine during plan
+// or deploy, the same way any other resource reference is.
+//
+// This mutator must run exactly once: volume_path is computed here and never persisted, so a
+// second run would see the value it set and trip the "computed and read-only" rejection below.
 func InitializeVolumePaths() bundle.Mutator {
 	return &initializeVolumePaths{}
 }

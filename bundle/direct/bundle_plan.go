@@ -1041,7 +1041,9 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	return p, nil
 }
 
-// ExtractReferences extracts all variable references from the config subtree rooted at node.
+// ExtractReferences extracts variable references from the config subtree rooted at node,
+// keeping only those whose field path exists in stateType (references in input-only or
+// bundle:"readonly" fields, such as volumes' computed volume_path, are skipped).
 // Returns a map from structpath string (field path within the resource) to template string.
 func ExtractReferences(root dyn.Value, node string, stateType reflect.Type) (map[string]string, error) {
 	return extractReferences(root, node, stateType)
