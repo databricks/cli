@@ -57,7 +57,3 @@ executionEnvironments = [
 
 venvPath = "."
 venv = ".venv"
-
-# Ruff (lint + format) is configured globally at the repo root (../ruff.toml)
-# and run via `task lint-python` / `task fmt-python`, so this package no longer
-# carries its own ruff config or dev dependency.
