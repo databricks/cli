@@ -12,7 +12,7 @@ import (
 type overrideImmutableFolder struct{}
 
 // OverrideImmutableFolder sets bundle.deployment.immutable_folder to true
-// if the DATABRICKS_IMMUTABLE_FOLDER environment variable is non-empty.
+// if the __TEST_DATABRICKS_IMMUTABLE_FOLDER environment variable is non-empty.
 // This allows running the acceptance test suite against the immutable folder
 // code path without modifying any databricks.yml files.
 func OverrideImmutableFolder() bundle.Mutator {
@@ -24,7 +24,7 @@ func (m *overrideImmutableFolder) Name() string {
 }
 
 func (m *overrideImmutableFolder) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if env.Get(ctx, "DATABRICKS_IMMUTABLE_FOLDER") == "" {
+	if env.Get(ctx, "__TEST_DATABRICKS_IMMUTABLE_FOLDER") == "" {
 		return nil
 	}
 	if b.Config.Experimental == nil {

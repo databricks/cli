@@ -13,7 +13,7 @@ import (
 
 func TestOverrideImmutableFolderNotSet(t *testing.T) {
 	t.Parallel()
-	ctx := env.Set(t.Context(), "DATABRICKS_IMMUTABLE_FOLDER", "")
+	ctx := env.Set(t.Context(), "__TEST_DATABRICKS_IMMUTABLE_FOLDER", "")
 	b := &bundle.Bundle{Config: config.Root{}}
 	diags := bundle.Apply(ctx, b, mutator.OverrideImmutableFolder())
 	require.NoError(t, diags.Error())
@@ -22,7 +22,7 @@ func TestOverrideImmutableFolderNotSet(t *testing.T) {
 
 func TestOverrideImmutableFolderSet(t *testing.T) {
 	t.Parallel()
-	ctx := env.Set(t.Context(), "DATABRICKS_IMMUTABLE_FOLDER", "true")
+	ctx := env.Set(t.Context(), "__TEST_DATABRICKS_IMMUTABLE_FOLDER", "true")
 	b := &bundle.Bundle{Config: config.Root{}}
 	diags := bundle.Apply(ctx, b, mutator.OverrideImmutableFolder())
 	require.NoError(t, diags.Error())
@@ -32,7 +32,7 @@ func TestOverrideImmutableFolderSet(t *testing.T) {
 
 func TestOverrideImmutableFolderAlreadyTrue(t *testing.T) {
 	t.Parallel()
-	ctx := env.Set(t.Context(), "DATABRICKS_IMMUTABLE_FOLDER", "")
+	ctx := env.Set(t.Context(), "__TEST_DATABRICKS_IMMUTABLE_FOLDER", "")
 	b := &bundle.Bundle{Config: config.Root{}}
 	b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
 	diags := bundle.Apply(ctx, b, mutator.OverrideImmutableFolder())
