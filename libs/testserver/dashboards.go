@@ -328,9 +328,6 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	}
 
 	// The dashboard is marked as trashed and moved to the trash.
-	// Put (not Write): the trashed state is immediately visible. Only creates stage a
-	// stale value, so the eventual-consistency 404 happens only on the first read
-	// after create.
 	ev.Put(&fakeDashboard{
 		Dashboard: dashboards.Dashboard{
 			Etag:           dashboard.Etag,
