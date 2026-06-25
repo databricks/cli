@@ -94,7 +94,6 @@ func prepareJobSettingsForUpdate(js *jobs.JobSettings) {
 	for _, task := range js.Tasks {
 		if task.NewCluster != nil {
 			ModifyRequestOnInstancePool(task.NewCluster)
-			initializeNumWorkers(task.NewCluster)
 		}
 	}
 	for ind := range js.JobClusters {
