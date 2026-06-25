@@ -5,6 +5,7 @@ cleanup() {
 
 trace $CLI bundle validate -o json | jq .resources
 trace $CLI bundle plan
+$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 trap cleanup EXIT
 trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
