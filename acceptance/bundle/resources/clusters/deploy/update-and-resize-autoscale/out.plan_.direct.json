@@ -23,7 +23,7 @@
   "serial": 1,
   "plan": {
     "resources.clusters.test_cluster": {
-      "action": "resize",
+      "action": "update",
       "new_state": {
         "value": {
           "autoscale": {
@@ -56,8 +56,7 @@
       },
       "changes": {
         "autoscale": {
-          "action": "resize",
-          "reason": "custom",
+          "action": "update",
           "new": {
             "max_workers": 4,
             "min_workers": 2
@@ -89,8 +88,7 @@
           }
         },
         "num_workers": {
-          "action": "resize",
-          "reason": "custom",
+          "action": "update",
           "old": 2,
           "remote": 2
         }
@@ -105,7 +103,7 @@
   "serial": 2,
   "plan": {
     "resources.clusters.test_cluster": {
-      "action": "resize",
+      "action": "update",
       "new_state": {
         "value": {
           "autoscale": {
@@ -137,15 +135,13 @@
       },
       "changes": {
         "autoscale.max_workers": {
-          "action": "resize",
-          "reason": "custom",
+          "action": "update",
           "old": 4,
           "new": 5,
           "remote": 4
         },
         "autoscale.min_workers": {
-          "action": "resize",
-          "reason": "custom",
+          "action": "update",
           "old": 2,
           "new": 3,
           "remote": 2

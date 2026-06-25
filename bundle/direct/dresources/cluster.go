@@ -290,8 +290,9 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 		}
 
 	case "num_workers", "autoscale":
-		// Always classify as Resize; DoResize falls back to Edit if the cluster is not running.
-		change.Action = deployplan.Resize
+		if remoteState != nil && remoteState.State == compute.StateRunning {
+			change.Action = deployplan.Resize
+		}
 	}
 	return nil
 }

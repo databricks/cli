@@ -8,7 +8,7 @@
 
 ### Bundles
 
- * Cluster resize now falls back to regular update if cluster is in `INVALID_STATE`. Plan always shows 'resize' for changes that qualify without checking remote state ([#5716](https://github.com/databricks/cli/pull/5716)).
+ * Cluster resize now falls back to regular update if resize fails due to `INVALID_STATE` ([#5716](https://github.com/databricks/cli/pull/5716)).
 
 ### Dependency updates
 

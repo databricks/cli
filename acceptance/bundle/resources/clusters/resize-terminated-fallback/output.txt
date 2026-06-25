@@ -5,7 +5,16 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Terminate the cluster externally
+=== Create a plan while cluster is running: should show resize
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle plan
+resize clusters.test_cluster
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== Terminate the cluster before applying the saved plan
 
 >>> [CLI] clusters delete [CLUSTER_ID]
 {
@@ -30,16 +39,9 @@ Deployment complete!
   "state": "TERMINATED"
 }
 
-=== Changing num_workers on terminated cluster: plan should show resize
+=== Apply saved plan: resize fails with INVALID_STATE, falls back to edit
 
->>> [CLI] bundle plan
-resize clusters.test_cluster
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
-
-=== Deploy falls back to edit when resize returns INVALID_STATE
-
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy --plan plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Deploying resources...
 Updating deployment state...
