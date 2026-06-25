@@ -6,7 +6,9 @@
 *.dll
 *.so
 *.dylib
-cli
+# Root binary from a bare `go build`; anchored so it doesn't also ignore
+# nested paths like changelog.d/cli/.
+/cli
 
 # Test binary, built with `go test -c`
 *.test

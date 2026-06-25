@@ -263,6 +263,17 @@ tasks:
     cmds:
       - "./tools/update_github_links.py"
 
+  changelog-collate:
+    desc: Collate .nextchanges fragments into NEXT_CHANGELOG.md (run at release time)
+    cmds:
+      - "./tools/collate_changelog.py"
+      - "./tools/update_github_links.py NEXT_CHANGELOG.md"
+
+  changelog-check:
+    desc: Validate .nextchanges fragment placement
+    cmds:
+      - "./tools/collate_changelog.py --check"
+
   deadcode:
     desc: Check for dead code
     sources:
@@ -273,7 +284,7 @@ tasks:
       - ./tools/check_deadcode.py
 
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode)
+    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with whitespace/link scanners.
     cmds:
@@ -281,6 +292,7 @@ tasks:
       - task: ws
       - task: links
       - task: deadcode
+      - task: changelog-check
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
