@@ -1,0 +1,27 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_cluster.id')
+echo "$CLUSTER_ID:CLUSTER_ID" >> ACC_REPLS
+
+title "Terminate the cluster externally\n"
+$CLI clusters delete "$CLUSTER_ID"
+$CLI clusters get "$CLUSTER_ID" | jq '{cluster_name,num_workers,state}'
+
+title "Changing num_workers on terminated cluster: plan should show resize\n"
+update_file.py databricks.yml "num_workers: 2" "num_workers: 3"
+$CLI bundle plan
+
+title "Deploy falls back to edit when resize returns INVALID_STATE\n"
+trace $CLI bundle deploy
+trace print_requests.py //clusters/resize //clusters/edit
+
+title "Cluster should have new num_workers\n"
+$CLI clusters get "$CLUSTER_ID" | jq '{cluster_name,num_workers}'

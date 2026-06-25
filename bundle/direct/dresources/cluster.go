@@ -248,6 +248,27 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *Clust
 		Autoscale:       config.Autoscale,
 		ForceSendFields: utils.FilterFields[compute.ResizeCluster](config.ForceSendFields),
 	})
+	if err == nil {
+		return nil
+	}
+
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || apiErr.ErrorCode != "INVALID_STATE" {
+		return err
+	}
+
+	// Cluster is not running; fall back to clusters/edit with the same INVALID_STATE retry as DoUpdate.
+	timeout := 15 * time.Minute
+	_, err = retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
+		wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, &config.ClusterSpec))
+		if err == nil {
+			return wait, nil
+		}
+		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.ErrorCode == "INVALID_STATE" {
+			return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state: %s", id, apiErr.Message))
+		}
+		return nil, retries.Halt(err)
+	})
 	return err
 }
 
@@ -279,9 +300,8 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 		}
 
 	case "num_workers", "autoscale":
-		if remoteState != nil && remoteState.State == compute.StateRunning {
-			change.Action = deployplan.Resize
-		}
+		// Always classify as Resize; DoResize falls back to Edit if the cluster is not running.
+		change.Action = deployplan.Resize
 	}
 	return nil
 }
