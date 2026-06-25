@@ -85,19 +85,10 @@ func (s *FakeWorkspace) DashboardGet(req Request) Response {
 	defer s.LockUnlock()()
 
 	dashboardId := req.Vars["dashboard_id"]
-	ev, ok := s.Dashboards[dashboardId]
-	if !ok {
-		return Response{StatusCode: 404}
-	}
-	// When eventual consistency is enabled, the first GET after a create returns nil
+	// Read applies eventual consistency: the first GET after a create returns nil
 	// (404) to simulate propagation delay. Updates are immediately visible.
-	var ptr *fakeDashboard
-	if s.EventualConsistency {
-		ptr = ev.ReadEventual()
-	} else {
-		ptr = ev.ReadStrong()
-	}
-	if ptr == nil {
+	ptr, ok := s.Dashboards.Read(dashboardId)
+	if !ok || ptr == nil {
 		return Response{StatusCode: 404}
 	}
 	return Response{Body: *ptr}
@@ -166,14 +157,12 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	}
 	dashboard.Etag = "80611980"
 
-	// Write via EventualValue so that, when eventual consistency is enabled, the
-	// first GET after this create returns 404.
-	ev := &EventualValue[*fakeDashboard]{}
-	ev.Write(&fakeDashboard{
+	// Write so that, when eventual consistency is enabled, the first GET after this
+	// create returns 404.
+	s.Dashboards.Write(dashboard.DashboardId, &fakeDashboard{
 		Dashboard:                dashboard,
 		InputSerializedDashboard: inputSerializedDashboard,
 	})
-	s.Dashboards[dashboard.DashboardId] = ev
 
 	workspacePath := path.Join("/Workspace", dashboard.Path)
 	s.files[workspacePath] = FileEntry{
@@ -202,14 +191,8 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	}
 
 	dashboardId := req.Vars["dashboard_id"]
-	ev, ok := s.Dashboards[dashboardId]
+	dashboard, ok := s.Dashboards.ReadStrong(dashboardId)
 	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-	dashboard := ev.ReadStrong()
-	if dashboard == nil {
 		return Response{
 			StatusCode: 404,
 		}
@@ -251,7 +234,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 
 	// Put (not Write): updates are immediately visible. Only creates stage a stale
 	// value, so the eventual-consistency 404 happens only on first read after create.
-	ev.Put(&updated)
+	s.Dashboards.Put(dashboardId, &updated)
 
 	return Response{
 		Body: updated,
@@ -269,14 +252,8 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 	}
 
 	dashboardId := req.Vars["dashboard_id"]
-	ev, ok := s.Dashboards[dashboardId]
+	dashboard, ok := s.Dashboards.ReadStrong(dashboardId)
 	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-	dashboard := ev.ReadStrong()
-	if dashboard == nil {
 		return Response{
 			StatusCode: 404,
 		}
@@ -314,21 +291,15 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	defer s.LockUnlock()()
 
 	dashboardId := req.Vars["dashboard_id"]
-	ev, ok := s.Dashboards[dashboardId]
+	dashboard, ok := s.Dashboards.ReadStrong(dashboardId)
 	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-	dashboard := ev.ReadStrong()
-	if dashboard == nil {
 		return Response{
 			StatusCode: 404,
 		}
 	}
 
 	// The dashboard is marked as trashed and moved to the trash.
-	ev.Put(&fakeDashboard{
+	s.Dashboards.Put(dashboardId, &fakeDashboard{
 		Dashboard: dashboards.Dashboard{
 			Etag:           dashboard.Etag,
 			DashboardId:    dashboardId,
@@ -349,8 +320,7 @@ func (s *FakeWorkspace) DashboardUnpublish(req Request) Response {
 	defer s.LockUnlock()()
 
 	dashboardId := req.Vars["dashboard_id"]
-	ev, ok := s.Dashboards[dashboardId]
-	if !ok || ev.ReadStrong() == nil {
+	if _, ok := s.Dashboards.ReadStrong(dashboardId); !ok {
 		return Response{
 			StatusCode: 404,
 		}

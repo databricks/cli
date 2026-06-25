@@ -128,9 +128,6 @@ type FakeWorkspace struct {
 	mu                 sync.Mutex
 	url                string
 	isServicePrincipal bool
-	// EventualConsistency enables eventual-consistency simulation: the first
-	// GET after a create returns 404 (resource not yet visible).
-	EventualConsistency bool
 
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
@@ -146,7 +143,7 @@ type FakeWorkspace struct {
 	Schemas               map[string]catalog.SchemaInfo
 	Grants                map[string][]catalog.PrivilegeAssignment
 	Volumes               map[string]catalog.VolumeInfo
-	Dashboards            map[string]*EventualValue[*fakeDashboard]
+	Dashboards            *EventualMap[string, *fakeDashboard]
 	PublishedDashboards   map[string]dashboards.PublishedDashboard
 	GenieSpaces           map[string]dashboards.GenieSpace
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
@@ -256,9 +253,8 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 
 func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	return &FakeWorkspace{
-		url:                 url,
-		isServicePrincipal:  strings.HasPrefix(token, ServicePrincipalTokenPrefix),
-		EventualConsistency: strings.HasPrefix(token, EventualConsistencyTokenPrefix),
+		url:                url,
+		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
 		directories: map[string]workspace.ObjectInfo{
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
@@ -297,7 +293,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Schemas:             map[string]catalog.SchemaInfo{},
 		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
 		Volumes:             map[string]catalog.VolumeInfo{},
-		Dashboards:          map[string]*EventualValue[*fakeDashboard]{},
+		Dashboards:          NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
 		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
 		GenieSpaces:         map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
