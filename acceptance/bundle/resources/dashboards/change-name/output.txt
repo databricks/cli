@@ -9,8 +9,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQU
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> retry.py [CLI] lakeview get [DASHBOARD_ID]
 {
   "display_name": "dashboard1",
   "lifecycle_state": "ACTIVE",
@@ -30,8 +28,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQU
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> retry.py [CLI] lakeview get [DASHBOARD_ID]
 {
   "display_name": "dashboard2",
   "lifecycle_state": "ACTIVE",

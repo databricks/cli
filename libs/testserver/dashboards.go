@@ -328,7 +328,8 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	}
 
 	// The dashboard is marked as trashed and moved to the trash.
-	// Put (not Write) so the trashed state is immediately visible.
+	// Put (not Write), like DashboardUpdate: only create stages a stale value (the
+	// eventual-consistency 404); trashes apply immediately.
 	ev.Put(&fakeDashboard{
 		Dashboard: dashboards.Dashboard{
 			Etag:           dashboard.Etag,
