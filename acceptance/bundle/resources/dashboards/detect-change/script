@@ -22,7 +22,6 @@ DASHBOARD_ID=$(jq -r '.id' out.summary.json)
 
 # Capture the dashboard ID as a replacement.
 echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
-# Read back once (retrying the eventual-consistency 404) and reuse below.
 DASHBOARD=$(retry.py $CLI lakeview get "$DASHBOARD_ID")
 echo "$(echo "$DASHBOARD" | jq -r '.etag'):ETAG_1" >> ACC_REPLS
 

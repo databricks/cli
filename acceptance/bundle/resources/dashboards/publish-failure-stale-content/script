@@ -12,7 +12,6 @@ unset MSYS_NO_PATHCONV
 trace $CLI bundle deploy
 replace_ids.py
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
-# Read back once (retrying the eventual-consistency 404) and reuse below.
 DASHBOARD=$(retry.py $CLI lakeview get $DASHBOARD_ID)
 ETAG_1=$(echo "$DASHBOARD" | jq -r '.etag')
 add_repl.py "$ETAG_1" ETAG_1
