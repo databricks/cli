@@ -9,13 +9,12 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// loadRunConfig reads a run YAML config file, decodes it into the schema, and
-// runs structural validation. Unknown keys are rejected (KnownFields), mirroring
-// the Python schema's extra="forbid".
+// decodeRunConfig reads and decodes the run YAML into the schema. Unknown keys
+// are rejected (KnownFields), mirroring the Python schema's extra="forbid".
 //
 // The `_bases_` composition feature and CLI `--override` handling are not yet
 // ported; a config using `_bases_` is currently rejected as an unknown field.
-func loadRunConfig(path string) (*runConfig, error) {
+func decodeRunConfig(path string) (*runConfig, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -32,9 +31,22 @@ func loadRunConfig(path string) (*runConfig, error) {
 		}
 		return nil, fmt.Errorf("invalid config %s: %w", path, err)
 	}
+	return &cfg, nil
+}
 
-	if err := cfg.validate(); err != nil {
+// validateRunConfig runs structural validation over a decoded config.
+func validateRunConfig(cfg *runConfig) error {
+	return cfg.validate()
+}
+
+// loadRunConfig decodes and structurally validates a run YAML config file.
+func loadRunConfig(path string) (*runConfig, error) {
+	cfg, err := decodeRunConfig(path)
+	if err != nil {
 		return nil, err
 	}
-	return &cfg, nil
+	if err := validateRunConfig(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
