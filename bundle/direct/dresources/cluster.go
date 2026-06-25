@@ -241,7 +241,7 @@ func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config
 	return nil, nil
 }
 
-func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *ClusterState) error {
+func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) error {
 	_, err := r.client.Clusters.Resize(ctx, compute.ResizeCluster{
 		ClusterId:       id,
 		NumWorkers:      config.NumWorkers,
@@ -257,18 +257,8 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *Clust
 		return err
 	}
 
-	// Cluster is not running; fall back to clusters/edit with the same INVALID_STATE retry as DoUpdate.
-	timeout := 15 * time.Minute
-	_, err = retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
-		wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, &config.ClusterSpec))
-		if err == nil {
-			return wait, nil
-		}
-		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.ErrorCode == "INVALID_STATE" {
-			return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state: %s", id, apiErr.Message))
-		}
-		return nil, retries.Halt(err)
-	})
+	// Cluster is not running; fall back to the full clusters/edit path.
+	_, err = r.DoUpdate(ctx, id, config, entry)
 	return err
 }
 
