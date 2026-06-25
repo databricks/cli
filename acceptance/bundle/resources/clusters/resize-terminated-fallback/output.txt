@@ -6,6 +6,8 @@ Updating deployment state...
 Deployment complete!
 
 === Terminate the cluster externally
+
+>>> [CLI] clusters delete [CLUSTER_ID]
 {
   "autotermination_minutes": 60,
   "aws_attributes": {
@@ -20,6 +22,8 @@ Deployment complete!
   "spark_version": "13.3.x-snapshot-scala2.12",
   "state": "TERMINATED"
 }
+
+>>> [CLI] clusters get [CLUSTER_ID]
 {
   "cluster_name": "test-cluster-[UNIQUE_NAME]",
   "num_workers": 2,
@@ -27,6 +31,8 @@ Deployment complete!
 }
 
 === Changing num_workers on terminated cluster: plan should show resize
+
+>>> [CLI] bundle plan
 resize clusters.test_cluster
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
@@ -62,6 +68,8 @@ Deployment complete!
 }
 
 === Cluster should have new num_workers
+
+>>> [CLI] clusters get [CLUSTER_ID]
 {
   "cluster_name": "test-cluster-[UNIQUE_NAME]",
   "num_workers": 3
