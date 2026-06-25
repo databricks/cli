@@ -5,9 +5,9 @@
 === deploy initial genie space
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/genie space update inplace/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created genie_spaces.test_genie_space
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === update the genie space
 >>> [CLI] genie update-space [GENIE_SPACE_ID] --serialized-space {"a":"b"}

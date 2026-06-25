@@ -1,9 +1,9 @@
 
 >>> errcode [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === upload lock file
@@ -32,5 +32,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

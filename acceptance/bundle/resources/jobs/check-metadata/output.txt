@@ -8,9 +8,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.bar
+created jobs.foo
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Second summary, should have id and modified status should be absent
 >>> [CLI] bundle summary -o json
@@ -91,5 +92,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

@@ -8,11 +8,8 @@ Workspace:
 
 Validation OK!
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
 === Assert the volume is created successfully
 >>> [CLI] volumes read main.schema1-[UNIQUE_NAME].my_volume
@@ -53,7 +50,7 @@ To proceed, use --auto-approve after reviewing the plan above.
 Exit code: 1
 
 === Successfully recreate the volume with --auto-approve
->>> [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name} --auto-approve
+>>> [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name} --auto-approve -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
 
 This action will result in the deletion or recreation of the following volumes.
@@ -61,9 +58,6 @@ For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
   recreate resources.volumes.foo
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -83,5 +77,4 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted.

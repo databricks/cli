@@ -10,9 +10,12 @@ Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created catalogs.test_catalog
+created catalogs.test_catalog.grants
+created external_locations.test_location
+created external_locations.test_location.grants
+
+Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Assert the catalog is created with grants
 >>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
@@ -68,9 +71,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated external_locations.test_location
+
+Deploy: 0 created, 1 changed, 0 deleted, 3 unchanged.
 
 === Assert the external location comment is updated
 >>> [CLI] external-locations get test_ext_location_[UNIQUE_NAME]
@@ -88,9 +91,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated catalogs.test_catalog
+
+Deploy: 0 created, 1 changed, 0 deleted, 3 unchanged.
 
 === Assert the catalog comment is updated
 >>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
@@ -107,5 +110,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

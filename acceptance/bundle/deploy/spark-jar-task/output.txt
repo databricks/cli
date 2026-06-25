@@ -3,9 +3,9 @@
 Building my_java_code...
 Uploading myjar/PrintArgs.jar...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/spark-jar-task-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.jar_job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle run jar_job
 Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
@@ -20,5 +20,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/spark-jar-task-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

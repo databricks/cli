@@ -3,9 +3,14 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.dst_git
+created jobs.dst_pipeline
+created jobs.dst_tasks
+created jobs.src_git
+created jobs.src_tasks
+created pipelines.src_pipeline
+
+Deploy: 6 created, 0 changed, 0 deleted, 0 unchanged.
 /path/to/wheel.whl
 main
 mycluster

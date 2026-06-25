@@ -12,9 +12,9 @@ Exit code: 1
 === Deploy bundle:
 >>> [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Check that job is not bound and not updated with config from bundle:
 >>> [CLI] jobs get [JOB_ID]

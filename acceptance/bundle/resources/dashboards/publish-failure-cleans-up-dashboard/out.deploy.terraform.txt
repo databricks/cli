@@ -1,7 +1,6 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/files...
-Deploying resources...
 Error: terraform apply: exit status 1
 
 Error: cannot create dashboard: Warehouse doesnotexist does not exist
@@ -12,6 +11,5 @@ Error: cannot create dashboard: Warehouse doesnotexist does not exist
 
 
 
-Updating deployment state...
 
 Exit code: 1

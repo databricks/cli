@@ -66,7 +66,7 @@ envsubst < databricks.yml > databricks.yml.resolved
 mv databricks.yml.resolved databricks.yml
 
 # Deploy the updated configuration to sync state
-$CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 
 title "Rename b_task, replace a_task notebook_path, add synced_task"
 rename_job_id="$(read_id.py rename_task_job)"

@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.my
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests
 {
@@ -32,9 +32,9 @@ pipelines my id='[MY_ID]' name='test-pipeline-[UNIQUE_NAME]'
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated pipelines.my
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 === Fetch pipeline ID and verify remote state
 >>> [CLI] pipelines get [MY_ID]
@@ -77,8 +77,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.
 
 >>> print_requests
 {

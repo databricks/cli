@@ -1,16 +1,17 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.foo
+created pipelines.foo.permissions
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
 Warn: deploying resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from PUT /api/2.0/permissions/pipelines/[UUID]
-Updating deployment state...
-Deployment complete!
+updated pipelines.foo.permissions
+
+Deploy: 0 created, 1 changed, 0 deleted, 1 unchanged.
 
 >>> print_requests.py //api/2.0/permissions/pipelines
 "PUT /api/2.0/permissions/pipelines/[UUID]"

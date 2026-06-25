@@ -6,16 +6,15 @@
 }
 
 >>> [CLI] bundle deployment bind foo test-catalog-[UNIQUE_NAME] --auto-approve
-Updating deployment state...
 Successfully bound catalog with an id 'test-catalog-[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 === Deploy bundle
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated catalogs.foo
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] catalogs get test-catalog-[UNIQUE_NAME]
 {
@@ -25,14 +24,12 @@ Deployment complete!
 
 === Unbind catalog
 >>> [CLI] bundle deployment unbind foo
-Updating deployment state...
 
 === Destroy bundle
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 0 deleted.
 
 === Read the pre-defined catalog again (expecting it still exists): 
 >>> [CLI] catalogs get test-catalog-[UNIQUE_NAME]

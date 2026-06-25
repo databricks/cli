@@ -3,7 +3,7 @@
 # Issue: https://github.com/databricks/cli/issues/4309
 
 envsubst < databricks.yml.tmpl > databricks.yml
-trace $CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 
 job_id=$(read_id.py my_job)
 
@@ -27,12 +27,12 @@ trace has_manage_run > out.after_first_deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 rm -f out.after_first_deploy.direct.txt
 
 title "After second deploy"
-trace $CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 trace has_manage_run
 
 title "Apply fix and redeploy"
 patch -s --no-backup-if-mismatch databricks.yml < fix.patch
-trace $CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 trace has_manage_run
 
 trace $CLI bundle destroy --auto-approve

@@ -1,9 +1,9 @@
 
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.my_pipeline
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === test --no-wait flag

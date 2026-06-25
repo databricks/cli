@@ -12,8 +12,7 @@ postbuild value_from_env
 Executing 'predeploy' script
 predeploy value_from_env
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts_with_restricted_execution/default/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 Executing 'postdeploy' script
 postdeploy value_from_env
 

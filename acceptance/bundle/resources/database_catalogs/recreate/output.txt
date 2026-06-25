@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-recreate-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created database_catalogs.my_catalog
+created database_instances.my_instance
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Change an immutable catalog field: no update API, so the plan recreates it
 >>> [CLI] bundle plan
@@ -13,9 +14,9 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-recreate-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+recreated database_catalogs.my_catalog
+
+Deploy: 1 created, 0 changed, 1 deleted, 1 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -28,5 +29,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-recreate-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

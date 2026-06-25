@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle plan -o json
 Error: plan serial 999 does not match state serial 1; the state has been modified since the plan was created. Please run 'bundle plan' again
@@ -15,5 +15,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

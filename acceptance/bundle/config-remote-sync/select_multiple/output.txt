@@ -1,7 +1,9 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_a
+created jobs.job_b
+created jobs.job_c
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Modify all three jobs remotely
 === Comma-separated selectors preview two of three resources
@@ -70,5 +72,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted.

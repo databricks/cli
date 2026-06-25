@@ -29,7 +29,6 @@
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-app-already-exists/default/files...
-Deploying resources...
 Error: cannot create resources.apps.myapp: An app with the same name already exists: test-app-already-exists (409 RESOURCE_ALREADY_EXISTS)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/apps?no_compute=true

@@ -2,26 +2,24 @@
 === Deploy project, branch, and role
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-bind-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created postgres_branches.main
+created postgres_projects.my_project
+created postgres_roles.my_role
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Unbind the role: it now exists on the branch but is untracked
 >>> [CLI] bundle deployment unbind my_role
-Updating deployment state...
 
 === Bind the existing role to take explicit ownership of it
 >>> [CLI] bundle deployment bind my_role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role --auto-approve
-Updating deployment state...
 Successfully bound postgres_role with an id 'projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role'
 Run 'bundle deploy' to deploy changes to your workspace
 
 === Re-deploy now succeeds: the role is managed, not re-created
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-bind-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 3 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -39,5 +37,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/inherited-role-bind-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted.

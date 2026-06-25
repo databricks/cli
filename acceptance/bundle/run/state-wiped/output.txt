@@ -5,9 +5,9 @@ Error: resource not found or not yet deployed. Did you forget to run 'databricks
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle run foo
 Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]

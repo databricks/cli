@@ -3,6 +3,9 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
 Deploying resources...
+created jobs.job_with_run_as
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 Updating deployment state...
 Deployment complete!
 
@@ -55,6 +58,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
 Deploying resources...
+updated jobs.job_with_run_as
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 Updating deployment state...
 Deployment complete!
 

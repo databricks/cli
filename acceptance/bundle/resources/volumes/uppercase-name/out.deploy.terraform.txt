@@ -1,5 +1,4 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
 Error: terraform apply: exit status 1
 
 Error: Provider produced inconsistent final plan
@@ -14,7 +13,6 @@ This is a bug in the provider, which should be reported in the provider's own
 issue tracker.
 
 
-Updating deployment state...
 
 Exit code: 1
 {

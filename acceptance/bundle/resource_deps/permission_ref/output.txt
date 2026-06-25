@@ -11,6 +11,9 @@ Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_a
+created jobs.job_a.permissions
+created jobs.job_b
+created jobs.job_b.permissions
+
+Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.

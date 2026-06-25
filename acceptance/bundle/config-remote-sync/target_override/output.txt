@@ -1,7 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.my_job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Modify fields in target override
 === Detect and save changes
@@ -35,5 +35,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

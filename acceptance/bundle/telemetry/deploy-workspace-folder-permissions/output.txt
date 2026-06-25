@@ -1,8 +1,7 @@
 
 >>> [CLI] bundle deploy -t no_permissions
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/no_permissions/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_telemetry_bool_values
 dms_compat_auto true
@@ -18,8 +17,7 @@ state_path_other false
 
 >>> [CLI] bundle deploy -t user_declared
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_declared/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_telemetry_bool_values
 dms_compat_auto true
@@ -47,8 +45,7 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
   in databricks.yml:23:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_not_declared/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_telemetry_bool_values
 dms_compat_only_self_undeclared true
@@ -64,8 +61,7 @@ state_path_other false
 
 >>> [CLI] bundle deploy -t other_user_not_declared
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/other_user_not_declared/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_telemetry_bool_values
 dms_compat_not true
@@ -81,8 +77,7 @@ state_path_other false
 
 >>> [CLI] bundle deploy -t workspace_other
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/workspace_other/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_telemetry_bool_values
 dms_compat_auto true
@@ -110,8 +105,7 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
   in databricks.yml:47:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_users_can_manage/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_telemetry_bool_values
 dms_compat_auto true
@@ -127,8 +121,7 @@ state_path_other false
 
 >>> [CLI] bundle deploy -t shared_not_declared
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_not_declared/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_telemetry_bool_values
 dms_compat_not true

@@ -2,31 +2,32 @@
 >>> [CLI] bundle plan --select bar
 create jobs.bar
 
-Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged, 2 not selected
 
 >>> [CLI] bundle plan --select jobs.bar --select jobs.baz
 create jobs.bar
 create jobs.baz
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged, 1 not selected
 
 >>> [CLI] bundle plan --select jobs.bar,jobs.baz
 create jobs.bar
 create jobs.baz
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged, 1 not selected
 
 >>> [CLI] bundle plan --select jobs.foo
 create jobs.bar
 create jobs.foo
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged, 1 not selected
 
 === bundle deploy --select jobs.foo
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.bar
+created jobs.foo
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged, 1 not selected.
 
 === Telemetry:
 select_used true
@@ -101,9 +102,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Full deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.baz
+
+Deploy: 1 created, 0 changed, 0 deleted, 2 unchanged.
 
 >>> print_requests.py --sort //jobs
 {
@@ -137,5 +138,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted.

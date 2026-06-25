@@ -5,6 +5,6 @@ Warning: required field "git_provider" is not set
   in databricks.yml:12:9
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.

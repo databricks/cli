@@ -17,9 +17,10 @@ Please refer to the README.md file for "getting started" instructions.
 === Deploy pipeline
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.sample_job
+created pipelines.lakeflow_project_etl
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
@@ -41,9 +42,9 @@ Pipeline configurations for this update:
 === Edit project by creating and running a new second pipeline
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.lakeflow_project_etl_2
+
+Deploy: 1 created, 0 changed, 0 deleted, 2 unchanged.
 View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
@@ -112,5 +113,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted.

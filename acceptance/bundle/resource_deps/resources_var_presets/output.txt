@@ -30,9 +30,11 @@
 
 >>> [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.mypipeline
+created schemas.bar
+created schemas.foo
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> jq -s .[] | select(.path=="/api/2.0/pipelines") | .body.name out.requests.txt
 "[dev [USERNAME]] pipeline for mycatalog.dev_[USERNAME]_dev_[USERNAME]_myschema"

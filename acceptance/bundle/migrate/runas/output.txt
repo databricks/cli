@@ -31,9 +31,10 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
   in databricks.yml:5:3
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.foo
+created pipelines.foo.permissions
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //pipelines
 
@@ -143,5 +144,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

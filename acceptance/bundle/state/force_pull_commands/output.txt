@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Use a fake browser that just prints the URL it would have opened
 === bundle summary without --force-pull: no remote state read

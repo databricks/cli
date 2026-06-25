@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/yaml-sync-empty-grants/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created schemas.schema1
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.

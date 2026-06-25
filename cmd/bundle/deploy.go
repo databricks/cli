@@ -30,6 +30,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	var clusterId string
 	var autoApprove bool
 	var verbose bool
+	var quiet bool
 	var readPlanPath string
 	var selectResources []string
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
@@ -40,6 +41,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
+	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Only print the summary line, not the per-resource actions.")
 	cmd.Flags().StringVar(&readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
 	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Deploy only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
@@ -52,6 +54,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 				b.AutoApprove = autoApprove
 				b.Select = selectResources
+				b.Quiet = quiet
 
 				if cmd.Flag("compute-id").Changed {
 					b.Config.Bundle.ClusterId = clusterId

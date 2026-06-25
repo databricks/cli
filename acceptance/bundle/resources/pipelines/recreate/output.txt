@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.foo
+created schemas.bar
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Assert the pipeline is created with catalog
 >>> [CLI] pipelines get [UUID]
@@ -70,5 +71,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

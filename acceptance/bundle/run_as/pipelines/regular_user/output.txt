@@ -18,9 +18,10 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_user_name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.nyc_taxi_pipeline
+created pipelines.nyc_taxi_pipeline.permissions
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 \nProcessing target: t_user_name_different
 
 >>> [CLI] bundle validate -t t_user_name_different
@@ -40,9 +41,10 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_user_name_different
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name_different/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.nyc_taxi_pipeline
+created pipelines.nyc_taxi_pipeline.permissions
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 \nProcessing target: t_service_principal_name
 
 >>> [CLI] bundle validate -t t_service_principal_name
@@ -62,9 +64,10 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_service_principal_name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.nyc_taxi_pipeline
+created pipelines.nyc_taxi_pipeline.permissions
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 \nProcessing target: t_service_principal_name_different
 
 >>> [CLI] bundle validate -t t_service_principal_name_different
@@ -84,6 +87,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_service_principal_name_different
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name_different/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.nyc_taxi_pipeline
+created pipelines.nyc_taxi_pipeline.permissions
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

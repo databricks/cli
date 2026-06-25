@@ -1,7 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> cat databricks.yml
 bundle:
@@ -23,6 +23,6 @@ resources:
               libraries:
                 - whl: /Workspace/Users/foo@bar.test/mywheel.whl
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated jobs.job
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.

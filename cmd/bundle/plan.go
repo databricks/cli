@@ -27,9 +27,11 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	}
 
 	var force bool
+	var quiet bool
 	var clusterId string
 	var selectResources []string
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
+	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Only print the summary line, not the per-resource actions.")
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
@@ -66,36 +68,15 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			return root.ErrAlreadyPrinted
 		}
 
-		// Count actions by type and collect formatted actions
-		createCount := 0
-		updateCount := 0
-		deleteCount := 0
-		unchangedCount := 0
-
-		for _, change := range plan.GetActions() {
-			switch change.ActionType {
-			case deployplan.Create:
-				createCount++
-			case deployplan.Update, deployplan.UpdateWithID, deployplan.Resize:
-				updateCount++
-			case deployplan.Delete:
-				deleteCount++
-			case deployplan.Recreate:
-				// A recreate counts as both a delete and a create
-				deleteCount++
-				createCount++
-			case deployplan.Skip, deployplan.Undefined:
-				unchangedCount++
-			}
-		}
+		counts := plan.CountActions()
 
 		out := cmd.OutOrStdout()
 
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
 			// Print summary line and actions to stdout
-			totalChanges := createCount + updateCount + deleteCount
-			if totalChanges > 0 {
+			totalChanges := counts.Create + counts.Change + counts.Delete
+			if totalChanges > 0 && !quiet {
 				// Print all actions in the order they were processed
 				for _, action := range plan.GetActions() {
 					if action.ActionType == deployplan.Skip {
@@ -107,7 +88,11 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				fmt.Fprintln(out)
 			}
 			// Note, this string should not be changed, "bundle deployment migrate" depends on this format:
-			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchangedCount)
+			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
+			if len(selectResources) > 0 {
+				fmt.Fprintf(out, ", %d not selected", plan.NotSelected)
+			}
+			fmt.Fprintln(out)
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")
 			if err != nil {
