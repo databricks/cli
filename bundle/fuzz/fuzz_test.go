@@ -61,7 +61,7 @@ func TestJobCreateParity(t *testing.T) {
 func paritySeeds(t *testing.T) []int64 {
 	if v := os.Getenv("FUZZ_SEED"); v != "" {
 		var seeds []int64
-		for _, part := range strings.Split(v, ",") {
+		for part := range strings.SplitSeq(v, ",") {
 			part = strings.TrimSpace(part)
 			if part == "" {
 				continue
@@ -78,7 +78,7 @@ func paritySeeds(t *testing.T) []int64 {
 	if v := os.Getenv("FUZZ_SEEDS"); v != "" {
 		n, err := strconv.Atoi(v)
 		require.NoErrorf(t, err, "invalid FUZZ_SEEDS=%q", v)
-		require.Greaterf(t, n, 0, "FUZZ_SEEDS must be positive, got %d", n)
+		require.Positivef(t, n, "FUZZ_SEEDS must be positive, got %d", n)
 		count = n
 	}
 
