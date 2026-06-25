@@ -1,6 +1,19 @@
 
 >>> [CLI] bundle validate -o json
 {
+  "foo": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo-[UNIQUE_NAME]",
+    "queue": {
+      "enabled": true
+    }
+  },
   "process": {
     "deployment": {
       "kind": "BUNDLE",
@@ -12,7 +25,7 @@
     "name": "process-[UNIQUE_NAME]",
     "parameters": [
       {
-        "default": "/Volumes/main/myschema-[UNIQUE_NAME]/data-[UNIQUE_NAME]",
+        "default": "/Volumes/main/${resources.jobs.foo.creator_user_name}/${resources.jobs.foo.creator_user_name}",
         "name": "data_path"
       }
     ],
@@ -24,9 +37,9 @@
 {
   "data": {
     "catalog_name": "main",
-    "name": "data-[UNIQUE_NAME]",
-    "schema_name": "${resources.schemas.my.name}",
-    "volume_path": "/Volumes/main/myschema-[UNIQUE_NAME]/data-[UNIQUE_NAME]",
+    "name": "${resources.jobs.foo.creator_user_name}",
+    "schema_name": "${resources.jobs.foo.creator_user_name}",
+    "volume_path": "/Volumes/main/${resources.jobs.foo.creator_user_name}/${resources.jobs.foo.creator_user_name}",
     "volume_type": "MANAGED"
   }
 }

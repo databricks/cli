@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# A job parameter references a volume's computed volume_path, and the volume's
+# schema_name/name are references to another job's remote creator_user_name. So
+# volume_path embeds a reference at initialize that only resolves at deploy,
+# exercising the deferred-resolution chain (foo -> data.volume_path -> process)
+# end to end with no drift afterwards.
+resources:
+  jobs:
+    foo:
+      name: test-job-foo-$UNIQUE_NAME
+
+    process:
+      name: test-job-process-$UNIQUE_NAME
+      parameters:
+        - name: data_path
+          default: ${resources.volumes.data.volume_path}
+
+  volumes:
+    data:
+      catalog_name: main
+      schema_name: ${resources.jobs.foo.creator_user_name}
+      name: ${resources.jobs.foo.creator_user_name}

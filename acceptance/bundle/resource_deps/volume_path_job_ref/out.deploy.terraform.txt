@@ -1,6 +1,40 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Error: exit status 1
+
+Error: Unsupported attribute
+
+  on bundle.tf.json line 39, in resource.databricks_job.process.parameter[0]:
+  39:             "default": "/Volumes/main/${databricks_job.foo.creator_user_name}/${databricks_job.foo.creator_user_name}",
+
+This object has no argument, nested block, or exported attribute named
+"creator_user_name".
+
+Error: Unsupported attribute
+
+  on bundle.tf.json line 39, in resource.databricks_job.process.parameter[0]:
+  39:             "default": "/Volumes/main/${databricks_job.foo.creator_user_name}/${databricks_job.foo.creator_user_name}",
+
+This object has no argument, nested block, or exported attribute named
+"creator_user_name".
+
+Error: Unsupported attribute
+
+  on bundle.tf.json line 51, in resource.databricks_volume.data:
+  51:         "name": "${databricks_job.foo.creator_user_name}",
+
+This object has no argument, nested block, or exported attribute named
+"creator_user_name".
+
+Error: Unsupported attribute
+
+  on bundle.tf.json line 52, in resource.databricks_volume.data:
+  52:         "schema_name": "${databricks_job.foo.creator_user_name}",
+
+This object has no argument, nested block, or exported attribute named
+"creator_user_name".
+
+
+
+Exit code: 1
