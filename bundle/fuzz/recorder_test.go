@@ -9,10 +9,10 @@ import (
 
 // jobsCreatePath is the Jobs API route both engines must hit on create. The
 // direct engine posts here via the SDK and the terraform provider is expected to
-// as well. The testserver registers only this exact route, so if an engine ever
-// posted to a different version the deploy would 404 and captureJobCreate would
-// fail with "did not POST". A version skew therefore surfaces as a capture
-// failure, not as a payload diff.
+// as well. The testserver registers only this version of the jobs/create route,
+// so if an engine ever posted to a different version the deploy would 404 and
+// captureJobCreate would fail with "did not POST". A version skew therefore
+// surfaces as a capture failure, not as a payload diff.
 const jobsCreatePath = "/api/2.2/jobs/create"
 
 // capturedRequest is a single mutating API request observed by the testserver.
