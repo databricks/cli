@@ -122,11 +122,28 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 func ResolveVolumePathReferencesOnlyResources() bundle.Mutator {
 	return &resolveVariableReferences{
 		prefixes:         []string{"resources"},
-		lookupFn:         lookup,
+		lookupFn:         lookupVolumePath,
 		allowPathFn:      isVolumePathReferencePath,
 		extraRounds:      maxResolutionRounds - 1,
 		includeResources: true,
 	}
+}
+
+// lookupVolumePath resolves a reference to resources.volumes.<key>.volume_path.
+//
+// A volume's volume_path is empty only when it could not be computed, for example because
+// catalog_name, schema_name, or name is unset or contains a malformed reference (see
+// Volume.ComputeVolumePath). Resolving such a reference to "" would silently inject an empty
+// string into the referrer, so we return an actionable error instead.
+func lookupVolumePath(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
+	result, err := lookup(v, path, b)
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+	if s, ok := result.AsString(); ok && s == "" {
+		return dyn.InvalidValue, fmt.Errorf("cannot resolve ${%s}: volume_path could not be computed; set catalog_name, schema_name, and name and ensure they contain no malformed references", path.String())
+	}
+	return result, nil
 }
 
 func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
@@ -356,6 +373,5 @@ func isVolumePathReferencePath(path dyn.Path) bool {
 	}
 	return path[0].Key() == "resources" &&
 		path[1].Key() == "volumes" &&
-		path[2].Key() != "" &&
 		path[3].Key() == "volume_path"
 }

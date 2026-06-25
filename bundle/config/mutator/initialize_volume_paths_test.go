@@ -81,6 +81,28 @@ func TestInitializeVolumePaths_UnresolvedReference(t *testing.T) {
 	require.Equal(t, "${resources.schemas.missing.name}", b.Config.Resources.Volumes["foo"].SchemaName)
 }
 
+func TestInitializeVolumePaths_RejectsUserProvidedPath(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Volumes: map[string]*resources.Volume{
+					"foo": {
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+							CatalogName: "main",
+							SchemaName:  "myschema",
+							Name:        "volfoo",
+						},
+						VolumePath: "/Volumes/bogus/path/set-by-user",
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, InitializeVolumePaths())
+	require.ErrorContains(t, diags.Error(), "volume_path is computed and read-only")
+}
+
 func TestInitializeVolumePaths_MalformedReference(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{

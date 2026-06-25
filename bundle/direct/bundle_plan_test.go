@@ -1,11 +1,13 @@
 package direct
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,6 +40,38 @@ func TestDynPathToStructPath(t *testing.T) {
 		node := dynPathToStructPath(tc.path)
 		assert.Equal(t, tc.expected, node.String())
 	}
+}
+
+// extractReferences gates references on the resource's state type, so a reference
+// stored in a field that exists in the input config but not in state (most notably a
+// bundle:"readonly" field such as volumes' computed volume_path) must not become a
+// dependency. References in state fields (e.g. comment) are still extracted.
+func TestExtractReferences_ExcludesReadonlyFields(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	// The volume state type is catalog.CreateVolumeRequestContent, which has
+	// comment but not volume_path.
+	stateType := adapters["volumes"].StateType()
+
+	const yml = `
+resources:
+  volumes:
+    v:
+      catalog_name: main
+      schema_name: myschema
+      name: myvol
+      comment: "${resources.schemas.kept.name}"
+      volume_path: "/Volumes/main/${resources.schemas.dropped.name}/myvol"
+`
+	root, err := yamlloader.LoadYAML("test", bytes.NewBufferString(yml))
+	require.NoError(t, err)
+
+	refs, err := extractReferences(root, "resources.volumes.v", stateType)
+	require.NoError(t, err)
+
+	assert.Equal(t, map[string]string{
+		"comment": "${resources.schemas.kept.name}",
+	}, refs)
 }
 
 func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
