@@ -891,12 +891,15 @@ func (p *PathNode) UnmarshalYAML(unmarshal func(any) error) error {
 	if err := unmarshal(&s); err != nil {
 		return err
 	}
+	// An explicit empty string parses to the zero node (an empty component that
+	// matches nothing), which reads like a wildcard but isn't. The root path is
+	// expressed by omitting the field entirely, leaving the pointer nil.
+	if s == "" {
+		return errors.New("empty path string; omit the field to match the root")
+	}
 	parsed, err := parse(s, false)
 	if err != nil {
 		return err
-	}
-	if parsed == nil {
-		return nil
 	}
 	*p = *(*PathNode)(parsed)
 	return nil
@@ -914,12 +917,16 @@ func (p *PatternNode) UnmarshalYAML(unmarshal func(any) error) error {
 	if err := unmarshal(&s); err != nil {
 		return err
 	}
+	// An explicit empty string parses to the zero node (an empty component that
+	// matches nothing), which reads like a wildcard but isn't. The root pattern
+	// (match everything) is expressed by omitting the field entirely, leaving
+	// the pointer nil.
+	if s == "" {
+		return errors.New("empty path string; omit the field to match the root")
+	}
 	parsed, err := parse(s, true)
 	if err != nil {
 		return err
-	}
-	if parsed == nil {
-		return nil
 	}
 	*p = *parsed
 	return nil

@@ -25,26 +25,6 @@ func (s JobRunState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-// JobRunRemote is the return type for DoRead. It embeds JobRunState so that every
-// path in StateType is also a valid path in RemoteType (required by the
-// framework). DoRead records only the run's identity; RunId is the remote
-// identity, kept here for the detailed plan. The explicit marshaler is required
-// because the embedded jobs.RunNow has its own MarshalJSON that would otherwise
-// take over and drop RunId.
-type JobRunRemote struct {
-	JobRunState
-
-	RunId int64 `json:"run_id,omitempty"`
-}
-
-func (s *JobRunRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s JobRunRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
 type ResourceJobRun struct {
 	client *databricks.WorkspaceClient
 }
@@ -61,11 +41,12 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	}
 }
 
-func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
-	return &remote.JobRunState
-}
-
-func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, error) {
+// DoRead returns the run's remote state. We call GetRun both to read back the
+// run's job_id and to confirm the run still exists: a run can be deleted
+// out-of-band or age out of the workspace's run-history retention, and a
+// not-found result lets the planner re-trigger it. RemoteType is the same as
+// StateType: we don't track any remote-only fields, so no RemapState is needed.
+func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunState, error) {
 	runID, err := parseRunID(id)
 	if err != nil {
 		return nil, err
@@ -89,22 +70,20 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 	// (job_id) to confirm it still targets the expected job. Reading the run's
 	// overriding parameters back here would only feed a remote diff we then have
 	// to suppress, so we don't.
-	var state JobRunState
-	state.JobId = run.JobId
-	return &JobRunRemote{JobRunState: state, RunId: run.RunId}, nil
+	return &JobRunState{RunNow: jobs.RunNow{JobId: run.JobId}}, nil
 }
 
-func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
+func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunState, error) {
 	// RunNow returns immediately with the new run id; waiting for completion is
 	// a later milestone.
 	wait, err := r.client.Jobs.RunNow(ctx, config.RunNow)
 	if err != nil {
 		return "", nil, err
 	}
-	// RunNow's response carries only the run id, so we reconstruct the remote
-	// state from the request we just sent (the faithful record of what we
-	// created) plus the new run id.
-	remote := &JobRunRemote{JobRunState: *config, RunId: wait.RunId}
+	// RunNow's response carries only the run id. We don't track remote-only
+	// fields, so the faithful record of what we created is the config we sent;
+	// echo it back as the remote state (RemoteType == StateType).
+	remote := &JobRunState{RunNow: config.RunNow}
 	return strconv.FormatInt(wait.RunId, 10), remote, nil
 }
 
@@ -112,9 +91,14 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 // place. Every request field is marked recreate_on_changes in resources.yml, so
 // any config change goes through delete + create (a fresh RunNow).
 
-// DoDelete is a no-op: a triggered run cannot be "undeployed". On recreate the
-// framework calls this before DoCreate, so a no-op delete followed by RunNow
-// re-triggers the run, which is the intended behavior.
+// DoDelete is a no-op in this milestone. The project plan defines all changes as
+// "recreate" (no-op delete + a fresh RunNow), with the run considered deployed as
+// soon as it is triggered; waiting for completion is the next milestone. We also
+// can't usefully call jobs/runs/delete here: it only deletes a non-active run and
+// errors on an active one, and because we don't wait for completion the run is
+// typically still active when DoDelete runs (including on the recreate path,
+// which calls DoDelete before DoCreate). Real deletion can be revisited once runs
+// are awaited.
 func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *JobRunState) error {
 	return nil
 }

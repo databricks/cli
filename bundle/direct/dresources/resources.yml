@@ -155,36 +155,12 @@ resources:
         reason: input_only
     # There is no API to modify a run in place, so any change to the request must
     # re-trigger a fresh run. With no DoUpdate, recreate (no-op delete + RunNow)
-    # is the only path; every request field is marked immutable here.
+    # is the only path; every request field is immutable. Omitting `field` makes
+    # the rule match the root, i.e. every field, so any change recreates the run.
+    # (A literal `field: ""` would NOT do this: it parses to an empty component
+    # that matches nothing -- see TestFieldRuleEmptyStringVsOmitted.)
     recreate_on_changes:
-      - field: dbt_commands
-        reason: immutable
-      - field: idempotency_token
-        reason: immutable
-      - field: jar_params
-        reason: immutable
-      - field: job_id
-        reason: immutable
-      - field: job_parameters
-        reason: immutable
-      - field: notebook_params
-        reason: immutable
-      - field: only
-        reason: immutable
-      - field: performance_target
-        reason: immutable
-      - field: pipeline_params
-        reason: immutable
-      - field: python_named_params
-        reason: immutable
-      - field: python_params
-        reason: immutable
-      - field: queue
-        reason: immutable
-      - field: spark_submit_params
-        reason: immutable
-      - field: sql_params
-        reason: immutable
+      - reason: immutable
 
   pipelines:
     recreate_on_changes:

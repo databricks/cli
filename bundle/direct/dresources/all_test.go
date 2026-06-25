@@ -1152,27 +1152,40 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 		// provided_id_fields, or ignore_local_changes; output-only fields are
 		// covered by ignore_remote_changes since the user never sets them.
 		covered := map[string]bool{}
+		// A root rule (nil Field) matches every path via HasPatternPrefix, so it
+		// covers all fields at once. Coverage here is by exact path string, which
+		// a root rule (Field.String() == "") would never hit, so track it apart.
+		rootCovered := false
+		markCovered := func(r FieldRule) {
+			if r.Field.IsRoot() {
+				rootCovered = true
+			}
+			covered[r.Field.String()] = true
+		}
 		for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 			if cfg == nil {
 				continue
 			}
 			for _, r := range cfg.RecreateOnChanges {
-				covered[r.Field.String()] = true
+				markCovered(r)
 			}
 			for _, r := range cfg.ProvidedIDFields {
-				covered[r.Field.String()] = true
+				markCovered(r)
 			}
 			for _, r := range cfg.IgnoreLocalChanges {
-				covered[r.Field.String()] = true
+				markCovered(r)
 			}
 			for _, r := range cfg.IgnoreRemoteChanges {
 				if strings.HasSuffix(r.Reason, "output_only") {
-					covered[r.Field.String()] = true
+					markCovered(r)
 				}
 			}
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
+			if rootCovered {
+				return
+			}
 			err := structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
 				if path.IsRoot() {
 					return true

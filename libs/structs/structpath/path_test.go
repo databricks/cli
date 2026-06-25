@@ -1105,14 +1105,12 @@ func TestPathNodeYAMLNullAndEmpty(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, config.Path)
 
-	// Empty string results in allocated pointer with zero-value PathNode.
-	// The zero value has index=0, which represents "[0]" (array index 0).
-	// This is a quirk - in practice, use null for "no path" in YAML configs.
+	// An explicit empty string is rejected: it would otherwise parse to a
+	// zero-value PathNode (index=0, i.e. "[0]") that silently matches nothing.
+	// Use null / omit the field for "no path" instead.
 	var config2 Config
 	err = yaml.Unmarshal([]byte("path: ''"), &config2)
-	require.NoError(t, err)
-	require.NotNil(t, config2.Path)
-	assert.Equal(t, "[0]", config2.Path.String())
+	require.ErrorContains(t, err, "empty path string")
 }
 
 func TestPathNodeYAMLUnmarshalErrors(t *testing.T) {
