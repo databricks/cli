@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -36,7 +37,13 @@ func (m *initializeVolumePaths) Name() string {
 func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key("volumes"), dyn.AnyKey())
-		return dyn.MapByPattern(root, pattern, func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+		return dyn.MapByPattern(root, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// volume_path is computed and read-only. Reject a user-provided value
+			// instead of silently overwriting it with the computed path.
+			if existing, ok := v.Get("volume_path").AsString(); ok && existing != "" {
+				return dyn.InvalidValue, fmt.Errorf("%s.volume_path is computed and read-only; remove it from the configuration", p.String())
+			}
+
 			var vol resources.Volume
 			if err := convert.ToTyped(&vol, v); err != nil {
 				return dyn.InvalidValue, err
