@@ -22,7 +22,8 @@ DASHBOARD_ID=$(jq -r '.id' out.summary.json)
 
 # Capture the dashboard ID as a replacement.
 echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
-DASHBOARD=$(retry.py $CLI lakeview get "$DASHBOARD_ID")
+# env -u MSYS_NO_PATHCONV so git-bash passes retry.py's own path to python correctly.
+DASHBOARD=$(env -u MSYS_NO_PATHCONV retry.py $CLI lakeview get "$DASHBOARD_ID")
 echo "$(echo "$DASHBOARD" | jq -r '.etag'):ETAG_1" >> ACC_REPLS
 
 rm out.summary.json
