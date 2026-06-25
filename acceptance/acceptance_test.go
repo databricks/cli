@@ -389,6 +389,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			return n != singleTest
 		})
 		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
+	} else {
+		// Sharding applies only to the full run. A specific singleTest (e.g.
+		// TestInprocessMode) must never be filtered out by the shard split.
+		testDirs = shardTests(testDirs)
 	}
 
 	skippedDirs := 0
@@ -550,6 +554,24 @@ func getTests(t *testing.T) []string {
 
 	slices.Sort(testDirs)
 	return testDirs
+}
+
+// shardTests returns the subset of testDirs assigned to this CI shard when
+// SHARD_TOTAL > 1, or testDirs unchanged otherwise. testDirs must be sorted so
+// the split is deterministic and stable across runs.
+func shardTests(testDirs []string) []string {
+	total, _ := strconv.Atoi(os.Getenv("SHARD_TOTAL"))
+	if total <= 1 {
+		return testDirs
+	}
+	index, _ := strconv.Atoi(os.Getenv("SHARD_INDEX"))
+	sharded := testDirs[:0]
+	for i, d := range testDirs {
+		if i%total == index {
+			sharded = append(sharded, d)
+		}
+	}
+	return sharded
 }
 
 func validateTestPhase(phase int) error {

@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       targets: ${{ steps.mask1.outputs.targets || steps.mask2.outputs.targets || steps.mask3.outputs.targets }}
+      acc_matrix: ${{ steps.accmatrix.outputs.matrix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -70,14 +71,60 @@ jobs:
           # Always run all tests
           echo "targets=[\"test\"]" >> $GITHUB_OUTPUT
 
-  test:
+      # Build the acceptance-test shard matrix. Shard counts vary per
+      # (os, engine), which a static cross-product matrix can't express, so we
+      # emit an explicit include-list consumed via fromJSON in the test job.
+      - name: Build acceptance test shard matrix
+        id: accmatrix
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+
+          event = os.environ["EVENT_NAME"]
+          runners = {
+              "linux": {"group": "databricks-protected-runner-group-large", "labels": "linux-ubuntu-latest-large"},
+              "windows": {"group": "databricks-protected-runner-group-large", "labels": "windows-server-latest-large"},
+              "macos": {"labels": "macos-latest"},
+          }
+          # (os, engine) -> shard count. Windows gets more shards because
+          # TASK_CONCURRENCY=1 serializes tests within each job, so the only
+          # way to cut its wall time is more parallel jobs. direct is faster
+          # than terraform and needs fewer shards.
+          shard_counts = {
+              ("linux", "terraform"): 4,
+              ("linux", "direct"): 2,
+              ("macos", "terraform"): 4,
+              ("macos", "direct"): 2,
+              ("windows", "terraform"): 8,
+              ("windows", "direct"): 4,
+          }
+
+          include = []
+          for (osname, engine), total in shard_counts.items():
+              # Run on Linux only in merge queue to reduce time to merge.
+              if event == "merge_group" and osname != "linux":
+                  continue
+              for index in range(total):
+                  include.append({
+                      "os": {"name": osname, "runner": runners[osname]},
+                      "deployment": engine,
+                      "shard_index": index,
+                      "shard_total": total,
+                  })
+
+          print("matrix=" + json.dumps({"include": include}))
+          PY
+
+  test-unit:
     needs:
       - cleanups
       - testmask
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
-    name: "task test (${{matrix.os.name}}, ${{matrix.deployment}})"
+    name: "task test-unit (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
 
     defaults:
@@ -94,8 +141,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Use separate fields for the OS name and runner configuration.
-        # When combined in a single object, "runs-on" errors with "Unexpected value 'name'".
         os:
           - name: linux
             runner:
@@ -110,10 +155,6 @@ jobs:
           - name: macos
             runner:
               labels: macos-latest
-
-        deployment:
-          - "terraform"
-          - "direct"
 
         # Include "event_name" in the matrix so we can include/exclude based on it.
         event:
@@ -135,20 +176,83 @@ jobs:
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
-          cache-key: test-${{ matrix.deployment }}
+          # Sole writer of the shared "test" cache (test-acc shards restore it).
+          cache-key: test
+
+      - name: Run tests
+        run: go tool -modfile=tools/task/go.mod task test-unit
+
+      - name: Upload gotestsum JSON output
+        # Always upload so we can inspect timing even if tests fail.
+        # This is debug-only telemetry; a flaky artifact upload must not fail
+        # an otherwise-passing job.
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-output-unit-${{ matrix.os.name }}
+          path: test-output-unit.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  test:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
+    name: "task test-acc (${{matrix.os.name}}, ${{matrix.deployment}}, shard ${{matrix.shard_index}}/${{matrix.shard_total}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
+
+    strategy:
+      fail-fast: false
+      # Generated by testmask: an include-list with per-(os, engine) shard
+      # counts. Each entry carries os{name,runner}, deployment, shard_index,
+      # and shard_total.
+      matrix: ${{ fromJSON(needs.testmask.outputs.acc_matrix) }}
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          # Shares the cache-key with test-unit so these shards restore the
+          # cache it saves. save-cache is false because many shard/deployment
+          # instances share this key; test-unit is the sole writer.
+          cache-key: test
+          save-cache: false
 
       - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-        run: go tool -modfile=tools/task/go.mod task test
+          SHARD_INDEX: ${{ matrix.shard_index }}
+          SHARD_TOTAL: ${{ matrix.shard_total }}
+        run: go tool -modfile=tools/task/go.mod task test-acc
 
       - name: Upload gotestsum JSON output
         # Always upload so we can inspect timing even if tests fail.
+        # This is debug-only telemetry; a flaky artifact upload must not fail
+        # an otherwise-passing job.
         if: ${{ always() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-output-${{ matrix.os.name }}-${{ matrix.deployment }}
-          path: test-output.json
+          name: test-output-${{ matrix.os.name }}-${{ matrix.deployment }}-shard${{ matrix.shard_index }}
+          path: test-output-acc.json
           if-no-files-found: warn
           retention-days: 7
 
@@ -381,6 +485,7 @@ jobs:
   # Reference: https://github.com/orgs/community/discussions/25970
   test-result:
     needs:
+      - test-unit
       - test
       - test-exp-aitools
       - test-exp-ssh
