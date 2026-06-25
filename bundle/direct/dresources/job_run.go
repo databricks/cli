@@ -81,13 +81,14 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 		return nil, err
 	}
 	// A run is immutable and fire-once: nothing about it changes on the backend
-	// after launch, so the run must only be re-triggered when its own RunNow
-	// config changes, never from remote drift. We therefore record only the run's
-	// identity (job_id) to confirm it still targets the expected job; every
-	// settable input is ignored for remote changes in resources.yml and
-	// re-triggered solely by a local change via recreate_on_changes. Reading the
-	// run's overriding parameters back here would only feed a remote diff we then
-	// have to suppress, so we don't.
+	// after launch. In this milestone a run is re-triggered solely by a local
+	// change to its own RunNow config (every settable input is marked
+	// recreate_on_changes in resources.yml and ignored for remote changes);
+	// re-triggering on other signals (every deploy, file or referenced-value
+	// changes) is a later milestone. We therefore record only the run's identity
+	// (job_id) to confirm it still targets the expected job. Reading the run's
+	// overriding parameters back here would only feed a remote diff we then have
+	// to suppress, so we don't.
 	var state JobRunState
 	state.JobId = run.JobId
 	return &JobRunRemote{JobRunState: state, RunId: run.RunId}, nil

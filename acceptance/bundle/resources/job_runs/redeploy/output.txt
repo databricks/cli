@@ -43,6 +43,11 @@ Resources:
 === change the run configuration and redeploy
 >>> update_file.py databricks.yml env: dev env: prod
 
+>>> [CLI] bundle plan
+recreate job_runs.my_run
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
 Deploying resources...
