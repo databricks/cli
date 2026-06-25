@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle/schema"
@@ -63,4 +64,47 @@ func TestJsonSchema(t *testing.T) {
 	assert.Contains(t, providers.OneOf[0].Enum, "bitbucketCloud")
 	assert.Contains(t, providers.OneOf[0].Enum, "gitHubEnterprise")
 	assert.Contains(t, providers.OneOf[0].Enum, "bitbucketServer")
+}
+
+func TestJsonSchemaEnumsAreUnique(t *testing.T) {
+	var s any
+	err := json.Unmarshal(schema.Bytes, &s)
+	require.NoError(t, err)
+
+	duplicateEnums := duplicateEnumPaths(s, "")
+	assert.Empty(t, duplicateEnums)
+}
+
+func duplicateEnumPaths(v any, path string) []string {
+	var duplicates []string
+	switch v := v.(type) {
+	case map[string]any:
+		if enum, ok := v["enum"].([]any); ok {
+			seen := map[string]struct{}{}
+			for _, item := range enum {
+				keyBytes, err := json.Marshal(item)
+				if err != nil {
+					panic(err)
+				}
+				key := string(keyBytes)
+				if _, ok := seen[key]; ok {
+					duplicates = append(duplicates, path)
+					break
+				}
+				seen[key] = struct{}{}
+			}
+		}
+		for key, value := range v {
+			childPath := key
+			if path != "" {
+				childPath = fmt.Sprintf("%s/%s", path, key)
+			}
+			duplicates = append(duplicates, duplicateEnumPaths(value, childPath)...)
+		}
+	case []any:
+		for i, value := range v {
+			duplicates = append(duplicates, duplicateEnumPaths(value, fmt.Sprintf("%s[%d]", path, i))...)
+		}
+	}
+	return duplicates
 }

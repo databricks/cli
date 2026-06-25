@@ -196,6 +196,19 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 		assert.Equal(t, "Type of endpoint.", s.Description)
 		assert.Equal(t, []string{"[Public Preview]", ""}, s.EnumDescriptions)
 	})
+
+	t.Run("deduplicates enum values before building enum descriptions", func(t *testing.T) {
+		s := &jsonschema.Schema{}
+		assignAnnotation(s, annotation.Descriptor{
+			Enum: []any{"AWS_SSE_S3", "AWS_SSE_KMS", "AWS_SSE_KMS", "AWS_SSE_S3"},
+			EnumDescriptions: map[string]string{
+				"AWS_SSE_KMS": "SSE-KMS encryption.",
+				"AWS_SSE_S3":  "SSE-S3 encryption.",
+			},
+		})
+		assert.Equal(t, []any{"AWS_SSE_S3", "AWS_SSE_KMS"}, s.Enum)
+		assert.Equal(t, []string{"SSE-S3 encryption.", "SSE-KMS encryption."}, s.EnumDescriptions)
+	})
 }
 
 func TestPrefixWithPreviewTagNoDoubleTag(t *testing.T) {

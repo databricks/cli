@@ -175,14 +175,39 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 
 	s.MarkdownDescription = convertLinksToAbsoluteUrl(a.MarkdownDescription)
 	s.Title = a.Title
-	s.Enum = a.Enum
-	s.EnumDescriptions = buildEnumDescriptions(a.Enum, a.EnumLaunchStages, a.EnumDescriptions)
+	enum := deduplicateEnumValues(a.Enum)
+	s.Enum = enum
+	s.EnumDescriptions = buildEnumDescriptions(enum, a.EnumLaunchStages, a.EnumDescriptions)
 
 	// Surface launch stage in hover tooltips. Editors only render the standard
 	// description field, so the tag is baked into the text.
 	if tag := annotation.PreviewTag(a.LaunchStage); tag != "" {
 		s.Description = prefixWithPreviewTag(s.Description, tag)
 	}
+}
+
+func deduplicateEnumValues(enum []any) []any {
+	if len(enum) < 2 {
+		return enum
+	}
+
+	out := make([]any, 0, len(enum))
+	for _, value := range enum {
+		found := false
+		for _, existing := range out {
+			if reflect.DeepEqual(existing, value) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			out = append(out, value)
+		}
+	}
+	if len(out) == len(enum) {
+		return enum
+	}
+	return out
 }
 
 // buildEnumDescriptions produces the parallel enumDescriptions array VSCode
