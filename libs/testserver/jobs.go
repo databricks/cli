@@ -195,7 +195,11 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 
 	job, ok := s.Jobs[jobIdInt]
 	if !ok {
-		return Response{StatusCode: 404}
+		// Match the real Jobs API, which echoes the job id in the error message.
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Job %d does not exist.", jobIdInt)},
+		}
 	}
 
 	job = setSourceIfNotSet(job)
