@@ -11,22 +11,6 @@ Deployment complete!
 
 === Terminate the cluster before applying the saved plan
 
->>> [CLI] clusters delete [CLUSTER_ID]
-{
-  "autotermination_minutes": 60,
-  "aws_attributes": {
-    "availability": "SPOT_WITH_FALLBACK",
-    "zone_id": "us-east-1c"
-  },
-  "cluster_id": "[CLUSTER_ID]",
-  "cluster_name": "test-cluster-[UNIQUE_NAME]",
-  "enable_elastic_disk": false,
-  "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
-  "num_workers": 2,
-  "spark_version": "13.3.x-snapshot-scala2.12",
-  "state": "TERMINATED"
-}
-
 >>> [CLI] clusters get [CLUSTER_ID]
 {
   "cluster_name": "test-cluster-[UNIQUE_NAME]",

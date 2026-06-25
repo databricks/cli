@@ -16,7 +16,7 @@ update_file.py databricks.yml "num_workers: 2" "num_workers: 3"
 trace $CLI bundle plan -o json > plan.json
 
 title "Terminate the cluster before applying the saved plan\n"
-trace $CLI clusters delete "$CLUSTER_ID"
+$CLI clusters delete "$CLUSTER_ID" > /dev/null
 trace $CLI clusters get "$CLUSTER_ID" | jq '{cluster_name,num_workers,state}'
 
 title "Apply saved plan: resize fails with INVALID_STATE, falls back to edit\n"
