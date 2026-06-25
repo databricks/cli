@@ -65,8 +65,7 @@ func isTruePtr(value *bool) bool {
 
 // staleOnceEnabled reports whether the testserver should simulate eventual
 // consistency (the first GET after a create returns 404). It is opt-in via
-// TESTS_STALE_ONCE=1 and only applies to the direct engine; the terraform
-// provider does not retry reads, so it is skipped there.
+// TESTS_STALE_ONCE=1 and only applies to the direct engine.
 //
 // testEnv carries the per-variant EnvMatrix values, which are not visible via
 // os/env because matrix variants run in parallel and only reach the CLI subprocess.
