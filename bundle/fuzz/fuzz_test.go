@@ -25,11 +25,12 @@ const defaultParitySeeds = 20
 //
 //   - 29: generates a single-node task-level new_cluster (num_workers 0, no
 //     autoscale). The direct engine omits num_workers on task clusters while
-//     terraform force-sends num_workers:0, so the create payloads diverge. This
-//     divergence is documented and currently suppressed via DefaultIgnorePaths
-//     (tasks[*].new_cluster.num_workers), not fixed in this PR; tracked under
-//     DECO-25361. The seed stays here so that once the divergence is fixed and
-//     its ignore entry removed, this seed guards against regression.
+//     terraform force-sends num_workers:0, so the create payloads diverge. That
+//     specific shape is suppressed by defaultIgnoreRules (see
+//     isBenignTaskNumWorkers), so seed 29 currently asserts only that nothing
+//     else about this config diverges. Once the divergence is fixed and its
+//     ignore rule removed, this seed becomes a full guard against it regressing.
+//     Tracked under DECO-25361.
 var regressionSeeds = []int64{29}
 
 // TestJobCreateParity is the first DECO-25361 technique: for many random job
@@ -111,6 +112,14 @@ func paritySeeds(t *testing.T) []int64 {
 // TestParitySeeds verifies paritySeeds composes the regression seeds with the
 // rotating window, deduplicates overlaps, and lets FUZZ_SEED override both.
 func TestParitySeeds(t *testing.T) {
+	// Isolate from any ambient FUZZ_* in the developer's environment. FUZZ_SEED in
+	// particular would short-circuit paritySeeds and break the cases below; an
+	// inherited FUZZ_SEEDS/OFFSET would skew the expected window. paritySeeds
+	// treats "" as unset, and subtests set only what they need on top.
+	t.Setenv("FUZZ_SEED", "")
+	t.Setenv("FUZZ_SEEDS", "")
+	t.Setenv("FUZZ_SEED_OFFSET", "")
+
 	t.Run("default includes regression seeds then window", func(t *testing.T) {
 		t.Setenv("FUZZ_SEEDS", "3")
 		t.Setenv("FUZZ_SEED_OFFSET", "100")
@@ -163,13 +172,15 @@ func FuzzJobCreateParity(f *testing.F) {
 // deploy failure into regressionSeeds (which is only for real payload diffs):
 //   - neither engine deployed: the generator produced a config nothing accepts,
 //     so skip (logging both errors) rather than flag a parity bug.
-//   - exactly one engine deployed: the engines disagree on whether the config is
-//     even valid. That is a real divergence worth failing on, but an acceptance
-//     divergence, not a payload diff, so it is reported as such.
+//   - exactly one engine deployed: the engines disagree on whether the config
+//     deploys at all. That is worth failing on, but it is a deploy/capture
+//     difference rather than a payload diff, so it is reported separately. The
+//     failing side's error (an API rejection, an unregistered route, etc.) is
+//     included so triage can tell a true acceptance divergence from a harness gap.
 //   - both deployed: compare the captured create payloads.
 func checkJobParity(t *testing.T, seed int64) {
 	t.Helper()
-	job := GenerateJob(newRNG(seed))
+	job := generateJob(newRNG(seed))
 
 	ctx := t.Context()
 	direct, directErr := captureJobCreate(ctx, t, job, "direct")
@@ -179,12 +190,12 @@ func checkJobParity(t *testing.T, seed int64) {
 	case directErr != nil && tfErr != nil:
 		t.Skipf("seed %d: config did not deploy under either engine (not a parity divergence)\ndirect: %v\nterraform: %v", seed, directErr, tfErr)
 	case directErr != nil:
-		t.Fatalf("seed %d: direct rejected a config terraform accepted (engine acceptance divergence, not a payload diff): %v", seed, directErr)
+		t.Fatalf("seed %d: terraform deployed but direct did not (deploy/capture difference, not a payload diff): %v", seed, directErr)
 	case tfErr != nil:
-		t.Fatalf("seed %d: terraform rejected a config direct accepted (engine acceptance divergence, not a payload diff): %v", seed, tfErr)
+		t.Fatalf("seed %d: direct deployed but terraform did not (deploy/capture difference, not a payload diff): %v", seed, tfErr)
 	}
 
-	diffs, err := DiffPayloads(direct, terraform, DefaultIgnorePaths)
+	diffs, err := diffPayloads(direct, terraform, defaultIgnoreRules)
 	require.NoErrorf(t, err, "seed %d: comparing create payloads", seed)
 
 	if len(diffs) > 0 {

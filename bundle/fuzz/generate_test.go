@@ -28,14 +28,14 @@ var (
 	gitProviders  = []jobs.GitProvider{jobs.GitProviderGitHub, jobs.GitProviderGitLab, jobs.GitProviderAzureDevOpsServices}
 )
 
-// GenerateJob builds a random, well-formed job config driven entirely by rng, so
+// generateJob builds a random, well-formed job config driven entirely by rng, so
 // the same seed always produces the same job. It deliberately favors fields whose
 // translation tends to differ between engines (tasks, clusters, schedules,
 // notifications, tags, zero-able scalars).
 //
 // TODO(DECO-25361): generalize the harness across resource kinds so pipelines,
 // apps, etc. get the same create-payload parity coverage as jobs.
-func GenerateJob(rng *rand.Rand) *resources.Job {
+func generateJob(rng *rand.Rand) *resources.Job {
 	job := &resources.Job{}
 	job.Name = randName(rng, "job")
 

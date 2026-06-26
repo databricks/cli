@@ -13,7 +13,7 @@ func TestDiffPayloads(t *testing.T) {
 		name      string
 		direct    string
 		terraform string
-		ignore    []string
+		ignore    []ignoreRule
 		want      []string
 	}{
 		{
@@ -62,7 +62,7 @@ func TestDiffPayloads(t *testing.T) {
 			name:      "ignored path",
 			direct:    `{"tasks":[{"timeout_seconds":1}]}`,
 			terraform: `{"tasks":[{"timeout_seconds":2}]}`,
-			ignore:    []string{"tasks[*].timeout_seconds"},
+			ignore:    []ignoreRule{{Path: "tasks[*].timeout_seconds"}},
 			want:      nil,
 		},
 		{
@@ -75,7 +75,7 @@ func TestDiffPayloads(t *testing.T) {
 			name:      "dotted map key can be ignored",
 			direct:    `{"c":{"spark_conf":{"spark.x.y":"1"}}}`,
 			terraform: `{"c":{"spark_conf":{}}}`,
-			ignore:    []string{`c.spark_conf["spark.x.y"]`},
+			ignore:    []ignoreRule{{Path: `c.spark_conf["spark.x.y"]`}},
 			want:      nil,
 		},
 		{
@@ -102,11 +102,29 @@ func TestDiffPayloads(t *testing.T) {
 			terraform: `{"job_clusters":[{"job_cluster_key":"y","new_cluster":{"num_workers":2}},{"job_cluster_key":"x","new_cluster":{"num_workers":1}}]}`,
 			want:      nil,
 		},
+		{
+			// The documented single-node divergence: direct omits num_workers,
+			// terraform force-sends 0. defaultIgnoreRules suppresses exactly this.
+			name:      "task num_workers absent-vs-zero is ignored",
+			direct:    `{"tasks":[{"task_key":"t","new_cluster":{"spark_version":"x"}}]}`,
+			terraform: `{"tasks":[{"task_key":"t","new_cluster":{"spark_version":"x","num_workers":0}}]}`,
+			ignore:    defaultIgnoreRules,
+			want:      nil,
+		},
+		{
+			// A real num_workers value mismatch shares the path but is NOT the
+			// benign shape, so the narrowed rule must still report it.
+			name:      "task num_workers value mismatch still surfaces",
+			direct:    `{"tasks":[{"task_key":"t","new_cluster":{"spark_version":"x","num_workers":3}}]}`,
+			terraform: `{"tasks":[{"task_key":"t","new_cluster":{"spark_version":"x","num_workers":5}}]}`,
+			ignore:    defaultIgnoreRules,
+			want:      []string{"tasks[0].new_cluster.num_workers"},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diffs, err := DiffPayloads(json.RawMessage(tt.direct), json.RawMessage(tt.terraform), tt.ignore)
+			diffs, err := diffPayloads(json.RawMessage(tt.direct), json.RawMessage(tt.terraform), tt.ignore)
 			require.NoError(t, err)
 
 			var paths []string
@@ -116,4 +134,15 @@ func TestDiffPayloads(t *testing.T) {
 			assert.ElementsMatch(t, tt.want, paths)
 		})
 	}
+}
+
+func TestIsBenignTaskNumWorkers(t *testing.T) {
+	assert.True(t, isBenignTaskNumWorkers(difference{Direct: missing{}, Terraform: json.Number("0")}),
+		"direct absent + terraform 0 is the documented divergence")
+	assert.False(t, isBenignTaskNumWorkers(difference{Direct: json.Number("3"), Terraform: json.Number("5")}),
+		"two differing counts is a real divergence")
+	assert.False(t, isBenignTaskNumWorkers(difference{Direct: missing{}, Terraform: json.Number("2")}),
+		"direct absent but terraform non-zero is not the benign shape")
+	assert.False(t, isBenignTaskNumWorkers(difference{Direct: json.Number("0"), Terraform: missing{}}),
+		"reversed sides are not the benign shape")
 }
