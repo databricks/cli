@@ -19,4 +19,4 @@ DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.
 # Capture the dashboard ID as a replacement.
 echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
 
-trace retry.py $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path, serialized_dashboard}'
+trace retry $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path, serialized_dashboard}'

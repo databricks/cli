@@ -12,7 +12,7 @@ trap cleanup EXIT
 dashboard_id=$($CLI bundle summary -o json | jq .resources.dashboards.already_exists.id -r)
 
 title "Get current dashboard\n"
-retry.py $CLI lakeview get $dashboard_id | jq .serialized_dashboard
+retry $CLI lakeview get $dashboard_id | jq .serialized_dashboard
 
 title "Update dashboard\n"
 $CLI lakeview update $dashboard_id --display-name "Updated dashboard" | jq .serialized_dashboard

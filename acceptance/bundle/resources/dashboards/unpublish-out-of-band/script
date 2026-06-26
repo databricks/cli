@@ -11,7 +11,7 @@ trace $CLI bundle plan -o json > out.plan_initial.$DATABRICKS_BUNDLE_ENGINE.json
 # Deploy the dashboard
 trace $CLI bundle deploy
 DASHBOARD_ID=$(read_id.py dashboard1)
-add_repl.py "$(retry.py $CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG
+add_repl.py "$(retry $CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG
 
 trace print_state.py | grep publish > out.state.$DATABRICKS_BUNDLE_ENGINE.json
 

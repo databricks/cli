@@ -103,6 +103,12 @@ envsubst() {
     env -u MSYS_NO_PATHCONV envsubst.py
 }
 
+retry() {
+    # Same MSYS_NO_PATHCONV workaround as envsubst above: otherwise Python cannot
+    # find retry.py on Windows.
+    env -u MSYS_NO_PATHCONV retry.py "$@"
+}
+
 print_telemetry_bool_values() {
     jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' out.requests.txt | sort
 }
