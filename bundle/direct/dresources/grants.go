@@ -220,6 +220,9 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 		}
 		pageToken = resp.NextPageToken
 	}
+	slices.SortFunc(assignments, func(a, b catalog.PrivilegeAssignment) int {
+		return strings.Compare(a.Principal, b.Principal)
+	})
 	return assignments, nil
 }
 

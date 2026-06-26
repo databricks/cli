@@ -1,0 +1,23 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+register_model_id() {
+    # Register the model's numeric ID so it appears as [MODEL_ID] in output
+    MODEL_ID=$($CLI model-registry get-model test-model | jq -r '.registered_model_databricks.id')
+    add_repl.py "$MODEL_ID" "MODEL_ID"
+}
+
+title "Initial deploy: model created with permissions"
+trace $CLI bundle deploy
+register_model_id
+trace print_requests.py //permissions/registered-models
+
+title "Remove manager permission and description, deploy from plan"
+grep -v TO_REMOVE databricks.yml > updated.yml && mv updated.yml databricks.yml
+$CLI bundle plan -o json > tmp.plan.json
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+register_model_id
+trace print_requests.py //permissions/registered-models

@@ -1,0 +1,58 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.schemas.myschema",
+      "label": "${resources.schemas.myschema.id}"
+    }
+  ],
+  "action": "update",
+  "new_state": {
+    "value": {
+      "securable_type": "schema",
+      "full_name": "main.myschema",
+      "__embed__": [
+        {
+          "principal": "[USERNAME]",
+          "privileges": [
+            "USE_SCHEMA"
+          ]
+        }
+      ]
+    }
+  },
+  "remote_state": {
+    "securable_type": "schema",
+    "full_name": "main.myschema",
+    "__embed__": [
+      {
+        "principal": "extra@example.test",
+        "privileges": [
+          "CREATE_TABLE"
+        ]
+      },
+      {
+        "principal": "[USERNAME]",
+        "privileges": [
+          "USE_SCHEMA"
+        ]
+      }
+    ]
+  },
+  "changes": {
+    "[principal='extra@example.test']": {
+      "action": "update",
+      "old": {
+        "principal": "extra@example.test",
+        "privileges": [
+          "CREATE_TABLE"
+        ]
+      },
+      "remote": {
+        "principal": "extra@example.test",
+        "privileges": [
+          "CREATE_TABLE"
+        ]
+      }
+    }
+  }
+}
