@@ -11,32 +11,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// defaultParitySeeds is the number of random jobs TestJobCreateParity checks by
-// default. Each seed runs two real deploys (direct + terraform), so the count is
-// kept modest; override with FUZZ_SEEDS for a deeper local run.
+// defaultParitySeeds is how many random jobs TestJobCreateParity checks by default.
+// Each seed runs two real deploys, so keep it modest; override with FUZZ_SEEDS.
 const defaultParitySeeds = 20
 
-// regressionSeeds are seeds that previously surfaced a terraform/direct create
-// payload divergence. They are always checked (in addition to the rotating
-// nightly window) so the divergence keeps being exercised even though the
-// nightly window moves on every run and would otherwise never revisit them.
+// regressionSeeds are seeds that previously surfaced a divergence. They are always
+// checked (on top of the rotating nightly window, which never revisits them) so a
+// fixed divergence can't silently regress. When the nightly job reports a new
+// failing FUZZ_SEED, add it here in the PR that fixes the divergence.
 //
-// When the nightly job reports a new failing FUZZ_SEED, add it here.
-//
-//   - 29: generates a single-node task-level new_cluster (num_workers 0, no
-//     autoscale). The direct engine omits num_workers on task clusters while
-//     terraform force-sends num_workers:0, so the create payloads diverge. That
-//     specific shape is suppressed by defaultIgnoreRules (see
-//     isBenignTaskNumWorkers), so seed 29 currently asserts only that nothing
-//     else about this config diverges. Once the divergence is fixed and its
-//     ignore rule removed, this seed becomes a full guard against it regressing.
-//     Tracked under DECO-25361.
+//   - 29: single-node task new_cluster; direct omitted num_workers while terraform
+//     force-sent 0. Fixed by initializeNumWorkers on task clusters (DECO-25361).
 var regressionSeeds = []int64{29}
 
-// TestJobCreateParity is the first DECO-25361 technique: for many random job
-// configs, assert the terraform and direct engines produce equivalent create
-// payloads. On divergence it prints the seed and the generated job so the failure
-// can be reproduced and inspected.
+// TestJobCreateParity asserts the terraform and direct engines produce equivalent
+// create payloads for many random jobs, printing the seed on divergence.
 func TestJobCreateParity(t *testing.T) {
 	requireTerraform(t)
 
@@ -49,17 +38,11 @@ func TestJobCreateParity(t *testing.T) {
 
 // paritySeeds returns the seeds TestJobCreateParity should check.
 //
-// FUZZ_SEED (comma-separated list) runs exactly those seeds and overrides
-// everything else. This is the knob the failure message prints so a single
-// reported divergence can be reproduced with one command, without re-running
-// every seed before it.
-//
-// Otherwise the test runs the regressionSeeds plus FUZZ_SEEDS seeds (default
-// defaultParitySeeds) starting at FUZZ_SEED_OFFSET. The offset lets the nightly
-// job shift the window every run (push.yml derives it from the run number) so CI
-// explores configs it has never tested before instead of re-checking the same
-// fixed set forever; the regressionSeeds are always included on top so known
-// past divergences keep being verified.
+// FUZZ_SEED (comma-separated) runs exactly those seeds and overrides everything,
+// so a reported divergence reproduces with one command. Otherwise it runs
+// regressionSeeds plus FUZZ_SEEDS seeds (default defaultParitySeeds) from
+// FUZZ_SEED_OFFSET; the nightly job shifts the offset each run so CI keeps
+// exploring new configs.
 func paritySeeds(t *testing.T) []int64 {
 	if v := os.Getenv("FUZZ_SEED"); v != "" {
 		var seeds []int64
@@ -112,10 +95,8 @@ func paritySeeds(t *testing.T) []int64 {
 // TestParitySeeds verifies paritySeeds composes the regression seeds with the
 // rotating window, deduplicates overlaps, and lets FUZZ_SEED override both.
 func TestParitySeeds(t *testing.T) {
-	// Isolate from any ambient FUZZ_* in the developer's environment. FUZZ_SEED in
-	// particular would short-circuit paritySeeds and break the cases below; an
-	// inherited FUZZ_SEEDS/OFFSET would skew the expected window. paritySeeds
-	// treats "" as unset, and subtests set only what they need on top.
+	// Isolate from ambient FUZZ_* in the dev environment (paritySeeds treats "" as
+	// unset); subtests set only what they need.
 	t.Setenv("FUZZ_SEED", "")
 	t.Setenv("FUZZ_SEEDS", "")
 	t.Setenv("FUZZ_SEED_OFFSET", "")
@@ -146,16 +127,14 @@ func TestParitySeeds(t *testing.T) {
 	})
 }
 
-// FuzzJobCreateParity exposes the same parity check to Go's native fuzzer
-// (`go test -fuzz=FuzzJobCreateParity`). Note each input runs two real deploys,
-// so this is intended for ad-hoc deep runs, not the default `go test` path.
+// FuzzJobCreateParity exposes the parity check to Go's native fuzzer. Each input
+// runs two real deploys, so it's for ad-hoc deep runs, not the default test path.
 func FuzzJobCreateParity(f *testing.F) {
 	requireTerraform(f)
 	for seed := range int64(5) {
 		f.Add(seed)
 	}
-	// Seed the corpus with known past divergences so the fuzzer always starts
-	// from inputs that previously exposed a bug.
+	// Seed the corpus with known past divergences.
 	for _, seed := range regressionSeeds {
 		f.Add(seed)
 	}
@@ -164,20 +143,12 @@ func FuzzJobCreateParity(f *testing.F) {
 	})
 }
 
-// checkJobParity generates the job for seed, deploys it under both engines, and
-// fails the test with reproduction details if the create payloads diverge.
-//
-// A deploy/capture failure is not a create-payload divergence, so the three
-// outcomes are handled distinctly to keep nightly triage from misdirecting a
-// deploy failure into regressionSeeds (which is only for real payload diffs):
-//   - neither engine deployed: the generator produced a config nothing accepts,
-//     so skip (logging both errors) rather than flag a parity bug.
-//   - exactly one engine deployed: the engines disagree on whether the config
-//     deploys at all. That is worth failing on, but it is a deploy/capture
-//     difference rather than a payload diff, so it is reported separately. The
-//     failing side's error (an API rejection, an unregistered route, etc.) is
-//     included so triage can tell a true acceptance divergence from a harness gap.
-//   - both deployed: compare the captured create payloads.
+// checkJobParity deploys the seed's job under both engines and fails if the create
+// payloads diverge. A deploy/capture failure is not a payload divergence, so the
+// outcomes are kept distinct:
+//   - neither deployed: skip (the config is unacceptable to both engines).
+//   - one deployed: fail separately as a deploy/capture difference, not a diff.
+//   - both deployed: compare the captured payloads.
 func checkJobParity(t *testing.T, seed int64) {
 	t.Helper()
 	job := generateJob(newRNG(seed))
@@ -195,7 +166,7 @@ func checkJobParity(t *testing.T, seed int64) {
 		t.Fatalf("seed %d: direct deployed but terraform did not (deploy/capture difference, not a payload diff): %v", seed, tfErr)
 	}
 
-	diffs, err := diffPayloads(direct, terraform, defaultIgnoreRules)
+	diffs, err := diffPayloads(direct, terraform, defaultIgnorePaths)
 	require.NoErrorf(t, err, "seed %d: comparing create payloads", seed)
 
 	if len(diffs) > 0 {
