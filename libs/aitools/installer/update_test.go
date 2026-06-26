@@ -388,6 +388,55 @@ func TestUpdateCheckShowsPruneWithoutDeleting(t *testing.T) {
 	assert.Contains(t, state.Skills, "databricks-jobs")
 }
 
+func TestUpdatePruneRemovesCopiedAgentExposure(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
+
+	// A real registry agent is required so prune (which iterates the registry)
+	// can find and remove the agent's exposure.
+	claude := agents.ByName(agents.NameClaudeCode)
+	require.NotNil(t, claude)
+
+	// One global agent -> the skill is copied into the agent dir, not symlinked.
+	require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{claude}, InstallOptions{}))
+	agentCopy := filepath.Join(tmp, ".claude", "skills", "databricks-jobs")
+	_, err := os.Stat(agentCopy)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+	updated := &Manifest{Version: "2", Skills: map[string]SkillMeta{
+		"databricks-sql": {Version: "0.2.0", Files: []string{"SKILL.md"}},
+	}}
+	result, err := UpdateSkills(ctx, &mockManifestSource{manifest: updated}, []*agents.Agent{claude}, UpdateOptions{})
+	require.NoError(t, err)
+	require.Len(t, result.Removed, 1)
+
+	// Prune must remove the agent's copy too, not just the canonical dir.
+	_, err = os.Stat(agentCopy)
+	assert.ErrorIs(t, err, fs.ErrNotExist, "the copied exposure must be pruned")
+}
+
+func TestUpdateKeepsVanishedSkillWithExtraCanonicalFile(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	globalDir, src2 := installThenVanish(t, ctx, tmp)
+	agent := testAgent(tmp)
+
+	// An extra file the CLI didn't write means the dir isn't purely ours.
+	require.NoError(t, os.WriteFile(filepath.Join(globalDir, "databricks-jobs", "notes.md"), []byte("mine"), 0o644))
+
+	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{})
+	require.NoError(t, err)
+	assert.Empty(t, result.Removed)
+	assert.Contains(t, result.Unchanged, "databricks-jobs")
+}
+
 func TestUpdateSkipsExperimentalSkills(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())

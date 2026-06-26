@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -123,7 +124,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 				// The skill vanished from the manifest. Prune it only when we
 				// installed it and the user hasn't modified it since; otherwise
 				// keep it with a warning so we never delete user-edited content.
-				if !opts.NoPrune && skillFilesUnmodified(baseDir, name, state) {
+				if !opts.NoPrune && skillPrunable(ctx, baseDir, name, scope, cwd, state) {
 					result.Removed = append(result.Removed, SkillUpdate{Name: name, OldVersion: state.Skills[name]})
 				} else {
 					log.Warnf(ctx, "Warning: %q not found in manifest %s (keeping installed version).", name, latestTag)
@@ -213,14 +214,10 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	maps.Copy(state.Files, fileRecords)
 
 	// Prune skills that vanished from the manifest (and that the user hasn't
-	// modified, as decided above). Only removes the symlinks pointing into our
-	// canonical dir and the canonical copy; user-managed dirs are left alone.
+	// modified, as decided above). Removes our symlinks and unmodified copies
+	// from every agent plus the canonical copy; user-managed dirs are left alone.
 	for _, rem := range result.Removed {
-		canonicalDir := filepath.Join(baseDir, rem.Name)
-		removeSymlinksFromAgents(ctx, rem.Name, canonicalDir, scope, cwd)
-		if err := os.RemoveAll(canonicalDir); err != nil {
-			log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
-		}
+		removeSkillExposures(ctx, baseDir, rem.Name, scope, cwd, state)
 		delete(state.Skills, rem.Name)
 		delete(state.RepoDirs, rem.Name)
 		for path := range state.Files {
@@ -279,28 +276,137 @@ func hasLegacyInstall(ctx context.Context, globalDir string) bool {
 // still exists in the canonical dir and matches its recorded sha256. Returns
 // false when there is no recorded provenance (e.g. a legacy v1 install), so the
 // caller keeps such skills rather than risk deleting user content.
-func skillFilesUnmodified(baseDir, skillName string, state *InstallState) bool {
+// skillPrunable reports whether a vanished skill can be safely removed: the
+// canonical copy and every agent exposure (symlink into canonical, or a copied
+// dir) must be ours and unmodified. If anything is user-modified, has extra
+// files, or has no recorded provenance, the skill is kept (the caller warns).
+func skillPrunable(ctx context.Context, baseDir, skillName, scope, cwd string, state *InstallState) bool {
+	canonicalDir := filepath.Join(baseDir, skillName)
+	if !dirMatchesRecords(canonicalDir, skillName, state) {
+		return false
+	}
+	for i := range agents.Registry {
+		agent := &agents.Registry[i]
+		if scope == ScopeProject && !agent.SupportsProjectScope {
+			continue
+		}
+		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
+		if err != nil {
+			continue
+		}
+		if !exposureRemovable(filepath.Join(agentDir, skillName), canonicalDir, skillName, state) {
+			return false
+		}
+	}
+	return true
+}
+
+// removeSkillExposures removes a skill's exposure from every scoped agent (a
+// symlink into canonical, or our unmodified copy) plus the canonical dir. Only
+// call after skillPrunable has confirmed everything is removable.
+func removeSkillExposures(ctx context.Context, baseDir, skillName, scope, cwd string, state *InstallState) {
+	canonicalDir := filepath.Join(baseDir, skillName)
+	for i := range agents.Registry {
+		agent := &agents.Registry[i]
+		if scope == ScopeProject && !agent.SupportsProjectScope {
+			continue
+		}
+		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
+		if err != nil {
+			continue
+		}
+		entry := filepath.Join(agentDir, skillName)
+		if !exposureRemovable(entry, canonicalDir, skillName, state) {
+			continue
+		}
+		// RemoveAll on a symlink removes the link, not its target.
+		if err := os.RemoveAll(entry); err != nil {
+			log.Warnf(ctx, "Failed to remove %s: %v", entry, err)
+		}
+	}
+	if err := os.RemoveAll(canonicalDir); err != nil {
+		log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
+	}
+}
+
+// exposureRemovable reports whether an agent's skill entry is ours and safe to
+// remove: absent, a symlink into canonicalDir, or a copied dir whose contents
+// exactly match the recorded checksums.
+func exposureRemovable(entry, canonicalDir, skillName string, state *InstallState) bool {
+	fi, err := os.Lstat(entry)
+	if errors.Is(err, fs.ErrNotExist) {
+		return true
+	}
+	if err != nil {
+		return false
+	}
+	if fi.Mode()&os.ModeSymlink != 0 {
+		target, err := os.Readlink(entry)
+		if err != nil {
+			return false
+		}
+		abs := target
+		if !filepath.IsAbs(target) {
+			abs = filepath.Clean(filepath.Join(filepath.Dir(entry), target))
+		}
+		return abs == canonicalDir || strings.HasPrefix(abs, canonicalDir+string(os.PathSeparator))
+	}
+	if fi.IsDir() {
+		return dirMatchesRecords(entry, skillName, state)
+	}
+	return false
+}
+
+// dirMatchesRecords reports whether dir contains exactly the files recorded for
+// skillName, each with its recorded sha256 (no missing, modified, or extra
+// files). Returns false when there is no recorded provenance, so unverifiable
+// content is never deleted.
+func dirMatchesRecords(dir, skillName string, state *InstallState) bool {
 	prefix := skillName + "/"
-	var recorded []string
-	for path := range state.Files {
-		if strings.HasPrefix(path, prefix) {
-			recorded = append(recorded, path)
+	recorded := map[string]string{}
+	for path, rec := range state.Files {
+		if after, ok := strings.CutPrefix(path, prefix); ok {
+			recorded[after] = rec.SHA256
 		}
 	}
 	if len(recorded) == 0 {
 		return false
 	}
-	for _, relPath := range recorded {
-		data, err := os.ReadFile(filepath.Join(baseDir, filepath.FromSlash(relPath)))
+
+	seen := 0
+	matched := true
+	walkErr := filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return false
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, p)
+		if err != nil {
+			return err
+		}
+		want, ok := recorded[filepath.ToSlash(rel)]
+		if !ok {
+			matched = false // a file we didn't write -> not ours, keep
+			return filepath.SkipAll
+		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return err
 		}
 		sum := sha256.Sum256(data)
-		if hex.EncodeToString(sum[:]) != state.Files[relPath].SHA256 {
-			return false
+		if hex.EncodeToString(sum[:]) != want {
+			matched = false
+			return filepath.SkipAll
 		}
+		seen++
+		return nil
+	})
+	if walkErr != nil || !matched {
+		return false
 	}
-	return true
+	return seen == len(recorded)
 }
 
 // PluginUpdate records that a plugin was updated for an agent.
