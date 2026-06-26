@@ -28,10 +28,10 @@ var (
 )
 
 // generateJob builds a random, well-formed job config driven entirely by rng, so
-// the same seed always produces the same job. It favors fields whose translation
-// tends to differ between engines.
+// the same seed always produces the same job. It favors fields whose
+// config->payload translation is non-trivial (clusters, scheduling, references).
 //
-// TODO(DECO-25361): generalize the harness across resource kinds.
+// TODO: generalize the harness across resource kinds.
 func generateJob(rng *rand.Rand) *resources.Job {
 	job := &resources.Job{}
 	job.Name = randName(rng, "job")

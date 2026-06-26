@@ -3,6 +3,7 @@ package fuzz
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,12 +20,18 @@ const (
 	fakeToken         = "testtoken"
 )
 
-// captureJobCreate deploys a bundle containing job through the given engine
-// ("direct" or "terraform") and returns the create request body sent to the Jobs
-// API. Both engines run the full `bundle deploy` against an in-process testserver,
-// so shared mutators cancel out and the only difference in the payloads is the
-// engine itself. Terraform additionally needs the env from requireTerraform.
-func captureJobCreate(ctx context.Context, t *testing.T, job *resources.Job, engine string) (json.RawMessage, error) {
+// errInvalidConfig marks a generated config that `bundle validate` rejects. The
+// caller skips on it: an invalid config can't violate an invariant, so it is not a
+// bug. This is the distinction that makes the suite safe to point at a looser
+// (e.g. schema-driven) generator, which will produce invalid configs by design.
+var errInvalidConfig = errors.New("config did not validate")
+
+// captureJobCreate validates then deploys a bundle containing job via the direct
+// engine against an in-process testserver, returning the create request body sent
+// to the Jobs API. A validation failure is wrapped as errInvalidConfig. The
+// invariant suite asserts properties of the payload; the terraform engine is not
+// involved (we assert fundamental properties rather than compare engines).
+func captureJobCreate(ctx context.Context, t *testing.T, job *resources.Job) (json.RawMessage, error) {
 	rec := &recorder{}
 	server := testserver.New(t)
 	server.RequestCallback = rec.callback
@@ -37,18 +44,24 @@ func captureJobCreate(ctx context.Context, t *testing.T, job *resources.Job, eng
 
 	t.Setenv("DATABRICKS_HOST", server.URL)
 	t.Setenv("DATABRICKS_TOKEN", fakeToken)
-	t.Setenv("DATABRICKS_BUNDLE_ENGINE", engine)
+	t.Setenv("DATABRICKS_BUNDLE_ENGINE", "direct")
 	t.Chdir(dir)
+
+	// Validate first so an invalid config is reported as errInvalidConfig (caller
+	// skips) rather than a deploy failure (caller fails).
+	if _, stderr, err := testcli.NewRunner(t, ctx, "bundle", "validate").Run(); err != nil {
+		return nil, fmt.Errorf("%w: %v\nstderr:\n%s", errInvalidConfig, err, stderr.String())
+	}
 
 	stdout, stderr, err := testcli.NewRunner(t, ctx, "bundle", "deploy").Run()
 	if err != nil {
-		return nil, fmt.Errorf("bundle deploy (engine=%s) failed: %w\nstdout:\n%s\nstderr:\n%s",
-			engine, err, stdout.String(), stderr.String())
+		return nil, fmt.Errorf("bundle deploy failed: %w\nstdout:\n%s\nstderr:\n%s",
+			err, stdout.String(), stderr.String())
 	}
 
 	body, ok := rec.find("POST", jobsCreatePath)
 	if !ok {
-		return nil, fmt.Errorf("engine=%s did not POST %s during deploy", engine, jobsCreatePath)
+		return nil, fmt.Errorf("deploy did not POST %s", jobsCreatePath)
 	}
 	return body, nil
 }
@@ -82,61 +95,18 @@ func writeJobBundle(dir, host string, job *resources.Job) error {
 	return os.WriteFile(filepath.Join(dir, "databricks.yml"), data, 0o600)
 }
 
-// fuzzOptInVars opt a run into the terraform parity suite. FUZZ_SEED(S)/OFFSET also
-// tune it (see paritySeeds); FUZZ_PARITY is a no-tuning switch for `task test-fuzz`.
-var fuzzOptInVars = []string{"FUZZ_PARITY", "FUZZ_SEED", "FUZZ_SEEDS", "FUZZ_SEED_OFFSET"}
+// fuzzOptInVars opt a run into the invariant suite. FUZZ_SEED(S)/OFFSET also tune
+// it (see invariantSeeds); FUZZ_INVARIANTS is a no-tuning switch for `task test-fuzz`.
+var fuzzOptInVars = []string{"FUZZ_INVARIANTS", "FUZZ_SEED", "FUZZ_SEEDS", "FUZZ_SEED_OFFSET"}
 
-// requireFuzzOptIn skips unless a FUZZ_* var is set. Gating on an env var rather
-// than on a leftover build/ keeps a plain `task test` from running real deploys.
+// requireFuzzOptIn skips unless a FUZZ_* var is set. Each seed runs a real
+// in-process deploy, so gating keeps a plain `task test` fast (the single
+// un-gated direct smoke test still exercises the harness on every run).
 func requireFuzzOptIn(t testing.TB) {
 	for _, name := range fuzzOptInVars {
 		if os.Getenv(name) != "" {
 			return
 		}
 	}
-	t.Skip("terraform parity suite is opt-in; run `task test-fuzz` or set FUZZ_SEED=<n> to reproduce a single seed")
-}
-
-// requireTerraform opts in via requireFuzzOptIn, then points the terraform engine
-// at the binary and provider mirror that acceptance/install_terraform.py provisions
-// into <repo>/build, skipping cleanly when they are absent.
-func requireTerraform(t testing.TB) {
-	requireFuzzOptIn(t)
-
-	buildDir := filepath.Join(repoRoot(t), "build")
-	execPath := filepath.Join(buildDir, "terraform")
-	cfgFile := filepath.Join(buildDir, ".terraformrc")
-
-	// Require all three together; a partial build/ would otherwise fail mid-deploy
-	// instead of skipping cleanly.
-	tfpluginsDir := filepath.Join(buildDir, "tfplugins")
-	for _, p := range []string{execPath, cfgFile, tfpluginsDir} {
-		if _, err := os.Stat(p); err != nil {
-			t.Skipf("terraform not fully provisioned (%s); run: python3 acceptance/install_terraform.py --targetdir build", p)
-		}
-	}
-
-	t.Setenv("DATABRICKS_TF_EXEC_PATH", execPath)
-	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", cfgFile)
-	t.Setenv("TF_CLI_CONFIG_FILE", cfgFile)
-	// Disable terraform's checkpoint-api.hashicorp.com phone-home. See acceptance_test.go.
-	t.Setenv("CHECKPOINT_DISABLE", "1")
-}
-
-// repoRoot returns the repository root by walking up from the current directory.
-func repoRoot(t testing.TB) string {
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %s", err)
-	}
-	for {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			t.Fatal("could not locate repo root (go.mod not found)")
-		}
-		dir = parent
-	}
+	t.Skip("invariant fuzz suite is opt-in; run `task test-fuzz` or set FUZZ_SEED=<n> to reproduce a single seed")
 }
