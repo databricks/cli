@@ -344,31 +344,39 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
+func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 	defer s.LockUnlock()()
 
-	if dirInfo, ok := s.directories[path]; ok {
-		return Response{
-			Body: &dirInfo,
+	// The real Workspace API collapses duplicate slashes, so look up the cleaned
+	// path. A doubled leading slash ("//Workspace/...", which some tests use to
+	// avoid Windows path conversion) is additionally canonicalized by stripping
+	// the "/Workspace" mount from the returned path, so mirror that too.
+	cleaned := path.Clean(requestPath)
+	stripWorkspacePrefix := strings.HasPrefix(requestPath, "//Workspace/")
+
+	respond := func(info workspace.ObjectInfo) Response {
+		if stripWorkspacePrefix {
+			info.Path = strings.TrimPrefix(info.Path, "/Workspace")
 		}
-	} else if entry, ok := s.files[path]; ok {
-		return Response{
-			Body: entry.Info,
-		}
-	} else if repoId, ok := s.repoIdByPath[path]; ok {
-		return Response{
-			Body: workspace.ObjectInfo{
-				ObjectType: "REPO",
-				Path:       path,
-				ObjectId:   repoId,
-			},
-		}
-	} else {
-		// Match the real Workspace API wording, which echoes the requested path.
-		return Response{
-			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", path)},
-		}
+		return Response{Body: info}
+	}
+
+	if dirInfo, ok := s.directories[cleaned]; ok {
+		return respond(dirInfo)
+	} else if entry, ok := s.files[cleaned]; ok {
+		return respond(entry.Info)
+	} else if repoId, ok := s.repoIdByPath[cleaned]; ok {
+		return respond(workspace.ObjectInfo{
+			ObjectType: "REPO",
+			Path:       cleaned,
+			ObjectId:   repoId,
+		})
+	}
+
+	// Match the real Workspace API wording, which echoes the requested path.
+	return Response{
+		StatusCode: 404,
+		Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", requestPath)},
 	}
 }
 
