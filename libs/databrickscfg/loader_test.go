@@ -66,11 +66,9 @@ func TestResolveNonAuthFromEnvSkipsHostAndAuth(t *testing.T) {
 }
 
 func TestProfileAuthLoadersConflictingEnvAuthMethodErrors(t *testing.T) {
-	// The profile provides a complete PAT, while the env provides a different
-	// complete method (OAuth M2M). The gap-fill loads the empty client_id/secret
-	// from env, so the resolved config carries two auth methods and the SDK
-	// rejects it: the profile wins for the fields it sets, but a conflicting
-	// complete method in env still errors rather than being dropped (#5096).
+	// Profile has a PAT; env gap-fills a different complete method (OAuth M2M).
+	// The config then carries two auth methods, which the SDK rejects rather
+	// than silently dropping the env one (#5096).
 	t.Setenv("DATABRICKS_CLIENT_ID", "env-client-id")
 	t.Setenv("DATABRICKS_CLIENT_SECRET", "env-client-secret")
 
@@ -84,11 +82,9 @@ func TestProfileAuthLoadersConflictingEnvAuthMethodErrors(t *testing.T) {
 	require.ErrorContains(t, err, "more than one authorization method configured")
 }
 
-// TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs guards against an SDK bump
-// silently re-introducing #5096. Every Internal (auth:"-") env-backed attribute
-// that HasAuthAttribute misses must be either skipped (auth-steering) or listed
-// below as a reviewed env-first attribute; a new SDK attribute fails this test
-// until a human classifies it.
+// TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs fails when an SDK bump adds an
+// Internal (auth:"-") env-backed attribute that is neither skipped nor listed as
+// a reviewed env-first attribute, forcing a human to classify it (#5096).
 func TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs(t *testing.T) {
 	knownEnvFirstInternal := map[string]bool{
 		"oauth_callback_port":         true,

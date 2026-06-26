@@ -156,8 +156,7 @@ func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
 }
 
 func TestWorkspaceClientProfileOverridesAuthEnv(t *testing.T) {
-	// An explicit profile (--profile or workspace.profile) must win over auth
-	// env vars, mirroring MustWorkspaceClient (#5096).
+	// An explicit profile must win over auth env vars (#5096).
 	setupWorkspaceTest(t)
 
 	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
@@ -202,9 +201,8 @@ func TestWorkspaceClientProfileFillsAuthFromEnv(t *testing.T) {
 }
 
 func TestWorkspaceClientHostAndProfileOverridesAuthEnv(t *testing.T) {
-	// A bundle that pins both workspace.host and workspace.profile: the profile
-	// still wins for auth over the env vars, the bundle host is honored, and
-	// ValidateConfigAndProfileHost passes because they agree (#5096).
+	// Bundle pins both workspace.host and workspace.profile: the profile wins
+	// for auth and the host check passes because they agree (#5096).
 	setupWorkspaceTest(t)
 
 	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{

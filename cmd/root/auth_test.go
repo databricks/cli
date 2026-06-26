@@ -454,8 +454,7 @@ token = tst-token
 	require.NoError(t, err)
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	// direnv-style auth env vars pointing at a different workspace. Before #5096
-	// these shadowed the profile selected with --profile.
+	// Auth env vars for a different workspace; before #5096 these shadowed --profile.
 	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
 	t.Setenv("DATABRICKS_TOKEN", "dev-token")
 
@@ -522,8 +521,8 @@ token = tst-token
 	require.NoError(t, err)
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	// Selected via DATABRICKS_CONFIG_PROFILE, not --profile: this keeps the SDK's
-	// env-first precedence, so the auth env vars below must still win (#5096).
+	// Selected via DATABRICKS_CONFIG_PROFILE, not --profile, so env-first
+	// precedence is kept and the auth env vars below still win (#5096).
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "tst-svc")
 	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
 	t.Setenv("DATABRICKS_TOKEN", "dev-token")
