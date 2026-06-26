@@ -10,15 +10,15 @@ import (
 	"strings"
 )
 
-// Difference is a single mismatch between the two engines' create payloads,
+// difference is a single mismatch between the two engines' create payloads,
 // located by a JSON-ish path (e.g. "tasks[0].new_cluster.num_workers").
-type Difference struct {
+type difference struct {
 	Path      string
 	Direct    any
 	Terraform any
 }
 
-func (d Difference) String() string {
+func (d difference) String() string {
 	return fmt.Sprintf("%s: direct=%s terraform=%s", d.Path, render(d.Direct), render(d.Terraform))
 }
 
@@ -36,10 +36,20 @@ func render(v any) string {
 	return string(b)
 }
 
-// DiffPayloads decodes both create payloads and returns every difference whose
-// path is not explicitly ignored. ignorePaths are matched exactly against the
-// rendered path, with "[*]" standing in for any slice index.
-func DiffPayloads(direct, terraform json.RawMessage, ignorePaths []string) ([]Difference, error) {
+// ignoreRule suppresses a known, intentional engine divergence. A rule matches a
+// difference when the difference's normalized path equals Path and, if Match is
+// non-nil, Match also reports true for the two values. A nil Match ignores any
+// difference at Path; a non-nil Match narrows the rule to specific values so a
+// genuine mismatch at the same path is still reported.
+type ignoreRule struct {
+	Path  string
+	Match func(d difference) bool
+}
+
+// diffPayloads decodes both create payloads and returns every difference that no
+// ignore rule suppresses. Paths are matched with "[*]" standing in for any slice
+// index (see normalizePath).
+func diffPayloads(direct, terraform json.RawMessage, ignore []ignoreRule) ([]difference, error) {
 	d, err := decode(direct)
 	if err != nil {
 		return nil, fmt.Errorf("decoding direct payload: %w", err)
@@ -49,21 +59,30 @@ func DiffPayloads(direct, terraform json.RawMessage, ignorePaths []string) ([]Di
 		return nil, fmt.Errorf("decoding terraform payload: %w", err)
 	}
 
-	var diffs []Difference
+	var diffs []difference
 	diffValue("", d, tf, &diffs)
-
-	ignore := make(map[string]bool, len(ignorePaths))
-	for _, p := range ignorePaths {
-		ignore[p] = true
-	}
 
 	filtered := diffs[:0]
 	for _, diff := range diffs {
-		if !ignore[normalizePath(diff.Path)] {
+		if !ignored(diff, ignore) {
 			filtered = append(filtered, diff)
 		}
 	}
 	return filtered, nil
+}
+
+// ignored reports whether any rule suppresses d.
+func ignored(d difference, rules []ignoreRule) bool {
+	norm := normalizePath(d.Path)
+	for _, r := range rules {
+		if r.Path != norm {
+			continue
+		}
+		if r.Match == nil || r.Match(d) {
+			return true
+		}
+	}
+	return false
 }
 
 // decode unmarshals JSON using UseNumber so large int64 values (e.g. job ids,
@@ -82,12 +101,12 @@ func decode(raw json.RawMessage) (any, error) {
 	return v, nil
 }
 
-func diffValue(path string, a, b any, diffs *[]Difference) {
+func diffValue(path string, a, b any, diffs *[]difference) {
 	switch av := a.(type) {
 	case map[string]any:
 		bv, ok := b.(map[string]any)
 		if !ok {
-			*diffs = append(*diffs, Difference{Path: path, Direct: a, Terraform: b})
+			*diffs = append(*diffs, difference{Path: path, Direct: a, Terraform: b})
 			return
 		}
 		keys := unionKeys(av, bv)
@@ -99,15 +118,15 @@ func diffValue(path string, a, b any, diffs *[]Difference) {
 			case aok && bok:
 				diffValue(child, achild, bchild, diffs)
 			case aok:
-				*diffs = append(*diffs, Difference{Path: child, Direct: achild, Terraform: missing{}})
+				*diffs = append(*diffs, difference{Path: child, Direct: achild, Terraform: missing{}})
 			default:
-				*diffs = append(*diffs, Difference{Path: child, Direct: missing{}, Terraform: bchild})
+				*diffs = append(*diffs, difference{Path: child, Direct: missing{}, Terraform: bchild})
 			}
 		}
 	case []any:
 		bv, ok := b.([]any)
 		if !ok {
-			*diffs = append(*diffs, Difference{Path: path, Direct: a, Terraform: b})
+			*diffs = append(*diffs, difference{Path: path, Direct: a, Terraform: b})
 			return
 		}
 		// Slices whose elements carry a natural identity key (tasks, job clusters)
@@ -125,14 +144,14 @@ func diffValue(path string, a, b any, diffs *[]Difference) {
 			case i < len(av) && i < len(bv):
 				diffValue(child, av[i], bv[i], diffs)
 			case i < len(av):
-				*diffs = append(*diffs, Difference{Path: child, Direct: av[i], Terraform: missing{}})
+				*diffs = append(*diffs, difference{Path: child, Direct: av[i], Terraform: missing{}})
 			default:
-				*diffs = append(*diffs, Difference{Path: child, Direct: missing{}, Terraform: bv[i]})
+				*diffs = append(*diffs, difference{Path: child, Direct: missing{}, Terraform: bv[i]})
 			}
 		}
 	default:
 		if !scalarEqual(a, b) {
-			*diffs = append(*diffs, Difference{Path: path, Direct: a, Terraform: b})
+			*diffs = append(*diffs, difference{Path: path, Direct: a, Terraform: b})
 		}
 	}
 }
@@ -174,7 +193,7 @@ func allHaveKey(s []any, field string) bool {
 // within each slice for tasks/job clusters) and diffs each matched pair,
 // reporting unmatched elements as present-on-one-side. Paths keep numeric indices
 // so ignore-path [*] normalization still applies.
-func diffKeyedSlice(path, key string, a, b []any, diffs *[]Difference) {
+func diffKeyedSlice(path, key string, a, b []any, diffs *[]difference) {
 	// identityFields are unique within a slice by API contract (no two job tasks
 	// share a task_key, no two job_clusters share a job_cluster_key), so keying by
 	// them is unambiguous. If a payload ever repeated a key, last-one-wins here and
@@ -193,7 +212,7 @@ func diffKeyedSlice(path, key string, a, b []any, diffs *[]Difference) {
 		if bel, ok := bByKey[k]; ok {
 			diffValue(child, el, bel, diffs)
 		} else {
-			*diffs = append(*diffs, Difference{Path: child, Direct: el, Terraform: missing{}})
+			*diffs = append(*diffs, difference{Path: child, Direct: el, Terraform: missing{}})
 		}
 	}
 	for j, el := range b {
@@ -202,7 +221,7 @@ func diffKeyedSlice(path, key string, a, b []any, diffs *[]Difference) {
 			continue
 		}
 		child := fmt.Sprintf("%s[%d]", path, j)
-		*diffs = append(*diffs, Difference{Path: child, Direct: missing{}, Terraform: el})
+		*diffs = append(*diffs, difference{Path: child, Direct: missing{}, Terraform: el})
 	}
 }
 
@@ -260,16 +279,16 @@ func normalizePath(path string) string {
 	return indexRe.ReplaceAllString(path, "[*]")
 }
 
-// DefaultIgnorePaths lists create-payload paths that legitimately differ between
-// the engines and are not parity bugs. Keep this list small and well-justified;
-// every entry is a known, intentional divergence.
-var DefaultIgnorePaths = []string{
+// defaultIgnoreRules lists create-payload divergences that are known, intentional
+// engine differences and not parity bugs. Keep this list small and
+// well-justified; every entry is a documented divergence.
+var defaultIgnoreRules = []ignoreRule{
 	// The terraform provider strips the deprecated/ignored spark conf
 	// "spark.databricks.delta.preview.enabled" from new_cluster.spark_conf, while
 	// the direct engine forwards it verbatim. The backend ignores the key either
 	// way, so this is a benign provider-side filter rather than a parity bug.
-	`tasks[*].new_cluster.spark_conf["spark.databricks.delta.preview.enabled"]`,
-	`job_clusters[*].new_cluster.spark_conf["spark.databricks.delta.preview.enabled"]`,
+	{Path: `tasks[*].new_cluster.spark_conf["spark.databricks.delta.preview.enabled"]`},
+	{Path: `job_clusters[*].new_cluster.spark_conf["spark.databricks.delta.preview.enabled"]`},
 
 	// For a single-node task-level new_cluster (no autoscale, num_workers unset)
 	// the terraform provider force-sends num_workers:0 while the direct engine
@@ -278,5 +297,18 @@ var DefaultIgnorePaths = []string{
 	// and suppressed here rather than fixed in this PR. Tracked under DECO-25361.
 	// Shared job_clusters are not affected: resourcemutator already force-sends
 	// num_workers for them under both engines, so only the task path diverges.
-	`tasks[*].new_cluster.num_workers`,
+	//
+	// Match narrows this to exactly that shape (direct absent, terraform 0); a
+	// genuine num_workers value mismatch at the same path is still reported.
+	{Path: `tasks[*].new_cluster.num_workers`, Match: isBenignTaskNumWorkers},
+}
+
+// isBenignTaskNumWorkers reports whether d is the single documented num_workers
+// divergence: the direct engine omits num_workers while terraform force-sends 0.
+// Any other pair of values (in particular two differing non-zero counts) is a
+// real divergence and must not be suppressed.
+func isBenignTaskNumWorkers(d difference) bool {
+	_, directAbsent := d.Direct.(missing)
+	n, ok := d.Terraform.(json.Number)
+	return directAbsent && ok && n.String() == "0"
 }
