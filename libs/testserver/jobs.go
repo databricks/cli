@@ -105,6 +105,14 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 		return Response{StatusCode: 403, Body: "{}"}
 	}
 
+	// Known cloud quirk (see the test's Badness note): jobs/reset is a full
+	// replace, but omitting run_as from new_settings does NOT clear it — cloud
+	// keeps the previously configured identity. Mirror that so the local
+	// testserver matches cloud against one golden.
+	if request.NewSettings.RunAs == nil {
+		request.NewSettings.RunAs = prevjob.Settings.RunAs
+	}
+
 	s.Jobs[jobId] = jobs.Job{
 		JobId:           jobId,
 		CreatorUserName: prevjob.CreatorUserName,
