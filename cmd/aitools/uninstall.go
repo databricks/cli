@@ -2,8 +2,11 @@ package aitools
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/libs/aitools/installer"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -50,6 +53,25 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 				KeepMarketplace: keepMarketplace,
 			}
 			opts.Skills = splitAndTrim(skillsFlag)
+
+			// Uninstall is destructive, so confirm interactively before doing
+			// anything. Non-interactive runs (no TTY) proceed unprompted so
+			// automation is unaffected, matching how install only prompts on a TTY.
+			if cmdio.IsPromptSupported(ctx) {
+				dir := globalDir
+				if scope == installer.ScopeProject {
+					dir = projectDir
+				}
+				proceed, err := confirmUninstall(ctx, dir, opts)
+				if err != nil {
+					return err
+				}
+				if !proceed {
+					cmdio.LogString(ctx, "Cancelled.")
+					return nil
+				}
+			}
+
 			return uninstallSkillsFn(ctx, opts)
 		},
 	}
@@ -61,4 +83,51 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Uninstall globally-scoped skills")
 	markScopeBoolsDeprecated(cmd)
 	return cmd
+}
+
+// confirmUninstall asks the user to confirm a destructive uninstall, summarizing
+// what will be removed. It returns true without prompting when nothing is
+// recorded in the scope, so the installer can surface its own "nothing installed"
+// or legacy guidance instead.
+func confirmUninstall(ctx context.Context, dir string, opts installer.UninstallOptions) (bool, error) {
+	state, err := installer.LoadState(dir)
+	if err != nil {
+		return false, err
+	}
+	msg, ask := uninstallConfirmMessage(state, opts)
+	if !ask {
+		return true, nil
+	}
+	cmdio.LogString(ctx, msg)
+	return cmdio.AskYesOrNo(ctx, "Proceed?")
+}
+
+// uninstallConfirmMessage builds the human summary of what an uninstall will
+// remove. ask is false when there is nothing recorded to confirm.
+func uninstallConfirmMessage(state *installer.InstallState, opts installer.UninstallOptions) (msg string, ask bool) {
+	if state == nil {
+		return "", false
+	}
+	if len(opts.Skills) > 0 {
+		return fmt.Sprintf("This will remove %s %s (%s scope).", plural(len(opts.Skills), "skill"), strings.Join(opts.Skills, ", "), opts.Scope), true
+	}
+	var parts []string
+	if n := len(state.Skills); n > 0 {
+		parts = append(parts, fmt.Sprintf("%d %s", n, plural(n, "skill")))
+	}
+	if n := len(state.Plugins); n > 0 {
+		parts = append(parts, fmt.Sprintf("the databricks plugin from %d %s", n, plural(n, "agent")))
+	}
+	if len(parts) == 0 {
+		return "", false
+	}
+	return fmt.Sprintf("This will remove %s (%s scope).", strings.Join(parts, " and "), opts.Scope), true
+}
+
+// plural returns noun for n == 1 and noun+"s" otherwise.
+func plural(n int, noun string) string {
+	if n == 1 {
+		return noun
+	}
+	return noun + "s"
 }
