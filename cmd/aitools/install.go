@@ -61,8 +61,8 @@ func NewInstallCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "install",
-		Short: "Install Databricks AI tools for coding agents",
-		Long: `Install Databricks AI tools for detected coding agents.
+		Short: "Install Databricks skills and plugins for coding agents",
+		Long: `Install Databricks skills and plugins for detected coding agents.
 
 By default this installs the databricks plugin through each agent's own CLI
 (Claude Code, Codex, GitHub Copilot). Agents with no plugin (OpenCode,

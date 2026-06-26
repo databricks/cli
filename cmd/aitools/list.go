@@ -30,7 +30,7 @@ func NewListCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List installed AI tools components",
+		Short: "List installed skills and plugins",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Reject the legacy --project --global combination here so it

@@ -17,7 +17,7 @@ import (
 func NewVersionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
-		Short: "Show installed AI skills version",
+		Short: "Show installed skills and plugins version",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -42,7 +42,7 @@ func NewVersionCmd() *cobra.Command {
 			}
 
 			if globalState == nil && projectState == nil {
-				cmdio.LogString(ctx, "No Databricks AI Tools components installed.")
+				cmdio.LogString(ctx, "No Databricks skills or plugins installed.")
 				cmdio.LogString(ctx, "")
 				cmdio.LogString(ctx, "Run 'databricks aitools install' to get started.")
 				return nil
@@ -54,7 +54,7 @@ func NewVersionCmd() *cobra.Command {
 			}
 			bothScopes := globalState != nil && projectState != nil
 
-			cmdio.LogString(ctx, "Databricks AI Tools:")
+			cmdio.LogString(ctx, "Databricks skills and plugins:")
 
 			if globalState != nil {
 				label := "Skills"

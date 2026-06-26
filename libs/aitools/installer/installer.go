@@ -422,7 +422,7 @@ func PrintInstallingFor(ctx context.Context, targetAgents []*agents.Agent) {
 	for i, a := range targetAgents {
 		names[i] = a.DisplayName
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Installing Databricks AI skills for %s...", strings.Join(names, ", ")))
+	cmdio.LogString(ctx, fmt.Sprintf("Installing Databricks skills for %s...", strings.Join(names, ", ")))
 }
 
 func printNoAgentsDetected(ctx context.Context) {
