@@ -14,21 +14,36 @@ import (
 
 var ResolveProfileFromHost = profileFromHostLoader{}
 
-// ResolveNonAuthFromEnv reads configuration from environment variables, except
-// for the host and any authentication credential. It runs before the config
-// file loader when the user has explicitly selected a profile (via the
-// --profile flag or workspace.profile), so that the profile takes precedence
-// over auth environment variables.
-//
-// The SDK's default loader order is environment first, then config file, and a
-// loader never overwrites a field that is already set. As a result auth env
-// vars (DATABRICKS_HOST, DATABRICKS_TOKEN, ...) shadow the selected profile.
-// Skipping them here lets the subsequent config-file loader populate host and
-// auth from the profile instead. A trailing config.ConfigAttributes loader can
-// still fill auth fields the profile leaves empty (e.g. a host-only profile
-// combined with DATABRICKS_TOKEN). See
-// https://github.com/databricks/cli/issues/5096.
+// ResolveNonAuthFromEnv reads config from environment variables, except for the
+// host and any auth credential. It runs before the config file loader when a
+// profile is explicitly selected, so the profile wins over auth env vars: the
+// SDK's default chain reads env before the config file and never overwrites a
+// set field, which would otherwise let env vars shadow the profile (#5096).
 var ResolveNonAuthFromEnv = nonAuthEnvLoader{}
+
+// ProfileAuthLoaders is the loader chain to use when a profile is explicitly
+// selected (--profile or a bundle's workspace.profile), and the single source
+// of truth for that precedence rule. The profile must win for host, routing and
+// auth over the matching env vars (DATABRICKS_HOST, DATABRICKS_TOKEN, ...),
+// which the SDK's default env-first chain would otherwise let shadow it (#5096).
+//
+// This only governs an explicitly selected profile. One picked up from
+// DATABRICKS_CONFIG_PROFILE keeps env-first precedence: reordering two
+// environment signals (DATABRICKS_CONFIG_PROFILE vs DATABRICKS_HOST) is the
+// SDK's domain; we only override when the profile is named out-of-band.
+//
+// Order:
+//  1. ResolveNonAuthFromEnv: non-auth, non-routing env attrs (e.g. cluster_id),
+//     keeping env-wins precedence for those.
+//  2. ConfigFile: the selected profile (host, routing, auth).
+//  3. ConfigAttributes: gap-fills only fields the profile left empty (e.g. a
+//     host-only profile + DATABRICKS_TOKEN, a common CI pattern); it never
+//     overwrites a profile value, so the profile still wins.
+var ProfileAuthLoaders = []config.Loader{
+	ResolveNonAuthFromEnv,
+	config.ConfigFile,
+	config.ConfigAttributes,
+}
 
 var errNoMatchingProfiles = errors.New("no matching config profiles found")
 
@@ -76,19 +91,33 @@ func findMatchingProfile(configFile *config.File, matcher func(*ini.Section) boo
 	return matching[0], nil
 }
 
-// nonAuthEnvSkipAttrs lists SDK config attribute names that nonAuthEnvLoader
-// must not read from the environment, beyond those caught by HasAuthAttribute.
+// nonAuthEnvSkipAttrs lists SDK config attributes nonAuthEnvLoader must not read
+// from the environment, beyond those caught by HasAuthAttribute. They identify
+// the target workspace/account (host, routing IDs) or steer the auth method but
+// are tagged auth:"-" (collapsed to Internal), so HasAuthAttribute misses them;
+// leaving them to env would let an env var shadow the selected profile (#5096).
+// Skipping only changes precedence: the trailing ConfigAttributes loader still
+// gap-fills any the profile leaves empty.
 //
-//   - host: has no `auth` struct tag, so HasAuthAttribute can't see it.
-//   - auth_type, discovery_url: tagged `auth:"-"` in the SDK, which the SDK
-//     normalizes to an empty auth tag (internal), so HasAuthAttribute reports
-//     false even though both select/steer the authentication method. Leaving
-//     them to the env would let DATABRICKS_AUTH_TYPE / DATABRICKS_DISCOVERY_URL
-//     shadow the selected profile, the same bug as #5096.
+//   - host: no `auth` tag at all.
+//   - workspace_id / account_id: routing identifiers; an env var must not route
+//     the profile's credentials elsewhere.
+//   - auth_type: forces a specific auth method.
+//   - discovery_url: redirects OIDC discovery.
+//   - audience: selects the OIDC/workload-identity token audience.
+//   - cloud: steers cloud-specific auth (Azure/GCP/AWS).
+//
+// Non-auth attrs tagged auth:"-" (oauth_callback_port, debug_headers, ...) are
+// intentionally not skipped; TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs
+// guards that every auth-steering internal attribute stays classified.
 var nonAuthEnvSkipAttrs = map[string]bool{
 	"host":          true,
+	"workspace_id":  true,
+	"account_id":    true,
 	"auth_type":     true,
 	"discovery_url": true,
+	"audience":      true,
+	"cloud":         true,
 }
 
 type nonAuthEnvLoader struct{}

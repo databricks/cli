@@ -454,8 +454,8 @@ token = tst-token
 	require.NoError(t, err)
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	// direnv-style auth env vars pointing at a different (dev) workspace. Before
-	// the fix for #5096 these shadowed the profile selected with --profile.
+	// direnv-style auth env vars pointing at a different workspace. Before #5096
+	// these shadowed the profile selected with --profile.
 	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
 	t.Setenv("DATABRICKS_TOKEN", "dev-token")
 
@@ -471,7 +471,7 @@ token = tst-token
 
 	w := cmdctx.WorkspaceClient(cmd.Context())
 	require.NotNil(t, w)
-	// The explicitly selected profile must win over the auth env vars.
+	// The selected profile must win over the auth env vars.
 	assert.Equal(t, "tst-svc", w.Config.Profile)
 	assert.Equal(t, "https://tst.cloud.databricks.test", w.Config.Host)
 	assert.Equal(t, "tst-token", w.Config.Token)
@@ -480,10 +480,8 @@ token = tst-token
 func TestMustWorkspaceClientProfileFlagFillsAuthFromEnv(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
-	// A host-only profile relies on the environment for credentials. This is a
-	// common CI pattern: the host lives in .databrickscfg while DATABRICKS_TOKEN
-	// is injected by the runner. The profile must take precedence for the host,
-	// but the env must still fill the token the profile does not provide (#5096).
+	// Host-only profile + DATABRICKS_TOKEN from env, a common CI pattern: the
+	// profile wins for the host, but env fills the token it omits (#5096).
 	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
 	err := os.WriteFile(configFile, []byte(`
 [host-only]
@@ -512,6 +510,40 @@ host = https://tst.cloud.databricks.test
 	assert.Equal(t, "env-token", w.Config.Token)
 }
 
+func TestMustWorkspaceClientConfigProfileEnvKeepsAuthEnvPrecedence(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[tst-svc]
+host = https://tst.cloud.databricks.test
+token = tst-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	// Selected via DATABRICKS_CONFIG_PROFILE, not --profile: this keeps the SDK's
+	// env-first precedence, so the auth env vars below must still win (#5096).
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "tst-svc")
+	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	// The profile name is resolved, but the auth env vars win over its host and
+	// credentials.
+	assert.Equal(t, "tst-svc", w.Config.Profile)
+	assert.Equal(t, "https://dev.cloud.databricks.test", w.Config.Host)
+	assert.Equal(t, "dev-token", w.Config.Token)
+}
+
 func TestMustAccountClientProfileFlagOverridesAuthEnv(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
@@ -525,7 +557,7 @@ token = tst-token
 	require.NoError(t, err)
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	// Auth env vars pointing at a different account host. The profile must win.
+	// Auth env vars for a different account host; the profile must win.
 	t.Setenv("DATABRICKS_HOST", "https://accounts.dev.databricks.test")
 	t.Setenv("DATABRICKS_TOKEN", "dev-token")
 
@@ -538,7 +570,7 @@ token = tst-token
 
 	a := cmdctx.AccountClient(cmd.Context())
 	require.NotNil(t, a)
-	// The explicitly selected profile must win over the auth env vars.
+	// The selected profile must win over the auth env vars.
 	assert.Equal(t, "acc-tst", a.Config.Profile)
 	assert.Equal(t, "https://accounts.cloud.databricks.test", a.Config.Host)
 	assert.Equal(t, "tst-token", a.Config.Token)

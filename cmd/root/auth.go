@@ -31,28 +31,6 @@ import (
 // SDK removed the variable entirely in v0.127.0, so we now own it here.
 var errNotWorkspaceClient = errors.New("invalid Databricks Workspace configuration - host is not a workspace host")
 
-// profileAuthLoaders is the SDK loader chain to use when the user explicitly
-// selects a profile (via --profile or workspace.profile). The selected profile
-// must determine the host and authentication, taking precedence over auth
-// environment variables (DATABRICKS_HOST, DATABRICKS_TOKEN, ...). The SDK's
-// default chain reads the environment before the config file and never
-// overwrites an already-set field, so the env vars would otherwise shadow the
-// profile (issue #5096).
-//
-// The order matters:
-//  1. ResolveNonAuthFromEnv loads non-auth attributes from the environment
-//     (e.g. cluster_id), preserving the env-wins precedence for those.
-//  2. ConfigFile loads the selected profile, populating host and auth.
-//  3. ConfigAttributes loads any remaining attributes from the environment,
-//     filling auth fields the profile did not provide (e.g. a host-only
-//     profile combined with DATABRICKS_TOKEN). It never overwrites a value the
-//     profile already set, so the profile still wins for #5096.
-var profileAuthLoaders = []config.Loader{
-	databrickscfg.ResolveNonAuthFromEnv,
-	config.ConfigFile,
-	config.ConfigAttributes,
-}
-
 type ErrNoWorkspaceProfiles struct {
 	path string
 }
@@ -130,6 +108,25 @@ func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	}
 	value := profileFlag.Value.String()
 	return value, value != ""
+}
+
+// applyProfileAuthPrecedence makes an explicitly selected --profile take
+// precedence over auth environment variables instead of being shadowed by them.
+//
+// With a profile flag we install databrickscfg.ProfileAuthLoaders (the single
+// source of truth for this precedence rule; see its doc and #5096) and skip
+// NormalizeDatabricksConfigFromEnv: the host comes from the profile, not
+// DATABRICKS_HOST, so promoting that env host's ?o=/?a= query params would be
+// wrong. Trade-off: a host-less profile combined with a SPOG-style
+// DATABRICKS_HOST (?o=123) no longer extracts the workspace_id from the query.
+//
+// Without a profile flag we keep the SDK's env-first behavior.
+func applyProfileAuthPrecedence(ctx context.Context, cfg *config.Config, hasProfileFlag bool) {
+	if hasProfileFlag {
+		cfg.Loaders = databrickscfg.ProfileAuthLoaders
+		return
+	}
+	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 }
 
 // Helper function to create an account client or prompt once if the given configuration is not valid.
@@ -223,13 +220,8 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	pr, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = pr
-		// An explicit --profile must take precedence over authentication
-		// environment variables; see the matching comment in MustWorkspaceClient
-		// and issue #5096.
-		cfg.Loaders = profileAuthLoaders
-	} else {
-		auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	}
+	applyProfileAuthPrecedence(ctx, cfg, hasProfileFlag)
 
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
@@ -351,13 +343,8 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	profile, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = profile
-		// An explicit --profile must take precedence over authentication
-		// environment variables (DATABRICKS_HOST, DATABRICKS_TOKEN, ...);
-		// see profileAuthLoaders and issue #5096.
-		cfg.Loaders = profileAuthLoaders
-	} else {
-		auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	}
+	applyProfileAuthPrecedence(ctx, cfg, hasProfileFlag)
 	resolveDefaultProfile(ctx, cfg)
 
 	_, isTargetFlagSet := targetFlagValue(cmd)

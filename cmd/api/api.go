@@ -85,7 +85,9 @@ func makeCommand(method string) *cobra.Command {
 			// also reads it, but setting cfg.Profile here keeps any error
 			// messages we render referring to the same name), 3.
 			// [__settings__].default_profile in the config file.
-			if profileFlag := cmd.Flag("profile"); profileFlag != nil {
+			profileFlag := cmd.Flag("profile")
+			hasProfileFlag := profileFlag != nil && profileFlag.Value.String() != ""
+			if hasProfileFlag {
 				cfg.Profile = profileFlag.Value.String()
 			}
 			if cfg.Profile == "" {
@@ -95,7 +97,15 @@ func makeCommand(method string) *cobra.Command {
 				cfg.Profile = databrickscfg.ResolveDefaultProfile(cmd.Context())
 			}
 
-			auth.NormalizeDatabricksConfigFromEnv(cmd.Context(), cfg)
+			if hasProfileFlag {
+				// An explicit --profile takes precedence over auth env vars; see
+				// databrickscfg.ProfileAuthLoaders (#5096). NormalizeDatabricksConfigFromEnv
+				// is skipped too: the host comes from the profile, not DATABRICKS_HOST,
+				// so promoting its ?o=/?a= query params would be wrong.
+				cfg.Loaders = databrickscfg.ProfileAuthLoaders
+			} else {
+				auth.NormalizeDatabricksConfigFromEnv(cmd.Context(), cfg)
+			}
 
 			api, err := client.New(cfg)
 			if err != nil {

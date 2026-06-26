@@ -6,7 +6,7 @@
 
 ### CLI
 
-* An explicit `--profile` now takes precedence over authentication environment variables (`DATABRICKS_HOST`, `DATABRICKS_TOKEN`, etc.). Previously these env vars silently shadowed the selected profile's host and credentials ([#5096](https://github.com/databricks/cli/issues/5096)).
+* An explicitly selected profile (`--profile` or a bundle's `workspace.profile`) now takes precedence over auth environment variables (`DATABRICKS_HOST`, `DATABRICKS_TOKEN`, etc.) instead of being silently shadowed by them; env vars still fill auth fields the profile leaves empty ([#5096](https://github.com/databricks/cli/issues/5096)).
 
 ### Bundles
 
