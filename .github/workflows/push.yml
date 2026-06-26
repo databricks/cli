@@ -374,8 +374,9 @@ jobs:
     needs:
       - cleanups
 
-    # Two real deploys per seed: too slow for every PR, so nightly only and not part
-    # of test-result.
+    # A real deploy per seed across a wide rotating window: too slow for every PR,
+    # so nightly only and not part of test-result. (The package's un-gated smoke
+    # test still checks the invariants on one seed on every PR.)
     if: ${{ github.event_name == 'schedule' }}
     name: "task test-fuzz"
     runs-on:
@@ -405,14 +406,14 @@ jobs:
         env:
           # Shift the seed window each nightly run so CI explores new configs.
           # offset = GITHUB_RUN_NUMBER * FUZZ_SEEDS keeps windows non-overlapping
-          # (GITHUB_RUN_NUMBER is monotonic). A divergence prints FUZZ_SEED=<n>.
+          # (GITHUB_RUN_NUMBER is monotonic). A failure prints FUZZ_SEED=<n>.
           FUZZ_SEEDS: "25"
         run: |
           export FUZZ_SEED_OFFSET=$(( GITHUB_RUN_NUMBER * FUZZ_SEEDS ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
       # Excluded from test-result, so surface failures as a GitHub issue. Reuse one
-      # open issue (deduped by label) so a recurring divergence doesn't spam nightly.
+      # open issue (deduped by label) so a recurring failure doesn't spam nightly.
       - name: Report failure
         if: ${{ failure() }}
         env:
@@ -420,11 +421,11 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           gh label create fuzz-nightly \
-            --description "Nightly terraform/direct create-payload parity failures" \
+            --description "Nightly create-payload invariant failures" \
             --color FBCA04 2>/dev/null || true
 
           body=$(cat <<EOF
-          The nightly terraform/direct create-payload parity job (\`task test-fuzz\`) failed.
+          The nightly create-payload invariant job (\`task test-fuzz\`) failed.
 
           Run: $RUN_URL
 
@@ -436,7 +437,7 @@ jobs:
           \`\`\`
 
           Once fixed, add the seed to \`regressionSeeds\` in \`bundle/fuzz/fuzz_test.go\`
-          in the same PR so the divergence can never silently regress.
+          in the same PR so the bug can never silently regress.
           EOF
           )
 
@@ -444,7 +445,7 @@ jobs:
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --body "$body"
           else
-            gh issue create --title "Nightly fuzz parity failure" --label fuzz-nightly --body "$body"
+            gh issue create --title "Nightly fuzz invariant failure" --label fuzz-nightly --body "$body"
           fi
 
   # This job groups the result of all the above test jobs.
