@@ -100,6 +100,17 @@ func (a *Agent) ProjectSkillsDir(cwd string) string {
 	return filepath.Join(cwd, a.ProjectConfigDir, subdir)
 }
 
+// Registry agent names. Behavior keyed on a specific agent (e.g. per-agent
+// plugin command shapes) references these instead of bare string literals.
+const (
+	NameClaudeCode  = "claude-code"
+	NameCursor      = "cursor"
+	NameCodex       = "codex"
+	NameOpenCode    = "opencode"
+	NameCopilot     = "copilot"
+	NameAntigravity = "antigravity"
+)
+
 // Databricks plugin identity, shared across the agents that ship a plugin.
 // The verified install commands are e.g.
 //
@@ -124,7 +135,7 @@ func databricksPlugin() *PluginSpec {
 // Registry contains all supported agents.
 var Registry = []Agent{
 	{
-		Name:                 "claude-code",
+		Name:                 NameClaudeCode,
 		DisplayName:          "Claude Code",
 		ConfigDir:            homeSubdir(".claude"),
 		SupportsProjectScope: true,
@@ -133,7 +144,7 @@ var Registry = []Agent{
 		Plugin:               databricksPlugin(),
 	},
 	{
-		Name:                 "cursor",
+		Name:                 NameCursor,
 		DisplayName:          "Cursor",
 		ConfigDir:            homeSubdir(".cursor"),
 		SupportsProjectScope: true,
@@ -150,14 +161,14 @@ var Registry = []Agent{
 		},
 	},
 	{
-		Name:        "codex",
+		Name:        NameCodex,
 		DisplayName: "Codex CLI",
 		ConfigDir:   homeSubdir(".codex"),
 		Binary:      "codex",
 		Plugin:      databricksPlugin(),
 	},
 	{
-		Name:        "opencode",
+		Name:        NameOpenCode,
 		DisplayName: "OpenCode",
 		ConfigDir:   openCodeConfigDir,
 		Binary:      "opencode",
@@ -166,14 +177,14 @@ var Registry = []Agent{
 		// skills-only (Plugin nil).
 	},
 	{
-		Name:        "copilot",
+		Name:        NameCopilot,
 		DisplayName: "GitHub Copilot",
 		ConfigDir:   homeSubdir(".copilot"),
 		Binary:      "copilot",
 		Plugin:      databricksPlugin(),
 	},
 	{
-		Name:         "antigravity",
+		Name:         NameAntigravity,
 		DisplayName:  "Antigravity",
 		ConfigDir:    homeSubdir(".gemini", "antigravity"),
 		SkillsSubdir: "global_skills",
