@@ -1,3 +1,5 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
 # Agent detection needs ~/.claude; prefer USERPROFILE on Windows.
 mkdir -p "${USERPROFILE:-$HOME}/.claude"
 
