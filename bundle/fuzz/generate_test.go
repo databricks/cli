@@ -11,9 +11,8 @@ import (
 )
 
 // Value pools are intentionally small and valid-looking: the goal is to exercise
-// the engines' config->payload translation across many field combinations, not to
-// stress the API with invalid values (which the testserver would reject before we
-// can compare payloads).
+// config->payload translation across many field combinations, not to stress the
+// API with invalid values the testserver would reject.
 var (
 	sparkVersions = []string{"13.3.x-scala2.12", "14.3.x-scala2.12", "15.4.x-scala2.12", "16.4.x-scala2.12"}
 	nodeTypeIDs   = []string{"i3.xlarge", "m5.large", "r5.xlarge", "Standard_DS3_v2"}
@@ -29,12 +28,10 @@ var (
 )
 
 // generateJob builds a random, well-formed job config driven entirely by rng, so
-// the same seed always produces the same job. It deliberately favors fields whose
-// translation tends to differ between engines (tasks, clusters, schedules,
-// notifications, tags, zero-able scalars).
+// the same seed always produces the same job. It favors fields whose translation
+// tends to differ between engines.
 //
-// TODO(DECO-25361): generalize the harness across resource kinds so pipelines,
-// apps, etc. get the same create-payload parity coverage as jobs.
+// TODO(DECO-25361): generalize the harness across resource kinds.
 func generateJob(rng *rand.Rand) *resources.Job {
 	job := &resources.Job{}
 	job.Name = randName(rng, "job")
@@ -150,9 +147,8 @@ func randScheduling(rng *rand.Rand, job *resources.Job) {
 func randTask(rng *rand.Rand, idx int, jobClusterKeys []string) jobs.Task {
 	task := jobs.Task{TaskKey: fmt.Sprintf("task_%d", idx)}
 
-	// Use absolute workspace paths with source=WORKSPACE so the generated bundle
-	// never depends on local files existing on disk (which deploy would reject).
-	// condition_task needs no compute, so it is handled separately below.
+	// Use absolute workspace paths so deploy never depends on local files.
+	// condition_task needs no compute, handled separately below.
 	needsCompute := true
 	switch rng.IntN(4) {
 	case 0:
@@ -197,9 +193,8 @@ func randTask(rng *rand.Rand, idx int, jobClusterKeys []string) jobs.Task {
 	return task
 }
 
-// assignCompute attaches exactly one compute source, which notebook/python/wheel
-// tasks require: a shared job cluster (when available), a brand-new cluster, or an
-// existing cluster id.
+// assignCompute attaches exactly one compute source: a shared job cluster (when
+// available), a new cluster, or an existing cluster id.
 func assignCompute(rng *rand.Rand, task *jobs.Task, jobClusterKeys []string) {
 	const (
 		computeNew = iota

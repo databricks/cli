@@ -374,10 +374,8 @@ jobs:
     needs:
       - cleanups
 
-    # The terraform/direct create-payload parity tests run two real `bundle deploy`
-    # invocations per seed, so they are too slow for every PR and too noisy to gate
-    # the merge queue. Run them on the nightly schedule to catch engine drift; not
-    # part of test-result for that reason.
+    # Two real deploys per seed: too slow for every PR, so nightly only and not part
+    # of test-result.
     if: ${{ github.event_name == 'schedule' }}
     name: "task test-fuzz"
     runs-on:
@@ -405,26 +403,16 @@ jobs:
 
       - name: Run tests
         env:
-          # Shift the seed window by the run number every nightly run so CI
-          # explores configs it has never tested before instead of re-checking a
-          # fixed set. The window is kept modest (each seed runs two real deploys)
-          # since the exploration comes from rotating the window, not its size;
-          # raise it once nightly timings are known. A divergence prints
-          # FUZZ_SEED=<n> for one-command reproduction.
-          #
-          # offset = GITHUB_RUN_NUMBER * FUZZ_SEEDS. GITHUB_RUN_NUMBER is a
-          # built-in, monotonically increasing, unique-per-run integer, so as long
-          # as FUZZ_SEEDS is constant the windows are non-overlapping (gaps from
-          # non-schedule runs are fine; we only need fresh seeds, not every seed).
+          # Shift the seed window each nightly run so CI explores new configs.
+          # offset = GITHUB_RUN_NUMBER * FUZZ_SEEDS keeps windows non-overlapping
+          # (GITHUB_RUN_NUMBER is monotonic). A divergence prints FUZZ_SEED=<n>.
           FUZZ_SEEDS: "25"
         run: |
           export FUZZ_SEED_OFFSET=$(( GITHUB_RUN_NUMBER * FUZZ_SEEDS ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
-      # This job is intentionally excluded from test-result, so a failure here is
-      # invisible unless someone watches the Actions tab. Surface it as a GitHub
-      # issue instead. Reuse a single open issue (deduped by label) so a recurring
-      # divergence doesn't open one issue per night.
+      # Excluded from test-result, so surface failures as a GitHub issue. Reuse one
+      # open issue (deduped by label) so a recurring divergence doesn't spam nightly.
       - name: Report failure
         if: ${{ failure() }}
         env:

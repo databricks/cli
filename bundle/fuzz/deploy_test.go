@@ -20,18 +20,10 @@ const (
 )
 
 // captureJobCreate deploys a bundle containing job through the given engine
-// ("direct" or "terraform") and returns the create request body sent to the
-// Jobs API.
-//
-// Both engines run the full `bundle deploy` pipeline against an in-process
-// testserver, so the only difference between two captures with different engines
-// is the engine itself. That is what makes the resulting payloads directly
-// comparable: shared mutators (deployment metadata, presets, ...) are applied
-// identically on both sides and cancel out in the diff.
-//
-// The terraform engine additionally requires DATABRICKS_TF_EXEC_PATH and
-// DATABRICKS_TF_CLI_CONFIG_FILE to point at a provisioned terraform binary and
-// provider mirror; see requireTerraform.
+// ("direct" or "terraform") and returns the create request body sent to the Jobs
+// API. Both engines run the full `bundle deploy` against an in-process testserver,
+// so shared mutators cancel out and the only difference in the payloads is the
+// engine itself. Terraform additionally needs the env from requireTerraform.
 func captureJobCreate(ctx context.Context, t *testing.T, job *resources.Job, engine string) (json.RawMessage, error) {
 	rec := &recorder{}
 	server := testserver.New(t)
@@ -61,9 +53,8 @@ func captureJobCreate(ctx context.Context, t *testing.T, job *resources.Job, eng
 	return body, nil
 }
 
-// writeJobBundle writes a minimal databricks.yml describing a single job. The
-// document is emitted as JSON, which is valid YAML, so we can reuse the job's
-// own JSON marshaling (which honors ForceSendFields) without a YAML dependency.
+// writeJobBundle writes a minimal databricks.yml for a single job. It emits JSON
+// (valid YAML) to reuse the job's own marshaling, which honors ForceSendFields.
 func writeJobBundle(dir, host string, job *resources.Job) error {
 	jobJSON, err := json.Marshal(job)
 	if err != nil {
@@ -91,16 +82,12 @@ func writeJobBundle(dir, host string, job *resources.Job) error {
 	return os.WriteFile(filepath.Join(dir, "databricks.yml"), data, 0o600)
 }
 
-// fuzzOptInVars are the environment variables that opt a run into the
-// terraform-backed parity suite. FUZZ_SEED / FUZZ_SEEDS / FUZZ_SEED_OFFSET double
-// as the tuning knobs (see paritySeeds), so setting any of them implies opt-in;
-// FUZZ_PARITY is a no-tuning switch used by `task test-fuzz`.
+// fuzzOptInVars opt a run into the terraform parity suite. FUZZ_SEED(S)/OFFSET also
+// tune it (see paritySeeds); FUZZ_PARITY is a no-tuning switch for `task test-fuzz`.
 var fuzzOptInVars = []string{"FUZZ_PARITY", "FUZZ_SEED", "FUZZ_SEEDS", "FUZZ_SEED_OFFSET"}
 
-// requireFuzzOptIn skips unless the run explicitly opted into the terraform
-// parity suite. Gating on an env var rather than on the presence of build/ keeps
-// a leftover terraform install (from a prior `task test-fuzz` or acceptance run)
-// from silently turning a plain `task test` into dozens of real deploys.
+// requireFuzzOptIn skips unless a FUZZ_* var is set. Gating on an env var rather
+// than on a leftover build/ keeps a plain `task test` from running real deploys.
 func requireFuzzOptIn(t testing.TB) {
 	for _, name := range fuzzOptInVars {
 		if os.Getenv(name) != "" {
@@ -111,9 +98,8 @@ func requireFuzzOptIn(t testing.TB) {
 }
 
 // requireTerraform opts in via requireFuzzOptIn, then points the terraform engine
-// at the binary and provider mirror provisioned by acceptance/install_terraform.py
-// into <repo>/build, skipping when they are absent so the suite still skips
-// cleanly where terraform is not set up.
+// at the binary and provider mirror that acceptance/install_terraform.py provisions
+// into <repo>/build, skipping cleanly when they are absent.
 func requireTerraform(t testing.TB) {
 	requireFuzzOptIn(t)
 
@@ -121,9 +107,8 @@ func requireTerraform(t testing.TB) {
 	execPath := filepath.Join(buildDir, "terraform")
 	cfgFile := filepath.Join(buildDir, ".terraformrc")
 
-	// install_terraform.py provisions all three together; a partial build/ (e.g.
-	// the binary without the provider mirror or .terraformrc) would otherwise fail
-	// mid-deploy with a confusing error instead of skipping cleanly.
+	// Require all three together; a partial build/ would otherwise fail mid-deploy
+	// instead of skipping cleanly.
 	tfpluginsDir := filepath.Join(buildDir, "tfplugins")
 	for _, p := range []string{execPath, cfgFile, tfpluginsDir} {
 		if _, err := os.Stat(p); err != nil {
@@ -134,8 +119,7 @@ func requireTerraform(t testing.TB) {
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", execPath)
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", cfgFile)
 	t.Setenv("TF_CLI_CONFIG_FILE", cfgFile)
-	// Terraform phones home to checkpoint-api.hashicorp.com otherwise; disable it
-	// so the testserver/network isn't hit. See acceptance_test.go.
+	// Disable terraform's checkpoint-api.hashicorp.com phone-home. See acceptance_test.go.
 	t.Setenv("CHECKPOINT_DISABLE", "1")
 }
 
