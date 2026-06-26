@@ -110,17 +110,9 @@ func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	return value, value != ""
 }
 
-// applyProfileAuthPrecedence makes an explicitly selected --profile take
-// precedence over auth environment variables instead of being shadowed by them.
-//
-// With a profile flag we install databrickscfg.ProfileAuthLoaders (the single
-// source of truth for this precedence rule; see its doc and #5096) and skip
-// NormalizeDatabricksConfigFromEnv: the host comes from the profile, not
-// DATABRICKS_HOST, so promoting that env host's ?o=/?a= query params would be
-// wrong. Trade-off: a host-less profile combined with a SPOG-style
-// DATABRICKS_HOST (?o=123) no longer extracts the workspace_id from the query.
-//
-// Without a profile flag we keep the SDK's env-first behavior.
+// applyProfileAuthPrecedence makes an explicit --profile win over auth env vars
+// via ProfileAuthLoaders (#5096), skipping env host normalization since the host
+// comes from the profile. Without a profile flag, env-first behavior is kept.
 func applyProfileAuthPrecedence(ctx context.Context, cfg *config.Config, hasProfileFlag bool) {
 	if hasProfileFlag {
 		cfg.Loaders = databrickscfg.ProfileAuthLoaders
