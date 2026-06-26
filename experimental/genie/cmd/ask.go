@@ -21,7 +21,7 @@ func newAskCmd() *cobra.Command {
 	var warehouseID string
 	var raw bool
 	var includeSQL bool
-	var conversation string
+	var session string
 
 	cmd := &cobra.Command{
 		Use:   "ask QUESTION",
@@ -33,9 +33,9 @@ Examples:
   databricks experimental genie ask "What tables exist?" --output json
   databricks experimental genie ask "What tables exist?" --raw
 
-  # Continue a conversation across calls with a label you choose:
-  databricks experimental genie ask -c q3 "What were total sales by quarter?"
-  databricks experimental genie ask -c q3 "Break that down by region"`,
+  # Continue a conversation across calls with a session label you choose:
+  databricks experimental genie ask -s q3 "What were total sales by quarter?"
+  databricks experimental genie ask -s q3 "Break that down by region"`,
 		Args: root.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
@@ -79,7 +79,7 @@ Examples:
 				}
 			}
 
-			err := askWithConversation(ctx, cmd.ErrOrStderr(), host, conversation, ask)
+			err := askWithConversation(ctx, cmd.ErrOrStderr(), host, session, ask)
 			switch {
 			case err != nil && ctx.Err() != nil:
 				// Ctrl-C: aborting the request already told the server to stop.
@@ -98,7 +98,7 @@ Examples:
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID (auto-resolves if omitted)")
 	cmd.Flags().BoolVar(&raw, "raw", false, "Print raw SSE events instead of rendered output")
 	cmd.Flags().BoolVar(&includeSQL, "include-sql", false, "Show SQL queries executed by the agent (text output; JSON always includes them)")
-	cmd.Flags().StringVarP(&conversation, "conversation", "c", "", "Conversation label (any string) to continue across calls")
+	cmd.Flags().StringVarP(&session, "session", "s", "", "Session label (any string) to continue a conversation across calls")
 
 	return cmd
 }
