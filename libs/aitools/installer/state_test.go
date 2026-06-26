@@ -113,10 +113,15 @@ func TestLoadStateMigratesV1ToV2(t *testing.T) {
 }
 
 func TestMigrateStateIsIdempotent(t *testing.T) {
-	state := &InstallState{SchemaVersion: schemaVersionV2, Skills: map[string]string{"databricks": "1.0.0"}}
-	before := *state
+	// Start at v1 so this exercises the real v1 -> v2 migration, then confirm a
+	// second migrateState is a no-op.
+	state := &InstallState{SchemaVersion: 1, Skills: map[string]string{"databricks": "1.0.0"}}
 	migrateState(state)
-	assert.Equal(t, before, *state)
+	assert.Equal(t, schemaVersionV2, state.SchemaVersion)
+
+	migrated := *state
+	migrateState(state)
+	assert.Equal(t, migrated, *state)
 }
 
 func TestSaveAndLoadStateWithPluginAndFileRecords(t *testing.T) {
