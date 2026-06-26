@@ -209,18 +209,21 @@ func Evaluate(in Input) Verdict {
 func satisfies(level Level) (bool, string) {
 	for _, h := range level.Held {
 		if h.Name == level.Needed || h.Name == PrivAllPrivileges {
-			return true, satisfiedByLabel(h)
+			return true, satisfiedByLabel(h, level.Type)
 		}
 	}
 	return false, ""
 }
 
-// satisfiedByLabel describes how a privilege was conveyed.
-func satisfiedByLabel(h HeldPrivilege) string {
+// satisfiedByLabel describes how a privilege is conveyed: inherited from a
+// parent securable, or assigned at this securable. It deliberately does not say
+// "directly", because the effective-permissions API does not reveal whether the
+// privilege is granted to the principal itself or to a group it belongs to.
+func satisfiedByLabel(h HeldPrivilege, securableType string) string {
 	if h.InheritedFromName != "" {
 		return fmt.Sprintf("%s inherited from %s %s", h.Name, strings.ToLower(h.InheritedFromType), h.InheritedFromName)
 	}
-	return h.Name + " granted directly"
+	return fmt.Sprintf("%s granted on this %s", h.Name, strings.ToLower(securableType))
 }
 
 // grantStatement builds the UC GRANT that confers the needed privilege. The

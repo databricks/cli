@@ -273,9 +273,9 @@ var deniedVerdict = accessexplain.Verdict{
 	Action:    "SELECT",
 	Allowed:   false,
 	Levels: []accessexplain.LevelResult{
-		{Type: "CATALOG", FullName: "prod", Needed: "USE_CATALOG", Satisfied: true, SatisfiedBy: "USE_CATALOG granted directly"},
+		{Type: "CATALOG", FullName: "prod", Needed: "USE_CATALOG", Satisfied: true, SatisfiedBy: "USE_CATALOG granted on this catalog"},
 		{Type: "SCHEMA", FullName: "prod.sales", Needed: "USE_SCHEMA", Satisfied: false},
-		{Type: "TABLE", FullName: "prod.sales.transactions", Needed: "SELECT", Satisfied: true, SatisfiedBy: "SELECT granted directly"},
+		{Type: "TABLE", FullName: "prod.sales.transactions", Needed: "SELECT", Satisfied: true, SatisfiedBy: "SELECT granted on this table"},
 	},
 	Masks: []accessexplain.Mask{{Column: "ssn", Policy: "pii_mask", Applies: true}},
 	Fixes: []string{"GRANT USE SCHEMA ON SCHEMA prod.sales TO `alice@databricks.test`"},

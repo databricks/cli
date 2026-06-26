@@ -193,18 +193,18 @@ func checkHost(s Snapshot) []Finding {
 			Detail: s.Host + " serves both account and workspace APIs.",
 		}}
 	default:
-		f := Finding{
+		// account_id on a workspace host is harmless for workspace commands (it
+		// is only used for account-scoped operations), so it is noted, not warned.
+		detail := s.Host
+		if s.AccountID != "" {
+			detail = fmt.Sprintf("%s (account_id=%s is set; used only for account-scoped commands).", s.Host, s.AccountID)
+		}
+		return []Finding{{
 			Check:  checkNameHost,
 			Level:  LevelOK,
 			Title:  "Host is a workspace URL",
-			Detail: s.Host,
-		}
-		if s.AccountID != "" {
-			f.Level = LevelWarn
-			f.Title = "account_id set on a workspace host"
-			f.Detail = fmt.Sprintf("%s is a workspace URL but account_id=%s is set; account commands will not work against a workspace host.", s.Host, s.AccountID)
-		}
-		return []Finding{f}
+			Detail: detail,
+		}}
 	}
 }
 
@@ -276,11 +276,14 @@ func checkToken(s Snapshot) []Finding {
 		expired := !s.Token.Expiry.IsZero() && !s.Token.Expiry.After(s.Now)
 		switch {
 		case expired && s.Token.HasRefresh:
+			// The cached access token expires hourly; with a refresh token this
+			// is the normal state and renews transparently on the next call, so
+			// it is not a problem worth flagging.
 			out = append(out, Finding{
 				Check:  checkNameToken,
-				Level:  LevelWarn,
-				Title:  "Access token expired but a refresh token is present",
-				Detail: fmt.Sprintf("Expired at %s. The CLI should refresh it automatically on the next call.", formatExpiry(s.Token.Expiry, s.Now)),
+				Level:  LevelOK,
+				Title:  "Cached access token expired; will auto-refresh",
+				Detail: fmt.Sprintf("Expired at %s, but a refresh token is present, so the CLI renews it on the next call.", formatExpiry(s.Token.Expiry, s.Now)),
 			})
 		case expired && !s.Token.HasRefresh:
 			out = append(out, Finding{

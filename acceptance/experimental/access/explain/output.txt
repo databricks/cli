@@ -3,9 +3,9 @@
 >>> [CLI] experimental access explain --on prod.sales.transactions --principal alice@databricks.test
 DENIED for alice@databricks.test (user) on prod.sales.transactions (SELECT)
 Why:
-  ✓ CATALOG prod: USE_CATALOG granted directly
+  ✓ CATALOG prod: USE_CATALOG granted on this catalog
   ✗ SCHEMA prod.sales: missing USE_SCHEMA
-  ✓ TABLE prod.sales.transactions: SELECT granted directly
+  ✓ TABLE prod.sales.transactions: SELECT granted on this table
 Masking:
   ⚠ column ssn is masked by policy pii_mask
 Fix:
@@ -30,7 +30,7 @@ Fix:
         }
       ],
       "satisfied": true,
-      "satisfied_by": "USE_CATALOG granted directly"
+      "satisfied_by": "USE_CATALOG granted on this catalog"
     },
     {
       "type": "SCHEMA",
@@ -49,7 +49,7 @@ Fix:
         }
       ],
       "satisfied": true,
-      "satisfied_by": "SELECT granted directly"
+      "satisfied_by": "SELECT granted on this table"
     }
   ],
   "masks": [

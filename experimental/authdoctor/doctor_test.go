@@ -173,9 +173,11 @@ func TestAnalyzeTokenStates(t *testing.T) {
 		wantFix   bool
 	}{
 		{
+			// Expired access token with a refresh token is the normal hourly
+			// state and self-heals, so it is OK, not a warning.
 			name:      "expired with refresh",
 			mutate:    func(s *Snapshot) { s.Token.Expiry = refTime.Add(-time.Hour); s.Token.HasRefresh = true },
-			wantLevel: LevelWarn,
+			wantLevel: LevelOK,
 		},
 		{
 			name:      "expired no refresh",
@@ -271,12 +273,14 @@ func TestAnalyzeAccountHost(t *testing.T) {
 }
 
 func TestAnalyzeAccountIDOnWorkspaceHost(t *testing.T) {
+	// account_id on a workspace host is harmless for workspace commands, so it
+	// is noted informationally (OK), not warned.
 	s := healthySnapshot()
 	s.AccountID = "abc-123"
 	r := Analyze(s)
 	f := findOne(t, r, checkNameHost)
-	assert.Equal(t, LevelWarn, f.Level)
-	assert.Contains(t, f.Title, "account_id set on a workspace host")
+	assert.Equal(t, LevelOK, f.Level)
+	assert.Contains(t, f.Detail, "account-scoped")
 }
 
 func TestAnalyzeAuthTypePAT(t *testing.T) {
