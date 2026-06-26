@@ -134,7 +134,9 @@ func TestBuildPlanDeliveries(t *testing.T) {
 	plan := buildPlan(targets, installer.ScopeGlobal, false, false)
 	assert.Equal(t, deliveryPlugin, plan[0].delivery)
 	assert.Equal(t, agentScopeUser, plan[0].scope)
-	assert.Equal(t, deliveryManualCursor, plan[1].delivery)
+	// Cursor (manual-only plugin) installs skills and is nudged toward the plugin.
+	assert.Equal(t, deliverySkills, plan[1].delivery)
+	assert.True(t, plan[1].agent.Plugin.ManualOnly)
 	assert.Equal(t, deliverySkills, plan[2].delivery)
 
 	// --skills-only forces skills for every agent.
@@ -142,6 +144,26 @@ func TestBuildPlanDeliveries(t *testing.T) {
 	for _, it := range skillsPlan {
 		assert.Equal(t, deliverySkills, it.delivery)
 	}
+}
+
+func TestAgentChoicesOnlyOffersActionableAgents(t *testing.T) {
+	setupTestAgents(t)
+	fakeBinsOnPath(t, "claude")
+	ctx := cmdio.MockDiscard(t.Context())
+
+	// Project scope: only Claude (plugin) and Cursor (skills) support it; the
+	// user-only plugin agents and files-only agents are not offered as choices.
+	choices := agentChoices(ctx, installer.ScopeProject, false)
+	var names []string
+	for _, c := range choices {
+		names = append(names, c.agent.Name)
+	}
+	assert.Contains(t, names, agents.NameClaudeCode)
+	assert.Contains(t, names, agents.NameCursor)
+	assert.NotContains(t, names, agents.NameCodex)
+	assert.NotContains(t, names, agents.NameOpenCode)
+	assert.NotContains(t, names, agents.NameCopilot)
+	assert.NotContains(t, names, agents.NameAntigravity)
 }
 
 func TestBuildPlanProjectScopeSkipsUserOnlyAgent(t *testing.T) {
@@ -276,7 +298,10 @@ func TestInstallPluginFirstDefault(t *testing.T) {
 	require.Len(t, *plugins, 1)
 	assert.Equal(t, agents.NameClaudeCode, (*plugins)[0].agent)
 	assert.Equal(t, agentScopeUser, (*plugins)[0].scope)
-	assert.Empty(t, *skills, "plugin agents must not get raw skills by default")
+	// Claude (a real plugin agent) must not get raw skills, but Cursor (manual-only
+	// plugin) does, plus a plugin recommendation.
+	require.Len(t, *skills, 1)
+	assert.Equal(t, []string{agents.NameCursor}, (*skills)[0].agents)
 }
 
 func TestInstallInteractivePickerAndConfirm(t *testing.T) {
