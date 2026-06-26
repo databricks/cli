@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 )
 
@@ -96,6 +97,20 @@ func marketplaceAddArgs(spec *agents.PluginSpec) []string {
 	return []string{"plugin", "marketplace", "add", spec.Source}
 }
 
+// marketplaceRegistered reports whether the named marketplace is already listed
+// by the agent's plugin CLI. On any uncertainty (command unsupported, error) it
+// returns true, so we never claim to have added a marketplace we didn't, which
+// keeps uninstall from de-registering a marketplace another plugin may share.
+// The `plugin marketplace list` output shape is pending per-agent verification;
+// until then the conservative default applies.
+func marketplaceRegistered(ctx context.Context, bin, marketplace string) bool {
+	out, err := runAgentCmd(ctx, pluginProbeTimeout, []string{bin, "plugin", "marketplace", "list"})
+	if err != nil {
+		return true
+	}
+	return strings.Contains(out, marketplace)
+}
+
 // marketplaceRemoveArgs builds the `plugin marketplace remove <name>` argv (sans binary).
 func marketplaceRemoveArgs(spec *agents.PluginSpec) []string {
 	return []string{"plugin", "marketplace", "remove", spec.Marketplace}
@@ -173,13 +188,23 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 		return PluginRecord{}, err
 	}
 
-	// Register the marketplace. Record InstalledMarketplace only when our add
-	// succeeded, so uninstall never de-registers a marketplace that was already
-	// present (and may be shared by another plugin).
+	// Register the marketplace. We only record InstalledMarketplace (and thus
+	// later de-register on uninstall) when the marketplace was absent before and
+	// our add succeeded, so we never remove a marketplace another plugin shares.
+	// On any uncertainty marketplaceRegistered returns true, keeping us off the
+	// de-register path.
+	alreadyPresent := marketplaceRegistered(ctx, bin, agent.Plugin.Marketplace)
 	_, addErr := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceAddArgs(agent.Plugin)))
-	installedMarketplace := addErr == nil
+	installedMarketplace := addErr == nil && !alreadyPresent
 
 	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, pluginInstallArgs(agent, nativeScope))); err != nil {
+		// Roll back a marketplace we just added so a failed install doesn't
+		// leave an orphaned, untracked marketplace registration behind.
+		if installedMarketplace {
+			if _, rmErr := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceRemoveArgs(agent.Plugin))); rmErr != nil {
+				log.Warnf(ctx, "%s plugin install failed and the marketplace could not be de-registered: %v", agent.DisplayName, rmErr)
+			}
+		}
 		return PluginRecord{}, &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
 	}
 

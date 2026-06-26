@@ -7,10 +7,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/env"
 )
+
+// clearFileRecords removes all file-provenance entries belonging to a skill
+// (keys are "<skill>/<file>"), so refetching or removing a skill never leaves
+// orphaned records behind.
+func clearFileRecords(files map[string]FileRecord, skillName string) {
+	prefix := skillName + "/"
+	for path := range files {
+		if strings.HasPrefix(path, prefix) {
+			delete(files, path)
+		}
+	}
+}
 
 const stateFileName = ".state.json"
 

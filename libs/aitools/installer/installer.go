@@ -255,6 +255,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// Accumulate file provenance for skills we (re)fetch this run. Skipped
 	// (already-installed) skills keep their existing records via the merge below.
 	fileRecords := map[string]FileRecord{}
+	var refetched []string
 
 	for _, name := range skillNames {
 		meta := targetSkills[name]
@@ -274,6 +275,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 			return err
 		}
 		maps.Copy(fileRecords, records)
+		refetched = append(refetched, name)
 	}
 
 	// Save state. Merge into existing state (loaded above) so skills from
@@ -301,6 +303,11 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	for name, meta := range targetSkills {
 		state.Skills[name] = meta.Version
 		state.RepoDirs[name] = meta.RepoDir
+	}
+	// Drop stale provenance for refetched skills before recording the fresh set,
+	// so files removed/renamed in a new version don't leave orphaned records.
+	for _, name := range refetched {
+		clearFileRecords(state.Files, name)
 	}
 	maps.Copy(state.Files, fileRecords)
 	if err := SaveState(baseDir, state); err != nil {

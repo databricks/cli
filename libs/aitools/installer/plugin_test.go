@@ -120,12 +120,28 @@ func TestInstallPluginForAgentMarketplaceAlreadyPresent(t *testing.T) {
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
-	// marketplace add fails (already present), but install still succeeds.
-	stub.WithFailureFor("plugin marketplace add", errors.New("already added"))
+	// The marketplace is already registered, so even though `add` succeeds we must
+	// not claim ownership (and must not de-register it on uninstall).
+	stub.WithStdoutFor("plugin marketplace list", "databricks-agent-skills\n")
 
 	rec, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
 	require.NoError(t, err)
-	assert.False(t, rec.InstalledMarketplace, "we did not add the marketplace, so we must not record that we did")
+	assert.False(t, rec.InstalledMarketplace, "a pre-existing marketplace must not be recorded as ours")
+}
+
+func TestInstallPluginRollsBackMarketplaceOnInstallFailure(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	// Marketplace absent (empty list) so we add it; then the plugin install fails.
+	stub.WithFailureFor("plugin install", errors.New("boom"))
+
+	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
+	var be *BlockedError
+	require.ErrorAs(t, err, &be)
+	assert.Equal(t, ReasonInstallFailed, be.Reason)
+	// We added the marketplace, so a failed install must de-register it again.
+	assert.Contains(t, stub.Commands(), "claude plugin marketplace remove databricks-agent-skills")
 }
 
 func TestUpdatePluginForAgentCodexTwoStep(t *testing.T) {

@@ -195,6 +195,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		meta := manifest.Skills[change.Name]
 		state.Skills[change.Name] = change.NewVersion
 		state.RepoDirs[change.Name] = meta.RepoDir
+		// Drop stale provenance before recording the refetched files, so a file
+		// removed/renamed in the new version doesn't leave an orphaned record.
+		clearFileRecords(state.Files, change.Name)
 	}
 	maps.Copy(state.Files, fileRecords)
 	if err := SaveState(baseDir, state); err != nil {

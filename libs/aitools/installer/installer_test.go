@@ -333,6 +333,37 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 }
 
+func TestInstallPurgesStaleFileRecordsOnRefetch(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	agent := testAgent(tmp)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+
+	// v1: the skill ships two files.
+	m1 := &Manifest{Version: "1", Skills: map[string]SkillMeta{
+		"databricks-sql": {Version: "0.1.0", Files: []string{"a.md", "b.md"}},
+	}}
+	require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: m1}, []*agents.Agent{agent}, InstallOptions{SpecificSkills: []string{"databricks-sql"}}))
+	st, err := LoadState(globalDir)
+	require.NoError(t, err)
+	require.Contains(t, st.Files, "databricks-sql/a.md")
+	require.Contains(t, st.Files, "databricks-sql/b.md")
+
+	// v2 drops b.md. Refetching must purge the stale record.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+	m2 := &Manifest{Version: "2", Skills: map[string]SkillMeta{
+		"databricks-sql": {Version: "0.2.0", Files: []string{"a.md"}},
+	}}
+	require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: m2}, []*agents.Agent{agent}, InstallOptions{SpecificSkills: []string{"databricks-sql"}}))
+	st2, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Contains(t, st2.Files, "databricks-sql/a.md")
+	assert.NotContains(t, st2.Files, "databricks-sql/b.md")
+}
+
 func TestInstallSkillForSingleWritesState(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
