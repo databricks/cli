@@ -58,10 +58,6 @@ tools/testmask/testmask
 # Release artifacts
 dist/
 
-# Terraform binary + provider mirror provisioned by acceptance/install_terraform.py
-# for the bundle/fuzz parity tests (see Taskfile `test-fuzz`).
-/build/
-
 # Local development notes, tmp
 /pr-*
 /tmp/

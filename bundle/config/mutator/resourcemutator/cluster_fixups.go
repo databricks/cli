@@ -94,9 +94,6 @@ func prepareJobSettingsForUpdate(js *jobs.JobSettings) {
 	for _, task := range js.Tasks {
 		if task.NewCluster != nil {
 			ModifyRequestOnInstancePool(task.NewCluster)
-			// Match terraform, which force-sends num_workers:0 for single-node
-			// task clusters too, not just shared job_clusters (DECO-25361).
-			initializeNumWorkers(task.NewCluster)
 		}
 	}
 	for ind := range js.JobClusters {
