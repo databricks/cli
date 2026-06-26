@@ -1,5 +1,4 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/missing-role-[UNIQUE_NAME]/default/files...
-Deploying resources...
 Error: cannot create resources.postgres_databases.my_database: Field 'spec.role' cannot be empty (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases?database_id=my-database
@@ -7,7 +6,6 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Field 'spec.role' cannot be empty
 
-Updating deployment state...
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -24,5 +22,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/missing-role-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

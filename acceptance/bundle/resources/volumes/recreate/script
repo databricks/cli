@@ -6,7 +6,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle validate
-trace $CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 
 title "Assert the volume is created successfully"
 CATALOG_NAME="main"
@@ -22,4 +22,4 @@ title "Recreation of the volume without --auto-approve should fail since prompti
 trace errcode $CLI bundle deploy --var=schema_name='${resources.schemas.schema2.name}'
 
 title "Successfully recreate the volume with --auto-approve"
-trace $CLI bundle deploy --var=schema_name='${resources.schemas.schema2.name}' --auto-approve
+trace $CLI bundle deploy --var=schema_name='${resources.schemas.schema2.name}' --auto-approve -q 2>&1 | grep -v '^Deploy:'

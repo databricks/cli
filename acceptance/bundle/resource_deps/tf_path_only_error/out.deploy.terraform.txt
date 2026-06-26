@@ -2,6 +2,7 @@ Warning: "resources.jobs.src.always_running": Terraform-only field; this referen
   in databricks.yml:10:13
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.dst
+created jobs.src
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

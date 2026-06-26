@@ -32,9 +32,10 @@ Building python_artifact...
 Building python_artifact...
 Uploading .databricks/bundle/dev/patched_wheels/python_artifact_project_name_[UNIQUE_NAME]/project_name_[UNIQUE_NAME]-0.0.1+[NUMID]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.sample_job
+created pipelines.project_name_[UNIQUE_NAME]_etl
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle summary -t dev
 Name: project_name_[UNIQUE_NAME]
@@ -98,8 +99,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.
 
 >>> [CLI] bundle validate -t prod
 Name: project_name_[UNIQUE_NAME]
@@ -290,9 +290,12 @@ Building python_artifact...
 Building python_artifact...
 Uploading dist/project_name_[UNIQUE_NAME]-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.sample_job
+created jobs.sample_job.permissions
+created pipelines.project_name_[UNIQUE_NAME]_etl
+created pipelines.project_name_[UNIQUE_NAME]_etl.permissions
+
+Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle summary -t prod
 Name: project_name_[UNIQUE_NAME]
@@ -496,5 +499,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

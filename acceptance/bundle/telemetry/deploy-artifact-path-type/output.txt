@@ -1,13 +1,11 @@
 
 >>> [CLI] bundle deploy -t one
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/one/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy -t two
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/two/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> cat out.requests.txt
 {

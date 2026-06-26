@@ -34,12 +34,18 @@ Workspace:
 
 Validation OK!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/dev/files...
-Deploying resources...
-Deployment complete!
-Deleting files...
-Destroy complete!
+created jobs.sample_job
+created pipelines.X[UNIQUE_NAME]_etl
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+
+Destroy: 2 deleted.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/prod/files...
-Deploying resources...
-Deployment complete!
-Deleting files...
-Destroy complete!
+created jobs.sample_job
+created jobs.sample_job.permissions
+created pipelines.X[UNIQUE_NAME]_etl
+created pipelines.X[UNIQUE_NAME]_etl.permissions
+
+Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
+
+Destroy: 2 deleted.

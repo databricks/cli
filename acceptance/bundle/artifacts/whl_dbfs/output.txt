@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.test_job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Expecting to find no wheels
 >>> errcode find.py --expect 0 whl

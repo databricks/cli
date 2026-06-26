@@ -13,6 +13,9 @@ No active deployment found to destroy!
 >>> as-test-sp [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[UUID]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
+created jobs.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 Updating deployment state...
 Deployment complete!
 

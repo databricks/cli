@@ -1,5 +1,4 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
 Error: terraform apply: exit status 1
 
 Error: cannot create job: INJECTED
@@ -10,4 +9,3 @@ Error: cannot create job: INJECTED
 
 
 
-Updating deployment state...

@@ -28,9 +28,10 @@ Validation OK!
 >>> [CLI] bundle deploy
 Uploading ../lib/test.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.test
+created pipelines.pipeline
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Check that the job libraries are uploaded and the path is correct in the job
 >>> cat out.requests.txt

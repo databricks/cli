@@ -7,9 +7,10 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.bar
+created pipelines.foo
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //jobs //pipelines
 
@@ -33,9 +34,10 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   recreate resources.pipelines.foo
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated jobs.bar
+recreated pipelines.foo
+
+Deploy: 1 created, 1 changed, 1 deleted, 0 unchanged.
 
 >>> print_requests.py //jobs //pipelines
 
@@ -96,9 +98,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 2 unchanged.
 
 >>> print_requests.py //jobs //pipelines
 
@@ -113,8 +113,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.
 
 >>> print_requests.py //jobs //pipelines
 {

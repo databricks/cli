@@ -156,6 +156,10 @@ type Bundle struct {
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
 
+	// Quiet suppresses the per-resource lines in plan/deploy output, leaving
+	// only the summary line. Set via the --quiet flag.
+	Quiet bool
+
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.
 	// Used by config-remote-sync: a user may modify resource paths remotely (e.g.,

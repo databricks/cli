@@ -2,9 +2,9 @@
 === Test auto-approve pipelines destroy
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.my_pipeline
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> errcode [CLI] pipelines destroy
@@ -24,5 +24,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

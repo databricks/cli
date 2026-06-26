@@ -1,13 +1,12 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/engine-from-config/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_1
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 === State files after deploy ===
 .databricks/bundle/default/resources.json
 
 >>> [CLI] bundle deployment unbind job_1
-Updating deployment state...
 === State files after unbind ===
 .databricks/bundle/default/resources.json

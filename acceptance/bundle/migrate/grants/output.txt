@@ -1,9 +1,14 @@
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created registered_models.my_registered_model
+created registered_models.my_registered_model.grants
+created schemas.my_schema
+created schemas.my_schema.grants
+created volumes.my_volume
+created volumes.my_volume.grants
+
+Deploy: 6 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deployment migrate
 Success! Migrated 6 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
@@ -20,9 +25,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 6 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 6 unchanged.
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 6 unchanged
@@ -34,9 +37,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 6 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 6 unchanged.
 
 >>> print_requests.py --get //unity-catalog/permissions
 

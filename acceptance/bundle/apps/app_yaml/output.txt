@@ -15,9 +15,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created apps.myapp
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> jq select(.path | test("app.yml")) out.requests.txt
 
@@ -27,8 +27,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.
 
 >>> print_requests.py //apps
 {

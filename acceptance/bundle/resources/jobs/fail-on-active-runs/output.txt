@@ -11,17 +11,15 @@ Validation OK!
 === deploy empty bundle
 >>> [CLI] bundle deploy --fail-on-active-runs
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-active-runs-test-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Remove .databricks directory to simulate a fresh deployment
 === deploy empty bundle again
 >>> [CLI] bundle deploy --fail-on-active-runs
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-active-runs-test-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -29,5 +27,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-active-runs-test-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

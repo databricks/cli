@@ -2,9 +2,10 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created vector_search_endpoints.my_endpoint
+created vector_search_endpoints.my_endpoint.permissions
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //vector-search/endpoints //permissions
 
@@ -25,9 +26,10 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated vector_search_endpoints.my_endpoint
+updated vector_search_endpoints.my_endpoint.permissions
+
+Deploy: 0 created, 2 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //vector-search/endpoints //permissions
 
@@ -43,5 +45,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

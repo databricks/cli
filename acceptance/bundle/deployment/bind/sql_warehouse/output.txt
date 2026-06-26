@@ -1,6 +1,5 @@
 
 >>> [CLI] bundle deployment bind sql_warehouse1 [SQL-WAREHOUSE-ID] --auto-approve
-Updating deployment state...
 Successfully bound sql_warehouse with an id '[SQL-WAREHOUSE-ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
@@ -17,7 +16,6 @@ Resources:
       URL:  [DATABRICKS_URL]/sql/warehouses/[SQL-WAREHOUSE-ID]?w=[NUMID]
 
 >>> [CLI] bundle deployment unbind sql_warehouse1
-Updating deployment state...
 
 >>> [CLI] bundle summary
 Name: test-bundle

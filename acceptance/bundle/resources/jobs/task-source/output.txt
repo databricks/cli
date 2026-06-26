@@ -5,9 +5,10 @@ Warning: invalid value "github" for enum field. Valid values are [awsCodeCommit 
   in databricks.yml:8:19
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/task-source/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.git_job
+created jobs.workspace_job
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body out.requests.txt
 
@@ -20,9 +21,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/task-source/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated jobs.git_job
+
+Deploy: 0 created, 1 changed, 0 deleted, 1 unchanged.
 
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="git_job") | .body out.requests.txt
 

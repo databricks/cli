@@ -2,9 +2,9 @@
 === Test --var flag usage
 >>> [CLI] pipelines deploy --var=catalog=custom_catalog --var=schema=custom_schema --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Verify: Check that variables were substituted correctly
