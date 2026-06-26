@@ -1,3 +1,6 @@
+# Isolate HOME: this test reconciles the whole install state, so it must not
+# share ~/.databricks with the sibling aitools acceptance tests.
+sethome home
 # Agent detection needs ~/.claude; prefer USERPROFILE on Windows.
 mkdir -p "${USERPROFILE:-$HOME}/.claude"
 

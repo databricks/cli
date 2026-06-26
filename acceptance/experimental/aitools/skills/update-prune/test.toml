@@ -3,7 +3,7 @@ Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
 Env.DATABRICKS_SKILLS_REF = "test-ref"
 
 Ignore = [
-    ".databricks/aitools/skills/.state.json",
+    "home",
 ]
 
 [EnvMatrix]
