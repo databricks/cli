@@ -1,0 +1,77 @@
+
+=== doctor --all diagnoses every profile (text)
+>>> [CLI] experimental auth doctor --all
+Profile "ws"  host=[DATABRICKS_URL]  auth=pat
+✓ Resolved profile "ws" from --all
+    host=[DATABRICKS_URL], auth_type=pat
+✓ Host is a workspace URL
+    [DATABRICKS_URL]
+⚠ Token does not look like a Databricks PAT
+    Databricks personal access tokens start with "dapi".
+Overall: WARNING
+
+Profile "acct-noid"  host=https://accounts.cloud.databricks.test  auth=pat
+✓ Resolved profile "acct-noid" from --all
+    host=https://accounts.cloud.databricks.test, auth_type=pat
+✗ Account console host without an account id
+    https://accounts.cloud.databricks.test is the account console, but no account_id is set. Account commands need account_id; workspace commands need a workspace URL.
+    Fix: databricks auth login --host <account-console-url> --account-id <account-id>
+✓ Personal access token is present
+Overall: ERROR
+
+=== doctor --all (json)
+>>> [CLI] experimental auth doctor --all --output json
+[
+  {
+    "profile": "ws",
+    "host": "[DATABRICKS_URL]",
+    "auth_type": "pat",
+    "overall": "warn",
+    "findings": [
+      {
+        "check": "resolution",
+        "level": "ok",
+        "title": "Resolved profile \"ws\" from --all",
+        "detail": "host=[DATABRICKS_URL], auth_type=pat"
+      },
+      {
+        "check": "host",
+        "level": "ok",
+        "title": "Host is a workspace URL",
+        "detail": "[DATABRICKS_URL]"
+      },
+      {
+        "check": "auth_type",
+        "level": "warn",
+        "title": "Token does not look like a Databricks PAT",
+        "detail": "Databricks personal access tokens start with \"dapi\"."
+      }
+    ]
+  },
+  {
+    "profile": "acct-noid",
+    "host": "https://accounts.cloud.databricks.test",
+    "auth_type": "pat",
+    "overall": "error",
+    "findings": [
+      {
+        "check": "resolution",
+        "level": "ok",
+        "title": "Resolved profile \"acct-noid\" from --all",
+        "detail": "host=https://accounts.cloud.databricks.test, auth_type=pat"
+      },
+      {
+        "check": "host",
+        "level": "error",
+        "title": "Account console host without an account id",
+        "detail": "https://accounts.cloud.databricks.test is the account console, but no account_id is set. Account commands need account_id; workspace commands need a workspace URL.",
+        "fix": "databricks auth login --host \u003caccount-console-url\u003e --account-id \u003caccount-id\u003e"
+      },
+      {
+        "check": "auth_type",
+        "level": "ok",
+        "title": "Personal access token is present"
+      }
+    ]
+  }
+]

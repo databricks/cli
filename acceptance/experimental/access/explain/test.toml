@@ -1,0 +1,35 @@
+Ignore = [
+    "home",
+]
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+
+# The effective-permissions and policies endpoints are not modeled by the
+# testserver, so stub them. The principal holds USE_CATALOG and SELECT but not
+# USE_SCHEMA, so access is denied at the schema level.
+
+# Principal existence check: alice resolves to a user.
+[[Server]]
+Pattern = "GET /api/2.0/preview/scim/v2/Users"
+Response.Body = '{"Resources":[{"userName":"alice@databricks.test","id":"100"}],"totalResults":1,"startIndex":1,"itemsPerPage":1}'
+
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/effective-permissions/CATALOG/prod"
+Response.Body = '{"privilege_assignments":[{"principal":"alice@databricks.test","privileges":[{"privilege":"USE_CATALOG"}]}]}'
+
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/effective-permissions/SCHEMA/prod.sales"
+Response.Body = '{"privilege_assignments":[]}'
+
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/effective-permissions/TABLE/prod.sales.transactions"
+Response.Body = '{"privilege_assignments":[{"principal":"alice@databricks.test","privileges":[{"privilege":"SELECT"}]}]}'
+
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/policies/TABLE/prod.sales.transactions"
+Response.Body = '{"policies":[{"name":"pii_mask","policy_type":"POLICY_TYPE_COLUMN_MASK","column_mask":{"function_name":"main.default.mask_ssn","on_column":"ssn"},"to_principals":[]}]}'
+
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/tables/prod.sales.transactions"
+Response.Body = '{"full_name":"prod.sales.transactions","columns":[{"name":"ssn"},{"name":"amount"}]}'

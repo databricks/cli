@@ -1,0 +1,6 @@
+Ignore = [
+    "home",
+]
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []

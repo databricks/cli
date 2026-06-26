@@ -1,0 +1,66 @@
+
+=== access explain: DENIED (has SELECT but missing USE SCHEMA), with mask and GRANT fix
+>>> [CLI] experimental access explain --on prod.sales.transactions --principal alice@databricks.test
+DENIED for alice@databricks.test (user) on prod.sales.transactions (SELECT)
+Why:
+  ✓ CATALOG prod: USE_CATALOG granted directly
+  ✗ SCHEMA prod.sales: missing USE_SCHEMA
+  ✓ TABLE prod.sales.transactions: SELECT granted directly
+Masking:
+  ⚠ column ssn is masked by policy pii_mask
+Fix:
+  GRANT USE SCHEMA ON SCHEMA prod.sales TO `alice@databricks.test`
+
+=== access explain (json)
+>>> [CLI] experimental access explain --on prod.sales.transactions --principal alice@databricks.test --output json
+{
+  "principal": "alice@databricks.test",
+  "principal_kind": "user",
+  "securable": "prod.sales.transactions",
+  "action": "SELECT",
+  "allowed": false,
+  "levels": [
+    {
+      "type": "CATALOG",
+      "full_name": "prod",
+      "needed": "USE_CATALOG",
+      "held": [
+        {
+          "name": "USE_CATALOG"
+        }
+      ],
+      "satisfied": true,
+      "satisfied_by": "USE_CATALOG granted directly"
+    },
+    {
+      "type": "SCHEMA",
+      "full_name": "prod.sales",
+      "needed": "USE_SCHEMA",
+      "held": null,
+      "satisfied": false
+    },
+    {
+      "type": "TABLE",
+      "full_name": "prod.sales.transactions",
+      "needed": "SELECT",
+      "held": [
+        {
+          "name": "SELECT"
+        }
+      ],
+      "satisfied": true,
+      "satisfied_by": "SELECT granted directly"
+    }
+  ],
+  "masks": [
+    {
+      "column": "ssn",
+      "policy": "pii_mask",
+      "function": "main.default.mask_ssn",
+      "applies": true
+    }
+  ],
+  "fixes": [
+    "GRANT USE SCHEMA ON SCHEMA prod.sales TO `alice@databricks.test`"
+  ]
+}

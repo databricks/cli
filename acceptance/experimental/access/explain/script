@@ -1,0 +1,7 @@
+sethome "./home"
+
+title "access explain: DENIED (has SELECT but missing USE SCHEMA), with mask and GRANT fix"
+trace $CLI experimental access explain --on prod.sales.transactions --principal alice@databricks.test
+
+title "access explain (json)"
+trace $CLI experimental access explain --on prod.sales.transactions --principal alice@databricks.test --output json

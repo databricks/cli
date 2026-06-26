@@ -1,0 +1,28 @@
+sethome "./home"
+
+# Capture the test server creds, then resolve auth purely from the config file
+# so the diagnosis is deterministic (no env overrides, no network probe under
+# --all). Pin the bundle root at the cwd (no databricks.yml) so the bundle
+# walk-up does not pick up a stray bundle on the host running the test.
+HOST="$DATABRICKS_HOST"
+TOKEN="$DATABRICKS_TOKEN"
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+export DATABRICKS_BUNDLE_ROOT="$PWD"
+
+cat > "./home/.databrickscfg" <<EOF
+[ws]
+host  = $HOST
+token = $TOKEN
+
+[acct-noid]
+host  = https://accounts.cloud.databricks.test
+token = dapifaketoken1234
+EOF
+
+title "doctor --all diagnoses every profile (text)"
+trace $CLI experimental auth doctor --all
+
+title "doctor --all (json)"
+trace $CLI experimental auth doctor --all --output json
