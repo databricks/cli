@@ -3,8 +3,11 @@ package aitools
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -58,7 +61,10 @@ func NewVersionCmd() *cobra.Command {
 				if bothScopes {
 					label = "Skills (global)"
 				}
-				printVersionLine(ctx, label, globalState, latestRef)
+				if len(globalState.Skills) > 0 {
+					printVersionLine(ctx, label, globalState, latestRef)
+				}
+				printPluginLines(ctx, globalState)
 			}
 
 			if projectState != nil {
@@ -66,7 +72,10 @@ func NewVersionCmd() *cobra.Command {
 				if bothScopes {
 					label = "Skills (project)"
 				}
-				printVersionLine(ctx, label, projectState, latestRef)
+				if len(projectState.Skills) > 0 {
+					printVersionLine(ctx, label, projectState, latestRef)
+				}
+				printPluginLines(ctx, projectState)
 			}
 
 			return nil
@@ -74,6 +83,23 @@ func NewVersionCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// printPluginLines prints one line per plugin recorded in the scope's state.
+func printPluginLines(ctx context.Context, state *installer.InstallState) {
+	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
+		rec := state.Plugins[name]
+		cmdio.LogString(ctx, fmt.Sprintf("  Plugin (%s): v%s", agentDisplayName(name), rec.Version))
+	}
+}
+
+// agentDisplayName returns the agent's display name, falling back to its
+// registry name when it isn't a known agent.
+func agentDisplayName(name string) string {
+	if agent := agents.ByName(name); agent != nil {
+		return agent.DisplayName
+	}
+	return name
 }
 
 // printVersionLine prints a single version line for a scope.

@@ -12,6 +12,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -65,12 +66,34 @@ func NewListCmd() *cobra.Command {
 
 // listOutput is the structured representation of `aitools list` used by both
 // text rendering and `--output json` consumers. The JSON shape is part of
-// the public CLI contract; do not break field names or types.
+// the public CLI contract; do not break field names or types. The agents field
+// is additive (omitempty) and does not affect the existing skills/summary shape.
 type listOutput struct {
 	Release string                  `json:"release"`
 	Skills  []skillEntry            `json:"skills"`
 	Summary map[string]scopeSummary `json:"summary"`
+	Agents  []agentEntry            `json:"agents,omitempty"`
 }
+
+// agentEntry reports per-agent plugin state for `list`.
+type agentEntry struct {
+	Name   string      `json:"name"`
+	Plugin *pluginInfo `json:"plugin,omitempty"`
+	Status string      `json:"status"`
+}
+
+type pluginInfo struct {
+	Version string `json:"version,omitempty"`
+	// Managed is true when the CLI installed and tracks the plugin; false for
+	// agents whose plugin is added manually (Cursor).
+	Managed bool `json:"managed"`
+}
+
+const (
+	statusUpToDate        = "up_to_date"
+	statusUpdateAvailable = "update_available"
+	statusManualAddPlugin = "manual_add_plugin"
+)
 
 type skillEntry struct {
 	Name          string            `json:"name"`
@@ -164,7 +187,56 @@ func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
 		out.Summary[installer.ScopeProject] = scopeSummary{Installed: projectCount, Total: len(names), loaded: projectState != nil}
 	}
 
+	out.Agents = buildAgentEntries(ctx, out.Release, globalState, projectState)
+
 	return out, nil
+}
+
+// buildAgentEntries reports the real per-agent plugin state: each plugin agent
+// with a recorded install, plus Cursor (which is added manually) when present.
+func buildAgentEntries(ctx context.Context, release string, states ...*installer.InstallState) []agentEntry {
+	var entries []agentEntry
+	for i := range agents.Registry {
+		a := &agents.Registry[i]
+		if a.Plugin == nil {
+			continue
+		}
+
+		if rec, ok := pluginRecordFor(a.Name, states...); ok {
+			status := statusUpToDate
+			if rec.Version != release {
+				status = statusUpdateAvailable
+			}
+			entries = append(entries, agentEntry{
+				Name:   a.Name,
+				Plugin: &pluginInfo{Version: rec.Version, Managed: true},
+				Status: status,
+			})
+			continue
+		}
+
+		if a.Plugin.ManualOnly && (a.Detected(ctx) || a.HasBinary(ctx)) {
+			entries = append(entries, agentEntry{
+				Name:   a.Name,
+				Plugin: &pluginInfo{Managed: false},
+				Status: statusManualAddPlugin,
+			})
+		}
+	}
+	return entries
+}
+
+// pluginRecordFor returns the first plugin record for an agent across the given
+// scope states.
+func pluginRecordFor(name string, states ...*installer.InstallState) (installer.PluginRecord, bool) {
+	for _, st := range states {
+		if st != nil {
+			if rec, ok := st.Plugins[name]; ok {
+				return rec, true
+			}
+		}
+	}
+	return installer.PluginRecord{}, false
 }
 
 // loadStateForScope returns the install state for the named scope when the
@@ -215,6 +287,29 @@ func renderListText(ctx context.Context, out listOutput, scope string) {
 	cmdio.LogString(ctx, buf.String())
 
 	cmdio.LogString(ctx, summaryLine(out, scope))
+
+	if len(out.Agents) > 0 {
+		cmdio.LogString(ctx, "")
+		var ab strings.Builder
+		atw := tabwriter.NewWriter(&ab, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(atw, "  AGENT\tSTATUS")
+		for _, a := range out.Agents {
+			fmt.Fprintf(atw, "  %s\t%s\n", a.Name, agentStatusLabel(a))
+		}
+		atw.Flush()
+		cmdio.LogString(ctx, ab.String())
+	}
+}
+
+func agentStatusLabel(a agentEntry) string {
+	switch a.Status {
+	case statusManualAddPlugin:
+		return "plugin · add manually with /add-plugin"
+	case statusUpdateAvailable:
+		return "plugin · v" + a.Plugin.Version + " · update available"
+	default:
+		return "plugin · v" + a.Plugin.Version + " · up to date"
+	}
 }
 
 func installedStatusFromEntry(s skillEntry, bothScopes bool) string {
