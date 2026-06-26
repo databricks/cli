@@ -45,6 +45,10 @@ func TestRemoveLegacyRawSkills(t *testing.T) {
 	// thirdparty: no recorded provenance -> kept.
 	require.NoError(t, os.MkdirAll(filepath.Join(agentDir, "thirdparty"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(agentDir, "thirdparty", "SKILL.md"), []byte("tp"), 0o644))
+	// delta: recorded file matches but the user added an extra file -> kept.
+	require.NoError(t, os.MkdirAll(filepath.Join(agentDir, "delta"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(agentDir, "delta", "SKILL.md"), []byte("delta-content"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(agentDir, "delta", "extra.md"), []byte("mine"), 0o644))
 
 	require.NoError(t, SaveState(baseDir, &InstallState{
 		SchemaVersion: schemaVersionV2,
@@ -52,6 +56,7 @@ func TestRemoveLegacyRawSkills(t *testing.T) {
 			"alpha/SKILL.md": {SHA256: sha("alpha")},
 			"beta/SKILL.md":  {SHA256: sha("beta-content")},
 			"gamma/SKILL.md": {SHA256: sha("gamma-original")},
+			"delta/SKILL.md": {SHA256: sha("delta-content")},
 		},
 	}))
 
@@ -67,6 +72,7 @@ func TestRemoveLegacyRawSkills(t *testing.T) {
 	assertGone(t, filepath.Join(agentDir, "beta"))
 	assertExists(t, filepath.Join(agentDir, "gamma"))
 	assertExists(t, filepath.Join(agentDir, "thirdparty"))
+	assertExists(t, filepath.Join(agentDir, "delta"))
 }
 
 func assertGone(t *testing.T, path string) {

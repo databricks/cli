@@ -70,7 +70,9 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 		for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 			agent := agents.ByName(name)
 			if agent == nil {
-				delete(state.Plugins, name)
+				// We can't tear down an agent we don't know; keep the record (and
+				// the state file) rather than silently dropping a live plugin.
+				log.Warnf(ctx, "Leaving plugin record for unknown agent %q; remove its plugin manually", name)
 				continue
 			}
 			rec := state.Plugins[name]

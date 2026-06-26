@@ -244,6 +244,56 @@ func TestUninstallKeepMarketplace(t *testing.T) {
 	}
 }
 
+func TestUninstallKeepsUnknownAgentRecord(t *testing.T) {
+	setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Plugins: map[string]PluginRecord{
+			"mystery-agent": {Marketplace: "databricks-agent-skills", Plugin: "databricks"},
+		},
+	}))
+
+	// An unknown agent can't be torn down; its record (and the state file) must be
+	// kept rather than silently dropped while the plugin may still exist.
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	require.NotNil(t, st)
+	assert.Contains(t, st.Plugins, "mystery-agent")
+}
+
+func TestUninstallClearsRecordWhenMarketplaceRemoveFails(t *testing.T) {
+	setupTestHome(t)
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	// The plugin uninstall succeeds; only the marketplace de-register fails.
+	stub.WithFailureFor("plugin marketplace remove", errors.New("boom"))
+	ctx = cmdio.MockDiscard(ctx)
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Plugins: map[string]PluginRecord{
+			agents.NameClaudeCode: {Marketplace: "databricks-agent-skills", Plugin: "databricks", InstalledMarketplace: true},
+		},
+	}))
+
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+
+	// The plugin is gone, so the record is cleared even though the marketplace
+	// de-register failed (otherwise a retry would be stuck).
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Nil(t, st)
+}
+
 func TestUpdateInstalledPlugins(t *testing.T) {
 	setupTestHome(t)
 	stubAgentLookPath(t, true)

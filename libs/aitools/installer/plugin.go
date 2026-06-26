@@ -240,6 +240,12 @@ func UpdatePluginForAgent(ctx context.Context, agent *agents.Agent) error {
 // UninstallPluginForAgent removes the plugin through the agent's own CLI, and
 // de-registers the marketplace only when this CLI registered it and the caller
 // did not ask to keep it. It never removes a marketplace another plugin shares.
+//
+// A returned error means the plugin itself could not be removed, so the caller
+// should keep its state record. Once the plugin is removed, a failure to
+// de-register the marketplace is only warned about (not returned): the plugin is
+// gone, so the record is cleared, and the leftover marketplace registration is
+// harmless and can be removed manually.
 func UninstallPluginForAgent(ctx context.Context, agent *agents.Agent, rec PluginRecord, keepMarketplace bool) error {
 	if agent.Plugin == nil || agent.Plugin.ManualOnly {
 		return &BlockedError{Agent: agent.Name, Reason: ReasonManualOnly}
@@ -253,7 +259,7 @@ func UninstallPluginForAgent(ctx context.Context, agent *agents.Agent, rec Plugi
 	}
 	if rec.InstalledMarketplace && !keepMarketplace {
 		if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceRemoveArgs(agent.Plugin))); err != nil {
-			return fmt.Errorf("removed plugin but failed to de-register marketplace for %s: %w", agent.DisplayName, err)
+			log.Warnf(ctx, "Removed the %s plugin but could not de-register its marketplace (remove it manually if needed): %v", agent.DisplayName, stderrOf(err))
 		}
 	}
 	return nil
