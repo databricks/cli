@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -89,8 +88,17 @@ func NewVersionCmd() *cobra.Command {
 func printPluginLines(ctx context.Context, state *installer.InstallState) {
 	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 		rec := state.Plugins[name]
-		cmdio.LogString(ctx, fmt.Sprintf("  Plugin (%s): v%s", agentDisplayName(name), rec.Version))
+		cmdio.LogString(ctx, fmt.Sprintf("  Plugin (%s): %s", agentDisplayName(name), versionToken(rec.Version)))
 	}
+}
+
+// versionToken renders a skills/plugin version for output: the "latest" sentinel
+// is shown as-is; a concrete version gets a leading "v".
+func versionToken(v string) string {
+	if v == "latest" {
+		return "latest"
+	}
+	return "v" + v
 }
 
 // agentDisplayName returns the agent's display name, falling back to its
@@ -104,25 +112,25 @@ func agentDisplayName(name string) string {
 
 // printVersionLine prints a single version line for a scope.
 func printVersionLine(ctx context.Context, label string, state *installer.InstallState, latestRef string) {
-	version := strings.TrimPrefix(state.Release, "v")
+	version := versionToken(installer.DisplaySkillsVersion(state.Release))
 	skillNoun := "skills"
 	if len(state.Skills) == 1 {
 		skillNoun = "skill"
 	}
 
 	if latestRef == "" {
-		cmdio.LogString(ctx, fmt.Sprintf("  %s: v%s (%d %s)", label, version, len(state.Skills), skillNoun))
+		cmdio.LogString(ctx, fmt.Sprintf("  %s: %s (%d %s)", label, version, len(state.Skills), skillNoun))
 		cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
 		return
 	}
 
 	if latestRef == state.Release {
-		cmdio.LogString(ctx, fmt.Sprintf("  %s: v%s (%d %s, up to date)", label, version, len(state.Skills), skillNoun))
+		cmdio.LogString(ctx, fmt.Sprintf("  %s: %s (%d %s, up to date)", label, version, len(state.Skills), skillNoun))
 		cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
 	} else {
-		latestVersion := strings.TrimPrefix(latestRef, "v")
-		cmdio.LogString(ctx, fmt.Sprintf("  %s: v%s (%d %s)", label, version, len(state.Skills), skillNoun))
-		cmdio.LogString(ctx, "  Update available: v"+latestVersion)
+		latestVersion := versionToken(installer.DisplaySkillsVersion(latestRef))
+		cmdio.LogString(ctx, fmt.Sprintf("  %s: %s (%d %s)", label, version, len(state.Skills), skillNoun))
+		cmdio.LogString(ctx, "  Update available: "+latestVersion)
 		cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, "Run 'databricks aitools update' to update.")

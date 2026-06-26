@@ -91,7 +91,10 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return nil, err
 	}
 
-	if state.Release == latestTag && !opts.Force {
+	// Short-circuit only when pinned to an exact ref. When tracking latest (the
+	// default), the ref ("main") never changes, so always reconcile against the
+	// freshly fetched manifest instead of falsely reporting "already up to date".
+	if explicit && state.Release == latestTag && !opts.Force {
 		cmdio.LogString(ctx, "Already up to date.")
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
 	}
@@ -433,7 +436,7 @@ func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpd
 		return nil, nil
 	}
 
-	version := strings.TrimPrefix(ref, "v")
+	version := DisplaySkillsVersion(ref)
 	var updated []PluginUpdate
 	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 		agent := agents.ByName(name)

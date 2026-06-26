@@ -155,6 +155,26 @@ func TestBuildPlanProjectScopeSkipsUserOnlyAgent(t *testing.T) {
 	assert.Contains(t, plan[1].reason, "user-only")
 }
 
+func TestBuildPlanProjectScopeSkipsFilesOnlyAgent(t *testing.T) {
+	// A files-only agent that does not support project scope is skipped up front,
+	// so the picker never offers an option that fails at install time.
+	opencode := &agents.Agent{Name: agents.NameOpenCode, DisplayName: "OpenCode", Binary: "opencode"}
+	projectSkills := &agents.Agent{Name: "proj-skills", DisplayName: "Proj", Binary: "proj", SupportsProjectScope: true}
+
+	plan := buildPlan([]*agents.Agent{opencode, projectSkills}, installer.ScopeProject, false, false)
+	assert.Equal(t, deliverySkip, plan[0].delivery)
+	assert.Contains(t, plan[0].reason, "project-scoped skills")
+	assert.Equal(t, deliverySkills, plan[1].delivery)
+
+	// --skills-only does not rescue a project-incompatible agent.
+	skillsOnly := buildPlan([]*agents.Agent{opencode}, installer.ScopeProject, true, false)
+	assert.Equal(t, deliverySkip, skillsOnly[0].delivery)
+
+	// Under global scope the same agent gets skills.
+	globalPlan := buildPlan([]*agents.Agent{opencode}, installer.ScopeGlobal, false, false)
+	assert.Equal(t, deliverySkills, globalPlan[0].delivery)
+}
+
 func TestMapAgentScope(t *testing.T) {
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude", false)
 	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex", false)

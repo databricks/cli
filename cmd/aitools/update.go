@@ -82,7 +82,7 @@ preview what would change without downloading.`,
 						return err
 					}
 					for _, pu := range pluginUpdates {
-						cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin v%s", pu.Agent, pu.Version))
+						cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", pu.Agent, versionToken(pu.Version)))
 					}
 				}
 
