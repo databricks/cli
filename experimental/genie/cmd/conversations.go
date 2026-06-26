@@ -85,14 +85,16 @@ func saveConversations(path string, m map[string]conversationEntry) {
 		return
 	}
 	defer os.Remove(tmp.Name())
+	defer tmp.Close()
 	if _, err := tmp.Write(raw); err != nil {
-		tmp.Close()
+		return
+	}
+	if err := tmp.Chmod(conversationFilePerm); err != nil {
 		return
 	}
 	if err := tmp.Close(); err != nil {
 		return
 	}
-	_ = os.Chmod(tmp.Name(), conversationFilePerm)
 	_ = os.Rename(tmp.Name(), path)
 }
 
