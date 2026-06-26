@@ -62,9 +62,6 @@ func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.R
 		"Content-Type": "application/json",
 		"Accept":       "text/event-stream",
 	}
-	// Workspace-scoped endpoint: on SPOG hosts the gateway can't route without the
-	// workspace-id header (else "Credential was not sent…"). The SDK adds it for
-	// generated methods; a direct client.Do call adds it via this helper.
 	maps.Copy(headers, auth.WorkspaceIDHeaders(cfg))
 	err = api.Do(ctx, "POST", genieResponsesPath, headers, nil, req, &body)
 	// The route is fixed and carries no resource IDs, so a 404 normally means
