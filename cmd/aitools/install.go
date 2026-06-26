@@ -30,8 +30,8 @@ type delivery int
 const (
 	// deliveryPlugin installs the databricks plugin through the agent's own CLI.
 	deliveryPlugin delivery = iota
-	// deliverySkills copies raw skill files (no-plugin agents, --skills-only, or a
-	// manual-only plugin agent like Cursor, which also gets a plugin recommendation).
+	// deliverySkills copies raw skill files (agents with no headless plugin
+	// install: OpenCode, Antigravity, Cursor; or any agent under --skills-only).
 	deliverySkills
 	// deliverySkip does nothing for the agent and explains why.
 	deliverySkip
@@ -42,7 +42,7 @@ type agentPlanItem struct {
 	agent    *agents.Agent
 	delivery delivery
 	scope    string // agent-native plugin scope (deliveryPlugin only)
-	reason   string // why skipped or what the manual step is
+	reason   string // why the agent is skipped (deliverySkip only)
 	explicit bool   // named via --agents (blocking it is an error)
 }
 
@@ -64,9 +64,8 @@ func NewInstallCmd() *cobra.Command {
 		Long: `Install Databricks skills and plugins for detected coding agents.
 
 By default this installs the databricks plugin through each agent's own CLI
-(Claude Code, Codex, GitHub Copilot). Agents with no plugin (OpenCode,
-Antigravity) get raw skill files. Cursor has a plugin but no headless install,
-so the CLI prints the '/add-plugin databricks' step instead of copying files.
+(Claude Code, Codex, GitHub Copilot). Agents without a headless plugin install
+(OpenCode, Antigravity, Cursor) get raw skill files.
 
 Escape hatches:
   --skills-only          Force raw skill files for every agent (no plugin).
@@ -241,8 +240,6 @@ func agentStateLabel(s agents.DisplayState) string {
 		return "plugin"
 	case agents.StateInstalledCLIMissing:
 		return "plugin · CLI not found"
-	case agents.StateManualOnly:
-		return "skills (plugin recommended)"
 	case agents.StateFilesOnly:
 		return "skills"
 	default:
@@ -280,8 +277,8 @@ func defaultPromptAgentSelection(_ context.Context, choices []agentChoice) ([]*a
 }
 
 // buildPlan resolves the per-agent delivery and scope. Plugin-first: an agent
-// with a plugin gets the plugin (or the manual step for Cursor); --skills-only
-// forces skills everywhere; agents with no plugin always get skills.
+// with a headless plugin install gets the plugin; --skills-only forces skills
+// everywhere; agents with no plugin always get skills.
 func buildPlan(targetAgents []*agents.Agent, scope string, skillsOnly, explicit bool) []agentPlanItem {
 	plan := make([]agentPlanItem, 0, len(targetAgents))
 	for _, a := range targetAgents {
@@ -296,11 +293,10 @@ func buildPlan(targetAgents []*agents.Agent, scope string, skillsOnly, explicit 
 func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agentPlanItem {
 	item := agentPlanItem{agent: a, explicit: explicit}
 	switch {
-	case skillsOnly || a.Plugin == nil || a.Plugin.ManualOnly:
-		// Raw-skills delivery. A manual-only plugin agent (Cursor) can't be
-		// installed headlessly, so it gets skills plus a plugin recommendation at
-		// install time. Only some agents support project-scoped skills, so skip the
-		// rest up front instead of offering an option that fails at install time.
+	case skillsOnly || a.Plugin == nil:
+		// Raw-skills delivery (no-plugin agents, or --skills-only). Only some agents
+		// support project-scoped skills, so skip the rest up front instead of
+		// offering an option that fails at install time.
 		if scope == installer.ScopeProject && !a.SupportsProjectScope {
 			item.delivery = deliverySkip
 			item.reason = "does not support project-scoped skills"
@@ -329,11 +325,7 @@ func printPlanSummary(ctx context.Context, plan []agentPlanItem, scope string) {
 		case deliveryPlugin:
 			cmdio.LogString(ctx, "  "+it.agent.DisplayName+"  install the databricks plugin")
 		case deliverySkills:
-			line := "install skills"
-			if it.agent.Plugin != nil && it.agent.Plugin.ManualOnly {
-				line = "install skills (plugin recommended)"
-			}
-			cmdio.LogString(ctx, "  "+it.agent.DisplayName+"  "+line)
+			cmdio.LogString(ctx, "  "+it.agent.DisplayName+"  install skills")
 		case deliverySkip:
 			cmdio.LogString(ctx, "  "+it.agent.DisplayName+"  skip ("+it.reason+")")
 		}
@@ -365,13 +357,6 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		installer.PrintInstallingFor(ctx, skillsAgents)
 		if err := installSkillsForAgentsFn(ctx, src, skillsAgents, opts); err != nil {
 			return err
-		}
-		// An agent whose plugin can't be installed headlessly (Cursor) gets skills,
-		// plus a nudge toward the better plugin experience.
-		for _, a := range skillsAgents {
-			if a.Plugin != nil && a.Plugin.ManualOnly {
-				cmdio.LogString(ctx, fmt.Sprintf("  %s  recommended: %s", a.DisplayName, a.Plugin.ManualInstructions))
-			}
 		}
 	}
 

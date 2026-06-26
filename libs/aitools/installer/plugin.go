@@ -43,8 +43,9 @@ const (
 	ReasonCLINotOnPath = "cli-not-on-path"
 	// ReasonInstallFailed: the agent's plugin CLI ran but returned an error.
 	ReasonInstallFailed = "install-failed"
-	// ReasonManualOnly: the agent has a plugin but no headless install path (Cursor).
-	ReasonManualOnly = "manual-only"
+	// ReasonNoPlugin: the agent has no installable plugin. Callers filter these
+	// out; it is guarded here to avoid a nil dereference.
+	ReasonNoPlugin = "no-plugin"
 )
 
 func (e *BlockedError) Error() string {
@@ -180,8 +181,8 @@ func probePluginCLI(ctx context.Context, agent *agents.Agent) (string, error) {
 // plugin through the agent's own CLI, returning the record to persist in state.
 // It never falls back to skills: a blocked install returns a *BlockedError.
 func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope, ref string) (PluginRecord, error) {
-	if agent.Plugin == nil || agent.Plugin.ManualOnly {
-		return PluginRecord{}, &BlockedError{Agent: agent.Name, Reason: ReasonManualOnly}
+	if agent.Plugin == nil {
+		return PluginRecord{}, &BlockedError{Agent: agent.Name, Reason: ReasonNoPlugin}
 	}
 
 	bin, err := probePluginCLI(ctx, agent)
@@ -229,8 +230,8 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 // plugin's own update handles content the release dropped, so there is no
 // per-skill prune for plugin agents.
 func UpdatePluginForAgent(ctx context.Context, agent *agents.Agent) error {
-	if agent.Plugin == nil || agent.Plugin.ManualOnly {
-		return &BlockedError{Agent: agent.Name, Reason: ReasonManualOnly}
+	if agent.Plugin == nil {
+		return &BlockedError{Agent: agent.Name, Reason: ReasonNoPlugin}
 	}
 	bin, err := resolveAgentBinary(agent)
 	if err != nil {
@@ -254,8 +255,8 @@ func UpdatePluginForAgent(ctx context.Context, agent *agents.Agent) error {
 // gone, so the record is cleared, and the leftover marketplace registration is
 // harmless and can be removed manually.
 func UninstallPluginForAgent(ctx context.Context, agent *agents.Agent, rec PluginRecord, keepMarketplace bool) error {
-	if agent.Plugin == nil || agent.Plugin.ManualOnly {
-		return &BlockedError{Agent: agent.Name, Reason: ReasonManualOnly}
+	if agent.Plugin == nil {
+		return &BlockedError{Agent: agent.Name, Reason: ReasonNoPlugin}
 	}
 	bin, err := resolveAgentBinary(agent)
 	if err != nil {

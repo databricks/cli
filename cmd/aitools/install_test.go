@@ -111,11 +111,8 @@ func fakeBinsOnPath(t *testing.T, binaries ...string) {
 	t.Setenv("PATH", dir)
 }
 
-func testPluginAgent(name, display, binary string, manual bool) *agents.Agent {
-	spec := &agents.PluginSpec{Marketplace: "databricks-agent-skills", ID: "databricks", Source: "databricks/databricks-agent-skills", ManualOnly: manual}
-	if manual {
-		spec.ManualInstructions = "run /add-plugin databricks in Cursor"
-	}
+func testPluginAgent(name, display, binary string) *agents.Agent {
+	spec := &agents.PluginSpec{Marketplace: "databricks-agent-skills", ID: "databricks", Source: "databricks/databricks-agent-skills"}
 	a := &agents.Agent{Name: name, DisplayName: display, Binary: binary, Plugin: spec}
 	if name == agents.NameClaudeCode {
 		a.SupportsProjectScope = true
@@ -126,17 +123,16 @@ func testPluginAgent(name, display, binary string, manual bool) *agents.Agent {
 // --- buildPlan / mapAgentScope / executePlan unit tests (no detection) ---
 
 func TestBuildPlanDeliveries(t *testing.T) {
-	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude", false)
-	cursor := testPluginAgent(agents.NameCursor, "Cursor", "cursor-agent", true)
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	// Cursor is a skills-only agent (no headless plugin install).
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor", Binary: "cursor-agent", SupportsProjectScope: true}
 	opencode := &agents.Agent{Name: agents.NameOpenCode, DisplayName: "OpenCode", Binary: "opencode"}
 	targets := []*agents.Agent{claude, cursor, opencode}
 
 	plan := buildPlan(targets, installer.ScopeGlobal, false, false)
 	assert.Equal(t, deliveryPlugin, plan[0].delivery)
 	assert.Equal(t, agentScopeUser, plan[0].scope)
-	// Cursor (manual-only plugin) installs skills and is nudged toward the plugin.
-	assert.Equal(t, deliverySkills, plan[1].delivery)
-	assert.True(t, plan[1].agent.Plugin.ManualOnly)
+	assert.Equal(t, deliverySkills, plan[1].delivery) // Cursor -> skills
 	assert.Equal(t, deliverySkills, plan[2].delivery)
 
 	// --skills-only forces skills for every agent.
@@ -167,8 +163,8 @@ func TestAgentChoicesOnlyOffersActionableAgents(t *testing.T) {
 }
 
 func TestBuildPlanProjectScopeSkipsUserOnlyAgent(t *testing.T) {
-	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude", false)
-	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex", false)
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex")
 
 	plan := buildPlan([]*agents.Agent{claude, codex}, installer.ScopeProject, false, false)
 	assert.Equal(t, deliveryPlugin, plan[0].delivery)
@@ -198,8 +194,8 @@ func TestBuildPlanProjectScopeSkipsFilesOnlyAgent(t *testing.T) {
 }
 
 func TestMapAgentScope(t *testing.T) {
-	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude", false)
-	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex", false)
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex")
 
 	scope, ok, _ := mapAgentScope(claude, installer.ScopeGlobal)
 	assert.True(t, ok)
@@ -224,7 +220,7 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	}
 	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return nil }
 
-	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude", false)
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	ctx := cmdio.MockDiscard(t.Context())
 
 	// Non-explicit blocked install is a warning, not an error.

@@ -41,13 +41,8 @@ func pluginAgent(name, display, binary string) *agents.Agent {
 func claudeAgent() *agents.Agent { return pluginAgent(agents.NameClaudeCode, "Claude Code", "claude") }
 func codexAgent() *agents.Agent  { return pluginAgent(agents.NameCodex, "Codex CLI", "codex") }
 
-func cursorAgent() *agents.Agent {
-	return &agents.Agent{
-		Name:        agents.NameCursor,
-		DisplayName: "Cursor",
-		Binary:      "cursor-agent",
-		Plugin:      &agents.PluginSpec{ManualOnly: true, ManualInstructions: "run /add-plugin databricks in Cursor"},
-	}
+func noPluginAgent() *agents.Agent {
+	return &agents.Agent{Name: agents.NameOpenCode, DisplayName: "OpenCode", Binary: "opencode"}
 }
 
 func TestInstallPluginForAgentClaudeSuccess(t *testing.T) {
@@ -110,11 +105,11 @@ func TestInstallPluginForAgentCodexUsesAddNoScope(t *testing.T) {
 	}
 }
 
-func TestInstallPluginForAgentManualOnly(t *testing.T) {
-	_, err := InstallPluginForAgent(t.Context(), cursorAgent(), "user", "v0.2.6")
+func TestInstallPluginForAgentNoPlugin(t *testing.T) {
+	_, err := InstallPluginForAgent(t.Context(), noPluginAgent(), "user", "v0.2.6")
 	var be *BlockedError
 	require.ErrorAs(t, err, &be)
-	assert.Equal(t, ReasonManualOnly, be.Reason)
+	assert.Equal(t, ReasonNoPlugin, be.Reason)
 }
 
 func TestInstallPluginForAgentCLINotOnPath(t *testing.T) {
