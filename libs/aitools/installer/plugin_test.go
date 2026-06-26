@@ -191,6 +191,59 @@ func TestUninstallPluginKeepsSharedMarketplace(t *testing.T) {
 	}
 }
 
+func TestUninstallSkillsOptsTearsDownPlugin(t *testing.T) {
+	setupTestHome(t)
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	ctx, stderr := cmdio.NewTestContextWithStderr(ctx)
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Release:       "v0.2.6",
+		Plugins: map[string]PluginRecord{
+			agents.NameClaudeCode: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", InstalledMarketplace: true},
+		},
+	}))
+
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+
+	cmds := stub.Commands()
+	assert.Contains(t, cmds, "claude plugin uninstall databricks@databricks-agent-skills")
+	assert.Contains(t, cmds, "claude plugin marketplace remove databricks-agent-skills")
+	assert.Contains(t, stderr.String(), "Uninstalled the plugin from 1 agent.")
+
+	// State file removed since nothing remains.
+	state, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Nil(t, state)
+}
+
+func TestUninstallKeepMarketplace(t *testing.T) {
+	setupTestHome(t)
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	ctx = cmdio.MockDiscard(ctx)
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Plugins: map[string]PluginRecord{
+			agents.NameClaudeCode: {Marketplace: "databricks-agent-skills", Plugin: "databricks", InstalledMarketplace: true},
+		},
+	}))
+
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal, KeepMarketplace: true}))
+
+	for _, c := range stub.Commands() {
+		assert.NotContains(t, c, "marketplace remove")
+	}
+}
+
 func TestUpdateInstalledPlugins(t *testing.T) {
 	setupTestHome(t)
 	stubAgentLookPath(t, true)

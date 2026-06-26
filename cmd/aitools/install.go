@@ -20,6 +20,7 @@ var (
 	installSkillsForAgentsFn = installer.InstallSkillsForAgents
 	installPluginForAgentFn  = installer.InstallPluginForAgent
 	recordPluginInstallsFn   = installer.RecordPluginInstalls
+	cleanupLegacyFn          = installer.RemoveLegacyRawSkills
 )
 
 // delivery is how the databricks tools are delivered to one agent.
@@ -348,6 +349,11 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			}
 			records[it.agent.Name] = rec
 			pluginCount++
+			// Remove any raw skills we previously dropped on this agent so the
+			// plugin and leftover files don't surface the same skills twice.
+			if err := cleanupLegacyFn(ctx, it.agent, opts.Scope); err != nil {
+				log.Debugf(ctx, "Legacy skill cleanup for %s failed: %v", it.agent.DisplayName, err)
+			}
 			cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin v%s", it.agent.DisplayName, rec.Version))
 		}
 		if len(records) > 0 {
