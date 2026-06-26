@@ -347,35 +347,33 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 	defer s.LockUnlock()()
 
-	// Mirror the real API: collapse duplicate slashes, and for a doubled leading
-	// slash ("//Workspace/...") strip the "/Workspace" mount from the returned path.
+	// The real API collapses duplicate slashes, so look up the cleaned path.
 	cleaned := path.Clean(requestPath)
-	stripWorkspacePrefix := strings.HasPrefix(requestPath, "//Workspace/")
 
-	respond := func(info workspace.ObjectInfo) Response {
-		if stripWorkspacePrefix {
-			info.Path = strings.TrimPrefix(info.Path, "/Workspace")
-		}
-		return Response{Body: info}
-	}
-
+	var info workspace.ObjectInfo
 	if dirInfo, ok := s.directories[cleaned]; ok {
-		return respond(dirInfo)
+		info = dirInfo
 	} else if entry, ok := s.files[cleaned]; ok {
-		return respond(entry.Info)
+		info = entry.Info
 	} else if repoId, ok := s.repoIdByPath[cleaned]; ok {
-		return respond(workspace.ObjectInfo{
-			ObjectType: "REPO",
-			Path:       cleaned,
-			ObjectId:   repoId,
-		})
+		info = workspace.ObjectInfo{ObjectType: "REPO", Path: cleaned, ObjectId: repoId}
+	} else {
+		// Match the real Workspace API wording, which echoes the requested path.
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", requestPath)},
+		}
 	}
 
-	// Match the real Workspace API wording, which echoes the requested path.
-	return Response{
-		StatusCode: 404,
-		Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", requestPath)},
+	// A doubled leading slash ("//Workspace/...", which some tests use to avoid
+	// Windows path conversion) is sent to the backend verbatim, and it responds
+	// with the "/Workspace" mount stripped from the path. A normal single-slash
+	// "/Workspace/..." is preserved instead, so only strip the doubled form.
+	if strings.HasPrefix(requestPath, "//Workspace/") {
+		info.Path = strings.TrimPrefix(info.Path, "/Workspace")
 	}
+
+	return Response{Body: info}
 }
 
 func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
