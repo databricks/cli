@@ -2,6 +2,8 @@ package installer
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -250,6 +252,10 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// Install each skill in sorted order for determinism.
 	skillNames := slices.Sorted(maps.Keys(targetSkills))
 
+	// Accumulate file provenance for skills we (re)fetch this run. Skipped
+	// (already-installed) skills keep their existing records via the merge below.
+	fileRecords := map[string]FileRecord{}
+
 	for _, name := range skillNames {
 		meta := targetSkills[name]
 
@@ -263,9 +269,11 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 			}
 		}
 
-		if err := installSkillForAgents(ctx, name, meta, targetAgents, params); err != nil {
+		records, err := installSkillForAgents(ctx, name, meta, targetAgents, params)
+		if err != nil {
 			return err
 		}
+		maps.Copy(fileRecords, records)
 	}
 
 	// Save state. Merge into existing state (loaded above) so skills from
@@ -280,6 +288,9 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if state.RepoDirs == nil {
 		state.RepoDirs = make(map[string]string, len(state.Skills)+len(targetSkills))
 	}
+	if state.Files == nil {
+		state.Files = make(map[string]FileRecord, len(fileRecords))
+	}
 	state.Release = ref
 	state.LastUpdated = time.Now()
 	// IncludeExperimental reflects the last invocation's flag value. The Skills
@@ -291,6 +302,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		state.Skills[name] = meta.Version
 		state.RepoDirs[name] = meta.RepoDir
 	}
+	maps.Copy(state.Files, fileRecords)
 	if err := SaveState(baseDir, state); err != nil {
 		return err
 	}
@@ -466,10 +478,11 @@ type installParams struct {
 	ref     string
 }
 
-func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta, detectedAgents []*agents.Agent, params installParams) error {
+func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta, detectedAgents []*agents.Agent, params installParams) (map[string]FileRecord, error) {
 	canonicalDir := filepath.Join(params.baseDir, skillName)
-	if err := installSkillToDir(ctx, params.ref, meta.RepoDir, meta.SourceName, canonicalDir, meta.Files); err != nil {
-		return err
+	records, err := installSkillToDir(ctx, params.ref, meta.RepoDir, meta.SourceName, canonicalDir, meta.Files)
+	if err != nil {
+		return nil, err
 	}
 
 	// For project scope, always symlink. For global, symlink when multiple agents.
@@ -516,7 +529,7 @@ func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta
 		}
 	}
 
-	return nil
+	return records, nil
 }
 
 // agentSkillsDirForScope returns the agent's skills directory for the given scope.
@@ -566,15 +579,22 @@ func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName
 	return nil
 }
 
-func installSkillToDir(ctx context.Context, ref, repoDir, skillName, destDir string, files []string) error {
+// installSkillToDir downloads a skill's files into destDir and returns a
+// FileRecord per file (keyed by "<skillName>/<file>", forward slashes) capturing
+// the sha256 of the bytes written, so a later update can prune only the files we
+// wrote that the user hasn't modified.
+func installSkillToDir(ctx context.Context, ref, repoDir, skillName, destDir string, files []string) (map[string]FileRecord, error) {
 	// remove existing skill directory for clean install
 	if err := os.RemoveAll(destDir); err != nil {
-		return fmt.Errorf("failed to remove existing skill: %w", err)
+		return nil, fmt.Errorf("failed to remove existing skill: %w", err)
 	}
 
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
+
+	var mu sync.Mutex
+	records := make(map[string]FileRecord, len(files))
 
 	// Fetch files concurrently. Each file is a separate HTTPS GET, so
 	// wall-clock time is dominated by per-request TLS handshakes rather
@@ -595,10 +615,20 @@ func installSkillToDir(ctx context.Context, ref, repoDir, skillName, destDir str
 			if err := os.WriteFile(destPath, content, 0o644); err != nil {
 				return fmt.Errorf("failed to write %s: %w", file, err)
 			}
+			sum := sha256.Sum256(content)
+			mu.Lock()
+			records[skillName+"/"+filepath.ToSlash(file)] = FileRecord{
+				SHA256: hex.EncodeToString(sum[:]),
+				Origin: ref,
+			}
+			mu.Unlock()
 			return nil
 		})
 	}
-	return g.Wait()
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	return records, nil
 }
 
 // copyDir copies all files from src to dest, recreating the directory structure.

@@ -217,7 +217,8 @@ func TestInstallSkillToDirFetchesFilesConcurrently(t *testing.T) {
 	destDir := filepath.Join(t.TempDir(), "databricks-test")
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"one.md", "two.md"})
+		_, err := installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"one.md", "two.md"})
+		errCh <- err
 	}()
 
 	fetched := make(map[string]bool, 2)
@@ -276,7 +277,8 @@ func TestInstallSkillToDirCancelsInFlightFetchesOnError(t *testing.T) {
 	destDir := filepath.Join(t.TempDir(), "databricks-test")
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"blocked.md", "fail.md"})
+		_, err := installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"blocked.md", "fail.md"})
+		errCh <- err
 	}()
 
 	var err error
@@ -322,6 +324,11 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 	assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
+
+	// File provenance is captured for the prune safeguard.
+	require.Contains(t, state.Files, "databricks-sql/SKILL.md")
+	assert.NotEmpty(t, state.Files["databricks-sql/SKILL.md"].SHA256)
+	assert.Equal(t, testSkillsRef, state.Files["databricks-sql/SKILL.md"].Origin)
 
 	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 }

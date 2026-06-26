@@ -172,11 +172,14 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		ref:     latestTag,
 	}
 
+	fileRecords := map[string]FileRecord{}
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
-		if err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params); err != nil {
+		records, err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params)
+		if err != nil {
 			return nil, err
 		}
+		maps.Copy(fileRecords, records)
 	}
 
 	// Update state.
@@ -185,11 +188,15 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	if state.RepoDirs == nil {
 		state.RepoDirs = make(map[string]string, len(state.Skills)+len(allChanges))
 	}
+	if state.Files == nil {
+		state.Files = make(map[string]FileRecord, len(fileRecords))
+	}
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
 		state.Skills[change.Name] = change.NewVersion
 		state.RepoDirs[change.Name] = meta.RepoDir
 	}
+	maps.Copy(state.Files, fileRecords)
 	if err := SaveState(baseDir, state); err != nil {
 		return nil, err
 	}
