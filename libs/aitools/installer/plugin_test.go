@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -201,4 +202,28 @@ func TestUninstallPluginKeepMarketplaceFlag(t *testing.T) {
 	for _, c := range stub.Commands() {
 		assert.NotContains(t, c, "marketplace remove")
 	}
+}
+
+func TestRecordPluginInstallsThenSkillsInstallNoPanic(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+
+	// A pure-plugin install creates state with no skills.
+	require.NoError(t, RecordPluginInstalls(ctx, ScopeGlobal, map[string]PluginRecord{
+		agents.NameClaudeCode: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Version: "0.2.6"},
+	}, "v0.2.6"))
+
+	// A later raw-skills install over that plugin-only state must not panic on a
+	// nil Skills map.
+	require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{testAgent(tmp)}, InstallOptions{}))
+
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.NotEmpty(t, st.Skills)
+	assert.Contains(t, st.Plugins, agents.NameClaudeCode)
 }
