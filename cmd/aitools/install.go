@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
@@ -92,6 +91,13 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 				SpecificSkills:      splitAndTrim(skillsFlag),
 			}
 
+			// --skills cherry-picks individual skill files, which only applies to
+			// raw-skills delivery. The plugin is installed in full, so reject
+			// --skills unless raw skills were requested via --skills-only or --path.
+			if len(opts.SpecificSkills) > 0 && !skillsOnly && pathFlag == "" {
+				return errors.New("--skills requires --skills-only or --path; the databricks plugin is installed in full")
+			}
+
 			src := &installer.GitHubManifestSource{}
 
 			// --path is a dumb dump: no agents, no scope, no state.
@@ -119,7 +125,10 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 					return err
 				}
 			} else {
-				targetAgents = selectAgents(ctx, scope, skillsOnly)
+				targetAgents, err = selectAgents(ctx, scope, skillsOnly)
+				if err != nil {
+					return err
+				}
 				if len(targetAgents) == 0 {
 					printNoAgentsMessage(ctx)
 					return nil
@@ -163,15 +172,11 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 // needs a config dir, so in --skills-only mode an agent is "detected" by its
 // config dir (PATH-independent); plugin delivery additionally detects agents by
 // their CLI binary on PATH, which fixes the Codex/Copilot config-dir miss.
-func selectAgents(ctx context.Context, scope string, skillsOnly bool) []*agents.Agent {
+func selectAgents(ctx context.Context, scope string, skillsOnly bool) ([]*agents.Agent, error) {
+	// Interactive: the picker decides; a prompt error or empty selection is a real
+	// error, not a "nothing detected" no-op.
 	if cmdio.IsPromptSupported(ctx) {
-		choices := agentChoices(ctx)
-		selected, err := promptAgentSelection(ctx, choices)
-		if err != nil {
-			log.Warnf(ctx, "Agent selection failed: %v", err)
-			return nil
-		}
-		return selected
+		return promptAgentSelection(ctx, agentChoices(ctx))
 	}
 
 	var selected []*agents.Agent
@@ -185,7 +190,7 @@ func selectAgents(ctx context.Context, scope string, skillsOnly bool) []*agents.
 			selected = append(selected, a)
 		}
 	}
-	return selected
+	return selected, nil
 }
 
 // agentChoices builds the interactive picker rows over every known agent.

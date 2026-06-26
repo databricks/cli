@@ -3,6 +3,7 @@ package aitools
 import (
 	"bufio"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -347,6 +348,43 @@ func TestInstallNoAgentsDetected(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	assert.Empty(t, *plugins)
 	assert.Empty(t, *skills)
+}
+
+func TestInstallSkillsRequiresSkillsOnlyOrPath(t *testing.T) {
+	setupTestAgents(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := NewInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--skills", "databricks"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--skills requires --skills-only or --path")
+}
+
+func TestInstallInteractivePickerErrorPropagates(t *testing.T) {
+	setupTestAgents(t)
+	setupScopeMock(t, installer.ScopeGlobal)
+
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
+	promptAgentSelection = func(_ context.Context, _ []agentChoice) ([]*agents.Agent, error) {
+		return nil, errors.New("at least one agent must be selected")
+	}
+
+	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer test.Done()
+	go drainReader(test.Stdout)
+	go drainReader(test.Stderr)
+
+	cmd := NewInstallCmd()
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "at least one agent")
 }
 
 func TestInstallPathConflictsWithSkillsOnly(t *testing.T) {

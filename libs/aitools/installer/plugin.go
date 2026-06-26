@@ -272,7 +272,14 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 		return err
 	}
 	if state == nil {
-		state = &InstallState{SchemaVersion: schemaVersionV2}
+		// Initialize all maps so a later skills install/update can assign into a
+		// plugin-only state without hitting a nil map.
+		state = &InstallState{
+			SchemaVersion: schemaVersionV2,
+			Skills:        map[string]string{},
+			RepoDirs:      map[string]string{},
+			Files:         map[string]FileRecord{},
+		}
 	}
 	if state.Plugins == nil {
 		state.Plugins = make(map[string]PluginRecord, len(records))

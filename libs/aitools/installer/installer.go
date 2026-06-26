@@ -287,6 +287,9 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 			RepoDirs:      make(map[string]string, len(targetSkills)),
 		}
 	}
+	if state.Skills == nil {
+		state.Skills = make(map[string]string, len(targetSkills))
+	}
 	if state.RepoDirs == nil {
 		state.RepoDirs = make(map[string]string, len(state.Skills)+len(targetSkills))
 	}
