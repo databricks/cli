@@ -8,14 +8,14 @@ import (
 )
 
 func TestGenerateJobIsDeterministic(t *testing.T) {
-	a := GenerateJob(newRNG(42))
-	b := GenerateJob(newRNG(42))
+	a := generateJob(newRNG(42))
+	b := generateJob(newRNG(42))
 	assert.Equal(t, a, b, "same seed must produce identical job")
 }
 
 func TestGenerateJobIsWellFormed(t *testing.T) {
 	for seed := range int64(200) {
-		job := GenerateJob(newRNG(seed))
+		job := generateJob(newRNG(seed))
 		require.NotEmptyf(t, job.Name, "seed %d: job must have a name", seed)
 		require.NotEmptyf(t, job.Tasks, "seed %d: job must have at least one task", seed)
 
