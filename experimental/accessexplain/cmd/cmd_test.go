@@ -26,6 +26,7 @@ type fakeReader struct {
 	principalKind    string
 	principalMissing bool
 	resolveErr       error
+	maskErr          error
 }
 
 func (f *fakeReader) ResolvePrincipal(ctx context.Context, name string) (string, bool, error) {
@@ -47,7 +48,7 @@ func (f *fakeReader) Effective(ctx context.Context, securableType, fullName, pri
 }
 
 func (f *fakeReader) ColumnMasks(ctx context.Context, tableFullName, principal string) ([]accessexplain.Mask, error) {
-	return f.masks, nil
+	return f.masks, f.maskErr
 }
 
 func (f *fakeReader) LegacyColumnMasks(ctx context.Context, tableFullName string) ([]accessexplain.Mask, error) {
@@ -186,6 +187,23 @@ func TestExplainInvalidSecurable(t *testing.T) {
 	r := &fakeReader{}
 	_, err := explain(t.Context(), r, "a..b", "alice@databricks.test", "")
 	assert.Error(t, err)
+}
+
+func TestExplainMaskErrorIsNonFatal(t *testing.T) {
+	// A failure listing masks (e.g. no READ METADATA) must not abort the
+	// verdict, which is the command's core value.
+	r := &fakeReader{
+		maskErr: errors.New("User does not have READ METADATA on Table"),
+		effective: map[string][]accessexplain.HeldPrivilege{
+			"prod":                    held(accessexplain.PrivUseCatalog),
+			"prod.sales":              held(accessexplain.PrivUseSchema),
+			"prod.sales.transactions": held(accessexplain.PrivSelect),
+		},
+	}
+	v, err := explain(t.Context(), r, "prod.sales.transactions", "alice@databricks.test", "")
+	require.NoError(t, err)
+	assert.True(t, v.Allowed)
+	assert.Empty(t, v.Masks)
 }
 
 func TestExplainPrincipalNotFound(t *testing.T) {

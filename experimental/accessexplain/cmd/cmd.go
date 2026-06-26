@@ -131,16 +131,17 @@ func explain(ctx context.Context, reader accessReader, on, principal, privilege 
 		in.Levels = append(in.Levels, accessexplain.Level{LevelSpec: spec, Held: held})
 	}
 
-	// Column masks only apply to a table leaf. Surface both ABAC policies and
-	// legacy function-based masks attached to the table's columns.
+	// Column masks only apply to a table leaf. They are supplementary to the
+	// allow/deny verdict, so a failure to read them (commonly a missing READ
+	// METADATA grant on the table) is logged and skipped, not fatal.
 	if leaf := specs[len(specs)-1]; leaf.Type == accessexplain.SecurableTable {
 		policyMasks, err := reader.ColumnMasks(ctx, leaf.FullName, principal)
 		if err != nil {
-			return accessexplain.Verdict{}, fmt.Errorf("list masking policies on %s: %w", leaf.FullName, err)
+			log.Warnf(ctx, "access explain: could not list masking policies on %s, mask detection skipped: %v", leaf.FullName, err)
 		}
 		legacyMasks, err := reader.LegacyColumnMasks(ctx, leaf.FullName)
 		if err != nil {
-			return accessexplain.Verdict{}, fmt.Errorf("read column masks on %s: %w", leaf.FullName, err)
+			log.Warnf(ctx, "access explain: could not read column masks on %s, mask detection skipped: %v", leaf.FullName, err)
 		}
 		in.Masks = mergeMasks(policyMasks, legacyMasks)
 	}
@@ -247,15 +248,11 @@ func columnMaskFromPolicy(p catalog.PolicyInfo, principal string) (accessexplain
 // LegacyColumnMasks reports the function-based column masks attached directly
 // to the table's columns (ColumnInfo.Mask), the pre-ABAC masking mechanism.
 // These have no policy name and apply to all readers, so no Targets are set.
-//
-// Masks are supplementary to the allow/deny verdict, so a failed table read is
-// non-fatal; it is logged at warn (not debug) so the user knows mask detection
-// did not run rather than seeing a silent, incomplete result.
+// A read error is returned for the caller to treat as best-effort.
 func (r *sdkReader) LegacyColumnMasks(ctx context.Context, tableFullName string) ([]accessexplain.Mask, error) {
 	table, err := r.w.Tables.GetByFullName(ctx, tableFullName)
 	if err != nil {
-		log.Warnf(ctx, "access explain: could not read table %s for column masks, mask detection skipped: %v", tableFullName, err)
-		return nil, nil
+		return nil, err
 	}
 	var masks []accessexplain.Mask
 	for _, c := range table.Columns {
