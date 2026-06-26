@@ -80,11 +80,11 @@ func (a *Agent) DisplayState(ctx context.Context) DisplayState {
 	}
 }
 
-// Preselect reports whether the agent should be pre-checked in the picker. Only
+// IsPreselected reports whether the agent should be pre-checked in the picker. Only
 // agents that can complete an install automatically (a plugin agent with its
 // binary on PATH) and files-only agents whose config dir exists are pre-checked;
 // manual-only and binary-missing agents are shown but left unchecked.
-func (a *Agent) Preselect(ctx context.Context) bool {
+func (a *Agent) IsPreselected(ctx context.Context) bool {
 	switch a.DisplayState(ctx) {
 	case StateAvailable:
 		return true
