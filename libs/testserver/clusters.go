@@ -58,6 +58,14 @@ func (s *FakeWorkspace) ClustersResize(req Request) any {
 		return Response{StatusCode: 404}
 	}
 
+	// Only running clusters can be resized; match the real API behavior.
+	if cluster.State != compute.StateRunning {
+		return Response{
+			StatusCode: 400,
+			Body:       map[string]string{"error_code": "INVALID_STATE", "message": "Cluster is not running"},
+		}
+	}
+
 	cluster.NumWorkers = request.NumWorkers
 	cluster.Autoscale = request.Autoscale
 	s.Clusters[request.ClusterId] = cluster

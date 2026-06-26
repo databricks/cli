@@ -14,18 +14,16 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/bundle/migrate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/structs/structaccess"
-	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type uploadStateForYamlSync struct {
@@ -114,49 +112,31 @@ func uploadState(ctx context.Context, b *bundle.Bundle) error {
 }
 
 func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bundle, snapshotPath string) (bool, error) {
-	terraformResources, err := terraform.ParseResourcesState(ctx, b)
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse terraform state: %w", err)
 	}
 
-	// ParseResourcesState returns nil when the terraform state file doesn't exist
+	// ParseTFStateFull returns nil IDs when the terraform state file doesn't exist
 	// (e.g. first deploy with no resources).
-	if terraformResources == nil {
+	if tfState == nil {
 		return false, nil
 	}
 
-	_, localTerraformPath := b.StateFilenameTerraform(ctx)
-	data, err := os.ReadFile(localTerraformPath)
-	if err != nil {
-		return false, fmt.Errorf("failed to read terraform state: %w", err)
-	}
-
 	state := make(map[string]dstate.ResourceEntry)
-	etags := map[string]string{}
-
-	for key, resourceEntry := range terraformResources {
+	for key, id := range tfState.IDs {
 		state[key] = dstate.ResourceEntry{
-			ID:    resourceEntry.ID,
+			ID:    id,
 			State: json.RawMessage("{}"),
 		}
-		if resourceEntry.ETag != "" {
-			etags[key] = resourceEntry.ETag
-		}
-	}
-
-	var tfState struct {
-		Lineage string `json:"lineage"`
-		Serial  int    `json:"serial"`
-	}
-	if err := json.Unmarshal(data, &tfState); err != nil {
-		return false, err
 	}
 
 	migratedDB := dstate.NewDatabase(tfState.Lineage, tfState.Serial+1)
 	migratedDB.State = state
 
-	deploymentBundle := &direct.DeploymentBundle{}
-	deploymentBundle.StateDB.OpenWithData(snapshotPath, migratedDB)
+	var stateDB dstate.DeploymentState
+	stateDB.OpenWithData(snapshotPath, migratedDB)
 
 	// Apply SecretScopeFixups so the config matches what the direct engine expects.
 	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
@@ -166,9 +146,9 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return false, errors.New("failed to apply secret scope fixups")
 	}
 
-	// Get the dynamic value from b.Config and reverse the interpolation.
 	// b.Config has been modified by terraform.Interpolate which converts bundle-style
 	// references (${resources.pipelines.x.id}) to terraform-style (${databricks_pipeline.x.id}).
+	// BuildStateFromTF expects ${resources.*} references, so reverse the interpolation first.
 	interpolatedRoot := b.Config.Value()
 	uninterpolatedRoot, err := reverseInterpolate(interpolatedRoot)
 	if err != nil {
@@ -183,36 +163,20 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return false, fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
-	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &uninterpolatedConfig)
+	adapters, err := dresources.InitAll(nil)
 	if err != nil {
 		return false, err
 	}
 
-	for _, entry := range plan.Plan {
-		entry.Action = deployplan.Update
-	}
-
-	for key := range plan.Plan {
-		etag := etags[key]
-		if etag == "" {
-			continue
-		}
-		sv, ok := deploymentBundle.StateCache.Load(key)
-		if !ok {
-			continue
-		}
-		err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag)
-		if err != nil {
-			log.Warnf(ctx, "Failed to set etag on %q: %v", key, err)
-		}
-	}
-
-	if err := deploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+	if err := stateDB.UpgradeToWrite(); err != nil {
 		return false, fmt.Errorf("upgrading state for apply: %w", err)
 	}
 
-	deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
-	if _, err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
+	if err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs); err != nil {
+		return false, err
+	}
+
+	if _, err := stateDB.Finalize(ctx); err != nil {
 		return false, err
 	}
 

@@ -1,0 +1,34 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    trigger_job:
+      name: test-trigger-$UNIQUE_NAME
+      # 9007199254740993 = 2^53+1, the smallest integer float64 cannot represent
+      # exactly (it rounds to 2^53 = ...992). Stored as a literal via PrepareState,
+      # so trigger_job keeps the exact value; watcher_job references it to force the
+      # migration to resolve it from TF state, where naive float64 parsing of JSON
+      # numbers would corrupt it. Local-only: deliberately out of range for the
+      # real backend (see no_run_job_ref_on_cloud in the parent test.toml).
+      max_concurrent_runs: 9007199254740993
+      tasks:
+        - task_key: notebook
+          notebook_task:
+            notebook_path: /Shared/notebook
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            instance_pool_id: $TEST_INSTANCE_POOL_ID
+            num_workers: 1
+
+    watcher_job:
+      name: test-watcher-$UNIQUE_NAME
+      # Resolved from trigger_job's TF state during migration. Exercises the
+      # json.Number parsing path end-to-end: with the fix the migrated state keeps
+      # 9007199254740993; without it the value is silently truncated to ...992.
+      max_concurrent_runs: ${resources.jobs.trigger_job.max_concurrent_runs}
+      tasks:
+        - task_key: run_trigger
+          run_job_task:
+            job_id: ${resources.jobs.trigger_job.id}
