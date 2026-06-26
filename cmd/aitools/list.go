@@ -194,6 +194,10 @@ func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
 
 // buildAgentEntries reports the real per-agent plugin state: each plugin agent
 // with a recorded install, plus Cursor (which is added manually) when present.
+// When a plugin is recorded in more than one scope, status aggregates across
+// them (any out-of-date scope reports update_available) and version reflects the
+// record that determined the status, so a stale scoped install is never hidden
+// behind an up-to-date one.
 func buildAgentEntries(ctx context.Context, release string, states ...*installer.InstallState) []agentEntry {
 	var entries []agentEntry
 	for i := range agents.Registry {
@@ -202,16 +206,28 @@ func buildAgentEntries(ctx context.Context, release string, states ...*installer
 			continue
 		}
 
-		if rec, ok := pluginRecordFor(a.Name, states...); ok {
-			status := statusUpToDate
-			if rec.Version != release {
-				status = statusUpdateAvailable
+		var info *pluginInfo
+		status := statusUpToDate
+		for _, st := range states {
+			if st == nil {
+				continue
 			}
-			entries = append(entries, agentEntry{
-				Name:   a.Name,
-				Plugin: &pluginInfo{Version: rec.Version, Managed: true},
-				Status: status,
-			})
+			rec, ok := st.Plugins[a.Name]
+			if !ok {
+				continue
+			}
+			recStatus := statusUpToDate
+			if rec.Version != release {
+				recStatus = statusUpdateAvailable
+			}
+			// Prefer reporting a stale record so an out-of-date scope is visible.
+			if info == nil || (status == statusUpToDate && recStatus == statusUpdateAvailable) {
+				info = &pluginInfo{Version: rec.Version, Managed: true}
+				status = recStatus
+			}
+		}
+		if info != nil {
+			entries = append(entries, agentEntry{Name: a.Name, Plugin: info, Status: status})
 			continue
 		}
 
@@ -224,19 +240,6 @@ func buildAgentEntries(ctx context.Context, release string, states ...*installer
 		}
 	}
 	return entries
-}
-
-// pluginRecordFor returns the first plugin record for an agent across the given
-// scope states.
-func pluginRecordFor(name string, states ...*installer.InstallState) (installer.PluginRecord, bool) {
-	for _, st := range states {
-		if st != nil {
-			if rec, ok := st.Plugins[name]; ok {
-				return rec, true
-			}
-		}
-	}
-	return installer.PluginRecord{}, false
 }
 
 // loadStateForScope returns the install state for the named scope when the

@@ -172,6 +172,32 @@ func TestBuildAgentEntries(t *testing.T) {
 	assert.False(t, byName["cursor"].Plugin.Managed)
 }
 
+func TestBuildAgentEntriesAggregatesScopeStatus(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
+	ctx := cmdio.MockDiscard(t.Context())
+
+	// Same agent recorded in both scopes: global current, project stale.
+	globalState := &installer.InstallState{Plugins: map[string]installer.PluginRecord{
+		"claude-code": {Plugin: "databricks", Version: "0.2.6"},
+	}}
+	projectState := &installer.InstallState{Plugins: map[string]installer.PluginRecord{
+		"claude-code": {Plugin: "databricks", Version: "0.2.5"},
+	}}
+
+	entries := buildAgentEntries(ctx, "0.2.6", globalState, projectState)
+	byName := map[string]agentEntry{}
+	for _, e := range entries {
+		byName[e.Name] = e
+	}
+
+	require.Contains(t, byName, "claude-code")
+	// The stale scope must surface, not be hidden behind the up-to-date one.
+	assert.Equal(t, statusUpdateAvailable, byName["claude-code"].Status)
+	assert.Equal(t, "0.2.5", byName["claude-code"].Plugin.Version)
+}
+
 func TestRenderListJSONScopeFiltersSummary(t *testing.T) {
 	out := listOutput{
 		Release: "0.1.0",
