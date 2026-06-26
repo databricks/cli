@@ -191,6 +191,34 @@ func TestUninstallPluginKeepsSharedMarketplace(t *testing.T) {
 	}
 }
 
+func TestUpdateInstalledPlugins(t *testing.T) {
+	setupTestHome(t)
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Release:       "v0.2.6",
+		Plugins: map[string]PluginRecord{
+			agents.NameClaudeCode: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", Version: "0.2.6"},
+		},
+	}))
+
+	updated, err := UpdateInstalledPlugins(ctx, ScopeGlobal, "v0.2.7")
+	require.NoError(t, err)
+	require.Len(t, updated, 1)
+	assert.Equal(t, "Claude Code", updated[0].Agent)
+	assert.Equal(t, "0.2.7", updated[0].Version)
+	assert.Contains(t, stub.Commands(), "claude plugin update databricks@databricks-agent-skills")
+
+	state, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, "0.2.7", state.Plugins[agents.NameClaudeCode].Version)
+}
+
 func TestUninstallPluginKeepMarketplaceFlag(t *testing.T) {
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())

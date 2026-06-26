@@ -1,0 +1,8 @@
+# Agent detection needs ~/.claude; prefer USERPROFILE on Windows.
+mkdir -p "${USERPROFILE:-$HOME}/.claude"
+
+title "install two skills"
+trace $CLI experimental aitools install --skills-only --global
+
+title "update against a release where beta is gone: alpha updates, beta is pruned"
+trace DATABRICKS_SKILLS_REF=v2-ref $CLI experimental aitools update --scope global

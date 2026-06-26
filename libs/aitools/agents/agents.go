@@ -215,6 +215,16 @@ func openCodeConfigDir(ctx context.Context) (string, error) {
 	return filepath.Join(xdg, "opencode"), nil
 }
 
+// ByName returns the registry agent with the given name, or nil if not found.
+func ByName(name string) *Agent {
+	for i := range Registry {
+		if Registry[i].Name == name {
+			return &Registry[i]
+		}
+	}
+	return nil
+}
+
 // DetectInstalled returns all agents that are installed on the system.
 func DetectInstalled(ctx context.Context) []*Agent {
 	var installed []*Agent

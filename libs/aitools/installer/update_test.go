@@ -3,6 +3,7 @@ package installer
 import (
 	"bytes"
 	"context"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -284,46 +285,104 @@ func TestUpdateOutputSortedAlphabetically(t *testing.T) {
 	assert.Equal(t, "databricks-sql", result.Updated[1].Name)
 }
 
-func TestUpdateSkillRemovedFromManifestWarning(t *testing.T) {
-	tmp := setupTestHome(t)
-	ctx := cmdio.MockDiscard(t.Context())
-	setupFetchMock(t)
-	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
-
-	// Capture log output to verify warning.
-	var logBuf bytes.Buffer
-	logger := slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn}))
-	ctx = log.NewContext(ctx, logger)
-
-	// Install with default ref.
+// installThenVanish installs the two-skill testManifest and returns the global
+// canonical dir plus a manifest source where databricks-jobs has been removed.
+func installThenVanish(t *testing.T, ctx context.Context, tmp string) (string, ManifestSource) {
+	t.Helper()
 	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
 
-	// Simulate a new release.
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
-
-	// New manifest that removed databricks-jobs.
-	updatedManifest := &Manifest{
+	updated := &Manifest{
 		Version:   "1",
 		UpdatedAt: "2024-02-01",
 		Skills: map[string]SkillMeta{
 			"databricks-sql": {Version: "0.2.0", Files: []string{"SKILL.md"}},
 		},
 	}
-	src2 := &mockManifestSource{manifest: updatedManifest}
+	return filepath.Join(tmp, ".databricks", "aitools", "skills"), &mockManifestSource{manifest: updated}
+}
+
+func TestUpdatePrunesVanishedUnmodifiedSkill(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	globalDir, src2 := installThenVanish(t, ctx, tmp)
+	agent := testAgent(tmp)
 
 	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{})
 	require.NoError(t, err)
 
-	// databricks-jobs should be kept as unchanged.
-	assert.Contains(t, result.Unchanged, "databricks-jobs")
-	// Warning should be logged.
-	assert.Contains(t, logBuf.String(), "databricks-jobs")
-	assert.Contains(t, logBuf.String(), "not found in manifest v0.2.0")
+	require.Len(t, result.Removed, 1)
+	assert.Equal(t, "databricks-jobs", result.Removed[0].Name)
 
-	// State should still have databricks-jobs.
-	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.NotContains(t, state.Skills, "databricks-jobs")
+	assert.NotContains(t, state.Files, "databricks-jobs/SKILL.md")
+	_, statErr := os.Stat(filepath.Join(globalDir, "databricks-jobs"))
+	assert.ErrorIs(t, statErr, fs.ErrNotExist)
+}
+
+func TestUpdateNoPruneKeepsVanishedSkill(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	globalDir, src2 := installThenVanish(t, ctx, tmp)
+	agent := testAgent(tmp)
+
+	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{NoPrune: true})
+	require.NoError(t, err)
+
+	assert.Empty(t, result.Removed)
+	assert.Contains(t, result.Unchanged, "databricks-jobs")
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Contains(t, state.Skills, "databricks-jobs")
+}
+
+func TestUpdateKeepsModifiedVanishedSkill(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	globalDir, src2 := installThenVanish(t, ctx, tmp)
+	agent := testAgent(tmp)
+
+	// User edits the installed skill: its checksum no longer matches.
+	require.NoError(t, os.WriteFile(filepath.Join(globalDir, "databricks-jobs", "SKILL.md"), []byte("user edit"), 0o644))
+
+	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{})
+	require.NoError(t, err)
+
+	assert.Empty(t, result.Removed)
+	assert.Contains(t, result.Unchanged, "databricks-jobs")
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Contains(t, state.Skills, "databricks-jobs")
+}
+
+func TestUpdateCheckShowsPruneWithoutDeleting(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	globalDir, src2 := installThenVanish(t, ctx, tmp)
+	agent := testAgent(tmp)
+
+	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{Check: true})
+	require.NoError(t, err)
+
+	require.Len(t, result.Removed, 1)
+	assert.Equal(t, "databricks-jobs", result.Removed[0].Name)
+	// Check mode does not delete.
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
 	assert.Contains(t, state.Skills, "databricks-jobs")

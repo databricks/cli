@@ -2,6 +2,8 @@ package installer
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"maps"
@@ -21,18 +23,20 @@ import (
 
 // UpdateOptions controls the behavior of UpdateSkills.
 type UpdateOptions struct {
-	Force  bool
-	NoNew  bool
-	Check  bool     // dry run: show what would change without downloading
-	Skills []string // empty = all installed
-	Scope  string   // ScopeGlobal or ScopeProject (default: global)
+	Force   bool
+	NoNew   bool
+	NoPrune bool     // keep skills that vanished from the manifest instead of removing them
+	Check   bool     // dry run: show what would change without downloading
+	Skills  []string // empty = all installed
+	Scope   string   // ScopeGlobal or ScopeProject (default: global)
 }
 
 // UpdateResult describes what UpdateSkills did (or would do in check mode).
 type UpdateResult struct {
 	Updated   []SkillUpdate // skills that were updated
 	Added     []SkillUpdate // new skills added (when NoNew is false)
-	Unchanged []string      // skills at current version
+	Removed   []SkillUpdate // skills pruned because they vanished from the manifest
+	Unchanged []string      // skills at current version (or kept despite vanishing)
 	Skipped   []string      // skills skipped (experimental, version constraint)
 }
 
@@ -116,8 +120,15 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 		if !inManifest {
 			if _, ok := state.Skills[name]; ok {
-				log.Warnf(ctx, "Warning: %q not found in manifest %s (keeping installed version).", name, latestTag)
-				result.Unchanged = append(result.Unchanged, name)
+				// The skill vanished from the manifest. Prune it only when we
+				// installed it and the user hasn't modified it since; otherwise
+				// keep it with a warning so we never delete user-edited content.
+				if !opts.NoPrune && skillFilesUnmodified(baseDir, name, state) {
+					result.Removed = append(result.Removed, SkillUpdate{Name: name, OldVersion: state.Skills[name]})
+				} else {
+					log.Warnf(ctx, "Warning: %q not found in manifest %s (keeping installed version).", name, latestTag)
+					result.Unchanged = append(result.Unchanged, name)
+				}
 			}
 			continue
 		}
@@ -200,6 +211,25 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		clearFileRecords(state.Files, change.Name)
 	}
 	maps.Copy(state.Files, fileRecords)
+
+	// Prune skills that vanished from the manifest (and that the user hasn't
+	// modified, as decided above). Only removes the symlinks pointing into our
+	// canonical dir and the canonical copy; user-managed dirs are left alone.
+	for _, rem := range result.Removed {
+		canonicalDir := filepath.Join(baseDir, rem.Name)
+		removeSymlinksFromAgents(ctx, rem.Name, canonicalDir, scope, cwd)
+		if err := os.RemoveAll(canonicalDir); err != nil {
+			log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
+		}
+		delete(state.Skills, rem.Name)
+		delete(state.RepoDirs, rem.Name)
+		for path := range state.Files {
+			if strings.HasPrefix(path, rem.Name+"/") {
+				delete(state.Files, path)
+			}
+		}
+	}
+
 	if err := SaveState(baseDir, state); err != nil {
 		return nil, err
 	}
@@ -245,6 +275,84 @@ func hasLegacyInstall(ctx context.Context, globalDir string) bool {
 	return hasSkillsOnDisk(filepath.Join(homeDir, ".databricks", "agent-skills"))
 }
 
+// skillFilesUnmodified reports whether every file the CLI recorded for a skill
+// still exists in the canonical dir and matches its recorded sha256. Returns
+// false when there is no recorded provenance (e.g. a legacy v1 install), so the
+// caller keeps such skills rather than risk deleting user content.
+func skillFilesUnmodified(baseDir, skillName string, state *InstallState) bool {
+	prefix := skillName + "/"
+	var recorded []string
+	for path := range state.Files {
+		if strings.HasPrefix(path, prefix) {
+			recorded = append(recorded, path)
+		}
+	}
+	if len(recorded) == 0 {
+		return false
+	}
+	for _, relPath := range recorded {
+		data, err := os.ReadFile(filepath.Join(baseDir, filepath.FromSlash(relPath)))
+		if err != nil {
+			return false
+		}
+		sum := sha256.Sum256(data)
+		if hex.EncodeToString(sum[:]) != state.Files[relPath].SHA256 {
+			return false
+		}
+	}
+	return true
+}
+
+// PluginUpdate records that a plugin was updated for an agent.
+type PluginUpdate struct {
+	Agent   string
+	Version string
+}
+
+// UpdateInstalledPlugins runs the plugin update for every plugin recorded in the
+// given scope's state, bumping each record's version to ref. A plugin that can't
+// be updated (CLI missing, etc.) is skipped with a warning, never failed, to
+// keep the non-interactive update prompt-free and exit-0 on partial success.
+func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpdate, error) {
+	dir, err := skillsDir(ctx, scope)
+	if err != nil {
+		return nil, err
+	}
+	state, err := LoadState(dir)
+	if err != nil {
+		return nil, err
+	}
+	if state == nil || len(state.Plugins) == 0 {
+		return nil, nil
+	}
+
+	version := strings.TrimPrefix(ref, "v")
+	var updated []PluginUpdate
+	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
+		agent := agents.ByName(name)
+		if agent == nil {
+			log.Warnf(ctx, "Skipping unknown agent %q in state", name)
+			continue
+		}
+		if err := UpdatePluginForAgent(ctx, agent); err != nil {
+			log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
+			continue
+		}
+		rec := state.Plugins[name]
+		rec.Version = version
+		state.Plugins[name] = rec
+		updated = append(updated, PluginUpdate{Agent: agent.DisplayName, Version: version})
+	}
+
+	if len(updated) > 0 {
+		state.LastUpdated = time.Now()
+		if err := SaveState(dir, state); err != nil {
+			return nil, err
+		}
+	}
+	return updated, nil
+}
+
 // FormatUpdateResult returns a human-readable summary of the update result.
 // When check is true, output uses "Would update/add" instead of "Updated/Added".
 func FormatUpdateResult(result *UpdateResult, check bool) string {
@@ -252,11 +360,15 @@ func FormatUpdateResult(result *UpdateResult, check bool) string {
 
 	updateVerb := "updated"
 	addVerb := "added"
+	removeVerb := "removed"
 	summaryVerb := "Updated"
+	removeSummaryVerb := "Removed"
 	if check {
 		updateVerb = "would update"
 		addVerb = "would add"
+		removeVerb = "would remove"
 		summaryVerb = "Would update"
+		removeSummaryVerb = "Would remove"
 	}
 
 	for _, u := range result.Updated {
@@ -271,15 +383,27 @@ func FormatUpdateResult(result *UpdateResult, check bool) string {
 		lines = append(lines, fmt.Sprintf("  %s %s v%s", addVerb, a.Name, a.NewVersion))
 	}
 
+	for _, r := range result.Removed {
+		lines = append(lines, fmt.Sprintf("  %s %s (no longer in this release)", removeVerb, r.Name))
+	}
+
 	total := len(result.Updated) + len(result.Added)
-	if total == 0 {
+	if total == 0 && len(result.Removed) == 0 {
 		return "No changes."
 	}
 
-	noun := "skills"
-	if total == 1 {
-		noun = "skill"
+	if total > 0 {
+		lines = append(lines, fmt.Sprintf("%s %d %s.", summaryVerb, total, skillNoun(total)))
 	}
-	lines = append(lines, fmt.Sprintf("%s %d %s.", summaryVerb, total, noun))
+	if len(result.Removed) > 0 {
+		lines = append(lines, fmt.Sprintf("%s %d %s.", removeSummaryVerb, len(result.Removed), skillNoun(len(result.Removed))))
+	}
 	return strings.Join(lines, "\n")
+}
+
+func skillNoun(n int) string {
+	if n == 1 {
+		return "skill"
+	}
+	return "skills"
 }

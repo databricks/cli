@@ -1,0 +1,49 @@
+# Mock server replaces raw.githubusercontent.com for manifest + skill files.
+Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_SKILLS_REF = "test-ref"
+
+Ignore = [
+    ".databricks/aitools/skills/.state.json",
+]
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+
+# Initial release: alpha + beta.
+[[Server]]
+Pattern = "GET /test-ref/manifest.json"
+Response.Body = '''
+{
+  "version": "1",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "alpha": {"version": "1.0.0", "files": ["SKILL.md"], "repo_dir": "skills"},
+    "beta":  {"version": "1.0.0", "files": ["SKILL.md"], "repo_dir": "skills"}
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /test-ref/skills/alpha/SKILL.md"
+Response.Body = "alpha v1"
+
+[[Server]]
+Pattern = "GET /test-ref/skills/beta/SKILL.md"
+Response.Body = "beta v1"
+
+# Next release: beta is gone, alpha is bumped.
+[[Server]]
+Pattern = "GET /v2-ref/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-02-01T00:00:00Z",
+  "skills": {
+    "alpha": {"version": "2.0.0", "files": ["SKILL.md"], "repo_dir": "skills"}
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /v2-ref/skills/alpha/SKILL.md"
+Response.Body = "alpha v2"
