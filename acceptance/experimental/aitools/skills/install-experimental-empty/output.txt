@@ -1,6 +1,6 @@
 
 === --experimental against a manifest with no experimental skills logs a nudge
->>> [CLI] experimental aitools install --global --experimental
+>>> [CLI] experimental aitools install --skills-only --global --experimental
 Command "install" is deprecated, use "databricks aitools install" instead.
 Flag --global has been deprecated, use --scope=global
 Installing Databricks AI skills for Claude Code...

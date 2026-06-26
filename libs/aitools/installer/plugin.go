@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os/exec"
 	"strings"
 	"time"
@@ -256,6 +257,31 @@ func UninstallPluginForAgent(ctx context.Context, agent *agents.Agent, rec Plugi
 		}
 	}
 	return nil
+}
+
+// RecordPluginInstalls persists plugin install records into the state file for
+// the given CLI scope (global or project), creating state if none exists. ref
+// is the resolved skills release the install corresponds to.
+func RecordPluginInstalls(ctx context.Context, cliScope string, records map[string]PluginRecord, ref string) error {
+	dir, err := skillsDir(ctx, cliScope)
+	if err != nil {
+		return err
+	}
+	state, err := LoadState(dir)
+	if err != nil {
+		return err
+	}
+	if state == nil {
+		state = &InstallState{SchemaVersion: schemaVersionV2}
+	}
+	if state.Plugins == nil {
+		state.Plugins = make(map[string]PluginRecord, len(records))
+	}
+	maps.Copy(state.Plugins, records)
+	state.Release = ref
+	state.LastUpdated = time.Now()
+	state.Scope = cliScope
+	return SaveState(dir, state)
 }
 
 // prepend returns a fresh argv with bin as argv[0] followed by args.
