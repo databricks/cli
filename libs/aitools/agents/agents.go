@@ -120,15 +120,33 @@ const (
 	databricksMarketplace = "databricks-agent-skills"
 	databricksPluginID    = "databricks"
 	databricksPluginSrc   = "databricks/databricks-agent-skills"
+
+	// claudeOfficialMarketplace is Claude Code's built-in marketplace
+	// (anthropics/claude-plugins-official), registered by default. The databricks
+	// plugin is published there, so Claude installs from it and we never register
+	// our own marketplace for Claude. An empty PluginSpec.Source marks a built-in
+	// marketplace that must not be added.
+	claudeOfficialMarketplace = "claude-plugins-official"
 )
 
-// databricksPlugin returns the shared plugin descriptor for an agent with a
-// real headless install path (Claude, Codex, Copilot).
+// databricksPlugin returns the shared plugin descriptor for an agent that
+// installs from our own marketplace (Codex, Copilot, Cursor).
 func databricksPlugin() *PluginSpec {
 	return &PluginSpec{
 		Marketplace: databricksMarketplace,
 		ID:          databricksPluginID,
 		Source:      databricksPluginSrc,
+	}
+}
+
+// claudePlugin returns Claude's plugin descriptor. Claude installs the databricks
+// plugin from its built-in claude-plugins-official marketplace (Source empty), so
+// the CLI doesn't register a separate databricks-agent-skills marketplace for it.
+func claudePlugin() *PluginSpec {
+	return &PluginSpec{
+		Marketplace: claudeOfficialMarketplace,
+		ID:          databricksPluginID,
+		Source:      "",
 	}
 }
 
@@ -142,7 +160,7 @@ var Registry = []*Agent{
 		SupportsProjectScope: true,
 		ProjectConfigDir:     ".claude",
 		Binary:               "claude",
-		Plugin:               databricksPlugin(),
+		Plugin:               claudePlugin(),
 	},
 	{
 		Name:                 NameCursor,

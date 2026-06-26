@@ -194,9 +194,16 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 	// our add succeeded, so we never remove a marketplace another plugin shares.
 	// On any uncertainty marketplaceRegistered returns true, keeping us off the
 	// de-register path.
-	alreadyPresent := marketplaceRegistered(ctx, bin, agent.Plugin.Marketplace)
-	_, addErr := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceAddArgs(agent.Plugin)))
-	installedMarketplace := addErr == nil && !alreadyPresent
+	//
+	// An empty Source marks a built-in marketplace (e.g. Claude's
+	// claude-plugins-official): it is already registered, so we never add or
+	// de-register it.
+	installedMarketplace := false
+	if agent.Plugin.Source != "" {
+		alreadyPresent := marketplaceRegistered(ctx, bin, agent.Plugin.Marketplace)
+		_, addErr := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceAddArgs(agent.Plugin)))
+		installedMarketplace = addErr == nil && !alreadyPresent
+	}
 
 	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, pluginInstallArgs(agent, nativeScope))); err != nil {
 		// Roll back a marketplace we just added so a failed install doesn't
@@ -257,7 +264,9 @@ func UninstallPluginForAgent(ctx context.Context, agent *agents.Agent, rec Plugi
 	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, pluginUninstallArgs(agent))); err != nil {
 		return &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
 	}
-	if rec.InstalledMarketplace && !keepMarketplace {
+	// Never de-register a built-in marketplace (empty Source, e.g. Claude's
+	// claude-plugins-official): it is shared infrastructure we did not add.
+	if rec.InstalledMarketplace && !keepMarketplace && agent.Plugin.Source != "" {
 		if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceRemoveArgs(agent.Plugin))); err != nil {
 			log.Warnf(ctx, "Removed the %s plugin but could not de-register its marketplace (remove it manually if needed): %v", agent.DisplayName, stderrOf(err))
 		}
