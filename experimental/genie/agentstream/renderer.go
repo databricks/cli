@@ -82,7 +82,7 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 
 	var vizBuffer []*VizEvent
 	var finalResponse string
-	var conversationID string    // captured from the completion event
+	var conversationID string
 	var rendered strings.Builder // all text shown so far, for final-response dedupe
 	wrote := false               // any bytes written to stdout (gates a safe fail-open retry)
 	events := 0

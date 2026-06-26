@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/genie"
 	"github.com/databricks/cli/experimental/genie/agentstream"
-	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -31,8 +31,11 @@ func newAskCmd() *cobra.Command {
 Examples:
   databricks experimental genie ask "What were total sales last month?"
   databricks experimental genie ask "What tables exist?" --output json
-  databricks experimental genie ask "Break that down by region" --conversation q3
-  databricks experimental genie ask "What tables exist?" --raw`,
+  databricks experimental genie ask "What tables exist?" --raw
+
+  # Continue a conversation across calls with a label you choose:
+  databricks experimental genie ask -c q3 "What were total sales by quarter?"
+  databricks experimental genie ask -c q3 "Break that down by region"`,
 		Args: root.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
@@ -55,12 +58,6 @@ Examples:
 			w := cmdctx.WorkspaceClient(ctx)
 			host := w.Config.Host
 
-			// Only touch the on-disk cache when a label is in play.
-			var convCache *cache.Cache
-			if conversation != "" {
-				convCache = newConversationCache(ctx)
-			}
-
 			// ask runs one request+render against serverID ("" starts a fresh
 			// conversation) and reports the conversation id from the response,
 			// whether anything reached stdout, and any error.
@@ -82,21 +79,7 @@ Examples:
 				}
 			}
 
-			serverID := lookupConversationID(ctx, convCache, host, conversation)
-			id, wrote, err := ask(serverID)
-
-			// Fail open: resuming an expired/unknown conversation errors before any
-			// output (and is not a cancel/stall, which surface as context.Canceled).
-			// Forget the dead mapping, and if nothing was written yet, retry as a
-			// fresh conversation so the label keeps working.
-			if err != nil && serverID != "" && !errors.Is(err, context.Canceled) {
-				forgetConversation(ctx, convCache, host, conversation)
-				if !wrote {
-					fmt.Fprintf(cmd.ErrOrStderr(), "Conversation %q was not found (it may have expired); starting a new one.\n", conversation)
-					id, wrote, err = ask("")
-				}
-			}
-
+			err := askWithConversation(ctx, cmd.ErrOrStderr(), host, conversation, ask)
 			switch {
 			case err != nil && ctx.Err() != nil:
 				// Ctrl-C: aborting the request already told the server to stop.
@@ -106,12 +89,9 @@ Examples:
 				// The SDK's inactivity timeout cancelled the body read while our
 				// own context is still alive: the stream stalled.
 				return fmt.Errorf("the response stream stalled (no data received for %d minutes): %w", genie.StreamingTimeoutSeconds/60, err)
-			case err != nil:
+			default:
 				return err
 			}
-
-			storeConversationID(ctx, convCache, host, conversation, id)
-			return nil
 		},
 	}
 
@@ -121,4 +101,26 @@ Examples:
 	cmd.Flags().StringVarP(&conversation, "conversation", "c", "", "Conversation label (any string) to continue across calls")
 
 	return cmd
+}
+
+// askWithConversation resolves label to its stored conversation id, runs ask,
+// and keeps the label usable. A resume failure (not a cancel/stall, which
+// surface as context.Canceled) forgets the dead mapping and, if nothing was
+// written yet, retries as a fresh conversation. On success the resulting id is
+// stored. An empty label disables all of this and just runs ask once.
+func askWithConversation(ctx context.Context, stderr io.Writer, host, label string, ask func(serverID string) (string, bool, error)) error {
+	serverID := lookupConversationID(ctx, host, label)
+	id, wrote, err := ask(serverID)
+	if err != nil && serverID != "" && !errors.Is(err, context.Canceled) {
+		forgetConversation(ctx, host, label)
+		if !wrote {
+			fmt.Fprintf(stderr, "Conversation %q was not found (it may have expired); starting a new one.\n", label)
+			id, _, err = ask("")
+		}
+	}
+	if err != nil {
+		return err
+	}
+	storeConversationID(ctx, host, label, id)
+	return nil
 }
