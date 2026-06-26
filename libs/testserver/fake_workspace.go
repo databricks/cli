@@ -347,10 +347,8 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 	defer s.LockUnlock()()
 
-	// The real Workspace API collapses duplicate slashes, so look up the cleaned
-	// path. A doubled leading slash ("//Workspace/...", which some tests use to
-	// avoid Windows path conversion) is additionally canonicalized by stripping
-	// the "/Workspace" mount from the returned path, so mirror that too.
+	// Mirror the real API: collapse duplicate slashes, and for a doubled leading
+	// slash ("//Workspace/...") strip the "/Workspace" mount from the returned path.
 	cleaned := path.Clean(requestPath)
 	stripWorkspacePrefix := strings.HasPrefix(requestPath, "//Workspace/")
 
