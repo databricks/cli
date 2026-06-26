@@ -12,7 +12,10 @@ func NewAitoolsCmd() *cobra.Command {
 effectively with Databricks resources (bundles, jobs, SQL, and more).
 
 Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub
-Copilot, Antigravity.`,
+Copilot, Antigravity.
+
+Skills and plugins are sourced from
+https://github.com/databricks/databricks-agent-skills`,
 	}
 
 	cmd.AddCommand(NewInstallCmd())
