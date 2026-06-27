@@ -103,6 +103,15 @@ const STATUS_CONTEXT = "maintainer-approval";
 
 const loginCache = {};
 
+function latestReviewsByUser(reviews) {
+  const latest = new Map();
+  for (const review of reviews) {
+    if (!review.user?.login) continue;
+    latest.set(review.user.login.toLowerCase(), review);
+  }
+  return Array.from(latest.values());
+}
+
 function classifyFile(filepath, totalFiles) {
   const base = path.basename(filepath);
   if (base.startsWith("out.") || base === "output.txt") {
@@ -465,9 +474,10 @@ module.exports = async ({ github, context, core }) => {
     repo: context.repo.repo,
     pull_number: context.issue.number,
   });
+  const latestReviews = latestReviewsByUser(reviews);
 
   // Maintainer approval -> success with simple comment
-  const maintainerApproval = reviews.find(
+  const maintainerApproval = latestReviews.find(
     ({ state, user }) =>
       state === "APPROVED" && user && maintainers.includes(user.login)
   );
@@ -486,7 +496,7 @@ module.exports = async ({ github, context, core }) => {
 
   // Maintainer-authored PR with any approval -> success
   if (authorLogin && maintainers.includes(authorLogin)) {
-    const hasAnyApproval = reviews.some(
+    const hasAnyApproval = latestReviews.some(
       ({ state, user }) =>
         state === "APPROVED" && user && user.login !== authorLogin
     );
@@ -504,7 +514,7 @@ module.exports = async ({ github, context, core }) => {
   }
 
   // Gather approved logins (excluding the PR author).
-  const approverLogins = reviews
+  const approverLogins = latestReviews
     .filter(
       ({ state, user }) =>
         state === "APPROVED" && user && user.login !== authorLogin
