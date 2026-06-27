@@ -93,7 +93,7 @@ func TestGenieSpaceDoCreateRetriesWhenParentPathLooksMissing(t *testing.T) {
 		}, nil).
 		Once()
 
-	id, state, err := r.DoCreate(ctx, &resources.GenieSpaceConfig{
+	id, state, err := r.DoCreate(ctx, nil, &resources.GenieSpaceConfig{
 		Title:           "test genie space",
 		Description:     "test description",
 		ParentPath:      "/Workspace/test-parent",
@@ -132,7 +132,7 @@ func TestGenieSpaceDoUpdateRoundTripsEtag(t *testing.T) {
 		}, nil).
 		Once()
 
-	state, err := r.DoUpdate(ctx, "space-id", &resources.GenieSpaceConfig{
+	state, err := r.DoUpdate(ctx, nil, "space-id", &resources.GenieSpaceConfig{
 		Title: "new",
 		Etag:  "etag-7",
 	}, entry)
@@ -167,7 +167,7 @@ func TestGenieSpaceDoUpdateAlwaysSendsSerializedSpace(t *testing.T) {
 		}, nil).
 		Once()
 
-	state, err := r.DoUpdate(ctx, "space-id", &resources.GenieSpaceConfig{
+	state, err := r.DoUpdate(ctx, nil, "space-id", &resources.GenieSpaceConfig{
 		Title:           "new",
 		SerializedSpace: "{\"converge\":\"me\"}",
 	}, entry)

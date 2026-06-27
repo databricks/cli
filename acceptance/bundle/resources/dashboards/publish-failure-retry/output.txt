@@ -1,0 +1,67 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/publish-failure-retry/default/files...
+Deploying resources...
+Error: cannot create resources.dashboards.dashboard1: Fault injected by test. (400 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published
+HTTP Status: 400 Bad Request
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Updating deployment state...
+
+Exit code: 1
+
+>>> [CLI] bundle summary
+Name: publish-failure-retry
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/publish-failure-retry/default
+Resources:
+  Dashboards:
+    dashboard1:
+      Name: my dashboard
+      URL:  [DATABRICKS_URL]/dashboardsv3/[DASHBOARD1_ID]/published?[WSPARAM]=[NUMID]
+
+>>> [CLI] bundle plan -o json
+{
+  "action": "update",
+  "old": false,
+  "new": true,
+  "remote": false
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/publish-failure-retry/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
+  "body": {
+    "display_name": "my dashboard",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/publish-failure-retry/default/resources",
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
+    "warehouse_id": "someid"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published",
+  "body": {
+    "embed_credentials": false,
+    "warehouse_id": "someid"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.dashboards.dashboard1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/publish-failure-retry/default
+
+Deleting files...
+Destroy complete!

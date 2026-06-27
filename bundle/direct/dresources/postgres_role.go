@@ -116,7 +116,7 @@ func (r *ResourcePostgresRole) DoRead(ctx context.Context, id string) (*Postgres
 	return makePostgresRoleRemote(role), nil
 }
 
-func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRoleState) (string, *PostgresRoleRemote, error) {
+func (r *ResourcePostgresRole) DoCreate(ctx context.Context, _ *StateSaver, config *PostgresRoleState) (string, *PostgresRoleRemote, error) {
 	waiter, err := r.client.Postgres.CreateRole(ctx, postgres.CreateRoleRequest{
 		RoleId: config.RoleId,
 		Parent: config.Parent,
@@ -147,7 +147,7 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *PostgresRoleState, entry *PlanEntry) (*PostgresRoleRemote, error) {
+func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *PostgresRoleState, entry *PlanEntry) (*PostgresRoleRemote, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// Prefix with "spec." because the API expects paths relative to the Role
 	// object, not relative to our flattened state type.

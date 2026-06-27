@@ -1,0 +1,35 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# unset MSYS_NO_PATHCONV so MSYS2 converts the script path to a Windows path
+# when invoking the Python interpreter (required for fault.py to be found on Windows).
+unset MSYS_NO_PATHCONV
+
+# First deploy succeeds fully: the dashboard is created and published.
+trace $CLI bundle deploy
+replace_ids.py
+rm out.requests.txt
+
+# Inject a single publish failure for the update below.
+fault.py "POST /api/2.0/lakeview/dashboards/*" 400 0 1
+
+# Change the dashboard to trigger an Update, which bumps the server-side etag.
+update_file.py databricks.yml "my dashboard" "my dashboard renamed"
+
+# Deploy: Update (PATCH) succeeds and bumps the etag, but the publish (POST) fails.
+errcode trace $CLI bundle deploy
+
+# The failed deploy issued a PATCH (update) and a POST (publish), but no CREATE
+# (POST /api/2.0/lakeview/dashboards): the existing dashboard was updated in place.
+print_requests.py //lakeview/dashboards
+
+# Plan shows "modified remotely": state still holds the pre-PATCH etag; the PATCH bumped
+# the remote etag, so the next plan sees an etag mismatch and blocks with a warning.
+# The published field is not shown as a pending change (null) because the "modified
+# remotely" guard takes precedence.
+trace $CLI bundle plan -o json | jq '.plan["resources.dashboards.dashboard1"].changes.published'

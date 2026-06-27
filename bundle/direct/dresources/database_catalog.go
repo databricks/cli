@@ -24,7 +24,7 @@ func (r *ResourceDatabaseCatalog) DoRead(ctx context.Context, id string) (*datab
 	return r.client.Database.GetDatabaseCatalogByName(ctx, id)
 }
 
-func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database.DatabaseCatalog) (string, *database.DatabaseCatalog, error) {
+func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, _ *StateSaver, config *database.DatabaseCatalog) (string, *database.DatabaseCatalog, error) {
 	result, err := r.client.Database.CreateDatabaseCatalog(ctx, database.CreateDatabaseCatalogRequest{
 		Catalog: *config,
 	})

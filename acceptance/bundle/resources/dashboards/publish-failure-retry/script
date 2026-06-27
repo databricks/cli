@@ -1,0 +1,37 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# unset MSYS_NO_PATHCONV so MSYS2 converts the script path to a Windows path
+# when invoking the Python interpreter (required for fault.py to be found on Windows).
+unset MSYS_NO_PATHCONV
+
+# Inject a single publish failure so the first deploy creates the dashboard
+# draft but fails to publish it.
+fault.py "POST /api/2.0/lakeview/dashboards/*" 400 0 1
+
+# First deploy: dashboard is created and saved to state, but publish fails.
+errcode trace $CLI bundle deploy
+
+# Capture the dashboard ID from state so subsequent output is normalized.
+replace_ids.py
+
+# Dashboard should be in state (tracked) despite the publish failure.
+trace $CLI bundle summary
+
+# Plan should show published: false (saved state) -> true (desired).
+trace $CLI bundle plan -o json | jq '.plan["resources.dashboards.dashboard1"].changes.published'
+
+# Discard first-deploy requests so the output only contains second-deploy
+# calls, making it easy to confirm no CREATE was issued.
+rm out.requests.txt
+
+# Second deploy: fault is gone; must publish the existing draft, not create a new one.
+trace $CLI bundle deploy
+
+# Confirm: second deploy issued an UPDATE and a PUBLISH call but no CREATE.
+print_requests.py //lakeview/dashboards

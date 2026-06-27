@@ -24,7 +24,7 @@ func (r *ResourceSyncedDatabaseTable) DoRead(ctx context.Context, name string) (
 	return r.client.Database.GetSyncedDatabaseTableByName(ctx, name)
 }
 
-func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, config *database.SyncedDatabaseTable) (string, *database.SyncedDatabaseTable, error) {
+func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, _ *StateSaver, config *database.SyncedDatabaseTable) (string, *database.SyncedDatabaseTable, error) {
 	result, err := r.client.Database.CreateSyncedDatabaseTable(ctx, database.CreateSyncedDatabaseTableRequest{
 		SyncedTable: *config,
 	})

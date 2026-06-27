@@ -72,7 +72,7 @@ func (r *ResourceQualityMonitor) DoRead(ctx context.Context, id string) (*catalo
 	})
 }
 
-func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, config *QualityMonitorState) (string, *catalog.MonitorInfo, error) {
+func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, _ *StateSaver, config *QualityMonitorState) (string, *catalog.MonitorInfo, error) {
 	req := config.CreateMonitor
 	req.TableName = config.TableName
 	//nolint:staticcheck // Direct quality_monitor resource still uses legacy monitor endpoints; v1 data-quality migration is separate work.
@@ -83,7 +83,7 @@ func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, config *QualityMo
 	return response.TableName, response, nil
 }
 
-func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config *QualityMonitorState, _ *PlanEntry) (*catalog.MonitorInfo, error) {
+func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *QualityMonitorState, _ *PlanEntry) (*catalog.MonitorInfo, error) {
 	updateRequest := catalog.UpdateMonitor{
 		TableName:                id,
 		BaselineTableName:        config.BaselineTableName,
