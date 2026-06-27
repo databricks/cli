@@ -99,7 +99,7 @@ func TestDisplayState(t *testing.T) {
 	}
 }
 
-func TestPreselect(t *testing.T) {
+func TestIsPreselected(t *testing.T) {
 	ctx := t.Context()
 
 	tests := []struct {
@@ -122,7 +122,7 @@ func TestPreselect(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			stubLookPath(t, tc.onPath...)
 			a := &Agent{Binary: tc.binary, Plugin: tc.plugin, ConfigDir: configDir(t, tc.hasCfg)}
-			assert.Equal(t, tc.expected, a.Preselect(ctx))
+			assert.Equal(t, tc.expected, a.IsPreselected(ctx))
 		})
 	}
 }

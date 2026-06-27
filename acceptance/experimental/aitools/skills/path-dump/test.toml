@@ -2,14 +2,14 @@
 Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
 Env.DATABRICKS_SKILLS_REF = "test-ref"
 
+# --path writes files into the working directory; don't diff them.
 Ignore = [
-    "home",
+    "dumped",
 ]
 
 [EnvMatrix]
 DATABRICKS_BUNDLE_ENGINE = []
 
-# Stable + experimental skills via repo_dir.
 [[Server]]
 Pattern = "GET /test-ref/manifest.json"
 Response.Body = '''
@@ -22,12 +22,6 @@ Response.Body = '''
       "description": "Stable test skill",
       "files": ["SKILL.md"],
       "repo_dir": "skills"
-    },
-    "test-exp": {
-      "version": "0.0.1",
-      "description": "Experimental test skill",
-      "files": ["SKILL.md"],
-      "repo_dir": "experimental"
     }
   }
 }
@@ -40,13 +34,4 @@ name: test-stable
 ---
 
 # Test stable skill
-'''
-
-[[Server]]
-Pattern = "GET /test-ref/experimental/test-exp/SKILL.md"
-Response.Body = '''---
-name: test-exp
----
-
-# Test experimental skill
 '''
