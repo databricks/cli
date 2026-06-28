@@ -36,5 +36,6 @@ ignore = [
 
 [lint.per-file-ignores]
 # dbutils and spark are injected into the global namespace by the Databricks
-# runtime where this bootstrap script executes; they are never imported.
+# runtime where these scripts execute; they are never imported.
 "experimental/ssh/internal/client/ssh-server-bootstrap.py" = ["F821"]
+"acceptance/dbr_runner.py" = ["F821"]
