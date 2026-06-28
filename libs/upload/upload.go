@@ -236,8 +236,6 @@ func WithParallelism(n int) UploadOption {
 // WithProgress registers a callback invoked as the upload progresses, reporting
 // the cumulative bytes uploaded and the total size (-1 if unknown). It is useful
 // for rendering an upload progress bar.
-//
-//deadcode:allow exported engine option with no in-tree caller yet
 func WithProgress(fn ProgressFunc) UploadOption {
 	return func(c *uploadConfig) { c.progress = fn }
 }

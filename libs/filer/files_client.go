@@ -109,6 +109,24 @@ func MultipartUploadEnabled(ctx context.Context) bool {
 	return enabled
 }
 
+// uploadProgressKey is the context key for an optional large-file upload
+// progress callback.
+type uploadProgressKey struct{}
+
+// WithUploadProgress returns a context carrying a progress callback for
+// large-file (multipart) uploads. FilesClient.Write forwards it to the upload
+// engine; it has no effect on writes that do not go through the engine (small
+// files, non-seekable streams, non-Volumes targets, or when multipart upload is
+// disabled).
+func WithUploadProgress(ctx context.Context, fn upload.ProgressFunc) context.Context {
+	return context.WithValue(ctx, uploadProgressKey{}, fn)
+}
+
+func uploadProgressFromContext(ctx context.Context) upload.ProgressFunc {
+	fn, _ := ctx.Value(uploadProgressKey{}).(upload.ProgressFunc)
+	return fn
+}
+
 // FilesClient implements the [Filer] interface for the Files API backend.
 type FilesClient struct {
 	workspaceClient *databricks.WorkspaceClient
@@ -212,10 +230,17 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	// reads when the source provides one (a local file).
 	if MultipartUploadEnabled(ctx) {
 		if isSeekable(reader) {
-			_, uerr := w.uploader.Upload(ctx, absPath, reader,
+			opts := []upload.UploadOption{
 				upload.WithOverwrite(overwrite),
 				upload.WithLimiter(w.limiter),
-				upload.WithTransferClient(w.transferClient))
+				upload.WithTransferClient(w.transferClient),
+			}
+			// A caller (fs cp) can attach a progress callback via the context to
+			// render an upload bar; it is absent for other writers (e.g. bundle).
+			if fn := uploadProgressFromContext(ctx); fn != nil {
+				opts = append(opts, upload.WithProgress(fn))
+			}
+			_, uerr := w.uploader.Upload(ctx, absPath, reader, opts...)
 			return mapUploadError(uerr, absPath)
 		}
 	}

@@ -45,6 +45,11 @@ type copy struct {
 	sourceScheme string
 	targetScheme string
 
+	// showProgress renders an upload progress bar. It is set only for a single
+	// large-file copy to a Volume, not for recursive copies (where many files
+	// would each fight for the spinner line).
+	showProgress bool
+
 	mu sync.Mutex // protect output from concurrent writes
 }
 
@@ -131,20 +136,31 @@ func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string) 
 	}
 	defer r.Close()
 
+	// For a single large-file copy, attach a progress callback to the context
+	// that the Files filer forwards to the upload engine, rendering an upload bar.
+	// The spinner is stopped before any event line is emitted so its final frame
+	// does not overwrite it.
+	closeProgress := func() {}
+	if c.showProgress {
+		fn, stop := newProgressFunc(ctx)
+		ctx = filer.WithUploadProgress(ctx, fn)
+		closeProgress = stop
+	}
+
+	var writeErr error
 	if c.overwrite {
-		err = c.targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
-		if err != nil {
-			return err
-		}
+		writeErr = c.targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
 	} else {
-		err = c.targetFiler.Write(ctx, targetPath, r)
-		// skip if file already exists
-		if err != nil && errors.Is(err, fs.ErrExist) {
-			return c.emitFileSkippedEvent(ctx, sourcePath, targetPath)
-		}
-		if err != nil {
-			return err
-		}
+		writeErr = c.targetFiler.Write(ctx, targetPath, r)
+	}
+	closeProgress()
+
+	// skip if file already exists
+	if !c.overwrite && writeErr != nil && errors.Is(writeErr, fs.ErrExist) {
+		return c.emitFileSkippedEvent(ctx, sourcePath, targetPath)
+	}
+	if writeErr != nil {
+		return writeErr
 	}
 	return c.emitFileCopiedEvent(ctx, sourcePath, targetPath)
 }
@@ -277,6 +293,10 @@ func newCpCommand() *cobra.Command {
 		if sourceInfo.IsDir() {
 			return c.cpDirToDir(ctx, sourcePath, targetPath)
 		}
+
+		// A single large file copied to a Volume goes through the multipart engine,
+		// which reports progress; render an upload bar for it.
+		c.showProgress = filer.MultipartUploadEnabled(ctx) && strings.HasPrefix(targetPath, "/Volumes/")
 
 		// If target path has a trailing separator, trim it and let case 2 handle it
 		if hasTrailingDirSeparator(fullTargetPath) {
