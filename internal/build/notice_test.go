@@ -22,6 +22,7 @@ var moduleToGitHub = map[string]string{
 // Modules excluded from NOTICE requirements (Databricks-owned).
 var noticeExclude = map[string]bool{
 	"github.com/databricks/databricks-sdk-go": true,
+	"github.com/databricks/sdk-go/core":       true,
 }
 
 // Additional entries required in the NOTICE file that are not direct go.mod
