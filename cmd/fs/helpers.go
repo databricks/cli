@@ -14,6 +14,20 @@ import (
 )
 
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
+	return newFilerForPath(ctx, fullPath, 0)
+}
+
+// filerForUploadTarget is filerForPath for a copy target. When the target
+// resolves to a Volumes (Files API) filer, large-file (multipart) uploads use
+// uploadConcurrency as the shared transfer budget; other schemes ignore it.
+func filerForUploadTarget(ctx context.Context, fullPath string, uploadConcurrency int) (filer.Filer, string, error) {
+	return newFilerForPath(ctx, fullPath, uploadConcurrency)
+}
+
+// newFilerForPath resolves a filer and the scheme-stripped path. uploadConcurrency
+// (when > 0) sizes a Volumes filer's large-file upload budget; it is ignored for
+// every other scheme.
+func newFilerForPath(ctx context.Context, fullPath string, uploadConcurrency int) (filer.Filer, string, error) {
 	// Split path at : to detect any file schemes
 	parts := strings.SplitN(fullPath, ":", 2)
 
@@ -40,7 +54,11 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 
 	// If the specified path has the "Volumes" prefix, use the Files API.
 	if strings.HasPrefix(path, "/Volumes/") {
-		f, err := filer.NewFilesClient(w, "/")
+		var opts []filer.FilesClientOption
+		if uploadConcurrency > 0 {
+			opts = append(opts, filer.WithUploadConcurrency(uploadConcurrency))
+		}
+		f, err := filer.NewFilesClient(w, "/", opts...)
 		return f, path, err
 	}
 
