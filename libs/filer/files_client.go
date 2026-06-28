@@ -16,6 +16,9 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/upload"
+	uploadfiles "github.com/databricks/cli/libs/upload/files"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -88,6 +91,24 @@ func (e filesApiDirEntry) Info() (fs.FileInfo, error) {
 	return e.i, nil
 }
 
+// defaultUploadConcurrency bounds large-file (multipart) transfers for a filer
+// created without an explicit concurrency. fs cp overrides it from --concurrency.
+const defaultUploadConcurrency = 64
+
+// multipartUploadEnvVar gates routing large Volumes writes through the multipart
+// upload engine. The engine is new, so it is off by default: when unset or not
+// truthy, Write uses the single-shot PUT, leaving fs cp and bundle behavior
+// unchanged.
+const multipartUploadEnvVar = "DATABRICKS_EXPERIMENTAL_MULTIPART_UPLOAD"
+
+// MultipartUploadEnabled reports whether large files are uploaded to UC Volumes
+// with the multipart engine, gated by DATABRICKS_EXPERIMENTAL_MULTIPART_UPLOAD (off by
+// default).
+func MultipartUploadEnabled(ctx context.Context) bool {
+	enabled, _ := env.GetBool(ctx, multipartUploadEnvVar)
+	return enabled
+}
+
 // FilesClient implements the [Filer] interface for the Files API backend.
 type FilesClient struct {
 	workspaceClient *databricks.WorkspaceClient
@@ -95,10 +116,40 @@ type FilesClient struct {
 
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
+
+	// Large files are uploaded with the multipart engine. The limiter and transfer
+	// client are shared across every Write on this filer, so concurrent uploads
+	// (e.g. fs cp -r) draw from one bounded budget and one connection pool.
+	uploader       *upload.Client
+	limiter        upload.Limiter
+	transferClient *http.Client
 }
 
-func NewFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
+type filesClientConfig struct {
+	uploadConcurrency int
+}
+
+// FilesClientOption configures a [FilesClient].
+type FilesClientOption func(*filesClientConfig)
+
+// WithUploadConcurrency sizes the shared limiter and transfer-client connection
+// pool used for large-file (multipart) writes on the filer.
+func WithUploadConcurrency(n int) FilesClientOption {
+	return func(c *filesClientConfig) { c.uploadConcurrency = n }
+}
+
+func NewFilesClient(w *databricks.WorkspaceClient, root string, opts ...FilesClientOption) (Filer, error) {
+	cfg := filesClientConfig{uploadConcurrency: defaultUploadConcurrency}
+	for _, o := range opts {
+		o(&cfg)
+	}
+
 	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	uploader, err := upload.NewClient(w)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +159,10 @@ func NewFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 		apiClient:       apiClient,
 
 		root: NewWorkspaceRootPath(root),
+
+		uploader:       uploader,
+		limiter:        upload.NewLimiter(cfg.uploadConcurrency),
+		transferClient: upload.NewTransferClient(cfg.uploadConcurrency),
 	}, nil
 }
 
@@ -148,6 +203,23 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	}
 
 	overwrite := slices.Contains(mode, OverwriteIfExists)
+
+	// When enabled (DATABRICKS_EXPERIMENTAL_MULTIPART_UPLOAD), seekable uploads go
+	// through the multipart engine, which sends small files in a single PUT and
+	// splits large ones into parts. Non-seekable streams keep the single-shot PUT
+	// below to avoid buffering the whole stream in memory, as does everything when
+	// the flag is off. The engine recovers an io.ReaderAt for concurrent positioned
+	// reads when the source provides one (a local file).
+	if MultipartUploadEnabled(ctx) {
+		if isSeekable(reader) {
+			_, uerr := w.uploader.Upload(ctx, absPath, reader,
+				upload.WithOverwrite(overwrite),
+				upload.WithLimiter(w.limiter),
+				upload.WithTransferClient(w.transferClient))
+			return mapUploadError(uerr, absPath)
+		}
+	}
+
 	urlPath = fmt.Sprintf("%s?overwrite=%t", urlPath, overwrite)
 	headers := map[string]string{"Content-Type": "application/octet-stream"}
 	maps.Copy(headers, auth.WorkspaceIDHeaders(w.workspaceClient.Config))
@@ -169,6 +241,32 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 		return fileAlreadyExistsError{absPath}
 	}
 
+	return err
+}
+
+// isSeekable reports whether r can be seeked, without moving it: a no-op
+// Seek(0, io.SeekCurrent) returns the current offset for a working seeker and
+// errors for a broken one. Probing this way (rather than seeking to the end and
+// back) guarantees the reader keeps its position, so a false result never leaves
+// it parked at EOF for the single-shot fallback, which reads from the current
+// offset and would otherwise upload a truncated object. The engine sizes the
+// stream itself once it takes over.
+func isSeekable(r io.Reader) bool {
+	s, ok := r.(io.Seeker)
+	if !ok {
+		return false
+	}
+	_, err := s.Seek(0, io.SeekCurrent)
+	return err == nil
+}
+
+// mapUploadError translates the upload engine's already-exists sentinel into the
+// filer's error so skip-if-exists logic (which checks fs.ErrExist) keeps working.
+// A nil error passes through unchanged.
+func mapUploadError(err error, absPath string) error {
+	if errors.Is(err, uploadfiles.ErrAlreadyExists) {
+		return fileAlreadyExistsError{absPath}
+	}
 	return err
 }
 
