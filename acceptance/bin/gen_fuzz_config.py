@@ -2,14 +2,13 @@
 """
 Generate a random bundle config from the bundle JSON schema.
 
-The generator walks the schema (`databricks bundle schema`), resolving $ref and
-picking concrete branches of oneOf/anyOf, and emits a single random resource as a
-databricks.yml. It is seeded so a failing run can be reproduced with the same --seed.
+Walks the schema (`databricks bundle schema`), resolving $ref and picking concrete
+branches of oneOf/anyOf, and emits one random resource as a databricks.yml. Seeded
+so a failing run reproduces with the same --seed.
 
-This feeds the invariant tests (see acceptance/bundle/invariant/): the harness
-deploys the generated config and asserts invariants such as no-drift. Configs the
-CLI rejects are filtered out by the harness before invariants are checked, so the
-generator is free to produce structurally-random-but-sometimes-invalid configs.
+Feeds the invariant tests (see acceptance/bundle/invariant/). The harness filters out
+configs the CLI rejects, so the generator may emit structurally-random-but-sometimes-
+invalid configs.
 """
 
 import argparse
@@ -17,14 +16,13 @@ import json
 import random
 import sys
 
-# Maximum object/array nesting depth. The schema is recursive (e.g. job tasks ->
-# for_each_task -> task), so without a cap the walk would not terminate.
+# Cap nesting depth: the schema is recursive (e.g. task -> for_each_task -> task),
+# so without a cap the walk would not terminate.
 MAX_DEPTH = 6
 
-# A string branch whose pattern matches a ${...} reference. These exist because the
-# schema generator wraps every concrete field in a oneOf with interpolation-string
-# alternatives (see bundle/internal/schema/main.go addInterpolationPatterns). We
-# generate concrete values, not references, so these branches are skipped.
+# Matches the ${...} interpolation-string branches the schema wraps every concrete
+# field in (see bundle/internal/schema/main.go addInterpolationPatterns). We emit
+# concrete values, so these branches are skipped.
 INTERPOLATION_MARKER = "\\$\\{"
 
 
@@ -35,8 +33,8 @@ class Generator:
         self.unique = unique
 
     def resolve(self, schema):
-        # Follow $ref chains. A ref looks like "#/$defs/github.com/.../resources.Job";
-        # definitions are nested under $defs by the "/"-separated path segments.
+        # Follow $ref chains, e.g. "#/$defs/github.com/.../resources.Job", nested
+        # under $defs by "/"-separated path segments.
         while isinstance(schema, dict) and "$ref" in schema:
             cur = self.root["$defs"]
             for part in schema["$ref"].split("/")[2:]:
@@ -48,7 +46,7 @@ class Generator:
         return branch.get("type") == "string" and INTERPOLATION_MARKER in branch.get("pattern", "")
 
     def choose_branch(self, branches):
-        # Prefer concrete branches over the ${...} interpolation-string alternatives.
+        # Prefer concrete branches over the ${...} alternatives.
         concrete = [b for b in branches if not self.is_interpolation(b)]
         return self.rng.choice(concrete or branches)
 
@@ -82,8 +80,8 @@ class Generator:
         result = {}
 
         for prop_name, prop_schema in props.items():
-            # Always emit required fields; emit optional ones with decreasing
-            # probability as we go deeper to keep configs from exploding.
+            # Always emit required fields; emit optional ones less often as we go
+            # deeper to keep configs from exploding.
             keep = prop_name in required or (depth < MAX_DEPTH and self.rng.random() < 0.35)
             if not keep:
                 continue
@@ -91,8 +89,8 @@ class Generator:
             if value is not None:
                 result[prop_name] = value
 
-        # Map type (additionalProperties schema, no fixed properties): synthesize a
-        # few random keys, e.g. resources.<type> or string maps like tags.
+        # Map type (additionalProperties, no fixed properties): synthesize a few
+        # random keys, e.g. resources.<type> or string maps like tags.
         if self.is_map(schema):
             for _ in range(self.rng.randint(1, 2)):
                 key = self.token()
@@ -124,7 +122,7 @@ class Generator:
 
 
 def resource_types(schema, gen):
-    # resources is `oneOf[{object with one property per resource type}]`.
+    # resources is oneOf[{ object with one property per resource type }].
     resources = gen.resolve(schema["properties"]["resources"])
     obj = next(b for b in resources["oneOf"] if b.get("type") == "object")
     return obj["properties"]
@@ -140,8 +138,8 @@ def gen_config(schema, seed, unique, allowed):
         sys.exit(f"no resource types to generate from (allowed={sorted(allowed)})")
     rtype = rng.choice(sorted(candidates))
 
-    # Each resource type is a map ref; its element schema lives under the object
-    # branch's additionalProperties.
+    # Each resource type is a map ref; the element schema is the object branch's
+    # additionalProperties.
     map_schema = gen.resolve(types[rtype])
     obj = next(b for b in map_schema["oneOf"] if b.get("type") == "object")
     element = obj["additionalProperties"]

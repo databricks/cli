@@ -1,5 +1,3 @@
-# Schema fuzzing: generate random configs from the bundle schema and assert
-# invariants (see script). Unlike the curated-corpus invariant tests (no_drift,
-# migrate), the fuzzer generates its own configs, so drop the inherited
-# INPUT_CONFIG matrix.
+# Schema fuzzing (see script). Unlike the curated invariant tests, the fuzzer
+# generates its own configs, so drop the inherited INPUT_CONFIG matrix.
 EnvMatrix.INPUT_CONFIG = []
