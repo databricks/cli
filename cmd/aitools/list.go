@@ -30,7 +30,7 @@ func NewListCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List installed AI tools components",
+		Short: "List installed skills and plugins",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Reject the legacy --project --global combination here so it
@@ -151,7 +151,7 @@ func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
 	names := slices.Sorted(maps.Keys(manifest.Skills))
 
 	out := listOutput{
-		Release: strings.TrimPrefix(ref, "v"),
+		Release: installer.DisplaySkillsVersion(ref),
 		Skills:  make([]skillEntry, 0, len(names)),
 		Summary: map[string]scopeSummary{},
 	}
@@ -262,25 +262,30 @@ func renderListJSON(w io.Writer, out listOutput) error {
 }
 
 func renderListText(ctx context.Context, out listOutput, scope string) {
-	cmdio.LogString(ctx, "Available skills (v"+out.Release+"):")
-	cmdio.LogString(ctx, "")
-
 	bothScopes := scope == "" &&
 		out.Summary[installer.ScopeGlobal].loaded &&
 		out.Summary[installer.ScopeProject].loaded
 
-	var buf strings.Builder
-	tw := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, "  NAME\tVERSION\tINSTALLED")
+	// Split experimental skills into their own group so they are clearly
+	// separated from the stable set rather than interleaved alphabetically.
+	var stable, experimental []skillEntry
 	for _, s := range out.Skills {
-		tag := ""
 		if s.Experimental {
-			tag = " [experimental]"
+			experimental = append(experimental, s)
+		} else {
+			stable = append(stable, s)
 		}
-		fmt.Fprintf(tw, "  %s%s\tv%s\t%s\n", s.Name, tag, s.LatestVersion, installedStatusFromEntry(s, bothScopes))
 	}
-	tw.Flush()
-	cmdio.LogString(ctx, buf.String())
+
+	cmdio.LogString(ctx, "Available skills ("+versionToken(out.Release)+"):")
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, renderSkillTable(stable, bothScopes))
+
+	if len(experimental) > 0 {
+		cmdio.LogString(ctx, "Experimental skills:")
+		cmdio.LogString(ctx, "")
+		cmdio.LogString(ctx, renderSkillTable(experimental, bothScopes))
+	}
 
 	cmdio.LogString(ctx, summaryLine(out, scope))
 
@@ -295,6 +300,18 @@ func renderListText(ctx context.Context, out listOutput, scope string) {
 		atw.Flush()
 		cmdio.LogString(ctx, ab.String())
 	}
+}
+
+// renderSkillTable formats a NAME/VERSION/INSTALLED table for a group of skills.
+func renderSkillTable(skills []skillEntry, bothScopes bool) string {
+	var buf strings.Builder
+	tw := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(tw, "  NAME\tVERSION\tINSTALLED")
+	for _, s := range skills {
+		fmt.Fprintf(tw, "  %s\tv%s\t%s\n", s.Name, s.LatestVersion, installedStatusFromEntry(s, bothScopes))
+	}
+	tw.Flush()
+	return buf.String()
 }
 
 // agentStatusLabel renders the text-view status for an agent, collapsing the
@@ -322,9 +339,9 @@ func agentStatusLabel(a agentEntry, release string) string {
 	}
 
 	if upToDate {
-		return "plugin · v" + version + " · up to date"
+		return "plugin · " + versionToken(version) + " · up to date"
 	}
-	return "plugin · v" + version + " · update available"
+	return "plugin · " + versionToken(version) + " · update available"
 }
 
 func installedStatusFromEntry(s skillEntry, bothScopes bool) string {

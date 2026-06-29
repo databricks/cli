@@ -213,7 +213,7 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 		Marketplace:          agent.Plugin.Marketplace,
 		Plugin:               agent.Plugin.ID,
 		Scope:                nativeScope,
-		Version:              strings.TrimPrefix(ref, "v"),
+		Version:              DisplaySkillsVersion(ref),
 		InstalledMarketplace: installedMarketplace,
 	}, nil
 }

@@ -76,18 +76,50 @@ func stateRepoDir(state *InstallState, name string) string {
 // It is a package-level var so tests can replace it with a mock.
 var fetchFileFn func(ctx context.Context, ref, repoDir, skillName, filePath string) ([]byte, error) = fetchSkillFile
 
+// latestSkillsRef is the ref used when nothing pins a version. It tracks the
+// skills repo's default branch, the same content plugin agents receive (their
+// marketplace clones the default branch), so skills and plugin agents stay in
+// sync by default.
+const latestSkillsRef = "main"
+
+// skillsLatestSentinel is the value cli-compat.json uses for the skills version
+// to mean "track latest" rather than pinning a specific release.
+const skillsLatestSentinel = clicompat.AgentSkillsLatest
+
 // GetSkillsRef returns the skills repo ref to use and whether it was explicitly
-// set via DATABRICKS_SKILLS_REF (as opposed to auto-resolved from the manifest).
-// Resolution order: DATABRICKS_SKILLS_REF env var → compatibility manifest → error.
+// pinned (as opposed to tracking latest).
+//
+// By default we track the latest skills. cli-compat.json is the remote control
+// for this: it normally reports "latest" (so skills match what plugin agents
+// install), but if a future change makes a skills release incompatible with
+// older CLIs, it can be edited remotely to pin those CLIs to the last compatible
+// version with no CLI release. DATABRICKS_SKILLS_REF overrides everything for
+// eval/reproducibility. (AppKit version resolution is unaffected; cli-compat
+// still manages it via its own field.)
 func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref, true, nil
 	}
 	v, err := clicompat.ResolveAgentSkillsVersion(ctx)
 	if err != nil {
-		return "", false, fmt.Errorf("could not resolve skills version: %w", err)
+		// If compatibility can't be resolved (offline, parse error), track latest
+		// rather than failing the install.
+		log.Debugf(ctx, "could not resolve skills compatibility, tracking latest: %v", err)
+		return latestSkillsRef, false, nil
 	}
-	return "v" + v, false, nil
+	if v == "" || v == skillsLatestSentinel {
+		return latestSkillsRef, false, nil
+	}
+	return "v" + v, true, nil
+}
+
+// DisplaySkillsVersion renders a skills ref for humans: the latest sentinel
+// becomes "latest"; a pinned tag drops its leading "v".
+func DisplaySkillsVersion(ref string) string {
+	if ref == latestSkillsRef {
+		return "latest"
+	}
+	return strings.TrimPrefix(ref, "v")
 }
 
 // GetSkillsBaseURL returns the manifest and skill fetch base URL.
@@ -167,7 +199,7 @@ func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, re
 	manifest, err := src.FetchManifest(ctx, ref)
 	if err != nil && allowFallback && clicompat.IsNotFoundError(err) {
 		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAgentSkillsVersion()
-		if fbErr == nil && fallbackVersion != "" && fallbackVersion != tag {
+		if fbErr == nil && fallbackVersion != "" && fallbackVersion != skillsLatestSentinel && fallbackVersion != tag {
 			log.Warnf(ctx, "Skills version %s not found, falling back to embedded version %s", tag, fallbackVersion)
 			ref = "v" + fallbackVersion
 			manifest, err = src.FetchManifest(ctx, ref)
@@ -186,7 +218,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if err != nil {
 		return err
 	}
-	cmdio.LogString(ctx, "Using skills version "+strings.TrimPrefix(ref, "v"))
+	cmdio.LogString(ctx, "Using skills version "+DisplaySkillsVersion(ref))
 	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref, !explicit)
 	if err != nil {
 		return err
@@ -422,7 +454,7 @@ func PrintInstallingFor(ctx context.Context, targetAgents []*agents.Agent) {
 	for i, a := range targetAgents {
 		names[i] = a.DisplayName
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Installing Databricks AI skills for %s...", strings.Join(names, ", ")))
+	cmdio.LogString(ctx, fmt.Sprintf("Installing Databricks skills for %s...", strings.Join(names, ", ")))
 }
 
 func printNoAgentsDetected(ctx context.Context) {

@@ -24,8 +24,8 @@ func NewUpdateCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update installed AI skills",
-		Long: `Update installed Databricks AI skills to the latest release.
+		Short: "Update installed skills and plugins",
+		Long: `Update installed Databricks skills and plugins to the latest release.
 
 By default, updates all installed skills and auto-installs new skills
 from the manifest. Use --no-new to skip new skills, or --check to
@@ -82,13 +82,13 @@ preview what would change without downloading.`,
 						return err
 					}
 					for _, pu := range pluginUpdates {
-						cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin v%s", pu.Agent, pu.Version))
+						cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", pu.Agent, versionToken(pu.Version)))
 					}
 				}
 
 				// Reconcile file skills for non-plugin agents. Skip entirely for a
 				// pure-plugin install (no file skills to maintain); keep calling for
-				// no-state installs so the "no skills installed" guidance still fires.
+				// no-state installs so the "no skills or plugins installed" guidance still fires.
 				if state == nil || len(state.Skills) > 0 {
 					opts := installer.UpdateOptions{
 						Check:   check,

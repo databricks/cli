@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -366,6 +367,34 @@ func TestRenderListTextUsesLoadedStateForScopeLabels(t *testing.T) {
 	got := stderr.String()
 	assert.Contains(t, got, "v1.0.0 (up to date) (global)")
 	assert.Contains(t, got, "1/1 skills installed (global), 0/1 (project)")
+}
+
+func TestRenderListTextGroupsExperimental(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	out := listOutput{
+		Release: "latest",
+		Skills: []skillEntry{
+			{Name: "databricks-jobs", LatestVersion: "1.0.0", Installed: map[string]string{}},
+			{Name: "experimental-thing", LatestVersion: "0.1.0", Experimental: true, Installed: map[string]string{}},
+		},
+		Summary: map[string]scopeSummary{
+			installer.ScopeGlobal: {Installed: 0, Total: 2, loaded: true},
+		},
+	}
+
+	renderListText(ctx, out, installer.ScopeGlobal)
+
+	got := stderr.String()
+	availIdx := strings.Index(got, "Available skills")
+	expIdx := strings.Index(got, "Experimental skills:")
+	require.GreaterOrEqual(t, availIdx, 0, "available group header present")
+	require.GreaterOrEqual(t, expIdx, 0, "experimental group header present")
+	assert.Less(t, availIdx, expIdx, "available group comes before experimental group")
+	// Stable skill sits in the first group; experimental skill sits under its own header.
+	assert.Less(t, strings.Index(got, "databricks-jobs"), expIdx)
+	assert.Less(t, expIdx, strings.Index(got, "experimental-thing"))
+	// No inline tag now that they are grouped.
+	assert.NotContains(t, got, "[experimental]")
 }
 
 func TestListScopeFlag(t *testing.T) {
