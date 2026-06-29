@@ -4710,9 +4710,7 @@
                   "description": "SSE algorithm to use for encrypting S3 objects",
                   "enum": [
                     "AWS_SSE_S3",
-                    "AWS_SSE_KMS",
-                    "AWS_SSE_KMS",
-                    "AWS_SSE_S3"
+                    "AWS_SSE_KMS"
                   ]
                 },
                 {
