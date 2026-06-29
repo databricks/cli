@@ -9,6 +9,7 @@ Exit code: 1
 >>> [CLI] experimental genie ask What are total sales by franchise? --output json
 {
   "status": "error",
+  "conversation_id": "conv_1",
   "error": "the stream ended without an answer (received 2 events); the API may have changed: update the Databricks CLI to the latest version (run 'databricks version --check'), or re-run with --raw to inspect the raw stream"
 }
 Error: the stream ended without an answer (received 2 events); the API may have changed: update the Databricks CLI to the latest version (run 'databricks version --check'), or re-run with --raw to inspect the raw stream
