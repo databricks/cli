@@ -147,7 +147,7 @@ def gen_config(schema, seed, unique, allowed):
     element = obj["additionalProperties"]
 
     key = f"fuzz_{rtype}_{seed}"
-    instance = gen.gen(element, 0, "name")
+    instance = gen.gen(element, 0)
     return {
         "bundle": {"name": f"fuzz-{unique}"},
         "resources": {rtype: {key: instance}},

@@ -374,7 +374,7 @@ jobs:
     needs:
       - cleanups
 
-    # A real deploy per seed across a wide rotating window, with the no-drift
+    # Sweeps a wide rotating seed window against the fake server with the no-drift
     # invariant on: too slow for every PR, so nightly only and not part of
     # test-result. (The committed acceptance fuzz test still checks the no-panic
     # invariant on a small fixed seed window on every PR.)
