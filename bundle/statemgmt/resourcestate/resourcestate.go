@@ -8,11 +8,9 @@ type ResourceState struct {
 	// For dashboards
 	ETag string
 
-	// For job_runs: the resolved job_id the run was launched against. A run's
-	// URL needs its parent job id, but in config that comes from a
-	// ${resources.jobs.*.id} reference that is only resolved at deploy, so at
-	// read time (e.g. bundle summary) it reads 0. We carry the deployed value
-	// here so it can be restored into config at load time.
+	// For job_runs: the resolved job_id the run was launched against. In config
+	// it is a ${resources.jobs.*.id} reference resolved only at deploy, so at
+	// read time it is 0; we carry the deployed value to restore it at load time.
 	JobID int64
 
 	// Size in bytes of the resource's serialized state blob. Populated by the

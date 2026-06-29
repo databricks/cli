@@ -789,7 +789,6 @@ resources.job_runs.*.python_params	[]string	ALL
 resources.job_runs.*.python_params[*]	string	ALL
 resources.job_runs.*.queue	*jobs.QueueSettings	ALL
 resources.job_runs.*.queue.enabled	bool	ALL
-resources.job_runs.*.run_id	int64	REMOTE
 resources.job_runs.*.spark_submit_params	[]string	ALL
 resources.job_runs.*.spark_submit_params[*]	string	ALL
 resources.job_runs.*.sql_params	map[string]string	ALL

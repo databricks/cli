@@ -353,10 +353,9 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 }
 
 // runJobParameters mirrors how GetRun resolves job-level parameters: it returns
-// every parameter the job defines with its value, applying the run's overrides
-// on top of the job's defaults. This is the cloud behavior that lets a run
-// surface a job parameter it never explicitly overrode. Sorted by name for
-// deterministic output.
+// every parameter the job defines, with the run's overrides applied on top of
+// the job's defaults (so a run surfaces params it never overrode), sorted by
+// name for deterministic output.
 func runJobParameters(settings *jobs.JobSettings, overrides map[string]string) []jobs.JobParameter {
 	resolved := map[string]jobs.JobParameter{}
 	if settings != nil {

@@ -31,10 +31,9 @@ func (r JobRun) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(r)
 }
 
-// Exists reports whether the run identified by id (a numeric run id) still
-// exists in the workspace. A run is the unit of existence here: once RunNow has
-// been called, the run is retrievable via GetRun for as long as the workspace
-// retains its history.
+// Exists reports whether the run with the given numeric id still exists. Once
+// triggered, a run is retrievable via GetRun for as long as the workspace
+// retains its run history.
 func (r *JobRun) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
 	runID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {

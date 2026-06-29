@@ -46,6 +46,37 @@ func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMa
 		return diag.FromErr(err)
 	}
 
+	// Restore each job run's resolved job_id into the dynamic config. job_id is a
+	// serialized field, so it must go through Mutate; doing it here (before the
+	// dashboard etag assignment below) keeps that typed-only write last, since
+	// Mutate would otherwise rebuild the typed struct and drop the etag.
+	if err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		for resourceKey, rstate := range state {
+			if !strings.HasPrefix(resourceKey, "resources.job_runs.") || rstate.JobID == 0 {
+				continue
+			}
+			parts := strings.Split(resourceKey, ".")
+			if len(parts) != 3 {
+				continue
+			}
+
+			// A run in state but not config was deleted; skip it.
+			runPath := dyn.Path{dyn.Key("resources"), dyn.Key("job_runs"), dyn.Key(parts[2])}
+			if run, _ := dyn.GetByPath(v, runPath); !run.IsValid() {
+				continue
+			}
+
+			var err error
+			v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key("job_runs"), dyn.Key(parts[2]), dyn.Key("job_id")}, dyn.V(rstate.JobID))
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+		}
+		return v, nil
+	}); err != nil {
+		return diag.FromErr(err)
+	}
+
 	// Merge dashboard etags into configuration.
 	for resourceKey, dstate := range state {
 		// Check if this is a dashboard resource key
@@ -68,40 +99,6 @@ func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMa
 		}
 
 		dconfig.Etag = dstate.ETag
-	}
-
-	// Restore each job run's resolved job_id from state. In config a run's
-	// job_id is a ${resources.jobs.*.id} reference that is only resolved at
-	// deploy, so at read time it is 0; the deployed value lives in state and is
-	// needed to build the run URL. This is written into the dynamic config (not
-	// just the typed struct) because job_id is a serialized field and a later
-	// config round-trip would otherwise reset it to 0 before the URL is built.
-	if err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		for resourceKey, rstate := range state {
-			if !strings.HasPrefix(resourceKey, "resources.job_runs.") || rstate.JobID == 0 {
-				continue
-			}
-			parts := strings.Split(resourceKey, ".")
-			if len(parts) != 3 {
-				continue
-			}
-
-			// Only restore for runs still present in config; a run in state but
-			// not config was deleted and has no URL to build.
-			runPath := dyn.Path{dyn.Key("resources"), dyn.Key("job_runs"), dyn.Key(parts[2])}
-			if run, _ := dyn.GetByPath(v, runPath); !run.IsValid() {
-				continue
-			}
-
-			var err error
-			v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key("job_runs"), dyn.Key(parts[2]), dyn.Key("job_id")}, dyn.V(rstate.JobID))
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-		}
-		return v, nil
-	}); err != nil {
-		return diag.FromErr(err)
 	}
 
 	return nil

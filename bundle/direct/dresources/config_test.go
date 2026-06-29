@@ -20,11 +20,9 @@ func TestGetResourceConfig(t *testing.T) {
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
 }
 
-// TestFieldRuleOmittedIsRoot documents how a FieldRule with no field is
-// matched: the matcher (path.HasPatternPrefix) treats a nil pattern as root,
-// which matches every field. Omitting the field key leaves the pointer nil, so
-// a rule with no field applies to all of a resource's fields. This is what the
-// job_runs root recreate rule relies on.
+// TestFieldRuleOmittedIsRoot verifies that a FieldRule with no field is a root
+// rule matching every field (HasPatternPrefix treats a nil pattern as root),
+// which is what the job_runs root recreate rule relies on.
 func TestFieldRuleOmittedIsRoot(t *testing.T) {
 	someField := structpath.MustParsePath("dbt_commands")
 

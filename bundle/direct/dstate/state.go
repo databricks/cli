@@ -484,10 +484,8 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 			}
 		}
 
-		// Extract the resolved job_id for job runs. A run's URL needs its parent
-		// job id, which in config is a ${resources.jobs.*.id} reference that is
-		// only resolved at deploy; restoring the deployed value lets read-only
-		// commands build the run URL.
+		// Persist a run's resolved job_id so read-only commands can build its
+		// URL; in config it is a deploy-time-only ${resources.jobs.*.id} reference.
 		var jobID int64
 		if resourceType == "job_runs" && len(entry.State) > 0 {
 			var holder struct {
