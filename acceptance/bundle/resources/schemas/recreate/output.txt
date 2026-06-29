@@ -76,7 +76,7 @@ Error: Resource catalog.SchemaInfo not found: main.myschema
   "effective_predictive_optimization_flag": {
     "inherited_from_name": "[METASTORE_NAME]",
     "inherited_from_type": "METASTORE",
-    "value": "ENABLE"
+    "value": "DISABLE"
   },
   "enable_predictive_optimization": "INHERIT",
   "full_name": "newmain.myschema",

@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 
 	"github.com/databricks/cli/experimental/genie/agentstream"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -58,6 +60,7 @@ func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.R
 		"Content-Type": "application/json",
 		"Accept":       "text/event-stream",
 	}
+	maps.Copy(headers, auth.WorkspaceIDHeaders(cfg))
 	err = api.Do(ctx, "POST", genieResponsesPath, headers, nil, req, &body)
 	// The route is fixed and carries no resource IDs, so a 404 normally means
 	// the endpoint itself is gone: the backend route is undocumented and can

@@ -344,32 +344,36 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
+func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 	defer s.LockUnlock()()
 
-	if dirInfo, ok := s.directories[path]; ok {
-		return Response{
-			Body: &dirInfo,
-		}
-	} else if entry, ok := s.files[path]; ok {
-		return Response{
-			Body: entry.Info,
-		}
-	} else if repoId, ok := s.repoIdByPath[path]; ok {
-		return Response{
-			Body: workspace.ObjectInfo{
-				ObjectType: "REPO",
-				Path:       path,
-				ObjectId:   repoId,
-			},
-		}
+	// The real API collapses duplicate slashes, so look up the cleaned path.
+	cleaned := path.Clean(requestPath)
+
+	var info workspace.ObjectInfo
+	if dirInfo, ok := s.directories[cleaned]; ok {
+		info = dirInfo
+	} else if entry, ok := s.files[cleaned]; ok {
+		info = entry.Info
+	} else if repoId, ok := s.repoIdByPath[cleaned]; ok {
+		info = workspace.ObjectInfo{ObjectType: "REPO", Path: cleaned, ObjectId: repoId}
 	} else {
 		// Match the real Workspace API wording, which echoes the requested path.
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", path)},
+			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", requestPath)},
 		}
 	}
+
+	// A doubled leading slash ("//Workspace/...", which some tests use to avoid
+	// Windows path conversion) is sent to the backend verbatim, and it responds
+	// with the "/Workspace" mount stripped from the path. A normal single-slash
+	// "/Workspace/..." is preserved instead, so only strip the doubled form.
+	if strings.HasPrefix(requestPath, "//Workspace/") {
+		info.Path = strings.TrimPrefix(info.Path, "/Workspace")
+	}
+
+	return Response{Body: info}
 }
 
 func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
@@ -478,8 +482,16 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 		}
 	}
 
-	// Add all directories in the path to the directories map
-	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
+	s.addAncestorDirectories(workspacePath)
+
+	return Response{}
+}
+
+// addAncestorDirectories registers every parent directory of objectPath in the
+// directories map, mirroring the real workspace API which materializes parent
+// directories when an object is imported. The caller must hold the lock.
+func (s *FakeWorkspace) addAncestorDirectories(objectPath string) {
+	for dir := path.Dir(objectPath); dir != "/"; dir = path.Dir(dir) {
 		if _, exists := s.directories[dir]; !exists {
 			s.directories[dir] = workspace.ObjectInfo{
 				ObjectType: "DIRECTORY",
@@ -488,6 +500,39 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 			}
 		}
 	}
+}
+
+// WorkspaceImportNotebook stores a notebook imported with the SOURCE format.
+// Unlike AUTO format, SOURCE keeps the path as-is (no extension stripping) and
+// the notebook language is provided explicitly rather than sniffed from a
+// "# Databricks notebook source" header.
+func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, language workspace.Language, overwrite bool) Response {
+	if !strings.HasPrefix(filePath, "/") {
+		filePath = "/" + filePath
+	}
+
+	defer s.LockUnlock()()
+
+	if !overwrite {
+		if _, exists := s.files[filePath]; exists {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", filePath)},
+			}
+		}
+	}
+
+	s.files[filePath] = FileEntry{
+		Info: workspace.ObjectInfo{
+			ObjectType: "NOTEBOOK",
+			Path:       filePath,
+			Language:   language,
+			ObjectId:   nextID(),
+		},
+		Data: body,
+	}
+
+	s.addAncestorDirectories(filePath)
 
 	return Response{}
 }
