@@ -1,0 +1,62 @@
+# Invariant to test: the CLI never panics or hits an internal error on any config
+# generated from the bundle schema, and a config that deploys cleanly has no drift.
+#
+# gen_fuzz_config.py walks the schema emitted by the CLI under test and produces a
+# random-but-schema-valid config. Most invariant work is shared with the no_drift
+# test; the difference is the input is generated, not a curated template.
+#
+# Seeds form a window [START, START+COUNT). The window is env-driven so the nightly
+# job can sweep a wide, non-overlapping range (see Taskfile.yml test-fuzz) while this
+# committed test stays small and deterministic. Everything is routed to LOG.* / *.json
+# so output.txt stays empty regardless of the window: a violation fails via exit code,
+# not via output diff, which is what lets the same test run under any seed window.
+#
+# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a freshly deployed random config can
+# legitimately differ from the fake server's state, so the local/PR run asserts only
+# the cheap no-panic invariant. The nightly job enables drift on a real workspace.
+
+START="${FUZZ_SEED_START:-0}"
+COUNT="${FUZZ_SEED_COUNT:-5}"
+
+# Emit the schema from the CLI under test so the generator always matches it.
+$CLI bundle schema > schema.json 2>LOG.schema.err
+cat LOG.schema.err | contains.py '!panic' '!internal error' > /dev/null
+
+for ((offset = 0; offset < COUNT; offset++)); do
+    seed=$((START + offset))
+    dir="seed-$seed"
+    mkdir -p "$dir"
+
+    gen_fuzz_config.py --schema schema.json --seed "$seed" --unique "$UNIQUE_NAME-$seed" --resources "${FUZZ_RESOURCES:-}" > "$dir/databricks.yml" 2>"$dir/LOG.gen.err"
+    cat "$dir/LOG.gen.err" | contains.py '!Traceback' > /dev/null
+
+    (
+        cd "$dir"
+
+        # The CLI is allowed to reject a generated config, but never to crash.
+        set +e
+        $CLI bundle validate &> LOG.validate
+        $CLI bundle deploy &> LOG.deploy
+        deploy_rc=$?
+        set -e
+        cat LOG.validate LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
+
+        # Deploy failed => config was rejected (not a bug). This is the negative of
+        # the no_drift test's INPUT_CONFIG_OK marker: nothing more to assert.
+        if [ "$deploy_rc" -ne 0 ]; then
+            exit 0
+        fi
+
+        if [ -n "${FUZZ_CHECK_DRIFT:-}" ]; then
+            $CLI bundle plan -o json > plan.json 2>LOG.plan.err
+            cat LOG.plan.err | contains.py '!panic' '!internal error' > /dev/null
+            verify_no_drift.py plan.json
+        fi
+
+        $CLI bundle destroy --auto-approve &> LOG.destroy
+        cat LOG.destroy | contains.py '!panic' '!internal error' > /dev/null
+    ) || {
+        echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 task test-fuzz" >&2
+        exit 1
+    }
+done
