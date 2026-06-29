@@ -362,6 +362,9 @@ func exposureRemovable(entry, canonicalDir, skillName string, state *InstallStat
 // files). Returns false when there is no recorded provenance, so unverifiable
 // content is never deleted.
 func dirMatchesRecords(dir, skillName string, state *InstallState) bool {
+	if state == nil {
+		return false
+	}
 	prefix := skillName + "/"
 	recorded := map[string]string{}
 	for path, rec := range state.Files {
