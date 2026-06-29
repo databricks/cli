@@ -56,7 +56,10 @@ func CompactState(cfg *ResourceLifecycleConfig, state any) (any, error) {
 		return state, nil
 	}
 
-	// Shallow copy so the caller's value (reused for the deploy) is untouched.
+	// Shallow copy so the caller's value (reused for the deploy) is untouched. This is
+	// safe only because every hashed_in_state field is a top-level scalar (e.g.
+	// serialized_dashboard): SetByString overwrites it on the copy directly. A field
+	// reached through a shared pointer/slice/map would need a deep copy here.
 	out := reflect.New(rv.Type().Elem())
 	out.Elem().Set(rv.Elem())
 	compacted := out.Interface()
