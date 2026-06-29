@@ -1,7 +1,3 @@
-# Prevent Git Bash on Windows from converting the /Users/... paths into Windows
-# paths (e.g. C:/Program Files/Git/Users/...) before the CLI sees them.
-export MSYS_NO_PATHCONV=1
-
 mkdir .git
 cat > .gitignore << EOF
 .databricks/
@@ -16,17 +12,20 @@ EOF
 remote_dir="/Users/$CURRENT_USER_NAME/missing-dir-$UNIQUE_NAME"
 
 cleanup() {
-  $CLI workspace delete --recursive "$remote_dir" 2>/dev/null || true
+  MSYS_NO_PATHCONV=1 $CLI workspace delete --recursive "$remote_dir" 2>/dev/null || true
   rm -rf .git .gitignore .databricks out.requests.txt
 }
 trap cleanup EXIT
 
 # A dry run must not create the missing remote dir or upload anything.
 # Note: output line starting with Action lists files in non-deterministic order so we filter it out
-trace $CLI sync . "$remote_dir" --dry-run | grep -v "^Action" | sort
+# MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from converting /Users/... to C:/Program Files/Git/Users/...
+# It is set per-command, not exported for the whole script: a global setting also
+# breaks Git Bash's path resolution of the print_requests.py helper below.
+MSYS_NO_PATHCONV=1 trace $CLI sync . "$remote_dir" --dry-run | grep -v "^Action" | sort
 
 trace print_requests.py --sort //api/ | jq '{method, path}'
 
-trace $CLI sync . "$remote_dir" | grep -v "^Action" | sort
+MSYS_NO_PATHCONV=1 trace $CLI sync . "$remote_dir" | grep -v "^Action" | sort
 
 trace print_requests.py --sort //api/ | jq '{method, path}'
