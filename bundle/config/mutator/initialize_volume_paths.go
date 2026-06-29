@@ -50,11 +50,7 @@ func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.
 			vol.SchemaName = resolveResourceReference(root, vol.SchemaName)
 			vol.Name = resolveResourceReference(root, vol.Name)
 
-			path := vol.ComputeVolumePath()
-			if path == "" {
-				return v, nil
-			}
-			return dyn.Set(v, "volume_path", dyn.V(path))
+			return dyn.Set(v, "volume_path", dyn.V(vol.ComputeVolumePath()))
 		})
 	})
 	if err != nil {
@@ -65,7 +61,7 @@ func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.
 
 // resolveResourceReference resolves a pure ${resources....} reference by looking it up in root.
 // Values that are not such a reference, or cannot be resolved, are returned unchanged (still
-// containing "${"), so the caller will not compute a volume_path for them.
+// containing "${"), so the caller embeds the reference verbatim to be resolved later.
 func resolveResourceReference(root dyn.Value, s string) string {
 	p, ok := dynvar.PureReferenceToPath(s)
 	if !ok || p[0].Key() != "resources" {

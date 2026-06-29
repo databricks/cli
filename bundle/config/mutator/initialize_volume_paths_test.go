@@ -103,29 +103,6 @@ func TestInitializeVolumePaths_RejectsUserProvidedPath(t *testing.T) {
 	require.ErrorContains(t, diags.Error(), "volume_path is computed and read-only")
 }
 
-func TestInitializeVolumePaths_MalformedReference(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Volumes: map[string]*resources.Volume{
-					// A malformed reference must not leak into the computed path.
-					"foo": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "${resources.volumes.bar.bad..syntax}",
-							SchemaName:  "myschema",
-							Name:        "volfoo",
-						},
-					},
-				},
-			},
-		},
-	}
-
-	diags := bundle.Apply(t.Context(), b, InitializeVolumePaths())
-	require.NoError(t, diags.Error())
-	require.Empty(t, b.Config.Resources.Volumes["foo"].VolumePath)
-}
-
 func TestVolumePathPipeline_ResolvesCrossVolumeReference(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{

@@ -33,28 +33,6 @@ func TestComputeVolumePath_PureReferenceEmbedded(t *testing.T) {
 	require.Equal(t, "/Volumes/main/${resources.schemas.my.name}/myvol", v.ComputeVolumePath())
 }
 
-func TestComputeVolumePath_MalformedReference(t *testing.T) {
-	v := &Volume{
-		CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-			CatalogName: "main",
-			SchemaName:  "${resources.schemas.my.bad..syntax}",
-			Name:        "myvol",
-		},
-	}
-	// A malformed reference must not leak into the path.
-	require.Empty(t, v.ComputeVolumePath())
-}
-
-func TestComputeVolumePath_MissingField(t *testing.T) {
-	v := &Volume{
-		CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-			CatalogName: "main",
-			Name:        "myvol",
-		},
-	}
-	require.Empty(t, v.ComputeVolumePath())
-}
-
 func TestVolumeNotFound(t *testing.T) {
 	ctx := t.Context()
 

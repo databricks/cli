@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -78,19 +76,9 @@ func (v *Volume) GetName() string {
 
 // ComputeVolumePath returns the Unity Catalog volume path /Volumes/{catalog}/{schema}/{name}.
 //
-// A component containing well-formed ${...} references is embedded verbatim and resolved later
-// during plan or deploy. A component with a "${" but no valid reference (malformed or partial) is
-// rejected and the empty string is returned, so garbage never leaks into the path.
+// Components are used as-is: a ${...} reference is embedded verbatim and resolved later during plan
+// or deploy. Missing required fields and malformed references are reported by validation and the
+// plan/deploy backends, so this function does not guard against them.
 func (v *Volume) ComputeVolumePath() string {
-	for _, component := range []string{v.CatalogName, v.SchemaName, v.Name} {
-		// Required fields, but validate.Required runs later, so a missing one is empty here.
-		// Skip rather than emit a malformed path; validate.Required reports the real error.
-		if component == "" {
-			return ""
-		}
-		if strings.Contains(component, "${") && !dynvar.ContainsVariableReference(component) {
-			return ""
-		}
-	}
 	return fmt.Sprintf("/Volumes/%s/%s/%s", v.CatalogName, v.SchemaName, v.Name)
 }
