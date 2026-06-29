@@ -78,17 +78,17 @@ func (v *Volume) GetName() string {
 
 // ComputeVolumePath returns the Unity Catalog volume path /Volumes/{catalog}/{schema}/{name}.
 //
-// A component that is still a pure ${...} reference (for example a remote field only
-// known at plan or deploy time) is embedded verbatim, so the reference is carried into
-// the path and resolved later by the normal interpolation passes. A component that
-// contains "${" but is not a well-formed reference (malformed or partial) is rejected
-// to keep it from leaking into the path, in which case the empty string is returned.
+// A component containing well-formed ${...} references is embedded verbatim and resolved later
+// during plan or deploy. A component with a "${" but no valid reference (malformed or partial) is
+// rejected and the empty string is returned, so garbage never leaks into the path.
 func (v *Volume) ComputeVolumePath() string {
 	for _, component := range []string{v.CatalogName, v.SchemaName, v.Name} {
+		// Required fields, but validate.Required runs later, so a missing one is empty here.
+		// Skip rather than emit a malformed path; validate.Required reports the real error.
 		if component == "" {
 			return ""
 		}
-		if strings.Contains(component, "${") && !dynvar.IsPureVariableReference(component) {
+		if strings.Contains(component, "${") && !dynvar.ContainsVariableReference(component) {
 			return ""
 		}
 	}

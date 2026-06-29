@@ -1082,14 +1082,11 @@ func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map
 		// notation (['key.with.dots']) which round-trips correctly.
 		fieldPath := dynPathToStructPath(p)
 
-		// References are resolved against the resource's state type, not its input
-		// config (see the note in PlanResources and dresources.TestInputSubset). A
-		// field that exists in input but not in state — most notably a
-		// bundle:"readonly" field such as volumes' computed volume_path — is dropped
-		// from state before deploy, so a reference it carries cannot be resolved into
-		// the state and must not be treated as a dependency here. Such references are
-		// still made available to other resources that read the field (for example
-		// ${resources.volumes.x.volume_path}) earlier during initialize.
+		// References resolve against the state type, not the input config (see PlanResources
+		// and dresources.TestInputSubset). A field in input but not in state — e.g. a
+		// bundle:"readonly" field like volumes' volume_path — is dropped before deploy, so a
+		// reference it carries cannot resolve into state and is not a dependency here. Such
+		// references are still resolved earlier during initialize.
 		if structaccess.ValidatePath(stateType, fieldPath) == nil {
 			// Store the original string that contains references, not individual references.
 			refs[fieldPath.String()] = ref.Str
