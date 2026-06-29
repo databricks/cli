@@ -1,10 +1,6 @@
-print_requests() {
-    print_requests.py //pipelines
-}
-
 trace $CLI pipelines deploy
 rm out.requests.txt
 
 title "Dry running pipeline with --restart flag, should stop the current pipeline and start a new run"
 trace $CLI pipelines dry-run --restart
-trace print_requests
+trace print_requests.py //pipelines

@@ -92,19 +92,16 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 }
 
 func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemote) *serving.CreateServingEndpoint {
-	details := state.EndpointDetails
-	// Map the remote state (ServingEndpointDetailed) to the local state (CreateServingEndpoint)
-	// for proper comparison during diff calculation
 	return &serving.CreateServingEndpoint{
-		AiGateway:          details.AiGateway,
-		BudgetPolicyId:     details.BudgetPolicyId,
-		Config:             configOutputToInput(details.Config),
-		Description:        details.Description,
-		EmailNotifications: details.EmailNotifications,
-		Name:               details.Name,
-		RouteOptimized:     details.RouteOptimized,
-		Tags:               details.Tags,
-		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](details.ForceSendFields),
+		AiGateway:          state.AiGateway,
+		BudgetPolicyId:     state.BudgetPolicyId,
+		Config:             state.Config,
+		Description:        state.Description,
+		EmailNotifications: state.EmailNotifications,
+		Name:               state.Name,
+		RouteOptimized:     state.RouteOptimized,
+		Tags:               state.Tags,
+		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](state.EndpointDetails.ForceSendFields),
 
 		// Rate limits are a deprecated field that are not returned by the API on GET calls. Thus we map them to nil.
 		// TODO(shreyas): Add a warning when users try setting top level rate limits.
@@ -115,6 +112,32 @@ func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemot
 type ModelServingEndpointRemote struct {
 	EndpointDetails *serving.ServingEndpointDetailed `json:"endpoint_details"`
 	EndpointId      string                           `json:"endpoint_id"`
+
+	// Fields mapped from EndpointDetails in DoRead so that RemapState is a direct copy
+	// and these fields participate in normal drift detection.
+	AiGateway          *serving.AiGatewayConfig         `json:"ai_gateway,omitempty"`
+	BudgetPolicyId     string                           `json:"budget_policy_id,omitempty"`
+	Config             *serving.EndpointCoreConfigInput `json:"config,omitempty"`
+	Description        string                           `json:"description,omitempty"`
+	EmailNotifications *serving.EmailNotifications      `json:"email_notifications,omitempty"`
+	Name               string                           `json:"name,omitempty"`
+	RouteOptimized     bool                             `json:"route_optimized,omitempty"`
+	Tags               []serving.EndpointTag            `json:"tags,omitempty"`
+}
+
+func newModelServingEndpointRemote(details *serving.ServingEndpointDetailed) *ModelServingEndpointRemote {
+	return &ModelServingEndpointRemote{
+		EndpointDetails:    details,
+		EndpointId:         details.Id,
+		AiGateway:          details.AiGateway,
+		BudgetPolicyId:     details.BudgetPolicyId,
+		Config:             configOutputToInput(details.Config),
+		Description:        details.Description,
+		EmailNotifications: details.EmailNotifications,
+		Name:               details.Name,
+		RouteOptimized:     details.RouteOptimized,
+		Tags:               details.Tags,
+	}
 }
 
 func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*ModelServingEndpointRemote, error) {
@@ -122,10 +145,7 @@ func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*
 	if err != nil {
 		return nil, err
 	}
-	return &ModelServingEndpointRemote{
-		EndpointDetails: endpoint,
-		EndpointId:      endpoint.Id,
-	}, nil
+	return newModelServingEndpointRemote(endpoint), nil
 }
 
 func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *serving.CreateServingEndpoint) (string, *ModelServingEndpointRemote, error) {
@@ -143,11 +163,7 @@ func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-
-	return &ModelServingEndpointRemote{
-		EndpointDetails: details,
-		EndpointId:      details.Id,
-	}, nil
+	return newModelServingEndpointRemote(details), nil
 }
 
 func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, id string, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {

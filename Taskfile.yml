@@ -12,8 +12,10 @@ vars:
   # a separate static `**/testdata/**` glob, not this script.
   # Limitation: git grep only scans tracked files; new //go:embed directives in
   # untracked files are missed until the file is staged or committed.
+  # Run via uv with a pinned interpreter floor so the helper works on hosts whose
+  # default python3 is older than the 3.11 this repo's scripts target.
   EMBED_SOURCES:
-    sh: 'python3 tools/list_embeds.py'
+    sh: 'uv run -p ">=3.11" --no-project python tools/list_embeds.py'
 
 # pydabs-* tasks live in python/Taskfile.yml so `task pydabs-foo` works when
 # run from python/. Flattened so they keep their `pydabs-` names at the root.
@@ -55,7 +57,6 @@ tasks:
       - task: generate-refschema
       - task: generate-schema
       - task: generate-schema-map
-      - task: generate-schema-docs
       - task: generate-validation
       - task: generate-direct
       - task: pydabs-codegen
@@ -172,7 +173,7 @@ tasks:
       # Pinned to match the version used by the `ruff format --check` step in
       # .github/workflows/check.yml — newer ruff versions reformat files that
       # CI considers already formatted.
-      - "uvx ruff@0.9.1 format -n"
+      - "uvx ruff@0.15.17 format -n"
 
   # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
   # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
@@ -693,7 +694,21 @@ tasks:
           -- -parallel 4 -timeout=12h
 
   integration-short:
-    desc: Run short integration tests
+    desc: Run integration tests except the slow ones (skips CloudSlow via -short)
+    deps: [install-pythons]
+    cmds:
+      - |
+        VERBOSE_TEST=1 \
+        go run -modfile=tools/go.mod ./tools/testrunner/main.go \
+          {{.GO_TOOL}} gotestsum \
+          --format github-actions \
+          --rerun-fails \
+          --jsonfile output.json \
+          --packages "./acceptance ./integration/..." \
+          -- -parallel 4 -timeout=12h -short
+
+  integration-short-skiplocal:
+    desc: Run integration tests for PRs (skips CloudSlow and tests with testserver coverage)
     deps: [install-pythons]
     cmds:
       - |
@@ -704,7 +719,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=12h -short
+          -- -parallel 4 -timeout=2h -short
 
   dbr-integration:
     desc: Run DBR acceptance tests on Databricks Runtime
@@ -726,7 +741,7 @@ tasks:
   # can be invoked standalone.
 
   generate:
-    desc: Run all generators (cligen, tf-schema, refschema, schema, docs, validation, direct, pydabs)
+    desc: Run all generators (cligen, tf-schema, refschema, schema, validation, direct, pydabs)
     cmds:
       # Runs first: regenerates CLI command stubs from the checked-in
       # .codegen/cli.json (no universe checkout needed). Refreshing cli.json
@@ -740,7 +755,6 @@ tasks:
       # generate-direct-apitypes and generate-direct-resources below.
       - task: generate-refschema
       - task: generate-schema
-      - task: generate-schema-docs
       - task: generate-validation
       - task: generate-direct
       - task: pydabs-codegen
@@ -752,9 +766,9 @@ tasks:
   # reproducible per-PR:
   #   - generate-tf-schema downloads the Terraform provider, which no CI runner
   #     sets up; its output only changes when schema/version.go changes.
-  #   - generate-schema-docs stamps x-since-version from `git tag`, so it churns
-  #     after every release; jsonschema_for_docs.json is published separately to
-  #     the docgen branch by .github/workflows/update-schema-docs.yml.
+  # The docs schema (jsonschema_for_docs.json) is not generated here or on main
+  # at all — it is built and published to the docgen branch by
+  # .github/workflows/update-schema-docs.yml.
   # Keep this list in sync with `generate` when adding or removing generators.
   generate-check:
     desc: Run the reproducible generators (CI drift subset of `generate`)
@@ -860,7 +874,8 @@ tasks:
   # bundle/internal/schema/annotations.yml carries the CLI-owned docs and
   # overrides and is rewritten in place (synced with the config structure).
   # Editing either input and running `task generate` percolates into
-  # jsonschema.json, jsonschema_for_docs.json and pydabs.
+  # jsonschema.json and pydabs. (The docs schema is built only on release by
+  # .github/workflows/update-schema-docs.yml and published to the docgen branch.)
   generate-schema:
     desc: Generate bundle JSON schema
     sources: &SCHEMA_SOURCES
@@ -876,20 +891,6 @@ tasks:
       - bundle/internal/schema/annotations.yml
     cmds:
       - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json .codegen/cli.json"
-
-  generate-schema-docs:
-    desc: Generate bundle JSON schema for documentation
-    sources: *SCHEMA_SOURCES
-    generates:
-      - bundle/schema/jsonschema_for_docs.json
-      - bundle/internal/schema/annotations.yml
-    cmds:
-      # since_version.go reads `git tag --list 'v*'` to compute sinceVersion
-      # annotations. Without tags (e.g. shallow clone), those annotations are
-      # silently dropped from the output. Restore the fetch that lived in the
-      # old tools/post-generate.sh.
-      - git fetch origin 'refs/tags/v*:refs/tags/v*'
-      - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json .codegen/cli.json --docs"
 
   generate-validation:
     desc: Generate enum and required field validation code
@@ -948,7 +949,7 @@ tasks:
     generates:
       - bundle/direct/dresources/apitypes.generated.yml
     cmds:
-      - "sh -c 'python3 bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
+      - "sh -c 'uv run -p \">=3.11\" --no-project python bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
 
   generate-direct-resources:
     desc: Generate direct engine resources YAML

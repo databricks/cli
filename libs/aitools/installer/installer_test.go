@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -217,7 +218,8 @@ func TestInstallSkillToDirFetchesFilesConcurrently(t *testing.T) {
 	destDir := filepath.Join(t.TempDir(), "databricks-test")
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"one.md", "two.md"})
+		_, err := installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"one.md", "two.md"})
+		errCh <- err
 	}()
 
 	fetched := make(map[string]bool, 2)
@@ -276,7 +278,8 @@ func TestInstallSkillToDirCancelsInFlightFetchesOnError(t *testing.T) {
 	destDir := filepath.Join(t.TempDir(), "databricks-test")
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"blocked.md", "fail.md"})
+		_, err := installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"blocked.md", "fail.md"})
+		errCh <- err
 	}()
 
 	var err error
@@ -317,13 +320,49 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
 	require.NotNil(t, state)
-	assert.Equal(t, 1, state.SchemaVersion)
+	assert.Equal(t, schemaVersionV2, state.SchemaVersion)
 	assert.Equal(t, testSkillsRef, state.Release)
 	assert.Len(t, state.Skills, 2)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 	assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
 
+	// File provenance is captured for the prune safeguard.
+	require.Contains(t, state.Files, "databricks-sql/SKILL.md")
+	assert.NotEmpty(t, state.Files["databricks-sql/SKILL.md"].SHA256)
+	assert.Equal(t, testSkillsRef, state.Files["databricks-sql/SKILL.md"].Origin)
+
 	assert.Contains(t, stderr.String(), "Installed 2 skills.")
+}
+
+func TestInstallPurgesStaleFileRecordsOnRefetch(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	agent := testAgent(tmp)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+
+	// v1: the skill ships two files.
+	m1 := &Manifest{Version: "1", Skills: map[string]SkillMeta{
+		"databricks-sql": {Version: "0.1.0", Files: []string{"a.md", "b.md"}},
+	}}
+	require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: m1}, []*agents.Agent{agent}, InstallOptions{SpecificSkills: []string{"databricks-sql"}}))
+	st, err := LoadState(globalDir)
+	require.NoError(t, err)
+	require.Contains(t, st.Files, "databricks-sql/a.md")
+	require.Contains(t, st.Files, "databricks-sql/b.md")
+
+	// v2 drops b.md. Refetching must purge the stale record.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+	m2 := &Manifest{Version: "2", Skills: map[string]SkillMeta{
+		"databricks-sql": {Version: "0.2.0", Files: []string{"a.md"}},
+	}}
+	require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: m2}, []*agents.Agent{agent}, InstallOptions{SpecificSkills: []string{"databricks-sql"}}))
+	st2, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Contains(t, st2.Files, "databricks-sql/a.md")
+	assert.NotContains(t, st2.Files, "databricks-sql/b.md")
 }
 
 func TestInstallSkillForSingleWritesState(t *testing.T) {
@@ -903,19 +942,52 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 	}
 }
 
-func TestGetSkillsRefResolvesFromManifest(t *testing.T) {
-	// Pre-populate the cache so FetchManifest returns from tier 1 (local cache)
-	// without hitting the network. The embedded manifest fallback is tested
-	// separately in clicompat_test.go.
-	cacheDir := t.TempDir()
-	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
-	cachePath := filepath.Join(cacheDir, "compat-manifest.json")
-	manifest := `{"next":{"appkit":"0.24.0","skills":"0.1.5"},"0.300.0":{"appkit":"0.24.0","skills":"0.1.5"}}`
-	require.NoError(t, os.WriteFile(cachePath, []byte(manifest), 0o644))
+func TestGetSkillsRefDefaultsToLatest(t *testing.T) {
+	// cli-compat reports "latest", so we track the repo's default branch (the
+	// same content plugin agents install).
+	t.Setenv("DATABRICKS_SKILLS_REF", "")
+	withCachedCompat(t, skillsLatestSentinel)
+
+	ref, explicit, err := GetSkillsRef(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, latestSkillsRef, ref)
+	assert.False(t, explicit, "tracking latest is not an explicit pin")
+}
+
+func TestGetSkillsRefEnvEscapeHatch(t *testing.T) {
+	t.Setenv("DATABRICKS_SKILLS_REF", "v9.9.9")
+
+	ref, explicit, err := GetSkillsRef(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "v9.9.9", ref)
+	assert.True(t, explicit, "an explicit ref is a pin")
+}
+
+func TestGetSkillsRefPinnedByCliCompat(t *testing.T) {
+	// cli-compat reports a concrete version: the remote safety valve pinning this
+	// CLI (e.g. after a future breaking change).
+	t.Setenv("DATABRICKS_SKILLS_REF", "")
+	withCachedCompat(t, "0.1.5")
 
 	ref, explicit, err := GetSkillsRef(t.Context())
 	require.NoError(t, err, "GetSkillsRef should succeed via cached manifest")
-	assert.False(t, explicit, "ref resolved from manifest should not be explicit")
-	assert.NotEmpty(t, ref)
-	assert.True(t, len(ref) > 1 && ref[0] == 'v', "ref should start with 'v', got %q", ref)
+	assert.Equal(t, "v0.1.5", ref)
+	assert.True(t, explicit, "a cli-compat pin is explicit")
+}
+
+func TestDisplaySkillsVersion(t *testing.T) {
+	assert.Equal(t, "latest", DisplaySkillsVersion(latestSkillsRef))
+	assert.Equal(t, "0.2.5", DisplaySkillsVersion("v0.2.5"))
+	assert.Equal(t, "0.2.5", DisplaySkillsVersion("0.2.5"))
+}
+
+// withCachedCompat pre-populates the cli-compat cache so resolution is offline
+// and deterministic (a fresh local cache is tier 1, ahead of the network). A
+// single "0.0.0" entry matches every CLI version, including dev test builds.
+func withCachedCompat(t *testing.T, skills string) {
+	t.Helper()
+	cacheDir := t.TempDir()
+	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
+	manifest := fmt.Sprintf(`{"0.0.0":{"appkit":"0.24.0","skills":%q}}`, skills)
+	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), []byte(manifest), 0o644))
 }

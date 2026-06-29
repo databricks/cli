@@ -1,15 +1,11 @@
-print_requests() {
-    print_requests.py //pipelines
-}
-
 trace $CLI pipelines deploy
 trace $CLI pipelines run
 rm out.requests.txt
 
 title "Stopping pipeline"
 trace $CLI pipelines stop
-print_requests
+print_requests.py //pipelines
 
 title "Stopping pipeline with KEY, expect same output as without KEY"
 trace $CLI pipelines stop my_pipeline
-print_requests
+print_requests.py //pipelines
