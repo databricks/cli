@@ -4,6 +4,9 @@ vars:
   # Absolute path so tasks with `dir:` (lint-go-tools, lint-go-codegen) can use it.
   GO_TOOL: go tool -modfile={{.ROOT_DIR}}/tools/go.mod
   EXE_EXT: '{{if eq OS "windows"}}.exe{{end}}'
+  # Pinned ruff (linter + formatter). Keep in sync with the version in
+  # .github/workflows/check.yml and python/Taskfile.yml.
+  RUFF: uvx ruff@0.15.17
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
@@ -75,14 +78,29 @@ tasks:
   # speed; `./task all` uses the full variants.
 
   lint:
-    desc: Lint all Go files (root + tools + codegen modules)
+    desc: Lint all Go files (root + tools + codegen modules) and Python scripts
     cmds:
       - task: lint-go
+      - task: lint-python
 
   lint-q:
-    desc: Lint changed Go files in root module (diff vs main, with --fix)
+    desc: Lint changed Go files in root module (diff vs main, with --fix) and Python scripts
     cmds:
       - task: lint-q-go-root
+      - task: lint-python
+
+  lint-python:
+    desc: Lint first-party Python scripts with ruff
+    sources:
+      - "**/*.py"
+      - ruff.toml
+    cmds:
+      # Lints the whole repo; fixtures and generated outputs are skipped via
+      # `lint.exclude` / `extend-exclude` in ruff.toml. --no-cache: some excluded
+      # acceptance fixtures carry their own pyproject.toml/ruff.toml (config
+      # roots), so without it ruff writes a .ruff_cache into those checked-in
+      # dirs, polluting the goldens and breaking the acceptance tests.
+      - "{{.RUFF}} check --no-cache ."
 
   # `golangci-lint run` typechecks, so it stops at go.mod boundaries. We have
   # one task per Go module; `lint-go` composes them to cover the whole repo.
@@ -166,14 +184,19 @@ tasks:
     deps: ['fmt-python', 'fmt-q-go', 'fmt-yaml']
 
   fmt-python:
-    desc: Format Python files
+    desc: Lint-fix and format Python files
     sources:
       - "**/*.py"
+      - ruff.toml
     cmds:
-      # Pinned to match the version used by the `ruff format --check` step in
+      # Auto-fix the lint issues that ruff can fix (whole repo, minus lint.exclude);
+      # `|| true` so unfixable findings don't abort fmt (lint-python reports them).
+      # --no-cache: see lint-python (avoids polluting acceptance fixture goldens).
+      - "{{.RUFF}} check --no-cache --fix . || true"
+      # Pinned (via the RUFF var) to match the `ruff format --check` step in
       # .github/workflows/check.yml — newer ruff versions reformat files that
       # CI considers already formatted.
-      - "uvx ruff@0.9.1 format -n"
+      - "{{.RUFF}} format -n"
 
   # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
   # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
@@ -694,7 +717,21 @@ tasks:
           -- -parallel 4 -timeout=12h
 
   integration-short:
-    desc: Run short integration tests
+    desc: Run integration tests except the slow ones (skips CloudSlow via -short)
+    deps: [install-pythons]
+    cmds:
+      - |
+        VERBOSE_TEST=1 \
+        go run -modfile=tools/go.mod ./tools/testrunner/main.go \
+          {{.GO_TOOL}} gotestsum \
+          --format github-actions \
+          --rerun-fails \
+          --jsonfile output.json \
+          --packages "./acceptance ./integration/..." \
+          -- -parallel 4 -timeout=12h -short
+
+  integration-short-skiplocal:
+    desc: Run integration tests for PRs (skips CloudSlow and tests with testserver coverage)
     deps: [install-pythons]
     cmds:
       - |
@@ -705,7 +742,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=12h -short
+          -- -parallel 4 -timeout=2h -short
 
   dbr-integration:
     desc: Run DBR acceptance tests on Databricks Runtime

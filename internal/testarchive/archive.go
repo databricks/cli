@@ -109,12 +109,14 @@ func CreateArchive(archiveDir, binDir, repoRoot string) error {
 		GoDownloader{Arch: "amd64", BinDir: binDir, RepoRoot: repoRoot},
 		UvDownloader{Arch: "amd64", BinDir: binDir},
 		JqDownloader{Arch: "amd64", BinDir: binDir},
+		RuffDownloader{Arch: "amd64", BinDir: binDir},
 
 		// TODO: Serverless clusters do not support arm64 yet.
 		// Enable ARM64 once serverless clusters support it.
 		// GoDownloader{Arch: "arm64", BinDir: binDir, RepoRoot: repoRoot},
 		// UvDownloader{Arch: "arm64", BinDir: binDir},
 		// JqDownloader{Arch: "arm64", BinDir: binDir},
+		// RuffDownloader{Arch: "arm64", BinDir: binDir},
 	}
 
 	for _, downloader := range downloaders {

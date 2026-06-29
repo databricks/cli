@@ -44,7 +44,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	case deployplan.UpdateWithID:
 		return d.UpdateWithID(ctx, db, oldID, newState)
 	case deployplan.Resize:
-		return d.Resize(ctx, db, oldID, newState)
+		return d.Resize(ctx, db, oldID, newState, planEntry)
 	default:
 		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
@@ -246,8 +246,8 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
-	err := retryOnTransientErr(ctx, func() error { return d.Adapter.DoResize(ctx, id, newState) })
+func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState, id string, newState any, entry *deployplan.PlanEntry) error {
+	err := retryOnTransientErr(ctx, func() error { return d.Adapter.DoResize(ctx, id, newState, entry) })
 	if err != nil {
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}

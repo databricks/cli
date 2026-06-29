@@ -21,7 +21,15 @@
                 },
                 "name": "prod"
               }
-            ]
+            ],
+            "traffic_config": {
+              "routes": [
+                {
+                  "served_model_name": "prod",
+                  "traffic_percentage": 100
+                }
+              ]
+            }
           },
           "name": "[ENDPOINT_ID]"
         }
@@ -41,7 +49,15 @@
                 },
                 "name": "prod"
               }
-            ]
+            ],
+            "traffic_config": {
+              "routes": [
+                {
+                  "served_model_name": "prod",
+                  "traffic_percentage": 100
+                }
+              ]
+            }
           },
           "creation_timestamp": [UNIX_TIME_MILLIS][0],
           "creator": "[USERNAME]",
@@ -70,7 +86,15 @@
               },
               "name": "prod"
             }
-          ]
+          ],
+          "traffic_config": {
+            "routes": [
+              {
+                "served_model_name": "prod",
+                "traffic_percentage": 100
+              }
+            ]
+          }
         },
         "name": "[ENDPOINT_ID]"
       },

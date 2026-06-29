@@ -87,13 +87,9 @@ func makePostgresEndpointRemote(endpoint *postgres.Endpoint) *PostgresEndpointRe
 	if endpoint.Spec != nil {
 		spec = *endpoint.Spec
 	}
-	var endpointID string
-	if endpoint.Status != nil {
-		endpointID = endpoint.Status.EndpointId
-	}
 	return &PostgresEndpointRemote{
 		EndpointSpec: spec,
-		EndpointId:   endpointID,
+		EndpointId:   endpoint.EndpointId,
 		Parent:       endpoint.Parent,
 		Name:         endpoint.Name,
 		Status:       endpoint.Status,

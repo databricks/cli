@@ -45,6 +45,7 @@ var (
 	LogRequests     bool
 	LogConfig       bool
 	UseVersion      string
+	CLIPath         string
 	WorkspaceTmpDir bool
 	OnlyOutTestToml bool
 	Subset          bool
@@ -75,6 +76,7 @@ func init() {
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
+	flag.StringVar(&CLIPath, "clipath", "", "Use the CLI binary at this path instead of building from source (e.g. a CLI built from main for regression comparison)")
 
 	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
 	// to simulate an identical environment.
@@ -194,6 +196,11 @@ func hasRunFilter() bool {
 //
 // It reports whether all checks passed; a failure surfaces as
 // TestAccept/prerequisites rather than a bare TestAccept.
+//
+// On DBR the serverless image only provides what the test archive ships, so
+// every tool required here must also be bundled in internal/testarchive. When
+// adding a new RequireX prerequisite, add a matching downloader there too, or
+// DBR runs will fail this check before any test runs.
 func requirePrerequisites(t *testing.T) bool {
 	return t.Run("prerequisites", func(t *testing.T) {
 		// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
@@ -297,7 +304,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
-		if UseVersion != "" {
+		if CLIPath != "" {
+			// Use a prebuilt binary (e.g. a CLI built from main) instead of building
+			// from the current source, so the test infra and tests stay on this branch.
+			execPath = CLIPath
+		} else if UseVersion != "" {
 			version := UseVersion
 			if version == "latest" {
 				version = resolveLatestVersion(t, buildDir)

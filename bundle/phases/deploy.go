@@ -8,10 +8,12 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
+	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
@@ -146,13 +148,42 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	uploadLibraries(ctx, b, libs)
+	immutable := b.IsImmutableFolder()
+	if immutable && !engine.IsDirect() {
+		logdiag.LogError(ctx, errors.New("experimental.immutable_folder is only supported with the direct deployment engine"))
+		return
+	}
+
+	if immutable {
+		// Upload all source files and built artifacts as a single immutable snapshot.
+		// snapshot.Upload() sets workspace.snapshot_path; the variable-resolution
+		// pass expands ${workspace.snapshot_path} placeholders written by translate_paths.
+		bundle.ApplySeqContext(ctx, b,
+			snapshot.Upload(),
+			mutator.ResolveVariableReferencesOnlyResources("workspace"),
+		)
+		if !logdiag.HasError(ctx) {
+			_, libDiags := libraries.ReplaceWithRemotePath(ctx, b)
+			for _, d := range libDiags {
+				logdiag.LogDiag(ctx, d)
+			}
+		}
+	} else {
+		uploadLibraries(ctx, b, libs)
+	}
+
 	if logdiag.HasError(ctx) {
 		return
 	}
 
+	if !immutable {
+		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),

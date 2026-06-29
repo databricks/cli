@@ -40,17 +40,14 @@ jobs:
         with:
           version: "0.8.9"
 
-      - name: Run Go lint checks (does not include formatting checks)
+      - name: Run Go and Python lint checks (does not include formatting checks)
+        # `task lint` runs golangci-lint and `ruff check` (lint-python). ruff is
+        # provided by uvx, installed above; formatting is checked by `task fmt` below.
         run: go tool -modfile=tools/task/go.mod task lint
 
-      - name: Run ruff (Python linter and formatter)
-        uses: astral-sh/ruff-action@0ce1b0bf8b818ef400413f810f8a11cdbda0034b # v4.0.0
-        with:
-          version: "0.9.1"
-          args: "format --check"
-
-      - name: "task fmt: Python and Go formatting"
-        # Python formatting is already checked above, but this also checks Go and YAML formatting
+      - name: "task fmt: Python, Go and YAML formatting"
+        # `task fmt` runs ruff format (Python) plus Go and YAML formatters; the diff
+        # check fails the build if anything was left unformatted.
         run: |
           go tool -modfile=tools/task/go.mod task fmt
           git diff --exit-code
