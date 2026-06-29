@@ -34,7 +34,7 @@ type JobOptions struct {
 
 func (o *JobOptions) DefineJobOptions(fs *flag.FlagSet) {
 	fs.StringToStringVar(&o.jobParams, "params", nil, "comma separated k=v pairs for job parameters")
-	fs.StringSliceVar(&o.only, "only", nil, "comma separated list of task keys to run")
+	fs.StringSliceVar(&o.only, "only", nil, "comma separated list of task keys to run; prefix a key with + to also run its upstream tasks, suffix with + for downstream tasks")
 }
 
 func (o *JobOptions) DefineTaskOptions(fs *flag.FlagSet) {

@@ -10,6 +10,7 @@
 
 ### Bundles
 
+ * `bundle run --only` help now documents the `+` modifier syntax: prefix a task key with `+` to also run its upstream tasks, or suffix it with `+` for downstream tasks ([#5760](https://github.com/databricks/cli/pull/5760)).
  * direct: Cluster resize now falls back to regular update if resize fails due to `INVALID_STATE` ([#5716](https://github.com/databricks/cli/pull/5716)).
 
 ### Dependency updates
