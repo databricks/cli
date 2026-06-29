@@ -90,7 +90,7 @@ def main():
 
         print(f"\n{resource}: {len(res_fields)} fields, max_score={max_score:.2f}", file=sys.stderr)
         top_pct = candidates[0][0] if candidates else 0
-        for pct, score, schema_name, overlap, s_fields in candidates[:5]:
+        for pct, _score, schema_name, overlap, s_fields in candidates[:5]:
             # Only show if >= 80% or within 20% of top entry
             if pct < 80 and (top_pct - pct) >= 20:
                 continue
@@ -103,7 +103,7 @@ def main():
 
     print("# Generated, do not edit. Override via apitypes.yml")
     for resource in sorted(top_matches):
-        print("")
+        print()
         print(f"{resource}: {top_matches[resource]}")
 
 

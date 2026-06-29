@@ -179,7 +179,7 @@ func matchParts(patternParts, pathParts []string) bool {
 	}
 
 	if strings.Contains(patternPart, "[*]") {
-		prefix := strings.Split(patternPart, "[*]")[0]
+		prefix, _, _ := strings.Cut(patternPart, "[*]")
 
 		if strings.HasPrefix(pathPart, prefix) && strings.Contains(pathPart, "[") {
 			return matchParts(patternParts[1:], pathParts[1:])

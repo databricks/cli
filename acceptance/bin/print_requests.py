@@ -78,12 +78,11 @@ R4 POST
 ['GET', 'DELETE', 'GET']
 """
 
+import argparse
+import json
 import os
 import sys
-import json
-import argparse
 from pathlib import Path
-
 
 # I've originally tried ADD_PREFIX to be empty, so you can just do "print_requests.py /jobs"
 # However, that causes test to fail on Windows CI because "/jobs" becomes "C:/Program Files/Git/jobs"
@@ -181,7 +180,7 @@ def filter_requests(requests, path_filters, include_get, should_sort, unique=Fal
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("path_filters", nargs="*", help=f"Path substring filters")
+    parser.add_argument("path_filters", nargs="*", help="Path substring filters")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable diagnostic messages")
     parser.add_argument("--get", action="store_true", help="Include GET requests (excluded by default)")
     parser.add_argument("--keep", action="store_true", help="Keep out.requests.json file after processing")

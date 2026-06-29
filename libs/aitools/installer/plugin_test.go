@@ -41,13 +41,8 @@ func pluginAgent(name, display, binary string) *agents.Agent {
 func claudeAgent() *agents.Agent { return pluginAgent(agents.NameClaudeCode, "Claude Code", "claude") }
 func codexAgent() *agents.Agent  { return pluginAgent(agents.NameCodex, "Codex CLI", "codex") }
 
-func cursorAgent() *agents.Agent {
-	return &agents.Agent{
-		Name:        agents.NameCursor,
-		DisplayName: "Cursor",
-		Binary:      "cursor-agent",
-		Plugin:      &agents.PluginSpec{ManualOnly: true, ManualInstructions: "run /add-plugin databricks in Cursor"},
-	}
+func noPluginAgent() *agents.Agent {
+	return &agents.Agent{Name: agents.NameOpenCode, DisplayName: "OpenCode", Binary: "opencode"}
 }
 
 func TestInstallPluginForAgentClaudeSuccess(t *testing.T) {
@@ -69,6 +64,32 @@ func TestInstallPluginForAgentClaudeSuccess(t *testing.T) {
 	assert.Contains(t, cmds, "claude plugin install databricks@databricks-agent-skills --scope user")
 }
 
+func TestInstallPluginForAgentBuiltinMarketplace(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+
+	// An agent whose plugin lives in a built-in marketplace (empty Source) like
+	// Claude's claude-plugins-official: install from it, never register it.
+	agent := &agents.Agent{
+		Name:        agents.NameClaudeCode,
+		DisplayName: "Claude Code",
+		Binary:      "claude",
+		Plugin:      &agents.PluginSpec{Marketplace: "claude-plugins-official", ID: "databricks", Source: ""},
+	}
+
+	rec, err := InstallPluginForAgent(ctx, agent, "user", "main")
+	require.NoError(t, err)
+	assert.Equal(t, "claude-plugins-official", rec.Marketplace)
+	assert.False(t, rec.InstalledMarketplace, "a built-in marketplace is never registered by us")
+
+	cmds := stub.Commands()
+	for _, c := range cmds {
+		assert.NotContains(t, c, "marketplace add", "must not register a built-in marketplace")
+	}
+	assert.Contains(t, cmds, "claude plugin install databricks@claude-plugins-official --scope user")
+}
+
 func TestInstallPluginForAgentCodexUsesAddNoScope(t *testing.T) {
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())
@@ -84,11 +105,11 @@ func TestInstallPluginForAgentCodexUsesAddNoScope(t *testing.T) {
 	}
 }
 
-func TestInstallPluginForAgentManualOnly(t *testing.T) {
-	_, err := InstallPluginForAgent(t.Context(), cursorAgent(), "user", "v0.2.6")
+func TestInstallPluginForAgentNoPlugin(t *testing.T) {
+	_, err := InstallPluginForAgent(t.Context(), noPluginAgent(), "user", "v0.2.6")
 	var be *BlockedError
 	require.ErrorAs(t, err, &be)
-	assert.Equal(t, ReasonManualOnly, be.Reason)
+	assert.Equal(t, ReasonNoPlugin, be.Reason)
 }
 
 func TestInstallPluginForAgentCLINotOnPath(t *testing.T) {
@@ -191,6 +212,136 @@ func TestUninstallPluginKeepsSharedMarketplace(t *testing.T) {
 	}
 }
 
+func TestUninstallSkillsOptsTearsDownPlugin(t *testing.T) {
+	setupTestHome(t)
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	ctx, stderr := cmdio.NewTestContextWithStderr(ctx)
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Release:       "v0.2.6",
+		Plugins: map[string]PluginRecord{
+			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", InstalledMarketplace: true},
+		},
+	}))
+
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+
+	cmds := stub.Commands()
+	assert.Contains(t, cmds, "copilot plugin uninstall databricks@databricks-agent-skills")
+	assert.Contains(t, cmds, "copilot plugin marketplace remove databricks-agent-skills")
+	assert.Contains(t, stderr.String(), "Uninstalled the plugin from 1 agent.")
+
+	// State file removed since nothing remains.
+	state, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Nil(t, state)
+}
+
+func TestUninstallNeverDeregistersBuiltinMarketplace(t *testing.T) {
+	setupTestHome(t)
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	ctx = cmdio.MockDiscard(ctx)
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	// Claude installs from its built-in claude-plugins-official marketplace; even a
+	// stale InstalledMarketplace=true must never trigger a de-register.
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Plugins: map[string]PluginRecord{
+			agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", InstalledMarketplace: true},
+		},
+	}))
+
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+
+	cmds := stub.Commands()
+	assert.Contains(t, cmds, "claude plugin uninstall databricks@claude-plugins-official")
+	for _, c := range cmds {
+		assert.NotContains(t, c, "marketplace remove")
+	}
+}
+
+func TestUninstallKeepMarketplace(t *testing.T) {
+	setupTestHome(t)
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	ctx = cmdio.MockDiscard(ctx)
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Plugins: map[string]PluginRecord{
+			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", InstalledMarketplace: true},
+		},
+	}))
+
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal, KeepMarketplace: true}))
+
+	for _, c := range stub.Commands() {
+		assert.NotContains(t, c, "marketplace remove")
+	}
+}
+
+func TestUninstallKeepsUnknownAgentRecord(t *testing.T) {
+	setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Plugins: map[string]PluginRecord{
+			"mystery-agent": {Marketplace: "databricks-agent-skills", Plugin: "databricks"},
+		},
+	}))
+
+	// An unknown agent can't be torn down; its record (and the state file) must be
+	// kept rather than silently dropped while the plugin may still exist.
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	require.NotNil(t, st)
+	assert.Contains(t, st.Plugins, "mystery-agent")
+}
+
+func TestUninstallClearsRecordWhenMarketplaceRemoveFails(t *testing.T) {
+	setupTestHome(t)
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	// The plugin uninstall succeeds; only the marketplace de-register fails.
+	stub.WithFailureFor("plugin marketplace remove", errors.New("boom"))
+	ctx = cmdio.MockDiscard(ctx)
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Plugins: map[string]PluginRecord{
+			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", InstalledMarketplace: true},
+		},
+	}))
+
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+
+	// The plugin is gone, so the record is cleared even though the marketplace
+	// de-register failed (otherwise a retry would be stuck).
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Nil(t, st)
+}
+
 func TestUpdateInstalledPlugins(t *testing.T) {
 	setupTestHome(t)
 	stubAgentLookPath(t, true)
@@ -203,20 +354,20 @@ func TestUpdateInstalledPlugins(t *testing.T) {
 		SchemaVersion: schemaVersionV2,
 		Release:       "v0.2.6",
 		Plugins: map[string]PluginRecord{
-			agents.NameClaudeCode: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", Version: "0.2.6"},
+			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", Version: "0.2.6"},
 		},
 	}))
 
 	updated, err := UpdateInstalledPlugins(ctx, ScopeGlobal, "v0.2.7")
 	require.NoError(t, err)
 	require.Len(t, updated, 1)
-	assert.Equal(t, "Claude Code", updated[0].Agent)
+	assert.Equal(t, "GitHub Copilot", updated[0].Agent)
 	assert.Equal(t, "0.2.7", updated[0].Version)
-	assert.Contains(t, stub.Commands(), "claude plugin update databricks@databricks-agent-skills")
+	assert.Contains(t, stub.Commands(), "copilot plugin update databricks@databricks-agent-skills")
 
 	state, err := LoadState(dir)
 	require.NoError(t, err)
-	assert.Equal(t, "0.2.7", state.Plugins[agents.NameClaudeCode].Version)
+	assert.Equal(t, "0.2.7", state.Plugins[agents.NameCopilot].Version)
 }
 
 func TestUninstallPluginKeepMarketplaceFlag(t *testing.T) {

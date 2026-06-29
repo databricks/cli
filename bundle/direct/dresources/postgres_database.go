@@ -72,13 +72,9 @@ func makePostgresDatabaseRemote(database *postgres.Database) *PostgresDatabaseRe
 	if database.Spec != nil {
 		spec = *database.Spec
 	}
-	var databaseID string
-	if database.Status != nil {
-		databaseID = database.Status.DatabaseId
-	}
 	return &PostgresDatabaseRemote{
 		DatabaseDatabaseSpec: spec,
-		DatabaseId:           databaseID,
+		DatabaseId:           database.DatabaseId,
 		Parent:               database.Parent,
 		Name:                 database.Name,
 		Status:               database.Status,

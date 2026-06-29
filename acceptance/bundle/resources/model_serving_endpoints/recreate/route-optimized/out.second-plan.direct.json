@@ -34,7 +34,16 @@
                 "scale_to_zero_enabled": true,
                 "workload_size": "Small"
               }
-            ]
+            ],
+            "traffic_config": {
+              "routes": [
+                {
+                  "served_entity_name": "llama",
+                  "served_model_name": "llama",
+                  "traffic_percentage": 100
+                }
+              ]
+            }
           },
           "creation_timestamp": [UNIX_TIME_MILLIS][0],
           "creator": "[USERNAME]",
@@ -59,11 +68,33 @@
               "scale_to_zero_enabled": true,
               "workload_size": "Small"
             }
-          ]
+          ],
+          "traffic_config": {
+            "routes": [
+              {
+                "served_entity_name": "llama",
+                "served_model_name": "llama",
+                "traffic_percentage": 100
+              }
+            ]
+          }
         },
         "name": "[ORIGINAL_ENDPOINT_ID]"
       },
       "changes": {
+        "config.traffic_config": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "routes": [
+              {
+                "served_entity_name": "llama",
+                "served_model_name": "llama",
+                "traffic_percentage": 100
+              }
+            ]
+          }
+        },
         "description": {
           "action": "skip",
           "reason": "empty",

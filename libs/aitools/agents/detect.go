@@ -29,8 +29,6 @@ const (
 	StateAvailable DisplayState = "available"
 	// StateInstalledCLIMissing: the config dir exists but the CLI binary is not on PATH.
 	StateInstalledCLIMissing DisplayState = "installed-cli-missing"
-	// StateManualOnly: the agent has a plugin but no headless install path (Cursor).
-	StateManualOnly DisplayState = "manual-only"
 	// StateFilesOnly: the agent has no plugin; skill files are its only delivery.
 	StateFilesOnly DisplayState = "files-only"
 	// StateNotFound: neither presence signal is present.
@@ -56,10 +54,6 @@ func (a *Agent) HasBinary(_ context.Context) bool {
 // runs the agent (that is ProbePlugin's job); it only checks the binary on
 // PATH and the config dir on disk, so it is cheap enough for every render.
 func (a *Agent) DisplayState(ctx context.Context) DisplayState {
-	if a.Plugin != nil && a.Plugin.ManualOnly {
-		return StateManualOnly
-	}
-
 	hasBinary := a.HasBinary(ctx)
 	hasConfig := a.Detected(ctx)
 
@@ -83,7 +77,7 @@ func (a *Agent) DisplayState(ctx context.Context) DisplayState {
 // IsPreselected reports whether the agent should be pre-checked in the picker. Only
 // agents that can complete an install automatically (a plugin agent with its
 // binary on PATH) and files-only agents whose config dir exists are pre-checked;
-// manual-only and binary-missing agents are shown but left unchecked.
+// binary-missing agents are shown but left unchecked.
 func (a *Agent) IsPreselected(ctx context.Context) bool {
 	switch a.DisplayState(ctx) {
 	case StateAvailable:
@@ -101,7 +95,7 @@ func (a *Agent) IsPreselected(ctx context.Context) bool {
 // for a selected agent, right before install. It returns ErrPluginUnsupported
 // when the agent has no plugin path or its CLI lacks the subcommand.
 func (a *Agent) ProbePlugin(ctx context.Context) error {
-	if a.Binary == "" || a.Plugin == nil || a.Plugin.ManualOnly {
+	if a.Binary == "" || a.Plugin == nil {
 		return ErrPluginUnsupported
 	}
 

@@ -10,9 +10,9 @@ import (
 )
 
 // PluginSpec describes the databricks plugin for an agent. A non-nil
-// Agent.Plugin means the agent has a databricks plugin (Claude Code, Codex,
-// Copilot, Cursor); a nil Plugin means raw skill files are the only delivery
-// (OpenCode, Antigravity).
+// Agent.Plugin means the agent has a databricks plugin the CLI can install
+// headlessly (Claude Code, Codex, Copilot); a nil Plugin means raw skill files
+// are the only delivery (OpenCode, Antigravity, Cursor).
 type PluginSpec struct {
 	// Marketplace is the marketplace registry name the plugin is served from,
 	// as registered by `<agent> plugin marketplace add` (e.g. "databricks-agent-skills").
@@ -20,15 +20,9 @@ type PluginSpec struct {
 	// ID is the plugin identifier that is installed/enabled (e.g. "databricks").
 	ID string
 	// Source is the argument passed to `<agent> plugin marketplace add`
-	// (e.g. "databricks/databricks-agent-skills").
+	// (e.g. "databricks/databricks-agent-skills"). Empty marks a built-in
+	// marketplace that must not be added or de-registered.
 	Source string
-	// ManualOnly marks an agent that has a plugin but no headless install path
-	// (Cursor). For these agents the CLI prints ManualInstructions and copies
-	// nothing, because dropping skills alongside the plugin would duplicate them.
-	ManualOnly bool
-	// ManualInstructions is the user-facing tip for ManualOnly agents
-	// (e.g. "run /add-plugin databricks in Cursor"). Empty otherwise.
-	ManualInstructions string
 }
 
 // Agent defines a supported coding agent.
@@ -120,10 +114,17 @@ const (
 	databricksMarketplace = "databricks-agent-skills"
 	databricksPluginID    = "databricks"
 	databricksPluginSrc   = "databricks/databricks-agent-skills"
+
+	// claudeOfficialMarketplace is Claude Code's built-in marketplace
+	// (anthropics/claude-plugins-official), registered by default. The databricks
+	// plugin is published there, so Claude installs from it and we never register
+	// our own marketplace for Claude. An empty PluginSpec.Source marks a built-in
+	// marketplace that must not be added.
+	claudeOfficialMarketplace = "claude-plugins-official"
 )
 
-// databricksPlugin returns the shared plugin descriptor for an agent with a
-// real headless install path (Claude, Codex, Copilot).
+// databricksPlugin returns the shared plugin descriptor for an agent that
+// installs from our own marketplace (Codex, Copilot, Cursor).
 func databricksPlugin() *PluginSpec {
 	return &PluginSpec{
 		Marketplace: databricksMarketplace,
@@ -132,8 +133,20 @@ func databricksPlugin() *PluginSpec {
 	}
 }
 
-// Registry contains all supported agents.
-var Registry = []Agent{
+// claudePlugin returns Claude's plugin descriptor. Claude installs the databricks
+// plugin from its built-in claude-plugins-official marketplace (Source empty), so
+// the CLI doesn't register a separate databricks-agent-skills marketplace for it.
+func claudePlugin() *PluginSpec {
+	return &PluginSpec{
+		Marketplace: claudeOfficialMarketplace,
+		ID:          databricksPluginID,
+		Source:      "",
+	}
+}
+
+// Registry contains all supported agents. It holds pointers so callers can take
+// an *Agent without the &Registry[i] dance and call its pointer-receiver methods.
+var Registry = []*Agent{
 	{
 		Name:                 NameClaudeCode,
 		DisplayName:          "Claude Code",
@@ -141,7 +154,7 @@ var Registry = []Agent{
 		SupportsProjectScope: true,
 		ProjectConfigDir:     ".claude",
 		Binary:               "claude",
-		Plugin:               databricksPlugin(),
+		Plugin:               claudePlugin(),
 	},
 	{
 		Name:                 NameCursor,
@@ -152,13 +165,9 @@ var Registry = []Agent{
 		// Cursor's CLI binary is `cursor-agent`, not `cursor` (the latter is an
 		// IDE shim that isn't on PATH unless the user ran "install shell command").
 		Binary: "cursor-agent",
-		Plugin: &PluginSpec{
-			Marketplace:        databricksMarketplace,
-			ID:                 databricksPluginID,
-			Source:             databricksPluginSrc,
-			ManualOnly:         true,
-			ManualInstructions: "run /add-plugin databricks in Cursor",
-		},
+		// Cursor has a databricks plugin, but it can't be installed headlessly, so
+		// the CLI treats Cursor as a skills-only agent (Plugin nil) rather than
+		// referencing a plugin it can't act on.
 	},
 	{
 		Name:        NameCodex,
@@ -217,9 +226,9 @@ func openCodeConfigDir(ctx context.Context) (string, error) {
 
 // ByName returns the registry agent with the given name, or nil if not found.
 func ByName(name string) *Agent {
-	for i := range Registry {
-		if Registry[i].Name == name {
-			return &Registry[i]
+	for _, a := range Registry {
+		if a.Name == name {
+			return a
 		}
 	}
 	return nil
@@ -228,9 +237,9 @@ func ByName(name string) *Agent {
 // DetectInstalled returns all agents that are installed on the system.
 func DetectInstalled(ctx context.Context) []*Agent {
 	var installed []*Agent
-	for i := range Registry {
-		if Registry[i].Detected(ctx) {
-			installed = append(installed, &Registry[i])
+	for _, a := range Registry {
+		if a.Detected(ctx) {
+			installed = append(installed, a)
 		}
 	}
 	return installed

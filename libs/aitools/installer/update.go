@@ -83,7 +83,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
 			return nil, errors.New("found skills from a previous install without state tracking; run 'databricks aitools install' to refresh before updating")
 		}
-		return nil, errors.New("no skills installed. Run 'databricks aitools install' to install")
+		return nil, errors.New("no skills or plugins installed. Run 'databricks aitools install' to install")
 	}
 
 	latestTag, explicit, err := GetSkillsRef(ctx)
@@ -91,7 +91,10 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return nil, err
 	}
 
-	if state.Release == latestTag && !opts.Force {
+	// Short-circuit only when pinned to an exact ref. When tracking latest (the
+	// default), the ref ("main") never changes, so always reconcile against the
+	// freshly fetched manifest instead of falsely reporting "already up to date".
+	if explicit && state.Release == latestTag && !opts.Force {
 		cmdio.LogString(ctx, "Already up to date.")
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
 	}
@@ -285,8 +288,7 @@ func skillPrunable(ctx context.Context, baseDir, skillName, scope, cwd string, s
 	if !dirMatchesRecords(canonicalDir, skillName, state) {
 		return false
 	}
-	for i := range agents.Registry {
-		agent := &agents.Registry[i]
+	for _, agent := range agents.Registry {
 		if scope == ScopeProject && !agent.SupportsProjectScope {
 			continue
 		}
@@ -306,8 +308,7 @@ func skillPrunable(ctx context.Context, baseDir, skillName, scope, cwd string, s
 // call after skillPrunable has confirmed everything is removable.
 func removeSkillExposures(ctx context.Context, baseDir, skillName, scope, cwd string, state *InstallState) {
 	canonicalDir := filepath.Join(baseDir, skillName)
-	for i := range agents.Registry {
-		agent := &agents.Registry[i]
+	for _, agent := range agents.Registry {
 		if scope == ScopeProject && !agent.SupportsProjectScope {
 			continue
 		}
@@ -362,6 +363,9 @@ func exposureRemovable(entry, canonicalDir, skillName string, state *InstallStat
 // files). Returns false when there is no recorded provenance, so unverifiable
 // content is never deleted.
 func dirMatchesRecords(dir, skillName string, state *InstallState) bool {
+	if state == nil {
+		return false
+	}
 	prefix := skillName + "/"
 	recorded := map[string]string{}
 	for path, rec := range state.Files {
@@ -432,7 +436,7 @@ func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpd
 		return nil, nil
 	}
 
-	version := strings.TrimPrefix(ref, "v")
+	version := DisplaySkillsVersion(ref)
 	var updated []PluginUpdate
 	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 		agent := agents.ByName(name)
