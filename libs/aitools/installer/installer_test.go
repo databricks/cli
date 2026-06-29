@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -941,19 +942,52 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 	}
 }
 
-func TestGetSkillsRefResolvesFromManifest(t *testing.T) {
-	// Pre-populate the cache so FetchManifest returns from tier 1 (local cache)
-	// without hitting the network. The embedded manifest fallback is tested
-	// separately in clicompat_test.go.
-	cacheDir := t.TempDir()
-	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
-	cachePath := filepath.Join(cacheDir, "compat-manifest.json")
-	manifest := `{"next":{"appkit":"0.24.0","skills":"0.1.5"},"0.300.0":{"appkit":"0.24.0","skills":"0.1.5"}}`
-	require.NoError(t, os.WriteFile(cachePath, []byte(manifest), 0o644))
+func TestGetSkillsRefDefaultsToLatest(t *testing.T) {
+	// cli-compat reports "latest", so we track the repo's default branch (the
+	// same content plugin agents install).
+	t.Setenv("DATABRICKS_SKILLS_REF", "")
+	withCachedCompat(t, skillsLatestSentinel)
+
+	ref, explicit, err := GetSkillsRef(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, latestSkillsRef, ref)
+	assert.False(t, explicit, "tracking latest is not an explicit pin")
+}
+
+func TestGetSkillsRefEnvEscapeHatch(t *testing.T) {
+	t.Setenv("DATABRICKS_SKILLS_REF", "v9.9.9")
+
+	ref, explicit, err := GetSkillsRef(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "v9.9.9", ref)
+	assert.True(t, explicit, "an explicit ref is a pin")
+}
+
+func TestGetSkillsRefPinnedByCliCompat(t *testing.T) {
+	// cli-compat reports a concrete version: the remote safety valve pinning this
+	// CLI (e.g. after a future breaking change).
+	t.Setenv("DATABRICKS_SKILLS_REF", "")
+	withCachedCompat(t, "0.1.5")
 
 	ref, explicit, err := GetSkillsRef(t.Context())
 	require.NoError(t, err, "GetSkillsRef should succeed via cached manifest")
-	assert.False(t, explicit, "ref resolved from manifest should not be explicit")
-	assert.NotEmpty(t, ref)
-	assert.True(t, len(ref) > 1 && ref[0] == 'v', "ref should start with 'v', got %q", ref)
+	assert.Equal(t, "v0.1.5", ref)
+	assert.True(t, explicit, "a cli-compat pin is explicit")
+}
+
+func TestDisplaySkillsVersion(t *testing.T) {
+	assert.Equal(t, "latest", DisplaySkillsVersion(latestSkillsRef))
+	assert.Equal(t, "0.2.5", DisplaySkillsVersion("v0.2.5"))
+	assert.Equal(t, "0.2.5", DisplaySkillsVersion("0.2.5"))
+}
+
+// withCachedCompat pre-populates the cli-compat cache so resolution is offline
+// and deterministic (a fresh local cache is tier 1, ahead of the network). A
+// single "0.0.0" entry matches every CLI version, including dev test builds.
+func withCachedCompat(t *testing.T, skills string) {
+	t.Helper()
+	cacheDir := t.TempDir()
+	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
+	manifest := fmt.Sprintf(`{"0.0.0":{"appkit":"0.24.0","skills":%q}}`, skills)
+	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), []byte(manifest), 0o644))
 }

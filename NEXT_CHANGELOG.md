@@ -10,6 +10,7 @@
 
 ### Bundles
  * direct: add basic version of job_runs resource (experimental) ([#5603](https://github.com/databricks/cli/pull/5603)).
+ * direct: Fixed persistent drift on `model_serving_endpoints` caused by the `traffic_config` field ([#5708](https://github.com/databricks/cli/pull/5708)).
  * direct: Cluster resize now falls back to regular update if resize fails due to `INVALID_STATE` ([#5716](https://github.com/databricks/cli/pull/5716)).
 
 ### Dependency updates

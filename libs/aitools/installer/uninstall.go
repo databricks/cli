@@ -59,7 +59,7 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
 			return errors.New("found skills from a previous install without state tracking; run 'databricks aitools install' first, then uninstall")
 		}
-		return errors.New("no skills installed")
+		return errors.New("no skills or plugins installed")
 	}
 
 	// A full uninstall (no --skills filter) also tears down plugins.
