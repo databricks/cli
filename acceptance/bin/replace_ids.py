@@ -3,14 +3,14 @@
 Read state and add all resource IDs to ACC_REPLS.
 """
 
-import sys
-import json
 import argparse
+import json
+import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from print_state import get_state_file
 from add_repl import add_repl
+from print_state import get_state_file
 
 
 def iter_ids_terraform(filename):

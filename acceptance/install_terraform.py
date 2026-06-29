@@ -8,11 +8,11 @@ Script to set up terraform and databricks terraform provider in a local director
 - The config file contains env vars that need to be set so that databricks CLI uses this terraform and provider.
 """
 
+import argparse
+import json
 import os
 import platform
 import zipfile
-import argparse
-import json
 from pathlib import Path
 from urllib.request import urlretrieve
 

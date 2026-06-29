@@ -1,8 +1,7 @@
-import sys
-import subprocess
 import json
 import shlex
-
+import subprocess
+import sys
 
 VERBOSE = False
 
@@ -22,7 +21,7 @@ def run_json(cmd):
     try:
         return json.loads(result.stdout)
     except Exception as ex:
-        raise RunError(f"{cmd} returned non-json: {ex}\n{result.stdout}")
+        raise RunError(f"{cmd} returned non-json: {ex}\n{result.stdout}") from ex
 
 
 def run(cmd):

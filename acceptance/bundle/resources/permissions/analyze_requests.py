@@ -6,9 +6,10 @@ Analyze all requests recorded in subtests to highlight differences between direc
 import json
 import re
 import sys
-import tomllib
-from pathlib import Path
 from difflib import unified_diff
+from pathlib import Path
+
+import tomllib
 
 
 def read_json_many(file):
