@@ -1,7 +1,8 @@
 name: update-schema-docs
 
-# Regenerate bundle/schema/jsonschema_for_docs.json after every release and
-# publish it to the `docgen` branch.
+# Regenerate the bundle docs JSON schema after every release and publish it to
+# the `docgen` branch. The docs schema is NOT kept on main — `docgen` is its
+# only home (downstream docs tooling reads it from there).
 #
 # bundle/internal/schema/since_version.go derives `x-since-version` annotations
 # from the list of `v*` git tags that exist when the schema is generated. The
@@ -68,43 +69,24 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "Publishing for tag $tag"
 
-      - name: Regenerate jsonschema_for_docs.json
-        run: go tool -modfile=tools/task/go.mod task --force generate-schema-docs
-
-      # Fail loudly if regeneration touches anything other than the docs schema.
-      # Anything else (annotations.yml, untracked files, ...) is a bug in the
-      # generator, not something we want to silently publish.
-      - name: Assert only jsonschema_for_docs.json changed on main
-        run: |
-          changed=$(git status --porcelain)
-          expected=" M bundle/schema/jsonschema_for_docs.json"
-          if [ -z "$changed" ]; then
-            echo "Regeneration produced no diff against main."
-            exit 0
-          fi
-          if [ "$changed" != "$expected" ]; then
-            echo "Expected only bundle/schema/jsonschema_for_docs.json to be modified."
-            echo "Actual git status --porcelain:"
-            echo "$changed"
-            exit 1
-          fi
-
-      - name: Capture regenerated file
-        run: |
-          mkdir -p "$RUNNER_TEMP/regen"
-          cp bundle/schema/jsonschema_for_docs.json "$RUNNER_TEMP/regen/jsonschema_for_docs.json"
-
       - name: Check out docgen worktree
         run: |
           git fetch origin docgen
           git worktree add "$RUNNER_TEMP/docgen" origin/docgen
 
+      # The docs schema is not kept on main; generate it straight into the docgen
+      # worktree and publish from there. since_version.go reads `git tag --list
+      # 'v*'` to stamp x-since-version; the tags are provided by the checkout
+      # above (fetch-depth: 0 + fetch-tags: true).
+      - name: Regenerate docs schema into the docgen worktree
+        run: |
+          mkdir -p "$RUNNER_TEMP/docgen/bundle/schema"
+          go run ./bundle/internal/schema ./bundle/internal/schema \
+            "$RUNNER_TEMP/docgen/bundle/schema/jsonschema_for_docs.json" .codegen/cli.json --docs
+
       - name: Stage regenerated file on docgen
         working-directory: ${{ runner.temp }}/docgen
-        run: |
-          mkdir -p bundle/schema
-          cp "$RUNNER_TEMP/regen/jsonschema_for_docs.json" bundle/schema/jsonschema_for_docs.json
-          git add bundle/schema/jsonschema_for_docs.json
+        run: git add bundle/schema/jsonschema_for_docs.json
 
       - name: Commit and push to docgen
         working-directory: ${{ runner.temp }}/docgen

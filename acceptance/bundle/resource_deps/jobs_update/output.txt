@@ -90,7 +90,7 @@ Destroy complete!
 }
 
 >>> musterr [CLI] jobs get [FOO_ID]
-Error: Not Found
+Error: Job [FOO_ID] does not exist.
 
 >>> musterr [CLI] jobs get [BAR_ID]
-Error: Not Found
+Error: Job [BAR_ID] does not exist.

@@ -38,7 +38,7 @@
         },
         "warehouse_id": {
           "action": "skip",
-          "reason": "input_only",
+          "reason": "missing_in_remote",
           "old": "[TEST_DEFAULT_WAREHOUSE_ID]",
           "new": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }

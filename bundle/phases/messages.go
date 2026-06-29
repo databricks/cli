@@ -37,6 +37,10 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 This action will result in the deletion or recreation of the following Lakebase branches.
 All data stored in them will be permanently lost:`
 
+	deleteOrRecreatePostgresDatabaseMessage = `
+This action will result in the deletion or recreation of the following Lakebase databases.
+All data stored in them will be permanently lost:`
+
 	deleteOrRecreateVectorSearchIndexMessage = `
 This action will result in the deletion or recreation of the following Vector Search indexes.
 Recreating a Delta Sync index re-runs the full embedding pipeline; recreating a Direct Access
@@ -73,6 +77,9 @@ The synced data in the destination database will be lost (the source table is pr
 all their branches, databases, and endpoints. All data stored in them will be permanently lost:`
 
 	deletePostgresBranchMessage = `This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:`
+
+	deletePostgresDatabaseMessage = `This action will result in the deletion of the following Lakebase databases.
 All data stored in them will be permanently lost:`
 
 	deleteVectorSearchIndexMessage = `This action will result in the deletion of the following Vector Search indexes.

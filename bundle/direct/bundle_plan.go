@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -161,7 +162,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return adapter.DoRead(ctx, id)
 			})
 			if err != nil {
-				if isResourceGone(err) {
+				if apierr.IsMissing(err) {
 					// no such resource
 					plan.RemoveEntry(resourceKey)
 				} else {
@@ -218,7 +219,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return adapter.DoRead(ctx, dbentry.ID)
 		})
 		if err != nil {
-			if isResourceGone(err) {
+			if apierr.IsMissing(err) {
 				remoteState = nil
 			} else {
 				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
@@ -369,6 +370,12 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkip(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
+		} else if action, reason, ok := classifyIDField(cfg, path, ch); ok {
+			ch.Action = action
+			ch.Reason = reason
+		} else if action, reason, ok := classifyIDField(generatedCfg, path, ch); ok {
+			ch.Action = action
+			ch.Reason = reason
 		} else if reason, ok := shouldSkipBackendDefault(cfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
@@ -381,11 +388,14 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkipNormalized(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
-		} else if action, reason := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
-			ch.Action = action
+		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonMissingInRemote
+		} else if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
+			ch.Action = deployplan.Recreate
 			ch.Reason = reason
-		} else if action, reason := shouldUpdateOrRecreate(generatedCfg, path); action != deployplan.Undefined {
-			ch.Action = action
+		} else if reason, ok := findMatchingRule(path, generatedCfg.RecreateOnChanges); ok {
+			ch.Action = deployplan.Recreate
 			ch.Reason = reason
 		} else {
 			ch.Action = deployplan.Update
@@ -418,6 +428,15 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	return nil
 }
 
+// isFieldMissingInRemote reports whether path exists in StateType but is absent from RemoteType.
+// Such fields are accepted by the API on write but not returned by GET.
+func isFieldMissingInRemote(adapter *dresources.Adapter, path *structpath.PathNode) bool {
+	if structaccess.ValidatePath(adapter.StateType(), path) != nil {
+		return false
+	}
+	return structaccess.ValidatePath(adapter.RemoteType(), path) != nil
+}
+
 func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
 	for _, r := range rules {
 		if path.HasPatternPrefix(r.Field) {
@@ -440,11 +459,41 @@ func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNo
 	return "", false
 }
 
+// classifyIDField decides the action for a field that composes the resource's
+// name-based ID, in one place so the remote-only-vs-local rule does not depend on
+// ordering elsewhere in the ladder. Returns ok=false if the path is not such a field.
+//
+//   - Remote-only difference (Old==New): the resource was just fetched by that ID,
+//     so a differing remote value can only be backend normalization (e.g. UC
+//     lowercasing) — a real out-of-band rename would 404 and is handled as
+//     resource-gone. Skip.
+//   - Local change: provided_id_fields recreate (delete + create); updatable_id_fields
+//     rename via UpdateWithID.
+func classifyIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (deployplan.ActionType, string, bool) {
+	if cfg == nil {
+		return deployplan.Undefined, "", false
+	}
+	localChange := !structdiff.IsEqual(ch.Old, ch.New)
+	if reason, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
+		if localChange {
+			return deployplan.Recreate, reason, true
+		}
+		return deployplan.Skip, reason, true
+	}
+	if reason, ok := findMatchingRule(path, cfg.UpdatableIDFields); ok {
+		if localChange {
+			return deployplan.UpdateWithID, reason, true
+		}
+		return deployplan.Skip, reason, true
+	}
+	return deployplan.Undefined, "", false
+}
+
 // shouldSkipNormalized skips a change that is a false diff caused by UC API
-// normalization: the API lowercases identifier names (normalize_case) and strips
-// trailing slashes from storage URLs (normalize_slash). The direct engine saves
-// local config to state, so without this the next plan sees the original value
-// against the normalized remote value and triggers a spurious recreate/update.
+// normalization: the API strips trailing slashes from storage URLs
+// (normalize_slash). The direct engine saves local config to state, so without
+// this the next plan sees the original value against the normalized remote value
+// and triggers a spurious recreate/update.
 func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
 	if cfg == nil {
 		return "", false
@@ -454,26 +503,10 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 	if !newOk || !remoteOk {
 		return "", false
 	}
-	if reason, ok := findMatchingRule(path, cfg.NormalizeCase); ok && strings.EqualFold(newStr, remoteStr) {
-		return reason, true
-	}
 	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
 		return reason, true
 	}
 	return "", false
-}
-
-func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) (deployplan.ActionType, string) {
-	if cfg == nil {
-		return deployplan.Undefined, ""
-	}
-	if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
-		return deployplan.Recreate, reason
-	}
-	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
-		return deployplan.UpdateWithID, reason
-	}
-	return deployplan.Undefined, ""
 }
 
 // shouldSkipBackendDefault checks if a change should be skipped because the remote value
@@ -626,6 +659,12 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	// ${workspace.snapshot_path} is resolved by the mutator pipeline after
+	// snapshot.Upload() — not by the direct engine. Return errDelayed so the
+	// template string is preserved in the plan output rather than causing an error.
+	if path.String() == "workspace.snapshot_path" {
+		return nil, errDelayed
+	}
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 
@@ -706,7 +745,7 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return value, nil
 	}
 
-	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.IsFieldInRecreateOnChanges(fieldPath))
+	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.FieldTriggersRecreate(fieldPath))
 
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.
@@ -935,6 +974,11 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
 				targetNode := targetNodeDP.String()
+				// ${workspace.snapshot_path} is resolved by the mutator pipeline after
+				// snapshot.Upload(), not by the direct engine — skip it here.
+				if targetPath == "workspace.snapshot_path" {
+					continue
+				}
 
 				fullRef := "${" + targetPath + "}"
 
@@ -995,6 +1039,12 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	}
 
 	return p, nil
+}
+
+// ExtractReferences extracts all variable references from the config subtree rooted at node.
+// Returns a map from structpath string (field path within the resource) to template string.
+func ExtractReferences(root dyn.Value, node string) (map[string]string, error) {
+	return extractReferences(root, node)
 }
 
 func extractReferences(root dyn.Value, node string) (map[string]string, error) {
