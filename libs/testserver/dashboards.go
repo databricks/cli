@@ -32,11 +32,15 @@ func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSc
 		return serializedDashboard
 	}
 
+	// Track whether we modify the parsed content below.
+	mutated := false
+
 	// Add pageType to each page in the pages array (as of June 2025, this is an undocumented Lakeview API behaviour)
 	if pages, ok := dashboardContent["pages"].([]any); ok {
 		for _, page := range pages {
 			if pageMap, ok := page.(map[string]any); ok {
 				pageMap["pageType"] = "PAGE_TYPE_CANVAS"
+				mutated = true
 			}
 		}
 	}
@@ -47,21 +51,34 @@ func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSc
 			if datasetMap, ok := dataset.(map[string]any); ok {
 				if datasetCatalog != "" {
 					datasetMap["catalog"] = datasetCatalog
+					mutated = true
 				}
 				if datasetSchema != "" {
 					datasetMap["schema"] = datasetSchema
+					mutated = true
 				}
 			}
 		}
 	}
 
-	updatedContent, err := json.Marshal(dashboardContent)
-	if err != nil {
-		return serializedDashboard
+	// Cloud returns the serialized dashboard verbatim, except it re-serializes
+	// the content when it injects the fields above and canonicalizes an empty
+	// object to "{}" (both verified against cloud). Marshaling the parsed content
+	// covers both: a mutated object re-serializes and an empty object yields "{}".
+	result := serializedDashboard
+	if mutated || len(dashboardContent) == 0 {
+		updatedContent, err := json.Marshal(dashboardContent)
+		if err != nil {
+			return serializedDashboard
+		}
+		result = string(updatedContent)
 	}
 
-	// Add a newline to the end of the serialized dashboard.
-	return string(updatedContent) + "\n"
+	// Cloud always terminates the stored dashboard with a single trailing newline.
+	if !strings.HasSuffix(result, "\n") {
+		result += "\n"
+	}
+	return result
 }
 
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {

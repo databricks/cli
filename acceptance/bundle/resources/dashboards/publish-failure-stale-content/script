@@ -12,7 +12,8 @@ unset MSYS_NO_PATHCONV
 trace $CLI bundle deploy
 replace_ids.py
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
-add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_1
+ETAG_1=$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')
+add_repl.py "$ETAG_1" ETAG_1
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 trace $CLI bundle plan -o json | gron.py | grep -E "etag|published"
@@ -28,7 +29,8 @@ update_file.py databricks.yml "my dashboard" "my dashboard renamed"
 # SaveState is only called on success, so state retains the pre-PATCH etag.
 errcode trace $CLI bundle deploy
 trace print_requests.py //lakeview/dashboards
-add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_2
+# The PATCH bumped the remote etag to ETAG_2; retry until it is visible (eventual consistency).
+add_repl.py "$(retry.py --until-not "$ETAG_1" $CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_2
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 trace $CLI bundle plan -o json | gron.py | grep -E "etag|published"

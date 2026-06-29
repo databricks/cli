@@ -1,6 +1,6 @@
 
 === stable-only install (no --experimental flag) installs 1 skill
->>> [CLI] experimental aitools install --global
+>>> [CLI] experimental aitools install --skills-only --global
 Command "install" is deprecated, use "databricks aitools install" instead.
 Flag --global has been deprecated, use --scope=global
 Installing Databricks AI skills for Claude Code...
@@ -8,7 +8,7 @@ Using skills version test-ref
 Installed 1 skill.
 
 === re-run with --experimental installs the experimental one too
->>> [CLI] experimental aitools install --global --experimental
+>>> [CLI] experimental aitools install --skills-only --global --experimental
 Command "install" is deprecated, use "databricks aitools install" instead.
 Flag --global has been deprecated, use --scope=global
 Installing Databricks AI skills for Claude Code...
@@ -16,7 +16,7 @@ Using skills version test-ref
 Installed 2 skills.
 
 === no-op re-run is idempotent (no new fetches, no errors)
->>> [CLI] experimental aitools install --global --experimental
+>>> [CLI] experimental aitools install --skills-only --global --experimental
 Command "install" is deprecated, use "databricks aitools install" instead.
 Flag --global has been deprecated, use --scope=global
 Installing Databricks AI skills for Claude Code...

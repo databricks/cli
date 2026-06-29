@@ -46,8 +46,16 @@ type PostgresRoleRemote struct {
 	UpdateTime *sdktime.Time            `json:"update_time,omitempty"`
 }
 
-// Custom marshaler needed because embedded RoleRoleSpec has its own MarshalJSON
+// Custom marshalers needed because embedded RoleRoleSpec has its own MarshalJSON
 // which would otherwise take over and ignore the additional fields.
+func (s *PostgresRoleState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PostgresRoleState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
 func (s *PostgresRoleRemote) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
 }

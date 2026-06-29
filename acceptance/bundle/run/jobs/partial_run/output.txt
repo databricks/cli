@@ -20,7 +20,7 @@ Task task_2:
 Hello from notebook2!
 
 
->>> print_requests
+>>> print_requests.py //jobs/run-now
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
@@ -47,7 +47,7 @@ Task task_2:
 Hello from notebook2!
 
 
->>> print_requests
+>>> print_requests.py //jobs/run-now
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
@@ -75,7 +75,7 @@ Task task_2:
 Hello from notebook2!
 
 
->>> print_requests
+>>> print_requests.py //jobs/run-now
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
@@ -105,7 +105,7 @@ Task task_2:
 Hello from notebook2!
 
 
->>> print_requests
+>>> print_requests.py //jobs/run-now
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",

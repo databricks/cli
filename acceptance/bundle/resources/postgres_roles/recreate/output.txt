@@ -39,27 +39,45 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 {
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-[UNIQUE_NAME]"
+  },
   "body": {
     "spec": {
       "display_name": "Test Project for Role",
       "history_retention_duration": "604800s",
       "pg_version": 16
     }
-  },
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects",
-  "q": {
-    "project_id": "test-pg-proj-[UNIQUE_NAME]"
   }
 }
-      "no_expiry": true
+{
+  "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
+  "q": {
     "branch_id": "main"
-      "postgres_role": "app_role"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles",
+  "q": {
     "role_id": "test-role-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "postgres_role": "app_role"
+    }
+  }
+}
 
 >>> cat databricks.yml
 bundle:
@@ -99,21 +117,23 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 {
   "method": "DELETE",
   "path": "/api/2.0/postgres/[MY_ROLE_ID]"
 }
-  "body": {
-    "spec": {
-      "postgres_role": "app_role"
-    }
-  },
+{
   "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles",
   "q": {
     "role_id": "test-role-[UNIQUE_NAME]-v2"
+  },
+  "body": {
+    "spec": {
+      "postgres_role": "app_role"
+    }
   }
+}
 
 === Fetch role and verify it exists after recreation
 >>> [CLI] postgres get-role [MY_ROLE_ID]-v2
@@ -154,13 +174,19 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests
+>>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 {
   "method": "DELETE",
   "path": "/api/2.0/postgres/[MY_ROLE_ID]-v2"
 }
+{
+  "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
 
 >>> [CLI] bundle destroy --auto-approve
 No active deployment found to destroy!

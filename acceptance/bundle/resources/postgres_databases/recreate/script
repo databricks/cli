@@ -21,15 +21,7 @@ trace $CLI bundle deploy
 
 database_id_1=`read_id.py my_database`
 
-print_requests() {
-    # Filter postgres requests (excluding GET), remove parent field (differs between engines),
-    # then deduplicate consecutive retries
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres"))) | del(.body.parent)' < out.requests.txt | \
-        awk '!seen[$0]++ {print}'
-    rm -f out.requests.txt
-}
-
-trace print_requests
+trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'
 
 # Change database_id (should trigger recreation)
 envsubst < databricks.yml.tmpl | sed "s/DATABASE_ID_PLACEHOLDER/test-database-${UNIQUE_NAME}-v2/" > databricks.yml
@@ -43,7 +35,7 @@ musterr trace $CLI bundle deploy
 
 trace $CLI bundle deploy --auto-approve
 
-trace print_requests
+trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'
 
 title "Fetch database and verify it exists after recreation"
 
@@ -54,4 +46,4 @@ trace $CLI postgres get-database $database_id_2 | jq 'del(.create_time, .update_
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve
 
-trace print_requests
+trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'
