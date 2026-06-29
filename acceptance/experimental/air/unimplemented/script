@@ -3,8 +3,5 @@
 title "logs"
 errcode trace $CLI experimental air logs 123
 
-title "cancel"
-errcode trace $CLI experimental air cancel 123
-
 title "register-image"
 errcode trace $CLI experimental air register-image my-image:latest
