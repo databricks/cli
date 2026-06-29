@@ -42,7 +42,9 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	schema.EffectivePredictiveOptimizationFlag = &catalog.EffectivePredictiveOptimizationFlag{
 		InheritedFromName: testMetastoreName,
 		InheritedFromType: catalog.EffectivePredictiveOptimizationFlagInheritedFromType("METASTORE"),
-		Value:             catalog.EnablePredictiveOptimizationEnable,
+		// Mirror the real test metastore, which inherits DISABLE, so a single
+		// golden stays valid for both local and cloud runs.
+		Value: catalog.EnablePredictiveOptimizationDisable,
 	}
 	schema.EnablePredictiveOptimization = catalog.EnablePredictiveOptimizationInherit
 	schema.MetastoreId = TestMetastore.MetastoreId

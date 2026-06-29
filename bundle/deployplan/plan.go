@@ -103,6 +103,9 @@ const (
 	ReasonRemoteAlreadySet = "remote_already_set"
 	ReasonEmpty            = "empty"
 	ReasonCustom           = "custom"
+	// ReasonMissingInRemote: field is not present in RemoteType (write-only / input-only).
+	// Remote always appears nil, so treat the absence as a no-op when there is no local change.
+	ReasonMissingInRemote = "missing_in_remote"
 
 	// Special reason that results in removing this change from the plan
 	ReasonDrop = "!drop"

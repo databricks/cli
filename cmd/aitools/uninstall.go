@@ -14,7 +14,7 @@ var uninstallSkillsFn = func(ctx context.Context, opts installer.UninstallOption
 
 func NewUninstallCmd() *cobra.Command {
 	var skillsFlag, scopeFlag string
-	var projectFlag, globalFlag bool
+	var projectFlag, globalFlag, keepMarketplace bool
 
 	cmd := &cobra.Command{
 		Use:   "uninstall",
@@ -46,7 +46,8 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 			}
 
 			opts := installer.UninstallOptions{
-				Scope: scope,
+				Scope:           scope,
+				KeepMarketplace: keepMarketplace,
 			}
 			opts.Skills = splitAndTrim(skillsFlag)
 			return uninstallSkillsFn(ctx, opts)
@@ -54,6 +55,7 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 	}
 
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to uninstall (comma-separated)")
+	cmd.Flags().BoolVar(&keepMarketplace, "keep-marketplace", false, "Keep the marketplace registration when removing a plugin")
 	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Uninstall scope: project or global")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Uninstall project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Uninstall globally-scoped skills")

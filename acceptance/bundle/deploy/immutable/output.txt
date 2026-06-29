@@ -1,0 +1,62 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle-immutable-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle plan -o json
+Building python_artifact...
+[
+  {
+    "notebook_task": {
+      "notebook_path": "${workspace.snapshot_path}/src/files/src/notebook"
+    },
+    "task_key": "notebook_task"
+  },
+  {
+    "environment_key": "env",
+    "python_wheel_task": {
+      "entry_point": "main",
+      "package_name": "immutable"
+    },
+    "task_key": "python_wheel_task"
+  },
+  {
+    "environment_key": "env",
+    "spark_python_task": {
+      "python_file": "${workspace.snapshot_path}/src/files/src/main.py"
+    },
+    "task_key": "spark_python_task"
+  }
+]
+
+>>> [CLI] bundle deploy
+Building python_artifact...
+Uploading immutable bundle snapshot...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] jobs get [NUMID]
+"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/src/files/src/main.py"
+
+>>> [CLI] jobs get [NUMID]
+"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/src/files/src/notebook"
+
+>>> [CLI] jobs get [NUMID]
+[
+  "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/src/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

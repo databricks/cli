@@ -53,6 +53,16 @@ const (
 	minEnvironmentVersion    = 4
 )
 
+// acceleratorProvisioningNotice maps a GPU accelerator type to the upfront notice
+// shown while its serverless compute is provisioned. Latencies vary widely by type
+// (a single A10 is acquired in minutes; an 8xH100 node is ~10 min at P50 and can
+// exceed 30 min at P90), so the wording is tuned per type to set expectations
+// accurately. Types absent from this map fall back to a generic message.
+var acceleratorProvisioningNotice = map[string]string{
+	"GPU_1xA10":  "Provisioning GPU_1xA10 compute. This usually takes a few minutes and may take longer when capacity is constrained.",
+	"GPU_8xH100": "Provisioning GPU_8xH100 compute. This typically takes around 10 minutes and can exceed 30 minutes when capacity is constrained.",
+}
+
 type ClientOptions struct {
 	// Id of the cluster to connect to (for dedicated clusters)
 	ClusterID string
@@ -609,7 +619,64 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	cmdio.LogString(ctx, fmt.Sprintf("Job submitted successfully with run ID: %d", waiter.RunId))
 
 	// Return the run ID even on error so callers can fetch the run's failure details.
-	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts.TaskStartupTimeout)
+	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts)
+}
+
+// shellSingleQuote wraps s in single quotes for safe inclusion in a shell
+// command, escaping any embedded single quotes.
+func shellSingleQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
+// buildRemoteShellArgs returns the ssh arguments that follow the hostname.
+//
+// For the interactive case (no remote command given), it forces PTY allocation
+// and launches a login bash, because the default login shell on Databricks
+// compute images is /bin/sh. If bash is unavailable it falls back to $SHELL or
+// /bin/sh so the connection never breaks. When wsHome is set, the shell first
+// changes into the user's workspace home folder; if that directory is missing
+// the cd is ignored and the shell still launches from $HOME.
+//
+// For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
+// the user's command is returned verbatim so behavior is unchanged.
+//
+// Note: this returns the remote command only. PTY allocation (-t) is added to
+// the ssh options *before* the destination by the caller; -t placed after the
+// host would be parsed as part of the remote command, not as ssh's flag.
+func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
+	if len(opts.AdditionalArgs) > 0 {
+		return opts.AdditionalArgs
+	}
+	cmd := `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`
+	if wsHome != "" {
+		cmd = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + cmd
+	}
+	return []string{cmd}
+}
+
+// buildSSHArgs assembles the argument list for the ssh client. Options come
+// first, then the destination host, then the remote command (if any). PTY
+// allocation (-t) for the interactive case is added before the host: ssh stops
+// parsing options at the destination, so a -t placed after the host would be
+// treated as part of the remote command rather than as ssh's force-PTY flag.
+func buildSSHArgs(userName, privateKeyPath, proxyCommand, hostName, wsHome string, opts ClientOptions) []string {
+	sshArgs := []string{
+		"-l", userName,
+		"-i", privateKeyPath,
+		"-o", "IdentitiesOnly=yes",
+		"-o", "StrictHostKeyChecking=accept-new",
+		"-o", "ConnectTimeout=360",
+		"-o", "ProxyCommand=" + proxyCommand,
+	}
+	if opts.UserKnownHostsFile != "" {
+		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
+	}
+	if len(opts.AdditionalArgs) == 0 {
+		sshArgs = append(sshArgs, "-t")
+	}
+	sshArgs = append(sshArgs, hostName)
+	sshArgs = append(sshArgs, buildRemoteShellArgs(opts, wsHome)...)
+	return sshArgs
 }
 
 func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath string, serverPort int, clusterID string, opts ClientOptions) error {
@@ -624,19 +691,19 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 
 	hostName := opts.SessionIdentifier()
 
-	sshArgs := []string{
-		"-l", userName,
-		"-i", privateKeyPath,
-		"-o", "IdentitiesOnly=yes",
-		"-o", "StrictHostKeyChecking=accept-new",
-		"-o", "ConnectTimeout=360",
-		"-o", "ProxyCommand=" + proxyCommand,
+	// For an interactive session (no remote command supplied), land the shell in
+	// the user's workspace home folder (/Workspace/Users/<email>) instead of the
+	// OS home. Only needed for an interactive session; skip the lookup otherwise.
+	var wsHome string
+	if len(opts.AdditionalArgs) == 0 {
+		if currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+			log.Warnf(ctx, "Failed to resolve current user for workspace home directory: %v", err)
+		} else {
+			wsHome = "/Workspace/Users/" + currentUser.UserName
+		}
 	}
-	if opts.UserKnownHostsFile != "" {
-		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
-	}
-	sshArgs = append(sshArgs, hostName)
-	sshArgs = append(sshArgs, opts.AdditionalArgs...)
+
+	sshArgs := buildSSHArgs(userName, privateKeyPath, proxyCommand, hostName, wsHome, opts)
 
 	log.Debugf(ctx, "Launching SSH client: ssh %s", strings.Join(sshArgs, " "))
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)
@@ -683,7 +750,7 @@ func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, 
 	sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 	defer sp.Close()
 	if autoStart {
-		sp.Update("Ensuring the cluster is running...")
+		sp.Update("Waiting for compute to start...")
 		err := client.Clusters.EnsureClusterIsRunning(ctx, clusterID)
 		if err != nil {
 			return fmt.Errorf("failed to ensure that the cluster is running: %w", err)
@@ -703,13 +770,27 @@ func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, 
 
 // waitForJobToStart polls the task status until the SSH server task is in RUNNING state or terminates.
 // Returns an error if the task fails to start or if polling times out.
-func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, runID int64, taskStartupTimeout time.Duration) error {
+func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, runID int64, opts ClientOptions) error {
+	waitingMessage := "Waiting for compute to start..."
+	if opts.Accelerator != "" {
+		// GPU capacity is acquired on demand and the wait varies a lot by accelerator
+		// type; without this notice users assume a long PENDING wait means the service
+		// is down. Latencies differ enough between types that a single message would be
+		// misleading, so phrase the heads-up per accelerator with a generic fallback.
+		notice, ok := acceleratorProvisioningNotice[opts.Accelerator]
+		if !ok {
+			notice = fmt.Sprintf("Provisioning %s compute. This can take several minutes and may take longer when capacity is constrained.", opts.Accelerator)
+		}
+		cmdio.LogString(ctx, notice)
+		waitingMessage = fmt.Sprintf("Provisioning %s compute...", opts.Accelerator)
+	}
+
 	sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 	defer sp.Close()
-	sp.Update("Starting SSH server...")
+	sp.Update(waitingMessage)
 	var prevState jobs.RunLifecycleStateV2State
 
-	_, err := retries.Poll(ctx, taskStartupTimeout, func() (*jobs.RunTask, *retries.Err) {
+	_, err := retries.Poll(ctx, opts.TaskStartupTimeout, func() (*jobs.RunTask, *retries.Err) {
 		run, err := client.Jobs.GetRun(ctx, jobs.GetRunRequest{
 			RunId: runID,
 		})
@@ -738,7 +819,7 @@ func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, 
 
 		// Update spinner if state changed
 		if currentState != prevState {
-			sp.Update(fmt.Sprintf("Starting SSH server... (task: %s)", currentState))
+			sp.Update(fmt.Sprintf("%s (task: %s)", waitingMessage, currentState))
 			prevState = currentState
 		}
 

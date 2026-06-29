@@ -1,9 +1,13 @@
 package testserver
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"path"
 	"strings"
@@ -79,6 +83,11 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.WorkspaceGetStatus(path)
 	})
 
+	server.Handle("GET", "/api/2.0/workspace/list", func(req Request) any {
+		path := req.URL.Query().Get("path")
+		return req.Workspace.WorkspaceList(path)
+	})
+
 	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req Request) any {
 		var request workspace.Mkdirs
 		if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -138,13 +147,6 @@ func AddDefaultHandlers(server *Server) {
 			}
 		}
 
-		if request.Format != workspace.ImportFormatAuto {
-			return Response{
-				Body:       "internal error: The test server only supports auto format.",
-				StatusCode: http.StatusInternalServerError,
-			}
-		}
-
 		// The /workspace/import endpoint expects the content as base64 encoded string.
 		// We need to decode it to get the actual content.
 		decoded, err := base64.StdEncoding.DecodeString(request.Content)
@@ -155,7 +157,21 @@ func AddDefaultHandlers(server *Server) {
 			}
 		}
 
-		return req.Workspace.WorkspaceFilesImportFile(request.Path, decoded, request.Overwrite)
+		switch request.Format {
+		case workspace.ImportFormatAuto:
+			return req.Workspace.WorkspaceFilesImportFile(request.Path, decoded, request.Overwrite)
+		case workspace.ImportFormatSource, "":
+			// SOURCE imports a single notebook with an explicit language, e.g.
+			// `databricks workspace import --language PYTHON`. The CLI leaves the
+			// format empty in that case and treats empty as SOURCE (see
+			// cmd/workspace/workspace/overrides.go).
+			return req.Workspace.WorkspaceImportNotebook(request.Path, decoded, request.Language, request.Overwrite)
+		default:
+			return Response{
+				Body:       "internal error: The test server only supports auto and source formats.",
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
 	})
 
 	server.Handle("GET", "/api/2.0/workspace-files/{path...}", func(req Request) any {
@@ -562,6 +578,45 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/repos/{repo_id}", func(req Request) any {
 		return req.Workspace.ReposDelete(req)
+	})
+
+	server.Handle("POST", "/api/2.0/repos/snapshots", func(req Request) any {
+		contentType := req.Headers.Get("Content-Type")
+		mediaType, params, err := mime.ParseMediaType(contentType)
+		if err != nil || !strings.HasPrefix(mediaType, "multipart/") {
+			return Response{StatusCode: http.StatusBadRequest}
+		}
+
+		mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
+		var bundleID, snapshotID string
+		for {
+			p, err := mr.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return Response{StatusCode: http.StatusInternalServerError}
+			}
+			data, err := io.ReadAll(p)
+			if err != nil {
+				return Response{StatusCode: http.StatusInternalServerError}
+			}
+			switch p.FormName() {
+			case "bundle_id":
+				bundleID = string(data)
+			case "snapshot_id":
+				snapshotID = string(data)
+			}
+		}
+
+		// The real API uses the workspace user UUID (not email) in the snapshot path,
+		// matching service-principal identities used in cloud acceptance tests.
+		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
+		return map[string]any{
+			"snapshot": map[string]any{
+				"path": snapshotPath,
+			},
+		}
 	})
 
 	// SQL Warehouses:

@@ -13,7 +13,7 @@ Usage:
 
 Flags:
   -h, --help          help for migrate
-      --noplancheck   Skip running bundle plan before migration.
+      --noplancheck   No-op (kept for compatibility).
 
 Global Flags:
       --debug            enable debug logging

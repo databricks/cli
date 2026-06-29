@@ -66,7 +66,28 @@
             "ready": "NOT_READY"
           }
         },
-        "endpoint_id": "[UUID]"
+        "endpoint_id": "[UUID]",
+        "config": {
+          "auto_capture_config": {
+            "catalog_name": "main",
+            "schema_name": "default",
+            "table_name_prefix": "my_table"
+          },
+          "served_entities": [
+            {
+              "external_model": {
+                "name": "gpt-4o-mini",
+                "openai_config": {
+                  "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                },
+                "provider": "openai",
+                "task": "llm/v1/chat"
+              },
+              "name": "prod"
+            }
+          ]
+        },
+        "name": "[ORIGINAL_ENDPOINT_ID]"
       },
       "changes": {
         "config.auto_capture_config.schema_name": {
