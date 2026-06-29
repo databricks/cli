@@ -92,7 +92,7 @@ func (s *Stats) CollectChangeStats(ctx context.Context, changes Changes) {
 			perType = &protos.BundleConfigRemoteSyncResourceChanges{ResourceType: resourceType}
 			s.PerResourceType[resourceType] = perType
 		}
-		// Only Add/Replace/Remove reach this function: DetectChanges filters
+		// Only Add/Replace/Remove reach this function: ExtractChanges filters
 		// out Skip operations and convertChangeDesc never produces Unknown,
 		// so the totals always equal the per-operation breakdown.
 		for fieldPath, change := range resourceChanges {

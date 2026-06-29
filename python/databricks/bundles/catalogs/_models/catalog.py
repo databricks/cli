@@ -49,8 +49,14 @@ class Catalog(Resource):
     """
 
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
+    """
+    The Unity Catalog privileges to grant to principals on this securable.
+    """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    """
 
     managed_encryption_settings: VariableOrOptional[EncryptionSettings] = None
     """
@@ -116,8 +122,14 @@ class CatalogDict(TypedDict, total=False):
     """
 
     grants: VariableOrList[PrivilegeAssignmentParam]
+    """
+    The Unity Catalog privileges to grant to principals on this securable.
+    """
 
     lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    """
 
     managed_encryption_settings: VariableOrOptional[EncryptionSettingsParam]
     """

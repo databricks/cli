@@ -1,7 +1,12 @@
-Local = false
+Local = true
 Cloud = true
 RecordRequests = true
 RequiresUnityCatalog = true
+
+# Cloud goldens were recorded under a service principal, so the deployer's
+# auto-added CAN_MANAGE ACL serializes as service_principal_name. Make the
+# local fake report the deployer as a service principal to match.
+IsServicePrincipal = true
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
