@@ -14,21 +14,15 @@ import (
 
 type initializeVolumePaths struct{}
 
-// InitializeVolumePaths sets resources.volumes.*.volume_path from catalog, schema, and name.
+// InitializeVolumePaths sets resources.volumes.*.volume_path from catalog_name, schema_name, and name.
 //
-// catalog_name and schema_name may be ${resources.catalogs/schemas.<key>.name} references
-// (for example, after CaptureUCDependencies rewrites implicit dependencies). We resolve those
-// references locally to compute the path, but we do not write the resolved values back: the
-// original references are preserved so validate and plan keep showing them.
+// References in those fields are resolved locally only to compute the path; the original field
+// values are left intact so validate and plan still show the references. A component that cannot be
+// resolved locally is embedded verbatim as a ${...} reference and resolved later during plan or
+// deploy, like any other resource reference.
 //
-// A component that cannot be resolved locally (for example a remote field only known at plan or
-// deploy time) is left as a ${...} reference and embedded into volume_path. The embedded
-// reference is then carried into any ${resources.volumes.<key>.volume_path} referrer (resolved
-// by ResolveVolumePathReferencesOnlyResources) and ultimately resolved by the engine during plan
-// or deploy, the same way any other resource reference is.
-//
-// This mutator must run exactly once: volume_path is computed here and never persisted, so a
-// second run would see the value it set and trip the "computed and read-only" rejection below.
+// Must run exactly once: volume_path is computed here and never persisted, so a second run would
+// see its own value and trip the "computed and read-only" rejection below.
 func InitializeVolumePaths() bundle.Mutator {
 	return &initializeVolumePaths{}
 }
@@ -41,8 +35,7 @@ func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key("volumes"), dyn.AnyKey())
 		return dyn.MapByPattern(root, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// volume_path is computed and read-only. Reject a user-provided value
-			// instead of silently overwriting it with the computed path.
+			// volume_path is computed and read-only; reject a user-provided value instead of overwriting it.
 			if existing, ok := v.Get("volume_path").AsString(); ok && existing != "" {
 				return dyn.InvalidValue, fmt.Errorf("%s.volume_path is computed and read-only; remove it from the configuration", p.String())
 			}
@@ -52,8 +45,7 @@ func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.
 				return dyn.InvalidValue, err
 			}
 
-			// Resolve references for the purpose of computing the path only; the
-			// original field values in v are left untouched.
+			// Resolve references to compute the path only; the field values in v are left untouched.
 			vol.CatalogName = resolveResourceReference(root, vol.CatalogName)
 			vol.SchemaName = resolveResourceReference(root, vol.SchemaName)
 			vol.Name = resolveResourceReference(root, vol.Name)
@@ -71,10 +63,9 @@ func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.
 	return nil
 }
 
-// resolveResourceReference returns the concrete value of a pure ${resources....} reference
-// by looking it up in root. Non-reference values and references that cannot be resolved (or
-// resolve to another reference) are returned unchanged, so they still contain "${" and the
-// caller will not compute a volume_path for them.
+// resolveResourceReference resolves a pure ${resources....} reference by looking it up in root.
+// Values that are not such a reference, or cannot be resolved, are returned unchanged (still
+// containing "${"), so the caller will not compute a volume_path for them.
 func resolveResourceReference(root dyn.Value, s string) string {
 	p, ok := dynvar.PureReferenceToPath(s)
 	if !ok || p[0].Key() != "resources" {

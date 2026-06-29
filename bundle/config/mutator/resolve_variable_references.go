@@ -129,12 +129,9 @@ func ResolveVolumePathReferencesOnlyResources() bundle.Mutator {
 	}
 }
 
-// lookupVolumePath resolves a reference to resources.volumes.<key>.volume_path.
-//
-// A volume's volume_path is empty only when it could not be computed, for example because
-// catalog_name, schema_name, or name is unset or contains a malformed reference (see
-// Volume.ComputeVolumePath). Resolving such a reference to "" would silently inject an empty
-// string into the referrer, so we return an actionable error instead.
+// lookupVolumePath resolves a reference to resources.volumes.<key>.volume_path. An empty
+// volume_path means it could not be computed (see Volume.ComputeVolumePath); error instead of
+// silently resolving the referrer to an empty string.
 func lookupVolumePath(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
 	result, err := lookup(v, path, b)
 	if err != nil {

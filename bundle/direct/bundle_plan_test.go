@@ -42,10 +42,9 @@ func TestDynPathToStructPath(t *testing.T) {
 	}
 }
 
-// extractReferences gates references on the resource's state type, so a reference
-// stored in a field that exists in the input config but not in state (most notably a
-// bundle:"readonly" field such as volumes' computed volume_path) must not become a
-// dependency. References in state fields (e.g. comment) are still extracted.
+// extractReferences gates references on the state type: a reference in an input-only field
+// (e.g. a bundle:"readonly" field like volumes' volume_path) must not become a dependency,
+// while references in state fields (e.g. comment) are still extracted.
 func TestExtractReferences_ExcludesReadonlyFields(t *testing.T) {
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
