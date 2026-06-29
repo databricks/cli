@@ -232,8 +232,10 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	updated.WarehouseId = updateReq.WarehouseId
 	updated.UpdateTime = time.Now().UTC().Format(time.RFC3339)
 
-	// Put (not Write): updates are immediately visible. Only creates stage a stale
-	// value, so the eventual-consistency 404 happens only on first read after create.
+	// Updates apply immediately (Put). A real backend is eventually consistent on
+	// updates too, but staging a stale value (Write) yields a successful-but-stale 200
+	// that breaks plan-time reads (e.g. CheckDashboardsModifiedRemotely) the engine
+	// does not yet tolerate. We stage a stale value only on create (the 404).
 	s.Dashboards.Put(dashboardId, &updated)
 
 	return Response{
