@@ -116,7 +116,7 @@ func structFieldOrder(typ reflect.Type, props map[string]*jsonschema.Schema) []s
 			continue
 		}
 
-		name := strings.Split(field.Tag.Get("json"), ",")[0]
+		name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
 		if seen[name] {
 			continue
 		}
