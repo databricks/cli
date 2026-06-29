@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -96,8 +95,7 @@ func (opts importDirOptions) callback(ctx context.Context, workspaceFiler filer.
 			return err
 		}
 		if isNotebook {
-			ext := path.Ext(remoteName)
-			remoteName = strings.TrimSuffix(remoteName, ext)
+			remoteName = notebook.StripExtension(remoteName)
 		}
 
 		// Open the local file

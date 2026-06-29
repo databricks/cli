@@ -12,8 +12,10 @@ vars:
   # a separate static `**/testdata/**` glob, not this script.
   # Limitation: git grep only scans tracked files; new //go:embed directives in
   # untracked files are missed until the file is staged or committed.
+  # Run via uv with a pinned interpreter floor so the helper works on hosts whose
+  # default python3 is older than the 3.11 this repo's scripts target.
   EMBED_SOURCES:
-    sh: 'python3 tools/list_embeds.py'
+    sh: 'uv run -p ">=3.11" --no-project python tools/list_embeds.py'
 
 # pydabs-* tasks live in python/Taskfile.yml so `task pydabs-foo` works when
 # run from python/. Flattened so they keep their `pydabs-` names at the root.
@@ -171,7 +173,7 @@ tasks:
       # Pinned to match the version used by the `ruff format --check` step in
       # .github/workflows/check.yml — newer ruff versions reformat files that
       # CI considers already formatted.
-      - "uvx ruff@0.9.1 format -n"
+      - "uvx ruff@0.15.17 format -n"
 
   # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
   # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
@@ -692,7 +694,21 @@ tasks:
           -- -parallel 4 -timeout=12h
 
   integration-short:
-    desc: Run short integration tests
+    desc: Run integration tests except the slow ones (skips CloudSlow via -short)
+    deps: [install-pythons]
+    cmds:
+      - |
+        VERBOSE_TEST=1 \
+        go run -modfile=tools/go.mod ./tools/testrunner/main.go \
+          {{.GO_TOOL}} gotestsum \
+          --format github-actions \
+          --rerun-fails \
+          --jsonfile output.json \
+          --packages "./acceptance ./integration/..." \
+          -- -parallel 4 -timeout=12h -short
+
+  integration-short-skiplocal:
+    desc: Run integration tests for PRs (skips CloudSlow and tests with testserver coverage)
     deps: [install-pythons]
     cmds:
       - |
@@ -703,7 +719,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=12h -short
+          -- -parallel 4 -timeout=2h -short
 
   dbr-integration:
     desc: Run DBR acceptance tests on Databricks Runtime
@@ -933,7 +949,7 @@ tasks:
     generates:
       - bundle/direct/dresources/apitypes.generated.yml
     cmds:
-      - "sh -c 'python3 bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
+      - "sh -c 'uv run -p \">=3.11\" --no-project python bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
 
   generate-direct-resources:
     desc: Generate direct engine resources YAML
