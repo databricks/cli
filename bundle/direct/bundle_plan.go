@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -161,7 +162,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return adapter.DoRead(ctx, id)
 			})
 			if err != nil {
-				if isResourceGone(err) {
+				if apierr.IsMissing(err) {
 					// no such resource
 					plan.RemoveEntry(resourceKey)
 				} else {
@@ -218,7 +219,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return adapter.DoRead(ctx, dbentry.ID)
 		})
 		if err != nil {
-			if isResourceGone(err) {
+			if apierr.IsMissing(err) {
 				remoteState = nil
 			} else {
 				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
@@ -387,6 +388,9 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkipNormalized(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
+		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonMissingInRemote
 		} else if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
@@ -422,6 +426,15 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	}
 
 	return nil
+}
+
+// isFieldMissingInRemote reports whether path exists in StateType but is absent from RemoteType.
+// Such fields are accepted by the API on write but not returned by GET.
+func isFieldMissingInRemote(adapter *dresources.Adapter, path *structpath.PathNode) bool {
+	if structaccess.ValidatePath(adapter.StateType(), path) != nil {
+		return false
+	}
+	return structaccess.ValidatePath(adapter.RemoteType(), path) != nil
 }
 
 func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
@@ -646,6 +659,12 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	// ${workspace.snapshot_path} is resolved by the mutator pipeline after
+	// snapshot.Upload() — not by the direct engine. Return errDelayed so the
+	// template string is preserved in the plan output rather than causing an error.
+	if path.String() == "workspace.snapshot_path" {
+		return nil, errDelayed
+	}
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 
@@ -955,6 +974,11 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
 				targetNode := targetNodeDP.String()
+				// ${workspace.snapshot_path} is resolved by the mutator pipeline after
+				// snapshot.Upload(), not by the direct engine — skip it here.
+				if targetPath == "workspace.snapshot_path" {
+					continue
+				}
 
 				fullRef := "${" + targetPath + "}"
 
@@ -1015,6 +1039,12 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	}
 
 	return p, nil
+}
+
+// ExtractReferences extracts all variable references from the config subtree rooted at node.
+// Returns a map from structpath string (field path within the resource) to template string.
+func ExtractReferences(root dyn.Value, node string) (map[string]string, error) {
+	return extractReferences(root, node)
 }
 
 func extractReferences(root dyn.Value, node string) (map[string]string, error) {

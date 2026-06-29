@@ -1,10 +1,6 @@
-print_requests() {
-    print_requests.py //jobs/
-}
-
 trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests > out.requests_create.json
+trace print_requests.py //jobs/ > out.requests_create.json
 
 job_id="$(read_id.py job_with_permissions)"
 
@@ -13,11 +9,11 @@ rm -f out.requests.txt
 
 title "Delete permissions remotely"
 trace $CLI permissions set jobs "$job_id" --json @remote_delete.json
-trace print_requests
+trace print_requests.py //jobs/
 
 trace $CLI bundle plan -o json > out.plan_restore.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests > out.requests_restore.json
+trace print_requests.py //jobs/ > out.requests_restore.json
 
 trace $CLI permissions get jobs "$job_id"
 rm -f out.requests.txt

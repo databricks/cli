@@ -3,15 +3,11 @@ rm out.requests.txt
 
 $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-print_requests() {
-    print_requests.py //permissions
-}
-
 rm out.requests.txt
 trace $CLI bundle deploy
 # Genie space IDs are random; normalize them in the recorded requests.
 replace_ids.py
-print_requests > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests.py //permissions > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle destroy --auto-approve
-print_requests > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests.py //permissions > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

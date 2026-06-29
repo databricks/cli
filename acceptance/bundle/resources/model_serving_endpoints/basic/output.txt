@@ -7,8 +7,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py //serving-endpoints
-
 === Print the GET endpoint details
 {
   "name": "[ENDPOINT_NAME_1]",
@@ -22,8 +20,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> print_requests.py //serving-endpoints
 
 === Print the GET endpoint details
 {

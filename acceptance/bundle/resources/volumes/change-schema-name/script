@@ -1,10 +1,6 @@
 trace $CLI bundle deploy
 
-print_requests() {
-    print_requests.py //unity
-}
-
-trace print_requests
+trace print_requests.py //unity
 
 title "Summary should now show id and url\n"
 $CLI bundle summary -o json | jq .resources
@@ -14,7 +10,7 @@ trace update_file.py databricks.yml myschema mynewschema
 
 trace $CLI bundle plan | contains.py recreate
 trace $CLI bundle deploy --auto-approve
-trace print_requests
+trace print_requests.py //unity
 
 trace musterr $CLI volumes read main.myschema.myvolume
 trace $CLI volumes read main.myschema.mynewvolume

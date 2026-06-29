@@ -65,7 +65,7 @@ type IResource interface {
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
 
 	// [Optional] DoResize resizes the resource. Only supported by clusters
-	DoResize(ctx context.Context, id string, newState any) error
+	DoResize(ctx context.Context, id string, newState any, entry *PlanEntry) error
 
 	// [Optional] WaitAfterCreate waits for the resource to become ready after creation. Returns optionally updated remote state.
 	// TODO: wait status should be persisted in the state.
@@ -494,12 +494,12 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	return id, remoteState, nil
 }
 
-func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
+func (a *Adapter) DoResize(ctx context.Context, id string, newState any, entry *PlanEntry) error {
 	if a.doResize == nil {
 		return errors.New("internal error: DoResize not found")
 	}
 
-	_, err := a.doResize.Call(ctx, id, newState)
+	_, err := a.doResize.Call(ctx, id, newState, entry)
 	return err
 }
 
