@@ -6,7 +6,8 @@ test will dump full JSON plan to the output.
 In order to add a new test, add a config to configs/ and include it in test.toml.
 
 The fuzz/ test instead generates random configs from the live `databricks bundle
-schema` (see fuzz/script). Since the schema comes from the CLI under test, an unrelated
+schema` (see fuzz/script) and runs each one through the same no_drift.sh check the
+no_drift test uses. Since the schema comes from the CLI under test, an unrelated
 struct change can shift a seed onto a new config. A failure is a real CLI bug (panic,
 internal error, or drift), not flakiness; reproduce with
 `FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 task test-fuzz`.
