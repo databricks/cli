@@ -1,6 +1,8 @@
 package fileset
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -20,6 +22,19 @@ func TestSourceFileIsNotNotebook(t *testing.T) {
 	isNotebook, err := f.IsNotebook()
 	require.NoError(t, err)
 	require.False(t, isNotebook)
+}
+
+func TestFileSize(t *testing.T) {
+	tmpDir := t.TempDir()
+	contents := []byte("hello world")
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "test.txt"), contents, 0o644))
+
+	files, err := New(vfs.MustNew(tmpDir)).Files()
+	require.NoError(t, err)
+	require.Len(t, files, 1)
+	size, ok := files[0].Size()
+	require.True(t, ok)
+	require.Equal(t, int64(len(contents)), size)
 }
 
 func TestUnknownFileDetectsNotebook(t *testing.T) {

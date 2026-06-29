@@ -17,7 +17,7 @@ class ConfluenceConnectorOptions:
 
     include_confluence_spaces: VariableOrList[str] = field(default_factory=list)
     """
-    (Optional) Spaces to filter Confluence data on
+    [Public Preview] (Optional) Spaces to filter Confluence data on
     """
 
     @classmethod
@@ -33,7 +33,7 @@ class ConfluenceConnectorOptionsDict(TypedDict, total=False):
 
     include_confluence_spaces: VariableOrList[str]
     """
-    (Optional) Spaces to filter Confluence data on
+    [Public Preview] (Optional) Spaces to filter Confluence data on
     """
 
 

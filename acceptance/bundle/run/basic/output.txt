@@ -13,10 +13,11 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run foo
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "foo" RUNNING
 [TIMESTAMP] "foo" TERMINATED SUCCESS
+1
 
 === no resource key with --
 >>> [CLI] bundle run --
@@ -26,10 +27,11 @@ Exit code: 1
 
 === resource key with parameters
 >>> [CLI] bundle run foo -- arg1 arg2
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "foo" RUNNING
 [TIMESTAMP] "foo" TERMINATED SUCCESS
+1
 
 === inline script
 >>> [CLI] bundle run -- echo hello

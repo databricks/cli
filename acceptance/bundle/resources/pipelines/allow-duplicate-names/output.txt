@@ -5,8 +5,10 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
   "body": {
     "libraries": [
       {
@@ -16,11 +18,11 @@ Deployment complete!
       }
     ],
     "name": "test-pipeline-same-name-[UNIQUE_NAME]"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
   "body": {
     "allow_duplicate_names": true,
     "channel": "CURRENT",
@@ -37,9 +39,7 @@ Deployment complete!
       }
     ],
     "name": "test-pipeline-same-name-[UNIQUE_NAME]"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve

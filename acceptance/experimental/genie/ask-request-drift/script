@@ -1,0 +1,2 @@
+title "a 500 with no message points at a possible request format change"
+musterr trace $CLI experimental genie ask "What are total sales by franchise?"

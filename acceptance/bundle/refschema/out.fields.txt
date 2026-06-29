@@ -86,6 +86,7 @@ resources.apps.*.active_deployment.status.state	apps.AppDeploymentState	ALL
 resources.apps.*.active_deployment.update_time	string	ALL
 resources.apps.*.app_status	*apps.ApplicationStatus	ALL
 resources.apps.*.app_status.message	string	ALL
+resources.apps.*.app_status.running_instances	int	ALL
 resources.apps.*.app_status.state	apps.ApplicationState	ALL
 resources.apps.*.budget_policy_id	string	ALL
 resources.apps.*.compute_max_instances	int	ALL
@@ -231,6 +232,7 @@ resources.catalogs.*.comment	string	ALL
 resources.catalogs.*.connection_name	string	ALL
 resources.catalogs.*.created_at	int64	REMOTE
 resources.catalogs.*.created_by	string	REMOTE
+resources.catalogs.*.custom_max_retention_hours	int64	ALL
 resources.catalogs.*.effective_predictive_optimization_flag	*catalog.EffectivePredictiveOptimizationFlag	REMOTE
 resources.catalogs.*.effective_predictive_optimization_flag.inherited_from_name	string	REMOTE
 resources.catalogs.*.effective_predictive_optimization_flag.inherited_from_type	catalog.EffectivePredictiveOptimizationFlagInheritedFromType	REMOTE
@@ -290,6 +292,7 @@ resources.clusters.*.aws_attributes.spot_bid_price_percent	int	ALL
 resources.clusters.*.aws_attributes.zone_id	string	ALL
 resources.clusters.*.azure_attributes	*compute.AzureAttributes	ALL
 resources.clusters.*.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.clusters.*.azure_attributes.capacity_reservation_group	string	ALL
 resources.clusters.*.azure_attributes.first_on_demand	int	ALL
 resources.clusters.*.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.clusters.*.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -428,6 +431,7 @@ resources.clusters.*.spec.aws_attributes.spot_bid_price_percent	int	REMOTE
 resources.clusters.*.spec.aws_attributes.zone_id	string	REMOTE
 resources.clusters.*.spec.azure_attributes	*compute.AzureAttributes	REMOTE
 resources.clusters.*.spec.azure_attributes.availability	compute.AzureAvailability	REMOTE
+resources.clusters.*.spec.azure_attributes.capacity_reservation_group	string	REMOTE
 resources.clusters.*.spec.azure_attributes.first_on_demand	int	REMOTE
 resources.clusters.*.spec.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	REMOTE
 resources.clusters.*.spec.azure_attributes.log_analytics_info.log_analytics_primary_key	string	REMOTE
@@ -835,6 +839,7 @@ resources.jobs.*.job_clusters[*].new_cluster.aws_attributes.spot_bid_price_perce
 resources.jobs.*.job_clusters[*].new_cluster.aws_attributes.zone_id	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.azure_attributes	*compute.AzureAttributes	ALL
 resources.jobs.*.job_clusters[*].new_cluster.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.jobs.*.job_clusters[*].new_cluster.azure_attributes.capacity_reservation_group	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.azure_attributes.first_on_demand	int	ALL
 resources.jobs.*.job_clusters[*].new_cluster.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.jobs.*.job_clusters[*].new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -1155,6 +1160,7 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.aws_attributes.spot_bid
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.aws_attributes.zone_id	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes	*compute.AzureAttributes	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes.capacity_reservation_group	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes.first_on_demand	int	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -1440,6 +1446,7 @@ resources.jobs.*.tasks[*].new_cluster.aws_attributes.spot_bid_price_percent	int	
 resources.jobs.*.tasks[*].new_cluster.aws_attributes.zone_id	string	ALL
 resources.jobs.*.tasks[*].new_cluster.azure_attributes	*compute.AzureAttributes	ALL
 resources.jobs.*.tasks[*].new_cluster.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.jobs.*.tasks[*].new_cluster.azure_attributes.capacity_reservation_group	string	ALL
 resources.jobs.*.tasks[*].new_cluster.azure_attributes.first_on_demand	int	ALL
 resources.jobs.*.tasks[*].new_cluster.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.jobs.*.tasks[*].new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -1724,148 +1731,148 @@ resources.jobs.*.permissions[*].group_name	string	ALL
 resources.jobs.*.permissions[*].level	iam.PermissionLevel	ALL
 resources.jobs.*.permissions[*].service_principal_name	string	ALL
 resources.jobs.*.permissions[*].user_name	string	ALL
-resources.model_serving_endpoints.*.ai_gateway	*serving.AiGatewayConfig	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.fallback_config	*serving.FallbackConfig	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.fallback_config.enabled	bool	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails	*serving.AiGatewayGuardrails	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.input	*serving.AiGatewayGuardrailParameters	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.input.invalid_keywords	[]string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.input.invalid_keywords[*]	string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii	*serving.AiGatewayGuardrailPiiBehavior	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior	serving.AiGatewayGuardrailPiiBehaviorBehavior	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.input.safety	bool	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.input.valid_topics	[]string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.input.valid_topics[*]	string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.output	*serving.AiGatewayGuardrailParameters	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.output.invalid_keywords	[]string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.output.invalid_keywords[*]	string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii	*serving.AiGatewayGuardrailPiiBehavior	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii.behavior	serving.AiGatewayGuardrailPiiBehaviorBehavior	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.output.safety	bool	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.output.valid_topics	[]string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.guardrails.output.valid_topics[*]	string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.inference_table_config	*serving.AiGatewayInferenceTableConfig	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.inference_table_config.catalog_name	string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.inference_table_config.enabled	bool	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.inference_table_config.schema_name	string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.inference_table_config.table_name_prefix	string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.rate_limits	[]serving.AiGatewayRateLimit	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.rate_limits[*]	serving.AiGatewayRateLimit	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].calls	int64	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].key	serving.AiGatewayRateLimitKey	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].principal	string	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].renewal_period	serving.AiGatewayRateLimitRenewalPeriod	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].tokens	int64	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.usage_tracking_config	*serving.AiGatewayUsageTrackingConfig	INPUT	STATE
-resources.model_serving_endpoints.*.ai_gateway.usage_tracking_config.enabled	bool	INPUT	STATE
-resources.model_serving_endpoints.*.budget_policy_id	string	INPUT	STATE
-resources.model_serving_endpoints.*.config	*serving.EndpointCoreConfigInput	INPUT	STATE
-resources.model_serving_endpoints.*.config.auto_capture_config	*serving.AutoCaptureConfigInput	INPUT	STATE
-resources.model_serving_endpoints.*.config.auto_capture_config.catalog_name	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.auto_capture_config.enabled	bool	INPUT	STATE
-resources.model_serving_endpoints.*.config.auto_capture_config.schema_name	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.auto_capture_config.table_name_prefix	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities	[]serving.ServedEntityInput	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*]	serving.ServedEntityInput	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].burst_scaling_enabled	bool	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].entity_name	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].entity_version	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].environment_vars	map[string]string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].environment_vars.*	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model	*serving.ExternalModel	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.ai21labs_config	*serving.Ai21LabsConfig	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config	*serving.AmazonBedrockConfig	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_region	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.bedrock_provider	serving.AmazonBedrockConfigBedrockProvider	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.instance_profile_arn	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.anthropic_config	*serving.AnthropicConfig	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.anthropic_config.anthropic_api_key	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config	*serving.CohereConfig	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config.cohere_api_base	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config.cohere_api_key	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config	*serving.CustomProviderConfig	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth	*serving.ApiKeyAuth	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth.key	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth.value	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth	*serving.BearerTokenAuth	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.custom_provider_url	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config	*serving.DatabricksModelServingConfig	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config.databricks_workspace_url	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config	*serving.GoogleCloudVertexAiConfig	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.project_id	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.region	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.name	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config	*serving.OpenAiConfig	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_client_id	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_tenant_id	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_base	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_key	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_key_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_type	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_version	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_deployment_name	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_organization	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.palm_config	*serving.PaLmConfig	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.palm_config.palm_api_key	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.palm_config.palm_api_key_plaintext	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.provider	serving.ExternalModelProvider	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].external_model.task	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].instance_profile_arn	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].max_provisioned_concurrency	int	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].max_provisioned_throughput	int	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].min_provisioned_concurrency	int	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].min_provisioned_throughput	int	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].name	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].provisioned_model_units	int64	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].scale_to_zero_enabled	bool	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].workload_size	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_entities[*].workload_type	serving.ServingModelWorkloadType	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models	[]serving.ServedModelInput	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*]	serving.ServedModelInput	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].burst_scaling_enabled	bool	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].environment_vars	map[string]string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].environment_vars.*	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].instance_profile_arn	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].max_provisioned_concurrency	int	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].max_provisioned_throughput	int	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].min_provisioned_concurrency	int	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].min_provisioned_throughput	int	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].model_name	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].model_version	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].name	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].provisioned_model_units	int64	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].scale_to_zero_enabled	bool	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].workload_size	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.served_models[*].workload_type	serving.ServedModelInputWorkloadType	INPUT	STATE
-resources.model_serving_endpoints.*.config.traffic_config	*serving.TrafficConfig	INPUT	STATE
-resources.model_serving_endpoints.*.config.traffic_config.routes	[]serving.Route	INPUT	STATE
-resources.model_serving_endpoints.*.config.traffic_config.routes[*]	serving.Route	INPUT	STATE
-resources.model_serving_endpoints.*.config.traffic_config.routes[*].served_entity_name	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.traffic_config.routes[*].served_model_name	string	INPUT	STATE
-resources.model_serving_endpoints.*.config.traffic_config.routes[*].traffic_percentage	int	INPUT	STATE
-resources.model_serving_endpoints.*.description	string	INPUT	STATE
-resources.model_serving_endpoints.*.email_notifications	*serving.EmailNotifications	INPUT	STATE
-resources.model_serving_endpoints.*.email_notifications.on_update_failure	[]string	INPUT	STATE
-resources.model_serving_endpoints.*.email_notifications.on_update_failure[*]	string	INPUT	STATE
-resources.model_serving_endpoints.*.email_notifications.on_update_success	[]string	INPUT	STATE
-resources.model_serving_endpoints.*.email_notifications.on_update_success[*]	string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway	*serving.AiGatewayConfig	ALL
+resources.model_serving_endpoints.*.ai_gateway.fallback_config	*serving.FallbackConfig	ALL
+resources.model_serving_endpoints.*.ai_gateway.fallback_config.enabled	bool	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails	*serving.AiGatewayGuardrails	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input	*serving.AiGatewayGuardrailParameters	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.invalid_keywords	[]string	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.invalid_keywords[*]	string	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii	*serving.AiGatewayGuardrailPiiBehavior	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior	serving.AiGatewayGuardrailPiiBehaviorBehavior	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.safety	bool	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.valid_topics	[]string	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.valid_topics[*]	string	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output	*serving.AiGatewayGuardrailParameters	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.invalid_keywords	[]string	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.invalid_keywords[*]	string	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii	*serving.AiGatewayGuardrailPiiBehavior	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii.behavior	serving.AiGatewayGuardrailPiiBehaviorBehavior	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.safety	bool	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.valid_topics	[]string	ALL
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.valid_topics[*]	string	ALL
+resources.model_serving_endpoints.*.ai_gateway.inference_table_config	*serving.AiGatewayInferenceTableConfig	ALL
+resources.model_serving_endpoints.*.ai_gateway.inference_table_config.catalog_name	string	ALL
+resources.model_serving_endpoints.*.ai_gateway.inference_table_config.enabled	bool	ALL
+resources.model_serving_endpoints.*.ai_gateway.inference_table_config.schema_name	string	ALL
+resources.model_serving_endpoints.*.ai_gateway.inference_table_config.table_name_prefix	string	ALL
+resources.model_serving_endpoints.*.ai_gateway.rate_limits	[]serving.AiGatewayRateLimit	ALL
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*]	serving.AiGatewayRateLimit	ALL
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].calls	int64	ALL
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].key	serving.AiGatewayRateLimitKey	ALL
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].principal	string	ALL
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].renewal_period	serving.AiGatewayRateLimitRenewalPeriod	ALL
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].tokens	int64	ALL
+resources.model_serving_endpoints.*.ai_gateway.usage_tracking_config	*serving.AiGatewayUsageTrackingConfig	ALL
+resources.model_serving_endpoints.*.ai_gateway.usage_tracking_config.enabled	bool	ALL
+resources.model_serving_endpoints.*.budget_policy_id	string	ALL
+resources.model_serving_endpoints.*.config	*serving.EndpointCoreConfigInput	ALL
+resources.model_serving_endpoints.*.config.auto_capture_config	*serving.AutoCaptureConfigInput	ALL
+resources.model_serving_endpoints.*.config.auto_capture_config.catalog_name	string	ALL
+resources.model_serving_endpoints.*.config.auto_capture_config.enabled	bool	ALL
+resources.model_serving_endpoints.*.config.auto_capture_config.schema_name	string	ALL
+resources.model_serving_endpoints.*.config.auto_capture_config.table_name_prefix	string	ALL
+resources.model_serving_endpoints.*.config.served_entities	[]serving.ServedEntityInput	ALL
+resources.model_serving_endpoints.*.config.served_entities[*]	serving.ServedEntityInput	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].burst_scaling_enabled	bool	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].entity_name	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].entity_version	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].environment_vars	map[string]string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].environment_vars.*	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model	*serving.ExternalModel	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.ai21labs_config	*serving.Ai21LabsConfig	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config	*serving.AmazonBedrockConfig	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_region	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.bedrock_provider	serving.AmazonBedrockConfigBedrockProvider	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.instance_profile_arn	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.anthropic_config	*serving.AnthropicConfig	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.anthropic_config.anthropic_api_key	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config	*serving.CohereConfig	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config.cohere_api_base	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config.cohere_api_key	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config	*serving.CustomProviderConfig	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth	*serving.ApiKeyAuth	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth.key	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth.value	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth	*serving.BearerTokenAuth	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.custom_provider_url	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config	*serving.DatabricksModelServingConfig	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config.databricks_workspace_url	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config	*serving.GoogleCloudVertexAiConfig	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.project_id	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.region	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.name	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config	*serving.OpenAiConfig	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_client_id	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_tenant_id	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_base	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_key	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_key_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_type	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_version	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_deployment_name	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_organization	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.palm_config	*serving.PaLmConfig	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.palm_config.palm_api_key	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.palm_config.palm_api_key_plaintext	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.provider	serving.ExternalModelProvider	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.task	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].instance_profile_arn	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].max_provisioned_concurrency	int	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].max_provisioned_throughput	int	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].min_provisioned_concurrency	int	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].min_provisioned_throughput	int	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].name	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].provisioned_model_units	int64	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].scale_to_zero_enabled	bool	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].workload_size	string	ALL
+resources.model_serving_endpoints.*.config.served_entities[*].workload_type	serving.ServingModelWorkloadType	ALL
+resources.model_serving_endpoints.*.config.served_models	[]serving.ServedModelInput	ALL
+resources.model_serving_endpoints.*.config.served_models[*]	serving.ServedModelInput	ALL
+resources.model_serving_endpoints.*.config.served_models[*].burst_scaling_enabled	bool	ALL
+resources.model_serving_endpoints.*.config.served_models[*].environment_vars	map[string]string	ALL
+resources.model_serving_endpoints.*.config.served_models[*].environment_vars.*	string	ALL
+resources.model_serving_endpoints.*.config.served_models[*].instance_profile_arn	string	ALL
+resources.model_serving_endpoints.*.config.served_models[*].max_provisioned_concurrency	int	ALL
+resources.model_serving_endpoints.*.config.served_models[*].max_provisioned_throughput	int	ALL
+resources.model_serving_endpoints.*.config.served_models[*].min_provisioned_concurrency	int	ALL
+resources.model_serving_endpoints.*.config.served_models[*].min_provisioned_throughput	int	ALL
+resources.model_serving_endpoints.*.config.served_models[*].model_name	string	ALL
+resources.model_serving_endpoints.*.config.served_models[*].model_version	string	ALL
+resources.model_serving_endpoints.*.config.served_models[*].name	string	ALL
+resources.model_serving_endpoints.*.config.served_models[*].provisioned_model_units	int64	ALL
+resources.model_serving_endpoints.*.config.served_models[*].scale_to_zero_enabled	bool	ALL
+resources.model_serving_endpoints.*.config.served_models[*].workload_size	string	ALL
+resources.model_serving_endpoints.*.config.served_models[*].workload_type	serving.ServedModelInputWorkloadType	ALL
+resources.model_serving_endpoints.*.config.traffic_config	*serving.TrafficConfig	ALL
+resources.model_serving_endpoints.*.config.traffic_config.routes	[]serving.Route	ALL
+resources.model_serving_endpoints.*.config.traffic_config.routes[*]	serving.Route	ALL
+resources.model_serving_endpoints.*.config.traffic_config.routes[*].served_entity_name	string	ALL
+resources.model_serving_endpoints.*.config.traffic_config.routes[*].served_model_name	string	ALL
+resources.model_serving_endpoints.*.config.traffic_config.routes[*].traffic_percentage	int	ALL
+resources.model_serving_endpoints.*.description	string	ALL
+resources.model_serving_endpoints.*.email_notifications	*serving.EmailNotifications	ALL
+resources.model_serving_endpoints.*.email_notifications.on_update_failure	[]string	ALL
+resources.model_serving_endpoints.*.email_notifications.on_update_failure[*]	string	ALL
+resources.model_serving_endpoints.*.email_notifications.on_update_success	[]string	ALL
+resources.model_serving_endpoints.*.email_notifications.on_update_success[*]	string	ALL
 resources.model_serving_endpoints.*.endpoint_details	*serving.ServingEndpointDetailed	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.ai_gateway	*serving.AiGatewayConfig	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.ai_gateway.fallback_config	*serving.FallbackConfig	REMOTE
@@ -2174,17 +2181,17 @@ resources.model_serving_endpoints.*.id	string	INPUT
 resources.model_serving_endpoints.*.lifecycle	resources.Lifecycle	INPUT
 resources.model_serving_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
 resources.model_serving_endpoints.*.modified_status	string	INPUT
-resources.model_serving_endpoints.*.name	string	INPUT	STATE
+resources.model_serving_endpoints.*.name	string	ALL
 resources.model_serving_endpoints.*.rate_limits	[]serving.RateLimit	INPUT	STATE
 resources.model_serving_endpoints.*.rate_limits[*]	serving.RateLimit	INPUT	STATE
 resources.model_serving_endpoints.*.rate_limits[*].calls	int64	INPUT	STATE
 resources.model_serving_endpoints.*.rate_limits[*].key	serving.RateLimitKey	INPUT	STATE
 resources.model_serving_endpoints.*.rate_limits[*].renewal_period	serving.RateLimitRenewalPeriod	INPUT	STATE
-resources.model_serving_endpoints.*.route_optimized	bool	INPUT	STATE
-resources.model_serving_endpoints.*.tags	[]serving.EndpointTag	INPUT	STATE
-resources.model_serving_endpoints.*.tags[*]	serving.EndpointTag	INPUT	STATE
-resources.model_serving_endpoints.*.tags[*].key	string	INPUT	STATE
-resources.model_serving_endpoints.*.tags[*].value	string	INPUT	STATE
+resources.model_serving_endpoints.*.route_optimized	bool	ALL
+resources.model_serving_endpoints.*.tags	[]serving.EndpointTag	ALL
+resources.model_serving_endpoints.*.tags[*]	serving.EndpointTag	ALL
+resources.model_serving_endpoints.*.tags[*].key	string	ALL
+resources.model_serving_endpoints.*.tags[*].value	string	ALL
 resources.model_serving_endpoints.*.url	string	INPUT
 resources.model_serving_endpoints.*.permissions.object_id	string	ALL
 resources.model_serving_endpoints.*.permissions[*]	dresources.StatePermission	ALL
@@ -2258,6 +2265,7 @@ resources.pipelines.*.clusters[*].aws_attributes.spot_bid_price_percent	int	ALL
 resources.pipelines.*.clusters[*].aws_attributes.zone_id	string	ALL
 resources.pipelines.*.clusters[*].azure_attributes	*compute.AzureAttributes	ALL
 resources.pipelines.*.clusters[*].azure_attributes.availability	compute.AzureAvailability	ALL
+resources.pipelines.*.clusters[*].azure_attributes.capacity_reservation_group	string	ALL
 resources.pipelines.*.clusters[*].azure_attributes.first_on_demand	int	ALL
 resources.pipelines.*.clusters[*].azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.pipelines.*.clusters[*].azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -2386,6 +2394,9 @@ resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy.enabled	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy.min_interval_hours	int	ALL
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.clustering_columns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.clustering_columns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.enable_auto_clustering	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.exclude_columns	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.exclude_columns[*]	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.include_columns	[]string	ALL
@@ -2402,6 +2413,8 @@ resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.sequence_by	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.sequence_by[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.table_properties	map[string]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.table_properties.*	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.incremental	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.parameters	map[string]string	ALL
@@ -2538,6 +2551,9 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy.enabled	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy.min_interval_hours	int	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.clustering_columns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.clustering_columns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.enable_auto_clustering	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.exclude_columns	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.exclude_columns[*]	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.include_columns	[]string	ALL
@@ -2554,6 +2570,8 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.sequence_by	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.sequence_by[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.table_properties	map[string]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.table_properties.*	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.incremental	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.parameters	map[string]string	ALL
@@ -2692,6 +2710,9 @@ resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration	
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy.enabled	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy.min_interval_hours	int	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.clustering_columns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.clustering_columns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.enable_auto_clustering	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.exclude_columns	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.exclude_columns[*]	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.include_columns	[]string	ALL
@@ -2708,6 +2729,8 @@ resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.sequence_by	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.sequence_by[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.table_properties	map[string]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.table_properties.*	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.incremental	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.parameters	map[string]string	ALL
@@ -2731,6 +2754,9 @@ resources.pipelines.*.ingestion_definition.table_configuration	*pipelines.TableS
 resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy.enabled	bool	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy.min_interval_hours	int	ALL
+resources.pipelines.*.ingestion_definition.table_configuration.clustering_columns	[]string	ALL
+resources.pipelines.*.ingestion_definition.table_configuration.clustering_columns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.table_configuration.enable_auto_clustering	bool	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.exclude_columns	[]string	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.exclude_columns[*]	string	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.include_columns	[]string	ALL
@@ -2747,6 +2773,8 @@ resources.pipelines.*.ingestion_definition.table_configuration.salesforce_includ
 resources.pipelines.*.ingestion_definition.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.sequence_by	[]string	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.sequence_by[*]	string	ALL
+resources.pipelines.*.ingestion_definition.table_configuration.table_properties	map[string]string	ALL
+resources.pipelines.*.ingestion_definition.table_configuration.table_properties.*	string	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.incremental	bool	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.parameters	map[string]string	ALL
@@ -2802,6 +2830,7 @@ resources.pipelines.*.run_as.user_name	string	ALL
 resources.pipelines.*.run_as_user_name	string	REMOTE
 resources.pipelines.*.schema	string	ALL
 resources.pipelines.*.serverless	bool	ALL
+resources.pipelines.*.serverless_compute_id	string	ALL
 resources.pipelines.*.state	pipelines.PipelineState	REMOTE
 resources.pipelines.*.storage	string	ALL
 resources.pipelines.*.tags	map[string]string	ALL
@@ -2870,6 +2899,22 @@ resources.postgres_catalogs.*.status.project	string	REMOTE
 resources.postgres_catalogs.*.uid	string	REMOTE
 resources.postgres_catalogs.*.update_time	*time.Time	REMOTE
 resources.postgres_catalogs.*.url	string	INPUT
+resources.postgres_databases.*.create_time	*time.Time	REMOTE
+resources.postgres_databases.*.database_id	string	ALL
+resources.postgres_databases.*.id	string	INPUT
+resources.postgres_databases.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_databases.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_databases.*.modified_status	string	INPUT
+resources.postgres_databases.*.name	string	REMOTE
+resources.postgres_databases.*.parent	string	ALL
+resources.postgres_databases.*.postgres_database	string	ALL
+resources.postgres_databases.*.role	string	ALL
+resources.postgres_databases.*.status	*postgres.DatabaseDatabaseStatus	REMOTE
+resources.postgres_databases.*.status.database_id	string	REMOTE
+resources.postgres_databases.*.status.postgres_database	string	REMOTE
+resources.postgres_databases.*.status.role	string	REMOTE
+resources.postgres_databases.*.update_time	*time.Time	REMOTE
+resources.postgres_databases.*.url	string	INPUT
 resources.postgres_endpoints.*.autoscaling_limit_max_cu	float64	ALL
 resources.postgres_endpoints.*.autoscaling_limit_min_cu	float64	ALL
 resources.postgres_endpoints.*.create_time	*time.Time	REMOTE
@@ -2977,6 +3022,37 @@ resources.postgres_projects.*.permissions[*].group_name	string	ALL
 resources.postgres_projects.*.permissions[*].level	iam.PermissionLevel	ALL
 resources.postgres_projects.*.permissions[*].service_principal_name	string	ALL
 resources.postgres_projects.*.permissions[*].user_name	string	ALL
+resources.postgres_roles.*.attributes	*postgres.RoleAttributes	ALL
+resources.postgres_roles.*.attributes.bypassrls	bool	ALL
+resources.postgres_roles.*.attributes.createdb	bool	ALL
+resources.postgres_roles.*.attributes.createrole	bool	ALL
+resources.postgres_roles.*.auth_method	postgres.RoleAuthMethod	ALL
+resources.postgres_roles.*.create_time	*time.Time	REMOTE
+resources.postgres_roles.*.id	string	INPUT
+resources.postgres_roles.*.identity_type	postgres.RoleIdentityType	ALL
+resources.postgres_roles.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_roles.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_roles.*.membership_roles	[]postgres.RoleMembershipRole	ALL
+resources.postgres_roles.*.membership_roles[*]	postgres.RoleMembershipRole	ALL
+resources.postgres_roles.*.modified_status	string	INPUT
+resources.postgres_roles.*.name	string	REMOTE
+resources.postgres_roles.*.parent	string	ALL
+resources.postgres_roles.*.postgres_role	string	ALL
+resources.postgres_roles.*.role_id	string	ALL
+resources.postgres_roles.*.status	*postgres.RoleRoleStatus	REMOTE
+resources.postgres_roles.*.status.attributes	*postgres.RoleAttributes	REMOTE
+resources.postgres_roles.*.status.attributes.bypassrls	bool	REMOTE
+resources.postgres_roles.*.status.attributes.createdb	bool	REMOTE
+resources.postgres_roles.*.status.attributes.createrole	bool	REMOTE
+resources.postgres_roles.*.status.auth_method	postgres.RoleAuthMethod	REMOTE
+resources.postgres_roles.*.status.identity_type	postgres.RoleIdentityType	REMOTE
+resources.postgres_roles.*.status.membership_roles	[]postgres.RoleMembershipRole	REMOTE
+resources.postgres_roles.*.status.membership_roles[*]	postgres.RoleMembershipRole	REMOTE
+resources.postgres_roles.*.status.postgres_role	string	REMOTE
+resources.postgres_roles.*.status.role_id	string	REMOTE
+resources.postgres_roles.*.update_time	*time.Time	REMOTE
+resources.postgres_roles.*.url	string	INPUT
+resources.postgres_synced_tables.*.accelerated_sync	bool	ALL
 resources.postgres_synced_tables.*.branch	string	ALL
 resources.postgres_synced_tables.*.create_database_objects_if_missing	bool	ALL
 resources.postgres_synced_tables.*.create_time	*time.Time	REMOTE
@@ -3018,6 +3094,11 @@ resources.postgres_synced_tables.*.status.provisioning_phase	postgres.Provisioni
 resources.postgres_synced_tables.*.status.unity_catalog_provisioning_state	postgres.ProvisioningInfoState	REMOTE
 resources.postgres_synced_tables.*.synced_table_id	string	ALL
 resources.postgres_synced_tables.*.timeseries_key	string	ALL
+resources.postgres_synced_tables.*.type_overrides	[]postgres.SyncedTableSyncedTableSpecTypeOverride	ALL
+resources.postgres_synced_tables.*.type_overrides[*]	postgres.SyncedTableSyncedTableSpecTypeOverride	ALL
+resources.postgres_synced_tables.*.type_overrides[*].column_name	string	ALL
+resources.postgres_synced_tables.*.type_overrides[*].pg_type	postgres.SyncedTableSyncedTableSpecPgSpecificType	ALL
+resources.postgres_synced_tables.*.type_overrides[*].size	int	ALL
 resources.postgres_synced_tables.*.uid	string	REMOTE
 resources.postgres_synced_tables.*.url	string	INPUT
 resources.quality_monitors.*.assets_dir	string	ALL
@@ -3112,6 +3193,7 @@ resources.schemas.*.catalog_type	catalog.CatalogType	REMOTE
 resources.schemas.*.comment	string	ALL
 resources.schemas.*.created_at	int64	REMOTE
 resources.schemas.*.created_by	string	REMOTE
+resources.schemas.*.custom_max_retention_hours	int64	ALL
 resources.schemas.*.effective_predictive_optimization_flag	*catalog.EffectivePredictiveOptimizationFlag	REMOTE
 resources.schemas.*.effective_predictive_optimization_flag.inherited_from_name	string	REMOTE
 resources.schemas.*.effective_predictive_optimization_flag.inherited_from_type	catalog.EffectivePredictiveOptimizationFlagInheritedFromType	REMOTE
@@ -3264,6 +3346,7 @@ resources.synced_database_tables.*.logical_database_name	string	ALL
 resources.synced_database_tables.*.modified_status	string	INPUT
 resources.synced_database_tables.*.name	string	ALL
 resources.synced_database_tables.*.spec	*database.SyncedTableSpec	ALL
+resources.synced_database_tables.*.spec.accelerated_sync	bool	ALL
 resources.synced_database_tables.*.spec.create_database_objects_if_missing	bool	ALL
 resources.synced_database_tables.*.spec.existing_pipeline_id	string	ALL
 resources.synced_database_tables.*.spec.new_pipeline_spec	*database.NewPipelineSpec	ALL
@@ -3275,6 +3358,11 @@ resources.synced_database_tables.*.spec.primary_key_columns[*]	string	ALL
 resources.synced_database_tables.*.spec.scheduling_policy	database.SyncedTableSchedulingPolicy	ALL
 resources.synced_database_tables.*.spec.source_table_full_name	string	ALL
 resources.synced_database_tables.*.spec.timeseries_key	string	ALL
+resources.synced_database_tables.*.spec.type_overrides	[]database.SyncedTableSpecTypeOverride	ALL
+resources.synced_database_tables.*.spec.type_overrides[*]	database.SyncedTableSpecTypeOverride	ALL
+resources.synced_database_tables.*.spec.type_overrides[*].column_name	string	ALL
+resources.synced_database_tables.*.spec.type_overrides[*].pg_type	database.SyncedTableSpecPgSpecificType	ALL
+resources.synced_database_tables.*.spec.type_overrides[*].size	int	ALL
 resources.synced_database_tables.*.unity_catalog_provisioning_state	database.ProvisioningInfoState	ALL
 resources.synced_database_tables.*.url	string	INPUT
 resources.vector_search_endpoints.*.budget_policy_id	string	ALL
@@ -3301,7 +3389,7 @@ resources.vector_search_endpoints.*.num_indexes	int	REMOTE
 resources.vector_search_endpoints.*.scaling_info	*vectorsearch.EndpointScalingInfo	REMOTE
 resources.vector_search_endpoints.*.scaling_info.requested_target_qps	int64	REMOTE
 resources.vector_search_endpoints.*.scaling_info.state	vectorsearch.ScalingChangeState	REMOTE
-resources.vector_search_endpoints.*.target_qps	int64	INPUT	STATE
+resources.vector_search_endpoints.*.target_qps	int64	ALL
 resources.vector_search_endpoints.*.url	string	INPUT
 resources.vector_search_endpoints.*.usage_policy_id	string	INPUT	STATE
 resources.vector_search_endpoints.*.permissions.object_id	string	ALL
@@ -3341,6 +3429,7 @@ resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_colu
 resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].embedding_dimension	int	ALL
 resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].name	string	ALL
 resources.vector_search_indexes.*.direct_access_index_spec.schema_json	string	ALL
+resources.vector_search_indexes.*.endpoint_id	string	REMOTE
 resources.vector_search_indexes.*.endpoint_name	string	ALL
 resources.vector_search_indexes.*.endpoint_uuid	string	REMOTE	STATE
 resources.vector_search_indexes.*.id	string	INPUT

@@ -2,8 +2,14 @@ package genie
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
+	"maps"
 
+	"github.com/databricks/cli/experimental/genie/agentstream"
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 )
@@ -54,7 +60,31 @@ func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.R
 		"Content-Type": "application/json",
 		"Accept":       "text/event-stream",
 	}
+	maps.Copy(headers, auth.WorkspaceIDHeaders(cfg))
 	err = api.Do(ctx, "POST", genieResponsesPath, headers, nil, req, &body)
+	// The route is fixed and carries no resource IDs, so a 404 normally means
+	// the endpoint itself is gone: the backend route is undocumented and can
+	// move or be disabled between Databricks releases (a removed route returns
+	// 404 ENDPOINT_NOT_FOUND, "No API found for ...", which the SDK maps to
+	// plain ErrNotFound). A 404 RESOURCE_DOES_NOT_EXIST is excluded: it refers
+	// to something the request named (e.g. the warehouse) and must keep the
+	// backend's own message instead of blaming the endpoint.
+	if errors.Is(err, apierr.ErrNotFound) && !errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		return nil, fmt.Errorf("the Genie API is not available on this workspace: %w; the endpoint may have moved since this CLI release: %s", err, agentstream.UpdateCLIAdvice)
+	}
+	// A request body the backend cannot interpret (e.g. after its expected
+	// request shape changed) surfaces as a 500 INTERNAL_ERROR with an empty
+	// message (observed live), leaving the user a blank error. Transient
+	// backend faults share the status code, hence the hedged advice.
+	if errors.Is(err, apierr.ErrInternalError) {
+		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.Message == "" {
+			// An empty message would render as "request: ;" mid-sentence, so
+			// the observed no-details shape gets its own wording. The %w
+			// keeps the error chain and renders as nothing.
+			return nil, fmt.Errorf("the Genie backend could not process the request (500 with no details)%w; if this keeps happening, the request format may have changed since this CLI release: %s", err, agentstream.UpdateCLIAdvice)
+		}
+		return nil, fmt.Errorf("the Genie backend could not process the request: %w; if this keeps happening, the request format may have changed since this CLI release: %s", err, agentstream.UpdateCLIAdvice)
+	}
 	if err != nil {
 		return nil, err
 	}

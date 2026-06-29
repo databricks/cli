@@ -50,6 +50,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	// Add methods
 	cmd.AddCommand(newCreateBranch())
 	cmd.AddCommand(newCreateCatalog())
+	cmd.AddCommand(newCreateDataApi())
 	cmd.AddCommand(newCreateDatabase())
 	cmd.AddCommand(newCreateEndpoint())
 	cmd.AddCommand(newCreateProject())
@@ -57,6 +58,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newCreateSyncedTable())
 	cmd.AddCommand(newDeleteBranch())
 	cmd.AddCommand(newDeleteCatalog())
+	cmd.AddCommand(newDeleteDataApi())
 	cmd.AddCommand(newDeleteDatabase())
 	cmd.AddCommand(newDeleteEndpoint())
 	cmd.AddCommand(newDeleteProject())
@@ -65,6 +67,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newGenerateDatabaseCredential())
 	cmd.AddCommand(newGetBranch())
 	cmd.AddCommand(newGetCatalog())
+	cmd.AddCommand(newGetDataApi())
 	cmd.AddCommand(newGetDatabase())
 	cmd.AddCommand(newGetEndpoint())
 	cmd.AddCommand(newGetOperation())
@@ -79,6 +82,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newUndeleteBranch())
 	cmd.AddCommand(newUndeleteProject())
 	cmd.AddCommand(newUpdateBranch())
+	cmd.AddCommand(newUpdateDataApi())
 	cmd.AddCommand(newUpdateDatabase())
 	cmd.AddCommand(newUpdateEndpoint())
 	cmd.AddCommand(newUpdateProject())
@@ -340,6 +344,128 @@ Register a Database in UC.
 	// Apply optional overrides to this command.
 	for _, fn := range createCatalogOverrides {
 		fn(cmd, &createCatalogReq)
+	}
+
+	return cmd
+}
+
+// start create-data-api command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createDataApiOverrides []func(
+	*cobra.Command,
+	*postgres.CreateDataApiRequest,
+)
+
+func newCreateDataApi() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createDataApiReq postgres.CreateDataApiRequest
+	createDataApiReq.DataApi = postgres.DataApi{}
+	var createDataApiJson flags.JsonFlag
+
+	var createDataApiSkipWait bool
+	var createDataApiTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createDataApiSkipWait, "no-wait", createDataApiSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&createDataApiTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&createDataApiJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createDataApiReq.DataApi.Name, "name", createDataApiReq.DataApi.Name, `Resource name: projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api.`)
+	// TODO: complex arg: spec
+	// TODO: complex arg: status
+
+	cmd.Use = "create-data-api PARENT"
+	cmd.Short = `Enable Data API for a database.`
+	cmd.Long = `Enable Data API for a database.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    PARENT: Parent database:
+      projects/{project_id}/branches/{branch_id}/databases/{database_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createDataApiJson.Unmarshal(&createDataApiReq.DataApi)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createDataApiReq.Parent = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case createDataApiSkipWait:
+			wait, err := w.Postgres.CreateDataApi(ctx, createDataApiReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.CreateDataApi(ctx, createDataApiReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for create-data-api to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(createDataApiTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createDataApiOverrides {
+		fn(cmd, &createDataApiReq)
 	}
 
 	return cmd
@@ -1195,6 +1321,109 @@ Delete a Database Catalog.
 	return cmd
 }
 
+// start delete-data-api command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteDataApiOverrides []func(
+	*cobra.Command,
+	*postgres.DeleteDataApiRequest,
+)
+
+func newDeleteDataApi() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteDataApiReq postgres.DeleteDataApiRequest
+
+	var deleteDataApiSkipWait bool
+	var deleteDataApiTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deleteDataApiSkipWait, "no-wait", deleteDataApiSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&deleteDataApiTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "delete-data-api NAME"
+	cmd.Short = `Disable Data API for a database.`
+	cmd.Long = `Disable Data API for a database.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: Resource name:
+      projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteDataApiReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case deleteDataApiSkipWait:
+			wait, err := w.Postgres.DeleteDataApi(ctx, deleteDataApiReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.DeleteDataApi(ctx, deleteDataApiReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for delete-data-api to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(deleteDataApiTimeout)
+
+			err = wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return nil
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteDataApiOverrides {
+		fn(cmd, &deleteDataApiReq)
+	}
+
+	return cmd
+}
+
 // start delete-database command
 
 // Slice with functions to override default command behavior.
@@ -1922,6 +2151,69 @@ Get a Database Catalog.
 	// Apply optional overrides to this command.
 	for _, fn := range getCatalogOverrides {
 		fn(cmd, &getCatalogReq)
+	}
+
+	return cmd
+}
+
+// start get-data-api command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getDataApiOverrides []func(
+	*cobra.Command,
+	*postgres.GetDataApiRequest,
+)
+
+func newGetDataApi() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getDataApiReq postgres.GetDataApiRequest
+
+	cmd.Use = "get-data-api NAME"
+	cmd.Short = `Get Data API configuration.`
+	cmd.Long = `Get Data API configuration.
+
+  Get Data API configuration for a database.
+
+  Arguments:
+    NAME: Resource name:
+      projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getDataApiReq.Name = args[0]
+
+		response, err := w.Postgres.GetDataApi(ctx, getDataApiReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getDataApiOverrides {
+		fn(cmd, &getDataApiReq)
 	}
 
 	return cmd
@@ -3020,6 +3312,136 @@ Update a Branch.
 	// Apply optional overrides to this command.
 	for _, fn := range updateBranchOverrides {
 		fn(cmd, &updateBranchReq)
+	}
+
+	return cmd
+}
+
+// start update-data-api command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateDataApiOverrides []func(
+	*cobra.Command,
+	*postgres.UpdateDataApiRequest,
+)
+
+func newUpdateDataApi() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateDataApiReq postgres.UpdateDataApiRequest
+	updateDataApiReq.DataApi = postgres.DataApi{}
+	var updateDataApiJson flags.JsonFlag
+
+	var updateDataApiSkipWait bool
+	var updateDataApiTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateDataApiSkipWait, "no-wait", updateDataApiSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&updateDataApiTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&updateDataApiJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateDataApiReq.DataApi.Name, "name", updateDataApiReq.DataApi.Name, `Resource name: projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api.`)
+	// TODO: complex arg: spec
+	// TODO: complex arg: status
+
+	cmd.Use = "update-data-api NAME UPDATE_MASK"
+	cmd.Short = `Update Data API configuration.`
+	cmd.Long = `Update Data API configuration.
+
+  Update Data API configuration for a database.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: Resource name:
+      projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api
+    UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
+      when possible.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateDataApiJson.Unmarshal(&updateDataApiReq.DataApi)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateDataApiReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateDataApiReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case updateDataApiSkipWait:
+			wait, err := w.Postgres.UpdateDataApi(ctx, updateDataApiReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.UpdateDataApi(ctx, updateDataApiReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for update-data-api to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(updateDataApiTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateDataApiOverrides {
+		fn(cmd, &updateDataApiReq)
 	}
 
 	return cmd

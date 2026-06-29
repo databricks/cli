@@ -1,15 +1,21 @@
 Cloud = true
-Local = false
+Local = true
 
 # Alert tests timeout during bundle deploy (hang at file upload for 50+ minutes).
 # Use aggressive 5-minute timeout until the issue is resolved.
 # See: https://github.com/databricks/cli/issues/4221
 TimeoutCloud = "5m"
 
-# On aws the host URL includes the workspace ID as well. Thus skipping it to keep the test simple.
-CloudEnvs.aws = false
-
 Ignore = [
     "databricks.yml",
     "alert.json",
 ]
+
+# Redact the ?[ow]=<id> workspace query param from summary URLs. The CLI appends it
+# whenever the host doesn't already carry the workspace ID in its subdomain, which is
+# the case for the local testserver (127.0.0.1) and aws hosts; azure/gcp vanity hosts
+# embed the ID and omit it. Stripping it lets one golden match local and all clouds.
+[[Repls]]
+Old = '\?[ow]=\d+'
+New = ''
+Order = 0

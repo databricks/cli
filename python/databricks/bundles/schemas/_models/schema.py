@@ -39,14 +39,25 @@ class Schema(Resource):
     User-provided free-form text description.
     """
 
+    custom_max_retention_hours: VariableOrOptional[int] = None
+    """
+    [Public Preview] Custom maximum retention period in hours for the schema.
+    """
+
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
+    """
+    The Unity Catalog privileges to grant to principals on this securable.
+    """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     properties: VariableOrDict[str] = field(default_factory=dict)
+    """
+    A map of key-value properties attached to the securable.
+    """
 
     storage_root: VariableOrOptional[str] = None
     """
@@ -79,14 +90,25 @@ class SchemaDict(TypedDict, total=False):
     User-provided free-form text description.
     """
 
+    custom_max_retention_hours: VariableOrOptional[int]
+    """
+    [Public Preview] Custom maximum retention period in hours for the schema.
+    """
+
     grants: VariableOrList[PrivilegeAssignmentParam]
+    """
+    The Unity Catalog privileges to grant to principals on this securable.
+    """
 
     lifecycle: VariableOrOptional[LifecycleParam]
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     properties: VariableOrDict[str]
+    """
+    A map of key-value properties attached to the securable.
+    """
 
     storage_root: VariableOrOptional[str]
     """

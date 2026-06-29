@@ -8,13 +8,14 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
+	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -36,6 +37,7 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
 	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
 	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
+	{group: "postgres_databases", message: deleteOrRecreatePostgresDatabaseMessage},
 	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
 	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
 }
@@ -82,7 +84,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		err   error
 	)
 	if targetEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
 		// Capture the finalized state for deploy telemetry. It carries each
 		// resource's state-size in bytes (from the WAL replay Finalize just
@@ -146,13 +148,42 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	uploadLibraries(ctx, b, libs)
+	immutable := b.IsImmutableFolder()
+	if immutable && !engine.IsDirect() {
+		logdiag.LogError(ctx, errors.New("experimental.immutable_folder is only supported with the direct deployment engine"))
+		return
+	}
+
+	if immutable {
+		// Upload all source files and built artifacts as a single immutable snapshot.
+		// snapshot.Upload() sets workspace.snapshot_path; the variable-resolution
+		// pass expands ${workspace.snapshot_path} placeholders written by translate_paths.
+		bundle.ApplySeqContext(ctx, b,
+			snapshot.Upload(),
+			mutator.ResolveVariableReferencesOnlyResources("workspace"),
+		)
+		if !logdiag.HasError(ctx) {
+			_, libDiags := libraries.ReplaceWithRemotePath(ctx, b)
+			for _, d := range libDiags {
+				logdiag.LogDiag(ctx, d)
+			}
+		}
+	} else {
+		uploadLibraries(ctx, b, libs)
+	}
+
 	if logdiag.HasError(ctx) {
 		return
 	}
 
+	if !immutable {
+		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
@@ -168,6 +199,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	if plan == nil {
 		// State is already open for read by process.go (for direct engine)
 		plan = RunPlan(ctx, b, engine)
+	}
+
+	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
+	// writes a WAL header that only deployCore's Finalize commits or discards;
+	// returning past it without finalizing leaves a header-only WAL behind.
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	if engine.IsDirect() {
@@ -187,6 +225,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
+	// InitForApply receives ctx and could log a diagnostic without returning an
+	// error, so re-check before deploying. (UpgradeToWrite above takes no ctx and
+	// thus cannot log, so the earlier check is enough to guard the WAL open.)
 	if logdiag.HasError(ctx) {
 		return
 	}

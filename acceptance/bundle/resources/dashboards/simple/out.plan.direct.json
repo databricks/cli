@@ -11,7 +11,7 @@
         "dashboard_id": "[DASHBOARD_ID]",
         "display_name": "test bundle-deploy-dashboard [UUID]",
         "embed_credentials": true,
-        "etag": [ETAG],
+        "etag": "[ETAG]",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
         "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
@@ -21,11 +21,31 @@
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },
       "changes": {
+        "create_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
+        },
+        "dashboard_id": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[DASHBOARD_ID]"
+        },
         "etag": {
           "action": "skip",
           "reason": "custom",
-          "old": [ETAG],
-          "remote": [ETAG]
+          "old": "[ETAG]",
+          "remote": "[ETAG]"
+        },
+        "lifecycle_state": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "ACTIVE"
+        },
+        "path": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json"
         },
         "serialized_dashboard": {
           "action": "skip",
@@ -33,6 +53,11 @@
           "old": "{ }\n",
           "new": "{ }\n",
           "remote": "{}\n"
+        },
+        "update_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
         }
       }
     }

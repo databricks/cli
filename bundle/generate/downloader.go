@@ -57,7 +57,7 @@ func (n *Downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pi
 }
 
 func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) error {
-	_, err := n.w.Workspace.GetStatusByPath(ctx, *filePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	_, err := n.w.Workspace.GetStatusByPath(ctx, *filePath)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) 
 }
 
 func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *string) error {
-	_, err := n.w.Workspace.GetStatusByPath(ctx, *dirPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	_, err := n.w.Workspace.GetStatusByPath(ctx, *dirPath)
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 func (n *Downloader) recursiveListWithExclusions(ctx context.Context, dirPath string) ([]workspace.ObjectInfo, error) {
 	var result []workspace.ObjectInfo
 
-	objects, err := n.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	objects, err := n.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
 		Path: dirPath,
 	})
 	if err != nil {
@@ -176,27 +176,30 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 	}
 
 	relPath := n.relativePath(*notebookPath)
-	// If the path has any extension, strip it
-	ext := path.Ext(relPath)
-	if ext != "" {
-		relPath = strings.TrimSuffix(relPath, ext)
+
+	relPath = notebook.StripExtension(relPath)
+
+	format := stat.ExportFormat
+	if fixed, ok := notebook.FixedExportFormat(stat.ObjectType); ok {
+		// These object types carry their full extension in the workspace path
+		// (preserved above) and report no export format, so we use a fixed one.
+		format = fixed
+	} else {
+		ext := notebook.GetExtensionByLanguage(&workspace.ObjectInfo{
+			Language:   stat.Language,
+			ObjectType: stat.ObjectType,
+		})
+		if format == workspace.ExportFormatJupyter {
+			ext = notebook.ExtensionJupyter
+		}
+		relPath += ext
 	}
 
-	ext = notebook.GetExtensionByLanguage(&workspace.ObjectInfo{
-		Language:   stat.Language,
-		ObjectType: stat.ObjectType,
-	})
-
-	if stat.ExportFormat == workspace.ExportFormatJupyter {
-		ext = ".ipynb"
-	}
-
-	relPath = relPath + ext
 	targetPath := filepath.Join(n.sourceDir, relPath)
 
 	n.files[targetPath] = exportFile{
 		path:   *notebookPath,
-		format: stat.ExportFormat,
+		format: format,
 	}
 
 	// Update the notebook path to be relative to the config dir
@@ -321,9 +324,8 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 			if err != nil {
 				return err
 			}
-			defer file.Close()
 
-			_, err = io.Copy(file, reader)
+			err = writeAndClose(file, reader)
 			if err != nil {
 				return err
 			}
@@ -334,6 +336,18 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 	}
 
 	return errs.Wait()
+}
+
+// writeAndClose copies src into dst and closes dst. A copy error takes
+// precedence; otherwise the Close error is returned because a failed Close
+// can mean buffered writes were lost and the file is truncated.
+func writeAndClose(dst io.WriteCloser, src io.Reader) error {
+	_, err := io.Copy(dst, src)
+	cerr := dst.Close()
+	if err == nil {
+		err = cerr
+	}
+	return err
 }
 
 func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string) *Downloader {

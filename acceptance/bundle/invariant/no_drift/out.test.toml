@@ -7,6 +7,7 @@ EnvMatrix.INPUT_CONFIG = [
   "app.yml.tmpl",
   "catalog.yml.tmpl",
   "cluster.yml.tmpl",
+  "cluster_apply_policy_default_values.yml.tmpl",
   "dashboard.yml.tmpl",
   "database_catalog.yml.tmpl",
   "database_instance.yml.tmpl",
@@ -18,6 +19,7 @@ EnvMatrix.INPUT_CONFIG = [
   "job_pydabs_1000_tasks.yml.tmpl",
   "job_cross_resource_ref.yml.tmpl",
   "job_permission_ref.yml.tmpl",
+  "job_run_job_ref.yml.tmpl",
   "job_with_depends_on.yml.tmpl",
   "job_with_permissions.yml.tmpl",
   "job_with_task.yml.tmpl",
@@ -28,8 +30,10 @@ EnvMatrix.INPUT_CONFIG = [
   "pipeline_config_dots.yml.tmpl",
   "postgres_branch.yml.tmpl",
   "postgres_catalog.yml.tmpl",
+  "postgres_database.yml.tmpl",
   "postgres_endpoint.yml.tmpl",
   "postgres_project.yml.tmpl",
+  "postgres_role.yml.tmpl",
   "postgres_synced_table.yml.tmpl",
   "registered_model.yml.tmpl",
   "schema.yml.tmpl",
@@ -47,3 +51,4 @@ EnvMatrix.INPUT_CONFIG = [
   "volume_external.yml.tmpl",
   "volume_uppercase_name.yml.tmpl"
 ]
+EnvMatrix.READPLAN = ["", "1"]

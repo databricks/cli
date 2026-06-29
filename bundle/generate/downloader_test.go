@@ -1,13 +1,19 @@
 package generate
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"testing/iotest"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -186,6 +192,52 @@ func notebookStatusHandler(t *testing.T) http.HandlerFunc {
 	}
 }
 
+// designerStatusHandler mimics get-status for a Lakeflow Designer file: object
+// type DESIGNER_FILE and no export format reported.
+func designerStatusHandler(t *testing.T) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/2.0/workspace/get-status" {
+			t.Fatalf("unexpected request path: %s", r.URL.Path)
+		}
+		resp := workspaceStatus{
+			ObjectType: workspace.ObjectType("DESIGNER_FILE"),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		assert.NoError(t, json.NewEncoder(w).Encode(resp))
+	}
+}
+
+func TestDownloader_MarkTasksForDownload_DesignerNotebook(t *testing.T) {
+	ctx := t.Context()
+	w := newTestWorkspaceClient(t, designerStatusHandler(t))
+
+	dir := "base/dir"
+	sourceDir := filepath.Join(dir, "source")
+	configDir := filepath.Join(dir, "config")
+	downloader := NewDownloader(w, sourceDir, configDir)
+
+	tasks := []jobs.Task{
+		{
+			TaskKey: "designer_task",
+			NotebookTask: &jobs.NotebookTask{
+				NotebookPath: "/Users/user/project/My Pipeline.designer.ipynb",
+			},
+		},
+	}
+
+	err := downloader.MarkTasksForDownload(ctx, tasks)
+	require.NoError(t, err)
+
+	// The ".designer.ipynb" suffix must be preserved, not stripped to ".designer".
+	assert.Equal(t, "../source/My Pipeline.designer.ipynb", tasks[0].NotebookTask.NotebookPath)
+	require.Len(t, downloader.files, 1)
+	f := downloader.files[filepath.Join(sourceDir, "My Pipeline.designer.ipynb")]
+	assert.Equal(t, "/Users/user/project/My Pipeline.designer.ipynb", f.path)
+	// Designer files round-trip as Jupyter notebooks even though get-status
+	// reports no export format.
+	assert.Equal(t, workspace.ExportFormatJupyter, f.format)
+}
+
 func TestDownloader_MarkTasksForDownload_PreservesStructure(t *testing.T) {
 	w := newTestWorkspaceClient(t, notebookStatusHandler(t))
 
@@ -259,6 +311,101 @@ func TestDownloader_MarkTasksForDownload_NoNotebooks(t *testing.T) {
 	err := downloader.MarkTasksForDownload(ctx, tasks)
 	require.NoError(t, err)
 	assert.Empty(t, downloader.files)
+}
+
+func TestDownloader_FlushToDisk(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+
+	contents := map[string]string{
+		"/Users/user/project/notebook": "# Databricks notebook source\nprint(1)",
+		"/Users/user/project/utils.py": "def helper(): pass",
+	}
+	w := newTestWorkspaceClient(t, func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/2.0/workspace/export" {
+			t.Fatalf("unexpected request path: %s", r.URL.Path)
+		}
+		content, ok := contents[r.URL.Query().Get("path")]
+		if !ok {
+			t.Fatalf("unexpected export path: %s", r.URL.Query().Get("path"))
+		}
+		_, err := rw.Write([]byte(content))
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	sourceDir := t.TempDir()
+	downloader := NewDownloader(w, sourceDir, "config")
+	downloader.files[filepath.Join(sourceDir, "notebook.py")] = exportFile{
+		path:   "/Users/user/project/notebook",
+		format: workspace.ExportFormatSource,
+	}
+	downloader.files[filepath.Join(sourceDir, "utils.py")] = exportFile{
+		path:   "/Users/user/project/utils.py",
+		format: workspace.ExportFormatSource,
+	}
+
+	err := downloader.FlushToDisk(ctx, false)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(filepath.Join(sourceDir, "notebook.py"))
+	require.NoError(t, err)
+	assert.Equal(t, contents["/Users/user/project/notebook"], string(data))
+
+	data, err = os.ReadFile(filepath.Join(sourceDir, "utils.py"))
+	require.NoError(t, err)
+	assert.Equal(t, contents["/Users/user/project/utils.py"], string(data))
+}
+
+type fakeWriteCloser struct {
+	bytes.Buffer
+	closeErr error
+}
+
+func (f *fakeWriteCloser) Close() error { return f.closeErr }
+
+func TestWriteAndClose(t *testing.T) {
+	closeErr := errors.New("close failed")
+	readErr := errors.New("read failed")
+
+	tests := []struct {
+		name     string
+		src      io.Reader
+		closeErr error
+		wantErr  error
+		wantData string
+	}{
+		{
+			name:     "success",
+			src:      strings.NewReader("data"),
+			wantData: "data",
+		},
+		{
+			name:     "close error is returned",
+			src:      strings.NewReader("data"),
+			closeErr: closeErr,
+			wantErr:  closeErr,
+			wantData: "data",
+		},
+		{
+			name:     "copy error takes precedence over close error",
+			src:      iotest.ErrReader(readErr),
+			closeErr: closeErr,
+			wantErr:  readErr,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dst := &fakeWriteCloser{closeErr: tt.closeErr}
+			err := writeAndClose(dst, tt.src)
+			if tt.wantErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorIs(t, err, tt.wantErr)
+			}
+			assert.Equal(t, tt.wantData, dst.String())
+		})
+	}
 }
 
 func TestDownloader_CleanupOldFiles(t *testing.T) {

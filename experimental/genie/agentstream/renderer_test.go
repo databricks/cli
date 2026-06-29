@@ -233,6 +233,7 @@ func TestRenderText_NoAnswerFails(t *testing.T) {
 	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "without an answer")
+	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
 	assert.Contains(t, err.Error(), "--raw")
 }
 
@@ -259,6 +260,7 @@ func TestRenderText_UnparsedEventsWarn(t *testing.T) {
 	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 	assert.Contains(t, stderr.String(), "2 stream event(s) could not be parsed")
+	assert.Contains(t, stderr.String(), "update the Databricks CLI to the latest version")
 }
 
 func TestRenderText_VizChartAfterText(t *testing.T) {
@@ -401,6 +403,7 @@ func TestRenderJSON_EmptyStreamFails(t *testing.T) {
 	err := RenderJSON(strings.NewReader(""), &buf, &stderr, adapt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "without an answer")
+	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
 
 	var result StreamResult
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &result))

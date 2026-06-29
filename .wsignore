@@ -3,7 +3,6 @@
 .codegen/_openapi_sha
 .release_metadata.json
 bundle/schema/jsonschema.json
-bundle/schema/jsonschema_for_docs.json
 python/docs/images/databricks-logo.svg
 **/*.dist-info/METADATA
 **/*.dist-info/WHEEL
@@ -26,8 +25,3 @@ python/databricks/bundles/*/_models/*.py
 
 # Developed elsewhere:
 internal/genkit/tagging.py
-
-# Docsgen:
-bundle/docsgen/output/resources.md
-bundle/docsgen/output/reference.md
-bundle/docsgen/testdata/anchors.md

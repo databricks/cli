@@ -371,8 +371,19 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 
 // resolveDefaultProfile applies the [__settings__].default_profile setting
 // when no profile is specified via --profile flag or DATABRICKS_CONFIG_PROFILE.
+//
+// It does nothing when a host is configured directly via the environment
+// (DATABRICKS_HOST). Authentication is then fully determined by the environment,
+// and the SDK already ignores .databrickscfg in that case, but only while
+// cfg.Profile is empty (see configFileLoader.Configure in databricks-sdk-go).
+// Pinning a default profile would defeat that skip and merge the profile's
+// credentials with the environment config, failing with "more than one
+// authorization method configured".
 func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
+		return
+	}
+	if envlib.Get(ctx, "DATABRICKS_HOST") != "" {
 		return
 	}
 	if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {

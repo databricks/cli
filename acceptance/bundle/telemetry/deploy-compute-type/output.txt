@@ -42,6 +42,46 @@ Deployment complete!
     "value": false
   },
   {
+    "key": "state_path_is_shared",
+    "value": false
+  },
+  {
+    "key": "permissions_section_set",
+    "value": false
+  },
+  {
+    "key": "state_path_in_deployer_home",
+    "value": true
+  },
+  {
+    "key": "state_path_in_other_user_home",
+    "value": false
+  },
+  {
+    "key": "state_path_other",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_deploying_user",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_other_user",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_service_principal",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_group",
+    "value": false
+  },
+  {
+    "key": "dms_compat_auto",
+    "value": true
+  },
+  {
     "key": "has_serverless_compute",
     "value": true
   },
@@ -82,6 +122,46 @@ Deployment complete!
   {
     "key": "skip_artifact_cleanup",
     "value": false
+  },
+  {
+    "key": "state_path_is_shared",
+    "value": false
+  },
+  {
+    "key": "permissions_section_set",
+    "value": false
+  },
+  {
+    "key": "state_path_in_deployer_home",
+    "value": true
+  },
+  {
+    "key": "state_path_in_other_user_home",
+    "value": false
+  },
+  {
+    "key": "state_path_other",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_deploying_user",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_other_user",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_service_principal",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_group",
+    "value": false
+  },
+  {
+    "key": "dms_compat_auto",
+    "value": true
   },
   {
     "key": "has_serverless_compute",

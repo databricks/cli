@@ -1,5 +1,5 @@
 
->>> [CLI] bundle deployment list
+>>> [CLI] bundle-deployments list-deployments
 [
   {
     "display_name": "first deployment",
@@ -15,16 +15,21 @@
   }
 ]
 
->>> [CLI] bundle deployment get deployments/abc
+>>> [CLI] bundle-deployments get-deployment deployments/abc
 {
   "display_name": "first deployment",
+  "git_info": {
+    "branch": "main",
+    "commit": "[COMMIT_SHA]",
+    "origin_url": "https://github.com/databricks/cli"
+  },
   "last_version_id": "v1",
   "name": "deployments/abc",
   "status": "DEPLOYMENT_STATUS_ACTIVE",
   "target_name": "dev"
 }
 
->>> [CLI] bundle version list deployments/abc
+>>> [CLI] bundle-deployments list-versions deployments/abc
 [
   {
     "cli_version": "[DEV_VERSION]",
@@ -34,15 +39,20 @@
   }
 ]
 
->>> [CLI] bundle version get deployments/abc/versions/v1
+>>> [CLI] bundle-deployments get-version deployments/abc/versions/v1
 {
   "cli_version": "[DEV_VERSION]",
+  "git_info": {
+    "branch": "main",
+    "commit": "[COMMIT_SHA]",
+    "origin_url": "https://github.com/databricks/cli"
+  },
   "name": "deployments/abc/versions/v1",
   "status": "VERSION_STATUS_COMPLETED",
   "version_type": ""
 }
 
->>> [CLI] bundle resource list deployments/abc
+>>> [CLI] bundle-deployments list-resources deployments/abc
 [
   {
     "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
@@ -53,7 +63,7 @@
   }
 ]
 
->>> [CLI] bundle resource get deployments/abc/resources/my_job
+>>> [CLI] bundle-deployments get-resource deployments/abc/resources/my_job
 {
   "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
   "last_version_id": "v1",
@@ -62,7 +72,7 @@
   "resource_type": "DEPLOYMENT_RESOURCE_TYPE_JOB"
 }
 
->>> [CLI] bundle operation list deployments/abc/versions/v1
+>>> [CLI] bundle-deployments list-operations deployments/abc/versions/v1
 [
   {
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
@@ -72,7 +82,7 @@
   }
 ]
 
->>> [CLI] bundle operation get deployments/abc/versions/v1/operations/my_job
+>>> [CLI] bundle-deployments get-operation deployments/abc/versions/v1/operations/my_job
 {
   "action_type": "OPERATION_ACTION_TYPE_CREATE",
   "name": "deployments/abc/versions/v1/operations/my_job",

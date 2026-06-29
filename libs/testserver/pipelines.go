@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -31,6 +32,20 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 		return Response{
 			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
 			StatusCode: 400,
+		}
+	}
+
+	// Unity Catalog requires target_schema_name to be a single schema segment, so a
+	// dotted catalog.schema value is rejected; the catalog belongs in the separate
+	// catalog field. Only the dot trips this check, but the backend's canned error
+	// also lists dashes and other characters as invalid.
+	if strings.Contains(spec.Target, ".") {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    fmt.Sprintf("CreatePipeline target_schema_name %q is not a valid name. Valid names must contain only alphanumeric characters and underscores, and cannot contain spaces, periods, forward slashes, or control characters.", spec.Target),
+			},
 		}
 	}
 
