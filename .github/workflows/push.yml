@@ -374,9 +374,10 @@ jobs:
     needs:
       - cleanups
 
-    # A real deploy per seed across a wide rotating window: too slow for every PR,
-    # so nightly only and not part of test-result. (The package's un-gated smoke
-    # test still checks the invariants on one seed on every PR.)
+    # A real deploy per seed across a wide rotating window, with the no-drift
+    # invariant on: too slow for every PR, so nightly only and not part of
+    # test-result. (The committed acceptance fuzz test still checks the no-panic
+    # invariant on a small fixed seed window on every PR.)
     if: ${{ github.event_name == 'schedule' }}
     name: "task test-fuzz"
     runs-on:
@@ -405,11 +406,11 @@ jobs:
       - name: Run tests
         env:
           # Shift the seed window each nightly run so CI explores new configs.
-          # offset = GITHUB_RUN_NUMBER * FUZZ_SEEDS keeps windows non-overlapping
-          # (GITHUB_RUN_NUMBER is monotonic). A failure prints FUZZ_SEED=<n>.
-          FUZZ_SEEDS: "25"
+          # start = GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT keeps windows non-overlapping
+          # (GITHUB_RUN_NUMBER is monotonic). A failure prints the failing seed.
+          FUZZ_SEED_COUNT: "25"
         run: |
-          export FUZZ_SEED_OFFSET=$(( GITHUB_RUN_NUMBER * FUZZ_SEEDS ))
+          export FUZZ_SEED_START=$(( GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
       # Excluded from test-result, so surface failures as a GitHub issue. Reuse one
@@ -421,23 +422,20 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           gh label create fuzz-nightly \
-            --description "Nightly create-payload invariant failures" \
+            --description "Nightly schema fuzz invariant failures" \
             --color FBCA04 2>/dev/null || true
 
           body=$(cat <<EOF
-          The nightly create-payload invariant job (\`task test-fuzz\`) failed.
+          The nightly schema fuzz invariant job (\`task test-fuzz\`) failed.
 
           Run: $RUN_URL
 
-          The failing seed(s) are printed in the job log as \`reproduce with: FUZZ_SEED=<n>\`.
+          The failing seed is printed in the job log as \`reproduce with: ...\`.
           Reproduce locally with:
 
           \`\`\`
-          FUZZ_SEED=<seed> task test-fuzz
+          FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 task test-fuzz
           \`\`\`
-
-          Once fixed, add the seed to \`regressionSeeds\` in \`bundle/fuzz/fuzz_test.go\`
-          in the same PR so the bug can never silently regress.
           EOF
           )
 
