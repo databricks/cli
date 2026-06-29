@@ -1,0 +1,95 @@
+# Confidence checks that /workspace/import is a drop-in for the legacy import-file:
+# verify the CLI's multipart upload pipeline handles the cases that differ between the
+# two endpoints — large content (>10 MiB), empty content, varied extensions/object types,
+# and non-ASCII / spaced filenames in the multipart `path` field.
+
+# Exclude framework-generated and script-internal files from the sync. We only want the
+# inputs we explicitly generate below to show up in the recorded uploads.
+cat > .gitignore <<'EOF'
+script
+output.txt
+out.requests.txt
+repls.json
+test.toml
+.databricks
+EOF
+
+# 12 MiB binary file. The legacy /workspace/import JSON-body cap is 10 MiB; multipart has
+# no such cap. Generated dynamically to keep the repo small.
+python3 -c "open('large.bin', 'wb').write(b'\\0' * (12 * 1024 * 1024))"
+
+# Empty file (multipart encodes an empty `content` part — distinct from JSON's empty string).
+touch empty.txt
+
+# Python notebook: auto-detected as NOTEBOOK by /workspace/import; testserver mirrors
+# this and stores the object at the path with .py stripped.
+cat > pyNb.py <<'EOF'
+# Databricks notebook source
+print("hello")
+EOF
+
+# SQL notebook: -- comment header, .sql extension, Language=SQL on the workspace side.
+cat > sqlNb.sql <<'EOF'
+-- Databricks notebook source
+SELECT 1
+EOF
+
+# Scala notebook: // comment header, .scala extension, Language=SCALA.
+cat > scalaNb.scala <<'EOF'
+// Databricks notebook source
+println("hello")
+EOF
+
+# Plain .py without the source header — should land as FILE, not NOTEBOOK,
+# even though the extension is .py.
+cat > plain-script.py <<'EOF'
+print("plain script, no header")
+EOF
+
+# Lakeview dashboard descriptor: the real /workspace/import assigns object_type=DASHBOARD
+# and preserves the .lvdash.json extension. The testserver doesn't emulate that and stores
+# it as a generic FILE — but the upload-side request shape (which is what this test asserts)
+# is identical.
+echo '{"datasets":[],"pages":[]}' > dashboard.lvdash.json
+
+# Non-ASCII filename. Multipart encodes filenames with RFC 5987 / quoted-string rules,
+# distinct from URL-encoding in the legacy import-file endpoint.
+echo "hello, naïve world" > "héllo.txt"
+
+# Filename with a space.
+echo "hello, world" > "with spaces.txt"
+
+trace $CLI bundle sync --output text 2>&1 | sort
+
+title "workspace state after sync — assert object_type and language for each upload"
+remote_files=$($CLI bundle summary -o json 2>/dev/null | jq -r .workspace.file_path)
+# MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the leading-slash
+# workspace path into a C:/Program Files/... filesystem path before it
+# reaches the CLI.
+trace MSYS_NO_PATHCONV=1 $CLI workspace list -o json "$remote_files" |
+  jq 'sort_by(.path) | .[] | {name: (.path | sub(".*/"; "")), object_type, language}'
+
+title "uploaded paths from each multipart POST /workspace/import (sorted)"
+trace jq -rs '
+  map(select(.path == "/api/2.0/workspace/import")) |
+  map(.body.multipart_form.path) |
+  sort | .[]
+' out.requests.txt
+
+title "every upload set format=AUTO"
+trace jq -rs '
+  map(select(.path == "/api/2.0/workspace/import")) |
+  map(.body.multipart_form.format) | unique
+' out.requests.txt
+
+title "recorded content for the small text inputs"
+trace jq -rs '
+  map(select(.path == "/api/2.0/workspace/import")) |
+  map(select(.body.multipart_form.path | test("/(pyNb\\.py|sqlNb\\.sql|scalaNb\\.scala|plain-script\\.py|héllo\\.txt|with spaces\\.txt|empty\\.txt|dashboard\\.lvdash\\.json)$"))) |
+  map({path: (.body.multipart_form.path | sub(".*/"; "")), content: .body.multipart_form.content}) |
+  sort_by(.path) | .[]
+' out.requests.txt
+
+# Drop the recorded requests; their workspace-prefixed paths are noisy and the
+# assertions above already pin the relevant fields.
+rm out.requests.txt .gitignore

@@ -19,7 +19,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> jq select(.path | test("app.yml")) out.requests.txt
+>>> jq select(.body.multipart_form.path | strings | test("app.yml")) out.requests.txt
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -1,8 +1,13 @@
 package filer
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"io"
 	"io/fs"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,8 +15,10 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -95,6 +102,248 @@ func TestWorkspaceFilesClientWorkspaceIDHeaders(t *testing.T) {
 		w := &WorkspaceFilesClient{}
 		assert.Nil(t, w.workspaceIDHeaders())
 	})
+}
+
+func TestWorkspaceFilesClientWriteSuccess(t *testing.T) {
+	tests := []struct {
+		name           string
+		modes          []WriteMode
+		expectOverride bool
+	}{
+		{
+			name:           "no overwrite",
+			modes:          nil,
+			expectOverride: false,
+		},
+		{
+			name:           "overwrite",
+			modes:          []WriteMode{OverwriteIfExists},
+			expectOverride: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mw := mocks.NewMockWorkspaceClient(t)
+			workspaceApi := mw.GetMockWorkspaceAPI()
+
+			workspaceApi.EXPECT().Upload(
+				mock.Anything,
+				"/dir/file.txt",
+				mock.Anything,
+				mock.Anything,
+				mock.Anything,
+			).RunAndReturn(func(_ context.Context, _ string, r io.Reader, opts ...func(*workspace.Import)) error {
+				body, err := io.ReadAll(r)
+				require.NoError(t, err)
+				assert.Equal(t, "hello", string(body))
+
+				i := &workspace.Import{}
+				for _, opt := range opts {
+					opt(i)
+				}
+				assert.Equal(t, workspace.ImportFormatAuto, i.Format)
+				assert.Equal(t, tc.expectOverride, i.Overwrite)
+				return nil
+			}).Once()
+
+			c := WorkspaceFilesClient{
+				workspaceClient: mw.WorkspaceClient,
+				root:            NewWorkspaceRootPath("/dir"),
+			}
+			err := c.Write(t.Context(), "file.txt", strings.NewReader("hello"), tc.modes...)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
+	tests := []struct {
+		name            string
+		mode            []WriteMode
+		apiErr          *apierr.APIError
+		expectErrTarget any
+	}{
+		{
+			name:            "404 without create-parent maps to noSuchDirectoryError",
+			apiErr:          &apierr.APIError{StatusCode: http.StatusNotFound, Message: "not found"},
+			expectErrTarget: noSuchDirectoryError{},
+		},
+		{
+			name: "400 RESOURCE_ALREADY_EXISTS maps to fileAlreadyExistsError",
+			apiErr: &apierr.APIError{
+				StatusCode: http.StatusBadRequest,
+				ErrorCode:  "RESOURCE_ALREADY_EXISTS",
+				Message:    "/dir/file.txt already exists. Please pass overwrite=true to overwrite it.",
+			},
+			expectErrTarget: fileAlreadyExistsError{},
+		},
+		{
+			name: "409 ALREADY_EXISTS (concurrent contention) maps to fileAlreadyExistsError",
+			apiErr: &apierr.APIError{
+				StatusCode: http.StatusConflict,
+				ErrorCode:  "ALREADY_EXISTS",
+				Message:    "Node with name /dir/file.txt already exists. Please pass overwrite=true to update it.",
+			},
+			expectErrTarget: fileAlreadyExistsError{},
+		},
+		{
+			name: "400 INVALID_PARAMETER_VALUE 'type mismatch' (overwrite=true) maps to fileAlreadyExistsError",
+			apiErr: &apierr.APIError{
+				StatusCode: http.StatusBadRequest,
+				ErrorCode:  "INVALID_PARAMETER_VALUE",
+				Message:    "Cannot overwrite the asset at /dir/foo due to type mismatch (asked: FILE, actual: NOTEBOOK).",
+			},
+			expectErrTarget: fileAlreadyExistsError{},
+		},
+		{
+			name: "400 INVALID_PARAMETER_VALUE 'Requested node type' (overwrite=true) maps to fileAlreadyExistsError",
+			apiErr: &apierr.APIError{
+				StatusCode: http.StatusBadRequest,
+				ErrorCode:  "INVALID_PARAMETER_VALUE",
+				Message:    "Requested node type [FILE] is different from the existing node type [NOTEBOOK]",
+			},
+			expectErrTarget: fileAlreadyExistsError{},
+		},
+		{
+			name: "400 INVALID_PARAMETER_VALUE other message passes through",
+			apiErr: &apierr.APIError{
+				StatusCode: http.StatusBadRequest,
+				ErrorCode:  "INVALID_PARAMETER_VALUE",
+				Message:    "some other validation failure",
+			},
+			expectErrTarget: nil,
+		},
+		{
+			name:            "403 maps to permissionError",
+			apiErr:          &apierr.APIError{StatusCode: http.StatusForbidden, Message: "denied"},
+			expectErrTarget: permissionError{},
+		},
+		{
+			name:            "500 passes through",
+			apiErr:          &apierr.APIError{StatusCode: http.StatusInternalServerError, Message: "boom"},
+			expectErrTarget: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mw := mocks.NewMockWorkspaceClient(t)
+			workspaceApi := mw.GetMockWorkspaceAPI()
+			workspaceApi.EXPECT().Upload(
+				mock.Anything, "/dir/file.txt", mock.Anything, mock.Anything, mock.Anything,
+			).Return(tc.apiErr).Once()
+
+			c := WorkspaceFilesClient{
+				workspaceClient: mw.WorkspaceClient,
+				root:            NewWorkspaceRootPath("/dir"),
+			}
+			err := c.Write(t.Context(), "file.txt", bytes.NewReader([]byte("data")), tc.mode...)
+			require.Error(t, err)
+			switch target := tc.expectErrTarget.(type) {
+			case noSuchDirectoryError:
+				assert.ErrorAs(t, err, &target)
+			case fileAlreadyExistsError:
+				assert.ErrorAs(t, err, &target)
+			case permissionError:
+				assert.ErrorAs(t, err, &target)
+			case nil:
+				// passthrough — same APIError pointer
+				var aerr *apierr.APIError
+				require.ErrorAs(t, err, &aerr)
+				assert.Equal(t, tc.apiErr.StatusCode, aerr.StatusCode)
+			}
+		})
+	}
+}
+
+// writeWithImportError exercises Write through a real HTTP roundtrip so the
+// SDK parses AIP-193 error details from the response body (the errorDetails
+// field on apierr.APIError is unexported and only populated during response
+// parsing, so it cannot be set on a directly constructed APIError).
+func writeWithImportError(t *testing.T, body map[string]any) error {
+	t.Helper()
+
+	server := testserver.New(t)
+	server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+		return testserver.Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       body,
+		}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	f, err := NewWorkspaceFilesClient(client, "/dir")
+	require.NoError(t, err)
+
+	err = f.Write(t.Context(), "file.txt", strings.NewReader("data"), OverwriteIfExists)
+	require.Error(t, err)
+	return err
+}
+
+func TestWorkspaceFilesClientWriteTypeMismatchReason(t *testing.T) {
+	// The message is deliberately one the fallback string match does not
+	// recognize, to prove the branch fires on the structured reason alone.
+	err := writeWithImportError(t, map[string]any{
+		"error_code": "INVALID_PARAMETER_VALUE",
+		"message":    "some future wording for the same condition",
+		"details": []map[string]any{
+			{
+				"@type":    "type.googleapis.com/google.rpc.ErrorInfo",
+				"reason":   workspaceObjectTypeMismatchReason,
+				"domain":   "workspace.databricks.com",
+				"metadata": map[string]string{"existing_type": "NOTEBOOK"},
+			},
+		},
+	})
+	var target fileAlreadyExistsError
+	assert.ErrorAs(t, err, &target)
+}
+
+func TestWorkspaceFilesClientWriteUnrelatedReasonPassesThrough(t *testing.T) {
+	err := writeWithImportError(t, map[string]any{
+		"error_code": "INVALID_PARAMETER_VALUE",
+		"message":    "some other validation failure",
+		"details": []map[string]any{
+			{
+				"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
+				"reason": "SOME_OTHER_REASON",
+				"domain": "workspace.databricks.com",
+			},
+		},
+	})
+	var aerr *apierr.APIError
+	require.ErrorAs(t, err, &aerr)
+	assert.Equal(t, http.StatusBadRequest, aerr.StatusCode)
+}
+
+func TestWorkspaceFilesClientWriteCreatesParentDirectories(t *testing.T) {
+	mw := mocks.NewMockWorkspaceClient(t)
+	workspaceApi := mw.GetMockWorkspaceAPI()
+
+	// First Upload returns 404, second returns success after MkdirsByPath.
+	workspaceApi.EXPECT().Upload(
+		mock.Anything, "/dir/sub/file.txt", mock.Anything, mock.Anything, mock.Anything,
+	).Return(&apierr.APIError{StatusCode: http.StatusNotFound, Message: "not found"}).Once()
+
+	workspaceApi.EXPECT().MkdirsByPath(mock.Anything, "/dir/sub").Return(nil).Once()
+
+	workspaceApi.EXPECT().Upload(
+		mock.Anything, "/dir/sub/file.txt", mock.Anything, mock.Anything, mock.Anything,
+	).Return(nil).Once()
+
+	c := WorkspaceFilesClient{
+		workspaceClient: mw.WorkspaceClient,
+		root:            NewWorkspaceRootPath("/dir"),
+	}
+	err := c.Write(t.Context(), "sub/file.txt", strings.NewReader("data"), CreateParentDirectories)
+	require.NoError(t, err)
 }
 
 func TestWorkspaceFilesClient_wsfsUnmarshal(t *testing.T) {

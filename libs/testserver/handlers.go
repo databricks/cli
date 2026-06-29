@@ -138,6 +138,81 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/workspace/import", func(req Request) any {
+		// /workspace/import accepts both a JSON body (matching workspace.Import) and a
+		// multipart form body. The multipart variant is what databricks-sdk-go's
+		// Workspace.Upload uses; the JSON variant is kept for back-compat with anything
+		// that still hits Workspace.Import directly.
+		contentType := req.Headers.Get("Content-Type")
+		mediaType, params, _ := mime.ParseMediaType(contentType)
+		if strings.HasPrefix(mediaType, "multipart/") {
+			mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
+			var (
+				filePath  string
+				content   []byte
+				format    string
+				overwrite bool
+			)
+			for {
+				part, err := mr.NextPart()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					return Response{
+						Body:       fmt.Sprintf("internal error: %s", err),
+						StatusCode: http.StatusInternalServerError,
+					}
+				}
+				data, err := io.ReadAll(part)
+				if err != nil {
+					return Response{
+						Body:       fmt.Sprintf("internal error: %s", err),
+						StatusCode: http.StatusInternalServerError,
+					}
+				}
+				switch part.FormName() {
+				case "path":
+					filePath = string(data)
+				case "content":
+					content = data
+				case "format":
+					format = string(data)
+				case "overwrite":
+					overwrite = string(data) == "true"
+				}
+			}
+
+			if format != "" && format != string(workspace.ImportFormatAuto) {
+				return Response{
+					Body:       "internal error: The test server only supports auto format.",
+					StatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			// Translate any 409 from the shared fake into the 400 + errorCode
+			// RESOURCE_ALREADY_EXISTS shape returned by the real /workspace/import
+			// endpoint, including the AIP-193 ErrorInfo detail it attaches to path
+			// collisions (universe PR #2019174, WP-6031).
+			resp := req.Workspace.WorkspaceFilesImportFile(filePath, content, overwrite)
+			if resp.StatusCode == http.StatusConflict {
+				return Response{
+					StatusCode: http.StatusBadRequest,
+					Body: map[string]any{
+						"error_code": "RESOURCE_ALREADY_EXISTS",
+						"message":    fmt.Sprintf("Path (%s) already exists.", filePath),
+						"details": []map[string]any{
+							{
+								"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
+								"reason": "RESOURCE_ALREADY_EXISTS",
+								"domain": "workspace.databricks.com",
+							},
+						},
+					},
+				}
+			}
+			return resp
+		}
+
 		var request workspace.Import
 		err := json.Unmarshal(req.Body, &request)
 		if err != nil {

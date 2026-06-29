@@ -8,13 +8,13 @@ OK  	deploy.direct	/api/2.0/workspace/get-status	engine/direct
 OK  	deploy.direct	/api/2.0/workspace/get-status	engine/direct
 OK  	deploy.direct	/api/2.0/workspace/get-status	engine/direct
 OK  	deploy.direct	/api/2.0/workspace/get-status	engine/direct
-OK  	deploy.direct	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/empty.py	engine/direct
-OK  	deploy.direct	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock	engine/direct
-OK  	deploy.direct	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json	engine/direct
-OK  	deploy.direct	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json	engine/direct
-OK  	deploy.direct	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json	engine/direct
 OK  	deploy.direct	/api/2.0/workspace/delete	engine/direct
 OK  	deploy.direct	/api/2.0/workspace/delete	engine/direct
+OK  	deploy.direct	/api/2.0/workspace/import	engine/direct
+OK  	deploy.direct	/api/2.0/workspace/import	engine/direct
+OK  	deploy.direct	/api/2.0/workspace/import	engine/direct
+OK  	deploy.direct	/api/2.0/workspace/import	engine/direct
+OK  	deploy.direct	/api/2.0/workspace/import	engine/direct
 OK  	deploy.direct	/api/2.0/workspace/mkdirs	engine/direct
 OK  	deploy.direct	/api/2.1/unity-catalog/schemas	engine/direct
 MISS	deploy.direct	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
@@ -28,13 +28,13 @@ OK  	deploy.terraform	/api/2.0/workspace/get-status	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/get-status	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/get-status	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/get-status	engine/terraform
-OK  	deploy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/empty.py	engine/terraform
-OK  	deploy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock	engine/terraform
-OK  	deploy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json	engine/terraform
-OK  	deploy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json	engine/terraform
-OK  	deploy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/delete	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/delete	engine/terraform
+OK  	deploy.terraform	/api/2.0/workspace/import	engine/terraform
+OK  	deploy.terraform	/api/2.0/workspace/import	engine/terraform
+OK  	deploy.terraform	/api/2.0/workspace/import	engine/terraform
+OK  	deploy.terraform	/api/2.0/workspace/import	engine/terraform
+OK  	deploy.terraform	/api/2.0/workspace/import	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/mkdirs	engine/terraform
 MISS	deploy.terraform	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
 MISS	deploy.terraform	/api/2.0/preview/scim/v2/Me	'databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 auth/pat'
@@ -55,8 +55,8 @@ OK  	destroy.direct	/api/2.0/workspace/get-status	engine/direct
 OK  	destroy.direct	/api/2.0/workspace/get-status	engine/direct
 OK  	destroy.direct	/api/2.0/workspace/get-status	engine/direct
 OK  	destroy.direct	/api/2.1/unity-catalog/schemas/mycatalog.myschema	engine/direct
-OK  	destroy.direct	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock	engine/direct
 OK  	destroy.direct	/api/2.0/workspace/delete	engine/direct
+OK  	destroy.direct	/api/2.0/workspace/import	engine/direct
 MISS	destroy.direct	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
 MISS	destroy.terraform	/api/2.0/preview/scim/v2/Me	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	destroy.terraform	/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none auth/pat'
@@ -66,8 +66,8 @@ OK  	destroy.terraform	/api/2.0/workspace/export	engine/terraform
 OK  	destroy.terraform	/api/2.0/workspace/get-status	engine/terraform
 OK  	destroy.terraform	/api/2.0/workspace/get-status	engine/terraform
 OK  	destroy.terraform	/api/2.0/workspace/get-status	engine/terraform
-OK  	destroy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock	engine/terraform
 OK  	destroy.terraform	/api/2.0/workspace/delete	engine/terraform
+OK  	destroy.terraform	/api/2.0/workspace/import	engine/terraform
 MISS	destroy.terraform	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
 MISS	destroy.terraform	/api/2.1/unity-catalog/schemas/mycatalog.myschema	'databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	destroy.terraform	/api/2.0/preview/scim/v2/Me	'databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'

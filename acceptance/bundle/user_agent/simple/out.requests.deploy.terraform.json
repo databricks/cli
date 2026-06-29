@@ -130,146 +130,6 @@
     ]
   },
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/empty.py",
-  "q": {
-    "overwrite": "true"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
-    ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
-  "q": {
-    "overwrite": "false"
-  },
-  "body": {
-    "ID": "[UUID]",
-    "AcquisitionTime": "[TIMESTAMP]",
-    "IsForced": false,
-    "User": "[USERNAME]"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
-    ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
-  "q": {
-    "overwrite": "true"
-  },
-  "body": {
-    "version": 1,
-    "seq": 1,
-    "cli_version": "[DEV_VERSION]",
-    "timestamp": "[TIMESTAMP]",
-    "files": [
-      {
-        "local_path": "empty.py",
-        "is_notebook": false
-      }
-    ],
-    "id": "[UUID]"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
-    ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json",
-  "q": {
-    "overwrite": "true"
-  },
-  "body": {
-    "version": 1,
-    "config": {
-      "bundle": {
-        "name": "test-bundle",
-        "target": "default",
-        "git": {
-          "bundle_root_path": "."
-        }
-      },
-      "workspace": {
-        "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
-      },
-      "resources": {},
-      "presets": {
-        "source_linked_deployment": false
-      }
-    },
-    "extra": {}
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
-    ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
-  "q": {
-    "overwrite": "true"
-  },
-  "body": {
-    "version": 4,
-    "terraform_version": "1.5.5",
-    "serial": 1,
-    "lineage": "[UUID]",
-    "outputs": {},
-    "resources": [
-      {
-        "mode": "managed",
-        "type": "databricks_schema",
-        "name": "foo",
-        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
-        "instances": [
-          {
-            "schema_version": 0,
-            "attributes": {
-              "catalog_name": "mycatalog",
-              "comment": null,
-              "enable_predictive_optimization": "INHERIT",
-              "force_destroy": true,
-              "id": "mycatalog.myschema",
-              "metastore_id": "[UUID]",
-              "name": "myschema",
-              "owner": "[USERNAME]",
-              "properties": null,
-              "provider_config": [
-                {
-                  "workspace_id": "[NUMID]"
-                }
-              ],
-              "schema_id": "[UUID]",
-              "storage_root": null
-            },
-            "sensitive_attributes": [],
-            "private": "bnVsbA=="
-          }
-        ]
-      }
-    ],
-    "check_results": null
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
-    ]
-  },
-  "method": "POST",
   "path": "/api/2.0/workspace/delete",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal",
@@ -286,6 +146,90 @@
   "path": "/api/2.0/workspace/delete",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/import",
+  "body": {
+    "multipart_form": {
+      "content": "",
+      "format": "AUTO",
+      "overwrite": "true",
+      "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/empty.py"
+    }
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/import",
+  "body": {
+    "multipart_form": {
+      "content": "{\"ID\":\"[UUID]\",\"AcquisitionTime\":\"[TIMESTAMP]\",\"IsForced\":false,\"User\":\"[USERNAME]\"}",
+      "format": "AUTO",
+      "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+    }
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/import",
+  "body": {
+    "multipart_form": {
+      "content": "{\"version\":1,\"seq\":1,\"cli_version\":\"[DEV_VERSION]\",\"timestamp\":\"[TIMESTAMP]\",\"files\":[{\"local_path\":\"empty.py\",\"is_notebook\":false}],\"id\":\"[UUID]\"}",
+      "format": "AUTO",
+      "overwrite": "true",
+      "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+    }
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/import",
+  "body": {
+    "multipart_form": {
+      "content": "{\n  \"version\": 1,\n  \"config\": {\n    \"bundle\": {\n      \"name\": \"test-bundle\",\n      \"target\": \"default\",\n      \"git\": {\n        \"bundle_root_path\": \".\"\n      }\n    },\n    \"workspace\": {\n      \"file_path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files\"\n    },\n    \"resources\": {},\n    \"presets\": {\n      \"source_linked_deployment\": false\n    }\n  },\n  \"extra\": {}\n}",
+      "format": "AUTO",
+      "overwrite": "true",
+      "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    }
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/import",
+  "body": {
+    "multipart_form": {
+      "content": "{\n  \"version\": 4,\n  \"terraform_version\": \"1.5.5\",\n  \"serial\": 1,\n  \"lineage\": \"[UUID]\",\n  \"outputs\": {},\n  \"resources\": [\n    {\n      \"mode\": \"managed\",\n      \"type\": \"databricks_schema\",\n      \"name\": \"foo\",\n      \"provider\": \"provider[\\\"registry.terraform.io/databricks/databricks\\\"]\",\n      \"instances\": [\n        {\n          \"schema_version\": 0,\n          \"attributes\": {\n            \"catalog_name\": \"mycatalog\",\n            \"comment\": null,\n            \"enable_predictive_optimization\": \"INHERIT\",\n            \"force_destroy\": true,\n            \"id\": \"mycatalog.myschema\",\n            \"metastore_id\": \"[UUID]\",\n            \"name\": \"myschema\",\n            \"owner\": \"[USERNAME]\",\n            \"properties\": null,\n            \"provider_config\": [\n              {\n                \"workspace_id\": \"[NUMID]\"\n              }\n            ],\n            \"schema_id\": \"[UUID]\",\n            \"storage_root\": null\n          },\n          \"sensitive_attributes\": [],\n          \"private\": \"bnVsbA==\"\n        }\n      ]\n    }\n  ],\n  \"check_results\": null\n}\n",
+      "format": "AUTO",
+      "overwrite": "true",
+      "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+    }
   }
 }
 {

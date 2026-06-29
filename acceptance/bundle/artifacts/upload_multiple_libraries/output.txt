@@ -40,15 +40,15 @@ Deployment complete!
 ]
 
 === Expecting 4 wheels to be uploaded
->>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source1.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source2.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source3.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source4.whl"
-"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source1.whl"
-"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source2.whl"
-"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source3.whl"
-"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source4.whl"
+>>> jq -r .body.multipart_form.path | strings
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source1.whl
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source2.whl
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source3.whl
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source4.whl
+/Workspace/foo/bar/artifacts/.internal/source1.whl
+/Workspace/foo/bar/artifacts/.internal/source2.whl
+/Workspace/foo/bar/artifacts/.internal/source3.whl
+/Workspace/foo/bar/artifacts/.internal/source4.whl
 
 === Expecting environment dependencies to be updated
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt

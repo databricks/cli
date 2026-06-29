@@ -1,8 +1,12 @@
 package internal
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -278,12 +282,66 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 
 	if json.Valid(req.Body) {
 		result.Body = json.RawMessage(req.Body)
+	} else if normalized, ok := normalizeMultipartBody(req); ok {
+		// Multipart bodies contain a randomly generated boundary string and binary
+		// content; record a normalized form (sorted form-field names with sizes for
+		// file parts) so recorded requests stay deterministic and reviewable.
+		result.Body = normalized
 	} else {
 		result.RawBody = string(req.Body)
 	}
 
 	return result
 }
+
+// normalizeMultipartBody returns a deterministic representation of a multipart
+// form body if the request's Content-Type is multipart/*. The second return
+// value is false if the body is not multipart or cannot be parsed.
+//
+// Text parts are recorded as their literal content so reviewers can read what
+// was uploaded; existing global UNIX_TIME / UUID / USERNAME replacements
+// normalize the timestamp / id / email fields embedded in deploy.lock and
+// similar payloads. Non-UTF-8 (binary) parts and parts whose serialized
+// content would bloat the recording past multipartContentLimit are
+// summarized as "[binary content N bytes]".
+func normalizeMultipartBody(req *testserver.Request) (any, bool) {
+	contentType := req.Headers.Get("Content-Type")
+	mediaType, params, err := mime.ParseMediaType(contentType)
+	if err != nil || !strings.HasPrefix(mediaType, "multipart/") {
+		return nil, false
+	}
+	boundary := params["boundary"]
+	if boundary == "" {
+		return nil, false
+	}
+	mr := multipart.NewReader(bytes.NewReader(req.Body), boundary)
+	parts := map[string]any{}
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, false
+		}
+		data, err := io.ReadAll(part)
+		if err != nil {
+			return nil, false
+		}
+		name := part.FormName()
+		if !utf8.Valid(data) || len(data) > multipartContentLimit {
+			parts[name] = fmt.Sprintf("[binary content %d bytes]", len(data))
+			continue
+		}
+		parts[name] = string(data)
+	}
+	return map[string]any{"multipart_form": parts}, true
+}
+
+// Multipart parts larger than this limit are summarized as a size placeholder
+// to keep recorded fixtures small. Reviewers care about *what* was uploaded
+// (path, format, overwrite flag), not the bytes themselves, for large blobs.
+const multipartContentLimit = 4096
 
 func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 	headers := make(http.Header)

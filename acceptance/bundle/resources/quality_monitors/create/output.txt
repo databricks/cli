@@ -16,7 +16,7 @@ Table main.qm_test_[UNIQUE_NAME].test_table is now visible (catalog_name=main)
 
 >>> [CLI] bundle plan -o json
 
->>> print_requests.py ^//import-file/ ^//workspace/ ^//telemetry-ext
+>>> print_requests.py ^//workspace/ ^//telemetry-ext
 
 >>> [CLI] bundle plan -o json
 
