@@ -7,10 +7,6 @@ vars:
   # Pinned ruff (linter + formatter). Keep in sync with the version in
   # .github/workflows/check.yml and python/Taskfile.yml.
   RUFF: uvx ruff@0.15.17
-  # First-party Python that `ruff check` lints. The formatter runs over every
-  # *.py in the repo; the linter is scoped here so acceptance fixtures and golden
-  # outputs (intentionally varied) are not linted. ruff config lives in ruff.toml.
-  PY_LINT_PATHS: tools acceptance/bin bundle/direct/tools experimental/ssh libs/testserver python acceptance/install_terraform.py acceptance/dbr_runner.py acceptance/bundle/user_agent/verify.py acceptance/bundle/resources/permissions/analyze_requests.py acceptance/bundle/resources/permissions/factcheck/check_permissions.py
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
@@ -99,7 +95,12 @@ tasks:
       - "**/*.py"
       - ruff.toml
     cmds:
-      - "{{.RUFF}} check {{.PY_LINT_PATHS}}"
+      # Lints the whole repo; fixtures and generated outputs are skipped via
+      # `lint.exclude` / `extend-exclude` in ruff.toml. --no-cache: some excluded
+      # acceptance fixtures carry their own pyproject.toml/ruff.toml (config
+      # roots), so without it ruff writes a .ruff_cache into those checked-in
+      # dirs, polluting the goldens and breaking the acceptance tests.
+      - "{{.RUFF}} check --no-cache ."
 
   # `golangci-lint run` typechecks, so it stops at go.mod boundaries. We have
   # one task per Go module; `lint-go` composes them to cover the whole repo.
@@ -188,9 +189,10 @@ tasks:
       - "**/*.py"
       - ruff.toml
     cmds:
-      # Auto-fix the lint issues that ruff can fix on the scoped scripts; `|| true`
-      # so unfixable findings don't abort fmt (lint-python reports them).
-      - "{{.RUFF}} check --fix {{.PY_LINT_PATHS}} || true"
+      # Auto-fix the lint issues that ruff can fix (whole repo, minus lint.exclude);
+      # `|| true` so unfixable findings don't abort fmt (lint-python reports them).
+      # --no-cache: see lint-python (avoids polluting acceptance fixture goldens).
+      - "{{.RUFF}} check --no-cache --fix . || true"
       # Pinned (via the RUFF var) to match the `ruff format --check` step in
       # .github/workflows/check.yml — newer ruff versions reformat files that
       # CI considers already formatted.

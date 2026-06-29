@@ -1,8 +1,21 @@
 line-length = 120
 
 
-exclude = [
-    "tagging.py" # tagging.py is synced from universe in the `openapi/tagging` directory and follows different format rules.
+# Excluded from BOTH linting and formatting. These must be pruned during
+# directory traversal (not lint-only) because they either follow different rules
+# entirely (tagging.py is synced from universe) or live under their own nested
+# ruff config that a root-level lint exclude cannot reach: the instantiated
+# `bundle init` projects (acceptance/**/output) carry their own pyproject
+# [tool.ruff], and some testdata carries its own .ruff.toml. Formatting these is
+# unnecessary anyway — they are generated outputs and intentionally-varied test
+# inputs. extend-exclude (not exclude) keeps ruff's built-in defaults.
+extend-exclude = [
+    "tagging.py",
+    "acceptance/**/output",
+    # default-sql carries its own .ruff.toml above output/, which re-roots
+    # traversal and shields output/ from the acceptance/**/output prune above.
+    "acceptance/bundle/templates/default-sql",
+    "**/testdata",
 ]
 
 [lint]
@@ -32,6 +45,20 @@ ignore = [
     "RUF001",
     "RUF002",
     "RUF003",
+]
+
+# Excluded from LINTING only — these are still formatted (whole-repo `ruff
+# format` coverage is unchanged). They are acceptance fixtures and template
+# sources that intentionally don't satisfy the lint rules: Databricks notebooks
+# using the injected `spark`/`dbutils` globals, sample wheels, bundle input
+# scripts, and `.py.tmpl` template sources. The /** glob is required (a bare dir
+# name only prunes via the top-level exclude, not here).
+exclude = [
+    ".vscode/**",                 # Pylance __builtins__.pyi stub uses a star-import by design
+    "acceptance/bundle/**",       # acceptance fixtures
+    "acceptance/pipelines/**",    # acceptance fixtures
+    "acceptance/cmd/**",          # acceptance fixtures
+    "libs/template/templates/**", # template sources (.py.tmpl + fixture .py)
 ]
 
 [lint.per-file-ignores]
