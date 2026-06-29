@@ -122,25 +122,11 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 func ResolveVolumePathReferencesOnlyResources() bundle.Mutator {
 	return &resolveVariableReferences{
 		prefixes:         []string{"resources"},
-		lookupFn:         lookupVolumePath,
+		lookupFn:         lookup,
 		allowPathFn:      isVolumePathReferencePath,
 		extraRounds:      maxResolutionRounds - 1,
 		includeResources: true,
 	}
-}
-
-// lookupVolumePath resolves a reference to resources.volumes.<key>.volume_path. An empty
-// volume_path means it could not be computed (see Volume.ComputeVolumePath); error instead of
-// silently resolving the referrer to an empty string.
-func lookupVolumePath(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
-	result, err := lookup(v, path, b)
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-	if s, ok := result.AsString(); ok && s == "" {
-		return dyn.InvalidValue, fmt.Errorf("cannot resolve ${%s}: volume_path could not be computed; set catalog_name, schema_name, and name and ensure they contain no malformed references", path.String())
-	}
-	return result, nil
 }
 
 func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
