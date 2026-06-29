@@ -58,7 +58,7 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 		"effective_predictive_optimization_flag": {
 			"inherited_from_name": "deco-uc-prod-isolated-aws-us-east-1",
 			"inherited_from_type": "METASTORE",
-			"value": "DISABLE"
+			"value": "ENABLE"
 		},
 		"enable_predictive_optimization": "INHERIT",
 		"properties": {"key": "updated_value"},
