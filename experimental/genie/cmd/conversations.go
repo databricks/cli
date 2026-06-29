@@ -10,70 +10,75 @@ import (
 	"github.com/databricks/cli/libs/env"
 )
 
-// Conversation labels are mapped to server conversation ids in
-// ~/.databricks/genie-conversations.json, following the same ~/.databricks JSON
-// store pattern as cmd/sandbox/state.go. The mapping is best-effort: any
-// read/write error fails open and the ask just starts a fresh conversation.
+// A Genie conversation can be continued across CLI calls by giving it a session
+// id (the --session flag). The server only accepts conversation ids it issued,
+// so we map each session id to its server conversation id on disk, in
+// ~/.databricks/genie-conversations.json (the same ~/.databricks JSON-store
+// pattern as cmd/sandbox/state.go). The store is best-effort: any read/write
+// error fails open and the ask just starts a fresh conversation.
 const (
-	conversationStorePath = ".databricks/genie-conversations.json"
+	// conversationStoreName is the store file inside ~/.databricks.
+	conversationStoreName = "genie-conversations.json"
 	conversationDirPerm   = 0o700
 	conversationFilePerm  = 0o600
 
-	// conversationTTL bounds how long a label stays mapped. Genie conversations
-	// are ephemeral server-side and a stale mapping self-heals, so it only needs
-	// to be generous.
+	// conversationTTL is how long a session mapping is kept before it expires.
 	conversationTTL = 14 * 24 * time.Hour
 )
 
+// conversationEntry is the stored server conversation id for one session id,
+// plus when it was last used (for TTL expiry).
 type conversationEntry struct {
-	ID        string    `json:"id"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ConversationID string    `json:"conversation_id"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
-// conversationKey scopes a label by workspace host, so the same label on
-// different workspaces never collides.
-func conversationKey(host, label string) string {
-	return host + "\n" + label
-}
+// conversationStore maps workspace host -> session id -> entry. Scoping by host
+// keeps the same session id on different workspaces from colliding.
+type conversationStore map[string]map[string]conversationEntry
 
-func conversationStoreLocation(ctx context.Context) (string, error) {
+// loadStore reads and parses the on-disk store so a caller can look up or update
+// a session mapping, dropping entries past the TTL. A missing or unreadable file
+// yields an empty store. The resolved file path is returned so a follow-up
+// saveStore knows where to write (empty if the home dir can't be resolved).
+func loadStore(ctx context.Context) (conversationStore, string) {
+	store := conversationStore{}
 	home, err := env.UserHomeDir(ctx)
 	if err != nil {
-		return "", err
+		return store, ""
 	}
-	return filepath.Join(home, conversationStorePath), nil
-}
-
-// loadConversations reads the store, dropping entries past the TTL. A missing or
-// unreadable file yields an empty map. The store path is returned for a
-// follow-up save (empty if it can't be resolved).
-func loadConversations(ctx context.Context) (map[string]conversationEntry, string) {
-	out := map[string]conversationEntry{}
-	path, err := conversationStoreLocation(ctx)
-	if err != nil {
-		return out, ""
-	}
+	// Split path elements (not ".databricks/genie-..."), so the separator is
+	// correct on Windows too.
+	path := filepath.Join(home, ".databricks", conversationStoreName)
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return out, path
+		return store, path
 	}
-	var stored map[string]conversationEntry
+	var stored conversationStore
 	if json.Unmarshal(raw, &stored) != nil {
-		return out, path
+		return store, path
 	}
-	for k, e := range stored {
-		if time.Since(e.UpdatedAt) < conversationTTL {
-			out[k] = e
+	for host, sessions := range stored {
+		for sessionID, e := range sessions {
+			if time.Since(e.UpdatedAt) < conversationTTL {
+				if store[host] == nil {
+					store[host] = map[string]conversationEntry{}
+				}
+				store[host][sessionID] = e
+			}
 		}
 	}
-	return out, path
+	return store, path
 }
 
-func saveConversations(path string, m map[string]conversationEntry) {
+// saveStore writes the store back to path. It writes a temp file in the same
+// directory and renames it into place, so a crash or concurrent reader never
+// sees a half-written file. Errors are ignored: the store is best-effort.
+func saveStore(path string, store conversationStore) {
 	if path == "" {
 		return
 	}
-	raw, err := json.MarshalIndent(m, "", "  ")
+	raw, err := json.MarshalIndent(store, "", "  ")
 	if err != nil {
 		return
 	}
@@ -98,33 +103,37 @@ func saveConversations(path string, m map[string]conversationEntry) {
 	_ = os.Rename(tmp.Name(), path)
 }
 
-// lookupConversationID returns the server conversation id mapped to label on
+// lookupConversationID returns the server conversation id mapped to sessionID on
 // host, or "" if there is no live mapping.
-func lookupConversationID(ctx context.Context, host, label string) string {
-	if label == "" {
+func lookupConversationID(ctx context.Context, host, sessionID string) string {
+	if sessionID == "" {
 		return ""
 	}
-	m, _ := loadConversations(ctx)
-	return m[conversationKey(host, label)].ID
+	store, _ := loadStore(ctx)
+	return store[host][sessionID].ConversationID
 }
 
-// storeConversationID records label -> serverID for later calls.
-func storeConversationID(ctx context.Context, host, label, serverID string) {
-	if label == "" || serverID == "" {
+// storeConversationID records sessionID -> conversationID so a later call with
+// the same session id continues the conversation.
+func storeConversationID(ctx context.Context, host, sessionID, conversationID string) {
+	if sessionID == "" || conversationID == "" {
 		return
 	}
-	m, path := loadConversations(ctx)
-	m[conversationKey(host, label)] = conversationEntry{ID: serverID, UpdatedAt: time.Now()}
-	saveConversations(path, m)
+	store, path := loadStore(ctx)
+	if store[host] == nil {
+		store[host] = map[string]conversationEntry{}
+	}
+	store[host][sessionID] = conversationEntry{ConversationID: conversationID, UpdatedAt: time.Now()}
+	saveStore(path, store)
 }
 
-// forgetConversation drops the mapping for label so the next ask starts fresh.
-// It is called when resuming fails because the server conversation is gone.
-func forgetConversation(ctx context.Context, host, label string) {
-	if label == "" {
+// forgetConversation drops the mapping for sessionID so the next ask starts
+// fresh. It's called when resuming fails because the server conversation is gone.
+func forgetConversation(ctx context.Context, host, sessionID string) {
+	if sessionID == "" {
 		return
 	}
-	m, path := loadConversations(ctx)
-	delete(m, conversationKey(host, label))
-	saveConversations(path, m)
+	store, path := loadStore(ctx)
+	delete(store[host], sessionID)
+	saveStore(path, store)
 }

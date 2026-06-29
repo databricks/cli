@@ -4,10 +4,8 @@ package genie
 type GenieRequest struct {
 	Input       []InputItem `json:"input"`
 	WarehouseID string      `json:"warehouseId,omitempty"`
-	// ConversationID continues an existing conversation, carrying the
-	// conversation_id from a prior response. Empty starts a new one. The request
-	// field is camelCase (matching warehouseId); the snake_case conversation_id
-	// the response uses is NOT read back on the request — verified live.
+	// Tag is camelCase (conversationId), unlike the response's snake_case
+	// conversation_id; the server does not read the snake_case form on input.
 	ConversationID string `json:"conversationId,omitempty"`
 }
 

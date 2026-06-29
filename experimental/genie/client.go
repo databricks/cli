@@ -24,9 +24,10 @@ const genieResponsesPath = "/api/2.0/data-rooms/tools/onechat/responses"
 // is much higher than the SDK's 60s default.
 const StreamingTimeoutSeconds = 600
 
-// BuildRequest creates a GenieRequest for a question. An empty warehouseID is
-// omitted from the wire format and the backend auto-resolves. A non-empty
-// conversationID continues that conversation instead of starting a new one.
+// BuildRequest creates a GenieRequest for a question. warehouseID is the SQL
+// warehouse Genie runs queries on; when empty it is left out of the request and
+// Genie picks a default warehouse itself. A non-empty conversationID continues
+// that conversation instead of starting a new one.
 func BuildRequest(question, warehouseID, conversationID string) GenieRequest {
 	return GenieRequest{
 		Input: []InputItem{

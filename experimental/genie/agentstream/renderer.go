@@ -56,8 +56,9 @@ func RenderDebug(r io.Reader, w io.Writer) error {
 // error: the most damaging historical failure mode of this command was a wire
 // format change making every item unparseable, which rendered nothing and
 // exited 0.
-// It returns the response's conversation id (for follow-up turns) and whether
-// any output reached stdout.
+//
+// Returns the conversation id (for follow-up turns), whether any output was
+// written to stdout, and any error.
 func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts RenderOptions) (string, bool, error) {
 	reader := NewSSEReader(r)
 
@@ -184,7 +185,8 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 // CLI exit non-zero. Status starts as "incomplete" and is only promoted to
 // "completed" by a completion event, so a truncated stream cannot masquerade
 // as a successful one.
-// It returns the response's conversation id for follow-up turns.
+//
+// Returns the conversation id for follow-up turns.
 func RenderJSON(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc) (string, error) {
 	reader := NewSSEReader(r)
 	result := StreamResult{Status: statusIncomplete}
