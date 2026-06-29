@@ -70,6 +70,40 @@ func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMa
 		dconfig.Etag = dstate.ETag
 	}
 
+	// Restore each job run's resolved job_id from state. In config a run's
+	// job_id is a ${resources.jobs.*.id} reference that is only resolved at
+	// deploy, so at read time it is 0; the deployed value lives in state and is
+	// needed to build the run URL. This is written into the dynamic config (not
+	// just the typed struct) because job_id is a serialized field and a later
+	// config round-trip would otherwise reset it to 0 before the URL is built.
+	if err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		for resourceKey, rstate := range state {
+			if !strings.HasPrefix(resourceKey, "resources.job_runs.") || rstate.JobID == 0 {
+				continue
+			}
+			parts := strings.Split(resourceKey, ".")
+			if len(parts) != 3 {
+				continue
+			}
+
+			// Only restore for runs still present in config; a run in state but
+			// not config was deleted and has no URL to build.
+			runPath := dyn.Path{dyn.Key("resources"), dyn.Key("job_runs"), dyn.Key(parts[2])}
+			if run, _ := dyn.GetByPath(v, runPath); !run.IsValid() {
+				continue
+			}
+
+			var err error
+			v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key("job_runs"), dyn.Key(parts[2]), dyn.Key("job_id")}, dyn.V(rstate.JobID))
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+		}
+		return v, nil
+	}); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return nil
 }
 
@@ -130,16 +164,6 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, config *conf
 				v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName), dyn.Key("id")}, dyn.V(attrs.ID))
 				if err != nil {
 					return dyn.InvalidValue, err
-				}
-
-				// A run's job_id in config is a ${resources.jobs.*.id} reference
-				// that is only resolved at deploy, so at read time it is 0.
-				// Restore the deployed value so the run URL can be built.
-				if groupName == "job_runs" && attrs.JobID != 0 {
-					v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName), dyn.Key("job_id")}, dyn.V(attrs.JobID))
-					if err != nil {
-						return dyn.InvalidValue, err
-					}
 				}
 			}
 		}

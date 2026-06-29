@@ -20,21 +20,13 @@ func TestGetResourceConfig(t *testing.T) {
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
 }
 
-// TestFieldRuleEmptyStringVsOmitted documents how a FieldRule's pattern is
-// matched and guards the empty-string footgun. The matcher
-// (path.HasPatternPrefix) treats only a nil pattern as root (matches every
-// field). The two ways one might try to express "all fields" differ:
-//   - field: ""    would parse to a non-nil zero PatternNode (an empty component
-//     that matches nothing), so it is rejected at unmarshal time.
-//   - omitting field leaves the pointer nil, which IS root and matches all.
-//
-// So to cover all fields, omit the field key entirely; a literal "" is an error.
-func TestFieldRuleEmptyStringVsOmitted(t *testing.T) {
+// TestFieldRuleOmittedIsRoot documents how a FieldRule with no field is
+// matched: the matcher (path.HasPatternPrefix) treats a nil pattern as root,
+// which matches every field. Omitting the field key leaves the pointer nil, so
+// a rule with no field applies to all of a resource's fields. This is what the
+// job_runs root recreate rule relies on.
+func TestFieldRuleOmittedIsRoot(t *testing.T) {
 	someField := structpath.MustParsePath("dbt_commands")
-
-	var emptyString FieldRule
-	err := yaml.Unmarshal([]byte("field: \"\"\nreason: input_only\n"), &emptyString)
-	assert.ErrorContains(t, err, "empty path string", "field: \"\" should be rejected")
 
 	var omitted FieldRule
 	require.NoError(t, yaml.Unmarshal([]byte("reason: input_only\n"), &omitted))

@@ -156,9 +156,9 @@ resources:
     # There is no API to modify a run in place, so any change to the request must
     # re-trigger a fresh run. With no DoUpdate, recreate (no-op delete + RunNow)
     # is the only path; every request field is immutable. Omitting `field` makes
-    # the rule match the root, i.e. every field, so any change recreates the run.
-    # (A literal `field: ""` would NOT do this: it parses to an empty component
-    # that matches nothing -- see TestFieldRuleEmptyStringVsOmitted.)
+    # the rule match the root, i.e. every field, so any change recreates the run
+    # (see TestFieldRuleOmittedIsRoot). A literal `field: ""` would NOT do this:
+    # it parses to an empty component that matches nothing.
     recreate_on_changes:
       - reason: immutable
 
