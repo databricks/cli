@@ -93,6 +93,13 @@
 }
 {
   "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state"
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
