@@ -33,7 +33,15 @@ $CLI bundle plan -o json > plan.json 2>LOG.plan_initial.err
 cat LOG.plan_initial.err | contains.py '!panic' '!internal error' > /dev/null
 
 trace $CLI bundle deploy $(readplanarg plan.json) &> LOG.deploy
+deploy_rc=$?
 cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
+
+# A rejected config didn't deploy, so skip the INPUT_CONFIG_OK marker; otherwise
+# the fuzzer reads the re-plan's "needs create" as drift. Curated tests run under
+# `bash -e` and already aborted above, so this only fires in the fuzzer subshell.
+if [ "$deploy_rc" -ne 0 ]; then
+    return "$deploy_rc"
+fi
 deployed=1
 
 # Special message to fuzzer that generated config was fine.
