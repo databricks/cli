@@ -1,0 +1,14 @@
+Local = true
+Cloud = false
+
+# This reproduces databricks/cli#5171. The behaviour is OS-specific (see _script),
+# so the actual test cases live in the posix/ and windows/ leaf directories, each
+# GOOS-gated with its own golden. This directory only holds the shared _script,
+# the notebook fixture, and the config they inherit.
+
+# The exported notebook lands under $TEST_TMP_DIR/export and is not part of the
+# comparison; only the captured command output is.
+Ignore = ["export/"]
+
+[Env]
+MSYS_NO_PATHCONV = "1"

@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -241,13 +242,25 @@ func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config
 	return nil, nil
 }
 
-func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *ClusterState) error {
+func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) error {
 	_, err := r.client.Clusters.Resize(ctx, compute.ResizeCluster{
 		ClusterId:       id,
 		NumWorkers:      config.NumWorkers,
 		Autoscale:       config.Autoscale,
 		ForceSendFields: utils.FilterFields[compute.ResizeCluster](config.ForceSendFields),
 	})
+	if err == nil {
+		return nil
+	}
+
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || apiErr.ErrorCode != "INVALID_STATE" {
+		return err
+	}
+
+	// Cluster is not running; fall back to the full clusters/edit path.
+	log.Debugf(ctx, "cluster %s: resize returned INVALID_STATE (%s), falling back to edit", id, err)
+	_, err = r.DoUpdate(ctx, id, config, entry)
 	return err
 }
 

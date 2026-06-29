@@ -25,7 +25,7 @@ func New() *cobra.Command {
 
 A system schema is a schema that lives within the system catalog. A system
   schema may contain information about customer usage of Unity Catalog such as
-  audit-logs, billing-logs, lineage information, etc.`,
+  audit logs, billing logs, and lineage information.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}

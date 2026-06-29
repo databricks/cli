@@ -1,3 +1,1 @@
 Error: cache: databricks OAuth is not configured for this host. no cached credentials; run `databricks auth login` to sign in
-
-Exit code: 1

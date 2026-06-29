@@ -22,11 +22,12 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
+  "project_id": "test-pg-proj-[UNIQUE_NAME]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
     "default_branch": "[MY_PROJECT_ID]/branches/production",
@@ -58,7 +59,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 === Update display_name and re-deploy
 >>> update_file.py databricks.yml Original Name Updated Name
@@ -95,11 +96,12 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
+  "project_id": "test-pg-proj-[UNIQUE_NAME]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
     "default_branch": "[MY_PROJECT_ID]/branches/production",
@@ -135,11 +137,12 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
+  "project_id": "test-pg-proj-[UNIQUE_NAME]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
     "default_branch": "[MY_PROJECT_ID]/branches/production",

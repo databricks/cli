@@ -1,0 +1,6 @@
+# --path is a dumb dump: no agents, no state, just the files.
+title "dump skills to a directory"
+trace $CLI experimental aitools install --path dumped
+
+title "the skill files were written"
+trace find.py 'dumped.*SKILL.md' --expect 1
