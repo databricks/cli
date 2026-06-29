@@ -87,7 +87,9 @@ class IngestionPipelineDefinition:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Private Preview] Netsuite only configuration. When the field is set for a netsuite connector,
+    the jar stored in the field will be validated and added to the classpath of
+    pipeline's cluster.
     """
 
     objects: VariableOrList[IngestionConfig] = field(default_factory=list)
@@ -166,7 +168,9 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Private Preview] Netsuite only configuration. When the field is set for a netsuite connector,
+    the jar stored in the field will be validated and added to the classpath of
+    pipeline's cluster.
     """
 
     objects: VariableOrList[IngestionConfigParam]

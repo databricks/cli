@@ -1,0 +1,37 @@
+# Mock server replaces raw.githubusercontent.com for manifest + skill files.
+Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_SKILLS_REF = "test-ref"
+
+# --path writes files into the working directory; don't diff them.
+Ignore = [
+    "dumped",
+]
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+
+[[Server]]
+Pattern = "GET /test-ref/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "test-stable": {
+      "version": "1.0.0",
+      "description": "Stable test skill",
+      "files": ["SKILL.md"],
+      "repo_dir": "skills"
+    }
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /test-ref/skills/test-stable/SKILL.md"
+Response.Body = '''---
+name: test-stable
+---
+
+# Test stable skill
+'''

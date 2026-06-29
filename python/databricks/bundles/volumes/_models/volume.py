@@ -45,10 +45,13 @@ class Volume(Resource):
     """
 
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
+    """
+    The Unity Catalog privileges to grant to principals on this securable.
+    """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     storage_location: VariableOrOptional[str] = None
@@ -57,6 +60,11 @@ class Volume(Resource):
     """
 
     volume_type: VariableOrOptional[VolumeType] = None
+    """
+    The type of the volume. An external volume is located in the specified external location.
+    A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.
+    [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
+    """
 
     @classmethod
     def from_dict(cls, value: "VolumeDict") -> "Self":
@@ -90,10 +98,13 @@ class VolumeDict(TypedDict, total=False):
     """
 
     grants: VariableOrList[PrivilegeAssignmentParam]
+    """
+    The Unity Catalog privileges to grant to principals on this securable.
+    """
 
     lifecycle: VariableOrOptional[LifecycleParam]
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     storage_location: VariableOrOptional[str]
@@ -102,6 +113,11 @@ class VolumeDict(TypedDict, total=False):
     """
 
     volume_type: VariableOrOptional[VolumeTypeParam]
+    """
+    The type of the volume. An external volume is located in the specified external location.
+    A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.
+    [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
+    """
 
 
 VolumeParam = VolumeDict | Volume

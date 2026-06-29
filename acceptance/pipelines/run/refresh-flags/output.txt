@@ -21,16 +21,16 @@ Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "refresh_selection": [
       "table1",
       "table2"
     ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }
 
 === Running pipeline with --full-refresh-all flag
@@ -48,13 +48,13 @@ Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "full_refresh": true
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }
 
 === Running pipeline with --full-refresh flag and specific tables
@@ -72,16 +72,16 @@ Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "full_refresh_selection": [
       "table1",
       "table2"
     ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }
 
 === Running pipeline with --full-refresh flag and --refresh flag
@@ -99,8 +99,10 @@ Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "full_refresh_selection": [
       "table1",
@@ -110,7 +112,5 @@ Pipeline configurations for this update:
       "table3",
       "table4"
     ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }

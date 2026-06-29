@@ -46,8 +46,16 @@ type PostgresRoleRemote struct {
 	UpdateTime *sdktime.Time            `json:"update_time,omitempty"`
 }
 
-// Custom marshaler needed because embedded RoleRoleSpec has its own MarshalJSON
+// Custom marshalers needed because embedded RoleRoleSpec has its own MarshalJSON
 // which would otherwise take over and ignore the additional fields.
+func (s *PostgresRoleState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PostgresRoleState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
 func (s *PostgresRoleRemote) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
 }
@@ -85,13 +93,9 @@ func makePostgresRoleRemote(role *postgres.Role) *PostgresRoleRemote {
 	if role.Spec != nil {
 		spec = *role.Spec
 	}
-	var roleID string
-	if role.Status != nil {
-		roleID = role.Status.RoleId
-	}
 	return &PostgresRoleRemote{
 		RoleRoleSpec: spec,
-		RoleId:       roleID,
+		RoleId:       role.RoleId,
 		Parent:       role.Parent,
 		Name:         role.Name,
 		Status:       role.Status,
@@ -116,6 +120,7 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 			Spec: &config.RoleRoleSpec,
 
 			// Output-only fields.
+			RoleId:          "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",
@@ -150,6 +155,7 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 			Spec: &config.RoleRoleSpec,
 
 			// Output-only fields.
+			RoleId:          "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",
