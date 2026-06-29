@@ -285,8 +285,7 @@ func skillPrunable(ctx context.Context, baseDir, skillName, scope, cwd string, s
 	if !dirMatchesRecords(canonicalDir, skillName, state) {
 		return false
 	}
-	for i := range agents.Registry {
-		agent := &agents.Registry[i]
+	for _, agent := range agents.Registry {
 		if scope == ScopeProject && !agent.SupportsProjectScope {
 			continue
 		}
@@ -306,8 +305,7 @@ func skillPrunable(ctx context.Context, baseDir, skillName, scope, cwd string, s
 // call after skillPrunable has confirmed everything is removable.
 func removeSkillExposures(ctx context.Context, baseDir, skillName, scope, cwd string, state *InstallState) {
 	canonicalDir := filepath.Join(baseDir, skillName)
-	for i := range agents.Registry {
-		agent := &agents.Registry[i]
+	for _, agent := range agents.Registry {
 		if scope == ScopeProject && !agent.SupportsProjectScope {
 			continue
 		}

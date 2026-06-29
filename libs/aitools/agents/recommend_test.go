@@ -25,7 +25,7 @@ func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 	require.NoError(t, os.MkdirAll(agentDir, 0o755))
 
 	origRegistry := Registry
-	Registry = []Agent{
+	Registry = []*Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
@@ -45,7 +45,7 @@ func TestRecommendSkillsInstallSkipsWhenNoAgents(t *testing.T) {
 	t.Setenv("USERPROFILE", tmp)
 
 	origRegistry := Registry
-	Registry = []Agent{}
+	Registry = []*Agent{}
 	defer func() { Registry = origRegistry }()
 
 	ctx := cmdio.MockDiscard(t.Context())
@@ -59,7 +59,7 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 	t.Setenv("USERPROFILE", tmpDir)
 
 	origRegistry := Registry
-	Registry = []Agent{
+	Registry = []*Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
@@ -80,7 +80,7 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 	t.Setenv("USERPROFILE", tmpDir)
 
 	origRegistry := Registry
-	Registry = []Agent{
+	Registry = []*Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",

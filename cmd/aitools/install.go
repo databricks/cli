@@ -182,8 +182,7 @@ func selectAgents(ctx context.Context, scope string, skillsOnly bool) ([]*agents
 	}
 
 	var selected []*agents.Agent
-	for i := range agents.Registry {
-		a := &agents.Registry[i]
+	for _, a := range agents.Registry {
 		detected := a.Detected(ctx)
 		if !skillsOnly {
 			detected = detected || a.HasBinary(ctx)
@@ -199,8 +198,7 @@ func selectAgents(ctx context.Context, scope string, skillsOnly bool) ([]*agents
 func agentChoices(ctx context.Context) []agentChoice {
 	cmdio.LogString(ctx, "Detecting coding agents...")
 	choices := make([]agentChoice, 0, len(agents.Registry))
-	for i := range agents.Registry {
-		a := &agents.Registry[i]
+	for _, a := range agents.Registry {
 		choices = append(choices, agentChoice{
 			agent:     a,
 			label:     a.DisplayName + "  " + agentStateLabel(a.DisplayState(ctx)),
@@ -394,8 +392,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 func resolveAgentNames(_ context.Context, names string) ([]*agents.Agent, error) {
 	available := make(map[string]*agents.Agent, len(agents.Registry))
 	var availableNames []string
-	for i := range agents.Registry {
-		a := &agents.Registry[i]
+	for _, a := range agents.Registry {
 		available[a.Name] = a
 		availableNames = append(availableNames, a.Name)
 	}
