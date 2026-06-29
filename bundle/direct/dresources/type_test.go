@@ -23,15 +23,7 @@ var knownMissingInRemoteType = map[string][]string{
 		"skip_validation",
 	},
 	"model_serving_endpoints": {
-		"ai_gateway",
-		"budget_policy_id",
-		"config",
-		"description",
-		"email_notifications",
-		"name",
 		"rate_limits",
-		"route_optimized",
-		"tags",
 	},
 	"quality_monitors": {
 		"skip_builtin_dashboard",
@@ -53,7 +45,6 @@ var knownMissingInRemoteType = map[string][]string{
 		"purge_on_delete",
 	},
 	"vector_search_endpoints": {
-		"target_qps",
 		"usage_policy_id",
 	},
 }

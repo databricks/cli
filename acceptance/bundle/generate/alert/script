@@ -3,6 +3,7 @@ trace $CLI workspace mkdirs /Workspace/test-$UNIQUE_NAME
 # create an alert to import
 envsubst < alert.json.tmpl > alert.json
 alert_id=$($CLI alerts-v2 create-alert --json @alert.json | jq -r '.id')
+echo "$alert_id:ALERT_ID" >> ACC_REPLS
 rm alert.json
 
 trace $CLI bundle generate alert --existing-id $alert_id --source-dir out/alert --config-dir out/resource
