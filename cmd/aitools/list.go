@@ -75,25 +75,28 @@ type listOutput struct {
 	Agents  []agentEntry            `json:"agents,omitempty"`
 }
 
-// agentEntry reports per-agent plugin state for `list`.
+// agentEntry reports per-agent plugin state for `list`. It mirrors skillEntry:
+// Installed maps scope -> the plugin recorded in that scope, so a stale scoped
+// install stays visible next to an up-to-date one. Managed says whether the CLI
+// installs and tracks the plugin (false for Cursor, which is added manually).
+// Up-to-date-ness is derived by comparing each Installed version against the
+// top-level release, exactly as the skills view does, so there is no
+// precomputed cross-scope status to keep in sync.
 type agentEntry struct {
-	Name   string      `json:"name"`
-	Plugin *pluginInfo `json:"plugin,omitempty"`
-	Status string      `json:"status"`
+	Name      string                `json:"name"`
+	Managed   bool                  `json:"managed"`
+	Installed map[string]pluginInfo `json:"installed,omitempty"`
+	// Status carries the manual-add hint for agents whose plugin can't be
+	// installed headlessly (Cursor); empty for CLI-managed agents.
+	Status string `json:"status,omitempty"`
 }
 
+// pluginInfo is the per-scope plugin record surfaced in list output.
 type pluginInfo struct {
 	Version string `json:"version,omitempty"`
-	// Managed is true when the CLI installed and tracks the plugin; false for
-	// agents whose plugin is added manually (Cursor).
-	Managed bool `json:"managed"`
 }
 
-const (
-	statusUpToDate        = "up_to_date"
-	statusUpdateAvailable = "update_available"
-	statusManualAddPlugin = "manual_add_plugin"
-)
+const statusManualAddPlugin = "manual_add_plugin"
 
 type skillEntry struct {
 	Name          string            `json:"name"`
@@ -187,56 +190,46 @@ func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
 		out.Summary[installer.ScopeProject] = scopeSummary{Installed: projectCount, Total: len(names), loaded: projectState != nil}
 	}
 
-	out.Agents = buildAgentEntries(ctx, out.Release, globalState, projectState)
+	// Filter unloaded scopes here so buildAgentEntries can assume every state
+	// it receives is non-nil.
+	states := map[string]*installer.InstallState{}
+	if globalState != nil {
+		states[installer.ScopeGlobal] = globalState
+	}
+	if projectState != nil {
+		states[installer.ScopeProject] = projectState
+	}
+	out.Agents = buildAgentEntries(ctx, states)
 
 	return out, nil
 }
 
-// buildAgentEntries reports the real per-agent plugin state: each plugin agent
-// with a recorded install, plus Cursor (which is added manually) when present.
-// When a plugin is recorded in more than one scope, status aggregates across
-// them (any out-of-date scope reports update_available) and version reflects the
-// record that determined the status, so a stale scoped install is never hidden
-// behind an up-to-date one.
-func buildAgentEntries(ctx context.Context, release string, states ...*installer.InstallState) []agentEntry {
+// buildAgentEntries reports per-agent plugin state: each plugin agent with a
+// recorded install (its version per scope), plus Cursor (which is added
+// manually) when present. states maps scope -> install state and must contain
+// only non-nil states; the caller filters scopes it did not load. Status across
+// scopes is left for the renderer (and JSON consumers) to derive from the
+// per-scope versions, so no cross-scope record is merged away here.
+func buildAgentEntries(ctx context.Context, states map[string]*installer.InstallState) []agentEntry {
 	var entries []agentEntry
-	for i := range agents.Registry {
-		a := &agents.Registry[i]
+	for _, a := range agents.Registry {
 		if a.Plugin == nil {
 			continue
 		}
 
-		var info *pluginInfo
-		status := statusUpToDate
-		for _, st := range states {
-			if st == nil {
-				continue
-			}
-			rec, ok := st.Plugins[a.Name]
-			if !ok {
-				continue
-			}
-			recStatus := statusUpToDate
-			if rec.Version != release {
-				recStatus = statusUpdateAvailable
-			}
-			// Prefer reporting a stale record so an out-of-date scope is visible.
-			if info == nil || (status == statusUpToDate && recStatus == statusUpdateAvailable) {
-				info = &pluginInfo{Version: rec.Version, Managed: true}
-				status = recStatus
+		installed := map[string]pluginInfo{}
+		for scope, st := range states {
+			if rec, ok := st.Plugins[a.Name]; ok {
+				installed[scope] = pluginInfo{Version: rec.Version}
 			}
 		}
-		if info != nil {
-			entries = append(entries, agentEntry{Name: a.Name, Plugin: info, Status: status})
+		if len(installed) > 0 {
+			entries = append(entries, agentEntry{Name: a.Name, Managed: true, Installed: installed})
 			continue
 		}
 
 		if a.Plugin.ManualOnly && (a.Detected(ctx) || a.HasBinary(ctx)) {
-			entries = append(entries, agentEntry{
-				Name:   a.Name,
-				Plugin: &pluginInfo{Managed: false},
-				Status: statusManualAddPlugin,
-			})
+			entries = append(entries, agentEntry{Name: a.Name, Status: statusManualAddPlugin})
 		}
 	}
 	return entries
@@ -297,22 +290,41 @@ func renderListText(ctx context.Context, out listOutput, scope string) {
 		atw := tabwriter.NewWriter(&ab, 0, 4, 2, ' ', 0)
 		fmt.Fprintln(atw, "  AGENT\tSTATUS")
 		for _, a := range out.Agents {
-			fmt.Fprintf(atw, "  %s\t%s\n", a.Name, agentStatusLabel(a))
+			fmt.Fprintf(atw, "  %s\t%s\n", a.Name, agentStatusLabel(a, out.Release))
 		}
 		atw.Flush()
 		cmdio.LogString(ctx, ab.String())
 	}
 }
 
-func agentStatusLabel(a agentEntry) string {
-	switch a.Status {
-	case statusManualAddPlugin:
+// agentStatusLabel renders the text-view status for an agent, collapsing the
+// per-scope plugin records into a single line. A stale scope (version !=
+// release) is surfaced over an up-to-date one so an outdated install is never
+// hidden; project is preferred when every scope matches release.
+func agentStatusLabel(a agentEntry, release string) string {
+	if a.Status == statusManualAddPlugin {
 		return "plugin · add manually with /add-plugin"
-	case statusUpdateAvailable:
-		return "plugin · v" + a.Plugin.Version + " · update available"
-	default:
-		return "plugin · v" + a.Plugin.Version + " · up to date"
 	}
+
+	version, upToDate := "", true
+	for _, scope := range []string{installer.ScopeProject, installer.ScopeGlobal} {
+		info, ok := a.Installed[scope]
+		if !ok {
+			continue
+		}
+		stale := info.Version != release
+		if version == "" || (upToDate && stale) {
+			version = info.Version
+		}
+		if stale {
+			upToDate = false
+		}
+	}
+
+	if upToDate {
+		return "plugin · v" + version + " · up to date"
+	}
+	return "plugin · v" + version + " · update available"
 }
 
 func installedStatusFromEntry(s skillEntry, bothScopes bool) string {

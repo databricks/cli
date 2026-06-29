@@ -110,8 +110,12 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 		Skills:  []skillEntry{},
 		Summary: map[string]scopeSummary{installer.ScopeGlobal: {Installed: 0, Total: 0}},
 		Agents: []agentEntry{
-			{Name: "claude-code", Plugin: &pluginInfo{Version: "0.2.6", Managed: true}, Status: statusUpToDate},
-			{Name: "cursor", Plugin: &pluginInfo{Managed: false}, Status: statusManualAddPlugin},
+			{
+				Name:      "claude-code",
+				Managed:   true,
+				Installed: map[string]pluginInfo{installer.ScopeGlobal: {Version: "0.2.6"}},
+			},
+			{Name: "cursor", Status: statusManualAddPlugin},
 		},
 	}
 
@@ -127,16 +131,18 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 
 	agentsRaw := raw["agents"].([]any)
 	require.Len(t, agentsRaw, 2)
+
 	first := agentsRaw[0].(map[string]any)
 	assert.Equal(t, "claude-code", first["name"])
-	assert.Equal(t, "up_to_date", first["status"])
-	plugin := first["plugin"].(map[string]any)
-	assert.Equal(t, "0.2.6", plugin["version"])
-	assert.Equal(t, true, plugin["managed"])
+	assert.Equal(t, true, first["managed"])
+	installed := first["installed"].(map[string]any)
+	global := installed["global"].(map[string]any)
+	assert.Equal(t, "0.2.6", global["version"])
 
 	second := agentsRaw[1].(map[string]any)
+	assert.Equal(t, "cursor", second["name"])
+	assert.Equal(t, false, second["managed"])
 	assert.Equal(t, "manual_add_plugin", second["status"])
-	assert.Equal(t, false, second["plugin"].(map[string]any)["managed"])
 }
 
 func TestBuildAgentEntries(t *testing.T) {
@@ -153,32 +159,40 @@ func TestBuildAgentEntries(t *testing.T) {
 		},
 	}
 
-	entries := buildAgentEntries(ctx, "0.2.6", globalState, nil)
+	entries := buildAgentEntries(ctx, map[string]*installer.InstallState{
+		installer.ScopeGlobal: globalState,
+	})
 	byName := map[string]agentEntry{}
 	for _, e := range entries {
 		byName[e.Name] = e
 	}
 
 	require.Contains(t, byName, "claude-code")
-	assert.Equal(t, statusUpToDate, byName["claude-code"].Status)
-	assert.True(t, byName["claude-code"].Plugin.Managed)
+	assert.True(t, byName["claude-code"].Managed)
+	assert.Equal(t, "0.2.6", byName["claude-code"].Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "plugin · v0.2.6 · up to date", agentStatusLabel(byName["claude-code"], "0.2.6"))
 
 	require.Contains(t, byName, "codex")
-	assert.Equal(t, statusUpdateAvailable, byName["codex"].Status)
+	assert.True(t, byName["codex"].Managed)
+	assert.Equal(t, "0.2.5", byName["codex"].Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "plugin · v0.2.5 · update available", agentStatusLabel(byName["codex"], "0.2.6"))
 
 	// Cursor is detected (config dir) but never CLI-managed.
 	require.Contains(t, byName, "cursor")
+	assert.False(t, byName["cursor"].Managed)
 	assert.Equal(t, statusManualAddPlugin, byName["cursor"].Status)
-	assert.False(t, byName["cursor"].Plugin.Managed)
+	assert.Empty(t, byName["cursor"].Installed)
+	assert.Equal(t, "plugin · add manually with /add-plugin", agentStatusLabel(byName["cursor"], "0.2.6"))
 }
 
-func TestBuildAgentEntriesAggregatesScopeStatus(t *testing.T) {
+func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 	t.Setenv("USERPROFILE", tmp)
 	ctx := cmdio.MockDiscard(t.Context())
 
-	// Same agent recorded in both scopes: global current, project stale.
+	// Same agent recorded in both scopes: global current, project stale. Both
+	// versions are recorded; no scope is merged away.
 	globalState := &installer.InstallState{Plugins: map[string]installer.PluginRecord{
 		"claude-code": {Plugin: "databricks", Version: "0.2.6"},
 	}}
@@ -186,16 +200,24 @@ func TestBuildAgentEntriesAggregatesScopeStatus(t *testing.T) {
 		"claude-code": {Plugin: "databricks", Version: "0.2.5"},
 	}}
 
-	entries := buildAgentEntries(ctx, "0.2.6", globalState, projectState)
+	entries := buildAgentEntries(ctx, map[string]*installer.InstallState{
+		installer.ScopeGlobal:  globalState,
+		installer.ScopeProject: projectState,
+	})
 	byName := map[string]agentEntry{}
 	for _, e := range entries {
 		byName[e.Name] = e
 	}
 
 	require.Contains(t, byName, "claude-code")
-	// The stale scope must surface, not be hidden behind the up-to-date one.
-	assert.Equal(t, statusUpdateAvailable, byName["claude-code"].Status)
-	assert.Equal(t, "0.2.5", byName["claude-code"].Plugin.Version)
+	cc := byName["claude-code"]
+	assert.True(t, cc.Managed)
+	assert.Equal(t, "0.2.6", cc.Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "0.2.5", cc.Installed[installer.ScopeProject].Version)
+
+	// The renderer collapses the scopes and surfaces the stale one, rather than
+	// hiding it behind the up-to-date scope.
+	assert.Equal(t, "plugin · v0.2.5 · update available", agentStatusLabel(cc, "0.2.6"))
 }
 
 func TestRenderListJSONScopeFiltersSummary(t *testing.T) {

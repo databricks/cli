@@ -161,8 +161,7 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 // in the registry, but only if the entry is a symlink pointing into canonicalDir.
 // Non-symlink directories are left untouched to avoid deleting user-managed content.
 func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string) {
-	for i := range agents.Registry {
-		agent := &agents.Registry[i]
+	for _, agent := range agents.Registry {
 		if scope == ScopeProject && !agent.SupportsProjectScope {
 			continue
 		}
@@ -218,8 +217,7 @@ func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scop
 // cleanOrphanedSymlinks scans all agent skill directories for symlinks pointing
 // into baseDir that are not tracked in state, and removes them.
 func cleanOrphanedSymlinks(ctx context.Context, baseDir, scope, cwd string) {
-	for i := range agents.Registry {
-		agent := &agents.Registry[i]
+	for _, agent := range agents.Registry {
 		if scope == ScopeProject && !agent.SupportsProjectScope {
 			continue
 		}

@@ -132,8 +132,9 @@ func databricksPlugin() *PluginSpec {
 	}
 }
 
-// Registry contains all supported agents.
-var Registry = []Agent{
+// Registry contains all supported agents. It holds pointers so callers can take
+// an *Agent without the &Registry[i] dance and call its pointer-receiver methods.
+var Registry = []*Agent{
 	{
 		Name:                 NameClaudeCode,
 		DisplayName:          "Claude Code",
@@ -217,9 +218,9 @@ func openCodeConfigDir(ctx context.Context) (string, error) {
 
 // ByName returns the registry agent with the given name, or nil if not found.
 func ByName(name string) *Agent {
-	for i := range Registry {
-		if Registry[i].Name == name {
-			return &Registry[i]
+	for _, a := range Registry {
+		if a.Name == name {
+			return a
 		}
 	}
 	return nil
@@ -228,9 +229,9 @@ func ByName(name string) *Agent {
 // DetectInstalled returns all agents that are installed on the system.
 func DetectInstalled(ctx context.Context) []*Agent {
 	var installed []*Agent
-	for i := range Registry {
-		if Registry[i].Detected(ctx) {
-			installed = append(installed, &Registry[i])
+	for _, a := range Registry {
+		if a.Detected(ctx) {
+			installed = append(installed, a)
 		}
 	}
 	return installed
