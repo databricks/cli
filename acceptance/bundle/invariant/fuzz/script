@@ -13,7 +13,8 @@
 #
 # Drift checking is opt-in (FUZZ_CHECK_DRIFT): a freshly deployed random config can
 # legitimately differ from the fake server's state, so the local/PR run asserts only
-# the cheap no-panic invariant. The nightly job enables drift on a real workspace.
+# the cheap no-panic invariant. The nightly job runs this same harness against the
+# fake server with a wider seed window and drift on (see Taskfile.yml test-fuzz).
 
 START="${FUZZ_SEED_START:-0}"
 COUNT="${FUZZ_SEED_COUNT:-5}"
@@ -27,11 +28,12 @@ for ((offset = 0; offset < COUNT; offset++)); do
     dir="seed-$seed"
     mkdir -p "$dir"
 
-    gen_fuzz_config.py --schema schema.json --seed "$seed" --unique "$UNIQUE_NAME-$seed" --resources "${FUZZ_RESOURCES:-}" > "$dir/databricks.yml" 2>"$dir/LOG.gen.err"
-    cat "$dir/LOG.gen.err" | contains.py '!Traceback' > /dev/null
-
+    # Run inside the subshell so a generator crash also prints the repro hint below.
     (
         cd "$dir"
+
+        gen_fuzz_config.py --schema ../schema.json --seed "$seed" --unique "$UNIQUE_NAME-$seed" --resources "${FUZZ_RESOURCES:-}" > databricks.yml 2>LOG.gen.err
+        cat LOG.gen.err | contains.py '!Traceback' > /dev/null
 
         # The CLI is allowed to reject a generated config, but never to crash.
         set +e
