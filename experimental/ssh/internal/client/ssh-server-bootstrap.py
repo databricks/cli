@@ -1,15 +1,16 @@
-from dbruntime.databricks_repl_context import get_context
-from databricks.sdk import WorkspaceClient
-import os
-import sys
-import subprocess
+import atexit
 import collections
 import ctypes
 import ctypes.util
-import signal
-import atexit
+import os
 import platform
+import signal
+import subprocess
+import sys
 import time
+
+from databricks.sdk import WorkspaceClient
+from dbruntime.databricks_repl_context import get_context
 
 SSH_TUNNEL_BASENAME = "databricks_cli"
 
@@ -85,7 +86,7 @@ def run_ssh_server():
     # Old DBRs require explicit WorkspaceClient arguments
     try:
         client = WorkspaceClient()
-    except Exception as e:
+    except Exception:
         client = WorkspaceClient(
             host=ctx.workspaceUrl or spark.conf.get("spark.databricks.workspaceUrl"), token=ctx.apiToken
         )

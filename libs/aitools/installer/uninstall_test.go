@@ -139,7 +139,7 @@ func TestUninstallNoStateReturnsError(t *testing.T) {
 
 	err := UninstallSkills(ctx)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no skills installed")
+	assert.Contains(t, err.Error(), "no skills or plugins installed")
 }
 
 func TestUninstallHandlesMissingDirectories(t *testing.T) {

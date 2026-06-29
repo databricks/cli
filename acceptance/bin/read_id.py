@@ -8,14 +8,14 @@ Print id of the resource from the state. Update ACC_REPLS for a given ID.
 Usage: <group> <name> [attr...]
 """
 
-import sys
-import json
 import argparse
+import json
+import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from print_state import get_state_file
 from add_repl import add_repl
+from print_state import get_state_file
 
 
 def get_id_terraform(filename, name):

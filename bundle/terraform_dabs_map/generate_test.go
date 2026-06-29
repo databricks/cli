@@ -46,7 +46,7 @@ var tfTypes = func() map[string]reflect.Type {
 	m := make(map[string]reflect.Type, rt.NumField())
 	for f := range rt.Fields() {
 		tag := f.Tag.Get("json")
-		tfType := strings.SplitN(tag, ",", 2)[0]
+		tfType, _, _ := strings.Cut(tag, ",")
 		if tfType != "" && tfType != "-" {
 			m[tfType] = f.Type
 		}
