@@ -1,0 +1,9 @@
+mkdir -p .databricks/bundle/default
+
+title "a state recording a known feature flag is accepted"
+cp resources.known.json .databricks/bundle/default/resources.json
+trace $CLI bundle plan | contains.py "Plan:"
+
+title "a state recording an unknown feature flag is rejected"
+cp resources.unknown.json .databricks/bundle/default/resources.json
+trace errcode $CLI bundle plan 2>&1 | contains.py 'requires feature "future_feature"' "upgrade to 9.9.9 or newer"

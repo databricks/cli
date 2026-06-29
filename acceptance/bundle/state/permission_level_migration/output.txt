@@ -12,7 +12,7 @@ Deployment complete!
 === Print state after deploy
 >>> print_state.py
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[DEV_VERSION]",
  "lineage": "test-lineage",
  "serial": 2,
