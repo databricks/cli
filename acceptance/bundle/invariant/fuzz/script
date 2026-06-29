@@ -1,20 +1,16 @@
-# Invariant to test: the CLI never panics or hits an internal error on any config
-# generated from the bundle schema, and a config that deploys cleanly has no drift.
+# Invariant: the CLI never panics or hits an internal error on any config generated
+# from the bundle schema, and a config that deploys cleanly has no drift.
 #
-# gen_fuzz_config.py walks the schema emitted by the CLI under test and produces a
-# random-but-schema-valid config. Most invariant work is shared with the no_drift
-# test; the difference is the input is generated, not a curated template.
+# gen_fuzz_config.py walks the schema emitted by the CLI under test to produce a
+# random schema-valid config; the rest is shared with the no_drift test.
 #
-# Seeds form a window [START, START+COUNT). The window is env-driven so the nightly
-# job can sweep a wide, non-overlapping range (see Taskfile.yml test-fuzz) while this
-# committed test stays small and deterministic. Everything is routed to LOG.* / *.json
-# so output.txt stays empty regardless of the window: a violation fails via exit code,
-# not via output diff, which is what lets the same test run under any seed window.
+# Seeds form a window [START, START+COUNT), env-driven so the nightly job can sweep a
+# wide non-overlapping range while this committed test stays small. All output goes to
+# LOG.* / *.json so output.txt stays empty: a violation fails via exit code, not diff,
+# which lets the same test run under any seed window.
 #
-# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a freshly deployed random config can
-# legitimately differ from the fake server's state, so the local/PR run asserts only
-# the cheap no-panic invariant. The nightly job runs this same harness against the
-# fake server with a wider seed window and drift on (see Taskfile.yml test-fuzz).
+# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a fresh random config can legitimately
+# differ from the fake server's state, so the PR run only asserts no-panic.
 
 START="${FUZZ_SEED_START:-0}"
 COUNT="${FUZZ_SEED_COUNT:-5}"
@@ -28,7 +24,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
     dir="seed-$seed"
     mkdir -p "$dir"
 
-    # Run inside the subshell so a generator crash also prints the repro hint below.
+    # Subshell so a generator crash also prints the repro hint below.
     (
         cd "$dir"
 
@@ -43,8 +39,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
         set -e
         cat LOG.validate LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
 
-        # Deploy failed => config was rejected (not a bug). This is the negative of
-        # the no_drift test's INPUT_CONFIG_OK marker: nothing more to assert.
+        # Deploy failed => config was rejected, not a bug; nothing more to assert.
         if [ "$deploy_rc" -ne 0 ]; then
             exit 0
         fi

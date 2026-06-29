@@ -374,10 +374,9 @@ jobs:
     needs:
       - cleanups
 
-    # Sweeps a wide rotating seed window against the fake server with the no-drift
-    # invariant on: too slow for every PR, so nightly only and not part of
-    # test-result. (The committed acceptance fuzz test still checks the no-panic
-    # invariant on a small fixed seed window on every PR.)
+    # Wide rotating seed window with drift checking on: too slow for every PR, so
+    # nightly only and not part of test-result. The committed acceptance test still
+    # checks the no-panic invariant on a small fixed window per PR.
     if: ${{ github.event_name == 'schedule' }}
     name: "task test-fuzz"
     runs-on:
@@ -391,7 +390,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      # Needed by the failure-reporting step below to open/comment a tracking issue.
+      # Failure-reporting step opens/comments a tracking issue.
       issues: write
 
     steps:
@@ -405,16 +404,15 @@ jobs:
 
       - name: Run tests
         env:
-          # Shift the seed window each nightly run so CI explores new configs.
-          # start = GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT keeps windows non-overlapping
-          # (GITHUB_RUN_NUMBER is monotonic). A failure prints the failing seed.
+          # start = monotonic GITHUB_RUN_NUMBER * COUNT keeps each nightly window
+          # non-overlapping, so CI explores new configs every run.
           FUZZ_SEED_COUNT: "25"
         run: |
           export FUZZ_SEED_START=$(( GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
-      # Excluded from test-result, so surface failures as a GitHub issue. Reuse one
-      # open issue (deduped by label) so a recurring failure doesn't spam nightly.
+      # Not in test-result, so surface failures as an issue. Reuse one open issue
+      # (deduped by label) so a recurring failure doesn't spam nightly.
       - name: Report failure
         if: ${{ failure() }}
         env:
