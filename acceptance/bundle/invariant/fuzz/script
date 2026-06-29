@@ -2,18 +2,35 @@
 # from the bundle schema, and a config that deploys cleanly has no drift.
 #
 # gen_fuzz_config.py walks the schema emitted by the CLI under test to produce a
-# random schema-valid config; the rest is shared with the no_drift test.
+# random schema-valid config; the no-drift / no-panic checks are the shared
+# ../no_drift.sh body, the same one the no_drift test runs. Reusing it keeps the
+# deploy/drift/destroy assertions in one place and lets other invariant tests be
+# fuzzed the same way.
 #
 # Seeds form a window [START, START+COUNT), env-driven so the nightly job can sweep a
 # wide non-overlapping range while this committed test stays small. All output goes to
-# LOG.* / *.json so output.txt stays empty: a violation fails via exit code, not diff,
-# which lets the same test run under any seed window.
+# LOG.* so output.txt stays empty: a violation fails via exit code, not diff, which
+# lets the same test run under any seed window.
 #
-# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a fresh random config can legitimately
-# differ from the fake server's state, so the PR run only asserts no-panic.
+# The CLI is free to reject a generated config; that is not a bug. ../no_drift.sh
+# prints INPUT_CONFIG_OK once a config deploys cleanly, so a non-zero result before
+# that marker (with no panic) means the config was rejected and is skipped, while a
+# panic anywhere or a failure after the marker (drift, destroy) is a real CLI bug.
+#
+# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a fresh random config can deploy yet
+# legitimately differ from the fake server's state, so the committed run only asserts
+# no-panic and tells ../no_drift.sh to skip its drift assertion.
 
 START="${FUZZ_SEED_START:-0}"
 COUNT="${FUZZ_SEED_COUNT:-5}"
+
+if [ -z "${FUZZ_CHECK_DRIFT:-}" ]; then
+    export SKIP_DRIFT_CHECK=1
+fi
+
+# no_drift.sh deploys via readplanarg, which reads READPLAN; the fuzzer doesn't use
+# the saved-plan matrix, so deploy once without it (and satisfy the script's set -u).
+export READPLAN=""
 
 # Emit the schema from the CLI under test so the generator always matches it.
 $CLI bundle schema > schema.json 2>LOG.schema.err
@@ -24,36 +41,36 @@ for ((offset = 0; offset < COUNT; offset++)); do
     dir="seed-$seed"
     mkdir -p "$dir"
 
-    # Subshell so a generator crash also prints the repro hint below.
+    # Subshell so a generator crash or shared-check failure is contained per seed.
+    set +e
     (
         cd "$dir"
-
         gen_fuzz_config.py --schema ../schema.json --seed "$seed" --unique "$UNIQUE_NAME-$seed" --resources "${FUZZ_RESOURCES:-}" > databricks.yml 2>LOG.gen.err
         cat LOG.gen.err | contains.py '!Traceback' > /dev/null
+        source "$TESTDIR/../no_drift.sh"
+    ) > "$dir/LOG.check" 2>&1
+    rc=$?
+    set -e
 
-        # The CLI is allowed to reject a generated config, but never to crash.
-        set +e
-        $CLI bundle validate &> LOG.validate
-        $CLI bundle deploy &> LOG.deploy
-        deploy_rc=$?
-        set -e
-        cat LOG.validate LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
+    if [ "$rc" -eq 0 ]; then
+        continue
+    fi
 
-        # Deploy failed => config was rejected, not a bug; nothing more to assert.
-        if [ "$deploy_rc" -ne 0 ]; then
-            exit 0
-        fi
+    bug=""
 
-        if [ -n "${FUZZ_CHECK_DRIFT:-}" ]; then
-            $CLI bundle plan -o json > plan.json 2>LOG.plan.err
-            cat LOG.plan.err | contains.py '!panic' '!internal error' > /dev/null
-            verify_no_drift.py plan.json
-        fi
+    # A panic or internal error is a bug even when the CLI then rejects the config.
+    if ! cat "$dir"/LOG.validate "$dir"/LOG.deploy 2>/dev/null | contains.py '!panic' '!internal error' > /dev/null; then
+        bug=1
+    fi
 
-        $CLI bundle destroy --auto-approve &> LOG.destroy
-        cat LOG.destroy | contains.py '!panic' '!internal error' > /dev/null
-    ) || {
+    # Failing after INPUT_CONFIG_OK means the config deployed but drifted (or destroy
+    # failed); failing before it with no panic just means the config was rejected.
+    if grep -q INPUT_CONFIG_OK "$dir/LOG.check"; then
+        bug=1
+    fi
+
+    if [ -n "$bug" ]; then
         echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 task test-fuzz" >&2
         exit 1
-    }
+    fi
 done
