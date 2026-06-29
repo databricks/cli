@@ -95,6 +95,12 @@ no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_loc
 # External volumes reference external locations; excluded from cloud for the same reason
 no_external_volume_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=volume_external.yml.tmpl"]
 
+# A vector search index takes 10-20 min to create, and these tests deploy it twice
+# (deploy, then re-plan), making it by far the slowest variant on cloud. The dedicated
+# vector_search_indexes resource test already covers it on cloud (CloudSlow), so exclude
+# it here to keep the cloud invariant runs from timing out. Still exercised locally.
+no_vector_search_index_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=vector_search_index.yml.tmpl"]
+
 # Fake SQL endpoint for local tests
 [[Server]]
 Pattern = "POST /api/2.0/sql/statements/"
