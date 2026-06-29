@@ -136,4 +136,4 @@ Error: The specified pipeline [FOO_ID] was not found.
 Error: The specified pipeline [FOO_ID_2] was not found.
 
 >>> musterr [CLI] jobs get [BAR_ID]
-Error: Not Found
+Error: Job [BAR_ID] does not exist.

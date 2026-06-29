@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
@@ -28,7 +30,18 @@ func (*workspaceRootPermissions) Name() string {
 
 // Apply implements bundle.Mutator.
 func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	stateFolderPermissions, err := giveAccessForWorkspaceRoot(ctx, b)
+	workspace := b.Config.Workspace
+	if b.IsImmutableFolder() {
+		// For immutable bundles, file_path and artifact_path point into content-addressed
+		// snapshot storage that is not a normal workspace folder. Clear them so that
+		// giveAccessForWorkspaceRoot only applies permissions to root_path (and the
+		// state_path / resource_path nested under it), which still need ACLs for
+		// shared deployments to work correctly.
+		workspace.FilePath = ""
+		workspace.ArtifactPath = ""
+	}
+
+	stateFolderPermissions, err := giveAccessForWorkspaceRoot(ctx, b, workspace)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -41,7 +54,7 @@ func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) di
 // workspace folders and returns the resulting permissions of the folder that holds
 // the deployment state. It returns nil only when no permissions are declared, in
 // which case no folders are synced.
-func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) (*WorkspacePathPermissions, error) {
+func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle, wsConfig config.Workspace) (*WorkspacePathPermissions, error) {
 	var permissions []workspace.WorkspaceObjectAccessControlRequest
 	for _, p := range b.Config.Permissions {
 		level, err := GetWorkspaceObjectPermissionLevel(string(p.Level))
@@ -62,7 +75,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) (*Workspa
 	}
 
 	w := b.WorkspaceClient(ctx).Workspace
-	wsPaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
+	wsPaths := paths.CollectUniqueWorkspacePathPrefixes(wsConfig)
 
 	// Each goroutine writes the folder's resulting permissions into its own slot,
 	// so they are inspected after Wait rather than concurrently.
@@ -83,7 +96,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) (*Workspa
 	// Return the permissions of the folder governing the deployment state. When
 	// state_path is nested under root_path it is deduplicated out of the collected
 	// paths, so Governing resolves it to root_path, whose ACL it inherits.
-	stateFolder := wsPaths.Governing(b.Config.Workspace.StatePath)
+	stateFolder := wsPaths.Governing(wsConfig.StatePath)
 	i := slices.Index(wsPaths.Paths, stateFolder)
 	if i < 0 {
 		return nil, nil
@@ -139,16 +152,49 @@ func GetWorkspaceObjectPermissionLevel(bundlePermission string) (workspace.Works
 // folder's permissions relate to the bundle's declared permissions. stateFolderPerms
 // is the folder's resulting ACL, or nil when no permissions are declared (no folders
 // are synced in that case).
+//
+// Alongside the single auto-migration verdict it emits an independent boolean breakdown
+// (state folder location, whether a permissions section is set, and which principal
+// types have undeclared write access) so the population can be sliced directly.
 func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPermissions) {
-	b.Metrics.SetBoolValue(metrics.StatePathIsShared, libraries.IsWorkspaceSharedPath(b.Config.Workspace.StatePath))
+	statePath := b.Config.Workspace.StatePath
+	deployer := deployingUserName(b)
+
+	isShared := libraries.IsWorkspaceSharedPath(statePath)
+	owner, underUserHome := userHomeOwner(statePath)
+
+	b.Metrics.SetBoolValue(metrics.StatePathIsShared, isShared)
+	b.Metrics.SetBoolValue(metrics.PermissionsSectionSet, len(b.Config.Permissions) > 0)
+
+	// userHomeOwner yields a non-empty owner whenever underUserHome is true, so the two
+	// home flags are exact complements: an unresolved deployer ("") never equals the
+	// owner and falls into the other-user bucket. StatePathOther covers any /Workspace
+	// folder that is neither shared nor a user home.
+	b.Metrics.SetBoolValue(metrics.StatePathInDeployerHome, underUserHome && owner == deployer)
+	b.Metrics.SetBoolValue(metrics.StatePathInOtherUserHome, underUserHome && owner != deployer)
+	b.Metrics.SetBoolValue(metrics.StatePathOther, !isShared && !underUserHome)
+
+	// stateFolderPerms is nil when no permissions are declared, in which case there are
+	// no undeclared writers (the migration mirrors the folder's ACLs).
+	var undeclared []resources.Permission
+	if stateFolderPerms != nil {
+		undeclared = stateFolderPerms.UndeclaredWriters(b.Config.Permissions)
+	}
+	self, otherUser, servicePrincipal, group := undeclaredWriterTypes(undeclared, deployer)
+	b.Metrics.SetBoolValue(metrics.DMSUndeclaredDeployingUser, self)
+	b.Metrics.SetBoolValue(metrics.DMSUndeclaredOtherUser, otherUser)
+	b.Metrics.SetBoolValue(metrics.DMSUndeclaredServicePrincipal, servicePrincipal)
+	b.Metrics.SetBoolValue(metrics.DMSUndeclaredGroup, group)
+
 	// Emit exactly one of the auto-migration verdict keys.
-	b.Metrics.SetBoolValue(autoMigrationVerdict(b, stateFolderPerms), true)
+	b.Metrics.SetBoolValue(autoMigrationVerdict(b, stateFolderPerms, undeclared), true)
 }
 
 // autoMigrationVerdict returns the metric key describing whether this deploy is
 // compatible with an automatic migration of the deployment state to a dedicated
-// state storage service. See metrics.DMSCompatAuto.
-func autoMigrationVerdict(b *bundle.Bundle, stateFolderPerms *WorkspacePathPermissions) string {
+// state storage service. undeclared is the state folder's undeclared writers (empty
+// when no permissions are declared). See metrics.DMSCompatAuto.
+func autoMigrationVerdict(b *bundle.Bundle, stateFolderPerms *WorkspacePathPermissions, undeclared []resources.Permission) string {
 	// No permissions section: the migration mirrors the state folder's ACLs onto the
 	// deployment (CAN_EDIT -> CAN_EDIT, CAN_MANAGE -> CAN_MANAGE), preserving
 	// everyone's access wherever the state lives.
@@ -167,7 +213,6 @@ func autoMigrationVerdict(b *bundle.Bundle, stateFolderPerms *WorkspacePathPermi
 	// The migration applies exactly the declared permissions to the deployment, so
 	// anyone with write access to the state folder who is not declared loses the
 	// ability to deploy.
-	undeclared := stateFolderPerms.UndeclaredWriters(b.Config.Permissions)
 	switch {
 	case len(undeclared) == 0:
 		return metrics.DMSCompatAuto
@@ -181,10 +226,50 @@ func autoMigrationVerdict(b *bundle.Bundle, stateFolderPerms *WorkspacePathPermi
 	}
 }
 
+// undeclaredWriterTypes classifies undeclared writers by principal type, distinguishing
+// the deploying user from other users.
+func undeclaredWriterTypes(undeclared []resources.Permission, deployer string) (self, otherUser, servicePrincipal, group bool) {
+	for _, p := range undeclared {
+		switch {
+		case p.UserName != "" && p.UserName == deployer:
+			self = true
+		case p.UserName != "":
+			otherUser = true
+		case p.ServicePrincipalName != "":
+			servicePrincipal = true
+		case p.GroupName != "":
+			group = true
+		}
+	}
+	return self, otherUser, servicePrincipal, group
+}
+
+// userHomeOwner returns the owner of the user home folder containing path, i.e. <owner>
+// for a path under /Workspace/Users/<owner>. ok is false when path is not under a user
+// home folder.
+//
+// Paths are always /Workspace-prefixed here: PrependWorkspacePrefix runs in the
+// initialize phase (before this deploy-phase mutator) and rewrites a bare /Users/...
+// to /Workspace/Users/..., so the /Workspace/Users/ check below is sufficient.
+func userHomeOwner(path string) (owner string, ok bool) {
+	const prefix = "/Workspace/Users/"
+	if !strings.HasPrefix(path, prefix) {
+		return "", false
+	}
+	owner, _, _ = strings.Cut(path[len(prefix):], "/")
+	return owner, owner != ""
+}
+
+// deployingUserName returns the user performing the deploy, or "" when not yet resolved.
+func deployingUserName(b *bundle.Bundle) string {
+	if b.Config.Workspace.CurrentUser == nil {
+		return ""
+	}
+	return b.Config.Workspace.CurrentUser.UserName
+}
+
 // isDeployingUser reports whether p is the user performing the deploy.
 func isDeployingUser(b *bundle.Bundle, p resources.Permission) bool {
-	if b.Config.Workspace.CurrentUser == nil {
-		return false
-	}
-	return p.UserName != "" && p.UserName == b.Config.Workspace.CurrentUser.UserName
+	deployer := deployingUserName(b)
+	return p.UserName != "" && p.UserName == deployer
 }

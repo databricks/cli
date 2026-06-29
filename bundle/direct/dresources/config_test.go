@@ -3,6 +3,7 @@ package dresources
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,6 +70,28 @@ func TestResourcesYMLNoRedundantRules(t *testing.T) {
 				if genFields[c.name][field] {
 					t.Errorf("bundle/direct/dresources/resources.yml: %s.%s entry %q is already produced by resources.generated.yml; remove it from resources.yml", resourceType, c.name, field)
 				}
+			}
+		}
+	}
+}
+
+// TestResourcesYMLNoRedundantMissingInRemote guards that ignore_remote_changes entries
+// in resources.yml do not duplicate the automatic missing-in-remote suppression. A field
+// absent from RemoteType is already skipped automatically (reason: missing_in_remote) when
+// there is no local change, so a manual ignore_remote_changes entry for it is dead weight.
+func TestResourcesYMLNoRedundantMissingInRemote(t *testing.T) {
+	cfg := MustLoadConfig()
+	for resourceType, rc := range cfg.Resources {
+		adapter, err := NewAdapter(SupportedResources[resourceType], resourceType, nil)
+		if err != nil {
+			t.Errorf("resources.yml: %s: failed to create adapter: %v", resourceType, err)
+			continue
+		}
+		for _, r := range rc.IgnoreRemoteChanges {
+			inState := structaccess.ValidatePattern(adapter.StateType(), r.Field) == nil
+			inRemote := structaccess.ValidatePattern(adapter.RemoteType(), r.Field) == nil
+			if inState && !inRemote {
+				t.Errorf("resources.yml: %s.ignore_remote_changes entry %q is automatically handled (field absent from RemoteType); remove it", resourceType, r.Field)
 			}
 		}
 	}

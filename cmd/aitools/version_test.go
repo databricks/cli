@@ -12,6 +12,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestVersionShowsPlugin(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	t.Chdir(tmp)
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, installer.SaveState(globalDir, &installer.InstallState{
+		SchemaVersion: 2,
+		Release:       "v0.2.6",
+		LastUpdated:   time.Date(2026, 6, 24, 0, 0, 0, 0, time.UTC),
+		Plugins: map[string]installer.PluginRecord{
+			"claude-code": {Marketplace: "databricks-agent-skills", Plugin: "databricks", Version: "0.2.6"},
+		},
+	}))
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	cmd := NewVersionCmd()
+	cmd.SetContext(ctx)
+	require.NoError(t, cmd.RunE(cmd, nil))
+
+	assert.Contains(t, stderr.String(), "Plugin (Claude Code, global): v0.2.6")
+}
+
 func TestVersionShowsBothScopes(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
@@ -68,7 +93,7 @@ func TestVersionShowsBothScopes(t *testing.T) {
 	assert.Contains(t, output, "Last updated: 2026-03-22")
 }
 
-func TestVersionShowsSingleScopeWithoutQualifier(t *testing.T) {
+func TestVersionAlwaysLabelsScope(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 	t.Setenv("USERPROFILE", tmp)
@@ -99,8 +124,8 @@ func TestVersionShowsSingleScopeWithoutQualifier(t *testing.T) {
 	require.NoError(t, err)
 
 	output := stderr.String()
-	// Should show "Skills:" without qualifier when only one scope.
-	assert.Contains(t, output, "Skills: v0.1.0")
-	assert.NotContains(t, output, "Skills (global)")
+	// The scope is always labeled, even when only one scope is installed, so it
+	// is unambiguous where skills/plugins live.
+	assert.Contains(t, output, "Skills (global): v0.1.0")
 	assert.NotContains(t, output, "Skills (project)")
 }

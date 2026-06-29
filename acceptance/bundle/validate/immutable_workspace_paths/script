@@ -1,0 +1,1 @@
+trace $CLI bundle validate -o json | jq '{workspace: .workspace, tasks: .resources.jobs.my_job.tasks}'
