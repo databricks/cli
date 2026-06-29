@@ -51,30 +51,22 @@ func NewVersionCmd() *cobra.Command {
 			if err != nil {
 				log.Debugf(ctx, "could not resolve skills version: %v", err)
 			}
-			bothScopes := globalState != nil && projectState != nil
-
 			cmdio.LogString(ctx, "Databricks skills and plugins:")
 
+			// Always label the scope (global / project) for both skills and
+			// plugins so it is unambiguous where each thing is installed.
 			if globalState != nil {
-				label := "Skills"
-				if bothScopes {
-					label = "Skills (global)"
-				}
 				if len(globalState.Skills) > 0 {
-					printVersionLine(ctx, label, globalState, latestRef)
+					printVersionLine(ctx, "Skills (global)", globalState, latestRef)
 				}
-				printPluginLines(ctx, globalState)
+				printPluginLines(ctx, globalState, "global")
 			}
 
 			if projectState != nil {
-				label := "Skills"
-				if bothScopes {
-					label = "Skills (project)"
-				}
 				if len(projectState.Skills) > 0 {
-					printVersionLine(ctx, label, projectState, latestRef)
+					printVersionLine(ctx, "Skills (project)", projectState, latestRef)
 				}
-				printPluginLines(ctx, projectState)
+				printPluginLines(ctx, projectState, "project")
 			}
 
 			return nil
@@ -84,11 +76,12 @@ func NewVersionCmd() *cobra.Command {
 	return cmd
 }
 
-// printPluginLines prints one line per plugin recorded in the scope's state.
-func printPluginLines(ctx context.Context, state *installer.InstallState) {
+// printPluginLines prints one line per plugin recorded in the scope's state,
+// labeled with the scope so it is clear where the plugin is installed.
+func printPluginLines(ctx context.Context, state *installer.InstallState, scope string) {
 	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 		rec := state.Plugins[name]
-		cmdio.LogString(ctx, fmt.Sprintf("  Plugin (%s): %s", agentDisplayName(name), versionToken(rec.Version)))
+		cmdio.LogString(ctx, fmt.Sprintf("  Plugin (%s, %s): %s", agentDisplayName(name), scope, versionToken(rec.Version)))
 	}
 }
 

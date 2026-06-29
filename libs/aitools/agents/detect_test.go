@@ -81,8 +81,6 @@ func TestDisplayState(t *testing.T) {
 		{"plugin agent, binary on path, config too", "claude", []string{"claude"}, &PluginSpec{}, true, StateAvailable},
 		{"plugin agent, no binary, config exists", "claude", nil, &PluginSpec{}, true, StateInstalledCLIMissing},
 		{"plugin agent, no binary, no config", "claude", nil, &PluginSpec{}, false, StateNotFound},
-		{"manual-only agent always manual", "cursor-agent", nil, &PluginSpec{ManualOnly: true}, false, StateManualOnly},
-		{"manual-only agent ignores presence", "cursor-agent", []string{"cursor-agent"}, &PluginSpec{ManualOnly: true}, true, StateManualOnly},
 		{"files-only agent, binary on path", "opencode", []string{"opencode"}, nil, false, StateFilesOnly},
 		{"files-only agent, config only", "opencode", nil, nil, true, StateFilesOnly},
 		{"files-only agent, neither", "opencode", nil, nil, false, StateNotFound},
@@ -113,7 +111,6 @@ func TestIsPreselected(t *testing.T) {
 		{"available is pre-checked", "claude", []string{"claude"}, &PluginSpec{}, false, true},
 		{"files-only with config is pre-checked", "opencode", nil, nil, true, true},
 		{"files-only without config is not", "opencode", []string{"opencode"}, nil, false, false},
-		{"manual-only is not pre-checked", "cursor-agent", []string{"cursor-agent"}, &PluginSpec{ManualOnly: true}, true, false},
 		{"installed-cli-missing is not pre-checked", "claude", nil, &PluginSpec{}, true, false},
 		{"not-found is not pre-checked", "claude", nil, &PluginSpec{}, false, false},
 	}
@@ -136,7 +133,6 @@ func TestProbePluginUnsupportedWithoutCapability(t *testing.T) {
 	}{
 		{"no binary", &Agent{Binary: "", Plugin: &PluginSpec{}}},
 		{"no plugin", &Agent{Binary: "antigravity"}},
-		{"manual only", &Agent{Binary: "cursor-agent", Plugin: &PluginSpec{ManualOnly: true}}},
 	}
 
 	for _, tc := range tests {

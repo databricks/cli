@@ -78,25 +78,19 @@ type listOutput struct {
 // agentEntry reports per-agent plugin state for `list`. It mirrors skillEntry:
 // Installed maps scope -> the plugin recorded in that scope, so a stale scoped
 // install stays visible next to an up-to-date one. Managed says whether the CLI
-// installs and tracks the plugin (false for Cursor, which is added manually).
-// Up-to-date-ness is derived by comparing each Installed version against the
-// top-level release, exactly as the skills view does, so there is no
-// precomputed cross-scope status to keep in sync.
+// installs and tracks the plugin. Up-to-date-ness is derived by comparing each
+// Installed version against the top-level release, exactly as the skills view
+// does, so there is no precomputed cross-scope status to keep in sync.
 type agentEntry struct {
 	Name      string                `json:"name"`
 	Managed   bool                  `json:"managed"`
 	Installed map[string]pluginInfo `json:"installed,omitempty"`
-	// Status carries the manual-add hint for agents whose plugin can't be
-	// installed headlessly (Cursor); empty for CLI-managed agents.
-	Status string `json:"status,omitempty"`
 }
 
 // pluginInfo is the per-scope plugin record surfaced in list output.
 type pluginInfo struct {
 	Version string `json:"version,omitempty"`
 }
-
-const statusManualAddPlugin = "manual_add_plugin"
 
 type skillEntry struct {
 	Name          string            `json:"name"`
@@ -199,18 +193,17 @@ func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
 	if projectState != nil {
 		states[installer.ScopeProject] = projectState
 	}
-	out.Agents = buildAgentEntries(ctx, states)
+	out.Agents = buildAgentEntries(states)
 
 	return out, nil
 }
 
 // buildAgentEntries reports per-agent plugin state: each plugin agent with a
-// recorded install (its version per scope), plus Cursor (which is added
-// manually) when present. states maps scope -> install state and must contain
-// only non-nil states; the caller filters scopes it did not load. Status across
-// scopes is left for the renderer (and JSON consumers) to derive from the
-// per-scope versions, so no cross-scope record is merged away here.
-func buildAgentEntries(ctx context.Context, states map[string]*installer.InstallState) []agentEntry {
+// recorded install (its version per scope). states maps scope -> install state
+// and must contain only non-nil states; the caller filters scopes it did not
+// load. Status across scopes is left for the renderer (and JSON consumers) to
+// derive from the per-scope versions, so no cross-scope record is merged away here.
+func buildAgentEntries(states map[string]*installer.InstallState) []agentEntry {
 	var entries []agentEntry
 	for _, a := range agents.Registry {
 		if a.Plugin == nil {
@@ -225,11 +218,6 @@ func buildAgentEntries(ctx context.Context, states map[string]*installer.Install
 		}
 		if len(installed) > 0 {
 			entries = append(entries, agentEntry{Name: a.Name, Managed: true, Installed: installed})
-			continue
-		}
-
-		if a.Plugin.ManualOnly && (a.Detected(ctx) || a.HasBinary(ctx)) {
-			entries = append(entries, agentEntry{Name: a.Name, Status: statusManualAddPlugin})
 		}
 	}
 	return entries
@@ -319,10 +307,6 @@ func renderSkillTable(skills []skillEntry, bothScopes bool) string {
 // release) is surfaced over an up-to-date one so an outdated install is never
 // hidden; project is preferred when every scope matches release.
 func agentStatusLabel(a agentEntry, release string) string {
-	if a.Status == statusManualAddPlugin {
-		return "plugin · add manually with /add-plugin"
-	}
-
 	version, upToDate := "", true
 	for _, scope := range []string{installer.ScopeProject, installer.ScopeGlobal} {
 		info, ok := a.Installed[scope]
