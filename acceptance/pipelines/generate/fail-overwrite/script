@@ -1,2 +1,2 @@
 
-trace errcode $CLI pipelines generate --existing-pipeline-dir src/my_pipeline
+trace musterr $CLI pipelines generate --existing-pipeline-dir src/my_pipeline

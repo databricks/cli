@@ -13,6 +13,8 @@ genie_spaces: dashboards.GenieSpace
 
 postgres_branches: postgres.BranchSpec
 
+postgres_databases: postgres.DatabaseDatabaseSpec
+
 postgres_endpoints: postgres.EndpointSpec
 
 postgres_projects: postgres.ProjectSpec

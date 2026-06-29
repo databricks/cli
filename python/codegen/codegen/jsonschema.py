@@ -7,8 +7,16 @@ from typing import Optional
 import codegen.packages as packages
 
 
-class Stage:
-    PRIVATE = "PRIVATE"
+class LaunchStage:
+    # Mirrors clijson.LaunchStage in the Go code. jsonschema.json only carries
+    # x-databricks-launch-stage for private-preview fields (the Go schema
+    # generator emits it only there, to mark them experimental and exclude them
+    # from the generated documentation), but the full set is mirrored here for
+    # completeness.
+    GA = "GA"
+    PUBLIC_PREVIEW = "PUBLIC_PREVIEW"
+    PUBLIC_BETA = "PUBLIC_BETA"
+    PRIVATE_PREVIEW = "PRIVATE_PREVIEW"
 
 
 @dataclass
@@ -101,7 +109,7 @@ def _parse_schema(schema: dict) -> Schema:
             ref=v["$ref"],
             description=v.get("description"),
             deprecated=_parse_bool(v.get("deprecated")),
-            stage=v.get("x-databricks-preview"),
+            stage=v.get("x-databricks-launch-stage"),
         )
 
         properties[k] = prop
@@ -118,7 +126,7 @@ def _parse_schema(schema: dict) -> Schema:
         required=schema.get("required", []),
         description=schema.get("description"),
         deprecated=_parse_bool(schema.get("deprecated")),
-        stage=schema.get("x-databricks-preview"),
+        stage=schema.get("x-databricks-launch-stage"),
     )
 
 

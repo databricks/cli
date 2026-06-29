@@ -320,11 +320,26 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 }
 
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
-	// Set the remote root to the sync root if source-linked deployment is enabled.
-	// Otherwise, set it to the workspace file path.
-	if config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment) {
+	switch {
+	case b.IsImmutableFolder():
+		// Reject an explicit workspace.file_path: immutable bundles control that path
+		// automatically (it is set to the content-addressed snapshot location after upload).
+		// A user-supplied value would be silently discarded, so we error early instead.
+		if loc := b.Config.GetLocation("workspace.file_path"); loc.File != "" {
+			return diag.Diagnostics{{
+				Severity:  diag.Error,
+				Summary:   "workspace.file_path cannot be configured when experimental.immutable_folder is true",
+				Locations: []dyn.Location{loc},
+			}}
+		}
+		// Use a placeholder referencing workspace.snapshot_path so that paths are stored
+		// as ${workspace.snapshot_path}/src/files/<rel> during validate. After
+		// snapshot.Upload() sets workspace.snapshot_path, a variable-resolution pass
+		// expands these references to the actual content-addressed paths.
+		t.remoteRoot = "${workspace.snapshot_path}/src/files"
+	case config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment):
 		t.remoteRoot = t.b.SyncRootPath
-	} else {
+	default:
 		t.remoteRoot = t.b.Config.Workspace.FilePath
 	}
 

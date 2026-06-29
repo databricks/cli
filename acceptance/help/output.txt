@@ -67,9 +67,9 @@ AI/BI
   lakeview-embedded                      Token-based Lakeview APIs for embedding dashboards in external applications.
 
 Unity Catalog
-  artifact-allowlists                    In Databricks Runtime 13.3 and above, you can add libraries and init scripts to the allowlist in UC so that users can leverage these artifacts on compute configured with shared access mode.
+  artifact-allowlists                    In Databricks Runtime 13.3 and above, you can add libraries and init scripts to the allowlist in UC so that users can use these artifacts on compute configured with shared access mode.
   catalogs                               A catalog is the first layer of Unity Catalog’s three-level namespace.
-  connections                            Connections allow for creating a connection to an external data source.
+  connections                            A connection represents an external data source for use within Databricks.
   credentials                            A credential represents an authentication and authorization mechanism for accessing services on your cloud tenant.
   entity-tag-assignments                 Tags are attributes that include keys and optional values that you can use to organize and categorize entities in Unity Catalog.
   external-lineage                       *Public Preview* External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems.
@@ -90,10 +90,10 @@ Unity Catalog
   system-schemas                         *Public Preview* A system schema is a schema that lives within the system catalog.
   table-constraints                      Primary key and foreign key constraints encode relationships between fields in tables.
   tables                                 A table resides in the third layer of Unity Catalog’s three-level namespace.
-  temporary-path-credentials             Temporary Path Credentials refer to short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.
-  temporary-table-credentials            Temporary Table Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where table data is stored in Databricks.
-  temporary-volume-credentials           *Public Preview* Temporary Volume Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where volume data is stored in Databricks.
-  volumes                                Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing and processing files.
+  temporary-path-credentials             Temporary Path Credentials are short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.
+  temporary-table-credentials            Temporary Table Credentials are short-lived, downscoped credentials used to access cloud storage locations where table data is stored in Databricks.
+  temporary-volume-credentials           *Public Preview* Temporary Volume Credentials are short-lived, downscoped credentials used to access cloud storage locations where volume data is stored in Databricks.
+  volumes                                Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing, and processing files.
   workspace-bindings                     A securable in Databricks can be configured as __OPEN__ or __ISOLATED__.
 
 Delta Sharing
@@ -169,7 +169,7 @@ Developer Tools
 
 Additional Commands:
   account                                Databricks Account Commands
-  aitools                                Databricks AI Tools for coding agents
+  aitools                                Databricks skills and plugins for coding agents
   api                                    Perform Databricks API call
   auth                                   Authentication related commands
   cache                                  Local cache related commands

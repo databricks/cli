@@ -105,6 +105,14 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 		return Response{StatusCode: 403, Body: "{}"}
 	}
 
+	// Known cloud quirk (see the test's Badness note): jobs/reset is a full
+	// replace, but omitting run_as from new_settings does NOT clear it — cloud
+	// keeps the previously configured identity. Mirror that so the local
+	// testserver matches cloud against one golden.
+	if request.NewSettings.RunAs == nil {
+		request.NewSettings.RunAs = prevjob.Settings.RunAs
+	}
+
 	s.Jobs[jobId] = jobs.Job{
 		JobId:           jobId,
 		CreatorUserName: prevjob.CreatorUserName,
@@ -195,7 +203,11 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 
 	job, ok := s.Jobs[jobIdInt]
 	if !ok {
-		return Response{StatusCode: 404}
+		// Match the real Jobs API, which echoes the job id in the error message.
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Job %d does not exist.", jobIdInt)},
+		}
 	}
 
 	job = setSourceIfNotSet(job)
@@ -308,6 +320,8 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 				logs, err = s.executePythonWheelTask(job.Settings, taskToExecute)
 			} else if t.NotebookTask != nil {
 				logs, err = s.executeNotebookTask(t, request.NotebookParams)
+			} else if t.SparkPythonTask != nil {
+				logs, err = s.executeSparkPythonTask(t)
 			}
 
 			if err != nil {
@@ -505,6 +519,52 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(output), fmt.Errorf("notebook task execution failed: %s\n%s", err, output)
+	}
+
+	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
+	return strings.TrimRight(string(output), "\r\n") + "\n", nil
+}
+
+// executeSparkPythonTask runs a spark_python_task locally by reading the
+// python_file from the workspace and executing it in a uv-created venv.
+// For tasks using existing_cluster_id, the venv is cached per cluster to match
+// cloud behavior where libraries are cached on running clusters.
+func (s *FakeWorkspace) executeSparkPythonTask(task jobs.Task) (string, error) {
+	if task.SparkPythonTask == nil {
+		return "", errors.New("task has no spark_python_task")
+	}
+
+	// Read python file from workspace (lock already held by caller)
+	pythonPath := task.SparkPythonTask.PythonFile
+	if !strings.HasPrefix(pythonPath, "/") {
+		pythonPath = "/" + pythonPath
+	}
+
+	pythonData := s.files[pythonPath].Data
+	if len(pythonData) == 0 {
+		return "", fmt.Errorf("python file not found in workspace: %s", pythonPath)
+	}
+
+	env, cleanup, err := s.getOrCreateClusterEnv(task)
+	if err != nil {
+		return "", err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	// Write python file into the cluster env so it can be executed by the venv.
+	pythonFile := filepath.Join(env.dir, filepath.Base(pythonPath))
+	if err := os.WriteFile(pythonFile, pythonData, 0o644); err != nil {
+		return "", fmt.Errorf("failed to write python file: %w", err)
+	}
+
+	runArgs := []string{pythonFile}
+	runArgs = append(runArgs, task.SparkPythonTask.Parameters...)
+
+	output, err := exec.Command(venvPython(env.venvDir), runArgs...).CombinedOutput()
+	if err != nil {
+		return string(output), fmt.Errorf("spark python task execution failed: %s\n%s", err, output)
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)

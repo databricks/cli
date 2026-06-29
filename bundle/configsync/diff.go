@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structdiff"
 )
 
 type OperationType string
@@ -33,6 +34,12 @@ const (
 type ConfigChangeDesc struct {
 	Operation OperationType `json:"operation"`
 	Value     any           `json:"value,omitempty"` // Normalized remote value (nil for remove operations)
+
+	// LocalEdit reports that the local config value for this field differs from
+	// the last-deployed state, so applying this change overwrites a not-yet-
+	// deployed local edit. Telemetry-only; direct engine only (the terraform
+	// sync snapshot has no per-field base). Not part of the command output.
+	LocalEdit bool `json:"-"`
 }
 
 type ResourceChanges map[string]*ConfigChangeDesc
@@ -123,32 +130,33 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 	}, nil
 }
 
-// DetectChanges compares current remote state with the last deployed state
-// and returns a map of resource changes.
-func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (Changes, error) {
-	changes := make(Changes)
-
-	err := ensureSnapshotAvailable(ctx, b, engine)
-	if err != nil {
+// OpenDeploymentState returns the deployment bundle whose StateDB is open for
+// reading. For the direct engine the caller (process.go) has already opened
+// b.DeploymentBundle; for the terraform engine the config snapshot is opened
+// here. Both yield read-mode state, so GetResourceID and Data.State are usable.
+// Open the state once per command and pass it to CalculatePlan and
+// ResolveResourceSelectors so the terraform snapshot is read only once.
+func OpenDeploymentState(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (*direct.DeploymentBundle, error) {
+	if err := ensureSnapshotAvailable(ctx, b, engine); err != nil {
 		return nil, fmt.Errorf("state snapshot not available: %w", err)
 	}
 
-	var deployBundle *direct.DeploymentBundle
 	if engine.IsDirect() {
-		// For direct engine, state is already opened by the caller (process.go).
-		deployBundle = &b.DeploymentBundle
-	} else {
-		deployBundle = &direct.DeploymentBundle{}
-		_, statePath := b.StateFilenameConfigSnapshot(ctx)
-		if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-			return nil, fmt.Errorf("failed to open state: %w", err)
-		}
+		return &b.DeploymentBundle, nil
 	}
 
-	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to calculate plan: %w", err)
+	deployBundle := &direct.DeploymentBundle{}
+	_, statePath := b.StateFilenameConfigSnapshot(ctx)
+	if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+		return nil, fmt.Errorf("failed to open state: %w", err)
 	}
+	return deployBundle, nil
+}
+
+// ExtractChanges extracts the map of remote-vs-config changes from a deploy
+// plan. engine selects the LocalEdit comparison below.
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, error) {
+	changes := make(Changes)
 
 	for resourceKey, entry := range plan.Plan {
 		resourceChanges := make(ResourceChanges)
@@ -166,6 +174,14 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 				}
 				if change.Operation == OperationSkip {
 					continue
+				}
+				// On the direct engine the state snapshot holds real per-field
+				// values, so New != Old means the local config diverged from the
+				// last deploy and this change overwrites that pending edit. The
+				// terraform sync snapshot stores empty per-resource state, so this
+				// comparison is meaningless there and is skipped.
+				if engine.IsDirect() && !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
+					change.LocalEdit = true
 				}
 				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
 				resourceChanges[path] = change
@@ -205,7 +221,9 @@ func ensureSnapshotAvailable(ctx context.Context, b *bundle.Bundle, engine engin
 	r, err := f.Read(ctx, remotePathSnapshot)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("resources state snapshot not found remotely at %s", remotePathSnapshot)
+			// Wrap the sentinel so callers can classify this failure
+			// (telemetry reports it as STATE_NOT_FOUND).
+			return fmt.Errorf("resources state snapshot not found remotely at %s: %w", remotePathSnapshot, ErrStateSnapshotNotFound)
 		}
 		return fmt.Errorf("reading remote snapshot: %w", err)
 	}
