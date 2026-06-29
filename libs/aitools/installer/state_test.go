@@ -20,7 +20,7 @@ func TestLoadStateNonexistentFile(t *testing.T) {
 func TestSaveAndLoadStateRoundtrip(t *testing.T) {
 	dir := t.TempDir()
 	original := &InstallState{
-		SchemaVersion: 1,
+		SchemaVersion: schemaVersionV2,
 		Release:       "v0.2.0",
 		LastUpdated:   time.Date(2026, 3, 22, 10, 0, 0, 0, time.UTC),
 		Skills: map[string]string{
@@ -97,10 +97,66 @@ func TestProjectSkillsDirReturnsCwdBased(t *testing.T) {
 	assert.Equal(t, filepath.Join(cwd, ".databricks", "aitools", "skills"), dir)
 }
 
+func TestLoadStateMigratesV1ToV2(t *testing.T) {
+	dir := t.TempDir()
+	// A v1 state on disk has no plugins/files keys.
+	v1 := `{"schema_version":1,"release":"v0.2.0","last_updated":"2026-03-22T10:00:00Z","skills":{"databricks":"1.0.0"},"repo_dirs":{"databricks":"skills"}}`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, stateFileName), []byte(v1), 0o644))
+
+	loaded, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, schemaVersionV2, loaded.SchemaVersion)
+	// Migration is additive: existing data is untouched and the new maps stay nil.
+	assert.Equal(t, map[string]string{"databricks": "1.0.0"}, loaded.Skills)
+	assert.Nil(t, loaded.Plugins)
+	assert.Nil(t, loaded.Files)
+}
+
+func TestMigrateStateIsIdempotent(t *testing.T) {
+	// Start at v1 so this exercises the real v1 -> v2 migration, then confirm a
+	// second migrateState is a no-op.
+	state := &InstallState{SchemaVersion: 1, Skills: map[string]string{"databricks": "1.0.0"}}
+	migrateState(state)
+	assert.Equal(t, schemaVersionV2, state.SchemaVersion)
+
+	migrated := *state
+	migrateState(state)
+	assert.Equal(t, migrated, *state)
+}
+
+func TestSaveAndLoadStateWithPluginAndFileRecords(t *testing.T) {
+	dir := t.TempDir()
+	original := &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Release:       "v0.2.6",
+		LastUpdated:   time.Date(2026, 6, 24, 0, 0, 0, 0, time.UTC),
+		Skills:        map[string]string{"databricks": "1.0.0"},
+		RepoDirs:      map[string]string{"databricks": stableSkillsRepoPath},
+		Plugins: map[string]PluginRecord{
+			"claude-code": {
+				Marketplace:          "databricks-agent-skills",
+				Plugin:               "databricks",
+				Scope:                "user",
+				Version:              "0.2.6",
+				InstalledMarketplace: true,
+			},
+		},
+		Files: map[string]FileRecord{
+			"databricks/SKILL.md": {SHA256: "abc123", Origin: "v0.2.6"},
+		},
+	}
+
+	require.NoError(t, SaveState(dir, original))
+
+	loaded, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, original, loaded)
+}
+
 func TestSaveAndLoadStateWithOptionalFields(t *testing.T) {
 	dir := t.TempDir()
 	original := &InstallState{
-		SchemaVersion:       1,
+		SchemaVersion:       schemaVersionV2,
 		IncludeExperimental: true,
 		Release:             "v0.3.0",
 		LastUpdated:         time.Date(2026, 3, 22, 12, 30, 0, 0, time.UTC),

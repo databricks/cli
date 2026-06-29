@@ -21,7 +21,7 @@ Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/stop"

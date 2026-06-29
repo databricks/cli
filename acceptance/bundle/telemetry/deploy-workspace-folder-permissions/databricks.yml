@@ -23,6 +23,23 @@ targets:
       - group_name: team
         level: CAN_MANAGE
 
+  # The state lives under another user's home, where that user has inherited CAN_MANAGE
+  # that the bundle does not declare.
+  other_user_not_declared:
+    permissions:
+      - user_name: ${workspace.current_user.userName}
+        level: CAN_MANAGE
+    workspace:
+      state_path: /Workspace/Users/other@example.com/test-bundle-state
+
+  # The state lives in a non-home, non-shared workspace folder.
+  workspace_other:
+    permissions:
+      - user_name: ${workspace.current_user.userName}
+        level: CAN_MANAGE
+    workspace:
+      state_path: /Workspace/teams/test-bundle-state
+
   # A shared state folder is writable by all workspace users; that access is declared
   # via group_name: users CAN_MANAGE.
   shared_users_can_manage:

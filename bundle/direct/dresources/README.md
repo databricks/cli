@@ -18,7 +18,7 @@
 Each field with special plan/deploy behavior must be declared in `resources.yml`. Choose the right category:
 
  - **`backend_defaults`**: The backend may fill in a value when the user doesn't specify one. Suppresses the diff when the user's config is nil/empty but remote has a value. Optionally restrict to specific allowed remote values via `values:`. Use for fields the API fills in as defaults (e.g., `format`, `run_if`, `node_type_id`). Link to TF provider suppression comment in the same format as existing entries.
- - **`ignore_remote_changes`**: Ignore changes the remote makes to this field. Use for fields the backend manages (e.g., cloud-provider attributes like `aws_attributes`, `gcp_attributes`) or fields not returned by the update endpoint. Reason codes:
+ - **`ignore_remote_changes`**: Ignore changes the remote makes to this field. Use for fields the backend manages (e.g., cloud-provider attributes like `aws_attributes`, `gcp_attributes`) or fields not returned by the update endpoint. Do not zero out such fields in `RemapState` to hide them from diff computation: carry the real remote value through and declare the field here instead, since zeroing discards information and duplicates the suppression logic. For `output_only` fields this rule is often already produced by `resources.generated.yml` from the OpenAPI annotation. Reason codes:
    - `output_only` — the field is computed by the backend; the user never sets it
    - `input_only` — accepted on create/update but not returned by GET (e.g., write-only tokens, flags)
    - `managed` — managed by the cloud provider or platform, not by the user config
@@ -46,6 +46,18 @@ If the API may return a slice's elements in a different order between calls (e.g
 
 The state struct is serialized to JSON and persisted between deploys. Backward incompatible changes will result in a drift, which depending
 on field behaviour might result in recreate. See dstate/migrate.go on how to handle state migration.
+
+## RemapState and missing remote fields
+
+Do not populate a field in `RemapState` by mapping it from a differently-named field in `RemoteType`. When a field is absent from `RemoteType` the engine automatically suppresses remote drift for it (reason: `missing_in_remote`), which means any value `RemapState` sets there is invisible to drift detection — real remote changes go undetected.
+
+The correct pattern is:
+
+1. Add the field to `RemoteType` (the struct returned by `DoRead`).
+2. Populate it in `DoRead` by mapping from whatever the API returns under the other name.
+3. Keep `RemapState` trivial (a direct struct copy or no-op).
+
+This makes the field present in `InputType`, `StateType`, and `RemoteType`, so it participates in normal drift detection and is no longer subject to the `missing_in_remote` suppression.
 
 ## OverrideChangeDesc
 

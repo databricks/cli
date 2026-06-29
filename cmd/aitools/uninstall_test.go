@@ -64,3 +64,31 @@ func TestUninstallScopeFlag(t *testing.T) {
 		})
 	}
 }
+
+func TestUninstallConfirmMessage(t *testing.T) {
+	// Nothing recorded: no prompt (installer surfaces its own guidance).
+	_, ask := uninstallConfirmMessage(nil, installer.UninstallOptions{Scope: installer.ScopeGlobal})
+	assert.False(t, ask)
+
+	_, askEmpty := uninstallConfirmMessage(&installer.InstallState{}, installer.UninstallOptions{Scope: installer.ScopeGlobal})
+	assert.False(t, askEmpty)
+
+	st := &installer.InstallState{
+		Skills:  map[string]string{"a": "1", "b": "2"},
+		Plugins: map[string]installer.PluginRecord{"claude-code": {}},
+	}
+
+	msg, ask := uninstallConfirmMessage(st, installer.UninstallOptions{Scope: installer.ScopeGlobal})
+	require.True(t, ask)
+	assert.Contains(t, msg, "2 skills")
+	assert.Contains(t, msg, "the databricks plugin from 1 agent")
+	assert.Contains(t, msg, "(global scope)")
+
+	// --skills filter names the requested skills.
+	filtered := installer.UninstallOptions{Scope: installer.ScopeProject}
+	filtered.Skills = []string{"alpha"}
+	msg2, ask2 := uninstallConfirmMessage(st, filtered)
+	require.True(t, ask2)
+	assert.Contains(t, msg2, "skill alpha")
+	assert.Contains(t, msg2, "(project scope)")
+}

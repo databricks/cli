@@ -21,7 +21,15 @@
                 },
                 "name": "prod"
               }
-            ]
+            ],
+            "traffic_config": {
+              "routes": [
+                {
+                  "served_model_name": "prod",
+                  "traffic_percentage": 100
+                }
+              ]
+            }
           },
           "name": "[ENDPOINT_ID]"
         }
@@ -41,10 +49,21 @@
                 },
                 "name": "prod"
               }
-            ]
+            ],
+            "traffic_config": {
+              "routes": [
+                {
+                  "served_model_name": "prod",
+                  "traffic_percentage": 100
+                }
+              ]
+            }
           },
+          "creation_timestamp": [UNIX_TIME_MILLIS][0],
           "creator": "[USERNAME]",
+          "description": "",
           "id": "[UUID]",
+          "last_updated_timestamp": [UNIX_TIME_MILLIS][0],
           "name": "[ENDPOINT_ID]",
           "permission_level": "CAN_MANAGE",
           "route_optimized": false,
@@ -53,7 +72,31 @@
             "ready": "NOT_READY"
           }
         },
-        "endpoint_id": "[UUID]"
+        "endpoint_id": "[UUID]",
+        "config": {
+          "served_entities": [
+            {
+              "external_model": {
+                "name": "gpt-4o-mini",
+                "openai_config": {
+                  "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                },
+                "provider": "openai",
+                "task": "llm/v1/chat"
+              },
+              "name": "prod"
+            }
+          ],
+          "traffic_config": {
+            "routes": [
+              {
+                "served_model_name": "prod",
+                "traffic_percentage": 100
+              }
+            ]
+          }
+        },
+        "name": "[ENDPOINT_ID]"
       },
       "changes": {
         "config.served_entities[0].external_model.name": {
@@ -61,6 +104,11 @@
           "old": "gpt-4o-mini",
           "new": "gpt-5o-mini",
           "remote": "gpt-4o-mini"
+        },
+        "description": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": ""
         },
         "route_optimized": {
           "action": "skip",
