@@ -173,7 +173,7 @@ tasks:
       # Pinned to match the version used by the `ruff format --check` step in
       # .github/workflows/check.yml — newer ruff versions reformat files that
       # CI considers already formatted.
-      - "uvx ruff@0.9.1 format -n"
+      - "uvx ruff@0.15.17 format -n"
 
   # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
   # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)

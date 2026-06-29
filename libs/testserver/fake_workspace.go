@@ -362,32 +362,36 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
+func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 	defer s.LockUnlock()()
 
-	if dirInfo, ok := s.directories[path]; ok {
-		return Response{
-			Body: &dirInfo,
-		}
-	} else if entry, ok := s.files[path]; ok {
-		return Response{
-			Body: entry.Info,
-		}
-	} else if repoId, ok := s.repoIdByPath[path]; ok {
-		return Response{
-			Body: workspace.ObjectInfo{
-				ObjectType: "REPO",
-				Path:       path,
-				ObjectId:   repoId,
-			},
-		}
+	// The real API collapses duplicate slashes, so look up the cleaned path.
+	cleaned := path.Clean(requestPath)
+
+	var info workspace.ObjectInfo
+	if dirInfo, ok := s.directories[cleaned]; ok {
+		info = dirInfo
+	} else if entry, ok := s.files[cleaned]; ok {
+		info = entry.Info
+	} else if repoId, ok := s.repoIdByPath[cleaned]; ok {
+		info = workspace.ObjectInfo{ObjectType: "REPO", Path: cleaned, ObjectId: repoId}
 	} else {
 		// Match the real Workspace API wording, which echoes the requested path.
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", path)},
+			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", requestPath)},
 		}
 	}
+
+	// A doubled leading slash ("//Workspace/...", which some tests use to avoid
+	// Windows path conversion) is sent to the backend verbatim, and it responds
+	// with the "/Workspace" mount stripped from the path. A normal single-slash
+	// "/Workspace/..." is preserved instead, so only strip the doubled form.
+	if strings.HasPrefix(requestPath, "//Workspace/") {
+		info.Path = strings.TrimPrefix(info.Path, "/Workspace")
+	}
+
+	return Response{Body: info}
 }
 
 func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
@@ -463,17 +467,8 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 
 	workspacePath := filePath
 
-	// The real import API returns a 404 if the parent directory does not exist;
-	// it does not create it. Callers that want "mkdir -p" semantics first call
-	// /workspace/mkdirs (see WorkspaceFilesClient.Write, which mkdirs and retries
-	// on this 404).
-	if parent := path.Dir(workspacePath); parent != "/" {
-		if _, exists := s.directories[parent]; !exists {
-			return Response{
-				StatusCode: 404,
-				Body:       map[string]string{"message": fmt.Sprintf("The parent folder (%s) does not exist.", parent)},
-			}
-		}
+	if resp, ok := s.requireParentDirectory(workspacePath); !ok {
+		return resp
 	}
 
 	if !overwrite {
@@ -513,6 +508,63 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 			},
 			Data: body,
 		}
+	}
+
+	return Response{}
+}
+
+// requireParentDirectory returns a 404 response when objectPath's parent
+// directory does not exist. The real import API does not create missing parents;
+// callers get "mkdir -p" semantics only by first calling /workspace/mkdirs (see
+// WorkspaceFilesClient.Write, which mkdirs and retries on this 404). ok is false
+// when the returned response should be sent to the client. The caller must hold
+// the lock.
+func (s *FakeWorkspace) requireParentDirectory(objectPath string) (Response, bool) {
+	parent := path.Dir(objectPath)
+	if parent == "/" {
+		return Response{}, true
+	}
+	if _, exists := s.directories[parent]; !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The parent folder (%s) does not exist.", parent)},
+		}, false
+	}
+	return Response{}, true
+}
+
+// WorkspaceImportNotebook stores a notebook imported with the SOURCE format.
+// Unlike AUTO format, SOURCE keeps the path as-is (no extension stripping) and
+// the notebook language is provided explicitly rather than sniffed from a
+// "# Databricks notebook source" header.
+func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, language workspace.Language, overwrite bool) Response {
+	if !strings.HasPrefix(filePath, "/") {
+		filePath = "/" + filePath
+	}
+
+	defer s.LockUnlock()()
+
+	if resp, ok := s.requireParentDirectory(filePath); !ok {
+		return resp
+	}
+
+	if !overwrite {
+		if _, exists := s.files[filePath]; exists {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", filePath)},
+			}
+		}
+	}
+
+	s.files[filePath] = FileEntry{
+		Info: workspace.ObjectInfo{
+			ObjectType: "NOTEBOOK",
+			Path:       filePath,
+			Language:   language,
+			ObjectId:   nextID(),
+		},
+		Data: body,
 	}
 
 	return Response{}

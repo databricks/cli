@@ -24,6 +24,20 @@ func setupUpdateMock(t *testing.T) *[]installer.UpdateOptions {
 	return &calls
 }
 
+func TestUpdateNoPruneFlag(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupUpdateMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := NewUpdateCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--scope", "global", "--no-prune"})
+
+	require.NoError(t, cmd.Execute())
+	require.Len(t, *calls, 1)
+	assert.True(t, (*calls)[0].NoPrune)
+}
+
 func TestUpdateScopeFlag(t *testing.T) {
 	tests := []struct {
 		name       string

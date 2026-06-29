@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
@@ -29,7 +30,18 @@ func (*workspaceRootPermissions) Name() string {
 
 // Apply implements bundle.Mutator.
 func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	stateFolderPermissions, err := giveAccessForWorkspaceRoot(ctx, b)
+	workspace := b.Config.Workspace
+	if b.IsImmutableFolder() {
+		// For immutable bundles, file_path and artifact_path point into content-addressed
+		// snapshot storage that is not a normal workspace folder. Clear them so that
+		// giveAccessForWorkspaceRoot only applies permissions to root_path (and the
+		// state_path / resource_path nested under it), which still need ACLs for
+		// shared deployments to work correctly.
+		workspace.FilePath = ""
+		workspace.ArtifactPath = ""
+	}
+
+	stateFolderPermissions, err := giveAccessForWorkspaceRoot(ctx, b, workspace)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -42,7 +54,7 @@ func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) di
 // workspace folders and returns the resulting permissions of the folder that holds
 // the deployment state. It returns nil only when no permissions are declared, in
 // which case no folders are synced.
-func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) (*WorkspacePathPermissions, error) {
+func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle, wsConfig config.Workspace) (*WorkspacePathPermissions, error) {
 	var permissions []workspace.WorkspaceObjectAccessControlRequest
 	for _, p := range b.Config.Permissions {
 		level, err := GetWorkspaceObjectPermissionLevel(string(p.Level))
@@ -63,7 +75,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) (*Workspa
 	}
 
 	w := b.WorkspaceClient(ctx).Workspace
-	wsPaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
+	wsPaths := paths.CollectUniqueWorkspacePathPrefixes(wsConfig)
 
 	// Each goroutine writes the folder's resulting permissions into its own slot,
 	// so they are inspected after Wait rather than concurrently.
@@ -84,7 +96,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) (*Workspa
 	// Return the permissions of the folder governing the deployment state. When
 	// state_path is nested under root_path it is deduplicated out of the collected
 	// paths, so Governing resolves it to root_path, whose ACL it inherits.
-	stateFolder := wsPaths.Governing(b.Config.Workspace.StatePath)
+	stateFolder := wsPaths.Governing(wsConfig.StatePath)
 	i := slices.Index(wsPaths.Paths, stateFolder)
 	if i < 0 {
 		return nil, nil
