@@ -44,6 +44,5 @@ EnvMatrix.INPUT_CONFIG = [
   "synced_database_table.yml.tmpl",
   "volume.yml.tmpl",
   "volume_external.yml.tmpl",
-  "volume_path_job_ref.yml.tmpl",
   "volume_uppercase_name.yml.tmpl"
 ]
