@@ -10,7 +10,7 @@ vars:
   # First-party Python that `ruff check` lints. The formatter runs over every
   # *.py in the repo; the linter is scoped here so acceptance fixtures and golden
   # outputs (intentionally varied) are not linted. ruff config lives in ruff.toml.
-  PY_LINT_PATHS: tools acceptance/bin bundle/direct/tools experimental/ssh libs/testserver python/databricks python/databricks_tests python/codegen python/docs acceptance/install_terraform.py acceptance/dbr_runner.py acceptance/bundle/user_agent/verify.py acceptance/bundle/resources/permissions/analyze_requests.py acceptance/bundle/resources/permissions/factcheck/check_permissions.py
+  PY_LINT_PATHS: tools acceptance/bin bundle/direct/tools experimental/ssh libs/testserver python acceptance/install_terraform.py acceptance/dbr_runner.py acceptance/bundle/user_agent/verify.py acceptance/bundle/resources/permissions/analyze_requests.py acceptance/bundle/resources/permissions/factcheck/check_permissions.py
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
