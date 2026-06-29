@@ -390,8 +390,8 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      # Failure-reporting step opens/comments a tracking issue.
-      issues: write
+      # Failure-reporting step comments on the PR that introduced the failing commit.
+      pull-requests: write
 
     steps:
       - name: Checkout repository and submodules
@@ -411,20 +411,17 @@ jobs:
           export FUZZ_SEED_START=$(( GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
-      # Not in test-result, so surface failures as an issue. Reuse one open issue
-      # (deduped by label) so a recurring failure doesn't spam nightly.
+      # Not in test-result, so surface failures by commenting on the PR that
+      # introduced the commit under test.
       - name: Report failure
         if: ${{ failure() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT: ${{ github.sha }}
         run: |
-          gh label create fuzz-nightly \
-            --description "Nightly schema fuzz invariant failures" \
-            --color FBCA04 2>/dev/null || true
-
           body=$(cat <<EOF
-          The nightly schema fuzz invariant job (\`task test-fuzz\`) failed.
+          The nightly schema fuzz invariant job (\`task test-fuzz\`) failed on commit \`$COMMIT\`.
 
           Run: $RUN_URL
 
@@ -437,11 +434,12 @@ jobs:
           EOF
           )
 
-          existing=$(gh issue list --state open --label fuzz-nightly --json number --jq '.[0].number // empty')
-          if [ -n "$existing" ]; then
-            gh issue comment "$existing" --body "$body"
+          # The commit's pulls endpoint returns the merged PR that introduced it.
+          pr=$(gh api "repos/$GITHUB_REPOSITORY/commits/$COMMIT/pulls" --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then
+            gh pr comment "$pr" --body "$body"
           else
-            gh issue create --title "Nightly fuzz invariant failure" --label fuzz-nightly --body "$body"
+            echo "No PR found for commit $COMMIT; skipping failure comment" >&2
           fi
 
   # This job groups the result of all the above test jobs.
