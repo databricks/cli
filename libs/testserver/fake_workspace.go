@@ -273,6 +273,24 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				Path:       "/Users/" + TestUserSP.UserName,
 				ObjectId:   nextID(),
 			},
+			// The user home also exists under the /Workspace alias on real
+			// workspaces, so model it here too. Imports require the parent
+			// directory to exist (see WorkspaceFilesImportFile).
+			"/Workspace/Users": {
+				ObjectType: "DIRECTORY",
+				Path:       "/Workspace/Users",
+				ObjectId:   nextID(),
+			},
+			"/Workspace/Users/" + TestUser.UserName: {
+				ObjectType: "DIRECTORY",
+				Path:       "/Workspace/Users/" + TestUser.UserName,
+				ObjectId:   nextID(),
+			},
+			"/Workspace/Users/" + TestUserSP.UserName: {
+				ObjectType: "DIRECTORY",
+				Path:       "/Workspace/Users/" + TestUserSP.UserName,
+				ObjectId:   nextID(),
+			},
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
@@ -403,10 +421,16 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	defer s.LockUnlock()()
-	s.directories[request.Path] = workspace.ObjectInfo{
-		ObjectType: "DIRECTORY",
-		Path:       request.Path,
-		ObjectId:   nextID(),
+	// The real mkdirs API creates all intermediate directories ("mkdir -p"),
+	// so seed every ancestor up to the root.
+	for dir := request.Path; dir != "/" && dir != "" && dir != "."; dir = path.Dir(dir) {
+		if _, exists := s.directories[dir]; !exists {
+			s.directories[dir] = workspace.ObjectInfo{
+				ObjectType: "DIRECTORY",
+				Path:       dir,
+				ObjectId:   nextID(),
+			}
+		}
 	}
 }
 
@@ -442,6 +466,10 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 	defer s.LockUnlock()()
 
 	workspacePath := filePath
+
+	if resp, ok := s.requireParentDirectory(workspacePath); !ok {
+		return resp
+	}
 
 	if !overwrite {
 		if _, exists := s.files[workspacePath]; exists {
@@ -482,24 +510,27 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 		}
 	}
 
-	s.addAncestorDirectories(workspacePath)
-
 	return Response{}
 }
 
-// addAncestorDirectories registers every parent directory of objectPath in the
-// directories map, mirroring the real workspace API which materializes parent
-// directories when an object is imported. The caller must hold the lock.
-func (s *FakeWorkspace) addAncestorDirectories(objectPath string) {
-	for dir := path.Dir(objectPath); dir != "/"; dir = path.Dir(dir) {
-		if _, exists := s.directories[dir]; !exists {
-			s.directories[dir] = workspace.ObjectInfo{
-				ObjectType: "DIRECTORY",
-				Path:       dir,
-				ObjectId:   nextID(),
-			}
-		}
+// requireParentDirectory returns a 404 response when objectPath's parent
+// directory does not exist. The real import API does not create missing parents;
+// callers get "mkdir -p" semantics only by first calling /workspace/mkdirs (see
+// WorkspaceFilesClient.Write, which mkdirs and retries on this 404). ok is false
+// when the returned response should be sent to the client. The caller must hold
+// the lock.
+func (s *FakeWorkspace) requireParentDirectory(objectPath string) (Response, bool) {
+	parent := path.Dir(objectPath)
+	if parent == "/" {
+		return Response{}, true
 	}
+	if _, exists := s.directories[parent]; !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The parent folder (%s) does not exist.", parent)},
+		}, false
+	}
+	return Response{}, true
 }
 
 // WorkspaceImportNotebook stores a notebook imported with the SOURCE format.
@@ -512,6 +543,10 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 	}
 
 	defer s.LockUnlock()()
+
+	if resp, ok := s.requireParentDirectory(filePath); !ok {
+		return resp
+	}
 
 	if !overwrite {
 		if _, exists := s.files[filePath]; exists {
@@ -531,8 +566,6 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 		},
 		Data: body,
 	}
-
-	s.addAncestorDirectories(filePath)
 
 	return Response{}
 }

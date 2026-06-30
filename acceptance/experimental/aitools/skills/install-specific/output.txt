@@ -3,7 +3,7 @@
 >>> [CLI] experimental aitools install --skills-only --global --skills test-stable-a
 Command "install" is deprecated, use "databricks aitools install" instead.
 Flag --global has been deprecated, use --scope=global
-Installing Databricks AI skills for Claude Code...
+Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Installed 1 skill.
 
@@ -11,7 +11,7 @@ Installed 1 skill.
 >>> [CLI] experimental aitools install --skills-only --global --skills test-exp --experimental
 Command "install" is deprecated, use "databricks aitools install" instead.
 Flag --global has been deprecated, use --scope=global
-Installing Databricks AI skills for Claude Code...
+Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Installed 1 skill.
 
@@ -19,7 +19,7 @@ Installed 1 skill.
 >>> [CLI] experimental aitools install --skills-only --global --skills test-exp
 Command "install" is deprecated, use "databricks aitools install" instead.
 Flag --global has been deprecated, use --scope=global
-Installing Databricks AI skills for Claude Code...
+Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Error: skill "test-exp" is experimental; use --experimental to install
 

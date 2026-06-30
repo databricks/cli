@@ -6,8 +6,8 @@ It follows redirects if applicable.
 Usage: browser.py <url>
 """
 
-import urllib.request
 import sys
+import urllib.request
 
 if len(sys.argv) < 2:
     sys.stderr.write("Usage: browser.py <url>\n")

@@ -5,9 +5,9 @@ Print selected attributes from terraform state.
 Usage: <group> <name> [attr...]
 """
 
-import sys
-import os
 import json
+import os
+import sys
 
 
 def print_resource_terraform(group, name, *attrs):

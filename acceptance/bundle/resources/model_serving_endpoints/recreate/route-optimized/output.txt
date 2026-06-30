@@ -55,7 +55,16 @@ Deployment complete!
         "scale_to_zero_enabled": true,
         "workload_size": "Small"
       }
-    ]
+    ],
+    "traffic_config": {
+      "routes": [
+        {
+          "served_entity_name": "llama",
+          "served_model_name": "llama",
+          "traffic_percentage": 100
+        }
+      ]
+    }
   },
   "creation_timestamp": [UNIX_TIME_MILLIS][0],
   "creator": "[USERNAME]",

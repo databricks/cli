@@ -34,7 +34,7 @@ func TestVersionShowsPlugin(t *testing.T) {
 	cmd.SetContext(ctx)
 	require.NoError(t, cmd.RunE(cmd, nil))
 
-	assert.Contains(t, stderr.String(), "Plugin (Claude Code): v0.2.6")
+	assert.Contains(t, stderr.String(), "Plugin (Claude Code, global): v0.2.6")
 }
 
 func TestVersionShowsBothScopes(t *testing.T) {
@@ -93,7 +93,7 @@ func TestVersionShowsBothScopes(t *testing.T) {
 	assert.Contains(t, output, "Last updated: 2026-03-22")
 }
 
-func TestVersionShowsSingleScopeWithoutQualifier(t *testing.T) {
+func TestVersionAlwaysLabelsScope(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 	t.Setenv("USERPROFILE", tmp)
@@ -124,8 +124,8 @@ func TestVersionShowsSingleScopeWithoutQualifier(t *testing.T) {
 	require.NoError(t, err)
 
 	output := stderr.String()
-	// Should show "Skills:" without qualifier when only one scope.
-	assert.Contains(t, output, "Skills: v0.1.0")
-	assert.NotContains(t, output, "Skills (global)")
+	// The scope is always labeled, even when only one scope is installed, so it
+	// is unambiguous where skills/plugins live.
+	assert.Contains(t, output, "Skills (global): v0.1.0")
 	assert.NotContains(t, output, "Skills (project)")
 }

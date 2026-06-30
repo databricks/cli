@@ -24,7 +24,7 @@ func TestUpdateNoStateReturnsInstallHint(t *testing.T) {
 	src := &mockManifestSource{manifest: testManifest()}
 	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no skills installed")
+	assert.Contains(t, err.Error(), "no skills or plugins installed")
 	assert.Contains(t, err.Error(), "databricks aitools install")
 }
 

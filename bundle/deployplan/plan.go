@@ -111,7 +111,8 @@ const (
 	ReasonDrop = "!drop"
 )
 
-// HasChange checks if there are any changes for fields with the given prefix.
+// HasChange checks if there are any actionable changes for fields with the given prefix.
+// Suppressed changes (Action == Skip) are ignored, matching HasChangeExcept.
 // This function is path-aware and correctly handles path component boundaries.
 // For example:
 //   - HasChange for path "a" matches "a" and "a.b" but not "aa"
@@ -121,7 +122,10 @@ func (c *Changes) HasChange(fieldPath *structpath.PathNode) bool {
 		return false
 	}
 
-	for field := range *c {
+	for field, change := range *c {
+		if change.Action == Skip {
+			continue
+		}
 		fieldNode, err := structpath.ParsePath(field)
 		if err != nil {
 			continue
