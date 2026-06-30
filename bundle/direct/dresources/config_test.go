@@ -4,7 +4,10 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 func TestMustLoadConfig(t *testing.T) {
@@ -15,6 +18,18 @@ func TestMustLoadConfig(t *testing.T) {
 func TestGetResourceConfig(t *testing.T) {
 	assert.NotEmpty(t, GetResourceConfig("volumes").RecreateOnChanges)
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
+}
+
+// TestFieldRuleOmittedIsRoot verifies that a FieldRule with no field is a root
+// rule matching every field (HasPatternPrefix treats a nil pattern as root),
+// which is what the job_runs root recreate rule relies on.
+func TestFieldRuleOmittedIsRoot(t *testing.T) {
+	someField := structpath.MustParsePath("dbt_commands")
+
+	var omitted FieldRule
+	require.NoError(t, yaml.Unmarshal([]byte("reason: input_only\n"), &omitted))
+	assert.True(t, omitted.Field.IsRoot(), "omitting field should be root")
+	assert.True(t, someField.HasPatternPrefix(omitted.Field), "omitting field should match every field")
 }
 
 // categoryRules projects ResourceLifecycleConfig's categories onto a

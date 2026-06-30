@@ -338,16 +338,69 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	}
 
 	s.JobRuns[runId] = jobs.Run{
-		RunId:      runId,
-		JobId:      request.JobId,
-		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
-		RunPageUrl: fmt.Sprintf("%s/?o=900800700600#job/%d/run/%d", s.url, request.JobId, runId),
-		RunType:    jobs.RunTypeJobRun,
-		RunName:    runName,
-		Tasks:      tasks,
+		RunId:                runId,
+		JobId:                request.JobId,
+		State:                &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		RunPageUrl:           fmt.Sprintf("%s/?o=900800700600#job/%d/run/%d", s.url, request.JobId, runId),
+		RunType:              jobs.RunTypeJobRun,
+		RunName:              runName,
+		Tasks:                tasks,
+		JobParameters:        runJobParameters(job.Settings, request.JobParameters),
+		OverridingParameters: runOverridingParameters(request),
 	}
 
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
+}
+
+// runJobParameters mirrors how GetRun resolves job-level parameters: it returns
+// every parameter the job defines, with the run's overrides applied on top of
+// the job's defaults (so a run surfaces params it never overrode), sorted by
+// name for deterministic output.
+func runJobParameters(settings *jobs.JobSettings, overrides map[string]string) []jobs.JobParameter {
+	resolved := map[string]jobs.JobParameter{}
+	if settings != nil {
+		for _, p := range settings.Parameters {
+			resolved[p.Name] = jobs.JobParameter{Name: p.Name, Default: p.Default, Value: p.Default}
+		}
+	}
+	for name, value := range overrides {
+		p := resolved[name]
+		p.Name = name
+		p.Value = value
+		resolved[name] = p
+	}
+	if len(resolved) == 0 {
+		return nil
+	}
+	result := make([]jobs.JobParameter, 0, len(resolved))
+	for _, p := range resolved {
+		result = append(result, p)
+	}
+	slices.SortFunc(result, func(a, b jobs.JobParameter) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	return result
+}
+
+// runOverridingParameters mirrors how GetRun echoes the run's overriding
+// parameters. Returns nil when the request set none.
+func runOverridingParameters(request jobs.RunNow) *jobs.RunParameters {
+	p := jobs.RunParameters{
+		DbtCommands:       request.DbtCommands,
+		JarParams:         request.JarParams,
+		NotebookParams:    request.NotebookParams,
+		PipelineParams:    request.PipelineParams,
+		PythonNamedParams: request.PythonNamedParams,
+		PythonParams:      request.PythonParams,
+		SparkSubmitParams: request.SparkSubmitParams,
+		SqlParams:         request.SqlParams,
+	}
+	if len(p.DbtCommands) == 0 && len(p.JarParams) == 0 && len(p.NotebookParams) == 0 &&
+		p.PipelineParams == nil && len(p.PythonNamedParams) == 0 && len(p.PythonParams) == 0 &&
+		len(p.SparkSubmitParams) == 0 && len(p.SqlParams) == 0 {
+		return nil
+	}
+	return &p
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.

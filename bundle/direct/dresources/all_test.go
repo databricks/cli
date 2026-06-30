@@ -322,6 +322,30 @@ var testDeps = map[string]prepareWorkspace{
 		return testConfig["vector_search_indexes"], nil
 	},
 
+	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// A run can only be triggered against an existing job, so create one first.
+		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
+			Name: "job-for-run",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "t",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.JobRun{
+			RunNow: jobs.RunNow{
+				JobId: resp.JobId,
+			},
+		}, nil
+	},
+
 	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-permissions",
@@ -1032,7 +1056,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// job_runs has a no-op DoDelete (a triggered run cannot be "undeployed"), so
+	// the run remains readable after delete, like permissions and grants.
+	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "job_runs"
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
 	if deleteIsNoop {
@@ -1126,27 +1152,40 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 		// provided_id_fields, or ignore_local_changes; output-only fields are
 		// covered by ignore_remote_changes since the user never sets them.
 		covered := map[string]bool{}
+		// A root rule (nil Field) matches every path via HasPatternPrefix, so it
+		// covers all fields at once. Coverage here is by exact path string, which
+		// a root rule (Field.String() == "") would never hit, so track it apart.
+		rootCovered := false
+		markCovered := func(r FieldRule) {
+			if r.Field.IsRoot() {
+				rootCovered = true
+			}
+			covered[r.Field.String()] = true
+		}
 		for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 			if cfg == nil {
 				continue
 			}
 			for _, r := range cfg.RecreateOnChanges {
-				covered[r.Field.String()] = true
+				markCovered(r)
 			}
 			for _, r := range cfg.ProvidedIDFields {
-				covered[r.Field.String()] = true
+				markCovered(r)
 			}
 			for _, r := range cfg.IgnoreLocalChanges {
-				covered[r.Field.String()] = true
+				markCovered(r)
 			}
 			for _, r := range cfg.IgnoreRemoteChanges {
 				if strings.HasSuffix(r.Reason, "output_only") {
-					covered[r.Field.String()] = true
+					markCovered(r)
 				}
 			}
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
+			if rootCovered {
+				return
+			}
 			err := structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
 				if path.IsRoot() {
 					return true

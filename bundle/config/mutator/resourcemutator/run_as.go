@@ -126,6 +126,17 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		))
 	}
 
+	// Job runs execute under the triggered job's own identity; the RunNow API
+	// has no run_as field, so a differing bundle run_as cannot be honored.
+	if len(b.Config.Resources.JobRuns) > 0 {
+		diags = diags.Extend(reportRunAsNotSupported(
+			"job_runs",
+			b.Config.GetLocation("resources.job_runs"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		))
+	}
+
 	return diags
 }
 

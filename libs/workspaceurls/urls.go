@@ -81,6 +81,15 @@ func JobRunPath(jobID, runID string) string {
 	return fmt.Sprintf("jobs/%s/runs/%s", jobID, runID)
 }
 
+// JobRunURL constructs a workspace URL for a job run from a base URL, job ID,
+// and run ID. Unlike ResourceURL it takes two IDs because a run is addressed by
+// both its parent job and the run itself, so it can't be expressed as a single
+// entry in resourceURLPatterns.
+func JobRunURL(baseURL url.URL, jobID, runID string) string {
+	baseURL.Path = JobRunPath(jobID, runID)
+	return baseURL.String()
+}
+
 // ResourceURL constructs a workspace URL for a named resource type and ID.
 func ResourceURL(baseURL url.URL, resourceType, id string) string {
 	resourceType = resolveAlias(resourceType)

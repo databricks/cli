@@ -33,6 +33,7 @@ var unsupportedResources = []string{
 	"postgres_roles",
 	"postgres_synced_tables",
 	"vector_search_indexes",
+	"job_runs",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {

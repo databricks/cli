@@ -917,6 +917,16 @@ resources:
         "warehouse_id":
           "description": |-
             ID of the SQL warehouse used to run queries for this Genie space.
+    "job_runs":
+      "description": |-
+        The job run definitions for the bundle, where each key is the name of the job run. Each job run triggers a run of an existing job as part of bundle deployment.
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "python_named_params":
+          "description": |-
+            PLACEHOLDER
     "jobs":
       "description": |-
         The job definitions for the bundle, where each key is the name of the job.

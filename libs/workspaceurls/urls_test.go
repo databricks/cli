@@ -35,6 +35,14 @@ func TestJobRunPath(t *testing.T) {
 	assert.Equal(t, "jobs/123/runs/456", JobRunPath("123", "456"))
 }
 
+func TestJobRunURL(t *testing.T) {
+	base := url.URL{Scheme: "https", Host: "host.com"}
+	assert.Equal(t, "https://host.com/jobs/123/runs/456", JobRunURL(base, "123", "456"))
+
+	withWorkspace := url.URL{Scheme: "https", Host: "host.com", RawQuery: "w=789"}
+	assert.Equal(t, "https://host.com/jobs/123/runs/456?w=789", JobRunURL(withWorkspace, "123", "456"))
+}
+
 func TestResourceTypes(t *testing.T) {
 	types := ResourceTypes()
 	assert.NotEmpty(t, types)

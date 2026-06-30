@@ -116,6 +116,45 @@ resources:
       - field: tasks[*].new_cluster.data_security_mode
       - field: job_clusters[*].new_cluster.data_security_mode
 
+  job_runs:
+    # A run is immutable: this milestone re-triggers it only on a local change to
+    # its own config, never on remote drift. Every settable input is therefore
+    # ignored for remote changes here, while the recreate_on_changes rule below
+    # re-triggers on any local change. (Other re-trigger signals are a later milestone.)
+    ignore_remote_changes:
+      - field: dbt_commands
+        reason: input_only
+      - field: idempotency_token
+        reason: input_only
+      - field: jar_params
+        reason: input_only
+      - field: job_parameters
+        reason: input_only
+      - field: notebook_params
+        reason: input_only
+      - field: only
+        reason: input_only
+      - field: performance_target
+        reason: input_only
+      - field: pipeline_params
+        reason: input_only
+      - field: python_named_params
+        reason: input_only
+      - field: python_params
+        reason: input_only
+      - field: queue
+        reason: input_only
+      - field: spark_submit_params
+        reason: input_only
+      - field: sql_params
+        reason: input_only
+    # A run can't be modified in place, so any change recreates it (no-op delete +
+    # a fresh RunNow). Omitting `field` makes the rule match the root, i.e. every
+    # field (see TestFieldRuleOmittedIsRoot); a literal `field: ""` would not, as
+    # it parses to an empty component that matches nothing.
+    recreate_on_changes:
+      - reason: immutable
+
   pipelines:
     recreate_on_changes:
       - field: storage

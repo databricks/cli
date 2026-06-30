@@ -1,0 +1,22 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+title "initial deploy triggers the first run"
+trace $CLI bundle deploy
+trace $CLI bundle plan
+trace $CLI bundle summary
+trace read_id.py my_job
+trace print_requests.py //jobs/run-now
+
+title "change the run configuration and redeploy"
+trace update_file.py databricks.yml "env: dev" "env: prod"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI bundle plan
+trace $CLI bundle summary
+
+title "the config change triggered a second, different run"
+trace print_requests.py //jobs/run-now

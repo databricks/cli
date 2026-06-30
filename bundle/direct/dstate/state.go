@@ -10,9 +10,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
@@ -462,6 +462,11 @@ func (db *DeploymentState) AssertOpenedForWrite() {
 func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range data.State {
+		// Match on the exact resource type rather than substring-matching the
+		// key, so a sub-resource entry like resources.<group>.<name>.permissions
+		// (type "<group>.permissions") is not mistaken for the resource itself.
+		resourceType := config.GetResourceTypeFromKey(key)
+
 		var etag string
 		// Extract etag for resources that use it for drift detection
 		// (dashboards and genie_spaces). Both follow the same pattern of
@@ -470,7 +475,7 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 		// covered by test cases:
 		//   - bundle/deploy/dashboard/detect-change
 		//   - bundle/resources/genie_spaces/simple
-		if (strings.Contains(key, ".dashboards.") || strings.Contains(key, ".genie_spaces.")) && len(entry.State) > 0 {
+		if (resourceType == "dashboards" || resourceType == "genie_spaces") && len(entry.State) > 0 {
 			var holder struct {
 				Etag string `json:"etag"`
 			}
@@ -479,9 +484,22 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 			}
 		}
 
+		// Persist a run's resolved job_id so read-only commands can build its
+		// URL; in config it is a deploy-time-only ${resources.jobs.*.id} reference.
+		var jobID int64
+		if resourceType == "job_runs" && len(entry.State) > 0 {
+			var holder struct {
+				JobID int64 `json:"job_id"`
+			}
+			if err := json.Unmarshal(entry.State, &holder); err == nil {
+				jobID = holder.JobID
+			}
+		}
+
 		result[key] = resourcestate.ResourceState{
 			ID:             entry.ID,
 			ETag:           etag,
+			JobID:          jobID,
 			StateSizeBytes: len(entry.State),
 		}
 	}

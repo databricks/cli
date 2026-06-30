@@ -1,0 +1,90 @@
+
+=== deploy triggers exactly one run
+>>> [CLI] bundle validate
+Name: job-runs-basic
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
+
+Validation OK!
+
+>>> [CLI] bundle plan
+create job_runs.my_run
+create jobs.my_job
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle summary
+Name: job-runs-basic
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
+Resources:
+  Job Runs:
+    my_run:
+      Name: 
+      URL:  (not deployed)
+  Jobs:
+    my_job:
+      Name: my-job
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle summary
+Name: job-runs-basic
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
+Resources:
+  Job Runs:
+    my_run:
+      Name: 
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[NUMID]
+  Jobs:
+    my_job:
+      Name: my-job
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+
+=== exactly one run-now request was made
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+=== the triggered run id is stored in state
+>>> read_id.py my_run
+[MY_RUN_ID]
+
+>>> read_id.py my_job
+[MY_JOB_ID]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
+
+Deleting files...
+Destroy complete!

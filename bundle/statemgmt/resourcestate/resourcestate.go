@@ -8,6 +8,11 @@ type ResourceState struct {
 	// For dashboards
 	ETag string
 
+	// For job_runs: the resolved job_id the run was launched against. In config
+	// it is a ${resources.jobs.*.id} reference resolved only at deploy, so at
+	// read time it is 0; we carry the deployed value to restore it at load time.
+	JobID int64
+
 	// Size in bytes of the resource's serialized state blob. Populated by the
 	// direct engine (len of the JSON stored in resources.json) for deploy
 	// telemetry; left zero by the terraform path.

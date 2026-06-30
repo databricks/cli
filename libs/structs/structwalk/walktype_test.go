@@ -136,7 +136,7 @@ func TestTypeJobSettings(t *testing.T) {
 func TestTypeRoot(t *testing.T) {
 	testStruct(t,
 		reflect.TypeFor[config.Root](),
-		5000, 6000, // 5813 after genie_space resource added
+		5000, 8000, // 6027 with the job_runs resource (RunNow request fields only)
 		map[string]any{
 			"bundle.target":                "",
 			`variables.*.lookup.dashboard`: "",
