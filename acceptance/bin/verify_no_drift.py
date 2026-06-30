@@ -11,18 +11,21 @@ def check_plan(path):
     with open(path) as fobj:
         raw = fobj.read()
 
-    changes_detected = 0
-
+    # Empty or unparseable output means `bundle plan` itself failed; report that
+    # cleanly instead of crashing with a traceback.
+    if not raw.strip():
+        sys.exit(f"{path}: empty plan output (bundle plan failed)")
     try:
         data = json.loads(raw)
-        for key, value in data["plan"].items():
-            action = value.get("action")
-            if action != "skip":
-                print(f"Unexpected {action=} for {key}")
-                changes_detected += 1
-    except Exception:
-        print(raw, flush=True)
-        raise
+    except json.JSONDecodeError as e:
+        sys.exit(f"{path}: invalid plan JSON: {e}\n{raw}")
+
+    changes_detected = 0
+    for key, value in data["plan"].items():
+        action = value.get("action")
+        if action != "skip":
+            print(f"Unexpected {action=} for {key}")
+            changes_detected += 1
 
     if changes_detected:
         print(raw, flush=True)

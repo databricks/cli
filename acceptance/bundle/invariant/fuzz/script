@@ -1,25 +1,16 @@
-# Invariant: the CLI never panics or hits an internal error on any config generated
-# from the bundle schema, and a config that deploys cleanly has no drift.
+# Invariant: the CLI never panics on a schema-generated config, and a config that
+# deploys cleanly has no drift. gen_fuzz_config.py produces a random schema-valid
+# config; ../no_drift.sh (shared with the no_drift test) does the deploy/drift/destroy
+# checks. Output goes to LOG.* so a violation fails via exit code, not diff, letting
+# the same test run under any seed window [START, START+COUNT).
 #
-# gen_fuzz_config.py walks the schema emitted by the CLI under test to produce a
-# random schema-valid config; the no-drift / no-panic checks are the shared
-# ../no_drift.sh body, the same one the no_drift test runs. Reusing it keeps the
-# deploy/drift/destroy assertions in one place and lets other invariant tests be
-# fuzzed the same way.
+# A rejected config is not a bug: ../no_drift.sh prints INPUT_CONFIG_OK once a config
+# deploys, so a non-zero result before that marker (no panic) is just a rejection,
+# while a panic anywhere or a failure after it (drift, destroy) is a real bug.
 #
-# Seeds form a window [START, START+COUNT), env-driven so the nightly job can sweep a
-# wide non-overlapping range while this committed test stays small. All output goes to
-# LOG.* so output.txt stays empty: a violation fails via exit code, not diff, which
-# lets the same test run under any seed window.
-#
-# The CLI is free to reject a generated config; that is not a bug. ../no_drift.sh
-# prints INPUT_CONFIG_OK once a config deploys cleanly, so a non-zero result before
-# that marker (with no panic) means the config was rejected and is skipped, while a
-# panic anywhere or a failure after the marker (drift, destroy) is a real CLI bug.
-#
-# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a fresh random config can deploy yet
+# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a random config can deploy yet
 # legitimately differ from the fake server's state, so the committed run only asserts
-# no-panic and tells ../no_drift.sh to skip its drift assertion.
+# no-panic and skips the drift assertion.
 
 START="${FUZZ_SEED_START:-0}"
 COUNT="${FUZZ_SEED_COUNT:-5}"
@@ -28,8 +19,7 @@ if [ -z "${FUZZ_CHECK_DRIFT:-}" ]; then
     export SKIP_DRIFT_CHECK=1
 fi
 
-# no_drift.sh deploys via readplanarg, which reads READPLAN; the fuzzer doesn't use
-# the saved-plan matrix, so deploy once without it (and satisfy the script's set -u).
+# no_drift.sh reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
 export READPLAN=""
 
 # Emit the schema from the CLI under test so the generator always matches it.
