@@ -3,8 +3,13 @@ package aircmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/iotest"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -13,12 +18,24 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+// runCancelAll runs `cancel --all` against w with the given output mode and
+// stdin, capturing output into buf.
+func runCancelAll(t *testing.T, w *databricks.WorkspaceClient, out flags.Output, in io.Reader, buf *bytes.Buffer) error {
+	t.Helper()
+	cmd := withOutput(newCancelCommand(), out)
+	require.NoError(t, cmd.Flags().Set("all", "true"))
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), out, in, buf, buf, "", ""))
+	cmd.SetContext(cmdctx.SetWorkspaceClient(ctx, w))
+	return cmd.RunE(cmd, nil)
+}
 
 // cancelEnvelope decodes the air JSON envelope with the cancel payload.
 type cancelEnvelope struct {
@@ -138,18 +155,35 @@ func TestCancelByIDSuccessJSON(t *testing.T) {
 	assert.Empty(t, got.Data.Failed)
 }
 
+func TestCancelByIDGenericFailure(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 7}).Return(nil, errors.New("boom"))
+
+	var buf bytes.Buffer
+	_, err := runCancel(t, m.WorkspaceClient, flags.OutputText, "", &buf, "7")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Contains(t, buf.String(), "Failed to cancel run 7: boom")
+}
+
 func TestCancelAllNoActiveRuns(t *testing.T) {
+	w := newTestWorkspaceClient(t, workflowsServer(t, workflowsBody(t, "")).URL)
+	var buf bytes.Buffer
+	require.NoError(t, runCancelAll(t, w, flags.OutputText, nil, &buf))
+	assert.Contains(t, buf.String(), "No active runs found.")
+}
+
+func TestCancelAllNoActiveRunsJSON(t *testing.T) {
 	srv := workflowsServer(t, workflowsBody(t, ""))
 	w := newTestWorkspaceClient(t, srv.URL)
 
 	var buf bytes.Buffer
-	cmd := withOutput(newCancelCommand(), flags.OutputText)
-	require.NoError(t, cmd.Flags().Set("all", "true"))
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &buf, &buf, "", ""))
-	cmd.SetContext(cmdctx.SetWorkspaceClient(ctx, w))
+	require.NoError(t, runCancelAll(t, w, flags.OutputJSON, nil, &buf))
 
-	require.NoError(t, cmd.RunE(cmd, nil))
-	assert.Contains(t, buf.String(), "No active runs found.")
+	var got cancelEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Empty(t, got.Data.Cancelled)
+	assert.True(t, got.Data.All)
+	assert.Equal(t, srv.URL, got.Data.Workspace)
 }
 
 func TestCancelAllConfirmYes(t *testing.T) {
@@ -160,12 +194,7 @@ func TestCancelAllConfirmYes(t *testing.T) {
 	w := newTestWorkspaceClient(t, srv.URL)
 
 	var buf bytes.Buffer
-	cmd := withOutput(newCancelCommand(), flags.OutputText)
-	require.NoError(t, cmd.Flags().Set("all", "true"))
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader("y\n"), &buf, &buf, "", ""))
-	cmd.SetContext(cmdctx.SetWorkspaceClient(ctx, w))
-
-	require.NoError(t, cmd.RunE(cmd, nil))
+	require.NoError(t, runCancelAll(t, w, flags.OutputText, strings.NewReader("y\n"), &buf))
 	out := buf.String()
 	assert.Contains(t, out, "active run(s) to cancel")
 	assert.Contains(t, out, "Successfully requested cancellation for run 111")
@@ -179,14 +208,50 @@ func TestCancelAllAbort(t *testing.T) {
 	w := newTestWorkspaceClient(t, srv.URL)
 
 	var buf bytes.Buffer
-	cmd := withOutput(newCancelCommand(), flags.OutputText)
-	require.NoError(t, cmd.Flags().Set("all", "true"))
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader("n\n"), &buf, &buf, "", ""))
-	cmd.SetContext(cmdctx.SetWorkspaceClient(ctx, w))
-
-	err := cmd.RunE(cmd, nil)
+	err := runCancelAll(t, w, flags.OutputText, strings.NewReader("n\n"), &buf)
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Contains(t, buf.String(), "Cancellation aborted.")
+}
+
+func TestCancelAllConfirmReadError(t *testing.T) {
+	srv := workflowsServer(t, workflowsBody(t, "",
+		testWorkflow(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
+	))
+	w := newTestWorkspaceClient(t, srv.URL)
+
+	var buf bytes.Buffer
+	err := runCancelAll(t, w, flags.OutputText, iotest.ErrReader(errors.New("read failed")), &buf)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "read failed")
+}
+
+func TestCancelAllMeError(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, iam.MeRequest{}).Return(nil, errors.New("nope"))
+
+	var buf bytes.Buffer
+	err := runCancelAll(t, m.WorkspaceClient, flags.OutputText, nil, &buf)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to resolve current user")
+}
+
+func TestCancelAllListError(t *testing.T) {
+	// Me succeeds (default empty user), but listing active runs fails.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == listWorkflowsPath {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error_code":"INTERNAL","message":"boom"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	w := newTestWorkspaceClient(t, srv.URL)
+
+	var buf bytes.Buffer
+	err := runCancelAll(t, w, flags.OutputText, nil, &buf)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to list active runs")
 }
 
 func TestDisplayCancelPreview(t *testing.T) {
