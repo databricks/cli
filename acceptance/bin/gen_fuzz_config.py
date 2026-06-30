@@ -104,6 +104,10 @@ class Generator:
         if t == "boolean":
             return self.rng.choice([True, False])
         if t == "integer":
+            # The field is in hours, but UC validates it as a window of 0 or 7-30
+            # days; only 0 or 168-720 (hours) are accepted.
+            if name == "custom_max_retention_hours":
+                return self.rng.choice([0, self.rng.randint(168, 720)])
             return self.rng.choice([0, 1, self.rng.randint(2, 1000)])
         if t == "number":
             return round(self.rng.uniform(0, 1000), 2)
