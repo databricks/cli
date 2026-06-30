@@ -20,20 +20,26 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 	}
 
 	catalogInfo := catalog.CatalogInfo{
-		Name:         createRequest.Name,
-		Comment:      createRequest.Comment,
-		StorageRoot:  createRequest.StorageRoot,
-		ProviderName: createRequest.ProviderName,
-		ShareName:    createRequest.ShareName,
-		Options:      createRequest.Options,
-		Properties:   createRequest.Properties,
-		FullName:     createRequest.Name,
-		CreatedAt:    nowMilli(),
-		CreatedBy:    s.CurrentUser().UserName,
-		UpdatedBy:    s.CurrentUser().UserName,
-		MetastoreId:  nextUUID(),
-		Owner:        s.CurrentUser().UserName,
-		CatalogType:  catalog.CatalogTypeManagedCatalog,
+		Name:    createRequest.Name,
+		Comment: createRequest.Comment,
+		// Round-trip the remaining create-request fields so a re-read matches the
+		// deployed config. Dropping them made connection_name (recreate_on_changes)
+		// re-plan as a perpetual recreate and managed_encryption_settings as drift.
+		StorageRoot:               createRequest.StorageRoot,
+		ProviderName:              createRequest.ProviderName,
+		ShareName:                 createRequest.ShareName,
+		ConnectionName:            createRequest.ConnectionName,
+		ManagedEncryptionSettings: createRequest.ManagedEncryptionSettings,
+		CustomMaxRetentionHours:   createRequest.CustomMaxRetentionHours,
+		Options:                   createRequest.Options,
+		Properties:                createRequest.Properties,
+		FullName:                  createRequest.Name,
+		CreatedAt:                 nowMilli(),
+		CreatedBy:                 s.CurrentUser().UserName,
+		UpdatedBy:                 s.CurrentUser().UserName,
+		MetastoreId:               nextUUID(),
+		Owner:                     s.CurrentUser().UserName,
+		CatalogType:               catalog.CatalogTypeManagedCatalog,
 	}
 	catalogInfo.UpdatedAt = catalogInfo.CreatedAt
 
