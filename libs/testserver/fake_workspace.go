@@ -34,10 +34,15 @@ import (
 const (
 	UserNameTokenPrefix         = "dbapi0"
 	ServicePrincipalTokenPrefix = "dbapi1"
-	UserID                      = "1000012345"
-	TestDefaultClusterId        = "0123-456789-cluster0"
-	TestDefaultWarehouseId      = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId   = "0123-456789-pool0"
+	// GuestServicePrincipalTokenPrefix marks a guest service principal that
+	// shares another identity's workspace (the as-test-sp helper). A dedicated
+	// prefix identifies the guest regardless of request order and keeps it
+	// distinct from a test whose primary identity is itself a service principal.
+	GuestServicePrincipalTokenPrefix = "dbapi2"
+	UserID                           = "1000012345"
+	TestDefaultClusterId             = "0123-456789-cluster0"
+	TestDefaultWarehouseId           = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId        = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -48,6 +53,42 @@ var TestUser = iam.User{
 var TestUserSP = iam.User{
 	Id:       UserID,
 	UserName: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
+}
+
+// guestServicePrincipalDisplayName is the display name reported for a guest
+// service principal (the as-test-sp helper). On cloud the guest is a distinct,
+// named SP, so only the guest—not the primary SP identity—carries this name.
+const guestServicePrincipalDisplayName = "deco-test-spn"
+
+// isGuestToken reports whether a token belongs to a guest service principal
+// that shares another identity's workspace. Job permission checks apply only to
+// guests; the workspace's primary identity is treated as an admin.
+func isGuestToken(token string) bool {
+	return strings.HasPrefix(token, GuestServicePrincipalTokenPrefix)
+}
+
+// userForToken returns the identity behind a request token. Service-principal
+// tokens (primary or guest) authenticate as the SP, otherwise as the user. This
+// lets a single workspace be accessed by both the test's primary identity and a
+// guest service principal (the as-test-sp helper), mirroring cloud where one
+// workspace serves many identities.
+func userForToken(token string) iam.User {
+	if strings.HasPrefix(token, ServicePrincipalTokenPrefix) || isGuestToken(token) {
+		return TestUserSP
+	}
+	return TestUser
+}
+
+// MeUser returns the identity for a request token. A guest service principal
+// (the as-test-sp helper on a workspace shared with a primary user) reports a
+// display name, matching the named SP used on cloud; the primary SP identity
+// does not, so single-identity service-principal tests are unaffected.
+func (s *FakeWorkspace) MeUser(token string) iam.User {
+	user := userForToken(token)
+	if isGuestToken(token) {
+		user.DisplayName = guestServicePrincipalDisplayName
+	}
+	return user
 }
 
 var (
