@@ -91,11 +91,14 @@ func TestTypeSelf(t *testing.T) {
 	}, getScalarFields(t, reflect.TypeFor[Self]()))
 }
 
-func testStruct(t *testing.T, typ reflect.Type, minLen, maxLen int, present map[string]any, notPresent []string) {
+func testStruct(t *testing.T, typ reflect.Type, minLen int, present map[string]any, notPresent []string) {
 	results := getScalarFields(t, typ)
 
+	// Only assert a lower bound on the field count: SDK bumps regularly add fields,
+	// so an upper bound churns every few bumps without catching anything. A runaway
+	// walk (e.g. circular references failing to terminate) is caught precisely by the
+	// notPresent checks below instead.
 	assert.Greater(t, len(results), minLen, "Expected to find many fields in %s", typ)
-	assert.Less(t, len(results), maxLen, "Expected to find not so many fields in %s", typ)
 
 	for path, expectedValue := range present {
 		value, found := results[path]
@@ -113,7 +116,7 @@ func TestTypeJobSettings(t *testing.T) {
 	testStruct(t,
 		reflect.TypeFor[jobs.JobSettings](),
 		// Verify we found a reasonable number of fields (605 after SDK v0.136.0 bump)
-		500, 650,
+		500,
 		map[string]any{
 			"name":                "",
 			"timeout_seconds":     0,
@@ -136,7 +139,7 @@ func TestTypeJobSettings(t *testing.T) {
 func TestTypeRoot(t *testing.T) {
 	testStruct(t,
 		reflect.TypeFor[config.Root](),
-		5000, 7000, // 6019 after SDK v0.152.0 (ai_runtime_task, telemetry_config, etc.)
+		5000,
 		map[string]any{
 			"bundle.target":                "",
 			`variables.*.lookup.dashboard`: "",
