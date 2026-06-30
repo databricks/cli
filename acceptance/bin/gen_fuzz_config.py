@@ -2,13 +2,10 @@
 """
 Generate a random bundle config from the bundle JSON schema.
 
-Walks the schema (`databricks bundle schema`), resolving $ref and picking concrete
-branches of oneOf/anyOf, and emits one random resource as a databricks.yml. Seeded
-so a failing run reproduces with the same --seed.
-
-Feeds the invariant tests (see acceptance/bundle/invariant/). The harness filters out
-configs the CLI rejects, so the generator may emit structurally-random-but-sometimes-
-invalid configs.
+Walks `databricks bundle schema` (resolving $ref, picking concrete oneOf/anyOf
+branches) and emits one random resource as databricks.yml, seeded by --seed. Feeds the
+invariant tests; the harness filters out configs the CLI rejects, so output may be
+structurally-random but sometimes invalid.
 """
 
 import argparse
@@ -16,13 +13,11 @@ import json
 import random
 import sys
 
-# Cap nesting depth: the schema is recursive (e.g. task -> for_each_task -> task),
-# so without a cap the walk would not terminate.
+# The schema is recursive (e.g. task -> for_each_task -> task); cap the walk.
 MAX_DEPTH = 6
 
-# Matches the ${...} interpolation-string branches the schema wraps every concrete
-# field in (see bundle/internal/schema/main.go addInterpolationPatterns). We emit
-# concrete values, so these branches are skipped.
+# The ${...} interpolation branch the schema wraps every field in (see
+# bundle/internal/schema/main.go addInterpolationPatterns); we emit concrete values.
 INTERPOLATION_MARKER = "\\$\\{"
 
 
