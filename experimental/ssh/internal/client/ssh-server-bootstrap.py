@@ -127,6 +127,14 @@ def run_ssh_server():
         raise RuntimeError("Session ID is required. Please provide it using the 'sessionId' widget.")
     serverless = dbutils.widgets.get("serverless")
 
+    # Mark this process's WSFS command origin so workspace-file activity from the
+    # remote SSH session is attributable
+    try:
+        with open("/Workspace/.proc/self/metadata/command_origin", "w") as command_origin_file:
+            command_origin_file.write("RemoteSshServer")
+    except OSError as e:
+        print(f"Could not set WSFS command origin: {e}")
+
     arch = platform.machine()
     if arch == "x86_64":
         cli_arch = "linux_amd64"
