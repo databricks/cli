@@ -194,21 +194,26 @@ func hasRunFilter() bool {
 // work, so a stale toolchain fails fast with an actionable message instead of
 // producing confusing diffs deep into the run.
 //
+// It reports whether all checks passed; a failure surfaces as
+// TestAccept/prerequisites rather than a bare TestAccept.
+//
 // On DBR the serverless image only provides what the test archive ships, so
 // every tool required here must also be bundled in internal/testarchive. When
 // adding a new RequireX prerequisite, add a matching downloader there too, or
 // DBR runs will fail this check before any test runs.
-func requirePrerequisites(t *testing.T) {
-	// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
-	internal.RequireJQ(t, "1.7")
-	// uv builds the databricks-bundles wheel and provides the test interpreter
-	// via `uv python find`, which landed in the 0.3 line.
-	internal.RequireUV(t, "0.4")
-	// ruff 0.9.1 is pinned across the repo (python/pyproject.toml, Taskfile.yml);
-	// the check-formatting test's golden output assumes its formatter behavior.
-	internal.RequireRuff(t, "0.9.1")
-	// Acceptance scripts import the stdlib tomllib module, added in Python 3.11.
-	internal.EnsurePython(t, "3.11")
+func requirePrerequisites(t *testing.T) bool {
+	return t.Run("prerequisites", func(t *testing.T) {
+		// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
+		internal.RequireJQ(t, "1.7")
+		// uv builds the databricks-bundles wheel and provides the test interpreter
+		// via `uv python find`, which landed in the 0.3 line.
+		internal.RequireUV(t, "0.4")
+		// ruff 0.9.1 is pinned across the repo (python/pyproject.toml, Taskfile.yml);
+		// the check-formatting test's golden output assumes its formatter behavior.
+		internal.RequireRuff(t, "0.9.1")
+		// Acceptance scripts import the stdlib tomllib module, added in Python 3.11.
+		internal.RequirePython(t, "3.11")
+	})
 }
 
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
@@ -252,7 +257,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
-	requirePrerequisites(t)
+	if !requirePrerequisites(t) {
+		// Don't run the suite against a stale toolchain; the failed subtest
+		// has already marked the parent test as failed.
+		return 0
+	}
+	// Run after the version check passed; must use the top-level t so the PATH
+	// change survives for the rest of the run.
+	internal.ConfigurePython(t, "3.11")
 
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
