@@ -3,7 +3,7 @@ package acceptance_test
 import (
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -56,7 +56,7 @@ func TestInvariantConfigsCoverage(t *testing.T) {
 	for key := range config.ResourcesTypes {
 		keys = append(keys, key)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	for _, key := range keys {
 		var covered bool
