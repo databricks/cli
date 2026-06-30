@@ -2,4 +2,5 @@ Local = true
 Cloud = true
 RequiresUnityCatalog = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.FUZZ_INVARIANT = ["no_drift", "migrate"]
 EnvMatrix.INPUT_CONFIG = []
