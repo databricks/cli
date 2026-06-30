@@ -419,7 +419,7 @@ func fetchRemote(ctx context.Context) (Manifest, error) {
 
 // AgentSkillsLatest is the sentinel value the skills field may take instead of a
 // concrete version, meaning "track the latest skills" rather than pinning a
-// release. The aitools installer maps it to the skills repo's default branch.
+// release. The aitools installer maps it to the skills repo's latest release tag.
 const AgentSkillsLatest = "latest"
 
 func parseManifest(data []byte) (Manifest, error) {

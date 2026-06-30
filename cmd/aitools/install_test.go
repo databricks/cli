@@ -286,7 +286,7 @@ func TestInstallPluginFirstDefault(t *testing.T) {
 	plugins := setupPluginMock(t)
 	skills := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 
@@ -298,6 +298,7 @@ func TestInstallPluginFirstDefault(t *testing.T) {
 	// plugin) does, plus a plugin recommendation.
 	require.Len(t, *skills, 1)
 	assert.Equal(t, []string{agents.NameCursor}, (*skills)[0].agents)
+	assert.Contains(t, stderr.String(), "Installing databricks plugin for Claude Code...")
 }
 
 func TestInstallInteractivePickerAndConfirm(t *testing.T) {
