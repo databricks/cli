@@ -77,10 +77,9 @@ func (s *FakeWorkspace) upsertPermission(objectKey string, entry iam.AccessContr
 	s.Permissions[objectKey] = perms
 }
 
-// jobPrincipalHasAccess reports whether the named principal holds a direct ACL
-// entry on the job (hasAccess) and whether the ACL assigns an explicit owner
-// (hasOwner). The owner signal lets callers grant the creator implicit access
-// only until ownership is transferred to someone else.
+// jobPrincipalHasAccess reports whether the principal has a direct ACL entry
+// (hasAccess) and whether the ACL names an explicit owner (hasOwner). hasOwner
+// lets callers grant the creator implicit access only until ownership moves.
 func jobPrincipalHasAccess(perms iam.ObjectPermissions, principal string) (hasAccess, hasOwner bool) {
 	for _, acl := range perms.AccessControlList {
 		for _, p := range acl.AllPermissions {
@@ -95,10 +94,8 @@ func jobPrincipalHasAccess(perms iam.ObjectPermissions, principal string) (hasAc
 	return hasAccess, hasOwner
 }
 
-// guestHasJobAccess reports whether a guest service principal may read a job.
-// Access is granted by a direct ACL entry, or—when no explicit owner is set—by
-// being the job's creator (the creator is the implicit owner until ownership is
-// transferred away). Must be called with s.mu held.
+// guestHasJobAccess reports whether a guest may access a job: via a direct ACL
+// entry, or as the creator while no explicit owner is set. Call with s.mu held.
 func (s *FakeWorkspace) guestHasJobAccess(jobId int64, principal string) bool {
 	perms := s.Permissions[fmt.Sprintf("/jobs/%d", jobId)]
 	hasAccess, hasOwner := jobPrincipalHasAccess(perms, principal)
@@ -124,8 +121,8 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 		requestObjectType = prefix + "/" + requestObjectType
 	}
 
-	// A guest service principal without manage access on a job cannot read its
-	// permissions, mirroring the backend's pre-existence permission check.
+	// A guest without manage access cannot read a job's permissions, mirroring
+	// the backend's pre-existence permission check.
 	if requestObjectType == "jobs" && isGuestToken(req.Token) {
 		if jobId, err := strconv.ParseInt(objectId, 10, 64); err == nil && !s.guestHasJobAccess(jobId, userForToken(req.Token).UserName) {
 			return jobManagePermissionDenied(userForToken(req.Token).UserName, jobId)
