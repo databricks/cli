@@ -1,0 +1,17 @@
+title "dry-run (text)"
+trace $CLI experimental air run -f valid.yaml --dry-run
+
+title "dry-run (json)"
+trace $CLI experimental air run -f valid.yaml --dry-run -o json
+
+title "override not yet supported"
+errcode trace $CLI experimental air run -f valid.yaml --dry-run --override a=b
+
+title "watch not yet supported"
+errcode trace $CLI experimental air run -f valid.yaml --dry-run --watch
+
+title "invalid config is rejected"
+errcode trace $CLI experimental air run -f invalid.yaml --dry-run
+
+title "missing --file"
+errcode trace $CLI experimental air run --dry-run

@@ -1,0 +1,39 @@
+
+=== dry-run (text)
+>>> [CLI] experimental air run -f valid.yaml --dry-run
+Dry run: configuration for "smoke-test" is valid; not submitting.
+
+=== dry-run (json)
+>>> [CLI] experimental air run -f valid.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "status": "DRY_RUN_OK",
+    "dry_run": true
+  }
+}
+
+=== override not yet supported
+>>> [CLI] experimental air run -f valid.yaml --dry-run --override a=b
+Error: --override is not yet supported
+
+Exit code: 1
+
+=== watch not yet supported
+>>> [CLI] experimental air run -f valid.yaml --dry-run --watch
+Error: --watch is not yet supported
+
+Exit code: 1
+
+=== invalid config is rejected
+>>> [CLI] experimental air run -f invalid.yaml --dry-run
+Error: invalid experiment_name "bad.name": only alphanumeric characters, hyphens (-), and underscores (_) are allowed
+
+Exit code: 1
+
+=== missing --file
+>>> [CLI] experimental air run --dry-run
+Error: required flag(s) "file" not set
+
+Exit code: 1
