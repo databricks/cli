@@ -8,10 +8,10 @@ Drop in replacement for golangci-lint that runs it only on changed packages.
 Changes are calculated as diff against the merge base with main by default, use --ref or -H/--head to change this.
 """
 
-import os
-import sys
 import argparse
+import os
 import subprocess
+import sys
 
 # Each entry is a path prefix: "tools" also covers "tools/task", "tools/other", etc.
 NESTED_MODULES = ("bundle/internal/tf/codegen", "tools")
@@ -45,13 +45,11 @@ def main():
     if gitroot:
         os.chdir(gitroot[0])
 
-    # Resolve the merge base between the ref and HEAD so that we only lint
-    # files changed on this branch, not files that changed on the ref since
-    # the branch point.
-    merge_base = parse_lines(["git", "merge-base", args.ref, "HEAD"])
-    base = merge_base[0] if merge_base else args.ref
-
-    changed = parse_lines(["git", "diff", "--name-only", base, "--", "."])
+    # Diff the merge base against the working tree so we only lint files changed
+    # on this branch, not files that advanced on the ref since the branch point.
+    # Unlike testmask's three-dot "ref...HEAD" form (tools/testmask/git.go), this
+    # includes the dirty tree's uncommitted changes, which is the point of --fix.
+    changed = parse_lines(["git", "diff", "--name-only", "--merge-base", args.ref, "--", "."])
 
     cmd = args.args[:]
 

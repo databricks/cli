@@ -1,0 +1,2 @@
+extend = "../ruff.toml"
+line-length = 88

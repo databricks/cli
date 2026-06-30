@@ -3,7 +3,11 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.core._variable import (
+    VariableOrDict,
+    VariableOrList,
+    VariableOrOptional,
+)
 from databricks.bundles.pipelines._models.auto_full_refresh_policy import (
     AutoFullRefreshPolicy,
     AutoFullRefreshPolicyParam,
@@ -42,6 +46,30 @@ class TableSpecificConfig:
     }
     }
     If unspecified, auto full refresh is disabled.
+    """
+
+    clustering_columns: VariableOrList[str] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] List of column names to use for clustering the destination table.
+    When specified, the destination Delta table will be clustered by these columns.
+    This can improve query performance when filtering on these columns.
+    Note: clustering_columns in table specific configuration will override the pipeline definition.
+    Note: we can only provide enable_auto_clustering or clustering_columns,
+    added as separate fields as we cannot have repeated field in oneof.
+    """
+
+    enable_auto_clustering: VariableOrOptional[bool] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Whether to enable auto clustering on the destination table.
+    When enabled, Delta will automatically optimize the data layout
+    based on the clustering columns for improved query performance.
+    Note: enable_auto_clustering in table specific configuration will override the pipeline definition.
+    Note: we can only provide enable_auto_clustering or clustering_columns,
+    added as separate fields as we cannot have repeated field in oneof.
     """
 
     exclude_columns: VariableOrList[str] = field(default_factory=list)
@@ -97,13 +125,23 @@ class TableSpecificConfig:
     [Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
     """
 
+    table_properties: VariableOrDict[str] = field(default_factory=dict)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Table properties to set on the destination table.
+    These are key-value pairs that configure various Delta table behaviors or any user defined properties.
+    Example: {"delta.feature.variantType": "supported", "delta.enableTypeWidening": "true"}
+    Note: table_properties in table specific configuration will override the table_properties of the pipeline definition.
+    """
+
     workday_report_parameters: VariableOrOptional[
         IngestionPipelineDefinitionWorkdayReportParameters
     ] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Private Preview] (Optional) Additional custom parameters for Workday Report
     """
 
     @classmethod
@@ -130,6 +168,30 @@ class TableSpecificConfigDict(TypedDict, total=False):
     }
     }
     If unspecified, auto full refresh is disabled.
+    """
+
+    clustering_columns: VariableOrList[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] List of column names to use for clustering the destination table.
+    When specified, the destination Delta table will be clustered by these columns.
+    This can improve query performance when filtering on these columns.
+    Note: clustering_columns in table specific configuration will override the pipeline definition.
+    Note: we can only provide enable_auto_clustering or clustering_columns,
+    added as separate fields as we cannot have repeated field in oneof.
+    """
+
+    enable_auto_clustering: VariableOrOptional[bool]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Whether to enable auto clustering on the destination table.
+    When enabled, Delta will automatically optimize the data layout
+    based on the clustering columns for improved query performance.
+    Note: enable_auto_clustering in table specific configuration will override the pipeline definition.
+    Note: we can only provide enable_auto_clustering or clustering_columns,
+    added as separate fields as we cannot have repeated field in oneof.
     """
 
     exclude_columns: VariableOrList[str]
@@ -185,13 +247,23 @@ class TableSpecificConfigDict(TypedDict, total=False):
     [Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
     """
 
+    table_properties: VariableOrDict[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Table properties to set on the destination table.
+    These are key-value pairs that configure various Delta table behaviors or any user defined properties.
+    Example: {"delta.feature.variantType": "supported", "delta.enableTypeWidening": "true"}
+    Note: table_properties in table specific configuration will override the table_properties of the pipeline definition.
+    """
+
     workday_report_parameters: VariableOrOptional[
         IngestionPipelineDefinitionWorkdayReportParametersParam
     ]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Private Preview] (Optional) Additional custom parameters for Workday Report
     """
 
 

@@ -8,14 +8,14 @@ Deployment complete!
 
 >>> print_app_requests
 {
-  "body": {
-    "description": "my_app_description",
-    "name": "[UNIQUE_NAME]"
-  },
   "method": "POST",
   "path": "/api/2.0/apps",
   "q": {
     "no_compute": "true"
+  },
+  "body": {
+    "description": "my_app_description",
+    "name": "[UNIQUE_NAME]"
   }
 }
 
@@ -46,17 +46,17 @@ Deployment complete!
 
 >>> print_app_requests
 {
-  "body": {},
   "method": "POST",
-  "path": "/api/2.0/apps/[UNIQUE_NAME]/start"
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/start",
+  "body": {}
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
   "body": {
     "mode": "SNAPSHOT",
     "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files/app"
-  },
-  "method": "POST",
-  "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments"
+  }
 }
 
 === started: true -> (started omitted) -> deploy: no start/stop requests (compute stays as-is)

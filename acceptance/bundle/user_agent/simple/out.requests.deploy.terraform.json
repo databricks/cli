@@ -160,6 +160,24 @@
     ]
   },
   "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
   "q": {
     "overwrite": "true"
@@ -303,6 +321,18 @@
 {
   "headers": {
     "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
       "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
     ]
   },
@@ -312,7 +342,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.117.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 auth/pat"
+      "databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 auth/pat"
     ]
   },
   "method": "GET",
@@ -324,7 +354,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.117.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 auth/pat"
+      "databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 auth/pat"
     ]
   },
   "method": "GET",
@@ -336,7 +366,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.117.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+      "databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
     ]
   },
   "method": "GET",
@@ -345,7 +375,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.117.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+      "databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
     ]
   },
   "method": "POST",
@@ -358,7 +388,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.117.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+      "databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
     ]
   },
   "method": "GET",
@@ -367,7 +397,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.117.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+      "databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
     ]
   },
   "method": "GET",
@@ -376,7 +406,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.117.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+      "databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
     ]
   },
   "method": "GET",
@@ -385,7 +415,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.117.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+      "databricks-tf-provider/1.118.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
     ]
   },
   "method": "GET",

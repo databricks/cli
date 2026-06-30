@@ -1,7 +1,8 @@
+import os
 from typing import List, Optional
+
 from IPython.core.getipython import get_ipython
 from IPython.display import display as ip_display
-import os
 
 
 def _log_exceptions(func):
@@ -20,8 +21,8 @@ def _log_exceptions(func):
 
 @_log_exceptions
 def _register_runtime_hooks():
+    from dbruntime.IPythonShellHooks import IPythonShellHook, load_ipython_hooks
     from dbruntime.monkey_patches import apply_dataframe_display_patch
-    from dbruntime.IPythonShellHooks import load_ipython_hooks, IPythonShellHook
     from IPython.core.interactiveshell import ExecutionInfo
 
     # Setting executing_raw_cell before cell execution is required to make dbutils.library.restartPython() work
@@ -41,7 +42,8 @@ def _warn_for_dbr_alternative(magic: str):
     if magic in local_magic_dbr_alternative:
         warnings.warn(
             f"\\n{magic} is not supported on Databricks. This notebook might fail when running on a Databricks cluster.\\n"
-            f"Consider using %{local_magic_dbr_alternative[magic]} instead."
+            f"Consider using %{local_magic_dbr_alternative[magic]} instead.",
+            stacklevel=2,
         )
 
 
@@ -102,10 +104,7 @@ def _handle_line_magic(lines: List[str]) -> List[str]:
         lines = lines[1:]
         spark_string = (
             "global _sqldf\n"
-            + "_sqldf = spark.sql('''"
-            + "".join(lines).replace("'", "\\'")
-            + "''')\n"
-            + "display(_sqldf)\n"
+            "_sqldf = spark.sql('''" + "".join(lines).replace("'", "\\'") + "''')\n" + "display(_sqldf)\n"
         )
         return spark_string.splitlines(keepends=True)
 
@@ -152,9 +151,9 @@ def _register_common_magics():
 @_log_exceptions
 def _register_pip_magics():
     """Register the pip magic command parser with IPython."""
+    from dbruntime import UserNamespaceInitializer
     from dbruntime.DatasetInfo import UserNamespaceDict
     from dbruntime.PipMagicOverrides import PipMagicOverrides
-    from dbruntime import UserNamespaceInitializer
 
     user_namespace_initializer = UserNamespaceInitializer.getOrCreate()
     entry_point = user_namespace_initializer.get_spark_entry_point()

@@ -25,7 +25,11 @@ EnvMatrix.INPUT_CONFIG = [
     "app.yml.tmpl",
     "catalog.yml.tmpl",
     "cluster.yml.tmpl",
+    "cluster_apply_policy_default_values.yml.tmpl",
     "dashboard.yml.tmpl",
+    "job_apply_policy_default_values_job_cluster.yml.tmpl",
+    "job_apply_policy_default_values_task_cluster.yml.tmpl",
+    "job_apply_policy_default_values_for_each_task.yml.tmpl",
     "database_catalog.yml.tmpl",
     "database_instance.yml.tmpl",
     "experiment.yml.tmpl",
@@ -36,6 +40,7 @@ EnvMatrix.INPUT_CONFIG = [
     "job_pydabs_1000_tasks.yml.tmpl",
     "job_cross_resource_ref.yml.tmpl",
     "job_permission_ref.yml.tmpl",
+    "job_run_job_ref.yml.tmpl",
     "job_with_depends_on.yml.tmpl",
     "job_with_permissions.yml.tmpl",
     "job_with_task.yml.tmpl",
@@ -43,9 +48,11 @@ EnvMatrix.INPUT_CONFIG = [
     "model_with_permissions.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",
     "pipeline.yml.tmpl",
+    "pipeline_apply_policy_default_values.yml.tmpl",
     "pipeline_config_dots.yml.tmpl",
     "postgres_branch.yml.tmpl",
     "postgres_catalog.yml.tmpl",
+    "postgres_database.yml.tmpl",
     "postgres_endpoint.yml.tmpl",
     "postgres_project.yml.tmpl",
     "postgres_role.yml.tmpl",
@@ -70,6 +77,11 @@ EnvMatrix.INPUT_CONFIG = [
 [EnvMatrixExclude]
 no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
 
+# job_run_job_ref sets a health rule value to 2^53+1 to exercise large-integer
+# precision in state migration. The value is out of range for the real backend,
+# so this config is local-only (the mock server stores it verbatim).
+no_run_job_ref_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=job_run_job_ref.yml.tmpl"]
+
 # Postgres resources only work on AWS
 no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_project.yml.tmpl"]
 no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
@@ -77,6 +89,7 @@ no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_end
 no_postgres_catalog_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_catalog.yml.tmpl"]
 no_postgres_synced_table_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_synced_table.yml.tmpl"]
 no_postgres_role_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_role.yml.tmpl"]
+no_postgres_database_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_database.yml.tmpl"]
 
 # External locations require actual storage credentials with cloud IAM setup
 # which are environment-specific, so we only test locally with the mock server
@@ -84,6 +97,12 @@ no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_loc
 
 # External volumes reference external locations; excluded from cloud for the same reason
 no_external_volume_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=volume_external.yml.tmpl"]
+
+# A vector search index takes 10-20 min to create, and these tests deploy it twice
+# (deploy, then re-plan), making it by far the slowest variant on cloud. The dedicated
+# vector_search_indexes resource test already covers it on cloud (CloudSlow), so exclude
+# it here to keep the cloud invariant runs from timing out. Still exercised locally.
+no_vector_search_index_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=vector_search_index.yml.tmpl"]
 
 # Fake SQL endpoint for local tests
 [[Server]]

@@ -3,7 +3,13 @@
 #
 # Available options:
 #   recreate_on_changes: fields that trigger delete + create
-#   update_id_on_changes: fields that trigger UpdateWithID (ID may change)
+#   provided_id_fields: fields composing the name-based ID the resource is fetched by.
+#     Local changes trigger delete + create. Remote-only differences are skipped:
+#     a successful get-by-ID means a differing remote value can only be backend
+#     normalization; a real out-of-band rename would 404 (handled as resource-gone).
+#   updatable_id_fields: like provided_id_fields, but a local change triggers
+#     UpdateWithID (rename; the ID changes) instead of delete + create. Remote-only
+#     differences are skipped the same way (only local changes act).
 #   ignore_remote_changes: fields where remote changes are ignored
 #   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
 #   backend_defaults: fields where the backend may set defaults (skipped when old/new are nil but remote is set)
@@ -40,6 +46,12 @@ resources:
         reason: managed
       - field: tasks[*].new_cluster.gcp_attributes
         reason: managed
+      - field: tasks[*].for_each_task.task.new_cluster.aws_attributes
+        reason: managed
+      - field: tasks[*].for_each_task.task.new_cluster.azure_attributes
+        reason: managed
+      - field: tasks[*].for_each_task.task.new_cluster.gcp_attributes
+        reason: managed
       - field: job_clusters[*].new_cluster.aws_attributes
         reason: managed
       - field: job_clusters[*].new_cluster.azure_attributes
@@ -47,30 +59,45 @@ resources:
       - field: job_clusters[*].new_cluster.gcp_attributes
         reason: managed
 
+      # The Jobs API accepts apply_policy_default_values but does not return it
+      # in GET responses, so the remote is always nil even when the user sets it.
+      # Ignore remote-side nil so old==new (no user change) doesn't trigger drift.
+      - field: tasks[*].new_cluster.apply_policy_default_values
+        reason: not_returned_by_api
+      - field: tasks[*].for_each_task.task.new_cluster.apply_policy_default_values
+        reason: not_returned_by_api
+      - field: job_clusters[*].new_cluster.apply_policy_default_values
+        reason: not_returned_by_api
+
     backend_defaults:
       # Same as clusters.enable_elastic_disk — see clusters/resource_cluster.go#L331
       # s.SchemaPath("enable_elastic_disk").SetComputed()
       - field: tasks[*].new_cluster.enable_elastic_disk
+      - field: tasks[*].for_each_task.task.new_cluster.enable_elastic_disk
       - field: job_clusters[*].new_cluster.enable_elastic_disk
 
       # Same as clusters.enable_local_disk_encryption — see clusters/resource_cluster.go#L332
       # s.SchemaPath("enable_local_disk_encryption").SetComputed()
       - field: tasks[*].new_cluster.enable_local_disk_encryption
+      - field: tasks[*].for_each_task.task.new_cluster.enable_local_disk_encryption
       - field: job_clusters[*].new_cluster.enable_local_disk_encryption
 
       # Same as clusters.node_type_id — see clusters/resource_cluster.go#L333
       # s.SchemaPath("node_type_id").SetComputed()
       - field: tasks[*].new_cluster.node_type_id
+      - field: tasks[*].for_each_task.task.new_cluster.node_type_id
       - field: job_clusters[*].new_cluster.node_type_id
 
       # Same as clusters.driver_node_type_id — see clusters/resource_cluster.go#L334
       # s.SchemaPath("driver_node_type_id").SetComputed()
       - field: tasks[*].new_cluster.driver_node_type_id
+      - field: tasks[*].for_each_task.task.new_cluster.driver_node_type_id
       - field: job_clusters[*].new_cluster.driver_node_type_id
 
       # Same as clusters.driver_instance_pool_id — see clusters/resource_cluster.go#L335
       # s.SchemaPath("driver_instance_pool_id").SetComputed()
       - field: tasks[*].new_cluster.driver_instance_pool_id
+      - field: tasks[*].for_each_task.task.new_cluster.driver_instance_pool_id
       - field: job_clusters[*].new_cluster.driver_instance_pool_id
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L531
@@ -108,6 +135,7 @@ resources:
 
       # Same as clusters.data_security_mode: backend sets this when not specified
       - field: tasks[*].new_cluster.data_security_mode
+      - field: tasks[*].for_each_task.task.new_cluster.data_security_mode
       - field: job_clusters[*].new_cluster.data_security_mode
 
   pipelines:
@@ -176,7 +204,7 @@ resources:
       - field: event_log.schema
 
   models:
-    recreate_on_changes:
+    provided_id_fields:
       # Recreate matches current behavior of Terraform. It is possible to rename without recreate
       # but that would require dynamic select of the method during update since
       # the ml.RenameModel needs to be called instead of ml.UpdateModel.
@@ -214,9 +242,10 @@ resources:
 
   # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
   model_serving_endpoints:
-    recreate_on_changes:
+    provided_id_fields:
       - field: name
-        reason: immutable
+        reason: id_field
+    recreate_on_changes:
       # description is immutable, can't be updated via API
       - field: description
         reason: immutable
@@ -229,16 +258,11 @@ resources:
       - field: route_optimized
         reason: immutable
     ignore_remote_changes:
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
-      # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
-      # Routes have custom SuppressDiff (lines 387-388)
-      - field: config.traffic_config
-        reason: managed
+      # budget_policy_id is in ServingEndpointDetailed but GET never populates it
+      # (the API returns effective_budget_policy_id instead), so the remote always
+      # reports empty. This is not a backend default, so suppress remote changes.
       - field: budget_policy_id
         reason: no_update_api
-        # There is PublicPreview endpoints but we're not using it https://docs.databricks.com/api/workspace/servingendpoints/put
-      - field: rate_limits
-        reason: not_implemented
     ignore_local_changes:
       - field: budget_policy_id
         reason: no_update_api
@@ -262,10 +286,18 @@ resources:
       - field: route_optimized
         values: [false]
 
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
+      # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
+      # The backend defaults traffic_config (100% to the served entity) when the user
+      # does not specify one. Suppress only that default: if the user sets traffic_config
+      # and the remote diverges, normal drift detection still applies.
+      - field: config.traffic_config
+
   registered_models:
     ignore_remote_changes:
-      # Output-only timestamp/user fields zeroed in RemapState but still show up
-      # via ForceSendFields. These should never participate in diffs.
+      # Output-only timestamp/user fields populated by the backend on read.
+      # The user never sets them, so remote-only differences are ignored here
+      # rather than zeroed in RemapState.
       - field: created_at
         reason: output_only
       - field: created_by
@@ -274,15 +306,16 @@ resources:
         reason: output_only
       - field: updated_by
         reason: output_only
-    recreate_on_changes:
+    provided_id_fields:
       # The name can technically be updated without recreate. We recreate for now though
       # to match TF implementation.
       - field: name
         reason: terraform_compat
       - field: catalog_name
-        reason: immutable
+        reason: id_field
       - field: schema_name
-        reason: immutable
+        reason: id_field
+    recreate_on_changes:
       - field: storage_location
         reason: immutable
     backend_defaults:
@@ -295,18 +328,12 @@ resources:
       - field: metastore_id
 
   quality_monitors:
+    provided_id_fields:
+      - field: table_name
+        reason: id_field
     recreate_on_changes:
       - field: assets_dir
         reason: immutable
-      - field: table_name
-        reason: immutable
-    ignore_remote_changes:
-      - field: warehouse_id
-        reason: input_only
-      # skip_builtin_dashboard is input-only, not returned by the Get API.
-      # TF preserves it from state; see resource_quality_monitor.go.
-      - field: skip_builtin_dashboard
-        reason: input_only
 
   catalogs:
     recreate_on_changes:
@@ -318,24 +345,20 @@ resources:
         reason: immutable
       - field: share_name
         reason: immutable
-    update_id_on_changes:
+    updatable_id_fields:
       - field: name
         reason: id_changes
 
   schemas:
-    recreate_on_changes:
-      - field: name
-        reason: immutable
-      - field: catalog_name
-        reason: immutable
-      - field: storage_root
-        reason: immutable
-    normalize_case:
+    provided_id_fields:
       # UC lowercases identifier names; remote returns "myschema" for config "MySchema".
       - field: name
-        reason: uc_case
+        reason: id_field
       - field: catalog_name
-        reason: uc_case
+        reason: id_field
+    recreate_on_changes:
+      - field: storage_root
+        reason: immutable
     normalize_slash:
       - field: storage_root
         reason: uc_strips_trailing_slash
@@ -354,36 +377,24 @@ resources:
         reason: immutable
       - field: file_event_queue
         reason: immutable
-    update_id_on_changes:
+    updatable_id_fields:
       - field: name
         reason: id_changes
-    ignore_remote_changes:
-      # skip_validation is input-only and not returned by the API
-      - field: skip_validation
-        reason: input_only
 
   volumes:
-    recreate_on_changes:
+    provided_id_fields:
       - field: catalog_name
-        reason: immutable
+        reason: id_field
       - field: schema_name
-        reason: immutable
+        reason: id_field
+    recreate_on_changes:
       - field: storage_location
         reason: immutable
       - field: volume_type
         reason: immutable
-    update_id_on_changes:
+    updatable_id_fields:
       - field: name
         reason: id_changes
-    normalize_case:
-      # UC lowercases identifier names. name is in update_id_on_changes, so a
-      # case-only diff would otherwise trigger a spurious rename (DoUpdateWithID).
-      - field: catalog_name
-        reason: uc_case
-      - field: schema_name
-        reason: uc_case
-      - field: name
-        reason: uc_case
     normalize_slash:
       # UC strips trailing slashes on create; matches the Terraform provider's suppressLocationDiff.
       # https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
@@ -414,10 +425,67 @@ resources:
       - field: serialized_space
         reason: etag_based
 
-  apps:
-    recreate_on_changes:
+  database_instances:
+    provided_id_fields:
       - field: name
+        reason: id_field
+
+  database_catalogs:
+    provided_id_fields:
+      - field: name
+        reason: id_field
+    # The Database API has no UpdateDatabaseCatalog endpoint (the generated SDK
+    # method is a stub that returns 501 NOT_IMPLEMENTED), so this resource
+    # implements no DoUpdate and every settable field must recreate. The
+    # complementary ignore_remote_changes block in resources.generated.yml
+    # handles the read side (create_database_if_not_exists is input-only, uid is
+    # output-only) so no-op deploys stay idempotent.
+    recreate_on_changes:
+      - field: database_instance_name
         reason: immutable
+      - field: database_name
+        reason: immutable
+      - field: create_database_if_not_exists
+        reason: immutable
+
+  synced_database_tables:
+    provided_id_fields:
+      - field: name
+        reason: id_field
+    # The Database API has no UpdateSyncedDatabaseTable endpoint (the generated
+    # SDK method is a stub that returns 501 NOT_IMPLEMENTED), so this resource
+    # implements no DoUpdate and every settable field must recreate. The
+    # complementary ignore_remote_changes block in resources.generated.yml
+    # handles the read side (input-only and output-only fields) so no-op deploys
+    # stay idempotent. Same pattern as postgres_synced_tables.
+    recreate_on_changes:
+      - field: database_instance_name
+        reason: immutable
+      - field: logical_database_name
+        reason: immutable
+      - field: spec.source_table_full_name
+        reason: immutable
+      - field: spec.primary_key_columns
+        reason: immutable
+      - field: spec.timeseries_key
+        reason: immutable
+      - field: spec.scheduling_policy
+        reason: immutable
+      - field: spec.create_database_objects_if_missing
+        reason: immutable
+      - field: spec.new_pipeline_spec
+        reason: immutable
+      - field: spec.existing_pipeline_id
+        reason: immutable
+      - field: spec.accelerated_sync
+        reason: immutable
+      - field: spec.type_overrides
+        reason: immutable
+
+  apps:
+    provided_id_fields:
+      - field: name
+        reason: id_field
     backend_defaults:
       # Backend sets it "MEDIUM" when not specified in the config
       - field: compute_size
@@ -441,9 +509,10 @@ resources:
       # The Secrets API defaults scope_backend_type to DATABRICKS when not specified.
       - field: scope_backend_type
         values: ["DATABRICKS"]
-    recreate_on_changes:
+    provided_id_fields:
       - field: scope
-        reason: immutable
+        reason: id_field
+    recreate_on_changes:
       - field: scope_backend_type
         reason: immutable
       - field: backend_azure_keyvault
@@ -453,7 +522,7 @@ resources:
 
   # Permissions for secret scopes use ResourceSecretScopeAcls.
   secret_scopes.permissions:
-    update_id_on_changes:
+    updatable_id_fields:
       # When scope name changes, we need UpdateWithID trigger. This is necessary so that subsequent
       # DoRead operations use the correct ID and we do not end up with a persistent drift.
       - field: scope_name
@@ -548,54 +617,49 @@ resources:
       - field: enable_serverless_compute
 
   postgres_projects:
-    recreate_on_changes:
+    provided_id_fields:
       # project_id is immutable (part of hierarchical name, not in API spec)
       - field: project_id
-        reason: immutable
-    ignore_remote_changes:
-      # purge_on_delete is a delete-time query parameter; not returned by GET.
-      # When the user changes it locally we still want the new value to land
-      # in state so the next destroy honors it.
-      - field: purge_on_delete
-        reason: input_only
+        reason: id_field
 
   postgres_branches:
-    recreate_on_changes:
+    provided_id_fields:
       # parent and branch_id are immutable (part of hierarchical name, not in API spec)
       - field: parent
-        reason: immutable
+        reason: id_field
       - field: branch_id
-        reason: immutable
-    ignore_remote_changes:
-      # replace_existing is a create-time query parameter; not returned by GET.
-      - field: replace_existing
-        reason: input_only
+        reason: id_field
     ignore_local_changes:
       # replace_existing only takes effect on create; toggling it later is a no-op.
       - field: replace_existing
         reason: "input_only; cannot be updated after create"
 
+  postgres_databases:
+    provided_id_fields:
+      # parent and database_id are immutable (part of hierarchical name, not in API spec)
+      - field: parent
+        reason: id_field
+      - field: database_id
+        reason: id_field
+
   postgres_endpoints:
-    recreate_on_changes:
+    provided_id_fields:
       # parent and endpoint_id are immutable (part of hierarchical name, not in API spec)
       - field: parent
-        reason: immutable
+        reason: id_field
       - field: endpoint_id
-        reason: immutable
-    ignore_remote_changes:
-      # replace_existing is a create-time query parameter; not returned by GET.
-      - field: replace_existing
-        reason: input_only
+        reason: id_field
     ignore_local_changes:
       # replace_existing only takes effect on create; toggling it later is a no-op.
       - field: replace_existing
         reason: "input_only; cannot be updated after create"
 
   postgres_catalogs:
-    recreate_on_changes:
+    provided_id_fields:
       # catalog_id is part of the hierarchical name and immutable.
       - field: catalog_id
-        reason: immutable
+        reason: id_field
+    recreate_on_changes:
       # The Postgres SDK has no UpdateCatalog endpoint, so any local change
       # requires delete+create. The OpenAPI spec only marks postgres_database
       # as IMMUTABLE (handled by autogen); branch and create_database_if_missing
@@ -613,9 +677,10 @@ resources:
     # drift for the same fields because the GET API does not echo back the
     # spec. Together they make no-op deploys idempotent while a real config
     # edit still triggers a recreate. Same pattern as secret_scopes.
-    recreate_on_changes:
+    provided_id_fields:
       - field: synced_table_id
-        reason: immutable
+        reason: id_field
+    recreate_on_changes:
       - field: branch
         reason: immutable
       - field: postgres_database
@@ -633,6 +698,10 @@ resources:
       - field: new_pipeline_spec
         reason: immutable
       - field: existing_pipeline_id
+        reason: immutable
+      - field: accelerated_sync
+        reason: immutable
+      - field: type_overrides
         reason: immutable
 
   postgres_roles:
@@ -655,6 +724,10 @@ resources:
         reason: immutable
 
   vector_search_endpoints:
+    provided_id_fields:
+      # The endpoint API has no rename; the endpoint is fetched by name.
+      - field: name
+        reason: id_field
     recreate_on_changes:
       - field: endpoint_type
         reason: immutable
@@ -665,11 +738,12 @@ resources:
         reason: effective_vs_requested
 
   vector_search_indexes:
+    provided_id_fields:
+      - field: name
+        reason: id_field
     recreate_on_changes:
       # The index API has no rename or update path, so every config change
       # has to go through delete + create.
-      - field: name
-        reason: immutable
       - field: endpoint_name
         reason: immutable
       - field: index_type

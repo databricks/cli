@@ -1,4 +1,4 @@
-Local = false
+Local = true
 CloudSlow = true
 RecordRequests = false
 RunsOnDbr = true

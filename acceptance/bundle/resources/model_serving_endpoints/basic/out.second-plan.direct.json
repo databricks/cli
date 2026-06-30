@@ -26,7 +26,8 @@
             "ready": "NOT_READY"
           }
         },
-        "endpoint_id": "[ENDPOINT_ID_1]"
+        "endpoint_id": "[ENDPOINT_ID_1]",
+        "name": "[ENDPOINT_NAME_1]"
       },
       "changes": {
         "description": {
@@ -36,7 +37,7 @@
         },
         "name": {
           "action": "recreate",
-          "reason": "immutable",
+          "reason": "id_field",
           "old": "[ENDPOINT_NAME_1]",
           "new": "[ENDPOINT_NAME_2]",
           "remote": "[ENDPOINT_NAME_1]"

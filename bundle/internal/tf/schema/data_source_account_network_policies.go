@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessAllowedDatabricksDestinations struct {
+	WorkspaceIds []int `json:"workspace_ids,omitempty"`
+}
+
 type DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessAllowedInternetDestinations struct {
 	Destination             string `json:"destination,omitempty"`
 	InternetDestinationType string `json:"internet_destination_type,omitempty"`
@@ -26,11 +30,12 @@ type DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessPolicyEnforcement s
 }
 
 type DataSourceAccountNetworkPoliciesItemsEgressNetworkAccess struct {
-	AllowedInternetDestinations []DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessAllowedInternetDestinations `json:"allowed_internet_destinations,omitempty"`
-	AllowedStorageDestinations  []DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessAllowedStorageDestinations  `json:"allowed_storage_destinations,omitempty"`
-	BlockedInternetDestinations []DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessBlockedInternetDestinations `json:"blocked_internet_destinations,omitempty"`
-	PolicyEnforcement           *DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessPolicyEnforcement            `json:"policy_enforcement,omitempty"`
-	RestrictionMode             string                                                                                `json:"restriction_mode"`
+	AllowedDatabricksDestinations []DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessAllowedDatabricksDestinations `json:"allowed_databricks_destinations,omitempty"`
+	AllowedInternetDestinations   []DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessAllowedInternetDestinations   `json:"allowed_internet_destinations,omitempty"`
+	AllowedStorageDestinations    []DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessAllowedStorageDestinations    `json:"allowed_storage_destinations,omitempty"`
+	BlockedInternetDestinations   []DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessBlockedInternetDestinations   `json:"blocked_internet_destinations,omitempty"`
+	PolicyEnforcement             *DataSourceAccountNetworkPoliciesItemsEgressNetworkAccessPolicyEnforcement              `json:"policy_enforcement,omitempty"`
+	RestrictionMode               string                                                                                  `json:"restriction_mode"`
 }
 
 type DataSourceAccountNetworkPoliciesItemsEgress struct {

@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"reflect"
 	"slices"
@@ -12,16 +10,12 @@ import (
 
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/internal/clijson"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
 type annotationParser struct {
 	ref map[string]*clijson.SchemaJSON
 }
-
-const RootTypeKey = "_"
 
 // deprecationMessage is the message emitted for any field or type that the spec
 // marks as deprecated. The spec (.codegen/cli.json) carries only a deprecated
@@ -162,30 +156,13 @@ func isOutputOnly(behaviors []string) *bool {
 }
 
 // Use the spec to load descriptions for the given type.
-func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, overridesPath string) error {
+func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File, error) {
 	annotations := annotation.File{}
-	overrides := annotation.File{}
-
-	b, err := os.ReadFile(overridesPath)
-	if err != nil {
-		return err
-	}
-	overridesDyn, err := yamlloader.LoadYAML(overridesPath, bytes.NewBuffer(b))
-	if err != nil {
-		return err
-	}
-	err = convert.ToTyped(&overrides, overridesDyn)
-	if err != nil {
-		return err
-	}
-	if overrides == nil {
-		overrides = annotation.File{}
-	}
 
 	// Launch-stage validation happens inside the transform callback below, which
 	// cannot return an error, so failures accumulate here and are returned after.
 	var stageErr error
-	_, err = jsonschema.FromType(typ, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+	_, err := jsonschema.FromType(typ, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 			ref, ok := p.findRef(typ)
 			if !ok {
@@ -193,8 +170,6 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 			}
 
 			basePath := getPath(typ)
-			pkg := map[string]annotation.Descriptor{}
-			annotations[basePath] = pkg
 			// The contract carries no schema-level launch stage, so a type is
 			// never itself marked private-preview — only its fields are (below).
 			// Enum schemas do carry per-value launch stages and descriptions.
@@ -204,12 +179,12 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 			}
 			enumDescriptions := nonEmptyEnumDescriptions(ref.EnumDescriptions)
 			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil {
-				pkg[RootTypeKey] = annotation.Descriptor{
+				annotations.SetSelf(basePath, annotation.Descriptor{
 					Description:      ref.Description,
 					Enum:             enumValues(ref.Enum),
 					EnumLaunchStages: enumLaunchStages,
 					EnumDescriptions: enumDescriptions,
-				}
+				})
 			}
 
 			for k := range s.Properties {
@@ -230,79 +205,22 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 						}
 					}
 
-					pkg[k] = annotation.Descriptor{
+					annotations.SetField(basePath, k, annotation.Descriptor{
 						Description:        description,
 						LaunchStage:        launchStage,
 						DeprecationMessage: deprecationMessageFor(refProp.Deprecated),
 						OutputOnly:         isOutputOnly(refProp.Behaviors),
-					}
-					if description == "" {
-						addEmptyOverride(k, basePath, overrides)
-					}
-				} else {
-					addEmptyOverride(k, basePath, overrides)
+					})
 				}
 			}
 			return s
 		},
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if stageErr != nil {
-		return stageErr
+		return nil, stageErr
 	}
-
-	err = saveYamlWithStyle(overridesPath, overrides)
-	if err != nil {
-		return err
-	}
-	err = saveYamlWithStyle(outputPath, annotations)
-	if err != nil {
-		return err
-	}
-	err = prependCommentToFile(outputPath, "# This file is auto-generated. DO NOT EDIT.\n")
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func prependCommentToFile(outputPath, comment string) error {
-	b, err := os.ReadFile(outputPath)
-	if err != nil {
-		return err
-	}
-	f, err := os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = f.WriteString(comment)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(b)
-	return err
-}
-
-func addEmptyOverride(key, pkg string, overridesFile annotation.File) {
-	if overridesFile[pkg] == nil {
-		overridesFile[pkg] = map[string]annotation.Descriptor{}
-	}
-
-	overrides := overridesFile[pkg]
-	if overrides[key].Description == "" {
-		overrides[key] = annotation.Descriptor{Description: annotation.Placeholder}
-	}
-
-	a, ok := overrides[key]
-	if !ok {
-		a = annotation.Descriptor{}
-	}
-	if a.Description == "" {
-		a.Description = annotation.Placeholder
-	}
-	overrides[key] = a
+	return annotations, nil
 }

@@ -1,26 +1,19 @@
 # NEXT CHANGELOG
 
-## Release v1.4.0
+## Release v1.6.0
 
 ### Notable Changes
 
 ### CLI
-* Improved error messages for `ssh connect`: when an SSH connection attempt fails, the client now fetches and prints the server's recent error logs ([#5555](https://github.com/databricks/cli/pull/5555)).
-* Increase the SSH server startup timeout from 10 to 45 minutes when a GPU accelerator is requested via `databricks ssh connect --accelerator` ([#5569](https://github.com/databricks/cli/pull/5569)).
-* Fix authentication falling back to the default profile in `.databrickscfg` when a host is already configured via the environment (e.g. `DATABRICKS_HOST` with `DATABRICKS_TOKEN`) ([#5616](https://github.com/databricks/cli/pull/5616)).
-* ssh: fix opening remote environment in Cursor, which previously hung on default-extension install and never opened the editor ([#5619](https://github.com/databricks/cli/pull/5619)).
-* `databricks labs list` now only shows projects that can be installed ([#5560](https://github.com/databricks/cli/pull/5560)).
+
+ * `databricks aitools install` is now plugin-first: it installs the Databricks plugin through each agent's own CLI (Claude Code, Codex, GitHub Copilot) instead of copying raw skill files. Agents without a plugin (OpenCode, Antigravity) still get skill files, and Cursor prints the `/add-plugin databricks` step. Use `--skills-only` to force raw skill files for every agent, or `--path <dir>` to write skills to a directory ([#5738](https://github.com/databricks/cli/pull/5738)).
+ * `databricks labs list` now only shows projects that can be installed ([#5560](https://github.com/databricks/cli/pull/5560)).
 
 ### Bundles
-* Remove API enum values and types that are still in development from the `databricks-bundles` Python package; these were never accepted by the backend ([#5484](https://github.com/databricks/cli/pull/5484)).
-* direct: Fix resolving a resource reference that is used more than once within the same field ([#5558](https://github.com/databricks/cli/pull/5558)).
-* Bundle variable references now accept Unicode letters in path segments (e.g. `${var.变量}`). ([#5532](https://github.com/databricks/cli/pull/5532))
-* Ignore remote changes for vector search direct_access_index_spec.schema_json to prevent drift when the backend normalizes the schema ([#5481](https://github.com/databricks/cli/pull/5481)).
-* Remove hidden, never-functional `--existing-dashboard-id`, `--existing-dashboard-path`, `--existing-alert-id`, and `--existing-genie-space-id` alias flags from `bundle generate`; use the documented `--existing-id` / `--existing-path` flags instead ([#5591](https://github.com/databricks/cli/pull/5591)).
-* engine/direct: Fix WAL corruption after two consecutive failed deploys ([#5606](https://github.com/databricks/cli/pull/5606)).
-* engine/direct: Don't open the deployment state WAL when a deploy's plan fails ([#5607](https://github.com/databricks/cli/pull/5607)).
-* Ignore unity catalog managed schema property defaults to avoid unnecessary drift ([#5195](https://github.com/databricks/cli/pull/5195)).
-* Add Postgres role as a bundle resource ([#5467](https://github.com/databricks/cli/pull/5467)).
+
+ * direct: Fixed persistent drift on `model_serving_endpoints` caused by the `traffic_config` field ([#5708](https://github.com/databricks/cli/pull/5708)).
+ * direct: Fix spurious update when `apply_policy_default_values: true` is set on job task, for-each-task, or job cluster new_cluster ([#5731](https://github.com/databricks/cli/pull/5731)). Also fix spurious updates for for-each-task clusters due to missing backend defaults for `data_security_mode`, `node_type_id`, `driver_node_type_id`, `driver_instance_pool_id`, `enable_elastic_disk`, and `enable_local_disk_encryption`.
+ * direct: Cluster resize now falls back to regular update if resize fails due to `INVALID_STATE` ([#5716](https://github.com/databricks/cli/pull/5716)).
 
 ### Dependency updates
 

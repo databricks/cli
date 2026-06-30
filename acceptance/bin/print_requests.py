@@ -7,10 +7,11 @@ Free standing arguments are substrings matching path.
 If argument starts with ! then it's a negation filter.
 
 Examples:
-  print_requests.py //jobs                     # Show non-GET requests with /jobs in path
-  print_requests.py --get //jobs               # Show all requests with /jobs in path
-  print_requests.py --sort '^//import-file/'   # Show non-GET requests, exclude /import-file/, sort output
-  print_requests.py --keep //jobs              # Show requests and do not delete out.requests.json afterwards
+  print_requests.py //jobs                              # Show non-GET requests with /jobs in path
+  print_requests.py --get //jobs                        # Show all requests with /jobs in path
+  print_requests.py --sort '^//import-file/'            # Show non-GET requests, exclude /import-file/, sort output
+  print_requests.py --keep //jobs                       # Show requests and do not delete out.requests.json afterwards
+  print_requests.py //api/2.0/repos/snapshots --method DELETE  # Show only DELETE to that path
 
 This replaces custom jq wrappers like:
   jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
@@ -77,12 +78,11 @@ R4 POST
 ['GET', 'DELETE', 'GET']
 """
 
+import argparse
+import json
 import os
 import sys
-import json
-import argparse
 from pathlib import Path
-
 
 # I've originally tried ADD_PREFIX to be empty, so you can just do "print_requests.py /jobs"
 # However, that causes test to fail on Windows CI because "/jobs" becomes "C:/Program Files/Git/jobs"
@@ -123,7 +123,7 @@ result = read_json_many(test)
 assert result == [{"method": "GET"}, {"method": "POST"}], result
 
 
-def filter_requests(requests, path_filters, include_get, should_sort, unique=False):
+def filter_requests(requests, path_filters, include_get, should_sort, unique=False, method_filter=None):
     """Filter requests based on method and path filters."""
     positive_filters = []
     negative_filters = []
@@ -138,8 +138,12 @@ def filter_requests(requests, path_filters, include_get, should_sort, unique=Fal
 
     filtered_requests = []
     for req in requests:
-        # Skip GET requests unless include_get is True
-        if req.get("method") == "GET" and not include_get:
+        if method_filter:
+            # --method overrides the default GET exclusion
+            if req.get("method") != method_filter:
+                continue
+        elif req.get("method") == "GET" and not include_get:
+            # Skip GET requests unless include_get is True
             continue
 
         # Apply path filters
@@ -176,7 +180,7 @@ def filter_requests(requests, path_filters, include_get, should_sort, unique=Fal
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("path_filters", nargs="*", help=f"Path substring filters")
+    parser.add_argument("path_filters", nargs="*", help="Path substring filters")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable diagnostic messages")
     parser.add_argument("--get", action="store_true", help="Include GET requests (excluded by default)")
     parser.add_argument("--keep", action="store_true", help="Keep out.requests.json file after processing")
@@ -186,9 +190,21 @@ def main():
         action="store_true",
         help="Collapse consecutive duplicate requests (like uniq), e.g. repeated GET polls",
     )
+    parser.add_argument("--method", metavar="METHOD", help="Only show requests with this HTTP method (e.g. DELETE)")
     parser.add_argument("--oneline", action="store_true", help="Print output with one request per line")
+    parser.add_argument(
+        "--del-body",
+        action="append",
+        default=[],
+        metavar="FIELDS",
+        help="Comma-separated body fields to delete from each request (repeatable). Use for "
+        "body fields that diverge between deployment engines, e.g. identity fields the "
+        "terraform provider serializes into the body but the direct engine sends as query params.",
+    )
     parser.add_argument("--fname", default="out.requests.txt")
     args = parser.parse_args()
+
+    del_body_fields = [field for group in args.del_body for field in group.split(",")]
 
     test_tmp_dir = os.environ.get("TEST_TMP_DIR")
     if test_tmp_dir:
@@ -206,7 +222,13 @@ def main():
         return
 
     requests = read_json_many(data)
-    filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort, args.unique)
+    filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort, args.unique, args.method)
+
+    for req in filtered_requests:
+        body = req.get("body")
+        if isinstance(body, dict):
+            for field in del_body_fields:
+                body.pop(field, None)
     if args.verbose:
         print(
             f"Read {len(data)} chars, {len(requests)} requests, {len(filtered_requests)} after filtering",

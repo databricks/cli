@@ -1,14 +1,9 @@
-print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
-    rm out.requests.txt
-}
-
 trace $CLI pipelines deploy
 rm out.requests.txt
 title "Dry running pipeline, should have validate_only set to true"
 trace $CLI pipelines dry-run
-print_requests
+print_requests.py //pipelines
 
 title "Dry running pipeline with KEY, expect same output as without KEY"
 trace $CLI pipelines dry-run my_pipeline
-print_requests
+print_requests.py //pipelines
