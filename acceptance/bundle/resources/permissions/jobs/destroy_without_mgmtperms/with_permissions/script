@@ -1,5 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
-envsubst < take_ownership.json.tmpl > take_ownership.json
+# Locally DATABRICKS_CLIENT_ID is unset; fall back to the current identity so
+# the owner principal matches cloud (where the two values are equal).
+DATABRICKS_CLIENT_ID="${DATABRICKS_CLIENT_ID:-$CURRENT_USER_NAME}" envsubst < take_ownership.json.tmpl > take_ownership.json
 trace cat take_ownership.json
 
 trace as-test-sp $CLI current-user me | jq .displayName
