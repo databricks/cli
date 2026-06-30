@@ -61,6 +61,7 @@ func TestInstallPluginForAgentClaudeSuccess(t *testing.T) {
 	cmds := stub.Commands()
 	assert.Contains(t, cmds, "claude plugin --help")
 	assert.Contains(t, cmds, "claude plugin marketplace add databricks/databricks-agent-skills")
+	assert.Contains(t, cmds, "claude plugin marketplace update")
 	assert.Contains(t, cmds, "claude plugin install databricks@databricks-agent-skills --scope user")
 }
 
@@ -87,6 +88,7 @@ func TestInstallPluginForAgentBuiltinMarketplace(t *testing.T) {
 	for _, c := range cmds {
 		assert.NotContains(t, c, "marketplace add", "must not register a built-in marketplace")
 	}
+	assert.Contains(t, cmds, "claude plugin marketplace update")
 	assert.Contains(t, cmds, "claude plugin install databricks@claude-plugins-official --scope user")
 }
 
@@ -166,12 +168,27 @@ func TestInstallPluginRollsBackMarketplaceOnInstallFailure(t *testing.T) {
 	assert.Contains(t, stub.Commands(), "claude plugin marketplace remove databricks-agent-skills")
 }
 
+func TestInstallPluginRollsBackMarketplaceOnRefreshFailure(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	// Marketplace absent (empty list) so we add it; then the refresh fails.
+	stub.WithFailureFor("plugin marketplace update", errors.New("boom"))
+
+	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
+	var be *BlockedError
+	require.ErrorAs(t, err, &be)
+	assert.Equal(t, ReasonInstallFailed, be.Reason)
+	// We added the marketplace, so a failed refresh must de-register it again.
+	assert.Contains(t, stub.Commands(), "claude plugin marketplace remove databricks-agent-skills")
+}
+
 func TestUpdatePluginForAgentCodexTwoStep(t *testing.T) {
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
 
-	require.NoError(t, UpdatePluginForAgent(ctx, codexAgent()))
+	require.NoError(t, UpdatePluginForAgent(ctx, codexAgent(), PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user"}))
 	cmds := stub.Commands()
 	assert.Contains(t, cmds, "codex plugin marketplace upgrade")
 	assert.Contains(t, cmds, "codex plugin add databricks@databricks-agent-skills")
@@ -182,8 +199,25 @@ func TestUpdatePluginForAgentClaudeOneStep(t *testing.T) {
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
 
-	require.NoError(t, UpdatePluginForAgent(ctx, claudeAgent()))
-	assert.Contains(t, stub.Commands(), "claude plugin update databricks@databricks-agent-skills")
+	require.NoError(t, UpdatePluginForAgent(ctx, claudeAgent(), PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user"}))
+	cmds := stub.Commands()
+	assert.Contains(t, cmds, "claude plugin marketplace update")
+	assert.Contains(t, cmds, "claude plugin update databricks@databricks-agent-skills --scope user")
+}
+
+func TestUninstallPluginClaudeAlreadyDisabledContinues(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	stub.WithStderrFor("plugin disable", "Plugin databricks is already disabled in user scope").
+		WithFailureFor("plugin disable", errors.New("exit status 1"))
+
+	rec := PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user"}
+	require.NoError(t, UninstallPluginForAgent(ctx, claudeAgent(), rec, false))
+
+	cmds := stub.Commands()
+	assert.Contains(t, cmds, "claude plugin disable databricks@databricks-agent-skills --scope user")
+	assert.Contains(t, cmds, "claude plugin uninstall databricks@databricks-agent-skills --scope user")
 }
 
 func TestUninstallPluginDeregistersMarketplaceWhenInstalledByUs(t *testing.T) {
@@ -368,6 +402,62 @@ func TestUpdateInstalledPlugins(t *testing.T) {
 	state, err := LoadState(dir)
 	require.NoError(t, err)
 	assert.Equal(t, "0.2.7", state.Plugins[agents.NameCopilot].Version)
+}
+
+func TestUpdateInstalledPluginsUsesRecordedClaudeScope(t *testing.T) {
+	for _, scope := range []string{"project", "user", "local"} {
+		t.Run(scope, func(t *testing.T) {
+			setupTestHome(t)
+			stubAgentLookPath(t, true)
+			ctx, stub := process.WithStub(t.Context())
+			stub.WithCallback(func(*exec.Cmd) error { return nil })
+
+			dir, err := GlobalSkillsDir(ctx)
+			require.NoError(t, err)
+			require.NoError(t, SaveState(dir, &InstallState{
+				SchemaVersion: schemaVersionV2,
+				Release:       "v0.2.6",
+				Plugins: map[string]PluginRecord{
+					agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: scope, Version: "0.2.6"},
+				},
+			}))
+
+			updated, err := UpdateInstalledPlugins(ctx, ScopeGlobal, "v0.2.7")
+			require.NoError(t, err)
+			require.Len(t, updated, 1)
+
+			cmds := stub.Commands()
+			assert.Contains(t, cmds, "claude plugin marketplace update")
+			assert.Contains(t, cmds, "claude plugin update databricks@claude-plugins-official --scope "+scope)
+		})
+	}
+}
+
+func TestUninstallSkillsOptsUsesRecordedClaudeScope(t *testing.T) {
+	for _, scope := range []string{"project", "user", "local"} {
+		t.Run(scope, func(t *testing.T) {
+			setupTestHome(t)
+			stubAgentLookPath(t, true)
+			ctx, stub := process.WithStub(t.Context())
+			stub.WithCallback(func(*exec.Cmd) error { return nil })
+			ctx = cmdio.MockDiscard(ctx)
+
+			dir, err := GlobalSkillsDir(ctx)
+			require.NoError(t, err)
+			require.NoError(t, SaveState(dir, &InstallState{
+				SchemaVersion: schemaVersionV2,
+				Plugins: map[string]PluginRecord{
+					agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: scope},
+				},
+			}))
+
+			require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+
+			cmds := stub.Commands()
+			assert.Contains(t, cmds, "claude plugin disable databricks@claude-plugins-official --scope "+scope)
+			assert.Contains(t, cmds, "claude plugin uninstall databricks@claude-plugins-official --scope "+scope)
+		})
+	}
 }
 
 func TestUninstallPluginKeepMarketplaceFlag(t *testing.T) {

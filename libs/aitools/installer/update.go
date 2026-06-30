@@ -444,11 +444,11 @@ func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpd
 			log.Warnf(ctx, "Skipping unknown agent %q in state", name)
 			continue
 		}
-		if err := UpdatePluginForAgent(ctx, agent); err != nil {
+		rec := state.Plugins[name]
+		if err := UpdatePluginForAgent(ctx, agent, rec); err != nil {
 			log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
 			continue
 		}
-		rec := state.Plugins[name]
 		rec.Version = version
 		state.Plugins[name] = rec
 		updated = append(updated, PluginUpdate{Agent: agent.DisplayName, Version: version})
