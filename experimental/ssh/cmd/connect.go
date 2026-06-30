@@ -18,7 +18,7 @@ func newConnectCommand() *cobra.Command {
 Connect to serverless:
   databricks ssh connect
   databricks ssh connect --accelerator=<GPU_type>   # AI Runtime
-  databricks ssh connect --environment=<name>       # custom base environment
+  databricks ssh connect --base-environment=<name>  # custom base environment
 
 Connect to a dedicated cluster:
   databricks ssh connect --cluster=<cluster-id>`,
@@ -39,7 +39,7 @@ Connect to a dedicated cluster:
 	var liteswap string
 	var skipSettingsCheck bool
 	var environmentVersion int
-	var environment string
+	var baseEnvironment string
 	var autoApprove bool
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks dedicated cluster ID")
@@ -73,7 +73,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for AI Runtime")
 	cmd.Flags().MarkHidden("environment-version")
 
-	cmd.Flags().StringVar(&environment, "environment", "", "Custom base environment for serverless compute: an env.yaml path, a workspace-base-environments resource ID, or a display name")
+	cmd.Flags().StringVar(&baseEnvironment, "base-environment", "", "Custom base environment for serverless compute: an env.yaml path, a workspace-base-environments resource ID, or a display name")
 
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts, installing IDE extensions and applying IDE settings without asking")
 
@@ -92,7 +92,7 @@ Connect to a dedicated cluster:
 		ctx := cmd.Context()
 		wsClient := cmdctx.WorkspaceClient(ctx)
 		if connectionName == "" && clusterID == "" && !proxyMode {
-			connectionName = client.GenerateDefaultConnectionName(wsClient.Config.Host, accelerator, environment)
+			connectionName = client.GenerateDefaultConnectionName(wsClient.Config.Host, accelerator, baseEnvironment)
 		}
 		// Serverless GPU compute can take much longer to provision than CPU compute,
 		// so allow extra time for the SSH server job to start.
@@ -102,7 +102,7 @@ Connect to a dedicated cluster:
 		}
 		// Only carry an explicitly-set environment version. Leaving it at 0 otherwise
 		// lets the submit path default to minEnvironmentVersion and lets Validate
-		// detect a real --environment-version + --environment conflict.
+		// detect a real --environment-version + --base-environment conflict.
 		if !cmd.Flags().Changed("environment-version") {
 			environmentVersion = 0
 		}
@@ -127,7 +127,7 @@ Connect to a dedicated cluster:
 			Liteswap:             liteswap,
 			SkipSettingsCheck:    skipSettingsCheck,
 			EnvironmentVersion:   environmentVersion,
-			Environment:          environment,
+			BaseEnvironment:      baseEnvironment,
 			AdditionalArgs:       args,
 			AutoApprove:          autoApprove,
 		}

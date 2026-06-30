@@ -116,7 +116,7 @@ type ClientOptions struct {
 	// Base environment for serverless compute. Accepts an env.yaml path (leading "/"),
 	// a "workspace-base-environments/..." resource ID, or a bare display name resolved
 	// against the workspace base environments. Maps to compute.Environment.BaseEnvironment.
-	Environment string
+	BaseEnvironment string
 	// If true, skip confirmation prompts for IDE extension install and IDE settings updates.
 	AutoApprove bool
 }
@@ -142,11 +142,11 @@ func (o *ClientOptions) Validate() error {
 	}
 	// base_environment and environment_version are mutually exclusive in the SDK,
 	// and a custom base environment only applies to serverless compute.
-	if o.Environment != "" && o.EnvironmentVersion > 0 {
-		return errors.New("--environment cannot be used together with --environment-version")
+	if o.BaseEnvironment != "" && o.EnvironmentVersion > 0 {
+		return errors.New("--base-environment cannot be used together with --environment-version")
 	}
-	if o.Environment != "" && o.ClusterID != "" {
-		return errors.New("--environment can only be used with serverless compute")
+	if o.BaseEnvironment != "" && o.ClusterID != "" {
+		return errors.New("--base-environment can only be used with serverless compute")
 	}
 	return nil
 }
@@ -157,12 +157,12 @@ func (o *ClientOptions) Validate() error {
 // known_hosts conflicts). The environment is folded into the hash because a
 // serverless server bakes in its environment at startup: distinct environments
 // must map to distinct connection names so they don't reuse each other's server.
-func GenerateDefaultConnectionName(host, accelerator, environment string) string {
-	// Keep the hash host-only when no environment is set so existing default
+func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string) string {
+	// Keep the hash host-only when no base environment is set so existing default
 	// connection names are preserved.
 	hashInput := host
-	if environment != "" {
-		hashInput = host + "\x00" + environment
+	if baseEnvironment != "" {
+		hashInput = host + "\x00" + baseEnvironment
 	}
 	h := md5.Sum([]byte(hashInput))
 	hashStr := hex.EncodeToString(h[:4])
@@ -239,10 +239,12 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 		proxyCommand += " --environment-version=" + strconv.Itoa(o.EnvironmentVersion)
 	}
 
-	if o.Environment != "" {
-		// Quote the value: env.yaml paths and display names may contain spaces,
-		// unlike the other (space-free) flag values serialized above.
-		proxyCommand += " --environment=" + strconv.Quote(o.Environment)
+	if o.BaseEnvironment != "" {
+		// Shell-quote the value: this command is persisted as an OpenSSH ProxyCommand
+		// and executed via the shell, and base environments accept user-controlled
+		// display names/paths that may contain spaces or shell metacharacters.
+		// Single-quoting (unlike strconv.Quote's double quotes) prevents any expansion.
+		proxyCommand += " --base-environment=" + shellSingleQuote(o.BaseEnvironment)
 	}
 
 	return proxyCommand, nil
@@ -631,8 +633,8 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		// base_environment and environment_version are mutually exclusive: a custom
 		// base environment carries its own version, so we don't also set one.
 		var spec compute.Environment
-		if opts.Environment != "" {
-			baseEnvironment, err := resolveBaseEnvironment(ctx, client, opts.Environment)
+		if opts.BaseEnvironment != "" {
+			baseEnvironment, err := resolveBaseEnvironment(ctx, client, opts.BaseEnvironment)
 			if err != nil {
 				return 0, err
 			}
@@ -659,7 +661,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts)
 }
 
-// resolveBaseEnvironment maps the user-provided --environment value to a
+// resolveBaseEnvironment maps the user-provided --base-environment value to a
 // compute.Environment.BaseEnvironment string. A leading "/" is an env.yaml path and a
 // "workspace-base-environments/" prefix is a resource ID; both are passed through
 // verbatim. Anything else is treated as a display name and resolved to its resource ID
@@ -687,6 +689,23 @@ func resolveBaseEnvironment(ctx context.Context, client *databricks.WorkspaceCli
 		return matches[0], nil
 	default:
 		return "", fmt.Errorf("multiple workspace base environments found with display name %q", input)
+	}
+}
+
+// baseEnvironmentKind classifies a --base-environment value into a coarse,
+// non-identifying category for telemetry. The raw value is never logged because
+// it can carry PII (env.yaml paths embed user emails, display names are free-form);
+// the category mirrors the input forms resolveBaseEnvironment recognizes.
+func baseEnvironmentKind(input string) string {
+	switch {
+	case input == "":
+		return ""
+	case strings.HasPrefix(input, "/"):
+		return "path"
+	case strings.HasPrefix(input, "workspace-base-environments/"):
+		return "resource-id"
+	default:
+		return "display-name"
 	}
 }
 
@@ -1108,15 +1127,15 @@ func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isRec
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		SshTunnelEvent: &protos.SshTunnelEvent{
-			ComputeType:       computeType,
-			AcceleratorType:   opts.Accelerator,
-			Environment:       opts.Environment,
-			IdeType:           opts.IDE,
-			ClientMode:        clientMode,
-			IsReconnect:       isReconnect,
-			AutoStartCluster:  opts.AutoStartCluster,
-			ServerStartTimeMs: serverStartTimeMs,
-			IsSuccess:         isSuccess,
+			ComputeType:         computeType,
+			AcceleratorType:     opts.Accelerator,
+			BaseEnvironmentKind: baseEnvironmentKind(opts.BaseEnvironment),
+			IdeType:             opts.IDE,
+			ClientMode:          clientMode,
+			IsReconnect:         isReconnect,
+			AutoStartCluster:    opts.AutoStartCluster,
+			ServerStartTimeMs:   serverStartTimeMs,
+			IsSuccess:           isSuccess,
 		},
 	})
 }

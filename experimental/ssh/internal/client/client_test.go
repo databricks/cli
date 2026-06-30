@@ -95,22 +95,22 @@ func TestValidate(t *testing.T) {
 			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
 		},
 		{
-			name:    "environment with environment version",
-			opts:    client.ClientOptions{ConnectionName: "my-conn", Environment: "my-env", EnvironmentVersion: 4},
-			wantErr: "--environment cannot be used together with --environment-version",
+			name:    "base environment with environment version",
+			opts:    client.ClientOptions{ConnectionName: "my-conn", BaseEnvironment: "my-env", EnvironmentVersion: 4},
+			wantErr: "--base-environment cannot be used together with --environment-version",
 		},
 		{
-			name:    "environment with cluster",
-			opts:    client.ClientOptions{ClusterID: "abc-123", Environment: "my-env"},
-			wantErr: "--environment can only be used with serverless compute",
+			name:    "base environment with cluster",
+			opts:    client.ClientOptions{ClusterID: "abc-123", BaseEnvironment: "my-env"},
+			wantErr: "--base-environment can only be used with serverless compute",
 		},
 		{
-			name: "valid environment with connection name",
-			opts: client.ClientOptions{ConnectionName: "my-conn", Environment: "/Workspace/path/to/env.yaml"},
+			name: "valid base environment with connection name",
+			opts: client.ClientOptions{ConnectionName: "my-conn", BaseEnvironment: "/Workspace/path/to/env.yaml"},
 		},
 		{
-			name: "environment with serverless GPU accelerator",
-			opts: client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10", Environment: "my-gpu-env"},
+			name: "base environment with serverless GPU accelerator",
+			opts: client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10", BaseEnvironment: "my-gpu-env"},
 		},
 	}
 
@@ -169,15 +169,15 @@ func TestGenerateDefaultConnectionName(t *testing.T) {
 		})
 	}
 
-	// A serverless server bakes in its environment, so distinct environments must
-	// map to distinct default names (otherwise --environment is silently ignored
-	// when an existing server for the default name is reused).
-	t.Run("environment differentiates the name", func(t *testing.T) {
+	// A serverless server bakes in its base environment, so distinct environments
+	// must map to distinct default names (otherwise --base-environment is silently
+	// ignored when an existing server for the default name is reused).
+	t.Run("base environment differentiates the name", func(t *testing.T) {
 		const host = "https://my-workspace.cloud.databricks.com"
 		base := client.GenerateDefaultConnectionName(host, "", "")
 		withEnv := client.GenerateDefaultConnectionName(host, "", "my-env")
 		otherEnv := client.GenerateDefaultConnectionName(host, "", "other-env")
-		assert.NotEqual(t, base, withEnv, "setting --environment must change the default name")
+		assert.NotEqual(t, base, withEnv, "setting --base-environment must change the default name")
 		assert.NotEqual(t, withEnv, otherEnv, "different environments must produce different names")
 		assert.Equal(t, withEnv, client.GenerateDefaultConnectionName(host, "", "my-env"), "must be deterministic")
 	})
@@ -259,9 +259,17 @@ func TestToProxyCommand(t *testing.T) {
 			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --environment-version=4",
 		},
 		{
-			name: "serverless with environment",
-			opts: client.ClientOptions{ConnectionName: "my-conn", Environment: "my env", ShutdownDelay: 2 * time.Minute},
-			want: quoted + ` ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --environment="my env"`,
+			name: "serverless with base environment",
+			opts: client.ClientOptions{ConnectionName: "my-conn", BaseEnvironment: "my env", ShutdownDelay: 2 * time.Minute},
+			want: quoted + ` ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --base-environment='my env'`,
+		},
+		{
+			// The proxy command is executed via the shell, so a base environment
+			// containing shell metacharacters must be single-quoted (and embedded
+			// single quotes escaped) so nothing is expanded or word-split.
+			name: "serverless with base environment containing shell metacharacters",
+			opts: client.ClientOptions{ConnectionName: "my-conn", BaseEnvironment: `$(touch pwned) '; rm -rf /`, ShutdownDelay: 2 * time.Minute},
+			want: quoted + ` ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --base-environment='$(touch pwned) '\''; rm -rf /'`,
 		},
 	}
 
