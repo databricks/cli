@@ -94,6 +94,15 @@ func TestValidate(t *testing.T) {
 			name: "valid environment version",
 			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
 		},
+		{
+			name:    "usage policy with cluster ID",
+			opts:    client.ClientOptions{ClusterID: "abc-123", UsagePolicyID: "pol-1"},
+			wantErr: "--usage-policy-id flag can only be used with serverless compute (--name flag)",
+		},
+		{
+			name: "usage policy with connection name",
+			opts: client.ClientOptions{ConnectionName: "my-conn", UsagePolicyID: "pol-1"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -198,6 +207,11 @@ func TestToProxyCommand(t *testing.T) {
 			name: "serverless with accelerator",
 			opts: client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10", ShutdownDelay: 2 * time.Minute},
 			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --accelerator=GPU_1xA10",
+		},
+		{
+			name: "serverless with usage policy",
+			opts: client.ClientOptions{ConnectionName: "my-conn", UsagePolicyID: "pol-1", ShutdownDelay: 2 * time.Minute},
+			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --usage-policy-id=pol-1",
 		},
 		{
 			name: "with metadata",

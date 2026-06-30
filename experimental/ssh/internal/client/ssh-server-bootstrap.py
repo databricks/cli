@@ -25,6 +25,7 @@ dbutils.widgets.text("maxClients", "10")
 dbutils.widgets.text("shutdownDelay", "10m")
 dbutils.widgets.text("sessionId", "")
 dbutils.widgets.text("serverless", "false")
+dbutils.widgets.text("usagePolicyId", "")
 
 
 def cleanup():
@@ -125,6 +126,7 @@ def run_ssh_server():
     if not session_id:
         raise RuntimeError("Session ID is required. Please provide it using the 'sessionId' widget.")
     serverless = dbutils.widgets.get("serverless")
+    usage_policy_id = dbutils.widgets.get("usagePolicyId")
 
     arch = platform.machine()
     if arch == "x86_64":
@@ -162,6 +164,10 @@ def run_ssh_server():
         # TODO: file with log rotation
         "--log-file=stdout",
     ]
+
+    # Recorded in the server's metadata.json so reconnects can match the usage policy.
+    if usage_policy_id:
+        server_args.append(f"--usage-policy-id={usage_policy_id}")
 
     # Tee the server output instead of inheriting stdout: the run-page logs remain the only
     # place to debug a RUNNING server, but on failure we attach the log tail to the exception
