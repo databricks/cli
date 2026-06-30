@@ -1,9 +1,8 @@
-import sys
+import json
 import os
 import pprint
-import json
 import subprocess
-
+import sys
 
 cli = os.environ["CLI"]
 
@@ -21,7 +20,7 @@ def run_json(cmd):
     try:
         return json.loads(result.stdout)
     except Exception as ex:
-        raise Error(f"{cmd} returned non-json: {ex}\n{result.stdout}")
+        raise Error(f"{cmd} returned non-json: {ex}\n{result.stdout}") from ex
 
 
 def test_permissions(target_user, resource_type, resource_id, levels, expected):

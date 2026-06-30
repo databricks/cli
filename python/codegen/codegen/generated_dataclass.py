@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -342,9 +342,7 @@ def generate_dataclass(
 
 def _get_type_code(generated: GeneratedType, quote: bool = True) -> str:
     if generated.parameters:
-        parameters = ", ".join(
-            map(lambda x: _get_type_code(x, quote), generated.parameters)
-        )
+        parameters = ", ".join((_get_type_code(x, quote) for x in generated.parameters))
 
         return f"{generated.name}[{parameters}]"
     else:

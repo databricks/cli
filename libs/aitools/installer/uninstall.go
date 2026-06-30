@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -16,8 +18,9 @@ import (
 
 // UninstallOptions controls the behavior of UninstallSkillsOpts.
 type UninstallOptions struct {
-	Skills []string // empty = all
-	Scope  string   // ScopeGlobal or ScopeProject (default: global)
+	Skills          []string // empty = all
+	Scope           string   // ScopeGlobal or ScopeProject (default: global)
+	KeepMarketplace bool     // keep the marketplace registration when removing a plugin
 }
 
 // UninstallSkills removes all installed skills, their symlinks, and the state file.
@@ -56,7 +59,35 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
 			return errors.New("found skills from a previous install without state tracking; run 'databricks aitools install' first, then uninstall")
 		}
-		return errors.New("no skills installed")
+		return errors.New("no skills or plugins installed")
+	}
+
+	// A full uninstall (no --skills filter) also tears down plugins.
+	fullUninstall := len(opts.Skills) == 0
+
+	pluginCount := 0
+	if fullUninstall {
+		for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
+			agent := agents.ByName(name)
+			if agent == nil {
+				// We can't tear down an agent we don't know; keep the record (and
+				// the state file) rather than silently dropping a live plugin.
+				log.Warnf(ctx, "Leaving plugin record for unknown agent %q; remove its plugin manually", name)
+				continue
+			}
+			rec := state.Plugins[name]
+			if err := UninstallPluginForAgent(ctx, agent, rec, opts.KeepMarketplace); err != nil {
+				log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
+				continue
+			}
+			delete(state.Plugins, name)
+			pluginCount++
+			note := " + marketplace"
+			if opts.KeepMarketplace || !rec.InstalledMarketplace {
+				note = ""
+			}
+			cmdio.LogString(ctx, fmt.Sprintf("  %s  removed databricks plugin%s", agent.DisplayName, note))
+		}
 	}
 
 	// Determine which skills to remove.
@@ -79,8 +110,6 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 		}
 	}
 
-	removeAll := len(toRemove) == len(state.Skills)
-
 	// Remove skill directories and symlinks for each skill.
 	for _, name := range toRemove {
 		canonicalDir := filepath.Join(baseDir, name)
@@ -90,27 +119,41 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 		}
 		delete(state.Skills, name)
 		delete(state.RepoDirs, name)
+		for path := range state.Files {
+			if strings.HasPrefix(path, name+"/") {
+				delete(state.Files, path)
+			}
+		}
 	}
 
-	if removeAll {
-		// Clean up orphaned symlinks and delete state file.
+	// If nothing remains in this scope, clean up orphaned symlinks and delete the
+	// state file; otherwise persist the trimmed state.
+	if len(state.Skills) == 0 && len(state.Plugins) == 0 {
 		cleanOrphanedSymlinks(ctx, baseDir, scope, cwd)
 		stateFile := filepath.Join(baseDir, stateFileName)
 		if err := os.Remove(stateFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("failed to remove state file: %w", err)
 		}
 	} else {
-		// Update state to reflect remaining skills.
 		if err := SaveState(baseDir, state); err != nil {
 			return err
 		}
 	}
 
-	noun := "skills"
-	if len(toRemove) == 1 {
-		noun = "skill"
+	if pluginCount > 0 {
+		noun := "agent"
+		if pluginCount != 1 {
+			noun = "agents"
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("Uninstalled the plugin from %d %s.", pluginCount, noun))
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Uninstalled %d %s.", len(toRemove), noun))
+	if len(toRemove) > 0 {
+		noun := "skills"
+		if len(toRemove) == 1 {
+			noun = "skill"
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("Uninstalled %d %s.", len(toRemove), noun))
+	}
 	return nil
 }
 
@@ -118,8 +161,7 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 // in the registry, but only if the entry is a symlink pointing into canonicalDir.
 // Non-symlink directories are left untouched to avoid deleting user-managed content.
 func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string) {
-	for i := range agents.Registry {
-		agent := &agents.Registry[i]
+	for _, agent := range agents.Registry {
 		if scope == ScopeProject && !agent.SupportsProjectScope {
 			continue
 		}
@@ -175,8 +217,7 @@ func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scop
 // cleanOrphanedSymlinks scans all agent skill directories for symlinks pointing
 // into baseDir that are not tracked in state, and removes them.
 func cleanOrphanedSymlinks(ctx context.Context, baseDir, scope, cwd string) {
-	for i := range agents.Registry {
-		agent := &agents.Registry[i]
+	for _, agent := range agents.Registry {
 		if scope == ScopeProject && !agent.SupportsProjectScope {
 			continue
 		}

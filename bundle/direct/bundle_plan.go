@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -161,7 +162,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return adapter.DoRead(ctx, id)
 			})
 			if err != nil {
-				if isResourceGone(err) {
+				if apierr.IsMissing(err) {
 					// no such resource
 					plan.RemoveEntry(resourceKey)
 				} else {
@@ -218,7 +219,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return adapter.DoRead(ctx, dbentry.ID)
 		})
 		if err != nil {
-			if isResourceGone(err) {
+			if apierr.IsMissing(err) {
 				remoteState = nil
 			} else {
 				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
@@ -658,6 +659,12 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	// ${workspace.snapshot_path} is resolved by the mutator pipeline after
+	// snapshot.Upload() — not by the direct engine. Return errDelayed so the
+	// template string is preserved in the plan output rather than causing an error.
+	if path.String() == "workspace.snapshot_path" {
+		return nil, errDelayed
+	}
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 
@@ -967,6 +974,11 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
 				targetNode := targetNodeDP.String()
+				// ${workspace.snapshot_path} is resolved by the mutator pipeline after
+				// snapshot.Upload(), not by the direct engine — skip it here.
+				if targetPath == "workspace.snapshot_path" {
+					continue
+				}
 
 				fullRef := "${" + targetPath + "}"
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """This script implements "diff -r -U2 dir1 dir2" but applies replacements first"""
 
-import sys
-import os
 import difflib
 import json
+import os
 import re
+import sys
 from pathlib import Path
 
 

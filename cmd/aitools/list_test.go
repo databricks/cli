@@ -3,6 +3,7 @@ package aitools
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -100,6 +101,100 @@ func TestRenderListJSON(t *testing.T) {
 	second := skills[1].(map[string]any)
 	assert.Equal(t, true, second["experimental"])
 	assert.Empty(t, second["installed"])
+}
+
+func TestRenderListJSONWithAgents(t *testing.T) {
+	out := listOutput{
+		Release: "0.2.6",
+		Skills:  []skillEntry{},
+		Summary: map[string]scopeSummary{installer.ScopeGlobal: {Installed: 0, Total: 0}},
+		Agents: []agentEntry{
+			{
+				Name:      "claude-code",
+				Managed:   true,
+				Installed: map[string]pluginInfo{installer.ScopeGlobal: {Version: "0.2.6"}},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, renderListJSON(&buf, out))
+
+	var raw map[string]any
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &raw))
+	// Existing contract keys remain.
+	assert.Contains(t, raw, "release")
+	assert.Contains(t, raw, "skills")
+	assert.Contains(t, raw, "summary")
+
+	agentsRaw := raw["agents"].([]any)
+	require.Len(t, agentsRaw, 1)
+	first := agentsRaw[0].(map[string]any)
+	assert.Equal(t, "claude-code", first["name"])
+	assert.Equal(t, true, first["managed"])
+	installed := first["installed"].(map[string]any)
+	global := installed["global"].(map[string]any)
+	assert.Equal(t, "0.2.6", global["version"])
+}
+
+func TestBuildAgentEntries(t *testing.T) {
+	globalState := &installer.InstallState{
+		Plugins: map[string]installer.PluginRecord{
+			"claude-code": {Plugin: "databricks", Version: "0.2.6"},
+			"codex":       {Plugin: "databricks", Version: "0.2.5"},
+		},
+	}
+
+	entries := buildAgentEntries(map[string]*installer.InstallState{
+		installer.ScopeGlobal: globalState,
+	})
+	byName := map[string]agentEntry{}
+	for _, e := range entries {
+		byName[e.Name] = e
+	}
+
+	require.Contains(t, byName, "claude-code")
+	assert.True(t, byName["claude-code"].Managed)
+	assert.Equal(t, "0.2.6", byName["claude-code"].Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "plugin · v0.2.6 · up to date", agentStatusLabel(byName["claude-code"], "0.2.6"))
+
+	require.Contains(t, byName, "codex")
+	assert.True(t, byName["codex"].Managed)
+	assert.Equal(t, "0.2.5", byName["codex"].Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "plugin · v0.2.5 · update available", agentStatusLabel(byName["codex"], "0.2.6"))
+
+	// Cursor has no plugin, so it never appears as a plugin agent entry.
+	assert.NotContains(t, byName, "cursor")
+}
+
+func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {
+	// Same agent recorded in both scopes: global current, project stale. Both
+	// versions are recorded; no scope is merged away.
+	globalState := &installer.InstallState{Plugins: map[string]installer.PluginRecord{
+		"claude-code": {Plugin: "databricks", Version: "0.2.6"},
+	}}
+	projectState := &installer.InstallState{Plugins: map[string]installer.PluginRecord{
+		"claude-code": {Plugin: "databricks", Version: "0.2.5"},
+	}}
+
+	entries := buildAgentEntries(map[string]*installer.InstallState{
+		installer.ScopeGlobal:  globalState,
+		installer.ScopeProject: projectState,
+	})
+	byName := map[string]agentEntry{}
+	for _, e := range entries {
+		byName[e.Name] = e
+	}
+
+	require.Contains(t, byName, "claude-code")
+	cc := byName["claude-code"]
+	assert.True(t, cc.Managed)
+	assert.Equal(t, "0.2.6", cc.Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "0.2.5", cc.Installed[installer.ScopeProject].Version)
+
+	// The renderer collapses the scopes and surfaces the stale one, rather than
+	// hiding it behind the up-to-date scope.
+	assert.Equal(t, "plugin · v0.2.5 · update available", agentStatusLabel(cc, "0.2.6"))
 }
 
 func TestRenderListJSONScopeFiltersSummary(t *testing.T) {
@@ -248,6 +343,34 @@ func TestRenderListTextUsesLoadedStateForScopeLabels(t *testing.T) {
 	got := stderr.String()
 	assert.Contains(t, got, "v1.0.0 (up to date) (global)")
 	assert.Contains(t, got, "1/1 skills installed (global), 0/1 (project)")
+}
+
+func TestRenderListTextGroupsExperimental(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	out := listOutput{
+		Release: "latest",
+		Skills: []skillEntry{
+			{Name: "databricks-jobs", LatestVersion: "1.0.0", Installed: map[string]string{}},
+			{Name: "experimental-thing", LatestVersion: "0.1.0", Experimental: true, Installed: map[string]string{}},
+		},
+		Summary: map[string]scopeSummary{
+			installer.ScopeGlobal: {Installed: 0, Total: 2, loaded: true},
+		},
+	}
+
+	renderListText(ctx, out, installer.ScopeGlobal)
+
+	got := stderr.String()
+	availIdx := strings.Index(got, "Available skills")
+	expIdx := strings.Index(got, "Experimental skills:")
+	require.GreaterOrEqual(t, availIdx, 0, "available group header present")
+	require.GreaterOrEqual(t, expIdx, 0, "experimental group header present")
+	assert.Less(t, availIdx, expIdx, "available group comes before experimental group")
+	// Stable skill sits in the first group; experimental skill sits under its own header.
+	assert.Less(t, strings.Index(got, "databricks-jobs"), expIdx)
+	assert.Less(t, expIdx, strings.Index(got, "experimental-thing"))
+	// No inline tag now that they are grouped.
+	assert.NotContains(t, got, "[experimental]")
 }
 
 func TestListScopeFlag(t *testing.T) {

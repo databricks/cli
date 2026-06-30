@@ -34,6 +34,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -112,6 +113,10 @@ type ClientOptions struct {
 	SkipSettingsCheck bool
 	// Environment version for serverless compute.
 	EnvironmentVersion int
+	// Base environment for serverless compute. Accepts an env.yaml path (leading "/"),
+	// a "workspace-base-environments/..." resource ID, or a bare display name resolved
+	// against the workspace base environments. Maps to compute.Environment.BaseEnvironment.
+	BaseEnvironment string
 	// If true, skip confirmation prompts for IDE extension install and IDE settings updates.
 	AutoApprove bool
 	// Id of the usage policy to use for the serverless SSH server job. Serverless only.
@@ -140,15 +145,31 @@ func (o *ClientOptions) Validate() error {
 	if o.EnvironmentVersion > 0 && o.EnvironmentVersion < minEnvironmentVersion {
 		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
 	}
+	// base_environment and environment_version are mutually exclusive in the SDK,
+	// and a custom base environment only applies to serverless compute.
+	if o.BaseEnvironment != "" && o.EnvironmentVersion > 0 {
+		return errors.New("--base-environment cannot be used together with --environment-version")
+	}
+	if o.BaseEnvironment != "" && o.ClusterID != "" {
+		return errors.New("--base-environment can only be used with serverless compute")
+	}
 	return nil
 }
 
 // GenerateDefaultConnectionName creates a deterministic connection name from
-// the workspace host and accelerator type. The name includes a hash of the
-// workspace host so that different workspaces produce different names,
-// avoiding SSH known_hosts conflicts.
-func GenerateDefaultConnectionName(host, accelerator string) string {
-	h := md5.Sum([]byte(host))
+// the workspace host, accelerator type, and base environment. The name includes
+// a hash so that different workspaces produce different names (avoiding SSH
+// known_hosts conflicts). The environment is folded into the hash because a
+// serverless server bakes in its environment at startup: distinct environments
+// must map to distinct connection names so they don't reuse each other's server.
+func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string) string {
+	// Keep the hash host-only when no base environment is set so existing default
+	// connection names are preserved.
+	hashInput := host
+	if baseEnvironment != "" {
+		hashInput = host + "\x00" + baseEnvironment
+	}
+	h := md5.Sum([]byte(hashInput))
 	hashStr := hex.EncodeToString(h[:4])
 	if accelerator != "" {
 		acc := strings.ToLower(strings.ReplaceAll(accelerator, "_", "-"))
@@ -224,6 +245,14 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 
 	if o.EnvironmentVersion > 0 {
 		proxyCommand += " --environment-version=" + strconv.Itoa(o.EnvironmentVersion)
+	}
+
+	if o.BaseEnvironment != "" {
+		// Shell-quote the value: this command is persisted as an OpenSSH ProxyCommand
+		// and executed via the shell, and base environments accept user-controlled
+		// display names/paths that may contain spaces or shell metacharacters.
+		// Single-quoting (unlike strconv.Quote's double quotes) prevents any expansion.
+		proxyCommand += " --base-environment=" + shellSingleQuote(o.BaseEnvironment)
 	}
 
 	return proxyCommand, nil
@@ -600,12 +629,22 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath string, o
 	}
 
 	if opts.IsServerlessMode() {
+		// base_environment and environment_version are mutually exclusive: a custom
+		// base environment carries its own version, so we don't also set one.
+		var spec compute.Environment
+		if opts.BaseEnvironment != "" {
+			baseEnvironment, err := resolveBaseEnvironment(ctx, client, opts.BaseEnvironment)
+			if err != nil {
+				return 0, err
+			}
+			spec.BaseEnvironment = baseEnvironment
+		} else {
+			spec.EnvironmentVersion = strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion))
+		}
 		submitRequest.Environments = []jobs.JobEnvironment{
 			{
 				EnvironmentKey: serverlessEnvironmentKey,
-				Spec: &compute.Environment{
-					EnvironmentVersion: strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion)),
-				},
+				Spec:           &spec,
 			},
 		}
 	}
@@ -659,6 +698,37 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 
 	// Return the run ID even on error so callers can fetch the run's failure details.
 	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts)
+}
+
+// resolveBaseEnvironment maps the user-provided --base-environment value to a
+// compute.Environment.BaseEnvironment string. A leading "/" is an env.yaml path and a
+// "workspace-base-environments/" prefix is a resource ID; both are passed through
+// verbatim. Anything else is treated as a display name and resolved to its resource ID
+// via the workspace base environments listing.
+func resolveBaseEnvironment(ctx context.Context, client *databricks.WorkspaceClient, input string) (string, error) {
+	if strings.HasPrefix(input, "/") || strings.HasPrefix(input, "workspace-base-environments/") {
+		return input, nil
+	}
+
+	envs, err := client.Environments.ListWorkspaceBaseEnvironmentsAll(ctx, environments.ListWorkspaceBaseEnvironmentsRequest{})
+	if err != nil {
+		return "", fmt.Errorf("failed to list workspace base environments: %w", err)
+	}
+
+	var matches []string
+	for _, e := range envs {
+		if e.DisplayName == input {
+			matches = append(matches, e.Name)
+		}
+	}
+	switch len(matches) {
+	case 0:
+		return "", fmt.Errorf("no workspace base environment found with display name %q", input)
+	case 1:
+		return matches[0], nil
+	default:
+		return "", fmt.Errorf("multiple workspace base environments found with display name %q", input)
+	}
 }
 
 // shellSingleQuote wraps s in single quotes for safe inclusion in a shell

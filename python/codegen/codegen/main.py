@@ -11,7 +11,6 @@ import codegen.generated_imports as generated_imports
 import codegen.jsonschema as openapi
 import codegen.jsonschema_patch as openapi_patch
 import codegen.packages as packages
-
 from codegen.code_builder import CodeBuilder
 from codegen.generated_dataclass import GeneratedDataclass, GeneratedType
 from codegen.generated_enum import GeneratedEnum
@@ -294,7 +293,7 @@ def _write_code(
     package_code = {}
     typechecking_imports = {}
 
-    for schema_name, generated in dataclasses.items():
+    for _schema_name, generated in dataclasses.items():
         package = generated.package
         code = generated_dataclass.get_code(generated)
 
@@ -304,7 +303,7 @@ def _write_code(
         package_code[package] = package_code.get(package, "")
         package_code[package] += "\n" + code
 
-    for schema_name, generated in enums.items():
+    for _schema_name, generated in enums.items():
         package = generated.package
         code = generated_enum.get_code(generated)
 

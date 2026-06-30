@@ -25,7 +25,7 @@ tasks:
       - "uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv"
 
   pydabs-lint:
-    desc: Run pydabs lint checks
+    desc: Run pydabs type checks (ruff lint/format is global, see root `lint-python` / `fmt-python`)
     sources:
       - "**/*.py"
       - pyproject.toml
@@ -34,18 +34,18 @@ tasks:
       - LICENSE
     cmds:
       - "uv lock --check"
-      - "uv run ruff check databricks databricks_tests"
       - "uv run pyright"
-      - "uv run ruff format --diff databricks databricks_tests"
 
   pydabs-fmt:
-    desc: Format pydabs code
+    desc: Lint-fix and format pydabs code with the global ruff
     sources:
       - "**/*.py"
       - pyproject.toml
     cmds:
-      - uv run ruff check --fix databricks databricks_tests || true
-      - uv run ruff format
+      # Pinned to match the global ruff version (see root Taskfile fmt-python and
+      # .github/workflows/check.yml). ruff config lives in ../ruff.toml.
+      - uvx ruff@0.15.17 check --fix databricks databricks_tests || true
+      - uvx ruff@0.15.17 format
 
   pydabs-docs:
     desc: Generate pydabs documentation
@@ -78,8 +78,9 @@ tasks:
           -exec rm -rf {} \;
       - cd codegen && uv run -m pytest codegen_tests
       - cd codegen && uv run -m codegen.main --output ..
-      - uv run ruff check --fix databricks databricks_tests || true
-      - uv run ruff format
+      # Generated code is fixed and formatted by the global ruff (see ../ruff.toml).
+      - uvx ruff@0.15.17 check --fix databricks databricks_tests || true
+      - uvx ruff@0.15.17 format
 
   pydabs-build:
     desc: Build pydabs wheel

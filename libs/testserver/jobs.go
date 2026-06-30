@@ -105,6 +105,14 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 		return Response{StatusCode: 403, Body: "{}"}
 	}
 
+	// Known cloud quirk (see the test's Badness note): jobs/reset is a full
+	// replace, but omitting run_as from new_settings does NOT clear it — cloud
+	// keeps the previously configured identity. Mirror that so the local
+	// testserver matches cloud against one golden.
+	if request.NewSettings.RunAs == nil {
+		request.NewSettings.RunAs = prevjob.Settings.RunAs
+	}
+
 	s.Jobs[jobId] = jobs.Job{
 		JobId:           jobId,
 		CreatorUserName: prevjob.CreatorUserName,
@@ -173,7 +181,23 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 
 			// Set enable_elastic_disk to false (server-side default)
 			task.NewCluster.ForceSendFields = append(task.NewCluster.ForceSendFields, "EnableElasticDisk")
+
+			// The real Jobs API consumes apply_policy_default_values but does not
+			// return it in GET responses; clear it so testserver matches cloud.
+			task.NewCluster.ApplyPolicyDefaultValues = false
 		}
+
+		// Handle for_each_task inner cluster.
+		if task.ForEachTask != nil && task.ForEachTask.Task.NewCluster != nil {
+			// Same as above: not returned in GET responses.
+			task.ForEachTask.Task.NewCluster.ApplyPolicyDefaultValues = false
+		}
+	}
+
+	// Handle job cluster new_clusters.
+	for i := range jobSettings.JobClusters {
+		// Same as above: not returned in GET responses.
+		jobSettings.JobClusters[i].NewCluster.ApplyPolicyDefaultValues = false
 	}
 }
 
@@ -195,7 +219,11 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 
 	job, ok := s.Jobs[jobIdInt]
 	if !ok {
-		return Response{StatusCode: 404}
+		// Match the real Jobs API, which echoes the job id in the error message.
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Job %d does not exist.", jobIdInt)},
+		}
 	}
 
 	job = setSourceIfNotSet(job)

@@ -161,6 +161,17 @@ func BuildStateFromTF(
 			return strings.Compare(a.Label, b.Label)
 		})
 
+		// For a .permissions node, id (tfIDs[node]) is the databricks_permissions resource's
+		// own ID, which is exactly the object_id (e.g. "/serving-endpoints/<id>"). Use it
+		// directly: re-deriving it from the parent's TF state fails for types whose id field
+		// is absent there (model_serving_endpoints, database_instances).
+		if _, ok := sv.Refs["object_id"]; ok {
+			if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "object_id"), id); err != nil {
+				return fmt.Errorf("%s: setting object_id: %w", node, err)
+			}
+			delete(sv.Refs, "object_id")
+		}
+
 		// Resolve each reference using TF state.
 		// node format: "resources.<group>.<name>" or "resources.<group>.<name>.permissions"
 		parts := strings.SplitN(node, ".", 4)
