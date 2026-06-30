@@ -3,6 +3,7 @@ package aircmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"path"
 	"strconv"
@@ -70,7 +71,7 @@ type submitTask struct {
 	RunIf          string        `json:"run_if"`
 	AiRuntimeTask  aiRuntimeTask `json:"ai_runtime_task"`
 	EnvironmentKey string        `json:"environment_key"`
-	MaxRetries     int           `json:"max_retries,omitempty"`
+	MaxRetries     int           `json:"max_retries"`
 	RetryOnTimeout bool          `json:"retry_on_timeout,omitempty"`
 }
 
@@ -84,14 +85,13 @@ type jobsSubmitRun struct {
 	IdempotencyToken string           `json:"idempotency_token,omitempty"`
 }
 
-// dlRuntimeImage resolves the runtime channel. A config version wins; otherwise
-// the env override or default applies. The CLIENT-GPU- prefix is stripped because
-// the native path wants the bare channel.
+// dlRuntimeImage resolves the bare runtime channel (config version, else env,
+// else default), always stripping the CLIENT-GPU- prefix.
 func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
-	if runtimeVersion != "" {
-		return runtimeVersion
+	img := runtimeVersion
+	if img == "" {
+		img = env.Get(ctx, dlRuntimeImageEnv)
 	}
-	img := env.Get(ctx, dlRuntimeImageEnv)
 	if img == "" {
 		img = defaultDlRuntimeImage
 	}
@@ -123,12 +123,11 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string) jobsSubmitR
 		RunIf:          "ALL_SUCCESS",
 		AiRuntimeTask:  task,
 		EnvironmentKey: aiRuntimeEnvironmentKey,
+		MaxRetries:     cfg.maxRetries(),
 	}
-	// retry_on_timeout pairs with max_retries, matching the Python payload.
-	if r := cfg.maxRetries(); r > 0 {
-		st.MaxRetries = r
-		st.RetryOnTimeout = true
-	}
+	// max_retries 0 (no retries) is sent explicitly; retry_on_timeout only
+	// applies when retries are allowed.
+	st.RetryOnTimeout = st.MaxRetries > 0
 
 	return jobsSubmitRun{
 		RunName:        cfg.ExperimentName,
@@ -168,8 +167,9 @@ func (j *jobsSubmitClient) submit(ctx context.Context, payload jobsSubmitRun) (i
 }
 
 // submitToken resolves the idempotency token: the --idempotency-key flag wins,
-// then the config's token, else a generated one. Capped at the Jobs API's 64.
-func submitToken(flag string, cfg *runConfig) string {
+// then the config's token, else a generated one. Over-long tokens error rather
+// than truncate, since truncation could make two distinct tokens collide.
+func submitToken(flag string, cfg *runConfig) (string, error) {
 	token := flag
 	if token == "" && cfg.IdempotencyToken != nil {
 		token = *cfg.IdempotencyToken
@@ -178,9 +178,9 @@ func submitToken(flag string, cfg *runConfig) string {
 		token = uuid.NewString()
 	}
 	if len(token) > 64 {
-		token = token[:64]
+		return "", fmt.Errorf("idempotency token must be 64 characters or less, got %d", len(token))
 	}
-	return token
+	return token, nil
 }
 
 // submitWorkload runs the submit happy path: ensure the experiment directory,
@@ -194,6 +194,12 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	}
 	if cfg.CodeSource != nil {
 		return 0, "", errors.New("code_source is not yet supported")
+	}
+
+	// Resolve the idempotency token first so a bad key fails before any upload.
+	token, err := submitToken(idempotencyKey, cfg)
+	if err != nil {
+		return 0, "", err
 	}
 
 	experimentDir := ""
@@ -228,7 +234,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 
 	runtimeVersion, _ := cfg.runtimeVersion()
 	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion))
-	payload.IdempotencyToken = submitToken(idempotencyKey, cfg)
+	payload.IdempotencyToken = token
 
 	jc, err := newJobsSubmitClient(w)
 	if err != nil {

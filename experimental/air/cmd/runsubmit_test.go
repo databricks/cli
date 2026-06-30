@@ -16,7 +16,9 @@ func TestDlRuntimeImage(t *testing.T) {
 	ctx := t.Context()
 	// A config runtime version wins and is used bare.
 	assert.Equal(t, "5", dlRuntimeImage(ctx, "5"))
-	// Default, with the CLIENT-GPU- prefix stripped for the GPU_* path.
+	// The CLIENT-GPU- prefix is always stripped, even from the config version.
+	assert.Equal(t, "5", dlRuntimeImage(ctx, "CLIENT-GPU-5"))
+	// Default, with the prefix stripped.
 	assert.Equal(t, "4", dlRuntimeImage(ctx, ""))
 	// Env override, prefix stripped.
 	t.Setenv(dlRuntimeImageEnv, "CLIENT-GPU-7")
@@ -59,12 +61,42 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, aiRuntimeCompute{AcceleratorType: "GPU_8xH100", AcceleratorCount: 16}, at.Deployments[0].Compute)
 }
 
+func TestBuildSubmitPayload_NoRetries(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+		MaxRetries:     new(0),
+	}
+
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4").Tasks[0]
+	assert.Equal(t, 0, task.MaxRetries)
+	assert.False(t, task.RetryOnTimeout)
+
+	// max_retries: 0 must be sent, not omitted, so the server honors "no retries".
+	b, err := json.Marshal(task)
+	require.NoError(t, err)
+	assert.Contains(t, string(b), `"max_retries":0`)
+}
+
 func TestSubmitToken(t *testing.T) {
 	cfg := &runConfig{IdempotencyToken: new("from-config")}
-	assert.Equal(t, "from-flag", submitToken("from-flag", cfg))   // flag wins
-	assert.Equal(t, "from-config", submitToken("", cfg))          // then config
-	assert.NotEmpty(t, submitToken("", &runConfig{}))             // else generated
-	assert.Len(t, submitToken(string(make([]byte, 80)), cfg), 64) // capped
+
+	tok, err := submitToken("from-flag", cfg) // flag wins
+	require.NoError(t, err)
+	assert.Equal(t, "from-flag", tok)
+
+	tok, err = submitToken("", cfg) // then config
+	require.NoError(t, err)
+	assert.Equal(t, "from-config", tok)
+
+	tok, err = submitToken("", &runConfig{}) // else generated
+	require.NoError(t, err)
+	assert.NotEmpty(t, tok)
+
+	// An over-long token errors instead of being truncated.
+	_, err = submitToken(strings.Repeat("a", 65), cfg)
+	require.ErrorContains(t, err, "64 characters or less")
 }
 
 func TestJobsSubmitClient(t *testing.T) {
