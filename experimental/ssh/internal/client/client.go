@@ -692,23 +692,6 @@ func resolveBaseEnvironment(ctx context.Context, client *databricks.WorkspaceCli
 	}
 }
 
-// baseEnvironmentKind classifies a --base-environment value into a coarse,
-// non-identifying category for telemetry. The raw value is never logged because
-// it can carry PII (env.yaml paths embed user emails, display names are free-form);
-// the category mirrors the input forms resolveBaseEnvironment recognizes.
-func baseEnvironmentKind(input string) string {
-	switch {
-	case input == "":
-		return ""
-	case strings.HasPrefix(input, "/"):
-		return "path"
-	case strings.HasPrefix(input, "workspace-base-environments/"):
-		return "resource-id"
-	default:
-		return "display-name"
-	}
-}
-
 // shellSingleQuote wraps s in single quotes for safe inclusion in a shell
 // command, escaping any embedded single quotes.
 func shellSingleQuote(s string) string {
@@ -1127,15 +1110,14 @@ func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isRec
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		SshTunnelEvent: &protos.SshTunnelEvent{
-			ComputeType:         computeType,
-			AcceleratorType:     opts.Accelerator,
-			BaseEnvironmentKind: baseEnvironmentKind(opts.BaseEnvironment),
-			IdeType:             opts.IDE,
-			ClientMode:          clientMode,
-			IsReconnect:         isReconnect,
-			AutoStartCluster:    opts.AutoStartCluster,
-			ServerStartTimeMs:   serverStartTimeMs,
-			IsSuccess:           isSuccess,
+			ComputeType:       computeType,
+			AcceleratorType:   opts.Accelerator,
+			IdeType:           opts.IDE,
+			ClientMode:        clientMode,
+			IsReconnect:       isReconnect,
+			AutoStartCluster:  opts.AutoStartCluster,
+			ServerStartTimeMs: serverStartTimeMs,
+			IsSuccess:         isSuccess,
 		},
 	})
 }
