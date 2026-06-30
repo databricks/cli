@@ -57,10 +57,35 @@ func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand str
 // clusterSelectionPrompt is a package-level var so tests can replace it with a mock.
 var clusterSelectionPrompt = defaultClusterSelectionPrompt
 
+// buildClusterItems converts a list of cluster details into a slice of
+// display tuples suitable for an ordered picker. When two or more clusters
+// share the same name, the cluster ID is appended in parentheses to each
+// duplicate entry so the user can tell them apart.
+func buildClusterItems(clusters []compute.ClusterDetails) []cmdio.Tuple {
+	seen := make(map[string]bool, len(clusters))
+	items := make([]cmdio.Tuple, 0, len(clusters))
+	for _, c := range clusters {
+		label := c.ClusterName
+		if seen[label] {
+			// A previous cluster already used this name; go back and append
+			// the ID to that earlier entry too, so the list is unambiguous.
+			for i, item := range items {
+				if item.Name == label {
+					items[i].Name = label + " (" + item.Id + ")"
+				}
+			}
+			label = label + " (" + c.ClusterId + ")"
+		}
+		seen[c.ClusterName] = true
+		items = append(items, cmdio.Tuple{Name: label, Id: c.ClusterId})
+	}
+	return items
+}
+
 func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading clusters.")
-	clusters, err := client.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{
+	all, err := client.Clusters.ListAll(ctx, compute.ListClustersRequest{
 		FilterBy: &compute.ListClustersFilterBy{
 			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
 		},
@@ -69,7 +94,12 @@ func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.Works
 	if err != nil {
 		return "", fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify cluster argument. Original error: %w", err)
 	}
-	id, err := cmdio.Select(ctx, clusters, "The cluster to connect to")
+
+	// Databricks allows clusters to share names; use buildClusterItems to
+	// disambiguate duplicates before passing them to the interactive picker.
+	items := buildClusterItems(all)
+
+	id, err := cmdio.SelectOrdered(ctx, items, "The cluster to connect to")
 	if err != nil {
 		return "", err
 	}

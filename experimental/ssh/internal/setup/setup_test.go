@@ -18,6 +18,66 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestBuildClusterItems_UniqueNames verifies that clusters with distinct names
+// are shown with their original name.
+func TestBuildClusterItems_UniqueNames(t *testing.T) {
+	clusters := []compute.ClusterDetails{
+		{ClusterId: "id-1", ClusterName: "alpha"},
+		{ClusterId: "id-2", ClusterName: "beta"},
+	}
+	items := buildClusterItems(clusters)
+	require.Len(t, items, 2)
+	assert.Equal(t, "alpha", items[0].Name)
+	assert.Equal(t, "id-1", items[0].Id)
+	assert.Equal(t, "beta", items[1].Name)
+	assert.Equal(t, "id-2", items[1].Id)
+}
+
+// TestBuildClusterItems_DuplicateNames verifies that when two clusters share a
+// name, both entries are disambiguated by appending their cluster ID.
+func TestBuildClusterItems_DuplicateNames(t *testing.T) {
+	clusters := []compute.ClusterDetails{
+		{ClusterId: "id-1", ClusterName: "shared"},
+		{ClusterId: "id-2", ClusterName: "shared"},
+	}
+	items := buildClusterItems(clusters)
+	require.Len(t, items, 2)
+	assert.Equal(t, "shared (id-1)", items[0].Name)
+	assert.Equal(t, "id-1", items[0].Id)
+	assert.Equal(t, "shared (id-2)", items[1].Name)
+	assert.Equal(t, "id-2", items[1].Id)
+}
+
+// TestBuildClusterItems_ThreeDuplicateNames verifies disambiguation when three
+// clusters share the same name.
+func TestBuildClusterItems_ThreeDuplicateNames(t *testing.T) {
+	clusters := []compute.ClusterDetails{
+		{ClusterId: "id-a", ClusterName: "dup"},
+		{ClusterId: "id-b", ClusterName: "dup"},
+		{ClusterId: "id-c", ClusterName: "dup"},
+	}
+	items := buildClusterItems(clusters)
+	require.Len(t, items, 3)
+	assert.Equal(t, "dup (id-a)", items[0].Name)
+	assert.Equal(t, "dup (id-b)", items[1].Name)
+	assert.Equal(t, "dup (id-c)", items[2].Name)
+}
+
+// TestBuildClusterItems_MixedDuplicates verifies that only the duplicate names
+// get a suffix while unique names stay unchanged.
+func TestBuildClusterItems_MixedDuplicates(t *testing.T) {
+	clusters := []compute.ClusterDetails{
+		{ClusterId: "id-1", ClusterName: "unique"},
+		{ClusterId: "id-2", ClusterName: "dup"},
+		{ClusterId: "id-3", ClusterName: "dup"},
+	}
+	items := buildClusterItems(clusters)
+	require.Len(t, items, 3)
+	assert.Equal(t, "unique", items[0].Name)
+	assert.Equal(t, "dup (id-2)", items[1].Name)
+	assert.Equal(t, "dup (id-3)", items[2].Name)
+}
+
 func TestValidateClusterAccess_SingleUser(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	m := mocks.NewMockWorkspaceClient(t)
