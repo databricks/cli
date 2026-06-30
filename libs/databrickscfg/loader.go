@@ -14,6 +14,26 @@ import (
 
 var ResolveProfileFromHost = profileFromHostLoader{}
 
+// ResolveNonAuthFromEnv reads non-auth, non-host config from environment
+// variables. See ProfileAuthLoaders for how it fits into the chain.
+var ResolveNonAuthFromEnv = nonAuthEnvLoader{}
+
+// ProfileAuthLoaders is the loader chain for an explicitly selected profile
+// (--profile or a bundle's workspace.profile). Unlike the SDK's default
+// env-first chain, the profile wins over auth env vars (#5096):
+//
+//  1. ResolveNonAuthFromEnv: non-auth env attrs (e.g. cluster_id), env-wins.
+//  2. ConfigFile: the selected profile (host, routing, auth).
+//  3. ConfigAttributes: gap-fills only fields the profile left empty.
+//
+// A profile from DATABRICKS_CONFIG_PROFILE keeps env-first precedence; only an
+// out-of-band profile name triggers this chain.
+var ProfileAuthLoaders = []config.Loader{
+	ResolveNonAuthFromEnv,
+	config.ConfigFile,
+	config.ConfigAttributes,
+}
+
 var errNoMatchingProfiles = errors.New("no matching config profiles found")
 
 type errMultipleProfiles []string
@@ -58,6 +78,51 @@ func findMatchingProfile(configFile *config.File, matcher func(*ini.Section) boo
 	}
 
 	return matching[0], nil
+}
+
+// nonAuthEnvSkipAttrs lists env attributes nonAuthEnvLoader must skip on top of
+// those HasAuthAttribute catches: host/routing (host, workspace_id, account_id)
+// and auth-steering fields tagged auth:"-" (auth_type, discovery_url, audience,
+// cloud), which HasAuthAttribute misses. Reading these from env would shadow the
+// selected profile (#5096). TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs
+// guards against SDK drift.
+var nonAuthEnvSkipAttrs = map[string]bool{
+	"host":          true,
+	"workspace_id":  true,
+	"account_id":    true,
+	"auth_type":     true,
+	"discovery_url": true,
+	"audience":      true,
+	"cloud":         true,
+}
+
+type nonAuthEnvLoader struct{}
+
+func (nonAuthEnvLoader) Name() string {
+	return "environment (excluding auth)"
+}
+
+func (nonAuthEnvLoader) Configure(cfg *config.Config) error {
+	for _, attr := range config.ConfigAttributes {
+		// Host and auth come from the profile (config file), not env.
+		if nonAuthEnvSkipAttrs[attr.Name] || attr.HasAuthAttribute() {
+			continue
+		}
+		// Don't overwrite an already-set value (SDK loader semantics).
+		if !attr.IsZero(cfg) {
+			continue
+		}
+		v, envName := attr.ReadEnv()
+		if v == "" {
+			continue
+		}
+		if err := attr.SetS(cfg, v); err != nil {
+			return err
+		}
+		// Record the source so `auth describe` attributes the value to env.
+		cfg.SetAttrSource(&attr, config.Source{Type: config.SourceEnv, Name: envName})
+	}
+	return nil
 }
 
 type profileFromHostLoader struct{}

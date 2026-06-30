@@ -7,10 +7,10 @@ Account ID: acct-123
 Authenticated with: pat
 -----
 Current configuration:
-  ✓ host: [DATABRICKS_URL] (from DATABRICKS_HOST environment variable)
+  ✓ host: [DATABRICKS_URL] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
   ✓ account_id: acct-123 (from [TEST_TMP_DIR]/home/.databrickscfg config file)
   ✓ workspace_id: [NUMID] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
-  ✓ token: ******** (from DATABRICKS_TOKEN environment variable)
+  ✓ token: ******** (from [TEST_TMP_DIR]/home/.databrickscfg config file)
   ✓ profile: acct-with-ws (from --profile flag)
   ✓ databricks_cli_path: [CLI]
   ✓ auth_type: pat

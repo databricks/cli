@@ -34,6 +34,80 @@ func TestLoaderSkipsExistingAuth(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestResolveNonAuthFromEnvSkipsHostAndAuth(t *testing.T) {
+	t.Setenv("DATABRICKS_HOST", "https://env.test")
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+	// auth_type, discovery_url, audience and cloud are tagged auth:"-", so
+	// HasAuthAttribute misses them; they steer auth and must still be skipped.
+	t.Setenv("DATABRICKS_AUTH_TYPE", "oauth-m2m")
+	t.Setenv("DATABRICKS_DISCOVERY_URL", "https://discovery.env.test")
+	t.Setenv("DATABRICKS_TOKEN_AUDIENCE", "env-audience")
+	t.Setenv("DATABRICKS_CLOUD", "azure")
+	// workspace_id and account_id are routing identifiers, also skipped.
+	t.Setenv("DATABRICKS_WORKSPACE_ID", "env-workspace")
+	t.Setenv("DATABRICKS_ACCOUNT_ID", "env-account")
+	t.Setenv("DATABRICKS_CLUSTER_ID", "env-cluster")
+
+	cfg := &config.Config{}
+	err := ResolveNonAuthFromEnv.Configure(cfg)
+	require.NoError(t, err)
+
+	// Host, routing and auth settings are left for the profile (config file) to set.
+	assert.Empty(t, cfg.Host)
+	assert.Empty(t, cfg.Token)
+	assert.Empty(t, cfg.AuthType)
+	assert.Empty(t, cfg.DiscoveryURL)
+	assert.Empty(t, cfg.TokenAudience)
+	assert.Empty(t, cfg.Cloud)
+	assert.Empty(t, cfg.WorkspaceID)
+	assert.Empty(t, cfg.AccountID)
+	// Non-auth attributes are still populated from the environment.
+	assert.Equal(t, "env-cluster", cfg.ClusterID)
+}
+
+func TestProfileAuthLoadersConflictingEnvAuthMethodErrors(t *testing.T) {
+	// Profile has a PAT; env gap-fills a different complete method (OAuth M2M).
+	// The config then carries two auth methods, which the SDK rejects rather
+	// than silently dropping the env one (#5096).
+	t.Setenv("DATABRICKS_CLIENT_ID", "env-client-id")
+	t.Setenv("DATABRICKS_CLIENT_SECRET", "env-client-secret")
+
+	cfg := config.Config{
+		Loaders:    ProfileAuthLoaders,
+		ConfigFile: "profile/testdata/databrickscfg",
+		Profile:    "DEFAULT",
+	}
+
+	err := cfg.EnsureResolved()
+	require.ErrorContains(t, err, "more than one authorization method configured")
+}
+
+// TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs fails when an SDK bump adds an
+// Internal (auth:"-") env-backed attribute that is neither skipped nor listed as
+// a reviewed env-first attribute, forcing a human to classify it (#5096).
+func TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs(t *testing.T) {
+	knownEnvFirstInternal := map[string]bool{
+		"oauth_callback_port":         true,
+		"disable_oauth_refresh_token": true,
+		"debug_truncate_bytes":        true,
+		"debug_headers":               true,
+		"rate_limit":                  true,
+	}
+
+	for _, attr := range config.ConfigAttributes {
+		if !attr.Internal || len(attr.EnvVars) == 0 {
+			continue
+		}
+		if nonAuthEnvSkipAttrs[attr.Name] || knownEnvFirstInternal[attr.Name] {
+			continue
+		}
+		t.Errorf("SDK config attribute %q (env %v) is internal (auth:\"-\") but unclassified: "+
+			"add it to nonAuthEnvSkipAttrs if it steers auth/routing, or to "+
+			"knownEnvFirstInternal if env-first precedence is safe (#5096)",
+			attr.Name, attr.EnvVars)
+	}
+}
+
 func TestLoaderSkipsExplicitAuthType(t *testing.T) {
 	cfg := config.Config{
 		Loaders: []config.Loader{

@@ -1,0 +1,26 @@
+sethome "./home"
+
+# A profile carries full credentials; a second profile carries only a host.
+cat > "./home/.databrickscfg" <<EOF
+[my-workspace]
+host  = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+
+[host-only]
+host  = $DATABRICKS_HOST
+EOF
+
+# direnv-style auth env vars for a different workspace; before #5096 these
+# shadowed the profile selected with --profile.
+real_token=$DATABRICKS_TOKEN
+export DATABRICKS_HOST=https://dev.cloud.databricks.test
+export DATABRICKS_TOKEN=dev-token
+
+title "Describe with --profile overrides auth env vars (#5096)\n"
+trace $CLI auth describe --profile my-workspace
+
+# Host-only profile: the profile wins for the host, but env fills the token it
+# omits (#5096).
+export DATABRICKS_TOKEN=$real_token
+title "Describe with a host-only --profile fills the token from the environment (#5096)\n"
+trace $CLI auth describe --profile host-only

@@ -110,6 +110,17 @@ func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	return value, value != ""
 }
 
+// applyProfileAuthPrecedence makes an explicit --profile win over auth env vars
+// via ProfileAuthLoaders (#5096), skipping env host normalization since the host
+// comes from the profile. Without a profile flag, env-first behavior is kept.
+func applyProfileAuthPrecedence(ctx context.Context, cfg *config.Config, hasProfileFlag bool) {
+	if hasProfileFlag {
+		cfg.Loaders = databrickscfg.ProfileAuthLoaders
+		return
+	}
+	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
+}
+
 // Helper function to create an account client or prompt once if the given configuration is not valid.
 func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.AccountClient, error) {
 	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
@@ -195,15 +206,15 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
+	ctx := cmd.Context()
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	pr, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = pr
 	}
+	applyProfileAuthPrecedence(ctx, cfg, hasProfileFlag)
 
-	ctx := cmd.Context()
-	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
@@ -325,8 +336,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	if hasProfileFlag {
 		cfg.Profile = profile
 	}
-
-	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
+	applyProfileAuthPrecedence(ctx, cfg, hasProfileFlag)
 	resolveDefaultProfile(ctx, cfg)
 
 	_, isTargetFlagSet := targetFlagValue(cmd)

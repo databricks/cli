@@ -1,0 +1,36 @@
+
+=== Describe with --profile overrides auth env vars (#5096)
+
+>>> [CLI] auth describe --profile my-workspace
+Host: [DATABRICKS_URL]
+User: [USERNAME]
+Authenticated with: pat
+-----
+Current configuration:
+  ✓ host: [DATABRICKS_URL] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ workspace_id: [NUMID]
+  ✓ token: ******** (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ profile: my-workspace (from --profile flag)
+  ✓ databricks_cli_path: [CLI]
+  ✓ auth_type: pat
+  ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)
+  ✓ cloud: AWS
+  ✓ discovery_url: [DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server
+
+=== Describe with a host-only --profile fills the token from the environment (#5096)
+
+>>> [CLI] auth describe --profile host-only
+Host: [DATABRICKS_URL]
+User: [USERNAME]
+Authenticated with: pat
+-----
+Current configuration:
+  ✓ host: [DATABRICKS_URL] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ workspace_id: [NUMID]
+  ✓ token: ******** (from DATABRICKS_TOKEN environment variable)
+  ✓ profile: host-only (from --profile flag)
+  ✓ databricks_cli_path: [CLI]
+  ✓ auth_type: pat
+  ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)
+  ✓ cloud: AWS
+  ✓ discovery_url: [DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server
