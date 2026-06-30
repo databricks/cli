@@ -75,6 +75,46 @@ func TestRemoveLegacyRawSkills(t *testing.T) {
 	assertExists(t, filepath.Join(agentDir, "delta"))
 }
 
+func TestHasManagedRawSkillsForAgent(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	ctx := cmdio.MockDiscard(t.Context())
+
+	baseDir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Join(baseDir, "alpha"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(baseDir, "alpha", "SKILL.md"), []byte("alpha"), 0o644))
+
+	agentDir := filepath.Join(home, ".claude", "skills")
+	require.NoError(t, os.MkdirAll(agentDir, 0o755))
+	require.NoError(t, os.Symlink(filepath.Join(baseDir, "alpha"), filepath.Join(agentDir, "alpha")))
+	require.NoError(t, os.MkdirAll(filepath.Join(agentDir, "thirdparty"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(agentDir, "thirdparty", "SKILL.md"), []byte("mine"), 0o644))
+
+	require.NoError(t, SaveState(baseDir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Files: map[string]FileRecord{
+			"alpha/SKILL.md": {SHA256: sha("alpha")},
+		},
+	}))
+
+	agent := &agents.Agent{
+		Name:        agents.NameClaudeCode,
+		DisplayName: "Claude Code",
+		ConfigDir:   func(_ context.Context) (string, error) { return filepath.Join(home, ".claude"), nil },
+	}
+
+	has, err := HasManagedRawSkillsForAgent(ctx, agent, ScopeGlobal)
+	require.NoError(t, err)
+	assert.True(t, has)
+
+	require.NoError(t, RemoveLegacyRawSkills(ctx, agent, ScopeGlobal))
+	has, err = HasManagedRawSkillsForAgent(ctx, agent, ScopeGlobal)
+	require.NoError(t, err)
+	assert.False(t, has)
+}
+
 func assertGone(t *testing.T, path string) {
 	t.Helper()
 	_, err := os.Lstat(path)

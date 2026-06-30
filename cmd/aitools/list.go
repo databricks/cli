@@ -89,7 +89,8 @@ type agentEntry struct {
 
 // pluginInfo is the per-scope plugin record surfaced in list output.
 type pluginInfo struct {
-	Version string `json:"version,omitempty"`
+	Version     string `json:"version,omitempty"`
+	NativeScope string `json:"native_scope,omitempty"`
 }
 
 type skillEntry struct {
@@ -213,7 +214,7 @@ func buildAgentEntries(states map[string]*installer.InstallState) []agentEntry {
 		installed := map[string]pluginInfo{}
 		for scope, st := range states {
 			if rec, ok := st.Plugins[a.Name]; ok {
-				installed[scope] = pluginInfo{Version: rec.Version}
+				installed[scope] = pluginInfo{Version: rec.Version, NativeScope: rec.Scope}
 			}
 		}
 		if len(installed) > 0 {
@@ -265,7 +266,21 @@ func renderListText(ctx context.Context, out listOutput, scope string) {
 		}
 	}
 
-	cmdio.LogString(ctx, "Available skills ("+versionToken(out.Release)+"):")
+	if len(out.Agents) > 0 {
+		cmdio.LogString(ctx, "Plugin installs:")
+		cmdio.LogString(ctx, "")
+		var ab strings.Builder
+		atw := tabwriter.NewWriter(&ab, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(atw, "  AGENT\tSTATUS")
+		for _, a := range out.Agents {
+			fmt.Fprintf(atw, "  %s\t%s\n", agentDisplayName(a.Name), agentStatusLabel(a, out.Release))
+		}
+		atw.Flush()
+		cmdio.LogString(ctx, ab.String())
+		cmdio.LogString(ctx, "")
+	}
+
+	cmdio.LogString(ctx, "Available raw skill directories ("+versionToken(out.Release)+"):")
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, renderSkillTable(stable, bothScopes))
 
@@ -276,18 +291,6 @@ func renderListText(ctx context.Context, out listOutput, scope string) {
 	}
 
 	cmdio.LogString(ctx, summaryLine(out, scope))
-
-	if len(out.Agents) > 0 {
-		cmdio.LogString(ctx, "")
-		var ab strings.Builder
-		atw := tabwriter.NewWriter(&ab, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(atw, "  AGENT\tSTATUS")
-		for _, a := range out.Agents {
-			fmt.Fprintf(atw, "  %s\t%s\n", a.Name, agentStatusLabel(a, out.Release))
-		}
-		atw.Flush()
-		cmdio.LogString(ctx, ab.String())
-	}
 }
 
 // renderSkillTable formats a NAME/VERSION/INSTALLED table for a group of skills.
@@ -323,9 +326,9 @@ func agentStatusLabel(a agentEntry, release string) string {
 	}
 
 	if upToDate {
-		return "plugin · " + versionToken(version) + " · up to date"
+		return "databricks plugin · " + versionToken(version) + " · up to date"
 	}
-	return "plugin · " + versionToken(version) + " · update available"
+	return "databricks plugin · " + versionToken(version) + " · update available"
 }
 
 func installedStatusFromEntry(s skillEntry, bothScopes bool) string {
@@ -372,15 +375,15 @@ func summaryLine(out listOutput, scope string) string {
 		// Mirror prior behavior: only print the dual-scope line when both
 		// scopes have a state file; otherwise only mention the one that does.
 		if g.loaded && p.loaded {
-			return fmt.Sprintf("%d/%d skills installed (global), %d/%d (project)", g.Installed, g.Total, p.Installed, p.Total)
+			return fmt.Sprintf("%d/%d raw skill directories installed (global), %d/%d (project)", g.Installed, g.Total, p.Installed, p.Total)
 		}
 		if p.loaded {
-			return fmt.Sprintf("%d/%d skills installed (project)", p.Installed, p.Total)
+			return fmt.Sprintf("%d/%d raw skill directories installed (project)", p.Installed, p.Total)
 		}
-		return fmt.Sprintf("%d/%d skills installed (global)", g.Installed, g.Total)
+		return fmt.Sprintf("%d/%d raw skill directories installed (global)", g.Installed, g.Total)
 	case pOK:
-		return fmt.Sprintf("%d/%d skills installed (project)", p.Installed, p.Total)
+		return fmt.Sprintf("%d/%d raw skill directories installed (project)", p.Installed, p.Total)
 	default:
-		return fmt.Sprintf("%d/%d skills installed (global)", g.Installed, g.Total)
+		return fmt.Sprintf("%d/%d raw skill directories installed (global)", g.Installed, g.Total)
 	}
 }
