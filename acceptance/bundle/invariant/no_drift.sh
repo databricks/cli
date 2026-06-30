@@ -52,12 +52,15 @@ echo INPUT_CONFIG_OK
 # config can deploy yet legitimately differ from the fake server's state, so the
 # fuzzer sets SKIP_DRIFT_CHECK on runs where only the no-panic invariant is asserted.
 if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
-    # Check both text and JSON plan for no changes
-    # Note, expect that there maybe more than one resource unchanged
+    # Check both text and JSON plan for no changes (may be >1 unchanged resource).
+    # The fuzzer runs this with errexit off and reads the return code, so accumulate
+    # failures into drift_rc instead of letting the trailing no-panic check reset $?.
+    drift_rc=0
     $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
-    cat LOG.planjson.err | contains.py '!panic' '!internal error' > /dev/null
-    verify_no_drift.py LOG.planjson
+    cat LOG.planjson.err | contains.py '!panic' '!internal error' > /dev/null || drift_rc=1
+    verify_no_drift.py LOG.planjson || drift_rc=1
 
-    $CLI bundle plan 2>LOG.plan.err | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
-    cat LOG.plan.err | contains.py '!panic' '!internal error' > /dev/null
+    $CLI bundle plan 2>LOG.plan.err | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan || drift_rc=1
+    cat LOG.plan.err | contains.py '!panic' '!internal error' > /dev/null || drift_rc=1
+    return "$drift_rc"
 fi
