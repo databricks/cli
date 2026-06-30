@@ -952,7 +952,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		// This means input and state must be compatible: input can have more fields, but existing fields should not be moved
 		// This means one cannot refer to fields not present in state (e.g. ${resources.jobs.foo.permissions})
 
-		refs, err := extractReferences(configRoot.Value(), node)
+		refs, err := extractReferences(configRoot.Value(), node, adapter.StateType())
 		if err != nil {
 			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
 		}
@@ -1041,13 +1041,15 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	return p, nil
 }
 
-// ExtractReferences extracts all variable references from the config subtree rooted at node.
+// ExtractReferences extracts variable references from the config subtree rooted at node,
+// keeping only those whose field path exists in stateType (references in input-only or
+// bundle:"readonly" fields, such as volumes' computed volume_path, are skipped).
 // Returns a map from structpath string (field path within the resource) to template string.
-func ExtractReferences(root dyn.Value, node string) (map[string]string, error) {
-	return extractReferences(root, node)
+func ExtractReferences(root dyn.Value, node string, stateType reflect.Type) (map[string]string, error) {
+	return extractReferences(root, node, stateType)
 }
 
-func extractReferences(root dyn.Value, node string) (map[string]string, error) {
+func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map[string]string, error) {
 	nodeType := config.GetResourceTypeFromKey(node)
 	refs := make(map[string]string)
 
@@ -1075,11 +1077,20 @@ func extractReferences(root dyn.Value, node string) (map[string]string, error) {
 		if !ok {
 			return nil
 		}
-		// Store the original string that contains references, not individual references.
-		// Convert dyn.Path to structpath string because refs are later parsed by structpath.ParsePath.
-		// dyn.Path.String() uses dot notation which is ambiguous for keys containing dots;
-		// structpath uses bracket notation (['key.with.dots']) which round-trips correctly.
-		refs[dynPathToStructPath(p).String()] = ref.Str
+		// Convert dyn.Path to structpath: dyn.Path.String() uses dot notation
+		// which is ambiguous for keys containing dots; structpath uses bracket
+		// notation (['key.with.dots']) which round-trips correctly.
+		fieldPath := dynPathToStructPath(p)
+
+		// References resolve against the state type, not the input config (see PlanResources
+		// and dresources.TestInputSubset). A field in input but not in state — e.g. a
+		// bundle:"readonly" field like volumes' volume_path — is dropped before deploy, so a
+		// reference it carries cannot resolve into state and is not a dependency here. Such
+		// references are still resolved earlier during initialize.
+		if structaccess.ValidatePath(stateType, fieldPath) == nil {
+			// Store the original string that contains references, not individual references.
+			refs[fieldPath.String()] = ref.Str
+		}
 		return nil
 	})
 	if err != nil {

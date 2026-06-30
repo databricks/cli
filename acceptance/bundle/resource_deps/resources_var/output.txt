@@ -21,12 +21,14 @@
       "catalog_name": "mycatalog",
       "name": "barname",
       "schema_name": "myschema",
+      "volume_path": "/Volumes/mycatalog/myschema/barname",
       "volume_type": "MANAGED"
     },
     "foo": {
       "catalog_name": "${resources.volumes.bar.catalog_name}",
       "name": "myname",
       "schema_name": "${resources.volumes.bar.schema_name}",
+      "volume_path": "/Volumes/mycatalog/myschema/myname",
       "volume_type": "MANAGED"
     }
   }

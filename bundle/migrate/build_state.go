@@ -114,7 +114,7 @@ func BuildStateFromTF(
 			return fmt.Errorf("%s: PrepareState: %w", node, err)
 		}
 
-		refs, err := direct.ExtractReferences(configRoot.Value(), node)
+		refs, err := direct.ExtractReferences(configRoot.Value(), node, adapter.StateType())
 		if err != nil {
 			return fmt.Errorf("%s: extracting references: %w", node, err)
 		}

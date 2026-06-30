@@ -1,0 +1,80 @@
+
+>>> errcode [CLI] bundle plan -o json
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "foo-[UNIQUE_NAME]",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "resources.jobs.process": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.foo",
+          "label": "${resources.jobs.foo.creator_user_name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "process-[UNIQUE_NAME]",
+          "parameters": [
+            {
+              "default": "/Volumes/main/${resources.jobs.foo.creator_user_name}/${resources.jobs.foo.creator_user_name}",
+              "name": "data_path"
+            }
+          ],
+          "queue": {
+            "enabled": true
+          }
+        },
+        "vars": {
+          "parameters[0].default": "/Volumes/main/${resources.jobs.foo.creator_user_name}/${resources.jobs.foo.creator_user_name}"
+        }
+      }
+    },
+    "resources.volumes.data": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.foo",
+          "label": "${resources.jobs.foo.creator_user_name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "name": "${resources.jobs.foo.creator_user_name}",
+          "schema_name": "${resources.jobs.foo.creator_user_name}",
+          "volume_type": "MANAGED"
+        },
+        "vars": {
+          "name": "${resources.jobs.foo.creator_user_name}",
+          "schema_name": "${resources.jobs.foo.creator_user_name}"
+        }
+      }
+    }
+  }
+}
