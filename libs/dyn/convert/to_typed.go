@@ -76,7 +76,7 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 		info := getStructInfo(dst.Type())
 
 		forceSendFieldLocations := getForceSendFieldsValues(dst)
-		forceSendFieldsMap := make(map[int][]string)
+		forceSendFieldsMap := make(map[string][]string)
 
 		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
@@ -111,14 +111,9 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 			}
 
 			if pv.IsZero() {
-				// Use first index as key: -1 for direct fields, struct index for embedded fields
-				var structKey int
-				if len(index) == 1 {
-					structKey = -1 // Direct field
-				} else {
-					structKey = index[0] // Embedded struct index
-				}
-
+				// The field's zero value must still serialize, so record its Go name
+				// in the ForceSendFields of the struct that declares it.
+				structKey := info.ForceSendFieldsStructKey[jsonKey]
 				forceSendFieldsMap[structKey] = append(forceSendFieldsMap[structKey], info.GolangNames[jsonKey])
 			}
 		}
