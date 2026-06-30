@@ -20,7 +20,6 @@ package terraform_dabs_map
 // pipelines / databricks_pipeline: 3 renames
 // pipelines / databricks_pipeline: 7 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
-// postgres_branches / databricks_postgres_branch: 1 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
 // postgres_databases / databricks_postgres_database: 1 unwraps
@@ -613,9 +612,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"pipelines": {
 		"expected_last_modified": {},
 		"url":                    {},
-	},
-	"postgres_branches": {
-		"purge_on_delete": {},
 	},
 	"schemas": {
 		"force_destroy": {},

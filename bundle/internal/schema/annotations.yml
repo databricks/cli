@@ -1357,6 +1357,9 @@ resources:
         "parent":
           "description": |-
             PLACEHOLDER
+        "purge_on_delete":
+          "description": |-
+            PLACEHOLDER
         "replace_existing":
           "description": |-
             PLACEHOLDER

@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -52,7 +53,9 @@ func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *Po
 		BranchId:        input.BranchId,
 		Parent:          input.Parent,
 		ReplaceExisting: input.ReplaceExisting,
+		PurgeOnDelete:   input.PurgeOnDelete,
 		BranchSpec:      input.BranchSpec,
+		ForceSendFields: input.ForceSendFields,
 	}
 }
 
@@ -64,6 +67,11 @@ func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *Postgre
 		// replace_existing is a create-time-only flag; the GET API never returns
 		// it, so RemapState leaves it false.
 		ReplaceExisting: false,
+
+		// purge_on_delete is a delete-time query parameter; the GET API never
+		// returns it, so RemapState leaves it false.
+		PurgeOnDelete:   false,
+		ForceSendFields: nil,
 
 		BranchSpec: remote.BranchSpec,
 	}
@@ -139,6 +147,17 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 	// not relative to our flattened state type.
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
 
+	// purge_on_delete is an input-only flag consulted at delete time; it is
+	// not a spec field. Strip it from the mask so toggling it between deploys
+	// becomes a state-only refresh (the framework saves newState when this
+	// returns nil error).
+	fieldPaths = slices.DeleteFunc(fieldPaths, func(p string) bool {
+		return p == "spec.purge_on_delete"
+	})
+	if len(fieldPaths) == 0 {
+		return nil, nil
+	}
+
 	waiter, err := r.client.Postgres.UpdateBranch(ctx, postgres.UpdateBranchRequest{
 		Branch: postgres.Branch{
 			Spec: &config.BranchSpec,
@@ -170,10 +189,10 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 	return makePostgresBranchRemote(result), nil
 }
 
-func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string, _ *PostgresBranchState) error {
+func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string, state *PostgresBranchState) error {
 	waiter, err := r.client.Postgres.DeleteBranch(ctx, postgres.DeleteBranchRequest{
 		Name:            id,
-		Purge:           false,
+		Purge:           state.PurgeOnDelete,
 		ForceSendFields: nil,
 	})
 	if err != nil {
