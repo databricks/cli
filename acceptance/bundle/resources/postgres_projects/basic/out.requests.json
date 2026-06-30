@@ -12,6 +12,7 @@
         "suspend_timeout_duration": "300s"
       },
       "display_name": "Test Postgres Project",
+      "enable_pg_native_login": false,
       "history_retention_duration": "604800s",
       "pg_version": 16
     }

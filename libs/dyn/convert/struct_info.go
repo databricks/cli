@@ -3,6 +3,8 @@ package convert
 import (
 	"reflect"
 	"slices"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -28,9 +30,12 @@ type structInfo struct {
 	// Maps JSON-name of the field to Golang struct name
 	GolangNames map[string]string
 
-	// ForceSendFieldsStructKey maps the JSON-name of the field to which ForceSendFields slice it belongs to:
-	// -1 for direct fields, embedded struct index for embedded fields
-	ForceSendFieldsStructKey map[string]int
+	// ForceSendFieldsStructKey maps the JSON-name of the field to the struct that
+	// owns the ForceSendFields slice it belongs to. The value is the index path to
+	// that struct (see indexPathKey); "" is the top-level struct. The path can be
+	// more than one element deep because a field's declaring struct may be embedded
+	// several levels down (e.g. PostgresProject -> PostgresProjectConfig -> ProjectSpec).
+	ForceSendFieldsStructKey map[string]string
 }
 
 // structInfoCache caches type information.
@@ -61,7 +66,7 @@ func buildStructInfo(typ reflect.Type) structInfo {
 		Fields:                   make(map[string][]int),
 		ForceEmpty:               make(map[string]bool),
 		GolangNames:              make(map[string]string),
-		ForceSendFieldsStructKey: make(map[string]int),
+		ForceSendFieldsStructKey: make(map[string]string),
 	}
 
 	// Queue holds the indexes of the structs to visit.
@@ -119,14 +124,9 @@ func buildStructInfo(typ reflect.Type) structInfo {
 			}
 			out.GolangNames[name] = sf.Name
 
-			// Determine which ForceSendFields this field belongs to
-			if len(prefix) == 0 {
-				// Direct field on the main struct
-				out.ForceSendFieldsStructKey[name] = -1
-			} else {
-				// Field on embedded struct
-				out.ForceSendFieldsStructKey[name] = prefix[0]
-			}
+			// The field is declared directly in the struct reached by prefix, so
+			// its ForceSendFields lives there. prefix is empty for the top-level struct.
+			out.ForceSendFieldsStructKey[name] = indexPathKey(prefix)
 		}
 	}
 
@@ -192,33 +192,45 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 // Type of [dyn.Value].
 var configValueType = reflect.TypeFor[dyn.Value]()
 
-// getForceSendFieldsValues collects ForceSendFields reflect.Values
-// Returns map[structKey]reflect.Value where structKey is -1 for direct fields, embedded index for embedded fields
-func getForceSendFieldsValues(v reflect.Value) map[int]reflect.Value {
-	if !v.IsValid() || v.Type().Kind() != reflect.Struct {
-		return make(map[int]reflect.Value)
-	}
+// getForceSendFieldsValues collects the ForceSendFields slice declared directly
+// by the top-level struct and by every embedded struct reachable through anonymous
+// fields, at any depth. The result is keyed by the index path to each owning struct
+// (see indexPathKey), matching structInfo.ForceSendFieldsStructKey. Embedding can be
+// arbitrarily deep (e.g. PostgresProject -> PostgresProjectConfig -> ProjectSpec),
+// so each level is recorded under its own path rather than collapsed to one index.
+func getForceSendFieldsValues(v reflect.Value) map[string]reflect.Value {
+	result := make(map[string]reflect.Value)
+	collectForceSendFieldsValues(v, nil, result)
+	return result
+}
 
-	result := make(map[int]reflect.Value)
+func collectForceSendFieldsValues(v reflect.Value, path []int, result map[string]reflect.Value) {
+	v = deref(v)
+	if !v.IsValid() || v.Kind() != reflect.Struct {
+		return
+	}
 
 	for i := range v.Type().NumField() {
 		field := v.Type().Field(i)
 		fieldValue := v.Field(i)
 
-		if field.Name == "ForceSendFields" && !field.Anonymous {
-			// Direct ForceSendFields (structKey = -1)
-			result[-1] = fieldValue
-		} else if field.Anonymous {
-			// Embedded struct - check for ForceSendFields inside it
-			if embeddedStruct := deref(fieldValue); embeddedStruct.IsValid() {
-				if forceSendField := embeddedStruct.FieldByName("ForceSendFields"); forceSendField.IsValid() {
-					result[i] = forceSendField
-				}
-			}
+		switch {
+		case field.Name == "ForceSendFields" && !field.Anonymous:
+			result[indexPathKey(path)] = fieldValue
+		case field.Anonymous:
+			collectForceSendFieldsValues(fieldValue, append(path, i), result)
 		}
 	}
+}
 
-	return result
+// indexPathKey renders a reflect index path as a stable map key. The empty path
+// (the top-level struct) renders as "".
+func indexPathKey(path []int) string {
+	parts := make([]string, len(path))
+	for i, x := range path {
+		parts[i] = strconv.Itoa(x)
+	}
+	return strings.Join(parts, ".")
 }
 
 // deref dereferences a pointer, returning invalid value if nil
