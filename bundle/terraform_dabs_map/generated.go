@@ -12,8 +12,9 @@ package terraform_dabs_map
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 10 dabs-only
+// jobs / databricks_job: 32 dabs-only
 // jobs / databricks_job: 257 tf-only
+// model_serving_endpoints / databricks_model_serving: 4 dabs-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
@@ -129,8 +130,36 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"tasks": {
+			"ai_runtime_task": {
+				"code_source_path": {}, // jobs.*.tasks.ai_runtime_task.code_source_path
+				"deployments": {
+					"command_path": {}, // jobs.*.tasks.ai_runtime_task.deployments.command_path
+					"compute": {
+						"accelerator_count": {}, // jobs.*.tasks.ai_runtime_task.deployments.compute.accelerator_count
+						"accelerator_type":  {}, // jobs.*.tasks.ai_runtime_task.deployments.compute.accelerator_type
+					},
+					"name": {}, // jobs.*.tasks.ai_runtime_task.deployments.name
+				},
+				"experiment":                  {}, // jobs.*.tasks.ai_runtime_task.experiment
+				"mlflow_experiment_directory": {}, // jobs.*.tasks.ai_runtime_task.mlflow_experiment_directory
+				"mlflow_run":                  {}, // jobs.*.tasks.ai_runtime_task.mlflow_run
+			},
 			"for_each_task": {
 				"task": {
+					"ai_runtime_task": {
+						"code_source_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.code_source_path
+						"deployments": {
+							"command_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.command_path
+							"compute": {
+								"accelerator_count": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.compute.accelerator_count
+								"accelerator_type":  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.compute.accelerator_type
+							},
+							"name": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.name
+						},
+						"experiment":                  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.experiment
+						"mlflow_experiment_directory": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.mlflow_experiment_directory
+						"mlflow_run":                  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.mlflow_run
+					},
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -149,6 +178,14 @@ var DABsOnlyFields = map[string]FieldSet{
 				"azure_attributes": {
 					"capacity_reservation_group": {}, // jobs.*.tasks.new_cluster.azure_attributes.capacity_reservation_group
 				},
+			},
+		},
+	},
+	"model_serving_endpoints": {
+		"telemetry_config": {
+			"inference_table_config": {
+				"name":              {}, // model_serving_endpoints.*.telemetry_config.inference_table_config.name
+				"sampling_fraction": {}, // model_serving_endpoints.*.telemetry_config.inference_table_config.sampling_fraction
 			},
 		},
 	},

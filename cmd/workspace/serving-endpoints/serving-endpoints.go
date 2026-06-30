@@ -168,6 +168,7 @@ func newCreate() *cobra.Command {
 	// TODO: array: rate_limits
 	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
+	// TODO: complex arg: telemetry_config
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a new serving endpoint.`

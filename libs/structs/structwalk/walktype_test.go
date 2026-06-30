@@ -136,7 +136,7 @@ func TestTypeJobSettings(t *testing.T) {
 func TestTypeRoot(t *testing.T) {
 	testStruct(t,
 		reflect.TypeFor[config.Root](),
-		5000, 6000, // 5813 after genie_space resource added
+		5000, 7000, // 6019 after SDK v0.152.0 (ai_runtime_task, telemetry_config, etc.)
 		map[string]any{
 			"bundle.target":                "",
 			`variables.*.lookup.dashboard`: "",
