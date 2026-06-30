@@ -326,11 +326,9 @@ Response.Body = '<response body here>'
 	return s
 }
 
-// workspaceKeyForToken maps a token to its workspace key. A test's primary
-// token and its as-test-sp guest token differ only by the dbapi0/dbapi1
-// identity prefix; stripping the prefix makes both resolve to the same
-// FakeWorkspace so they share state, the way a single cloud workspace serves
-// many identities. The per-test uuid suffix keeps distinct tests isolated.
+// workspaceKeyForToken strips the identity prefix so a test's user, primary SP,
+// and guest tokens resolve to the same FakeWorkspace and share state. The uuid
+// suffix keeps distinct tests isolated.
 func workspaceKeyForToken(token string) string {
 	for _, prefix := range []string{UserNameTokenPrefix, ServicePrincipalTokenPrefix, GuestServicePrincipalTokenPrefix} {
 		if s, ok := strings.CutPrefix(token, prefix); ok {

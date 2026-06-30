@@ -842,11 +842,9 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	if !isRunningOnCloud {
-		// Expose a guest service-principal token for the as-test-sp helper. Its
-		// dedicated prefix plus the primary identity's uuid suffix make it share
-		// the same fake workspace, letting one local test exercise two
-		// identities the way cloud does. On cloud TEST_SP_TOKEN comes from the
-		// real environment.
+		// Expose a guest token for the as-test-sp helper: the guest prefix plus
+		// the primary identity's uuid suffix make it share the same fake
+		// workspace. On cloud TEST_SP_TOKEN comes from the real environment.
 		suffix := cfg.Token
 		for _, prefix := range []string{testserver.UserNameTokenPrefix, testserver.ServicePrincipalTokenPrefix} {
 			suffix = strings.TrimPrefix(suffix, prefix)

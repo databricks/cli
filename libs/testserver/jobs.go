@@ -202,9 +202,8 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	// A guest service principal that lacks access reads as a permission error,
-	// not a 404, and it does so even after the job is deleted: the backend
-	// checks permissions before existence. This is the quirk the test asserts.
+	// The backend checks permissions before existence, so a guest without access
+	// gets a permission error rather than a 404, even after the job is deleted.
 	if isGuestToken(req.Token) && !s.guestHasJobAccess(jobIdInt, userForToken(req.Token).UserName) {
 		return jobReadPermissionDenied(userForToken(req.Token).UserName, jobIdInt)
 	}
@@ -258,10 +257,8 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 	return Response{Body: job}
 }
 
-// JobsDelete deletes a job, enforcing permissions for guest service principals.
-// A guest without admin/owner access gets a permission error rather than a
-// delete, matching cloud (and even after the job is gone, since the permission
-// check precedes the existence check).
+// JobsDelete deletes a job. A guest without admin/owner access gets a permission
+// error, even after the job is gone (permission check precedes existence check).
 func (s *FakeWorkspace) JobsDelete(req Request, jobId int64) Response {
 	defer s.LockUnlock()()
 
@@ -286,7 +283,7 @@ func jobPermissionDenied(message string) Response {
 }
 
 // jobManagePermissionDenied is returned when reading a job's permissions without
-// Manage access. ElasticJobId mirrors the identifier shape in the backend error.
+// Manage access. ElasticJobId mirrors the backend error's identifier shape.
 func jobManagePermissionDenied(principal string, jobId int64) Response {
 	return jobPermissionDenied(fmt.Sprintf("%s does not have Manage permissions on Job with ID: ElasticJobId(%d). Please contact the owner or an administrator for access.", principal, jobId))
 }
