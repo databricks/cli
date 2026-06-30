@@ -1,17 +1,73 @@
 package client
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+func TestValidateClusterAccessSingleUser(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeSingleUser,
+	}, nil)
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.NoError(t, err)
+}
+
+func TestValidateClusterAccessInvalidAccessMode(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeUserIsolation,
+	}, nil)
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "does not have Dedicated access mode")
+	// The error surfaces the UI label ("Standard"), not the raw API enum (USER_ISOLATION).
+	assert.Contains(t, err.Error(), "Current access mode: Standard")
+	assert.NotContains(t, err.Error(), "USER_ISOLATION")
+}
+
+func TestAccessModeUILabel(t *testing.T) {
+	tests := []struct {
+		mode compute.DataSecurityMode
+		want string
+	}{
+		{compute.DataSecurityModeSingleUser, "Dedicated"},
+		{compute.DataSecurityModeDataSecurityModeDedicated, "Dedicated"},
+		{compute.DataSecurityModeUserIsolation, "Standard"},
+		{compute.DataSecurityModeDataSecurityModeStandard, "Standard"},
+		{compute.DataSecurityModeNone, "No isolation"},
+		// Legacy/unknown modes fall back to the raw API value.
+		{compute.DataSecurityModeLegacyTableAcl, "LEGACY_TABLE_ACL"},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, accessModeUILabel(tt.mode), "mode=%s", tt.mode)
+	}
+}
+
+func TestValidateClusterAccessClusterNotFound(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "nonexistent"}).Return(nil, errors.New("cluster not found"))
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "nonexistent")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get cluster information for cluster ID 'nonexistent'")
+}
 
 // terminatedRun builds a job run whose SSH server task has terminated, for the failure-surfacing tests.
 func terminatedRun(runID, taskRunID int64, message, pageURL string) *jobs.Run {

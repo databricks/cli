@@ -2,7 +2,6 @@ package setup
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,45 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestValidateClusterAccess_SingleUser(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	clustersAPI := m.GetMockClustersAPI()
-
-	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeSingleUser,
-	}, nil)
-
-	err := validateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
-	assert.NoError(t, err)
-}
-
-func TestValidateClusterAccess_InvalidAccessMode(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	clustersAPI := m.GetMockClustersAPI()
-
-	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeUserIsolation,
-	}, nil)
-
-	err := validateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "does not have dedicated access mode")
-}
-
-func TestValidateClusterAccess_ClusterNotFound(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	clustersAPI := m.GetMockClustersAPI()
-
-	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "nonexistent"}).Return(nil, errors.New("cluster not found"))
-
-	err := validateClusterAccess(ctx, m.WorkspaceClient, "nonexistent")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get cluster information for cluster ID 'nonexistent'")
-}
 
 func TestGenerateProxyCommand(t *testing.T) {
 	opts := client.ClientOptions{

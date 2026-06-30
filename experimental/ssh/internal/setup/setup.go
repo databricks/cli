@@ -33,17 +33,6 @@ type SetupOptions struct {
 	AutoApprove bool
 }
 
-func validateClusterAccess(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) error {
-	clusterInfo, err := client.Clusters.Get(ctx, compute.GetClusterRequest{ClusterId: clusterID})
-	if err != nil {
-		return fmt.Errorf("failed to get cluster information for cluster ID '%s': %w", clusterID, err)
-	}
-	if clusterInfo.DataSecurityMode != compute.DataSecurityModeSingleUser {
-		return fmt.Errorf("cluster '%s' does not have dedicated access mode. Current access mode: %s. Please ensure the cluster is configured with dedicated access mode (single user)", clusterID, clusterInfo.DataSecurityMode)
-	}
-	return nil
-}
-
 func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand string) (string, error) {
 	identityFilePath, err := keys.GetLocalSSHKeyPath(ctx, opts.ClusterID, opts.SSHKeysDir)
 	if err != nil {
@@ -89,7 +78,7 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		return errors.New("cluster ID is required")
 	}
 
-	err := validateClusterAccess(ctx, client, opts.ClusterID)
+	err := sshclient.ValidateClusterAccess(ctx, client, opts.ClusterID)
 	if err != nil {
 		return err
 	}
