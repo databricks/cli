@@ -161,13 +161,10 @@ func BuildStateFromTF(
 			return strings.Compare(a.Label, b.Label)
 		})
 
-		// For permissions, the node's own TF state ID is the object_id: the
-		// databricks_permissions resource stores it as "/serving-endpoints/<id>",
-		// "/database-instances/<name>", "/jobs/<id>", etc. Use it directly instead of
-		// re-deriving it from the parent resource's TF state, which lacks the referenced
-		// field for some resource types (model_serving_endpoints, database_instances) and
-		// would otherwise fail resolution. depends_on is computed above from the full refs
-		// map, so the parent dependency is still recorded.
+		// For a .permissions node, id (tfIDs[node]) is the databricks_permissions resource's
+		// own ID, which is exactly the object_id (e.g. "/serving-endpoints/<id>"). Use it
+		// directly: re-deriving it from the parent's TF state fails for types whose id field
+		// is absent there (model_serving_endpoints, database_instances).
 		if _, ok := sv.Refs["object_id"]; ok {
 			if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "object_id"), id); err != nil {
 				return fmt.Errorf("%s: setting object_id: %w", node, err)
