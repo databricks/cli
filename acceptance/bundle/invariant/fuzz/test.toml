@@ -1,3 +1,7 @@
 # Schema fuzzing (see script). Unlike the curated invariant tests, the fuzzer
 # generates its own configs, so drop the inherited INPUT_CONFIG matrix.
 EnvMatrix.INPUT_CONFIG = []
+
+# Fuzz each invariant body in ../<name>.sh. no_drift runs on the direct engine;
+# migrate ignores it and starts from a Terraform deployment (see migrate.sh).
+EnvMatrix.FUZZ_INVARIANT = ["no_drift", "migrate"]
