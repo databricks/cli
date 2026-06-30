@@ -30,13 +30,3 @@ EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml
 # migrate deploys via Terraform first, and the TF provider rejects an uppercase
 # volume schema_name ("inconsistent final plan"). Covered by no_drift on direct.
 EnvMatrixExclude.no_volume_uppercase = ["INPUT_CONFIG=volume_uppercase_name.yml.tmpl"]
-
-# Permissions migration fails for model_serving_endpoints and database_instances:
-# the permissions object_id reference resolves a parent field that is absent from the
-# Terraform state attributes (endpoint_id for serving endpoints, id for database
-# instances), so neither resolution method finds it and migrate aborts with
-# "cannot resolve field object_id". Regression introduced by the tfstate-only migrate
-# in #5399 (the previous impl read the value from remote state). The resource + its
-# permissions are still exercised by no_drift and continue_293. TODO: fix this.
-EnvMatrixExclude.no_model_serving_endpoint_with_permissions = ["INPUT_CONFIG=model_serving_endpoint_with_permissions.yml.tmpl"]
-EnvMatrixExclude.no_database_instance_with_permissions = ["INPUT_CONFIG=database_instance_with_permissions.yml.tmpl"]
