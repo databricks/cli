@@ -1039,7 +1039,7 @@ func TestInstallKeepsNameWhenRepoDirChanges(t *testing.T) {
 func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 	expected := map[string]bool{
 		"claude-code": true,
-		"cursor":      true,
+		"cursor":      false,
 		"codex":       false,
 		"opencode":    false,
 		"copilot":     false,

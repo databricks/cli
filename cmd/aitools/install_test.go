@@ -147,15 +147,15 @@ func TestAgentChoicesOnlyOffersActionableAgents(t *testing.T) {
 	fakeBinsOnPath(t, "claude")
 	ctx := cmdio.MockDiscard(t.Context())
 
-	// Project scope: only Claude (plugin) and Cursor (skills) support it; the
-	// user-only plugin agents and files-only agents are not offered as choices.
+	// Project scope: only Claude (plugin) supports it; the user-only plugin
+	// agents and files-only agents are not offered as choices.
 	choices := agentChoices(ctx, installer.ScopeProject, false)
 	var names []string
 	for _, c := range choices {
 		names = append(names, c.agent.Name)
 	}
 	assert.Contains(t, names, agents.NameClaudeCode)
-	assert.Contains(t, names, agents.NameCursor)
+	assert.NotContains(t, names, agents.NameCursor)
 	assert.NotContains(t, names, agents.NameCodex)
 	assert.NotContains(t, names, agents.NameOpenCode)
 	assert.NotContains(t, names, agents.NameCopilot)

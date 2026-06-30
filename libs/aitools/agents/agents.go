@@ -124,7 +124,7 @@ const (
 )
 
 // databricksPlugin returns the shared plugin descriptor for an agent that
-// installs from our own marketplace (Codex, Copilot, Cursor).
+// installs from our own marketplace (Codex, Copilot).
 func databricksPlugin() *PluginSpec {
 	return &PluginSpec{
 		Marketplace: databricksMarketplace,
@@ -157,11 +157,9 @@ var Registry = []*Agent{
 		Plugin:               claudePlugin(),
 	},
 	{
-		Name:                 NameCursor,
-		DisplayName:          "Cursor",
-		ConfigDir:            homeSubdir(".cursor"),
-		SupportsProjectScope: true,
-		ProjectConfigDir:     ".cursor",
+		Name:        NameCursor,
+		DisplayName: "Cursor",
+		ConfigDir:   homeSubdir(".cursor"),
 		// Cursor's CLI binary is `cursor-agent`, not `cursor` (the latter is an
 		// IDE shim that isn't on PATH unless the user ran "install shell command").
 		Binary: "cursor-agent",

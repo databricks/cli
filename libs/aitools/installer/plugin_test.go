@@ -276,6 +276,39 @@ func TestUninstallSkillsOptsTearsDownPlugin(t *testing.T) {
 	assert.Nil(t, state)
 }
 
+func TestUninstallSkillsOptsTargetsPluginAgents(t *testing.T) {
+	setupTestHome(t)
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	ctx = cmdio.MockDiscard(ctx)
+
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Release:       "v0.2.6",
+		Plugins: map[string]PluginRecord{
+			agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: "user"},
+			agents.NameCopilot:    {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user"},
+		},
+	}))
+
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal, Agents: []string{agents.NameClaudeCode}}))
+
+	cmds := stub.Commands()
+	assert.Contains(t, cmds, "claude plugin uninstall databricks@claude-plugins-official --scope user")
+	for _, cmd := range cmds {
+		assert.NotContains(t, cmd, "copilot plugin uninstall")
+	}
+
+	state, err := LoadState(dir)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.NotContains(t, state.Plugins, agents.NameClaudeCode)
+	assert.Contains(t, state.Plugins, agents.NameCopilot)
+}
+
 func TestUninstallNeverDeregistersBuiltinMarketplace(t *testing.T) {
 	setupTestHome(t)
 	stubAgentLookPath(t, true)

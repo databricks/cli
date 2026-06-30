@@ -156,12 +156,12 @@ func TestBuildAgentEntries(t *testing.T) {
 	require.Contains(t, byName, "claude-code")
 	assert.True(t, byName["claude-code"].Managed)
 	assert.Equal(t, "0.2.6", byName["claude-code"].Installed[installer.ScopeGlobal].Version)
-	assert.Equal(t, "plugin · v0.2.6 · up to date", agentStatusLabel(byName["claude-code"], "0.2.6"))
+	assert.Equal(t, "databricks plugin · v0.2.6 · up to date", agentStatusLabel(byName["claude-code"], "0.2.6"))
 
 	require.Contains(t, byName, "codex")
 	assert.True(t, byName["codex"].Managed)
 	assert.Equal(t, "0.2.5", byName["codex"].Installed[installer.ScopeGlobal].Version)
-	assert.Equal(t, "plugin · v0.2.5 · update available", agentStatusLabel(byName["codex"], "0.2.6"))
+	assert.Equal(t, "databricks plugin · v0.2.5 · update available", agentStatusLabel(byName["codex"], "0.2.6"))
 
 	// Cursor has no plugin, so it never appears as a plugin agent entry.
 	assert.NotContains(t, byName, "cursor")
@@ -194,7 +194,7 @@ func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {
 
 	// The renderer collapses the scopes and surfaces the stale one, rather than
 	// hiding it behind the up-to-date scope.
-	assert.Equal(t, "plugin · v0.2.5 · update available", agentStatusLabel(cc, "0.2.6"))
+	assert.Equal(t, "databricks plugin · v0.2.5 · update available", agentStatusLabel(cc, "0.2.6"))
 }
 
 func TestRenderListJSONScopeFiltersSummary(t *testing.T) {
@@ -282,7 +282,7 @@ func TestSummaryLinePreservesStatePresence(t *testing.T) {
 					installer.ScopeProject: {Installed: 0, Total: 1, loaded: true},
 				},
 			},
-			want: "0/1 skills installed (global), 0/1 (project)",
+			want: "0/1 raw skill directories installed (global), 0/1 (project)",
 		},
 		{
 			name: "only project state loaded",
@@ -295,7 +295,7 @@ func TestSummaryLinePreservesStatePresence(t *testing.T) {
 					installer.ScopeProject: {Installed: 0, Total: 1, loaded: true},
 				},
 			},
-			want: "0/1 skills installed (project)",
+			want: "0/1 raw skill directories installed (project)",
 		},
 		{
 			name: "only global state loaded",
@@ -308,7 +308,7 @@ func TestSummaryLinePreservesStatePresence(t *testing.T) {
 					installer.ScopeProject: {Installed: 0, Total: 1},
 				},
 			},
-			want: "0/1 skills installed (global)",
+			want: "0/1 raw skill directories installed (global)",
 		},
 	}
 
@@ -342,7 +342,7 @@ func TestRenderListTextUsesLoadedStateForScopeLabels(t *testing.T) {
 
 	got := stderr.String()
 	assert.Contains(t, got, "v1.0.0 (up to date) (global)")
-	assert.Contains(t, got, "1/1 skills installed (global), 0/1 (project)")
+	assert.Contains(t, got, "1/1 raw skill directories installed (global), 0/1 (project)")
 }
 
 func TestRenderListTextGroupsExperimental(t *testing.T) {
@@ -361,7 +361,7 @@ func TestRenderListTextGroupsExperimental(t *testing.T) {
 	renderListText(ctx, out, installer.ScopeGlobal)
 
 	got := stderr.String()
-	availIdx := strings.Index(got, "Available skills")
+	availIdx := strings.Index(got, "Available raw skill directories")
 	expIdx := strings.Index(got, "Experimental skills:")
 	require.GreaterOrEqual(t, availIdx, 0, "available group header present")
 	require.GreaterOrEqual(t, expIdx, 0, "experimental group header present")
@@ -371,6 +371,38 @@ func TestRenderListTextGroupsExperimental(t *testing.T) {
 	assert.Less(t, expIdx, strings.Index(got, "experimental-thing"))
 	// No inline tag now that they are grouped.
 	assert.NotContains(t, got, "[experimental]")
+}
+
+func TestRenderListTextShowsPluginInstallsBeforeRawSkills(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	out := listOutput{
+		Release: "0.2.6",
+		Skills: []skillEntry{
+			{Name: "databricks-jobs", LatestVersion: "1.0.0", Installed: map[string]string{}},
+		},
+		Summary: map[string]scopeSummary{
+			installer.ScopeGlobal: {Installed: 0, Total: 1, loaded: true},
+		},
+		Agents: []agentEntry{
+			{
+				Name:      "claude-code",
+				Managed:   true,
+				Installed: map[string]pluginInfo{installer.ScopeGlobal: {Version: "0.2.6", NativeScope: "user"}},
+			},
+		},
+	}
+
+	renderListText(ctx, out, installer.ScopeGlobal)
+
+	got := stderr.String()
+	pluginIdx := strings.Index(got, "Plugin installs:")
+	rawIdx := strings.Index(got, "Available raw skill directories")
+	require.GreaterOrEqual(t, pluginIdx, 0)
+	require.GreaterOrEqual(t, rawIdx, 0)
+	assert.Less(t, pluginIdx, rawIdx)
+	assert.Contains(t, got, "Claude Code")
+	assert.Contains(t, got, "databricks plugin · v0.2.6 · up to date")
+	assert.Contains(t, got, "0/1 raw skill directories installed (global)")
 }
 
 func TestListScopeFlag(t *testing.T) {
