@@ -3,6 +3,7 @@ package aircmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -238,6 +239,17 @@ func TestRunConfigValidate_FieldRules(t *testing.T) {
 		{"empty usage policy", func(c *runConfig) { c.UsagePolicyName = str(" ") }, "usage_policy_name must not be empty"},
 		{"bad secret ref", func(c *runConfig) { c.Secrets = map[string]string{"T": "noslash"} }, "expected format 'scope/key'"},
 		{"empty secret scope", func(c *runConfig) { c.Secrets = map[string]string{"T": "/key"} }, "scope and key cannot be empty"},
+		{"env var and secret collide", func(c *runConfig) {
+			c.EnvVariables = map[string]string{"TOK": "v"}
+			c.Secrets = map[string]string{"TOK": "scope/key"}
+		}, `"TOK" is set in both env_variables and secrets`},
+		{"long mlflow_run_name", func(c *runConfig) { c.MLflowRunName = str(strings.Repeat("a", 101)) }, "100 characters or less"},
+		{"usage policy name and id", func(c *runConfig) {
+			c.UsagePolicyName = str("p")
+			c.UsagePolicyID = str("id")
+		}, "mutually exclusive"},
+		{"empty usage_policy_id", func(c *runConfig) { c.UsagePolicyID = str("  ") }, "usage_policy_id must not be empty"},
+		{"usage_policy_id alone is ok", func(c *runConfig) { c.UsagePolicyID = str("policy-uuid") }, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

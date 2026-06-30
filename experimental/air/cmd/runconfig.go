@@ -3,6 +3,7 @@ package aircmd
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -50,6 +51,7 @@ type runConfig struct {
 	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory"`
 	Permissions               []permission   `yaml:"permissions"`
 	UsagePolicyName           *string        `yaml:"usage_policy_name"`
+	UsagePolicyID             *string        `yaml:"usage_policy_id"`
 }
 
 // validate runs structural validation over the whole config, returning the first
@@ -85,6 +87,14 @@ func (c *runConfig) validate() error {
 		return err
 	}
 
+	// A name can't be both a plain env var and a secret: the precedence would be
+	// ambiguous and could leak the secret. Sorted for a stable error.
+	for _, name := range slices.Sorted(maps.Keys(c.EnvVariables)) {
+		if _, ok := c.Secrets[name]; ok {
+			return fmt.Errorf("%q is set in both env_variables and secrets; remove it from one", name)
+		}
+	}
+
 	if c.CodeSource != nil {
 		if err := c.CodeSource.validate(); err != nil {
 			return err
@@ -114,6 +124,9 @@ func (c *runConfig) validate() error {
 		if v == "" {
 			return errors.New("mlflow_run_name cannot be empty")
 		}
+		if len(v) > 100 {
+			return fmt.Errorf("mlflow_run_name must be 100 characters or less (got %d)", len(v))
+		}
 		if !taskKeyRe.MatchString(v) {
 			return fmt.Errorf("invalid mlflow_run_name %q: only alphanumeric characters, hyphens, and underscores are allowed", v)
 		}
@@ -136,6 +149,11 @@ func (c *runConfig) validate() error {
 		}
 	}
 
+	// A usage policy is given by name or id, never both; the name resolves to an
+	// id at launch.
+	if c.UsagePolicyName != nil && c.UsagePolicyID != nil {
+		return errors.New("usage_policy_name and usage_policy_id are mutually exclusive; set only one")
+	}
 	if c.UsagePolicyName != nil {
 		v := strings.TrimSpace(*c.UsagePolicyName)
 		if v == "" {
@@ -145,6 +163,9 @@ func (c *runConfig) validate() error {
 		if len(v) > 127 {
 			return fmt.Errorf("usage_policy_name must be at most 127 characters, got %d", len(v))
 		}
+	}
+	if c.UsagePolicyID != nil && strings.TrimSpace(*c.UsagePolicyID) == "" {
+		return errors.New("usage_policy_id must not be empty")
 	}
 
 	return nil
