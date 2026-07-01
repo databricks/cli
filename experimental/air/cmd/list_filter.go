@@ -50,34 +50,26 @@ func parseListFilters(raw []string) (listFilters, error) {
 	return f, nil
 }
 
-// hasClientFilters reports whether any client-side filter (those applied in
-// matches) is set. The user filter is excluded — the server handles it.
-func (f listFilters) hasClientFilters() bool {
-	return f.Experiment != "" || f.AcceleratorType != "" || f.NumAccelerators != nil
-}
-
-// matches reports whether a workflow satisfies the experiment, accelerator-type
-// and accelerator-count filters. These have no ListTrainingWorkflows equivalent,
-// so they are applied client-side to the response. The user filter is handled by
-// the server (via creator_name), so it is not re-checked here.
-func (f listFilters) matches(w *trainingWorkflow) bool {
+// matches reports whether a run satisfies the experiment, accelerator-type and
+// accelerator-count filters. The user filter is applied separately while
+// scanning, since it maps onto the run's creator rather than its task.
+func (f listFilters) matches(run *jobRun) bool {
 	if f.Experiment != "" {
-		name := stripExperimentUserPrefix(w.Status.Mlflow.Experiment)
-		matched, err := path.Match(strings.ToLower(f.Experiment), strings.ToLower(name))
+		matched, err := path.Match(strings.ToLower(f.Experiment), strings.ToLower(jobExperiment(run)))
 		if err != nil || !matched {
 			return false
 		}
 	}
 
 	if f.AcceleratorType != "" || f.NumAccelerators != nil {
-		compute := w.Spec.Compute
+		gpuType, count := jobCompute(run)
 		if f.AcceleratorType != "" {
-			display := strings.ToLower(gpuDisplayName(compute.HardwareAcceleratorType))
+			display := strings.ToLower(gpuDisplayName(gpuType))
 			if !strings.Contains(display, strings.ToLower(f.AcceleratorType)) {
 				return false
 			}
 		}
-		if f.NumAccelerators != nil && compute.AcceleratorCount != *f.NumAccelerators {
+		if f.NumAccelerators != nil && count != *f.NumAccelerators {
 			return false
 		}
 	}

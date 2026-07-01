@@ -234,28 +234,8 @@ func TestAcceleratorLabel(t *testing.T) {
 	assert.Equal(t, "8x", acceleratorLabel("", 8))
 }
 
-func TestTrainingWorkflowStatus(t *testing.T) {
-	cases := map[string]string{
-		"TRAINING_WORKFLOW_STATE_PENDING":               "PENDING",
-		"TRAINING_WORKFLOW_STATE_PENDING_SENT":          "PENDING",
-		"TRAINING_WORKFLOW_STATE_RUNNING":               "RUNNING",
-		"TRAINING_WORKFLOW_STATE_TERMINATION_REQUESTED": "TERMINATING",
-		"TRAINING_WORKFLOW_STATE_TERMINATION_SENT":      "TERMINATING",
-		"TRAINING_WORKFLOW_STATE_TERMINATED_COMPLETED":  "SUCCESS",
-		"TRAINING_WORKFLOW_STATE_TERMINATED_FAILED":     "FAILED",
-		"TRAINING_WORKFLOW_STATE_TERMINATED_STOPPED":    "CANCELED",
-		"TRAINING_WORKFLOW_STATE_UNSPECIFIED":           "UNKNOWN",
-		"":                                              "UNKNOWN",
-	}
-	for state, want := range cases {
-		assert.Equal(t, want, trainingWorkflowStatus(state), state)
-	}
-}
-
-func TestParseRPCTime(t *testing.T) {
-	assert.True(t, parseRPCTime("").IsZero())
-	assert.True(t, parseRPCTime("not-a-time").IsZero())
-	got := parseRPCTime("2026-06-05T18:46:55.876Z")
-	require.False(t, got.IsZero())
-	assert.Equal(t, "2026-06-05T18:46:55.876000+00:00", isoFormat(got))
+func TestStatusWord(t *testing.T) {
+	assert.Equal(t, "SUCCESS", statusWord("TERMINATED", "SUCCESS")) // result wins
+	assert.Equal(t, "RUNNING", statusWord("RUNNING", ""))           // falls back to lifecycle
+	assert.Equal(t, "UNKNOWN", statusWord("", ""))
 }

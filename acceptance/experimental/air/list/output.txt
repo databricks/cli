@@ -1,9 +1,8 @@
 
 === list (text)
 >>> [CLI] experimental air list
-   Run ID           Experiment   Status     Started              Duration  MLflow              User                   Accelerators
-   [NUMID]  qwen-train   ● SUCCESS  [TIMESTAMP]       12s  …/runs/run1         [USERNAME]  8x H100
-   [NUMID]  llama-train  ● FAILED   [TIMESTAMP]    3m 31s  -                   [USERNAME]  1x A10
+   Run ID           Experiment  Status     Started              Duration  MLflow              User                   Accelerators
+   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s  …/runs/run1         [USERNAME]  8x H100
 
 === list (json)
 >>> [CLI] experimental air list -o json
@@ -17,14 +16,6 @@
         "run_name": "qwen-train",
         "user": "[USERNAME]",
         "status": "SUCCESS",
-        "started_at": "[TIMESTAMP]",
-        "is_sweep": false
-      },
-      {
-        "run_id": "[NUMID]",
-        "run_name": "llama-train",
-        "user": "[USERNAME]",
-        "status": "FAILED",
         "started_at": "[TIMESTAMP]",
         "is_sweep": false
       }

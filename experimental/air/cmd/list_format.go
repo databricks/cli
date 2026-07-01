@@ -1,54 +1,46 @@
 package aircmd
 
 import (
+	"strconv"
 	"time"
 )
 
-// buildListRow maps a TrainingWorkflow to a table/JSON row. Optional text
-// columns fall back to "-"; host builds the MLflow deep link.
-func buildListRow(w *trainingWorkflow, host string) listRow {
+// buildListRow extracts the columns shown for one run. Optional text columns fall
+// back to "-" so the table stays aligned. MLflow links aren't carried by
+// runs/list, so the column shows "-".
+func buildListRow(run *jobRun) listRow {
 	experiment := "-"
-	if e := stripExperimentUserPrefix(w.Status.Mlflow.Experiment); e != "" {
+	if e := jobExperiment(run); e != "" {
 		experiment = e
 	}
 
 	var startedAt *string
 	duration := "-"
-	if start := parseRPCTime(w.Status.StartTime); !start.IsZero() {
-		s := isoFormat(start)
+	if start, end := jobTiming(run); start > 0 {
+		s := isoFormat(time.UnixMilli(start))
 		startedAt = &s
-
-		// A still-running run has no end_time, so measure against the current time.
-		endMillis := time.Now().UnixMilli()
-		if end := parseRPCTime(w.Status.EndTime); !end.IsZero() {
-			endMillis = end.UnixMilli()
+		if end == 0 {
+			// Still running: measure against the current time.
+			end = time.Now().UnixMilli()
 		}
-		duration = formatDuration(roundMillisToSeconds(endMillis - start.UnixMilli()))
-	}
-
-	mlflowURL := "-"
-	if w.Status.Mlflow.ExperimentID != "" && w.Status.Mlflow.RunID != "" {
-		mlflowURL = mlflowLogsURL(host, &mlflowIdentifiers{
-			ExperimentID: w.Status.Mlflow.ExperimentID,
-			RunID:        w.Status.Mlflow.RunID,
-		})
+		duration = formatDuration(roundMillisToSeconds(end - start))
 	}
 
 	accel := "-"
-	if a := acceleratorLabel(w.Spec.Compute.HardwareAcceleratorType, w.Spec.Compute.AcceleratorCount); a != "" {
+	if a := acceleratorLabel(jobCompute(run)); a != "" {
 		accel = a
 	}
 
 	return listRow{
-		RunID:        w.JobRunID,
-		RunName:      w.Status.Job.Name,
-		User:         w.Metadata.CreatorName,
-		Status:       trainingWorkflowStatus(w.Status.State),
+		RunID:        strconv.FormatInt(run.RunID, 10),
+		RunName:      run.RunName,
+		User:         run.CreatorUserName,
+		Status:       statusWord(run.State.LifeCycleState, run.State.ResultState),
 		StartedAt:    startedAt,
-		IsSweep:      w.TaskRunID != "",
+		IsSweep:      isSweep(run),
 		Experiment:   experiment,
 		Duration:     duration,
-		MLflowURL:    mlflowURL,
+		MLflowURL:    "-",
 		Accelerators: accel,
 	}
 }

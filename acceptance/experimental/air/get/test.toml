@@ -22,6 +22,7 @@ Response.Body = '''
   "tasks": [
     {
       "task_key": "train",
+      "run_id": 456,
       "attempt_number": 0,
       "gen_ai_compute_task": {
         "mlflow_experiment_name": "/Users/user@example.com/my-exp",
