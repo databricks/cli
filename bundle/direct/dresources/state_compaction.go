@@ -32,7 +32,7 @@ func hashStateValue(v any) (any, error) {
 		return v, nil
 	}
 
-	h, err := hash.JSON(v)
+	h, err := hash.OfJSON(v)
 	if err != nil {
 		return nil, err
 	}
