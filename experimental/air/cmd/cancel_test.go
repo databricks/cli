@@ -179,14 +179,14 @@ func TestCancelByIDGenericFailure(t *testing.T) {
 }
 
 func TestCancelAllNoActiveRuns(t *testing.T) {
-	w := newTestWorkspaceClient(t, workflowsServer(t, workflowsBody(t, "")).URL)
+	w := newTestWorkspaceClient(t, runsServer(t, runsListBody(t, "")).URL)
 	var buf bytes.Buffer
 	require.NoError(t, runCancelAll(t, w, flags.OutputText, nil, &buf))
 	assert.Contains(t, buf.String(), "No active runs found.")
 }
 
 func TestCancelAllNoActiveRunsJSON(t *testing.T) {
-	srv := workflowsServer(t, workflowsBody(t, ""))
+	srv := runsServer(t, runsListBody(t, ""))
 	w := newTestWorkspaceClient(t, srv.URL)
 
 	var buf bytes.Buffer
@@ -200,9 +200,9 @@ func TestCancelAllNoActiveRunsJSON(t *testing.T) {
 }
 
 func TestCancelAllConfirmYes(t *testing.T) {
-	srv := workflowsServer(t, workflowsBody(t, "",
-		testWorkflow(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
-		testWorkflow(222, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-b"),
+	srv := runsServer(t, runsListBody(t, "",
+		airJobRun(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
+		airJobRun(222, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-b"),
 	))
 	w := newTestWorkspaceClient(t, srv.URL)
 
@@ -215,8 +215,8 @@ func TestCancelAllConfirmYes(t *testing.T) {
 }
 
 func TestCancelAllAbort(t *testing.T) {
-	srv := workflowsServer(t, workflowsBody(t, "",
-		testWorkflow(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
+	srv := runsServer(t, runsListBody(t, "",
+		airJobRun(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
 	))
 	w := newTestWorkspaceClient(t, srv.URL)
 
@@ -227,8 +227,8 @@ func TestCancelAllAbort(t *testing.T) {
 }
 
 func TestCancelAllConfirmReadError(t *testing.T) {
-	srv := workflowsServer(t, workflowsBody(t, "",
-		testWorkflow(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
+	srv := runsServer(t, runsListBody(t, "",
+		airJobRun(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
 	))
 	w := newTestWorkspaceClient(t, srv.URL)
 
@@ -251,7 +251,7 @@ func TestCancelAllMeError(t *testing.T) {
 func TestCancelAllListError(t *testing.T) {
 	// Me succeeds (default empty user), but listing active runs fails.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == listWorkflowsPath {
+		if r.URL.Path == jobsRunsListPath {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(`{"error_code":"INTERNAL","message":"boom"}`))
 			return

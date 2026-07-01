@@ -94,7 +94,10 @@ func newCancelCommand() *cobra.Command {
 				cmdio.LogString(ctx, fmt.Sprintf("Searching active runs for %s in %s...", me.UserName, host))
 			}
 
-			rows, err := listAirRuns(ctx, w, listQuery{activeOnly: true, userFilter: me.UserName})
+			// Fetch every active run (up to the scan bound) so --all cancels all
+			// of them, not just the first page.
+			fetcher := newRunFetcher(ctx, w, listQuery{activeOnly: true, userFilter: me.UserName})
+			rows, err := fetcher.next(maxListScan)
 			if err != nil {
 				return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 					fmt.Errorf("failed to list active runs: %w", err))
@@ -144,7 +147,7 @@ func newCancelCommand() *cobra.Command {
 			}
 			data.Cancelled = append(data.Cancelled, rid)
 			if !jsonOut {
-				cmdio.LogString(ctx, fmt.Sprintf("Successfully requested cancellation for run %s", rid))
+				cmdio.LogString(ctx, "Successfully requested cancellation for run "+rid)
 			}
 		}
 

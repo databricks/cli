@@ -13,33 +13,40 @@ Response.Body = ''
 Pattern = "POST /api/2.2/jobs/runs/cancel"
 Response.Body = '{}'
 
-# ListTrainingWorkflows backs `cancel --all`: two active runs for the current user.
+# Jobs runs/list backs `cancel --all`: two active AIR runs for the current user
+# (tester@databricks.com, from the built-in scim/v2/Me handler).
 [[Server]]
-Pattern = "GET /api/2.0/ai-training/workflows"
+Pattern = "GET /api/2.2/jobs/runs/list"
 Response.Body = '''
 {
-  "training_workflows": [
+  "runs": [
     {
-      "job_run_id": "334747067049496",
-      "metadata": {"creator_name": "tester@databricks.com"},
-      "spec": {"compute": {"hardware_accelerator_type": "GPU_1xA10", "accelerator_count": 1}},
-      "status": {
-        "state": "TRAINING_WORKFLOW_STATE_RUNNING",
-        "start_time": "2026-06-05T17:32:39.000Z",
-        "job": {"name": "qwen-train"},
-        "mlflow": {"experiment": "/Users/tester@databricks.com/qwen-train"}
-      }
+      "run_id": 334747067049496,
+      "run_name": "qwen-train",
+      "creator_user_name": "tester@databricks.com",
+      "start_time": 1717608759000,
+      "state": {"life_cycle_state": "RUNNING"},
+      "tasks": [{
+        "run_id": 334747067049497,
+        "ai_runtime_task": {
+          "experiment": "/Users/tester@databricks.com/qwen-train",
+          "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]
+        }
+      }]
     },
     {
-      "job_run_id": "566001814929041",
-      "metadata": {"creator_name": "tester@databricks.com"},
-      "spec": {"compute": {"hardware_accelerator_type": "GPU_1xA10", "accelerator_count": 1}},
-      "status": {
-        "state": "TRAINING_WORKFLOW_STATE_RUNNING",
-        "start_time": "2026-06-05T18:43:24.000Z",
-        "job": {"name": "llama-train"},
-        "mlflow": {"experiment": "/Users/tester@databricks.com/llama-train"}
-      }
+      "run_id": 566001814929041,
+      "run_name": "llama-train",
+      "creator_user_name": "tester@databricks.com",
+      "start_time": 1717612404000,
+      "state": {"life_cycle_state": "RUNNING"},
+      "tasks": [{
+        "run_id": 566001814929042,
+        "ai_runtime_task": {
+          "experiment": "/Users/tester@databricks.com/llama-train",
+          "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]
+        }
+      }]
     }
   ]
 }
