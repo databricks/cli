@@ -57,13 +57,11 @@ type listedRun struct {
 	taskRunID int64
 }
 
-// listQuery holds the resolved inputs to listAirRuns.
+// listQuery holds the resolved inputs to a runFetcher.
 type listQuery struct {
 	activeOnly  bool
-	allUsers    bool
 	userFilter  string
 	filters     listFilters
-	limit       int
 	fetchMLflow bool
 }
 
@@ -113,34 +111,47 @@ func newListCommand() *cobra.Command {
 			userFilter = me.UserName
 		}
 
-		rows, err := listAirRuns(ctx, w, listQuery{
+		fetcher := newRunFetcher(ctx, w, listQuery{
 			activeOnly:  active,
-			allUsers:    allUsers,
 			userFilter:  userFilter,
 			filters:     f,
-			limit:       limit,
 			fetchMLflow: root.OutputType(cmd) == flags.OutputText,
 		})
-		if err != nil {
-			return err
-		}
 
-		// JSON keeps the air envelope; text renders the table (interactive and
-		// navigable in a terminal, printed once when piped).
+		// JSON prints the newest `limit` runs once. Text renders the table:
+		// navigable in a terminal (paging in older runs on demand), printed once
+		// when piped.
 		if root.OutputType(cmd) == flags.OutputJSON {
+			rows, err := fetcher.next(limit)
+			if err != nil {
+				return err
+			}
+			warnIfTruncated(ctx, fetcher)
 			return renderEnvelope(ctx, listData{Rows: rows})
 		}
-		return renderListText(cmd, rows)
+		return renderListText(cmd, fetcher, limit)
 	}
 
 	return cmd
 }
 
-// listAirRuns pages through Jobs runs/list, keeps the AIR runs that match the
-// user and filters, and stops once it has enough matches or has scanned
-// maxListScan runs. Detail comes straight from runs/list (expand_tasks), so no
-// per-run calls are needed.
-func listAirRuns(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) ([]listRow, error) {
+// runFetcher pages Jobs runs/list on demand, yielding AIR runs that match the
+// user and filters. It buffers a page's leftover runs so successive next() calls
+// resume where the last stopped — driving both one-shot output and lazy paging.
+type runFetcher struct {
+	ctx         context.Context
+	w           *databricks.WorkspaceClient
+	query       map[string]any
+	userFilter  string
+	filters     listFilters
+	fetchMLflow bool
+
+	pending   []jobRun // runs from the last page not yet inspected
+	scanned   int
+	exhausted bool
+}
+
+func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *runFetcher {
 	query := map[string]any{
 		"run_type":     "SUBMIT_RUN",
 		"expand_tasks": true,
@@ -149,51 +160,55 @@ func listAirRuns(ctx context.Context, w *databricks.WorkspaceClient, q listQuery
 	if q.activeOnly {
 		query["active_only"] = true
 	}
+	return &runFetcher{
+		ctx:         ctx,
+		w:           w,
+		query:       query,
+		userFilter:  q.userFilter,
+		filters:     q.filters,
+		fetchMLflow: q.fetchMLflow,
+	}
+}
 
+// next returns up to want more matching rows, paging runs/list (and buffering the
+// leftover runs of a page) until it has enough, the server has no more pages, or
+// it has scanned maxListScan runs. MLflow links are filled in for text output.
+func (f *runFetcher) next(want int) ([]listRow, error) {
 	var entries []listedRun
-	scanned := 0
-	done := false
-	for !done && scanned < maxListScan {
-		resp, err := fetchJobRunsPage(ctx, w, query)
-		if err != nil {
-			return nil, err
-		}
-
-		for i := range resp.Runs {
-			run := &resp.Runs[i]
-			scanned++
-
-			if !isAirRun(run) {
-				continue
-			}
-			if q.userFilter != "" && run.CreatorUserName != q.userFilter {
-				continue
-			}
-			if !q.filters.matches(run) {
-				continue
-			}
-
-			entries = append(entries, listedRun{row: buildListRow(run), taskRunID: taskRunID(run)})
-			if len(entries) >= q.limit {
-				done = true
+	for len(entries) < want {
+		if len(f.pending) == 0 {
+			if f.exhausted || f.scanned >= maxListScan {
 				break
 			}
+			if err := f.fetchPage(); err != nil {
+				return nil, err
+			}
+			continue
 		}
 
-		if done || resp.NextPageToken == "" {
-			break
+		run := &f.pending[0]
+		f.pending = f.pending[1:]
+		f.scanned++
+
+		if !isAirRun(run) {
+			continue
 		}
-		query["page_token"] = resp.NextPageToken
+		if f.userFilter != "" && run.CreatorUserName != f.userFilter {
+			continue
+		}
+		if !f.filters.matches(run) {
+			continue
+		}
+		entries = append(entries, listedRun{row: buildListRow(run), taskRunID: taskRunID(run)})
 	}
-
-	if !done && scanned >= maxListScan {
-		log.Warnf(ctx, "air list: stopped after scanning %d runs; results may be incomplete", maxListScan)
+	if f.scanned >= maxListScan {
+		f.exhausted = true
 	}
 
 	// MLflow links appear only in the text table, so the per-run get-output
 	// lookups are skipped for JSON output (which omits the column anyway).
-	if q.fetchMLflow {
-		setMLflowLinks(ctx, w, entries)
+	if f.fetchMLflow {
+		setMLflowLinks(f.ctx, f.w, entries)
 	}
 
 	rows := make([]listRow, len(entries))
@@ -201,6 +216,30 @@ func listAirRuns(ctx context.Context, w *databricks.WorkspaceClient, q listQuery
 		rows[i] = e.row
 	}
 	return rows, nil
+}
+
+// fetchPage loads the next runs/list page into the pending buffer, marking the
+// fetcher exhausted once the server reports no further pages.
+func (f *runFetcher) fetchPage() error {
+	resp, err := fetchJobRunsPage(f.ctx, f.w, f.query)
+	if err != nil {
+		return err
+	}
+	f.pending = resp.Runs
+	if resp.NextPageToken == "" {
+		f.exhausted = true
+	} else {
+		f.query["page_token"] = resp.NextPageToken
+	}
+	return nil
+}
+
+// warnIfTruncated logs when the scan hit maxListScan, so one-shot output signals
+// its results may be incomplete.
+func warnIfTruncated(ctx context.Context, f *runFetcher) {
+	if f.scanned >= maxListScan {
+		log.Warnf(ctx, "air list: stopped after scanning %d runs; results may be incomplete", maxListScan)
+	}
 }
 
 // setMLflowLinks fills in each row's MLflow link in parallel, best-effort: a row

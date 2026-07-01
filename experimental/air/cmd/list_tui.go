@@ -13,9 +13,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// renderListText renders the table for text output: an inline navigable table
-// in a terminal, otherwise printed once. JSON is handled by the caller.
-func renderListText(cmd *cobra.Command, rows []listRow) error {
+// renderListText renders the table for text output: an inline navigable table in
+// a terminal (paging in older runs on demand), otherwise printed once. JSON is
+// handled by the caller.
+func renderListText(cmd *cobra.Command, f *runFetcher, limit int) error {
 	ctx := cmd.Context()
 	out := cmd.OutOrStdout()
 
@@ -25,17 +26,24 @@ func renderListText(cmd *cobra.Command, rows []listRow) error {
 		r.SetColorProfile(termenv.Ascii)
 	}
 
-	// Navigate only with a full color TTY, at least one row, and no explicit
-	// --limit (which means "just print these N"). Everything else — piped,
-	// NO_COLOR, --limit, empty — prints once.
-	interactive := len(rows) > 0 &&
-		color &&
+	// Navigate only with a full color TTY and no explicit --limit (which means
+	// "just print these N"). Everything else — piped, NO_COLOR, --limit — prints
+	// once.
+	interactive := color &&
 		cmdio.IsPagerSupported(ctx) &&
 		!cmd.Flags().Changed("limit")
 
 	if interactive {
-		_, err := tea.NewProgram(
-			newListModel(r, rows, color),
+		first, err := f.next(listPageRows)
+		if err != nil {
+			return err
+		}
+		if len(first) == 0 {
+			_, err := io.WriteString(out, "No runs found.\n")
+			return err
+		}
+		_, err = tea.NewProgram(
+			newListModel(r, f, first, color),
 			tea.WithContext(ctx),
 			tea.WithInput(cmd.InOrStdin()),
 			tea.WithOutput(out),
@@ -43,7 +51,12 @@ func renderListText(cmd *cobra.Command, rows []listRow) error {
 		return err
 	}
 
-	_, err := io.WriteString(out, staticListTable(r, rows, color))
+	rows, err := f.next(limit)
+	if err != nil {
+		return err
+	}
+	warnIfTruncated(ctx, f)
+	_, err = io.WriteString(out, staticListTable(r, rows, color))
 	return err
 }
 
@@ -65,28 +78,63 @@ func staticListTable(r *lipgloss.Renderer, rows []listRow, links bool) string {
 	return b.String()
 }
 
-// listModel is the inline, navigable runs table.
+// listModel is the inline, navigable runs table. It lazily pages older runs from
+// the fetcher as the cursor nears the end of the loaded rows. fetcher is nil for
+// a fixed, non-paging table (e.g. in tests).
 type listModel struct {
-	rows   []listRow
-	styles listStyles
-	cols   listCols
-	links  bool
+	rows    []listRow
+	styles  listStyles
+	cols    listCols
+	links   bool
+	fetcher *runFetcher
+	loading bool
+	loadErr error
 
 	cursor int
 	offset int // index of the first visible row
 	height int // terminal height, for windowing
 }
 
-func newListModel(r *lipgloss.Renderer, rows []listRow, links bool) listModel {
+func newListModel(r *lipgloss.Renderer, f *runFetcher, rows []listRow, links bool) listModel {
 	return listModel{
-		rows:   rows,
-		styles: newListStyles(r),
-		cols:   computeListCols(rows),
-		links:  links,
+		rows:    rows,
+		styles:  newListStyles(r),
+		cols:    computeListCols(rows),
+		links:   links,
+		fetcher: f,
 	}
 }
 
 func (m listModel) Init() tea.Cmd { return nil }
+
+// moreRowsMsg carries a lazily fetched batch of rows, or the error that ended paging.
+type moreRowsMsg struct {
+	rows []listRow
+	err  error
+}
+
+// fetchCmd pulls the next batch of rows in the background; guarded by loading so
+// only one runs at a time.
+func (m *listModel) fetchCmd() tea.Cmd {
+	m.loading = true
+	f := m.fetcher
+	return func() tea.Msg {
+		rows, err := f.next(listPageRows)
+		return moreRowsMsg{rows: rows, err: err}
+	}
+}
+
+// maybeFetch starts a fetch when the cursor nears the end of the loaded rows and
+// more runs may still exist.
+func (m *listModel) maybeFetch() tea.Cmd {
+	if m.fetcher == nil || m.loading || m.loadErr != nil || m.fetcher.exhausted {
+		return nil
+	}
+	if m.cursor < len(m.rows)-m.visibleCount() {
+		return nil
+	}
+	return m.fetchCmd()
+}
 
 // listPageRows is the most rows shown per page.
 const listPageRows = 20
@@ -106,6 +154,22 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.offset = m.clampedOffset()
+		return m, m.maybeFetch()
+
+	case moreRowsMsg:
+		m.loading = false
+		if msg.err != nil {
+			m.loadErr = msg.err
+			return m, nil
+		}
+		m.rows = append(m.rows, msg.rows...)
+		m.cols = computeListCols(m.rows)
+		m.offset = m.clampedOffset()
+		// A page with no matches but more to scan: keep paging so the cursor isn't
+		// stuck at the end of the loaded rows.
+		if len(msg.rows) == 0 && !m.fetcher.exhausted {
+			return m, m.fetchCmd()
+		}
 		return m, nil
 
 	case tea.KeyMsg:
@@ -130,13 +194,12 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor = len(m.rows) - 1
 		case "enter":
 			// Open the selected run's MLflow page in the browser.
-			if len(m.rows) > 0 {
-				if url := m.rows[m.cursor].MLflowURL; url != "" && url != "-" {
-					return m, openURL(url)
-				}
+			if url := m.rows[m.cursor].MLflowURL; url != "" && url != "-" {
+				return m, openURL(url)
 			}
 		}
 		m.offset = m.clampedOffset()
+		return m, m.maybeFetch()
 	}
 	return m, nil
 }
@@ -165,13 +228,16 @@ func (m listModel) View() string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-// renderHint is the faint one-line key legend, with a scroll position when the
-// list is windowed.
+// renderHint is the faint one-line key legend, with the cursor position and the
+// paging state (loading / load failed).
 func (m listModel) renderHint() string {
 	faint := m.styles.r.NewStyle().Foreground(colN7)
-	hint := "↑/↓ navigate · ←/→ page · ↵ mlflow · q quit"
-	if m.visibleCount() < len(m.rows) {
-		hint += fmt.Sprintf("  ·  row %d/%d", m.cursor+1, len(m.rows))
+	hint := fmt.Sprintf("↑/↓ navigate · ←/→ page · ↵ mlflow · q quit  ·  row %d/%d", m.cursor+1, len(m.rows))
+	switch {
+	case m.loadErr != nil:
+		hint += " (load failed)"
+	case m.loading:
+		hint += " (loading…)"
 	}
 	return faint.Render(hint)
 }
