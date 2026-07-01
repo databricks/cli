@@ -26,10 +26,11 @@ type DataSourceClusterClusterInfoAzureAttributesLogAnalyticsInfo struct {
 }
 
 type DataSourceClusterClusterInfoAzureAttributes struct {
-	Availability     string                                                       `json:"availability,omitempty"`
-	FirstOnDemand    int                                                          `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                          `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *DataSourceClusterClusterInfoAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                       `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                       `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                          `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                          `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *DataSourceClusterClusterInfoAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type DataSourceClusterClusterInfoClusterLogConfDbfs struct {
@@ -182,10 +183,11 @@ type DataSourceClusterClusterInfoSpecAzureAttributesLogAnalyticsInfo struct {
 }
 
 type DataSourceClusterClusterInfoSpecAzureAttributes struct {
-	Availability     string                                                           `json:"availability,omitempty"`
-	FirstOnDemand    int                                                              `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                              `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *DataSourceClusterClusterInfoSpecAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                           `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                           `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                              `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                              `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *DataSourceClusterClusterInfoSpecAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecClusterLogConfDbfs struct {
