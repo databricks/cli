@@ -27,6 +27,15 @@ func FromMany(errors ...error) error {
 	return aggregateErr
 }
 
+// Count returns the number of errors aggregated in err.
+// Returns 0 if err was not created by FromMany.
+func Count(err error) int {
+	if agg, ok := err.(*aggregateError); ok {
+		return len(agg.errors)
+	}
+	return 0
+}
+
 func (ce *aggregateError) Error() string {
 	var b []byte
 	for i, err := range ce.errors {
