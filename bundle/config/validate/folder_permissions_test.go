@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -167,6 +168,59 @@ func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 	require.Len(t, diags, 1)
 	require.Equal(t, "workspace folder has permissions not configured in bundle", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
+}
+
+func TestValidateFolderPermissionsNoWarnForDeployingIdentity(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath:     "/Workspace/Users/deployer@bar.com",
+				ArtifactPath: "/Workspace/Users/deployer@bar.com/artifacts",
+				FilePath:     "/Workspace/Users/deployer@bar.com/files",
+				StatePath:    "/Workspace/Users/deployer@bar.com/state",
+				ResourcePath: "/Workspace/Users/deployer@bar.com/resources",
+				CurrentUser: &config.User{
+					User: &iam.User{UserName: "deployer@bar.com"},
+				},
+			},
+			Permissions: []resources.Permission{
+				{Level: permissions.CAN_MANAGE, UserName: "other@bar.com"},
+			},
+		},
+	}
+	m := mocks.NewMockWorkspaceClient(t)
+	api := m.GetMockWorkspaceAPI()
+	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/deployer@bar.com").Return(&workspace.ObjectInfo{
+		ObjectId: 1234,
+	}, nil)
+
+	// The deploying identity has CAN_MANAGE on the folder (implicitly granted by Databricks).
+	// The bundle permissions only list "other@bar.com", not the deployer.
+	// No warning should be emitted for the deployer's own CAN_MANAGE.
+	api.EXPECT().GetPermissions(mock.Anything, workspace.GetWorkspaceObjectPermissionsRequest{
+		WorkspaceObjectId:   "1234",
+		WorkspaceObjectType: "directories",
+	}).Return(&workspace.WorkspaceObjectPermissions{
+		ObjectId: "1234",
+		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
+			{
+				UserName: "deployer@bar.com",
+				AllPermissions: []workspace.WorkspaceObjectPermission{
+					{PermissionLevel: "CAN_MANAGE"},
+				},
+			},
+			{
+				UserName: "other@bar.com",
+				AllPermissions: []workspace.WorkspaceObjectPermission{
+					{PermissionLevel: "CAN_MANAGE"},
+				},
+			},
+		},
+	}, nil)
+
+	b.SetWorkpaceClient(m.WorkspaceClient)
+	diags := ValidateFolderPermissions().Apply(t.Context(), b)
+	require.Empty(t, diags)
 }
 
 func TestValidateFolderPermissionsFailsOnNoRootFolder(t *testing.T) {
