@@ -59,4 +59,4 @@ acceptance TestAccept/ssh/connection
 
 # This is broken on Azure; it times out.
 integration/libs/git TestFetchRepositoryInfoAPI_FromRepo
-
+integration/libs/git TestFetchRepositoryInfoAPI_FromRepo/
