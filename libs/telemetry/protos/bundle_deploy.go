@@ -144,6 +144,16 @@ type ResourceMetadata struct {
 	StateSizeMaxBytes    int64 `json:"state_size_max_bytes,omitempty"`
 	StateSizeMeanBytes   int64 `json:"state_size_mean_bytes,omitempty"`
 	StateSizeMedianBytes int64 `json:"state_size_median_bytes,omitempty"`
+
+	// Compressed state-size statistics across resources of this type, each
+	// measured as the DEFLATE-compressed length of the same per-resource state
+	// blob. This is a rough proxy for what the state sizes look like on the
+	// server side (which compresses with zstd); the standard library's flate is
+	// used to avoid an extra dependency. Captures how much resource state
+	// shrinks under compression rather than just the raw sizes above.
+	StateCompressedSizeMaxBytes    int64 `json:"state_compressed_size_max_bytes,omitempty"`
+	StateCompressedSizeMeanBytes   int64 `json:"state_compressed_size_mean_bytes,omitempty"`
+	StateCompressedSizeMedianBytes int64 `json:"state_compressed_size_median_bytes,omitempty"`
 }
 
 type BoolMapEntry struct {
