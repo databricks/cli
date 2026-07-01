@@ -24,6 +24,12 @@ import (
 // BuildStateFromTF iterates over bundle resources, resolves cross-resource
 // references using TF state attributes, and writes each resource's state entry.
 // configRoot should be an un-interpolated config (with ${resources.*} references).
+//
+// When downgradeWarnings is true, warnings (e.g. skipped unsupported resource
+// types) are logged at info level instead of warn level. This is used by the
+// dry-run migration that runs after a terraform deploy, where these conditions
+// are reported via telemetry rather than surfaced to the user. The returned bool
+// reports whether any such warning was emitted, regardless of its log level.
 func BuildStateFromTF(
 	ctx context.Context,
 	configRoot *config.Root,
@@ -31,7 +37,17 @@ func BuildStateFromTF(
 	stateDB *dstate.DeploymentState,
 	tfAttrs TFStateAttrs,
 	tfIDs map[string]string,
-) error {
+	downgradeWarnings bool,
+) (bool, error) {
+	warningsSeen := false
+	warnf := func(format string, args ...any) {
+		warningsSeen = true
+		if downgradeWarnings {
+			log.Infof(ctx, format, args...)
+		} else {
+			log.Warnf(ctx, format, args...)
+		}
+	}
 	// Collect all resource nodes (same patterns as makePlan).
 	var nodes []string
 	patterns := []dyn.Pattern{
@@ -49,7 +65,7 @@ func BuildStateFromTF(
 			},
 		)
 		if err != nil {
-			return err
+			return warningsSeen, err
 		}
 	}
 
@@ -63,18 +79,18 @@ func BuildStateFromTF(
 
 		group := config.GetResourceTypeFromKey(node)
 		if group == "" {
-			return fmt.Errorf("cannot determine resource type for %q", node)
+			return warningsSeen, fmt.Errorf("cannot determine resource type for %q", node)
 		}
 
 		adapter, ok := adapters[group]
 		if !ok {
-			log.Warnf(ctx, "unsupported resource type %q for %s, skipping", group, node)
+			warnf("unsupported resource type %q for %s, skipping", group, node)
 			continue
 		}
 
 		inputConfig, err := configRoot.GetResourceConfig(node)
 		if err != nil {
-			return fmt.Errorf("%s: getting config: %w", node, err)
+			return warningsSeen, fmt.Errorf("%s: getting config: %w", node, err)
 		}
 
 		baseRefs := map[string]string{}
@@ -85,16 +101,16 @@ func BuildStateFromTF(
 			if strings.HasPrefix(node, "resources.secret_scopes.") {
 				typedConfig, ok := inputConfig.(*[]resources.SecretScopePermission)
 				if !ok {
-					return fmt.Errorf("%s: expected *[]resources.SecretScopePermission, got %T", node, inputConfig)
+					return warningsSeen, fmt.Errorf("%s: expected *[]resources.SecretScopePermission, got %T", node, inputConfig)
 				}
 				sv, err = dresources.PrepareSecretScopeAclsInputConfig(*typedConfig, node)
 				if err != nil {
-					return fmt.Errorf("%s: preparing secret scope ACLs config: %w", node, err)
+					return warningsSeen, fmt.Errorf("%s: preparing secret scope ACLs config: %w", node, err)
 				}
 			} else {
 				sv, err = dresources.PreparePermissionsInputConfig(inputConfig, node)
 				if err != nil {
-					return fmt.Errorf("%s: preparing permissions config: %w", node, err)
+					return warningsSeen, fmt.Errorf("%s: preparing permissions config: %w", node, err)
 				}
 			}
 			inputConfig = sv.Value
@@ -103,7 +119,7 @@ func BuildStateFromTF(
 		case strings.HasSuffix(node, ".grants"):
 			sv, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
 			if err != nil {
-				return fmt.Errorf("%s: preparing grants config: %w", node, err)
+				return warningsSeen, fmt.Errorf("%s: preparing grants config: %w", node, err)
 			}
 			inputConfig = sv.Value
 			baseRefs = sv.Refs
@@ -111,12 +127,12 @@ func BuildStateFromTF(
 
 		newStateValue, err := adapter.PrepareState(inputConfig)
 		if err != nil {
-			return fmt.Errorf("%s: PrepareState: %w", node, err)
+			return warningsSeen, fmt.Errorf("%s: PrepareState: %w", node, err)
 		}
 
 		refs, err := direct.ExtractReferences(configRoot.Value(), node)
 		if err != nil {
-			return fmt.Errorf("%s: extracting references: %w", node, err)
+			return warningsSeen, fmt.Errorf("%s: extracting references: %w", node, err)
 		}
 		maps.Copy(refs, baseRefs)
 
@@ -167,7 +183,7 @@ func BuildStateFromTF(
 		// is absent there (model_serving_endpoints, database_instances).
 		if _, ok := sv.Refs["object_id"]; ok {
 			if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "object_id"), id); err != nil {
-				return fmt.Errorf("%s: setting object_id: %w", node, err)
+				return warningsSeen, fmt.Errorf("%s: setting object_id: %w", node, err)
 			}
 			delete(sv.Refs, "object_id")
 		}
@@ -194,25 +210,25 @@ func BuildStateFromTF(
 		for _, pending := range pendingRefs {
 			fieldPath, err := structpath.ParsePath(pending.fieldPathStr)
 			if err != nil {
-				return fmt.Errorf("%s: parsing field path %q: %w", node, pending.fieldPathStr, err)
+				return warningsSeen, fmt.Errorf("%s: parsing field path %q: %w", node, pending.fieldPathStr, err)
 			}
 
 			// ResolveFieldRef returns the fully resolved value for this field,
 			// using either Method A (TF state lookup) or Method B (template evaluation).
-			value, err := ResolveFieldRef(ctx, tfAttrs, srcGroup, srcName, fieldPath, pending.refTemplate)
+			value, err := ResolveFieldRef(tfAttrs, srcGroup, srcName, fieldPath, pending.refTemplate, warnf)
 			if err != nil {
-				return fmt.Errorf("%s: cannot resolve field %q (template %q): %w", node, pending.fieldPathStr, pending.refTemplate, err)
+				return warningsSeen, fmt.Errorf("%s: cannot resolve field %q (template %q): %w", node, pending.fieldPathStr, pending.refTemplate, err)
 			}
 
 			// Set the resolved value directly and remove the ref entry.
 			if err := structaccess.Set(sv.Value, fieldPath, value); err != nil {
-				return fmt.Errorf("%s: cannot set resolved value for field %q: %w", node, pending.fieldPathStr, err)
+				return warningsSeen, fmt.Errorf("%s: cannot set resolved value for field %q: %w", node, pending.fieldPathStr, err)
 			}
 			delete(sv.Refs, pending.fieldPathStr)
 		}
 
 		if len(sv.Refs) > 0 {
-			return fmt.Errorf("%s: unresolved references: %v", node, sv.Refs)
+			return warningsSeen, fmt.Errorf("%s: unresolved references: %v", node, sv.Refs)
 		}
 
 		// Handle etag for dashboards: read it directly from TF state attributes.
@@ -222,15 +238,15 @@ func BuildStateFromTF(
 		if v, err := LookupTFField(tfAttrs, group, srcName, structpath.NewStringKey(nil, "etag")); err == nil {
 			if etag, ok := v.(string); ok && etag != "" {
 				if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag); err != nil {
-					return fmt.Errorf("%s: cannot set etag: %w", node, err)
+					return warningsSeen, fmt.Errorf("%s: cannot set etag: %w", node, err)
 				}
 			}
 		}
 
 		if err := stateDB.SaveState(node, id, sv.Value, dependsOn); err != nil {
-			return fmt.Errorf("%s: SaveState: %w", node, err)
+			return warningsSeen, fmt.Errorf("%s: SaveState: %w", node, err)
 		}
 	}
 
-	return nil
+	return warningsSeen, nil
 }

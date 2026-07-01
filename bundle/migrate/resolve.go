@@ -1,13 +1,11 @@
 package migrate
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -58,7 +56,10 @@ func evaluateTemplate(state TFStateAttrs, template string) (string, error) {
 //   - Method B: evaluate the template by reading each referenced field from TF state.
 //
 // Returns the reconciled value or an error if both methods fail.
-func ResolveFieldRef(ctx context.Context, state TFStateAttrs, srcGroup, srcName string, fieldPath *structpath.PathNode, refTemplate string) (any, error) {
+//
+// warnf reports a warning; the caller controls its severity (the post-deploy
+// dry-run downgrades these to info level) and tracks whether any warning fired.
+func ResolveFieldRef(state TFStateAttrs, srcGroup, srcName string, fieldPath *structpath.PathNode, refTemplate string, warnf func(format string, args ...any)) (any, error) {
 	// Method A: read field from source resource's TF state.
 	valueA, errA := LookupTFField(state, srcGroup, srcName, fieldPath)
 
@@ -73,11 +74,11 @@ func ResolveFieldRef(ctx context.Context, state TFStateAttrs, srcGroup, srcName 
 		}
 		// Both succeeded but disagree: prefer longer string and warn.
 		if len(valueB) > len(aStr) {
-			log.Warnf(ctx, "resource %s.%s field %s: method A value %q and method B value %q disagree; using longer (method B)",
+			warnf("resource %s.%s field %s: method A value %q and method B value %q disagree; using longer (method B)",
 				srcGroup, srcName, fieldPath, aStr, valueB)
 			return valueB, nil
 		}
-		log.Warnf(ctx, "resource %s.%s field %s: method A value %q and method B value %q disagree; using longer (method A)",
+		warnf("resource %s.%s field %s: method A value %q and method B value %q disagree; using longer (method A)",
 			srcGroup, srcName, fieldPath, aStr, valueB)
 		return valueA, nil
 	case errA == nil:

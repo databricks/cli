@@ -110,6 +110,26 @@ type BundleDeployExperimental struct {
 
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
+
+	// Result of the in-memory dry-run migration from the terraform engine to the
+	// direct engine, attempted after a successful terraform deploy to measure how
+	// many bundles could migrate cleanly. Nil for direct deploys and for terraform
+	// deploys that had nothing to migrate.
+	TerraformToDirectMigration *BundleDirectMigration `json:"terraform_to_direct_migration,omitempty"`
+}
+
+// BundleDirectMigration reports the outcome of the in-memory dry-run migration
+// from the terraform engine to the direct engine.
+type BundleDirectMigration struct {
+	// Whether the migration completed without error.
+	Success bool `json:"success"`
+
+	// Scrubbed error message if the migration failed; empty on success.
+	ErrorMessage string `json:"error_message,omitempty"`
+
+	// Whether the migration emitted any warnings (e.g. resources skipped because
+	// their type is not supported by the direct engine).
+	HasWarnings bool `json:"has_warnings,omitempty"`
 }
 
 // BundleResourcesMetadata mirrors the universe proto. Per-resource-type

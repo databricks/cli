@@ -172,7 +172,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return fmt.Errorf("upgrading state for apply: %w", err)
 		}
 
-		if err := migrate.BuildStateFromTF(ctx, &b.Config, adapters, &stateDB, tfState.Attrs, tfState.IDs); err != nil {
+		if _, err := migrate.BuildStateFromTF(ctx, &b.Config, adapters, &stateDB, tfState.Attrs, tfState.IDs, false); err != nil {
 			return err
 		}
 
