@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildSSHServerSubmitRun(t *testing.T) {
@@ -18,7 +19,7 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 			ServerTimeout:      time.Hour,
 			EnvironmentVersion: 4,
 		}
-		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, opts)
+		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
 
 		// Usage policy flows onto the run and into the base params the server reads.
 		assert.Equal(t, "pol-1", got.BudgetPolicyId)
@@ -38,9 +39,24 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 			Accelerator:    "GPU_1xA10",
 			ServerTimeout:  time.Hour,
 		}
-		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, opts)
+		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
 
 		assert.Equal(t, compute.HardwareAcceleratorType("GPU_1xA10"), got.Tasks[0].Compute.HardwareAccelerator)
+	})
+
+	t.Run("serverless with base environment", func(t *testing.T) {
+		opts := ClientOptions{
+			ConnectionName:     "conn",
+			ServerTimeout:      time.Hour,
+			EnvironmentVersion: 4,
+			BaseEnvironment:    "my-env",
+		}
+		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "workspace-base-environments/dbe_123", opts)
+
+		// A resolved base environment carries its own version, so environment_version is not set.
+		require.Len(t, got.Environments, 1)
+		assert.Equal(t, "workspace-base-environments/dbe_123", got.Environments[0].Spec.BaseEnvironment)
+		assert.Empty(t, got.Environments[0].Spec.EnvironmentVersion)
 	})
 
 	t.Run("dedicated cluster", func(t *testing.T) {
@@ -48,7 +64,7 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 			ClusterID:     "abc-123",
 			ServerTimeout: time.Hour,
 		}
-		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, opts)
+		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
 
 		// Usage policy is serverless-only; a dedicated run carries none and targets the cluster.
 		assert.Empty(t, got.BudgetPolicyId)

@@ -585,7 +585,7 @@ func fetchServerErrorLogs(ctx context.Context, client *databricks.WorkspaceClien
 
 // Assemble the SubmitRun request that bootstraps the SSH server.
 // Extracted from submitSSHTunnelJob so this logic can be unit tested.
-func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath string, opts ClientOptions) jobs.SubmitRun {
+func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvironment string, opts ClientOptions) jobs.SubmitRun {
 	sessionID := opts.SessionIdentifier()
 
 	baseParams := map[string]string{
@@ -632,11 +632,7 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath string, o
 		// base_environment and environment_version are mutually exclusive: a custom
 		// base environment carries its own version, so we don't also set one.
 		var spec compute.Environment
-		if opts.BaseEnvironment != "" {
-			baseEnvironment, err := resolveBaseEnvironment(ctx, client, opts.BaseEnvironment)
-			if err != nil {
-				return 0, err
-			}
+		if baseEnvironment != "" {
 			spec.BaseEnvironment = baseEnvironment
 		} else {
 			spec.EnvironmentVersion = strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion))
@@ -687,7 +683,15 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		log.Infof(ctx, "Using accelerator: %s", opts.Accelerator)
 	}
 
-	submitRequest := buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, opts)
+	var baseEnvironment string
+	if opts.IsServerlessMode() && opts.BaseEnvironment != "" {
+		baseEnvironment, err = resolveBaseEnvironment(ctx, client, opts.BaseEnvironment)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	submitRequest := buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvironment, opts)
 
 	waiter, err := client.Jobs.Submit(ctx, submitRequest)
 	if err != nil {
