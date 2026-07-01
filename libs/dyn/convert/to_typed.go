@@ -75,9 +75,6 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 
 		info := getStructInfo(dst.Type())
 
-		forceSendFieldLocations := getForceSendFieldsValues(dst)
-		forceSendFieldsMap := make(map[string][]string)
-
 		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
 			pv := pair.Value
@@ -90,20 +87,7 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 				continue
 			}
 
-			// Create intermediate structs embedded as pointer types.
-			// Code inspired by [reflect.FieldByIndex] implementation.
-			f := dst
-			for i, x := range index {
-				if i > 0 {
-					if f.Kind() == reflect.Pointer {
-						if f.IsNil() {
-							f.Set(reflect.New(f.Type().Elem()))
-						}
-						f = f.Elem()
-					}
-				}
-				f = f.Field(x)
-			}
+			f := fieldByIndexAlloc(dst, index)
 
 			err := ToTyped(f.Addr().Interface(), pv)
 			if err != nil {
@@ -111,17 +95,14 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 			}
 
 			if pv.IsZero() {
-				// The field's zero value must still serialize, so record its Go name
-				// in the ForceSendFields of the struct that declares it.
-				structKey := info.ForceSendFieldsStructKey[jsonKey]
-				forceSendFieldsMap[structKey] = append(forceSendFieldsMap[structKey], info.GolangNames[jsonKey])
-			}
-		}
-
-		// Set ForceSendFields using precalculated locations
-		for structKey, fields := range forceSendFieldsMap {
-			if forceSendFieldLocation, exists := forceSendFieldLocations[structKey]; exists {
-				forceSendFieldLocation.Set(reflect.ValueOf(fields))
+				// The field's zero value must still serialize, so append its Go name
+				// to the ForceSendFields of the struct that declares it. That struct
+				// shares a prefix with the field's index path, so it is already
+				// allocated by the walk above.
+				if fsfIndex, ok := info.ForceSendFieldsIndex[jsonKey]; ok {
+					fsf := fieldByIndexAlloc(dst, fsfIndex)
+					fsf.Set(reflect.Append(fsf, reflect.ValueOf(info.GolangNames[jsonKey])))
+				}
 			}
 		}
 
@@ -149,6 +130,24 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 		value: src,
 		msg:   fmt.Sprintf("expected a map, found a %s", src.Kind()),
 	}
+}
+
+// fieldByIndexAlloc resolves the value at the given index path within an addressable
+// struct, allocating intermediate structs embedded as pointer types along the way.
+// Code inspired by [reflect.FieldByIndex] implementation.
+func fieldByIndexAlloc(v reflect.Value, index []int) reflect.Value {
+	for i, x := range index {
+		if i > 0 {
+			if v.Kind() == reflect.Pointer {
+				if v.IsNil() {
+					v.Set(reflect.New(v.Type().Elem()))
+				}
+				v = v.Elem()
+			}
+		}
+		v = v.Field(x)
+	}
+	return v
 }
 
 func toTypedMap(dst reflect.Value, src dyn.Value) error {
