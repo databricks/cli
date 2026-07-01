@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -133,8 +134,7 @@ func newCancelCommand() *cobra.Command {
 			if err != nil {
 				data.Failed = append(data.Failed, cancelFailure{RunID: rid, Error: err.Error()})
 				if !jsonOut {
-					// Returned when the run ID is unknown to the user.
-					if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+					if runNotFound(err) {
 						cmdio.LogString(ctx, fmt.Sprintf("Run %s not found. Please check the run ID and ensure you're using a Job Run ID.", rid))
 					} else {
 						cmdio.LogString(ctx, fmt.Sprintf("Failed to cancel run %s: %s", rid, err))
@@ -170,6 +170,20 @@ func newCancelCommand() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// runNotFound reports whether err means the run does not exist. The cancel
+// endpoint returns 400 INVALID_PARAMETER_VALUE ("Run <id> does not exist") for
+// an unknown run, and the SDK only remaps that to ErrResourceDoesNotExist for
+// the runs/get path, not cancel — so we also detect the raw code here.
+func runNotFound(err error) bool {
+	if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		return true
+	}
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
+		return apiErr.StatusCode == http.StatusBadRequest && apiErr.ErrorCode == "INVALID_PARAMETER_VALUE"
+	}
+	return false
 }
 
 // cancelRun requests cancellation of a single job run. The cancel is async, so

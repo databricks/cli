@@ -123,6 +123,19 @@ func TestCancelByIDNotFound(t *testing.T) {
 	assert.Contains(t, out, "1 run(s) failed to cancel.")
 }
 
+func TestCancelByIDNotFoundInvalidParam(t *testing.T) {
+	// The cancel endpoint reports an unknown run as 400 INVALID_PARAMETER_VALUE,
+	// which the SDK does not remap to ErrResourceDoesNotExist for this path.
+	m := mocks.NewMockWorkspaceClient(t)
+	apiErr := &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "INVALID_PARAMETER_VALUE", Message: "Run 5 does not exist."}
+	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apiErr)
+
+	var buf bytes.Buffer
+	_, err := runCancel(t, m.WorkspaceClient, flags.OutputText, "", &buf, "5")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Contains(t, buf.String(), "Run 5 not found")
+}
+
 func TestCancelPartialFailureJSON(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 123}).Return(nil, nil)
