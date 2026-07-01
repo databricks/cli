@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -9,6 +10,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -63,6 +66,22 @@ Sweep Tasks:
 {{- end}}
 `
 
+// errNoProfile is the actionable message shown when no credentials are
+// configured: no default profile, no --profile (-p), and no auth environment.
+var errNoProfile = errors.New("no default profile is set: pass --profile (-p) or configure a default profile in your .databrickscfg")
+
+// authError converts a workspace-client or authentication failure into an air
+// error envelope with an actionable message: a missing-profile hint when no
+// credentials are configured, otherwise "authentication was not successful".
+// Both are permanent (not retryable).
+func authError(ctx context.Context, cmd *cobra.Command, err error) error {
+	if errors.Is(err, config.ErrCannotConfigureDefault) {
+		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false, errNoProfile)
+	}
+	return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false,
+		fmt.Errorf("authentication was not successful: %w", err))
+}
+
 // newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
 // configuration, and timing details for a specific run.
 func newGetCommand() *cobra.Command {
@@ -75,14 +94,16 @@ func newGetCommand() *cobra.Command {
 		},
 	}
 
-	// Match Python: a client/auth failure is a JSON error envelope in -o json mode,
-	// not a bare error. ErrAlreadyPrinted passes through (it was handled upstream).
+	// Resolve and authenticate the workspace client up front so an auth failure
+	// fails fast here, before any run status or config is fetched or printed.
+	// ErrAlreadyPrinted passes through (it was handled upstream); other failures
+	// become an actionable auth error (JSON envelope in -o json mode).
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		err := root.MustWorkspaceClient(cmd, args)
 		if err == nil || errors.Is(err, root.ErrAlreadyPrinted) {
 			return err
 		}
-		return renderError(cmd.Context(), cmd, "INTERNAL_ERROR", "TRANSIENT", true, err)
+		return authError(cmd.Context(), cmd, err)
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -93,6 +114,15 @@ func newGetCommand() *cobra.Command {
 		if err != nil || runID <= 0 {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
+		}
+
+		// Validate authentication against the workspace before fetching or
+		// rendering anything. MustWorkspaceClient's Config.Authenticate only
+		// attaches credentials (e.g. it does not check a PAT server-side), so
+		// without this a bad credential would surface as a confusing failure
+		// mid-render instead of a clear "not authenticated" error here.
+		if _, err := w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+			return authError(ctx, cmd, err)
 		}
 
 		run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})

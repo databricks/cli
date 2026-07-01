@@ -3,6 +3,7 @@ package aircmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"testing"
 	"text/template"
 
@@ -11,12 +12,20 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+// expectAuthSuccess stubs CurrentUser.Me so the command's up-front auth check
+// passes and the test can exercise the run-fetch path.
+func expectAuthSuccess(m *mocks.MockWorkspaceClient) {
+	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "u@example.com"}, nil)
+}
 
 // renderGet renders the get template against the JSON envelope, exactly as the
 // command does for a sweep run, so the test covers the real template branches.
@@ -55,6 +64,7 @@ func TestGetRunInvalidID(t *testing.T) {
 
 func TestGetRunNotFound(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
+	expectAuthSuccess(m)
 	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 5}).Return(
 		nil, apierr.ErrResourceDoesNotExist)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
@@ -66,9 +76,40 @@ func TestGetRunNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "run 5 not found")
 }
 
+func TestGetRunAuthFailed(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	// Auth is validated before the run is fetched, so GetRun is never reached
+	// (no GetRun expectation is set) and nothing is rendered.
+	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, errors.New("403 Forbidden"))
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	cmd := withOutput(newGetCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, []string{"5"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "authentication was not successful")
+}
+
+func TestAuthError(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := withOutput(newGetCommand(), flags.OutputText)
+
+	// No configurable credentials maps to the missing-profile hint.
+	noProfile := authError(ctx, cmd, config.ErrCannotConfigureDefault)
+	require.Error(t, noProfile)
+	assert.Contains(t, noProfile.Error(), "no default profile is set")
+
+	// Any other failure maps to the generic auth message, preserving the cause.
+	other := authError(ctx, cmd, errors.New("token expired"))
+	require.Error(t, other)
+	assert.Contains(t, other.Error(), "authentication was not successful")
+	assert.Contains(t, other.Error(), "token expired")
+}
+
 func TestGetRunNotFoundJSON(t *testing.T) {
 	var buf bytes.Buffer
 	m := mocks.NewMockWorkspaceClient(t)
+	expectAuthSuccess(m)
 	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 5}).Return(
 		nil, apierr.ErrResourceDoesNotExist)
 	ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
