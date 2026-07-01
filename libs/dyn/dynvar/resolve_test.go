@@ -39,6 +39,37 @@ func TestResolveNotFound(t *testing.T) {
 	require.ErrorContains(t, err, `reference does not exist: ${a}`)
 }
 
+func TestResolveNotFoundWithSuggestFn(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"alpha": dyn.V("hello"),
+		"b":     dyn.V("${alph}"),
+	})
+
+	suggest := func(key string) string {
+		if key == "alph" {
+			return "alpha"
+		}
+		return ""
+	}
+
+	_, err := dynvar.Resolve(in, dynvar.DefaultLookup(in), dynvar.WithSuggestFn(suggest))
+	require.ErrorContains(t, err, `reference does not exist: ${alph}. Did you mean ${alpha}?`)
+}
+
+func TestResolveNotFoundSuggestFnReturnsEmpty(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"b": dyn.V("${zzzzz}"),
+	})
+
+	suggest := func(key string) string {
+		return ""
+	}
+
+	_, err := dynvar.Resolve(in, dynvar.DefaultLookup(in), dynvar.WithSuggestFn(suggest))
+	require.ErrorContains(t, err, `reference does not exist: ${zzzzz}`)
+	assert.NotContains(t, err.Error(), "Did you mean")
+}
+
 func TestResolveWithNesting(t *testing.T) {
 	in := dyn.V(map[string]dyn.Value{
 		"a": dyn.V("${f.a}"),
