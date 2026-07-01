@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -10,11 +11,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	sdkclient "github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"golang.org/x/net/http2"
 )
 
@@ -26,16 +32,58 @@ func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClien
 		return fmt.Errorf("failed to get versioned directory: %w", err)
 	}
 
-	workspaceFiler, err := filer.NewWorkspaceFilesClient(client, versionedDir)
+	// Upload the CLI bundle over HTTP/1.1. It is a single ~14 MB POST, so HTTP/2
+	// buys us nothing, and some corporate proxies reset large HTTP/2 request bodies
+	// with RST_STREAM(NO_ERROR), which aborts the upload (see DECO-27497). Forcing
+	// HTTP/1.1 only for this client keeps the rest of the connect flow on HTTP/2.
+	uploadClient, err := newHTTP11Client(client.Config)
 	if err != nil {
-		return fmt.Errorf("failed to create workspace files client: %w", err)
+		return fmt.Errorf("failed to create upload client: %w", err)
 	}
+	workspaceFiler := filer.NewWorkspaceFilesClientWithClient(client, versionedDir, uploadClient)
 
 	getRelease := getGithubRelease
 	if releasesDir != "" {
 		getRelease = getLocalRelease
 	}
 	return uploadReleases(ctx, workspaceFiler, getRelease, version, releasesDir)
+}
+
+// newHTTP11Client returns an SDK client derived from cfg that negotiates HTTP/1.1
+// only. cfg is reused, not copied (it embeds a sync.Mutex); only the transport is
+// overridden, mirroring how client.New builds its client from the same config.
+func newHTTP11Client(cfg *config.Config) (*sdkclient.DatabricksClient, error) {
+	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	clientCfg.Transport = newHTTP11Transport(cfg)
+	return sdkclient.NewWithClient(cfg, httpclient.NewApiClient(clientCfg))
+}
+
+// newHTTP11Transport clones cfg's transport (or the default) and disables HTTP/2.
+// A non-nil, empty TLSNextProto map is the documented way to turn off the transport's
+// automatic HTTP/2 support. See https://pkg.go.dev/net/http#Transport
+func newHTTP11Transport(cfg *config.Config) *http.Transport {
+	t, ok := cfg.HTTPTransport.(*http.Transport)
+	if ok && t != nil {
+		t = t.Clone()
+	} else {
+		t = http.DefaultTransport.(*http.Transport).Clone()
+	}
+	t.ForceAttemptHTTP2 = false
+	t.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+	// Cloning http.DefaultTransport drops the InsecureSkipVerify the SDK would
+	// otherwise apply, so re-apply it here to honor the resolved config.
+	if cfg.InsecureSkipVerify {
+		if t.TLSClientConfig == nil {
+			t.TLSClientConfig = &tls.Config{}
+		} else {
+			t.TLSClientConfig = t.TLSClientConfig.Clone()
+		}
+		t.TLSClientConfig.InsecureSkipVerify = true
+	}
+	return t
 }
 
 func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease releaseProvider, version, releasesDir string) error {
@@ -66,12 +114,13 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 		// producing the filerRoot/remoteSubFolder/*archive-contents* structure, with 'databricks' binary inside.
 		err = workspaceFiler.Write(ctx, remoteArchivePath, releaseReader, filer.OverwriteIfExists, filer.CreateParentDirectories)
 		if err != nil {
-			if isStreamResetError(err) {
+			if isProxyUploadError(err) {
 				return fmt.Errorf("failed to upload file %s to workspace: %w\n\n"+
-					"The connection was closed before the upload finished. "+
-					"This is usually caused by a network intermediary (corporate egress proxy, VPN, or firewall/WAF) "+
+					"The upload was rejected before it finished. The CLI already sends this upload over HTTP/1.1, "+
+					"so this is most likely a network intermediary (corporate egress proxy, VPN, or firewall/WAF) "+
 					"enforcing a request-body size limit on POSTs to *.cloud.databricks.com. "+
-					"Try running this command from a network without such restrictions",
+					"Ask your network administrator to allow large uploads to that path, "+
+					"or run this command from a network without such restrictions",
 					remoteArchivePath, err)
 			}
 			return fmt.Errorf("failed to upload file %s to workspace: %w", remoteArchivePath, err)
@@ -82,12 +131,21 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 	return nil
 }
 
-// isStreamResetError reports whether err looks like an HTTP/2 stream reset from
-// the server, which typically means an edge proxy or the workspace-files import
-// endpoint rejected the request body (e.g. body-size limit). The string fallback
-// catches cases where a transport layer re-formats the http2 error before it
-// reaches us, losing the typed value but preserving the message shape.
-func isStreamResetError(err error) bool {
+// isProxyUploadError reports whether err looks like the binary upload was rejected
+// or severed by a network intermediary (corporate proxy / VPN / firewall / WAF)
+// rather than by Databricks — typically an enforced request-body size limit. Because
+// the upload runs over HTTP/1.1 (see newHTTP11Transport), the usual signatures are a
+// 413 response or a connection reset mid-body. The HTTP/2 stream-reset checks are
+// kept as a guard in case the upload ever runs over HTTP/2 again; that error reaches
+// us either as a typed http2.StreamError or, when a transport layer re-formats it,
+// as a string that still preserves the "stream error ... stream ID" shape.
+func isProxyUploadError(err error) bool {
+	if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
+		return aerr.StatusCode == http.StatusRequestEntityTooLarge
+	}
+	if errors.Is(err, syscall.ECONNRESET) {
+		return true
+	}
 	if _, ok := errors.AsType[http2.StreamError](err); ok {
 		return true
 	}

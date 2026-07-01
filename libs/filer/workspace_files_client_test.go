@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
@@ -180,4 +181,16 @@ func TestWorkspaceFilesClientStatInternalError(t *testing.T) {
 func TestWorkspaceFilesClientStatNotFound(t *testing.T) {
 	err := statWithError(t, 404, "RESOURCE_DOES_NOT_EXIST")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestNewWorkspaceFilesClientWithClient(t *testing.T) {
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: "https://x.test", Token: "x"})
+	require.NoError(t, err)
+	apiClient, err := client.New(w.Config)
+	require.NoError(t, err)
+
+	f := NewWorkspaceFilesClientWithClient(w, "/Workspace/Users/me", apiClient)
+	wfc, ok := f.(*WorkspaceFilesClient)
+	require.True(t, ok)
+	assert.Same(t, apiClient, wfc.apiClient)
 }
