@@ -1,0 +1,10 @@
+bundle:
+  name: dms-destroy-declined
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    foo:
+      name: foo

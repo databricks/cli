@@ -1,0 +1,5 @@
+# Deployment Metadata Service (DMS) recording is only meaningful in the direct
+# engine, where the deployment ID is derived from the state lineage.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+RecordRequests = true
