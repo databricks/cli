@@ -25,7 +25,7 @@ func testListRows() []listRow {
 func testListModel() listModel {
 	r := lipgloss.NewRenderer(io.Discard)
 	r.SetColorProfile(termenv.Ascii)
-	return newListModel(r, testListRows(), false)
+	return newListModel(r, nil, testListRows(), false)
 }
 
 func key(t *testing.T, m listModel, s string) listModel {
@@ -69,7 +69,7 @@ func TestListModelPageCap(t *testing.T) {
 	}
 	r := lipgloss.NewRenderer(io.Discard)
 	r.SetColorProfile(termenv.Ascii)
-	m := newListModel(r, rows, false)
+	m := newListModel(r, nil, rows, false)
 
 	// A tall terminal still shows at most listPageRows per page.
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 100})
@@ -83,7 +83,7 @@ func TestListModelPaging(t *testing.T) {
 	}
 	r := lipgloss.NewRenderer(io.Discard)
 	r.SetColorProfile(termenv.Ascii)
-	m := newListModel(r, rows, false)
+	m := newListModel(r, nil, rows, false)
 
 	// Height 7 leaves a 4-row window (header + hint reserved).
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 7})

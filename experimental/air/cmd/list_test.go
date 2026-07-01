@@ -66,10 +66,9 @@ func TestListAirRunsFiltersUserAndType(t *testing.T) {
 	}
 	srv := runsServer(t, runsListBody(t, "", runs...))
 
-	rows, err := listAirRuns(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
 		userFilter: "me@example.com",
-		limit:      10,
-	})
+	}).next(10)
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
 	assert.Equal(t, "1", rows[0].RunID)
@@ -83,10 +82,9 @@ func TestListAirRunsExperimentFilter(t *testing.T) {
 	}
 	srv := runsServer(t, runsListBody(t, "", runs...))
 
-	rows, err := listAirRuns(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
-		limit:   10,
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
 		filters: listFilters{Experiment: "qwen*"},
-	})
+	}).next(10)
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
 	assert.Equal(t, "1", rows[0].RunID)
@@ -100,7 +98,7 @@ func TestListAirRunsLimitTruncates(t *testing.T) {
 	}
 	srv := runsServer(t, runsListBody(t, "", runs...))
 
-	rows, err := listAirRuns(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{limit: 2})
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{}).next(2)
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
 	assert.Equal(t, "1", rows[0].RunID)
@@ -112,11 +110,40 @@ func TestListAirRunsPaginates(t *testing.T) {
 	page2 := runsListBody(t, "", airJobRun(2, "me@example.com", "GPU_1xH100", 1, "exp-b"))
 	srv := runsServer(t, page1, page2)
 
-	rows, err := listAirRuns(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{limit: 10})
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{}).next(10)
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
 	assert.Equal(t, "1", rows[0].RunID)
 	assert.Equal(t, "2", rows[1].RunID)
+}
+
+// TestRunFetcherResumesAcrossCalls covers the lazy paging the interactive table
+// relies on: a next() that stops mid-page must buffer the rest and hand it back on
+// the following call, then report exhaustion — without re-fetching.
+func TestRunFetcherResumesAcrossCalls(t *testing.T) {
+	runs := []jobRun{
+		airJobRun(1, "me@example.com", "GPU_1xH100", 1, "exp-a"),
+		airJobRun(2, "me@example.com", "GPU_1xH100", 1, "exp-b"),
+		airJobRun(3, "me@example.com", "GPU_1xH100", 1, "exp-c"),
+	}
+	srv := runsServer(t, runsListBody(t, "", runs...))
+	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{})
+
+	first, err := f.next(2)
+	require.NoError(t, err)
+	require.Len(t, first, 2)
+	assert.Equal(t, "1", first[0].RunID)
+	assert.Equal(t, "2", first[1].RunID)
+
+	second, err := f.next(2)
+	require.NoError(t, err)
+	require.Len(t, second, 1) // only the buffered leftover remains
+	assert.Equal(t, "3", second[0].RunID)
+	assert.True(t, f.exhausted)
+
+	third, err := f.next(2)
+	require.NoError(t, err)
+	assert.Empty(t, third)
 }
 
 // TestFetchJobRunsParsesAiRuntimeTask pins the raw parse against the real

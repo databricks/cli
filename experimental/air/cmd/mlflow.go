@@ -12,8 +12,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// getRunOutputResponse is the slice of the jobs runs/get-output response we care
-// about. The MLflow identifiers live under ai_runtime_task_output (current) or
+// getRunOutputResponse is the part of the jobs runs/get-output response we use.
+// The MLflow identifiers live under ai_runtime_task_output (current) or
 // gen_ai_compute_output.run_info (legacy), neither modeled by the typed SDK, so
 // we call the endpoint directly and parse just these fields.
 type getRunOutputResponse struct {
