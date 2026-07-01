@@ -38,7 +38,7 @@ type jobTask struct {
 	RunID            int64             `json:"run_id"`
 	StartTime        int64             `json:"start_time"`
 	EndTime          int64             `json:"end_time"`
-	AiRuntimeTask    *aiRuntimeTask    `json:"ai_runtime_task"`
+	AiRuntimeTask    *jobAiRuntimeTask `json:"ai_runtime_task"`
 	GenAiComputeTask *genAiComputeTask `json:"gen_ai_compute_task"`
 	ForEachTask      *forEachTask      `json:"for_each_task"`
 }
@@ -47,9 +47,9 @@ type forEachTask struct {
 	Task jobTask `json:"task"`
 }
 
-// aiRuntimeTask is the current AI runtime task shape; deployments[0].compute
+// jobAiRuntimeTask is the current AI runtime task shape; deployments[0].compute
 // carries the accelerator info.
-type aiRuntimeTask struct {
+type jobAiRuntimeTask struct {
 	Experiment  string            `json:"experiment"`
 	Deployments []aiRuntimeDeploy `json:"deployments"`
 }
@@ -77,7 +77,7 @@ type genAiCompute struct {
 
 // airTask returns the run's AI runtime / legacy GenAI task, unwrapping a foreach
 // sweep when present.
-func (r *jobRun) airTask() (*aiRuntimeTask, *genAiComputeTask) {
+func (r *jobRun) airTask() (*jobAiRuntimeTask, *genAiComputeTask) {
 	if len(r.Tasks) == 0 {
 		return nil, nil
 	}

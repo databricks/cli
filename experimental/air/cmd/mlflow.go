@@ -88,33 +88,16 @@ func mlflowLogsURL(host string, ids *mlflowIdentifiers) string {
 		strings.TrimRight(host, "/"), ids.ExperimentID, ids.RunID)
 }
 
-// mlflowExperimentURL links to the MLflow experiment page; mlflowRunURL links to
-// the run page. These back the Experiment and MLflow Run hyperlinks in text mode.
-func mlflowExperimentURL(host string, ids *mlflowIdentifiers) string {
-	return fmt.Sprintf("%s/ml/experiments/%s", strings.TrimRight(host, "/"), ids.ExperimentID)
-}
-
+// mlflowRunURL links to the MLflow run page; it backs the MLflow Run hyperlink
+// in the single-run view.
 func mlflowRunURL(host string, ids *mlflowIdentifiers) string {
 	return fmt.Sprintf("%s/ml/experiments/%s/runs/%s",
 		strings.TrimRight(host, "/"), ids.ExperimentID, ids.RunID)
 }
 
-// mlflowRunLabel returns the MLflow run's human-readable name to use as the
-// hyperlink text, falling back to "...{last 8 of run id}" when the name can't be
-// fetched. Mirrors Python's _get_mlflow_run_name (cli_display.py).
-func mlflowRunLabel(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string) string {
-	if name := fetchMLflowRunName(ctx, w, mlflowRunID); name != "" {
-		return name
-	}
-	if len(mlflowRunID) > 8 {
-		return "..." + mlflowRunID[len(mlflowRunID)-8:]
-	}
-	return "..." + mlflowRunID
-}
-
 // fetchMLflowRunName fetches a run's MLflow run_name via the MLflow REST API,
-// returning "" if it can't be obtained. Best-effort, like the rest of the
-// MLflow enrichment.
+// returning "" if it can't be obtained. Best-effort, like the rest of the MLflow
+// enrichment.
 func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string) string {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -135,4 +118,17 @@ func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 		return ""
 	}
 	return out.Run.Info.RunName
+}
+
+// mlflowRunLabel is the text shown for the MLflow Run cell: the run's name, or
+// "...{last 8 of run id}" when the name is unknown. Mirrors Python's
+// _get_mlflow_run_name (cli_display.py).
+func mlflowRunLabel(name, mlflowRunID string) string {
+	if name != "" {
+		return name
+	}
+	if len(mlflowRunID) > 8 {
+		return "..." + mlflowRunID[len(mlflowRunID)-8:]
+	}
+	return "..." + mlflowRunID
 }

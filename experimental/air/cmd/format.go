@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -287,4 +288,30 @@ func gpuDisplayName(gpuType string) string {
 		return name
 	}
 	return gpuType
+}
+
+// environment returns the run's runtime image (the training environment), or an
+// empty string if the run has no GenAI-compute task.
+func environment(run *jobs.Run) string {
+	if len(run.Tasks) == 0 {
+		return ""
+	}
+	task := run.Tasks[0].GenAiComputeTask
+	if task == nil {
+		return ""
+	}
+	return task.DlRuntimeImage
+}
+
+// maxRetries returns the configured retry limit for the run's latest task as a
+// display string: "unlimited" for the backend's -1, otherwise the count.
+func maxRetries(run *jobs.Run) string {
+	if len(run.Tasks) == 0 {
+		return "0"
+	}
+	n := run.Tasks[len(run.Tasks)-1].MaxRetries
+	if n < 0 {
+		return "unlimited"
+	}
+	return strconv.Itoa(n)
 }

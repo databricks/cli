@@ -1,8 +1,5 @@
 # Each stub must fail with "not implemented"; errcode records the exit code.
 
-title "run"
-errcode trace $CLI experimental air run
-
 title "logs"
 errcode trace $CLI experimental air logs 123
 

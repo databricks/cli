@@ -1,20 +1,41 @@
 
 === get (text)
->>> [CLI] experimental air get run 123
-Job Link: [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
+>>> [CLI] experimental air get 123
 
-Run ID:       123
-Status:       SUCCESS
-Submitted:    2023-11-14 22:13 UTC
-Retries:      0
-Duration:     12s
-Experiment:   my-exp
-MLflow Run:   my-run
-User:         user@example.com
-Accelerators: 8x H100
+╭─ Configuration ────────────────────────────────────────────────╮
+│                                                                │
+│  experiment_name: my-exp                                       │
+│  compute:                                                      │
+│    accelerator_type: a10                                       │
+│    num_accelerators: 1                                         │
+│  command: |                                                    │
+│    for i in $(seq 1 10); do                                    │
+│      echo "step $i"                                            │
+│    done                                                        │
+│                                                                │
+╰────────────────────────────────────────────────────────────────╯
+
+╭─ Metadata ─────────────────────────────────────────────────────╮
+│                                                                │
+│  Run ID        123                                             │
+│  Status        ● SUCCESS                                       │
+│  Submitted     2023-11-14 22:13 UTC                            │
+│  Retries       0                                               │
+│  Max Retries   3                                               │
+│  Duration      12s                                             │
+│  Experiment    my-exp                                          │
+│  MLflow Run    my-run                                          │
+│  User          user@example.com                                │
+│  Accelerators  1x A10                                          │
+│  Environment   ml-runtime-gpu:1.0                              │
+│                                                                │
+╰────────────────────────────────────────────────────────────────╯
+
+Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
+MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 
 === get (json)
->>> [CLI] experimental air get run 123 -o json
+>>> [CLI] experimental air get 123 -o json
 {
   "v": 1,
   "ts": "[TIMESTAMP]",
@@ -31,13 +52,13 @@ Accelerators: 8x H100
 }
 
 === invalid run id
->>> [CLI] experimental air get run notanumber
+>>> [CLI] experimental air get notanumber
 Error: invalid JOB_RUN_ID "notanumber": must be a positive integer
 
 Exit code: 1
 
 === invalid run id (json)
->>> [CLI] experimental air get run notanumber -o json
+>>> [CLI] experimental air get notanumber -o json
 {
   "v": 1,
   "ts": "[TIMESTAMP]",

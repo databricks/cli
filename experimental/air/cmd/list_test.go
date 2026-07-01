@@ -22,7 +22,7 @@ func airJobRun(id int64, user, accelType string, count int, experiment string) j
 		RunName:         "run-" + strconv.FormatInt(id, 10),
 		CreatorUserName: user,
 		State:           jobState{LifeCycleState: "RUNNING"},
-		Tasks: []jobTask{{AiRuntimeTask: &aiRuntimeTask{
+		Tasks: []jobTask{{AiRuntimeTask: &jobAiRuntimeTask{
 			Experiment: experiment,
 			Deployments: []aiRuntimeDeploy{{
 				Compute: airCompute{AcceleratorType: accelType, AcceleratorCount: count},
@@ -187,7 +187,7 @@ func TestBuildListRowDashFallbacks(t *testing.T) {
 
 func TestBuildListRowSweep(t *testing.T) {
 	run := jobRun{RunID: 9, Tasks: []jobTask{{
-		ForEachTask: &forEachTask{Task: jobTask{AiRuntimeTask: &aiRuntimeTask{Experiment: "sweep"}}},
+		ForEachTask: &forEachTask{Task: jobTask{AiRuntimeTask: &jobAiRuntimeTask{Experiment: "sweep"}}},
 	}}}
 	assert.True(t, buildListRow(&run).IsSweep)
 	assert.Equal(t, "sweep", buildListRow(&run).Experiment)

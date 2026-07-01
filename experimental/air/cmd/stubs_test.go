@@ -13,7 +13,6 @@ import (
 // fails with a "not implemented" error. Drop a command here once it lands.
 func TestStubCommandsReturnNotImplemented(t *testing.T) {
 	stubs := map[string]*cobra.Command{
-		"run":            newRunCommand(),
 		"logs":           newLogsCommand(),
 		"cancel":         newCancelCommand(),
 		"register-image": newRegisterImageCommand(),

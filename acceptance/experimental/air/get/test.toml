@@ -24,9 +24,12 @@ Response.Body = '''
       "task_key": "train",
       "run_id": 456,
       "attempt_number": 0,
+      "max_retries": 3,
       "gen_ai_compute_task": {
         "mlflow_experiment_name": "/Users/user@example.com/my-exp",
-        "compute": {"gpu_type": "GPU_8xH100", "num_gpus": 8}
+        "compute": {"gpu_type": "GPU_1xA10", "num_gpus": 1},
+        "dl_runtime_image": "ml-runtime-gpu:1.0",
+        "yaml_parameters": "experiment_name: my-exp\ncompute:\n  accelerator_type: a10\n  num_accelerators: 1\ncommand: |\n  for i in $(seq 1 10); do\n    echo \"step $i\"\n  done\n"
       }
     }
   ]

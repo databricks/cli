@@ -109,30 +109,40 @@ func TestMLflowURLs(t *testing.T) {
 	ids := &mlflowIdentifiers{ExperimentID: "E1", RunID: "R1"}
 	// A trailing slash on the host must not produce a double slash in the link.
 	assert.Equal(t, "https://h.test/ml/experiments/E1/runs/R1/artifacts/logs/node_0", mlflowLogsURL("https://h.test/", ids))
-	assert.Equal(t, "https://h.test/ml/experiments/E1", mlflowExperimentURL("https://h.test", ids))
 	assert.Equal(t, "https://h.test/ml/experiments/E1/runs/R1", mlflowRunURL("https://h.test", ids))
 }
 
 func TestMLflowRunLabel(t *testing.T) {
+	// Uses the run name when it is known.
+	assert.Equal(t, "sunny-cat-42", mlflowRunLabel("sunny-cat-42", "0123456789abcdef"))
+	// Falls back to the last 8 characters of a long run id.
+	assert.Equal(t, "...9abcdef0", mlflowRunLabel("", "0123456789abcdef0"))
+	// A short run id is shown in full behind the ellipsis.
+	assert.Equal(t, "...short", mlflowRunLabel("", "short"))
+}
+
+func TestFetchMLflowRunName(t *testing.T) {
 	ctx := t.Context()
 
-	t.Run("uses the run name when available", func(t *testing.T) {
+	mlflowServer := func(body string) *httptest.Server {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/2.0/mlflow/runs/get" {
-				_, _ = w.Write([]byte(`{"run":{"info":{"run_name":"sunny-cat-42"}}}`))
+				_, _ = w.Write([]byte(body))
 				return
 			}
 			_, _ = w.Write([]byte(`{}`))
 		}))
 		t.Cleanup(srv.Close)
-		assert.Equal(t, "sunny-cat-42", mlflowRunLabel(ctx, newTestWorkspaceClient(t, srv.URL), "0123456789abcdef"))
+		return srv
+	}
+
+	t.Run("returns the run name", func(t *testing.T) {
+		srv := mlflowServer(`{"run":{"info":{"run_name":"sunny-cat-42"}}}`)
+		assert.Equal(t, "sunny-cat-42", fetchMLflowRunName(ctx, newTestWorkspaceClient(t, srv.URL), "run1"))
 	})
 
-	t.Run("falls back to the last 8 characters of the run id", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = w.Write([]byte(`{}`))
-		}))
-		t.Cleanup(srv.Close)
-		assert.Equal(t, "...9abcdef0", mlflowRunLabel(ctx, newTestWorkspaceClient(t, srv.URL), "0123456789abcdef0"))
+	t.Run("empty when the run cannot be fetched", func(t *testing.T) {
+		srv := mlflowServer(`{}`)
+		assert.Empty(t, fetchMLflowRunName(ctx, newTestWorkspaceClient(t, srv.URL), "run1"))
 	})
 }
