@@ -90,6 +90,34 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 	mustFinalize(t, &recovered)
 }
 
+func TestRecordFeaturePersists(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	// RecordFeature must run before the WAL is started (UpgradeToWrite), so the
+	// feature is captured and persisted.
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false)))
+	db.RecordFeature(featureDummy)
+	require.NoError(t, db.UpgradeToWrite())
+	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{"key": "val"}, nil))
+	mustFinalize(t, &db)
+
+	var db2 DeploymentState
+	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
+	assert.Equal(t, currentStateVersion, db2.Data.StateVersion)
+	assert.Equal(t, featureMinCLIVersion[featureDummy], db2.Data.Features[featureDummy])
+	mustFinalize(t, &db2)
+}
+
+func TestRecordFeaturePanicsAfterWALStarted(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	assert.Panics(t, func() { db.RecordFeature(featureDummy) })
+	mustFinalize(t, &db)
+}
+
 func TestDeleteState(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 

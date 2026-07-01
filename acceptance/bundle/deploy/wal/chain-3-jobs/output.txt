@@ -12,7 +12,7 @@ Exit code: [KILLED]
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
-  "state_version": 2
+  "state_version": 3
 }
 {
   "k": "resources.jobs.job_01",

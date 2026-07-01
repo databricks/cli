@@ -1,0 +1,10 @@
+{
+ "state_version": 3,
+ "features": {
+  "dummy": "1.2.0"
+ },
+ "cli_version": "0.0.0-dev",
+ "lineage": "test-lineage",
+ "serial": 1,
+ "state": {}
+}

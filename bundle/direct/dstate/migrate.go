@@ -39,6 +39,14 @@ func migrateState(db *Database) error {
 var migrations = map[int]func(*Database) error{
 	0: migrateV1ToV2,
 	1: migrateV1ToV2,
+	2: migrateV2ToV3,
+}
+
+// migrateV2ToV3 upgrades to the schema that carries the feature-flag list
+// (Header.Features). The list is optional and absent by default, so there is
+// nothing to transform.
+func migrateV2ToV3(db *Database) error {
+	return nil
 }
 
 // migrateV1ToV2 migrates permissions and grants entries from the old format

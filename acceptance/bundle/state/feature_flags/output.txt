@@ -1,0 +1,13 @@
+
+=== a state recording a known feature flag is accepted
+>>> [CLI] bundle plan
+create jobs.my_job
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== a state recording an unknown feature flag is rejected
+>>> errcode [CLI] bundle plan
+Error: the deployment state requires feature "future_feature" which this CLI ([DEV_VERSION]) does not support; upgrade to 9.9.9 or newer
+
+
+Exit code: 1
