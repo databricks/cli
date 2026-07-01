@@ -11,16 +11,22 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
-// maxListPages caps how many pages `air list runs` fetches (a safety bound);
-// listPageBatch is the per-request page size.
+// maxListScan bounds how many runs `air list` inspects while looking for AIR runs
+// that match the filters. runs/list returns runs of every kind, so this caps the
+// work on a workspace with a large run history.
+const maxListScan = 2000
+
+// jobsPageLimit is the per-request page size for runs/list; enrichConcurrency
+// bounds the parallel MLflow lookups.
 const (
-	maxListPages  = 50
-	listPageBatch = 100
+	jobsPageLimit     = 25
+	enrichConcurrency = 8
 )
 
-// listData is the payload printed by `air list runs`.
+// listData is the payload printed by `air list`.
 type listData struct {
 	Rows []listRow `json:"runs"`
 }
@@ -37,20 +43,28 @@ type listRow struct {
 	IsSweep   bool    `json:"is_sweep"`
 
 	// Experiment, Duration, MLflowURL and Accelerators are table-only columns,
-	// omitted from JSON to match `air list runs --json`.
+	// omitted from JSON to match `air list --json`.
 	Experiment   string `json:"-"`
 	Duration     string `json:"-"`
 	MLflowURL    string `json:"-"`
 	Accelerators string `json:"-"`
 }
 
+// listedRun pairs a row with its task run id, so the MLflow link can be fetched
+// after the run has been filtered in.
+type listedRun struct {
+	row       listRow
+	taskRunID int64
+}
+
 // listQuery holds the resolved inputs to listAirRuns.
 type listQuery struct {
-	activeOnly bool
-	allUsers   bool
-	userFilter string
-	filters    listFilters
-	limit      int
+	activeOnly  bool
+	allUsers    bool
+	userFilter  string
+	filters     listFilters
+	limit       int
+	fetchMLflow bool
 }
 
 func newListCommand() *cobra.Command {
@@ -88,8 +102,8 @@ func newListCommand() *cobra.Command {
 		}
 
 		// An explicit user= filter wins; otherwise default to the current user
-		// unless --all-users is set. The resolved name is sent to the server as
-		// creator_name, which scopes the listing.
+		// unless --all-users is set. runs/list has no creator param, so the
+		// creator is matched while scanning.
 		userFilter := f.User
 		if userFilter == "" && !allUsers {
 			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
@@ -100,11 +114,12 @@ func newListCommand() *cobra.Command {
 		}
 
 		rows, err := listAirRuns(ctx, w, listQuery{
-			activeOnly: active,
-			allUsers:   allUsers,
-			userFilter: userFilter,
-			filters:    f,
-			limit:      limit,
+			activeOnly:  active,
+			allUsers:    allUsers,
+			userFilter:  userFilter,
+			filters:     f,
+			limit:       limit,
+			fetchMLflow: root.OutputType(cmd) == flags.OutputText,
 		})
 		if err != nil {
 			return err
@@ -121,50 +136,86 @@ func newListCommand() *cobra.Command {
 	return cmd
 }
 
-// listAirRuns pages through ListTrainingWorkflows, applies the client-side
-// --filter keys, and accumulates matches up to q.limit (0 = all). It stops at the
-// limit, when the server runs out of pages, or at maxListPages.
+// listAirRuns pages through Jobs runs/list, keeps the AIR runs that match the
+// user and filters, and stops once it has enough matches or has scanned
+// maxListScan runs. Detail comes straight from runs/list (expand_tasks), so no
+// per-run calls are needed.
 func listAirRuns(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) ([]listRow, error) {
-	// Fetch in bounded batches and follow the page token, so "all" doesn't ask
-	// the server for an unbounded page. With client-side filters we fetch full
-	// batches, since most rows may be dropped before reaching the limit.
-	pageSize := q.limit
-	if pageSize <= 0 || pageSize > listPageBatch || q.filters.hasClientFilters() {
-		pageSize = listPageBatch
-	}
 	query := map[string]any{
-		"active_only":       q.activeOnly,
-		"include_all_users": q.allUsers,
-		"page_size":         pageSize,
+		"run_type":     "SUBMIT_RUN",
+		"expand_tasks": true,
+		"limit":        jobsPageLimit,
 	}
-	if q.userFilter != "" {
-		query["creator_name"] = q.userFilter
+	if q.activeOnly {
+		query["active_only"] = true
 	}
 
-	var rows []listRow
-	for range maxListPages {
-		resp, err := listTrainingWorkflows(ctx, w, query)
+	var entries []listedRun
+	scanned := 0
+	done := false
+	for !done && scanned < maxListScan {
+		resp, err := fetchJobRunsPage(ctx, w, query)
 		if err != nil {
 			return nil, err
 		}
 
-		for i := range resp.TrainingWorkflows {
-			wf := &resp.TrainingWorkflows[i]
-			if !q.filters.matches(wf) {
+		for i := range resp.Runs {
+			run := &resp.Runs[i]
+			scanned++
+
+			if !isAirRun(run) {
 				continue
 			}
-			rows = append(rows, buildListRow(wf, w.Config.Host))
-			if q.limit > 0 && len(rows) >= q.limit {
-				return rows, nil
+			if q.userFilter != "" && run.CreatorUserName != q.userFilter {
+				continue
+			}
+			if !q.filters.matches(run) {
+				continue
+			}
+
+			entries = append(entries, listedRun{row: buildListRow(run), taskRunID: taskRunID(run)})
+			if len(entries) >= q.limit {
+				done = true
+				break
 			}
 		}
 
-		if resp.NextPageToken == "" {
-			return rows, nil
+		if done || resp.NextPageToken == "" {
+			break
 		}
 		query["page_token"] = resp.NextPageToken
 	}
 
-	log.Warnf(ctx, "air list: stopped after %d pages; results may be incomplete", maxListPages)
+	if !done && scanned >= maxListScan {
+		log.Warnf(ctx, "air list: stopped after scanning %d runs; results may be incomplete", maxListScan)
+	}
+
+	// MLflow links appear only in the text table, so the per-run get-output
+	// lookups are skipped for JSON output (which omits the column anyway).
+	if q.fetchMLflow {
+		setMLflowLinks(ctx, w, entries)
+	}
+
+	rows := make([]listRow, len(entries))
+	for i, e := range entries {
+		rows[i] = e.row
+	}
 	return rows, nil
+}
+
+// setMLflowLinks fills in each row's MLflow link in parallel, best-effort: a row
+// whose IDs can't be resolved keeps its "-" placeholder.
+func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, entries []listedRun) {
+	var g errgroup.Group
+	g.SetLimit(enrichConcurrency)
+	for i := range entries {
+		g.Go(func() error {
+			if ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID); ids != nil {
+				entries[i].row.MLflowURL = mlflowLogsURL(w.Config.Host, ids)
+			}
+			return nil
+		})
+	}
+	// mlflowIDsForTask never returns an error (it logs and yields nil), so Wait can't fail.
+	_ = g.Wait()
 }

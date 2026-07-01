@@ -13,10 +13,14 @@ import (
 )
 
 // getRunOutputResponse is the slice of the jobs runs/get-output response we care
-// about. The MLflow identifiers live under a gen_ai_compute_output field that
-// the typed SDK does not model, so we call the endpoint directly and parse just
-// these fields.
+// about. The MLflow identifiers live under ai_runtime_task_output (current) or
+// gen_ai_compute_output.run_info (legacy), neither modeled by the typed SDK, so
+// we call the endpoint directly and parse just these fields.
 type getRunOutputResponse struct {
+	AiRuntimeTaskOutput *struct {
+		MlflowExperimentID string `json:"mlflow_experiment_id"`
+		MlflowRunID        string `json:"mlflow_run_id"`
+	} `json:"ai_runtime_task_output"`
 	GenAiComputeOutput *struct {
 		RunInfo *struct {
 			MlflowExperimentID string `json:"mlflow_experiment_id"`
@@ -31,20 +35,28 @@ type mlflowIdentifiers struct {
 	RunID        string
 }
 
-// mlflowIDs fetches the run's MLflow experiment and run IDs, or nil if they
-// can't be obtained. They drive a convenience link, so any failure here
-// (missing task, endpoint error, run not yet started) is logged and treated as
-// "no link" rather than failing the whole command.
+// mlflowIDs fetches the MLflow IDs for a run via its latest task. Returns nil if
+// they can't be obtained.
 func mlflowIDs(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *mlflowIdentifiers {
 	if len(run.Tasks) == 0 {
 		return nil
 	}
 	// The MLflow output is attached to the task run, not the parent job run.
-	taskRunID := run.Tasks[len(run.Tasks)-1].RunId
+	return mlflowIDsForTask(ctx, w, run.Tasks[len(run.Tasks)-1].RunId)
+}
+
+// mlflowIDsForTask fetches a task run's MLflow experiment and run IDs from
+// runs/get-output, or nil if they can't be obtained. They drive a convenience
+// link, so any failure (endpoint error, run not yet started, no MLflow output)
+// is logged and treated as "no link" rather than failing the command.
+func mlflowIDsForTask(ctx context.Context, w *databricks.WorkspaceClient, taskRunID int64) *mlflowIdentifiers {
+	if taskRunID == 0 {
+		return nil
+	}
 
 	apiClient, err := client.New(w.Config)
 	if err != nil {
-		log.Debugf(ctx, "air get: could not build API client for MLflow link: %v", err)
+		log.Debugf(ctx, "air: could not build API client for MLflow link: %v", err)
 		return nil
 	}
 
@@ -55,18 +67,18 @@ func mlflowIDs(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run
 	err = apiClient.Do(ctx, http.MethodGet, "/api/2.2/jobs/runs/get-output",
 		nil, nil, map[string]any{"run_id": taskRunID}, &out)
 	if err != nil {
-		log.Debugf(ctx, "air get: could not fetch run output for MLflow link: %v", err)
+		log.Debugf(ctx, "air: could not fetch run output for MLflow link: %v", err)
 		return nil
 	}
 
-	if out.GenAiComputeOutput == nil || out.GenAiComputeOutput.RunInfo == nil {
-		return nil
+	if o := out.AiRuntimeTaskOutput; o != nil && o.MlflowExperimentID != "" && o.MlflowRunID != "" {
+		return &mlflowIdentifiers{ExperimentID: o.MlflowExperimentID, RunID: o.MlflowRunID}
 	}
-	info := out.GenAiComputeOutput.RunInfo
-	if info.MlflowExperimentID == "" || info.MlflowRunID == "" {
-		return nil
+	if o := out.GenAiComputeOutput; o != nil && o.RunInfo != nil &&
+		o.RunInfo.MlflowExperimentID != "" && o.RunInfo.MlflowRunID != "" {
+		return &mlflowIdentifiers{ExperimentID: o.RunInfo.MlflowExperimentID, RunID: o.RunInfo.MlflowRunID}
 	}
-	return &mlflowIdentifiers{ExperimentID: info.MlflowExperimentID, RunID: info.MlflowRunID}
+	return nil
 }
 
 // mlflowLogsURL is the deep link to a run's node-0 logs. It is the value of the

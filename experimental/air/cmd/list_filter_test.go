@@ -49,7 +49,7 @@ func TestParseListFilters(t *testing.T) {
 }
 
 func TestListFiltersMatches(t *testing.T) {
-	wf := testWorkflow(1, "me@example.com", "GPU_8xH100", 8, "/Users/me@example.com/qwen-eval")
+	run := airJobRun(1, "me@example.com", "GPU_8xH100", 8, "/Users/me@example.com/qwen-eval")
 
 	cases := []struct {
 		name string
@@ -68,7 +68,7 @@ func TestListFiltersMatches(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			assert.Equal(t, c.want, c.f.matches(&wf))
+			assert.Equal(t, c.want, c.f.matches(&run))
 		})
 	}
 }

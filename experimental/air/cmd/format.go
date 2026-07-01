@@ -97,11 +97,17 @@ func runStatus(state *jobs.RunState) string {
 	if state == nil {
 		return "UNKNOWN"
 	}
-	if state.ResultState != "" {
-		return string(state.ResultState)
+	return statusWord(string(state.LifeCycleState), string(state.ResultState))
+}
+
+// statusWord picks the status word to show from a run's lifecycle and result
+// states: the result state is the more meaningful one, so it wins when set.
+func statusWord(lifeCycle, result string) string {
+	if result != "" {
+		return result
 	}
-	if state.LifeCycleState != "" {
-		return string(state.LifeCycleState)
+	if lifeCycle != "" {
+		return lifeCycle
 	}
 	return "UNKNOWN"
 }
@@ -146,20 +152,6 @@ func isoFormat(t time.Time) string {
 		layout = "2006-01-02T15:04:05.000000-07:00"
 	}
 	return t.Format(layout)
-}
-
-// parseRPCTime parses an RFC3339 timestamp returned by the AiWorkflow RPC (e.g.
-// "2026-06-05T18:46:55.876Z"), returning the zero time when the field is absent
-// or unparseable.
-func parseRPCTime(s string) time.Time {
-	if s == "" {
-		return time.Time{}
-	}
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return time.Time{}
-	}
-	return t
 }
 
 // submittedDisplay formats the run's start time for the text table as
@@ -287,28 +279,6 @@ func acceleratorLabel(gpuType string, count int) string {
 		return fmt.Sprintf("%dx %s", count, name)
 	}
 	return fmt.Sprintf("%dx", count)
-}
-
-// trainingWorkflowStatus maps a TrainingWorkflowState enum value to the status
-// word shown for a run, matching `air get run`. The server collapses Jobs
-// lifecycle/result into this enum, so lossy cases (e.g. TIMEDOUT) render as FAILED.
-func trainingWorkflowStatus(state string) string {
-	switch state {
-	case "TRAINING_WORKFLOW_STATE_PENDING", "TRAINING_WORKFLOW_STATE_PENDING_SENT":
-		return "PENDING"
-	case "TRAINING_WORKFLOW_STATE_RUNNING":
-		return "RUNNING"
-	case "TRAINING_WORKFLOW_STATE_TERMINATION_REQUESTED", "TRAINING_WORKFLOW_STATE_TERMINATION_SENT":
-		return "TERMINATING"
-	case "TRAINING_WORKFLOW_STATE_TERMINATED_COMPLETED":
-		return "SUCCESS"
-	case "TRAINING_WORKFLOW_STATE_TERMINATED_FAILED":
-		return "FAILED"
-	case "TRAINING_WORKFLOW_STATE_TERMINATED_STOPPED":
-		return "CANCELED"
-	default:
-		return "UNKNOWN"
-	}
 }
 
 // gpuDisplayName returns the friendly name for a GPU identifier, falling back to
