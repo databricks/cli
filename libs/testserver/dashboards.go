@@ -232,11 +232,10 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	updated.WarehouseId = updateReq.WarehouseId
 	updated.UpdateTime = time.Now().UTC().Format(time.RFC3339)
 
-	// Updates apply immediately (Put). A real backend is eventually consistent on
-	// updates too, but staging a stale value (Write) yields a successful-but-stale 200
-	// that breaks plan-time reads (e.g. CheckDashboardsModifiedRemotely) the engine
-	// does not yet tolerate. We stage a stale value only on create (the 404).
-	s.Dashboards.Put(dashboardId, &updated)
+	// Write stages a stale value: like a real backend, the first read after an update
+	// returns the pre-update value. Tests that read right after an update wait for the
+	// new value with a content-aware retry (retry --until / --until-not).
+	s.Dashboards.Write(dashboardId, &updated)
 
 	return Response{
 		Body: updated,

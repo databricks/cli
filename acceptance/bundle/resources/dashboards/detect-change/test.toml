@@ -11,6 +11,12 @@ Ignore = [
 # Setting this environment variable prevents that conversion on windows.
 MSYS_NO_PATHCONV = "1"
 
+# This test makes an out-of-band update and then expects `bundle plan` to detect it.
+# Under eventual consistency the plan's own read (CheckDashboardsModifiedRemotely)
+# would observe the stale pre-update value and miss the change -- an engine-level read
+# that no test-level retry can fix -- so opt out of the simulation here.
+TESTS_STALE_ONCE = "0"
+
 [[Repls]]
 Old = "[0-9a-z]{16,}"
 New = "[ALPHANUMID]"

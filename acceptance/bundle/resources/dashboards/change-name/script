@@ -12,7 +12,9 @@ deploy_dashboard() {
     trace $CLI bundle plan
     trace $CLI bundle deploy
     dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
-    DASHBOARD=$(retry $CLI lakeview get $dashboard_id)
+    # Wait out eventual consistency: retry until the current name is visible (the read
+    # 404s on create and returns the stale name right after a rename).
+    DASHBOARD=$(retry --until "$NAME" $CLI lakeview get $dashboard_id)
     echo "$DASHBOARD" | jq '{display_name, lifecycle_state, parent_path, path, serialized_dashboard, warehouse_id}'
 }
 
