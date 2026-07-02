@@ -2,6 +2,8 @@ package databrickscfg
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
@@ -95,6 +97,32 @@ func TestProfileAuthLoadersProfileWinsOverSteeringEnv(t *testing.T) {
 	assert.Empty(t, cfg.AccountID)
 }
 
+func TestProfileAuthLoadersGapFillsHostFromEnv(t *testing.T) {
+	// A selected profile that leaves the host empty falls back to the env host,
+	// mirroring the token gap-fill (#5096). Auth-steering env vars stay ignored.
+	dir := t.TempDir()
+	cfgFile := filepath.Join(dir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(cfgFile, []byte("[hostless]\ncluster_id = env-cluster\n"), 0o600))
+
+	t.Setenv("DATABRICKS_HOST", "https://env.test")
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+	t.Setenv("DATABRICKS_AUTH_TYPE", "basic")
+
+	cfg := config.Config{
+		Loaders:    ProfileAuthLoaders,
+		ConfigFile: cfgFile,
+		Profile:    "hostless",
+	}
+
+	err := cfg.EnsureResolved()
+	require.NoError(t, err)
+
+	assert.Equal(t, "https://env.test", cfg.Host)
+	assert.Equal(t, "env-token", cfg.Token)
+	// Auth-steering env var did not leak in via the gap-fill.
+	assert.Empty(t, cfg.AuthType)
+}
+
 func TestProfileAuthLoadersConflictingEnvAuthMethodErrors(t *testing.T) {
 	// Profile has a PAT; env gap-fills a different complete method (OAuth M2M).
 	// The config then carries two auth methods, which the SDK rejects rather
@@ -112,10 +140,10 @@ func TestProfileAuthLoadersConflictingEnvAuthMethodErrors(t *testing.T) {
 	require.ErrorContains(t, err, "more than one authorization method configured")
 }
 
-// TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs fails when an SDK bump adds an
+// TestEnvAlwaysSkipAttrsCoverSDKInternalEnvAttrs fails when an SDK bump adds an
 // Internal (auth:"-") env-backed attribute that is neither skipped nor listed as
 // a reviewed env-first attribute, forcing a human to classify it (#5096).
-func TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs(t *testing.T) {
+func TestEnvAlwaysSkipAttrsCoverSDKInternalEnvAttrs(t *testing.T) {
 	knownEnvFirstInternal := map[string]bool{
 		"oauth_callback_port":         true,
 		"disable_oauth_refresh_token": true,
@@ -128,11 +156,11 @@ func TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs(t *testing.T) {
 		if !attr.Internal || len(attr.EnvVars) == 0 {
 			continue
 		}
-		if nonAuthEnvSkipAttrs[attr.Name] || knownEnvFirstInternal[attr.Name] {
+		if envAlwaysSkipAttrs[attr.Name] || knownEnvFirstInternal[attr.Name] {
 			continue
 		}
 		t.Errorf("SDK config attribute %q (env %v) is internal (auth:\"-\") but unclassified: "+
-			"add it to nonAuthEnvSkipAttrs if it steers auth/routing, or to "+
+			"add it to envAlwaysSkipAttrs if it steers auth/routing, or to "+
 			"knownEnvFirstInternal if env-first precedence is safe (#5096)",
 			attr.Name, attr.EnvVars)
 	}

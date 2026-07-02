@@ -18,8 +18,9 @@ var ResolveProfileFromHost = profileFromHostLoader{}
 // variables. See ProfileAuthLoaders for how it fits into the chain.
 var ResolveNonAuthFromEnv = envLoader{name: "environment (excluding auth)", skipAuth: true}
 
-// resolveAuthGapFromEnv gap-fills auth attributes the profile left empty from
-// environment variables. See ProfileAuthLoaders for how it fits into the chain.
+// resolveAuthGapFromEnv gap-fills the auth attributes and host the profile left
+// empty from environment variables. See ProfileAuthLoaders for how it fits into
+// the chain.
 var resolveAuthGapFromEnv = envLoader{name: "environment (auth gap-fill)", skipAuth: false}
 
 // ProfileAuthLoaders is the loader chain for an explicitly selected profile
@@ -28,12 +29,13 @@ var resolveAuthGapFromEnv = envLoader{name: "environment (auth gap-fill)", skipA
 //
 //  1. ResolveNonAuthFromEnv: non-auth env attrs (e.g. cluster_id), env-wins.
 //  2. ConfigFile: the selected profile (host, routing, auth).
-//  3. resolveAuthGapFromEnv: gap-fills auth attrs the profile left empty from
-//     env, so a complete conflicting env auth method still surfaces as an error
-//     rather than being silently dropped. It skips nonAuthEnvSkipAttrs (like the
-//     env-first pass) so host/routing/auth-steering attrs come from the profile
-//     only; using the SDK's ConfigAttributes here would let those env vars shadow
-//     the profile (e.g. DATABRICKS_AUTH_TYPE=basic over a PAT profile).
+//  3. resolveAuthGapFromEnv: gap-fills the auth attrs and host the profile left
+//     empty from env, so a host-less profile still reaches the env host and a
+//     complete conflicting env auth method surfaces as an error rather than being
+//     silently dropped. It skips envAlwaysSkipAttrs so routing/auth-steering
+//     attrs come from the profile only; using the SDK's ConfigAttributes here
+//     would let those env vars shadow the profile (e.g. DATABRICKS_AUTH_TYPE=basic
+//     over a PAT profile).
 //
 // A profile from DATABRICKS_CONFIG_PROFILE keeps env-first precedence; only an
 // out-of-band profile name triggers this chain.
@@ -89,14 +91,19 @@ func findMatchingProfile(configFile *config.File, matcher func(*ini.Section) boo
 	return matching[0], nil
 }
 
-// nonAuthEnvSkipAttrs lists env attributes nonAuthEnvLoader must skip on top of
-// those HasAuthAttribute catches: host/routing (host, workspace_id, account_id)
-// and auth-steering fields tagged auth:"-" (auth_type, discovery_url, audience,
-// cloud), which HasAuthAttribute misses. Reading these from env would shadow the
-// selected profile (#5096). TestNonAuthEnvSkipAttrsCoverSDKInternalEnvAttrs
-// guards against SDK drift.
-var nonAuthEnvSkipAttrs = map[string]bool{
-	"host":          true,
+// hostAttr is the SDK config attribute name for the workspace/account host.
+const hostAttr = "host"
+
+// envAlwaysSkipAttrs lists env attributes envLoader must never read when a
+// profile is explicitly selected, in either pass: routing (workspace_id,
+// account_id) and auth-steering fields tagged auth:"-" (auth_type, discovery_url,
+// audience, cloud), which HasAuthAttribute misses. Reading these from env — even
+// as a gap-fill — would re-steer or shadow the selected profile's auth (#5096).
+// The host is deliberately absent: like the auth attrs it is skipped only in the
+// env-first pass (see envLoader), then gap-filled after the profile so a
+// host-less profile falls back to the env host.
+// TestEnvAlwaysSkipAttrsCoverSDKInternalEnvAttrs guards against SDK drift.
+var envAlwaysSkipAttrs = map[string]bool{
 	"workspace_id":  true,
 	"account_id":    true,
 	"auth_type":     true,
@@ -106,9 +113,10 @@ var nonAuthEnvSkipAttrs = map[string]bool{
 }
 
 // envLoader reads config attributes from environment variables. It always skips
-// nonAuthEnvSkipAttrs so host/routing/auth-steering attrs come from the selected
+// envAlwaysSkipAttrs so routing/auth-steering attrs come from the selected
 // profile only (#5096). When skipAuth is true it additionally skips the SDK's
-// auth attributes, for the env-first pass that runs before the profile.
+// auth attributes and the host, for the env-first pass that runs before the
+// profile; the gap-fill pass then fills the ones the profile left empty.
 type envLoader struct {
 	name     string
 	skipAuth bool
@@ -120,13 +128,13 @@ func (l envLoader) Name() string {
 
 func (l envLoader) Configure(cfg *config.Config) error {
 	for _, attr := range config.ConfigAttributes {
-		// Host/routing/auth-steering come from the profile (config file), not env.
-		if nonAuthEnvSkipAttrs[attr.Name] {
+		// Routing/auth-steering come from the profile (config file), not env.
+		if envAlwaysSkipAttrs[attr.Name] {
 			continue
 		}
-		// The env-first pass leaves auth for the profile; the gap-fill pass runs
-		// after the profile and fills only auth attrs the profile didn't set.
-		if l.skipAuth && attr.HasAuthAttribute() {
+		// The env-first pass leaves the auth attrs and host for the profile; the
+		// gap-fill pass runs after the profile and fills only those it left empty.
+		if l.skipAuth && (attr.HasAuthAttribute() || attr.Name == hostAttr) {
 			continue
 		}
 		// Don't overwrite an already-set value (SDK loader semantics).
