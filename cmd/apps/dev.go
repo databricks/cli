@@ -40,12 +40,6 @@ func isViteReady(port int) bool {
 	return true
 }
 
-// isAppNotFound reports whether err is the Apps API's 404, which covers both a
-// never-created and a deleted app.
-func isAppNotFound(err error) bool {
-	return errors.Is(err, apierr.ErrNotFound)
-}
-
 // detectAppNameFromBundle tries to extract the app name from a databricks.yml bundle config.
 // Returns the app name if found, or empty string if no bundle or no apps found.
 // This properly loads and initializes the bundle to resolve variables and apply prefixes.
@@ -190,7 +184,8 @@ Examples:
 				return domainErr
 			})
 			if err != nil {
-				if isAppNotFound(err) {
+				// The Apps API reports both a never-created and a deleted app with a 404.
+				if errors.Is(err, apierr.ErrNotFound) {
 					return fmt.Errorf("application '%s' has not been deployed yet. Run `databricks apps deploy` to deploy and then try again", appName)
 				}
 				return fmt.Errorf("failed to get app domain: %w", err)

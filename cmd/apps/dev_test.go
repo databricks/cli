@@ -1,8 +1,6 @@
 package apps
 
 import (
-	"errors"
-	"fmt"
 	"net"
 	"os"
 	"testing"
@@ -10,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/libs/apps/vite"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,24 +42,6 @@ func TestIsViteReady(t *testing.T) {
 		ready := isViteReady(5173)
 		assert.True(t, ready)
 	})
-}
-
-func TestIsAppNotFound(t *testing.T) {
-	notFound := &apierr.APIError{
-		StatusCode: 404,
-		ErrorCode:  "NOT_FOUND",
-		Message:    "App with name test-app does not exist or is deleted.",
-	}
-	assert.True(t, isAppNotFound(notFound))
-	assert.True(t, isAppNotFound(fmt.Errorf("failed to get app: %w", notFound)))
-
-	forbidden := &apierr.APIError{
-		StatusCode: 403,
-		ErrorCode:  "PERMISSION_DENIED",
-		Message:    "user does not have permission",
-	}
-	assert.False(t, isAppNotFound(forbidden))
-	assert.False(t, isAppNotFound(errors.New("app URL is empty")))
 }
 
 func TestViteServerScriptContent(t *testing.T) {
