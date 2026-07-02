@@ -6,26 +6,27 @@ package terraform_dabs_map
 // alerts / databricks_alert_v2: 3 tf-only
 // apps / databricks_app: 16 dabs-only
 // apps / databricks_app: 1 tf-only
-// clusters / databricks_cluster: 1 dabs-only
 // clusters / databricks_cluster: 25 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 32 dabs-only
-// jobs / databricks_job: 257 tf-only
-// model_serving_endpoints / databricks_model_serving: 4 dabs-only
+// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 258 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 7 dabs-only
+// pipelines / databricks_pipeline: 5 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
+// postgres_databases / databricks_postgres_database: 1 tf-only
 // postgres_databases / databricks_postgres_database: 1 unwraps
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
+// postgres_projects / databricks_postgres_project: 2 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
+// postgres_roles / databricks_postgres_role: 1 tf-only
 // postgres_roles / databricks_postgres_role: 1 unwraps
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 dabs-only
@@ -115,51 +116,15 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 		"source_code_path": {},
 	},
-	"clusters": {
-		"azure_attributes": {
-			"capacity_reservation_group": {}, // clusters.*.azure_attributes.capacity_reservation_group
-		},
-	},
 	"jobs": {
 		"job_clusters": {
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
-				"azure_attributes": {
-					"capacity_reservation_group": {}, // jobs.*.job_clusters.new_cluster.azure_attributes.capacity_reservation_group
-				},
 			},
 		},
 		"tasks": {
-			"ai_runtime_task": {
-				"code_source_path": {}, // jobs.*.tasks.ai_runtime_task.code_source_path
-				"deployments": {
-					"command_path": {}, // jobs.*.tasks.ai_runtime_task.deployments.command_path
-					"compute": {
-						"accelerator_count": {}, // jobs.*.tasks.ai_runtime_task.deployments.compute.accelerator_count
-						"accelerator_type":  {}, // jobs.*.tasks.ai_runtime_task.deployments.compute.accelerator_type
-					},
-					"name": {}, // jobs.*.tasks.ai_runtime_task.deployments.name
-				},
-				"experiment":                  {}, // jobs.*.tasks.ai_runtime_task.experiment
-				"mlflow_experiment_directory": {}, // jobs.*.tasks.ai_runtime_task.mlflow_experiment_directory
-				"mlflow_run":                  {}, // jobs.*.tasks.ai_runtime_task.mlflow_run
-			},
 			"for_each_task": {
 				"task": {
-					"ai_runtime_task": {
-						"code_source_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.code_source_path
-						"deployments": {
-							"command_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.command_path
-							"compute": {
-								"accelerator_count": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.compute.accelerator_count
-								"accelerator_type":  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.compute.accelerator_type
-							},
-							"name": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.name
-						},
-						"experiment":                  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.experiment
-						"mlflow_experiment_directory": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.mlflow_experiment_directory
-						"mlflow_run":                  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.mlflow_run
-					},
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -167,33 +132,16 @@ var DABsOnlyFields = map[string]FieldSet{
 					},
 					"new_cluster": {
 						"autotermination_minutes": {}, // jobs.*.tasks.for_each_task.task.new_cluster.autotermination_minutes
-						"azure_attributes": {
-							"capacity_reservation_group": {}, // jobs.*.tasks.for_each_task.task.new_cluster.azure_attributes.capacity_reservation_group
-						},
 					},
 				},
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
-				"azure_attributes": {
-					"capacity_reservation_group": {}, // jobs.*.tasks.new_cluster.azure_attributes.capacity_reservation_group
-				},
-			},
-		},
-	},
-	"model_serving_endpoints": {
-		"telemetry_config": {
-			"inference_table_config": {
-				"name":              {}, // model_serving_endpoints.*.telemetry_config.inference_table_config.name
-				"sampling_fraction": {}, // model_serving_endpoints.*.telemetry_config.inference_table_config.sampling_fraction
 			},
 		},
 	},
 	"pipelines": {
 		"clusters": {
-			"azure_attributes": {
-				"capacity_reservation_group": {}, // pipelines.*.clusters.azure_attributes.capacity_reservation_group
-			},
 			"gcp_attributes": {
 				"boot_disk_size":            {}, // pipelines.*.clusters.gcp_attributes.boot_disk_size
 				"use_preemptible_executors": {}, // pipelines.*.clusters.gcp_attributes.use_preemptible_executors
@@ -203,7 +151,6 @@ var DABsOnlyFields = map[string]FieldSet{
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
 		},
-		"serverless_compute_id": {},
 	},
 	"schemas": {
 		"custom_max_retention_hours": {},
@@ -354,8 +301,9 @@ var TerraformOnlyFields = map[string]FieldSet{
 				"zone_id":                {}, // databricks_job.*.new_cluster.aws_attributes.zone_id
 			},
 			"azure_attributes": {
-				"availability":    {}, // databricks_job.*.new_cluster.azure_attributes.availability
-				"first_on_demand": {}, // databricks_job.*.new_cluster.azure_attributes.first_on_demand
+				"availability":               {}, // databricks_job.*.new_cluster.azure_attributes.availability
+				"capacity_reservation_group": {}, // databricks_job.*.new_cluster.azure_attributes.capacity_reservation_group
+				"first_on_demand":            {}, // databricks_job.*.new_cluster.azure_attributes.first_on_demand
 				"log_analytics_info": {
 					"log_analytics_primary_key":  {}, // databricks_job.*.new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key
 					"log_analytics_workspace_id": {}, // databricks_job.*.new_cluster.azure_attributes.log_analytics_info.log_analytics_workspace_id
@@ -616,6 +564,17 @@ var TerraformOnlyFields = map[string]FieldSet{
 	},
 	"postgres_branches": {
 		"purge_on_delete": {},
+	},
+	"postgres_databases": {
+		"replace_existing": {},
+	},
+	"postgres_projects": {
+		"initial_branch_spec": {
+			"is_protected": {}, // databricks_postgres_project.*.initial_branch_spec.is_protected
+		},
+	},
+	"postgres_roles": {
+		"replace_existing": {},
 	},
 	"schemas": {
 		"force_destroy": {},
