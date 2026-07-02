@@ -139,7 +139,7 @@ func TestUninstallNoStateReturnsError(t *testing.T) {
 
 	err := UninstallSkills(ctx)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no skills installed")
+	assert.Contains(t, err.Error(), "no skills or plugins installed")
 }
 
 func TestUninstallHandlesMissingDirectories(t *testing.T) {
@@ -333,4 +333,77 @@ func TestUninstallSelectiveAllRemovesStateFile(t *testing.T) {
 	// State file should be gone since all skills were removed.
 	_, err = os.Stat(filepath.Join(globalDir, ".state.json"))
 	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestUninstallTargetedAgentKeepsRemainingRawExposure(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
+
+	claudeAgent := agents.ByName(agents.NameClaudeCode)
+	cursorAgent := agents.ByName(agents.NameCursor)
+	src := &mockManifestSource{manifest: testManifest()}
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{claudeAgent, cursorAgent}, InstallOptions{}))
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	cursorLink := filepath.Join(tmp, ".cursor", "skills", "databricks-sql")
+	claudeLink := filepath.Join(tmp, ".claude", "skills", "databricks-sql")
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Agents: []string{agents.NameCursor}, Skills: []string{"databricks-sql"}}))
+
+	_, err := os.Lstat(cursorLink)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	_, err = os.Lstat(claudeLink)
+	assert.NoError(t, err)
+	_, err = os.Stat(filepath.Join(globalDir, "databricks-sql"))
+	assert.NoError(t, err)
+
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Contains(t, state.Skills, "databricks-sql")
+}
+
+func TestUninstallTargetedAgentRemovesCanonicalWhenNoExposureRemains(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
+
+	cursorAgent := agents.ByName(agents.NameCursor)
+	src := &mockManifestSource{manifest: testManifest()}
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{cursorAgent}, InstallOptions{SpecificSkills: []string{"databricks-sql"}}))
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	cursorDir := filepath.Join(tmp, ".cursor", "skills", "databricks-sql")
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Agents: []string{agents.NameCursor}, Skills: []string{"databricks-sql"}}))
+
+	_, err := os.Stat(cursorDir)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	_, err = os.Stat(filepath.Join(globalDir, "databricks-sql"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Nil(t, state)
+}
+
+func TestUninstallTargetedUntrackedSkillGivesRecoveryGuidance(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor", "skills", "databricks-sql"), 0o755))
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, SaveState(globalDir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Skills:        map[string]string{"databricks-jobs": "0.1.0"},
+	}))
+
+	err := UninstallSkillsOpts(ctx, UninstallOptions{Agents: []string{agents.NameCursor}, Skills: []string{"databricks-sql"}})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not tracked in Databricks aitools state")
+	assert.Contains(t, err.Error(), "Cursor")
+	assert.Contains(t, err.Error(), "install --skills-only --agents cursor")
 }

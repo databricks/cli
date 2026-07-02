@@ -417,6 +417,11 @@ func fetchRemote(ctx context.Context) (Manifest, error) {
 	return parseManifest(body)
 }
 
+// AgentSkillsLatest is the sentinel value the skills field may take instead of a
+// concrete version, meaning "track the latest skills" rather than pinning a
+// release. The aitools installer maps it to the skills repo's latest release tag.
+const AgentSkillsLatest = "latest"
+
 func parseManifest(data []byte) (Manifest, error) {
 	var m Manifest
 	if err := json.Unmarshal(data, &m); err != nil {
@@ -440,7 +445,7 @@ func parseManifest(data []byte) (Manifest, error) {
 		if !semver.IsValid("v" + entry.AppKit) {
 			return nil, fmt.Errorf("manifest entry %q has invalid appkit version %q", k, entry.AppKit)
 		}
-		if !semver.IsValid("v" + entry.AgentSkills) {
+		if entry.AgentSkills != AgentSkillsLatest && !semver.IsValid("v"+entry.AgentSkills) {
 			return nil, fmt.Errorf("manifest entry %q has invalid skills version %q", k, entry.AgentSkills)
 		}
 	}

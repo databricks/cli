@@ -1,0 +1,74 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify all three jobs remotely
+=== Comma-separated selectors preview two of three resources
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.job_a
+  max_concurrent_runs: replace
+
+Resource: resources.jobs.job_b
+  max_concurrent_runs: replace
+
+
+
+=== Repeating the same selector dedupes silently
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job_c
+  max_concurrent_runs: replace
+
+
+
+=== Save with repeated --select-ids flags
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.job_a
+  max_concurrent_runs: replace
+
+Resource: resources.jobs.job_b
+  max_concurrent_runs: replace
+
+
+
+=== job_a and job_b are updated, job_c is untouched
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -5,5 +5,5 @@
+   jobs:
+     job_a:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 5
+       tasks:
+         - task_key: main
+@@ -16,5 +16,5 @@
+
+     job_b:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 5
+       tasks:
+         - task_key: main
+
+=== Unfiltered sync still detects the job_c drift
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job_c
+  max_concurrent_runs: replace
+
+
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job_a
+  delete resources.jobs.job_b
+  delete resources.jobs.job_c
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

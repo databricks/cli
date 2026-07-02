@@ -1,3 +1,10 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state"
+  }
+}
 
 >>> [CLI] bundle summary -o json
 

@@ -1,0 +1,10 @@
+
+=== dump skills to a directory
+>>> [CLI] experimental aitools install --path dumped
+Command "install" is deprecated, use "databricks aitools install" instead.
+Using skills version test-ref
+Wrote 1 skill to dumped
+
+=== the skill files were written
+>>> find.py dumped.*SKILL.md --expect 1
+dumped/test-stable/SKILL.md

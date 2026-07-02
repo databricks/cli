@@ -1,0 +1,42 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_a_id="$(read_id.py job_a)"
+job_b_id="$(read_id.py job_b)"
+job_c_id="$(read_id.py job_c)"
+
+title "Modify all three jobs remotely"
+for id in $job_a_id $job_b_id $job_c_id; do
+edit_resource.py jobs $id <<EOF
+r["max_concurrent_runs"] = 5
+EOF
+done
+
+title "Comma-separated selectors preview two of three resources"
+echo
+$CLI bundle config-remote-sync --select-ids "jobs:$job_a_id,jobs:$job_b_id"
+
+title "Repeating the same selector dedupes silently"
+echo
+$CLI bundle config-remote-sync --select-ids "jobs:$job_c_id,jobs:$job_c_id"
+
+title "Save with repeated --select-ids flags"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --select-ids "jobs:$job_a_id" --select-ids "jobs:$job_b_id" --save
+
+title "job_a and job_b are updated, job_c is untouched"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Unfiltered sync still detects the job_c drift"
+echo
+$CLI bundle config-remote-sync

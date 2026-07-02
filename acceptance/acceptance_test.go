@@ -45,6 +45,7 @@ var (
 	LogRequests     bool
 	LogConfig       bool
 	UseVersion      string
+	CLIPath         string
 	WorkspaceTmpDir bool
 	OnlyOutTestToml bool
 	Subset          bool
@@ -75,6 +76,7 @@ func init() {
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
+	flag.StringVar(&CLIPath, "clipath", "", "Use the CLI binary at this path instead of building from source (e.g. a CLI built from main for regression comparison)")
 
 	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
 	// to simulate an identical environment.
@@ -188,6 +190,32 @@ func hasRunFilter() bool {
 	return f != nil && strings.Contains(f.Value.String(), "=")
 }
 
+// requirePrerequisites verifies external tool prerequisites before doing any
+// work, so a stale toolchain fails fast with an actionable message instead of
+// producing confusing diffs deep into the run.
+//
+// It reports whether all checks passed; a failure surfaces as
+// TestAccept/prerequisites rather than a bare TestAccept.
+//
+// On DBR the serverless image only provides what the test archive ships, so
+// every tool required here must also be bundled in internal/testarchive. When
+// adding a new RequireX prerequisite, add a matching downloader there too, or
+// DBR runs will fail this check before any test runs.
+func requirePrerequisites(t *testing.T) bool {
+	return t.Run("prerequisites", func(t *testing.T) {
+		// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
+		internal.RequireJQ(t, "1.7")
+		// uv builds the databricks-bundles wheel and provides the test interpreter
+		// via `uv python find`, which landed in the 0.3 line.
+		internal.RequireUV(t, "0.4")
+		// ruff 0.9.1 is pinned across the repo (python/pyproject.toml, Taskfile.yml);
+		// the check-formatting test's golden output assumes its formatter behavior.
+		internal.RequireRuff(t, "0.9.1")
+		// Acceptance scripts import the stdlib tomllib module, added in Python 3.11.
+		internal.RequirePython(t, "3.11")
+	})
+}
+
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
@@ -229,6 +257,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
+	if !requirePrerequisites(t) {
+		// Don't run the suite against a stale toolchain; the failed subtest
+		// has already marked the parent test as failed.
+		return 0
+	}
+	// Run after the version check passed; must use the top-level t so the PATH
+	// change survives for the rest of the run.
+	internal.ConfigurePython(t, "3.11")
+
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
@@ -267,7 +304,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
-		if UseVersion != "" {
+		if CLIPath != "" {
+			// Use a prebuilt binary (e.g. a CLI built from main) instead of building
+			// from the current source, so the test infra and tests stay on this branch.
+			execPath = CLIPath
+		} else if UseVersion != "" {
 			version := UseVersion
 			if version == "latest" {
 				version = resolveLatestVersion(t, buildDir)
@@ -783,6 +824,21 @@ func runTest(t *testing.T,
 	// binaries (e.g. -useversion) must never reach GitHub or print the notice
 	// into compared output. Tests can override this via [Env] in test.toml.
 	cmd.Env = append(cmd.Env, "DATABRICKS_CLI_DISABLE_UPDATE_CHECK=true")
+
+	// Neutralize Databricks-internal development-environment interference so
+	// acceptance tests behave the same as on CI (which has none of this). Two
+	// sources both reach the blocking proxy on every git invocation:
+	//
+	//  1. A command-timing shim that wraps git (ahead of the real binary on
+	//     PATH) and POSTs per-command metrics over the network.
+	//     COMMAND_TIMER_DISABLE=1 makes it pass through without the beacon.
+	//  2. A managed global git config installs a core.hooksPath whose hooks
+	//     (secret scanning, etc.) also beacon metrics. Ignoring the global and
+	//     system git config disables those hooks and keeps tests hermetic; tests
+	//     configure the repos they create via git-repo-init locally.
+	cmd.Env = append(cmd.Env, "COMMAND_TIMER_DISABLE=1")
+	cmd.Env = append(cmd.Env, "GIT_CONFIG_GLOBAL="+os.DevNull)
+	cmd.Env = append(cmd.Env, "GIT_CONFIG_SYSTEM="+os.DevNull)
 
 	for _, kv := range testEnv {
 		key, value, _ := strings.Cut(kv, "=")

@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -27,6 +28,66 @@ func terminatedRun(runID, taskRunID int64, message, pageURL string) *jobs.Run {
 			},
 		}},
 	}
+}
+
+func TestResolveBaseEnvironment(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+
+	// Paths and resource IDs are passed through without hitting the API.
+	t.Run("env.yaml path passthrough", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		got, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "/Workspace/path/to/env.yaml")
+		require.NoError(t, err)
+		assert.Equal(t, "/Workspace/path/to/env.yaml", got)
+	})
+
+	t.Run("resource ID passthrough", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		got, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "workspace-base-environments/dbe_123")
+		require.NoError(t, err)
+		assert.Equal(t, "workspace-base-environments/dbe_123", got)
+	})
+
+	t.Run("display name resolves to resource ID", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		m.GetMockEnvironmentsAPI().EXPECT().
+			ListWorkspaceBaseEnvironmentsAll(mock.Anything, environments.ListWorkspaceBaseEnvironmentsRequest{}).
+			Return([]environments.WorkspaceBaseEnvironment{
+				{DisplayName: "other", Name: "workspace-base-environments/dbe_other"},
+				{DisplayName: "my-env", Name: "workspace-base-environments/dbe_mine"},
+			}, nil)
+
+		got, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "my-env")
+		require.NoError(t, err)
+		assert.Equal(t, "workspace-base-environments/dbe_mine", got)
+	})
+
+	t.Run("display name not found", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		m.GetMockEnvironmentsAPI().EXPECT().
+			ListWorkspaceBaseEnvironmentsAll(mock.Anything, environments.ListWorkspaceBaseEnvironmentsRequest{}).
+			Return([]environments.WorkspaceBaseEnvironment{
+				{DisplayName: "other", Name: "workspace-base-environments/dbe_other"},
+			}, nil)
+
+		_, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "my-env")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `no workspace base environment found with display name "my-env"`)
+	})
+
+	t.Run("display name ambiguous", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		m.GetMockEnvironmentsAPI().EXPECT().
+			ListWorkspaceBaseEnvironmentsAll(mock.Anything, environments.ListWorkspaceBaseEnvironmentsRequest{}).
+			Return([]environments.WorkspaceBaseEnvironment{
+				{DisplayName: "my-env", Name: "workspace-base-environments/dbe_1"},
+				{DisplayName: "my-env", Name: "workspace-base-environments/dbe_2"},
+			}, nil)
+
+		_, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "my-env")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `multiple workspace base environments found with display name "my-env"`)
+	})
 }
 
 func TestDescribeRunFailureIncludesMessageTraceAndURL(t *testing.T) {
@@ -141,7 +202,7 @@ func TestWaitForJobToStartSurfacesFailure(t *testing.T) {
 	api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
 		&jobs.RunOutput{}, nil)
 
-	err := waitForJobToStart(ctx, m.WorkspaceClient, 1, 30*time.Second)
+	err := waitForJobToStart(ctx, m.WorkspaceClient, 1, ClientOptions{TaskStartupTimeout: 30 * time.Second})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "ssh server bootstrap job failed")
 	assert.Contains(t, err.Error(), "Could not reach driver of cluster 0605-x.")
@@ -196,6 +257,59 @@ func TestHostKeyChangedHint(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildRemoteShellArgs(t *testing.T) {
+	const bashCmd = `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`
+
+	t.Run("interactive returns login bash command", func(t *testing.T) {
+		args := buildRemoteShellArgs(ClientOptions{}, "")
+		require.Len(t, args, 1)
+		assert.Equal(t, bashCmd, args[0])
+	})
+
+	t.Run("interactive cds into workspace home when set", func(t *testing.T) {
+		args := buildRemoteShellArgs(ClientOptions{}, "/Workspace/Users/me@example.com")
+		require.Len(t, args, 1)
+		assert.Equal(t, `cd '/Workspace/Users/me@example.com' 2>/dev/null; `+bashCmd, args[0])
+	})
+
+	t.Run("non-interactive passes additional args verbatim", func(t *testing.T) {
+		additional := []string{"ls", "-la"}
+		args := buildRemoteShellArgs(ClientOptions{AdditionalArgs: additional}, "/Workspace/Users/me@example.com")
+		assert.Equal(t, additional, args)
+	})
+}
+
+func TestBuildSSHArgsPTYPlacement(t *testing.T) {
+	indexOf := func(args []string, want string) int {
+		for i, a := range args {
+			if a == want {
+				return i
+			}
+		}
+		return -1
+	}
+
+	t.Run("interactive forces a PTY before the destination", func(t *testing.T) {
+		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "/Workspace/Users/me@example.com", ClientOptions{})
+		ptyIdx := indexOf(args, "-t")
+		hostIdx := indexOf(args, "myhost")
+		require.NotEqual(t, -1, ptyIdx, "-t must be present for interactive sessions")
+		require.NotEqual(t, -1, hostIdx)
+		assert.Less(t, ptyIdx, hostIdx, "-t must precede the destination host")
+		// The remote command is the final arg, after the host.
+		assert.Greater(t, len(args)-1, hostIdx)
+		assert.Contains(t, args[len(args)-1], "exec bash -l")
+	})
+
+	t.Run("non-interactive does not force a PTY", func(t *testing.T) {
+		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
+		assert.Equal(t, -1, indexOf(args, "-t"), "no PTY for non-interactive passthrough")
+		hostIdx := indexOf(args, "myhost")
+		require.NotEqual(t, -1, hostIdx)
+		assert.Equal(t, []string{"ls", "-la"}, args[hostIdx+1:], "additional args follow the host verbatim")
+	})
 }
 
 func TestTailWriterRetainsTail(t *testing.T) {

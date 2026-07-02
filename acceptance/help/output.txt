@@ -39,6 +39,9 @@ Vector Search
   vector-search-endpoints                **Endpoint**: Represents the compute resources to host AI Search indexes.
   vector-search-indexes                  **Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.
 
+AI Search
+  ai-search                              *Beta* **AI Search Endpoint**: Represents the compute resources to host AI Search indexes.
+
 Identity and Access Management
   current-user                           *Public Preview* This API allows retrieving information about currently authenticated user or service principal.
   groups                                 Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
@@ -169,7 +172,7 @@ Developer Tools
 
 Additional Commands:
   account                                Databricks Account Commands
-  aitools                                Databricks AI Tools for coding agents
+  aitools                                Databricks skills and plugins for coding agents
   api                                    Perform Databricks API call
   auth                                   Authentication related commands
   cache                                  Local cache related commands

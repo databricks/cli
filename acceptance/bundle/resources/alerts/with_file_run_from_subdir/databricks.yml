@@ -1,0 +1,5 @@
+bundle:
+  name: alerts-with-file-run-from-subdir
+
+include:
+  - resources/*.yml

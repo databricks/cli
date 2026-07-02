@@ -1,0 +1,23 @@
+# Shared by the posix/ and windows/ leaf tests, which differ only in their GOOS
+# gate and golden output. The notebook name contains ':', which is a legal local
+# filename character on Linux/macOS but illegal on Windows, so export-dir renames
+# it to a legal name with a warning on Windows and exports it normally elsewhere.
+# The real #5171 trigger is the auto-generated "New Notebook <timestamp>" name.
+# We use two colons ("a:b:c") rather than one: a single ':' is the Windows
+# alternate-data-stream separator, so os.Create("New Notebook a:b.py") silently
+# succeeds (writing stream "b.py") instead of failing with ERROR_INVALID_NAME.
+# Two colons make the stream type invalid, which is what real timestamp names
+# ("13:54:24") hit. A plain name keeps the timestamp redaction out of the golden.
+
+# Operate in a unique directory under the current user's home so the test is
+# self-contained and safe to run against a real workspace. The import API returns
+# a 404 if the parent directory does not exist, so create it first.
+DIR="/Users/$CURRENT_USER_NAME/export-dir-test-$UNIQUE_NAME"
+$CLI workspace mkdirs "$DIR"
+$CLI workspace import "$DIR/New Notebook a:b:c.py" --file "$TESTDIR/../notebook.py" --format AUTO --language PYTHON
+
+mkdir -p "$TEST_TMP_DIR/export"
+
+trace $CLI workspace export-dir "$DIR" "$TEST_TMP_DIR/export"
+
+$CLI workspace delete --recursive "$DIR"

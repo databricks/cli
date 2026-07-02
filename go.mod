@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.7 // MIT
-	github.com/databricks/databricks-sdk-go v0.147.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.152.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
@@ -34,14 +34,14 @@ require (
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	github.com/zalando/go-keyring v0.2.8 // MIT
 	go.yaml.in/yaml/v3 v3.0.4 // MIT AND Apache-2.0
-	golang.org/x/crypto v0.52.0 // BSD-3-Clause
-	golang.org/x/mod v0.36.0 // BSD-3-Clause
-	golang.org/x/net v0.55.0 // BSD-3-Clause
+	golang.org/x/crypto v0.53.0 // BSD-3-Clause
+	golang.org/x/mod v0.37.0 // BSD-3-Clause
+	golang.org/x/net v0.56.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.21.0 // BSD-3-Clause
 	golang.org/x/sys v0.46.0 // BSD-3-Clause
-	golang.org/x/text v0.37.0 // BSD-3-Clause
-	gopkg.in/ini.v1 v1.67.2 // Apache-2.0
+	golang.org/x/text v0.38.0 // BSD-3-Clause
+	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 
 require (

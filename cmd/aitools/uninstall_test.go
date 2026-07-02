@@ -64,3 +64,69 @@ func TestUninstallScopeFlag(t *testing.T) {
 		})
 	}
 }
+
+func TestUninstallAgentsFlag(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupUninstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := NewUninstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--scope", "global", "--agents", "cursor,claude-code", "--skills", "databricks-sql"})
+
+	require.NoError(t, cmd.Execute())
+	require.Len(t, *calls, 1)
+	assert.Equal(t, []string{"cursor", "claude-code"}, (*calls)[0].Agents)
+	assert.Equal(t, []string{"databricks-sql"}, (*calls)[0].Skills)
+}
+
+func TestUninstallUnknownAgentErrors(t *testing.T) {
+	setupTestAgents(t)
+	setupUninstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := NewUninstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--scope", "global", "--agents", "invalid-agent"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown agent")
+}
+
+func TestUninstallConfirmMessage(t *testing.T) {
+	// Nothing recorded: no prompt (installer surfaces its own guidance).
+	_, ask := uninstallConfirmMessage(nil, installer.UninstallOptions{Scope: installer.ScopeGlobal})
+	assert.False(t, ask)
+
+	_, askEmpty := uninstallConfirmMessage(&installer.InstallState{}, installer.UninstallOptions{Scope: installer.ScopeGlobal})
+	assert.False(t, askEmpty)
+
+	st := &installer.InstallState{
+		Skills:  map[string]string{"a": "1", "b": "2"},
+		Plugins: map[string]installer.PluginRecord{"claude-code": {}},
+	}
+
+	msg, ask := uninstallConfirmMessage(st, installer.UninstallOptions{Scope: installer.ScopeGlobal})
+	require.True(t, ask)
+	assert.Contains(t, msg, "2 skills")
+	assert.Contains(t, msg, "the databricks plugin from 1 agent")
+	assert.Contains(t, msg, "(global scope)")
+
+	// --skills filter names the requested skills.
+	filtered := installer.UninstallOptions{Scope: installer.ScopeProject}
+	filtered.Skills = []string{"alpha"}
+	msg2, ask2 := uninstallConfirmMessage(st, filtered)
+	require.True(t, ask2)
+	assert.Contains(t, msg2, "skill alpha")
+	assert.Contains(t, msg2, "from all agents")
+	assert.Contains(t, msg2, "(project scope)")
+
+	targeted := installer.UninstallOptions{Scope: installer.ScopeGlobal, Agents: []string{"cursor"}}
+	targeted.Skills = []string{"alpha"}
+	msg3, ask3 := uninstallConfirmMessage(st, targeted)
+	require.True(t, ask3)
+	assert.Contains(t, msg3, "from cursor")
+}

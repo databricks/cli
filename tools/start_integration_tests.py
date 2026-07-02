@@ -12,7 +12,6 @@ import os
 import subprocess
 import sys
 
-
 CLI_REPO = "databricks/cli"
 CODE_OWNERS = "pietern andrewnester shreyas-goenka denik anton-107".split()
 ALLOWED_HEAD_REPOSITORY = {"id": "R_kgDOHVGMwQ", "name": "cli"}

@@ -38,11 +38,12 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 		MetastoreId: model.MetastoreId,
 		Owner:       model.Owner,
 
-		// Clear output only fields. They should not show up on remote diff computation.
-		CreatedAt: 0,
-		CreatedBy: "",
-		UpdatedAt: 0,
-		UpdatedBy: "",
+		// Output only fields. Remote changes to these are ignored via
+		// ignore_remote_changes in resources.yml rather than zeroed here.
+		CreatedAt: model.CreatedAt,
+		CreatedBy: model.CreatedBy,
+		UpdatedAt: model.UpdatedAt,
+		UpdatedBy: model.UpdatedBy,
 	}
 }
 

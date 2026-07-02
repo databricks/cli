@@ -20,6 +20,8 @@ from databricks.bundles.core._transform import _transform
 
 __all__ = []
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class _Args:
@@ -43,7 +45,7 @@ class _Conf:
         unknown_keys = d.keys() - known_keys
 
         if unknown_keys:
-            logging.warning(f"Unknown configuration keys: {unknown_keys}")
+            logger.warning(f"Unknown configuration keys: {unknown_keys}")
 
         return _transform(cls, {k: v for k, v in d.items() if k in known_keys})
 
@@ -482,7 +484,7 @@ def main(argv: list[str]) -> int:
     args = _parse_args(argv[1:])
 
     if args.unknown_args:
-        logging.warning(f"Unknown arguments: {args.unknown_args}")
+        logger.warning(f"Unknown arguments: {args.unknown_args}")
 
     logging.basicConfig(level=logging.DEBUG, stream=sys.stderr)
     new_bundle, locations, diagnostics = python_mutator(args)

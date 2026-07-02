@@ -29,8 +29,7 @@ def main():
             continue
         directory = os.path.dirname(file_path)
         for pat in directive[len(EMBED) :].split():
-            if pat.startswith("all:"):
-                pat = pat[len("all:") :]
+            pat = pat.removeprefix("all:")
             full = os.path.join(directory, pat) if directory else pat
             if os.path.isdir(full):
                 paths.add(full + "/**")
