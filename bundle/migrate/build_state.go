@@ -24,11 +24,6 @@ import (
 // BuildStateFromTF iterates over bundle resources, resolves cross-resource
 // references using TF state attributes, and writes each resource's state entry.
 // configRoot should be an un-interpolated config (with ${resources.*} references).
-//
-// warnPrefix is prepended to every warning (e.g. skipped unsupported resource
-// types). Callers that run the conversion in the background (the post-deploy
-// dry-run) set it so their warnings are attributable and not confused with the
-// user-invoked migration. The returned bool reports whether any warning fired.
 func BuildStateFromTF(
 	ctx context.Context,
 	configRoot *config.Root,
@@ -39,10 +34,6 @@ func BuildStateFromTF(
 	warnPrefix string,
 ) (bool, error) {
 	warningsSeen := false
-	warnf := func(format string, args ...any) {
-		warningsSeen = true
-		log.Warnf(ctx, warnPrefix+format, args...)
-	}
 	// Collect all resource nodes (same patterns as makePlan).
 	var nodes []string
 	patterns := []dyn.Pattern{
@@ -79,7 +70,8 @@ func BuildStateFromTF(
 
 		adapter, ok := adapters[group]
 		if !ok {
-			warnf("unsupported resource type %q for %s, skipping", group, node)
+			warningsSeen = true
+			log.Warnf(ctx, warnPrefix+"unsupported resource type %q for %s, skipping", group, node)
 			continue
 		}
 
@@ -210,9 +202,12 @@ func BuildStateFromTF(
 
 			// ResolveFieldRef returns the fully resolved value for this field,
 			// using either Method A (TF state lookup) or Method B (template evaluation).
-			value, err := ResolveFieldRef(tfAttrs, srcGroup, srcName, fieldPath, pending.refTemplate, warnf)
+			value, warned, err := ResolveFieldRef(ctx, tfAttrs, srcGroup, srcName, fieldPath, pending.refTemplate, warnPrefix)
 			if err != nil {
 				return warningsSeen, fmt.Errorf("%s: cannot resolve field %q (template %q): %w", node, pending.fieldPathStr, pending.refTemplate, err)
+			}
+			if warned {
+				warningsSeen = true
 			}
 
 			// Set the resolved value directly and remove the ref entry.

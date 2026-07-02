@@ -25,6 +25,12 @@ import (
 // confused with warnings from the user-invoked `bundle migrate` command.
 const warnPrefix = "post-deploy dry-run migration to direct: "
 
+// feedbackNotice is appended after the dry-run warnings to reassure the user the
+// deploy is unaffected and to ask them to report the warnings.
+const feedbackNotice = `The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
+Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
+Please forward these warnings to dabs-feedback@databricks.com`
+
 // CheckDirectMigration performs a dry-run migration of the just-deployed terraform
 // state to the direct engine and records the outcome in deploy telemetry.
 //
@@ -39,6 +45,9 @@ func CheckDirectMigration(ctx context.Context, b *bundle.Bundle) {
 	b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, hasWarnings)
 	if err != nil {
 		log.Warnf(ctx, "%s%v", warnPrefix, err)
+	}
+	if hasWarnings || err != nil {
+		log.Warnf(ctx, "%s", feedbackNotice)
 	}
 }
 

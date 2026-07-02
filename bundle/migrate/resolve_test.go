@@ -11,9 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// noWarn is a warnf that drops messages; these cases never hit the warning path.
-func noWarn(string, ...any) {}
-
 // state with src job having int and bool fields set.
 func testState() migrate.TFStateAttrs {
 	return migrate.TFStateAttrs{
@@ -43,8 +40,8 @@ func TestResolveFieldRefInt(t *testing.T) {
 	fieldPath, err := structpath.ParsePath("max_concurrent_runs")
 	require.NoError(t, err)
 
-	value, err := migrate.ResolveFieldRef(state, "jobs", "dst", fieldPath,
-		"${resources.jobs.src.max_concurrent_runs}", noWarn)
+	value, _, err := migrate.ResolveFieldRef(t.Context(), state, "jobs", "dst", fieldPath,
+		"${resources.jobs.src.max_concurrent_runs}", "")
 	require.NoError(t, err)
 
 	// Method B succeeds: returns string "4". Verify Set converts it to int.
@@ -65,8 +62,8 @@ func TestResolveFieldRefBool(t *testing.T) {
 	fieldPath, err := structpath.ParsePath("always_running")
 	require.NoError(t, err)
 
-	value, err := migrate.ResolveFieldRef(state, "jobs", "dst", fieldPath,
-		"${resources.jobs.src.always_running}", noWarn)
+	value, _, err := migrate.ResolveFieldRef(t.Context(), state, "jobs", "dst", fieldPath,
+		"${resources.jobs.src.always_running}", "")
 	require.NoError(t, err)
 
 	type target struct {
