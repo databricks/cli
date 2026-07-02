@@ -17,6 +17,7 @@ type Proxy struct {
 	client         *http.Client
 	server         *http.Server
 	headerToInject map[string]string
+	dynamicHeaders map[string]func(context.Context) (string, error)
 }
 
 // Creates a new proxy instance that will forward all requests to the targetURL
@@ -47,12 +48,38 @@ func (p *Proxy) Stop() error {
 	return p.server.Shutdown(p.ctx)
 }
 
-// InjectHeader injects a header that will be added to all requests forwarded by the proxy
+// InjectHeader injects a static header that will be added to all requests forwarded by the proxy.
 func (p *Proxy) InjectHeader(key, value string) {
 	if p.headerToInject == nil {
 		p.headerToInject = make(map[string]string)
 	}
 	p.headerToInject[key] = value
+}
+
+// InjectHeaderFunc injects a header whose value is resolved per request by fn,
+// for values that expire such as an OAuth token. If fn errors the request
+// fails with 502 rather than forwarding without the header.
+func (p *Proxy) InjectHeaderFunc(key string, fn func(context.Context) (string, error)) {
+	if p.dynamicHeaders == nil {
+		p.dynamicHeaders = make(map[string]func(context.Context) (string, error))
+	}
+	p.dynamicHeaders[key] = fn
+}
+
+// applyInjectedHeaders adds the static and dynamic injected headers to r,
+// resolving dynamic headers against r's context.
+func (p *Proxy) applyInjectedHeaders(r *http.Request) error {
+	for k, v := range p.headerToInject {
+		r.Header.Add(k, v)
+	}
+	for k, fn := range p.dynamicHeaders {
+		v, err := fn(r.Context())
+		if err != nil {
+			return err
+		}
+		r.Header.Set(k, v)
+	}
+	return nil
 }
 
 func (p *Proxy) proxyHandler(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +119,12 @@ func (p *Proxy) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer middlewareConn.Close()
 
+	// Inject headers on the upgrade request too, matching the HTTP path.
+	if err := p.applyInjectedHeaders(r); err != nil {
+		http.Error(w, "Error resolving injected header: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+
 	err = r.Write(targetServerConn)
 	if err != nil {
 		return
@@ -129,8 +162,9 @@ func (p *Proxy) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	r.Host = p.targetURL.Host
 
 	// Inject additional headers
-	for k, v := range p.headerToInject {
-		r.Header.Add(k, v)
+	if err := p.applyInjectedHeaders(r); err != nil {
+		http.Error(w, "Error resolving injected header: "+err.Error(), http.StatusBadGateway)
+		return
 	}
 
 	resp, err := p.client.Do(r)
