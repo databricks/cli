@@ -41,8 +41,7 @@ echo INPUT_CONFIG_OK
 
 # Replace the config with an empty bundle, keeping only the bundle name so the
 # deployment continues to target the same state root.
-head -n2 databricks.yml > databricks.empty.yml
-mv databricks.empty.yml databricks.yml
+envsubst < $TESTDIR/../configs/empty.yml.tmpl > databricks.yml
 cp databricks.yml LOG.config.empty
 
 # Save a plan for the emptied config; the second variant deploys with it via --plan
