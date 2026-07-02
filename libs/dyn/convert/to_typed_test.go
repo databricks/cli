@@ -754,3 +754,37 @@ func TestToTypedFieldByNameBugRegressionTest(t *testing.T) {
 	assert.Equal(t, "test-job", out.Name)
 	assert.Empty(t, out.Permissions)
 }
+
+func TestToTypedDeeplyEmbeddedStructForceSendFields(t *testing.T) {
+	// Mirrors resources.PostgresProject -> PostgresProjectConfig -> ProjectSpec:
+	// Spec is embedded two levels down and Wrapper shadows ForceSendFields to keep
+	// its own direct field out of Spec's ForceSendFields. A zero-value spec field
+	// must route to Spec.ForceSendFields, not Wrapper's, otherwise the SDK marshaler
+	// fails with "field ... cannot be found in struct".
+	type Spec struct {
+		SpecField       bool     `json:"spec_field,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Wrapper struct {
+		Spec
+		WrapperField    string   `json:"wrapper_field,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Outer struct {
+		Wrapper
+	}
+
+	var out Outer
+	m := dyn.Mapping{}
+	m.SetLoc("spec_field", nil, dyn.V(false))
+	m.SetLoc("wrapper_field", nil, dyn.V(""))
+	v := dyn.V(m)
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{"SpecField"}, out.Spec.ForceSendFields)
+	assert.Equal(t, []string{"WrapperField"}, out.ForceSendFields)
+}

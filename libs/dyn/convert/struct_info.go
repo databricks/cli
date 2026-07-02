@@ -28,9 +28,15 @@ type structInfo struct {
 	// Maps JSON-name of the field to Golang struct name
 	GolangNames map[string]string
 
-	// ForceSendFieldsStructKey maps the JSON-name of the field to which ForceSendFields slice it belongs to:
-	// -1 for direct fields, embedded struct index for embedded fields
-	ForceSendFieldsStructKey map[string]int
+	// ForceSendFieldsIndex maps the JSON-name of the field to the index path (for
+	// use with [reflect.Value.FieldByIndex]) of the ForceSendFields slice that
+	// governs it: the one declared by the struct that also declares the field.
+	// The path is static per type, so we resolve it once here rather than walking
+	// the value at conversion time. It can be more than one element deep because a
+	// field's declaring struct may be embedded several levels down (e.g.
+	// PostgresProject -> PostgresProjectConfig -> ProjectSpec). A field whose
+	// declaring struct has no ForceSendFields has no entry.
+	ForceSendFieldsIndex map[string][]int
 }
 
 // structInfoCache caches type information.
@@ -58,10 +64,10 @@ func getStructInfo(typ reflect.Type) structInfo {
 // buildStructInfo populates a new [structInfo] for the given type.
 func buildStructInfo(typ reflect.Type) structInfo {
 	out := structInfo{
-		Fields:                   make(map[string][]int),
-		ForceEmpty:               make(map[string]bool),
-		GolangNames:              make(map[string]string),
-		ForceSendFieldsStructKey: make(map[string]int),
+		Fields:               make(map[string][]int),
+		ForceEmpty:           make(map[string]bool),
+		GolangNames:          make(map[string]string),
+		ForceSendFieldsIndex: make(map[string][]int),
 	}
 
 	// Queue holds the indexes of the structs to visit.
@@ -79,6 +85,15 @@ func buildStructInfo(typ reflect.Type) structInfo {
 		// Dereference pointer type.
 		if styp.Kind() == reflect.Pointer {
 			styp = styp.Elem()
+		}
+
+		// Index path to the ForceSendFields declared by this struct, if any. All
+		// fields declared directly by this struct are governed by it. The len==1
+		// check excludes a ForceSendFields promoted from an embedded struct: that
+		// one governs the embedded struct's own fields, which we visit separately.
+		var forceSendFieldsIndex []int
+		if sf, ok := styp.FieldByName("ForceSendFields"); ok && len(sf.Index) == 1 {
+			forceSendFieldsIndex = append(slices.Clone(prefix), sf.Index...)
 		}
 
 		nf := styp.NumField()
@@ -119,13 +134,10 @@ func buildStructInfo(typ reflect.Type) structInfo {
 			}
 			out.GolangNames[name] = sf.Name
 
-			// Determine which ForceSendFields this field belongs to
-			if len(prefix) == 0 {
-				// Direct field on the main struct
-				out.ForceSendFieldsStructKey[name] = -1
-			} else {
-				// Field on embedded struct
-				out.ForceSendFieldsStructKey[name] = prefix[0]
+			// The field is declared directly in this struct, so it is governed by
+			// this struct's ForceSendFields (if it has one).
+			if forceSendFieldsIndex != nil {
+				out.ForceSendFieldsIndex[name] = forceSendFieldsIndex
 			}
 		}
 	}
@@ -142,40 +154,15 @@ type FieldValue struct {
 func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 	out := make([]FieldValue, 0, len(s.Fields))
 
-	// Collect ForceSendFields from all levels for field inclusion logic
-	forceSendFieldsMap := getForceSendFieldsValues(v)
-
 	for _, k := range s.FieldNames {
-		index := s.Fields[k]
-		fv := v
-
-		// Locate value in struct (it could be an embedded type).
-		for i, x := range index {
-			if i > 0 {
-				if fv.Kind() == reflect.Pointer && fv.Type().Elem().Kind() == reflect.Struct {
-					if fv.IsNil() {
-						fv = reflect.Value{}
-						break
-					}
-					fv = fv.Elem()
-				}
-			}
-			fv = fv.Field(x)
-		}
+		fv := fieldByIndex(v, s.Fields[k])
 
 		if fv.IsValid() {
 			isForced := true
 
 			// TODO: we should use isEmptyForOmitEmpty instead of IsZero()
 			if fv.IsZero() {
-				goName := s.GolangNames[k]
-				structKey := s.ForceSendFieldsStructKey[k]
-				if fieldValue, exists := forceSendFieldsMap[structKey]; exists {
-					forceSendFields := fieldValue.Interface().([]string)
-					isForced = slices.Contains(forceSendFields, goName)
-				} else {
-					isForced = false
-				}
+				isForced = s.isForceSend(v, k)
 			}
 
 			out = append(out, FieldValue{
@@ -189,45 +176,36 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 	return out
 }
 
-// Type of [dyn.Value].
-var configValueType = reflect.TypeFor[dyn.Value]()
-
-// getForceSendFieldsValues collects ForceSendFields reflect.Values
-// Returns map[structKey]reflect.Value where structKey is -1 for direct fields, embedded index for embedded fields
-func getForceSendFieldsValues(v reflect.Value) map[int]reflect.Value {
-	if !v.IsValid() || v.Type().Kind() != reflect.Struct {
-		return make(map[int]reflect.Value)
+// isForceSend reports whether the field named k is listed in the ForceSendFields
+// that governs it (see structInfo.ForceSendFieldsIndex).
+func (s *structInfo) isForceSend(v reflect.Value, k string) bool {
+	index, ok := s.ForceSendFieldsIndex[k]
+	if !ok {
+		return false
 	}
-
-	result := make(map[int]reflect.Value)
-
-	for i := range v.Type().NumField() {
-		field := v.Type().Field(i)
-		fieldValue := v.Field(i)
-
-		if field.Name == "ForceSendFields" && !field.Anonymous {
-			// Direct ForceSendFields (structKey = -1)
-			result[-1] = fieldValue
-		} else if field.Anonymous {
-			// Embedded struct - check for ForceSendFields inside it
-			if embeddedStruct := deref(fieldValue); embeddedStruct.IsValid() {
-				if forceSendField := embeddedStruct.FieldByName("ForceSendFields"); forceSendField.IsValid() {
-					result[i] = forceSendField
-				}
-			}
-		}
+	fsf := fieldByIndex(v, index)
+	if !fsf.IsValid() {
+		return false
 	}
-
-	return result
+	return slices.Contains(fsf.Interface().([]string), s.GolangNames[k])
 }
 
-// deref dereferences a pointer, returning invalid value if nil
-func deref(v reflect.Value) reflect.Value {
-	if v.Kind() == reflect.Pointer {
-		if v.IsNil() {
-			return reflect.Value{}
+// fieldByIndex resolves the value at the given index path, dereferencing embedded
+// pointer structs on the way. It returns an invalid value if a nil pointer is met.
+func fieldByIndex(v reflect.Value, index []int) reflect.Value {
+	for i, x := range index {
+		if i > 0 {
+			if v.Kind() == reflect.Pointer && v.Type().Elem().Kind() == reflect.Struct {
+				if v.IsNil() {
+					return reflect.Value{}
+				}
+				v = v.Elem()
+			}
 		}
-		return v.Elem()
+		v = v.Field(x)
 	}
 	return v
 }
+
+// Type of [dyn.Value].
+var configValueType = reflect.TypeFor[dyn.Value]()
