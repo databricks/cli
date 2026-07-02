@@ -1,0 +1,66 @@
+
+=== validate from the bundle root
+>>> [CLI] bundle validate -o json
+{
+  "custom_summary": "My alert from file",
+  "display_name": "myalert",
+  "evaluation": {
+    "comparison_operator": "EQUAL",
+    "notification": {
+      "notify_on_ok": false,
+      "retrigger_seconds": 1
+    },
+    "source": {
+      "aggregation": "MAX",
+      "display": "1",
+      "name": "1"
+    },
+    "threshold": {
+      "value": {
+        "double_value": 2
+      }
+    }
+  },
+  "file_path": "resources/alert.dbalert.json",
+  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/alerts-with-file-run-from-subdir/default/resources",
+  "query_text": "select 2\n",
+  "schedule": {
+    "pause_status": "UNPAUSED",
+    "quartz_cron_schedule": "44 19 */1 * * ?",
+    "timezone_id": "Europe/Amsterdam"
+  },
+  "warehouse_id": "[NUMID]"
+}
+
+=== validate from a subdirectory of the bundle
+>>> [CLI] bundle validate -o json
+{
+  "custom_summary": "My alert from file",
+  "display_name": "myalert",
+  "evaluation": {
+    "comparison_operator": "EQUAL",
+    "notification": {
+      "notify_on_ok": false,
+      "retrigger_seconds": 1
+    },
+    "source": {
+      "aggregation": "MAX",
+      "display": "1",
+      "name": "1"
+    },
+    "threshold": {
+      "value": {
+        "double_value": 2
+      }
+    }
+  },
+  "file_path": "resources/alert.dbalert.json",
+  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/alerts-with-file-run-from-subdir/default/resources",
+  "query_text": "select 2\n",
+  "schedule": {
+    "pause_status": "UNPAUSED",
+    "quartz_cron_schedule": "44 19 */1 * * ?",
+    "timezone_id": "Europe/Amsterdam"
+  },
+  "warehouse_id": "[NUMID]"
+}

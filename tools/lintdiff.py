@@ -8,10 +8,10 @@ Drop in replacement for golangci-lint that runs it only on changed packages.
 Changes are calculated as diff against the merge base with main by default, use --ref or -H/--head to change this.
 """
 
-import os
-import sys
 import argparse
+import os
 import subprocess
+import sys
 
 # Each entry is a path prefix: "tools" also covers "tools/task", "tools/other", etc.
 NESTED_MODULES = ("bundle/internal/tf/codegen", "tools")

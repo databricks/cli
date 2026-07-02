@@ -371,6 +371,94 @@ func TestMapByPatternOnSequence(t *testing.T) {
 	}, vout.AsAny())
 }
 
+func TestMapByPatternWildcardSkipsNonMatchingSiblings(t *testing.T) {
+	tests := []struct {
+		name    string
+		vin     dyn.Value
+		pattern dyn.Pattern
+		want    any
+		visited []string
+	}{
+		{
+			name: "nil sibling under any key",
+			vin: dyn.V(map[string]dyn.Value{
+				"a": dyn.NilValue,
+				"b": dyn.V(map[string]dyn.Value{"x": dyn.V(1)}),
+			}),
+			pattern: dyn.NewPattern(dyn.AnyKey(), dyn.Key("x")),
+			want: map[string]any{
+				"a": nil,
+				"b": map[string]any{"x": 42},
+			},
+			visited: []string{"b.x"},
+		},
+		{
+			name: "nil sequence sibling under any key",
+			vin: dyn.V(map[string]dyn.Value{
+				"a": dyn.V(map[string]dyn.Value{"tasks": dyn.NilValue}),
+				"b": dyn.V(map[string]dyn.Value{"tasks": dyn.V([]dyn.Value{dyn.V(1)})}),
+			}),
+			pattern: dyn.NewPattern(dyn.AnyKey(), dyn.Key("tasks"), dyn.AnyIndex()),
+			want: map[string]any{
+				"a": map[string]any{"tasks": nil},
+				"b": map[string]any{"tasks": []any{42}},
+			},
+			visited: []string{"b.tasks[0]"},
+		},
+		{
+			name: "wrong kind sibling under any key",
+			vin: dyn.V(map[string]dyn.Value{
+				"a": dyn.V(map[string]dyn.Value{"tasks": dyn.V("oops")}),
+				"b": dyn.V(map[string]dyn.Value{"tasks": dyn.V([]dyn.Value{dyn.V(1)})}),
+			}),
+			pattern: dyn.NewPattern(dyn.AnyKey(), dyn.Key("tasks"), dyn.AnyIndex()),
+			want: map[string]any{
+				"a": map[string]any{"tasks": "oops"},
+				"b": map[string]any{"tasks": []any{42}},
+			},
+			visited: []string{"b.tasks[0]"},
+		},
+		{
+			name: "nil element under any index",
+			vin: dyn.V([]dyn.Value{
+				dyn.NilValue,
+				dyn.V(map[string]dyn.Value{"x": dyn.V(1)}),
+			}),
+			pattern: dyn.NewPattern(dyn.AnyIndex(), dyn.Key("x")),
+			want: []any{
+				nil,
+				map[string]any{"x": 42},
+			},
+			visited: []string{"[1].x"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var visited []string
+			vout, err := dyn.MapByPattern(tc.vin, tc.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				visited = append(visited, p.String())
+				return dyn.V(42), nil
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, tc.want, vout.AsAny())
+			assert.Equal(t, tc.visited, visited)
+		})
+	}
+}
+
+func TestMapByPatternWildcardPropagatesMapFuncError(t *testing.T) {
+	vin := dyn.V(map[string]dyn.Value{
+		"a": dyn.V(map[string]dyn.Value{"x": dyn.V(1)}),
+	})
+
+	ref := errors.New("error")
+	_, err := dyn.MapByPattern(vin, dyn.NewPattern(dyn.AnyKey(), dyn.Key("x")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+		return dyn.InvalidValue, ref
+	})
+	assert.ErrorIs(t, err, ref)
+}
+
 func TestMapByPatternOnSequenceWithoutMatch(t *testing.T) {
 	vin := dyn.V([]dyn.Value{
 		dyn.V([]dyn.Value{

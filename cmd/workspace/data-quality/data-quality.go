@@ -305,7 +305,7 @@ Create a refresh.
   the table.
 
   Arguments:
-    OBJECT_TYPE: The type of the monitored object. Can be one of the following: schemaor
+    OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
     OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
       table_id for table.
@@ -1096,7 +1096,7 @@ Update a refresh.
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
     REFRESH_ID: Unique id of the refresh operation.
     UPDATE_MASK: The field mask to specify which fields to update.
-    OBJECT_TYPE: The type of the monitored object. Can be one of the following: schemaor
+    OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
     OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
       table_id for table.

@@ -32,6 +32,13 @@ Deployment complete!
 >>> print_requests.py ^//import-file/
 {
   "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state"
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.0/workspace/delete",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal",

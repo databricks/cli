@@ -1,0 +1,27 @@
+bundle:
+  name: test-bundle
+
+permissions:
+  - level: CAN_MANAGE
+    user_name: overlap@example.com
+  - level: CAN_VIEW
+    group_name: some_group
+
+resources:
+  jobs:
+    overlapping_job:
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+      permissions:
+        - level: CAN_VIEW
+          user_name: overlap@example.com
+
+    other_job:
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
