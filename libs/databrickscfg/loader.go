@@ -16,7 +16,11 @@ var ResolveProfileFromHost = profileFromHostLoader{}
 
 // ResolveNonAuthFromEnv reads non-auth, non-host config from environment
 // variables. See ProfileAuthLoaders for how it fits into the chain.
-var ResolveNonAuthFromEnv = nonAuthEnvLoader{}
+var ResolveNonAuthFromEnv = envLoader{name: "environment (excluding auth)", skipAuth: true}
+
+// resolveAuthGapFromEnv gap-fills auth attributes the profile left empty from
+// environment variables. See ProfileAuthLoaders for how it fits into the chain.
+var resolveAuthGapFromEnv = envLoader{name: "environment (auth gap-fill)", skipAuth: false}
 
 // ProfileAuthLoaders is the loader chain for an explicitly selected profile
 // (--profile or a bundle's workspace.profile). Unlike the SDK's default
@@ -24,14 +28,19 @@ var ResolveNonAuthFromEnv = nonAuthEnvLoader{}
 //
 //  1. ResolveNonAuthFromEnv: non-auth env attrs (e.g. cluster_id), env-wins.
 //  2. ConfigFile: the selected profile (host, routing, auth).
-//  3. ConfigAttributes: gap-fills only fields the profile left empty.
+//  3. resolveAuthGapFromEnv: gap-fills auth attrs the profile left empty from
+//     env, so a complete conflicting env auth method still surfaces as an error
+//     rather than being silently dropped. It skips nonAuthEnvSkipAttrs (like the
+//     env-first pass) so host/routing/auth-steering attrs come from the profile
+//     only; using the SDK's ConfigAttributes here would let those env vars shadow
+//     the profile (e.g. DATABRICKS_AUTH_TYPE=basic over a PAT profile).
 //
 // A profile from DATABRICKS_CONFIG_PROFILE keeps env-first precedence; only an
 // out-of-band profile name triggers this chain.
 var ProfileAuthLoaders = []config.Loader{
 	ResolveNonAuthFromEnv,
 	config.ConfigFile,
-	config.ConfigAttributes,
+	resolveAuthGapFromEnv,
 }
 
 var errNoMatchingProfiles = errors.New("no matching config profiles found")
@@ -96,16 +105,28 @@ var nonAuthEnvSkipAttrs = map[string]bool{
 	"cloud":         true,
 }
 
-type nonAuthEnvLoader struct{}
-
-func (nonAuthEnvLoader) Name() string {
-	return "environment (excluding auth)"
+// envLoader reads config attributes from environment variables. It always skips
+// nonAuthEnvSkipAttrs so host/routing/auth-steering attrs come from the selected
+// profile only (#5096). When skipAuth is true it additionally skips the SDK's
+// auth attributes, for the env-first pass that runs before the profile.
+type envLoader struct {
+	name     string
+	skipAuth bool
 }
 
-func (nonAuthEnvLoader) Configure(cfg *config.Config) error {
+func (l envLoader) Name() string {
+	return l.name
+}
+
+func (l envLoader) Configure(cfg *config.Config) error {
 	for _, attr := range config.ConfigAttributes {
-		// Host and auth come from the profile (config file), not env.
-		if nonAuthEnvSkipAttrs[attr.Name] || attr.HasAuthAttribute() {
+		// Host/routing/auth-steering come from the profile (config file), not env.
+		if nonAuthEnvSkipAttrs[attr.Name] {
+			continue
+		}
+		// The env-first pass leaves auth for the profile; the gap-fill pass runs
+		// after the profile and fills only auth attrs the profile didn't set.
+		if l.skipAuth && attr.HasAuthAttribute() {
 			continue
 		}
 		// Don't overwrite an already-set value (SDK loader semantics).

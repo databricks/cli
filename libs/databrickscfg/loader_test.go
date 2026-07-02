@@ -65,6 +65,36 @@ func TestResolveNonAuthFromEnvSkipsHostAndAuth(t *testing.T) {
 	assert.Equal(t, "env-cluster", cfg.ClusterID)
 }
 
+func TestProfileAuthLoadersProfileWinsOverSteeringEnv(t *testing.T) {
+	// A PAT profile plus auth-steering/routing env vars. The profile owns
+	// host/routing/auth-steering, so these env vars must not shadow it (#5096).
+	// In particular DATABRICKS_AUTH_TYPE=basic must not force basic auth over the
+	// profile's PAT.
+	t.Setenv("DATABRICKS_AUTH_TYPE", "basic")
+	t.Setenv("DATABRICKS_DISCOVERY_URL", "https://discovery.env.test")
+	t.Setenv("DATABRICKS_CLOUD", "azure")
+	t.Setenv("DATABRICKS_WORKSPACE_ID", "env-workspace")
+	t.Setenv("DATABRICKS_ACCOUNT_ID", "env-account")
+
+	cfg := config.Config{
+		Loaders:    ProfileAuthLoaders,
+		ConfigFile: "profile/testdata/databrickscfg",
+		Profile:    "DEFAULT",
+	}
+
+	err := cfg.EnsureResolved()
+	require.NoError(t, err)
+
+	assert.Equal(t, "https://default.test", cfg.Host)
+	assert.Equal(t, "default", cfg.Token)
+	// Steering/routing env vars did not shadow the profile.
+	assert.Empty(t, cfg.AuthType)
+	assert.Empty(t, cfg.DiscoveryURL)
+	assert.Empty(t, cfg.Cloud)
+	assert.Empty(t, cfg.WorkspaceID)
+	assert.Empty(t, cfg.AccountID)
+}
+
 func TestProfileAuthLoadersConflictingEnvAuthMethodErrors(t *testing.T) {
 	// Profile has a PAT; env gap-fills a different complete method (OAuth M2M).
 	// The config then carries two auth methods, which the SDK rejects rather
