@@ -3,6 +3,7 @@
 package ip_access_lists
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -119,7 +120,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'label', 'list_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'label', 'list_type' in your JSON input")
 			}
 			return nil
 		}
@@ -222,7 +223,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			return errors.New("expected to have the id for the corresponding ip access list")
 		}
 		deleteReq.IpAccessListId = args[0]
 
@@ -292,7 +293,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			return errors.New("expected to have the id for the corresponding ip access list")
 		}
 		getReq.IpAccessListId = args[0]
 
@@ -424,7 +425,7 @@ func newReplace() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only IP_ACCESS_LIST_ID as positional arguments. Provide 'label', 'list_type', 'enabled' in your JSON input")
+				return errors.New("when --json flag is specified, provide only IP_ACCESS_LIST_ID as positional arguments. Provide 'label', 'list_type', 'enabled' in your JSON input")
 			}
 			return nil
 		}
@@ -569,7 +570,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			return errors.New("expected to have the id for the corresponding ip access list")
 		}
 		updateReq.IpAccessListId = args[0]
 
