@@ -59,7 +59,9 @@ func (m *trampoline) generateNotebookWrapper(ctx context.Context, b *bundle.Bund
 		return err
 	}
 
-	notebookName := fmt.Sprintf("notebook_%s_%s", task.JobKey, task.Task.TaskKey)
+	// Keys may contain underscores, so joining with "_" alone is ambiguous ("a_b"+"c"
+	// vs "a"+"b_c"); the job key length prefix keeps the filename unique per task.
+	notebookName := fmt.Sprintf("notebook_%d_%s_%s", len(task.JobKey), task.JobKey, task.Task.TaskKey)
 	localNotebookPath := filepath.Join(internalDir, notebookName+".py")
 
 	err = os.MkdirAll(filepath.Dir(localNotebookPath), 0o755)
