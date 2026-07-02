@@ -17,7 +17,7 @@
  * direct: Cluster resize now falls back to regular update if resize fails due to `INVALID_STATE` ([#5716](https://github.com/databricks/cli/pull/5716)).
  * `bundle generate dashboard` now honors the `--key` flag when naming the generated resource, and rejects combining `--existing-path`, `--existing-id`, and `--resource` instead of silently ignoring all but one ([#5492](https://github.com/databricks/cli/pull/5492)).
  * Fixed `bundle deployment migrate` failing on `model_serving_endpoints`/`database_instances` with permissions (regression since v1.5.0) ([#5775](https://github.com/databricks/cli/pull/5775)).
- * Support `replace_existing: true` on `postgres_databases` and `postgres_roles` so bundles can take over a database or role that already exists on a Lakebase branch instead of failing with `ALREADY_EXISTS`.
+ * Support `replace_existing: true` on `postgres_databases` and `postgres_roles` so bundles can take over a database or role that already exists on a Lakebase branch instead of failing with `ALREADY_EXISTS` ([#5803](https://github.com/databricks/cli/pull/5803)).
  * After a terraform deploy, the CLI now dry-runs a migration to the direct engine (writing nothing locally or remotely) and reports the outcome via telemetry, warning if the migration could not be completed ([#5797](https://github.com/databricks/cli/pull/5797)).
 
 ### Dependency updates
