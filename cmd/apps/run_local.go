@@ -126,6 +126,19 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 		proxy.InjectHeader(key, value)
 	}
 
+	// The deployed Apps OAuth2 proxy injects the caller's OBO token as
+	// X-Forwarded-Access-Token; locally that header is absent, so OBO paths
+	// can't be run. Inject a token from the CLI's own credentials, resolved
+	// per request so a browser session outliving the token still refreshes.
+	tokenSource := w.Config.GetTokenSource()
+	proxy.InjectHeaderFunc(runlocal.HeaderForwardedAccessToken, func(ctx context.Context) (string, error) {
+		token, err := tokenSource.Token(ctx)
+		if err != nil {
+			return "", err
+		}
+		return token.AccessToken, nil
+	})
+
 	proxyAddr := fmt.Sprintf("localhost:%d", port)
 	// Bind synchronously so a taken port fails the command instead of only printing an error from the goroutine.
 	ln, err := proxy.Listen(proxyAddr)

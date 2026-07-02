@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/apps/runlocal"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
@@ -23,9 +24,12 @@ func TestSetupProxyPortInUse(t *testing.T) {
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "test-user"}, nil)
+	// setupProxy reads a token source off the config; the real command
+	// always has a resolved config here.
+	m.WorkspaceClient.Config = &config.Config{Host: "https://workspace.databricks.test", Token: "token"}
 
-	config := runlocal.NewConfig("https://workspace.databricks.test", "123", t.TempDir(), runlocal.DEFAULT_HOST, runlocal.DEFAULT_PORT)
-	err = setupProxy(t.Context(), &cobra.Command{}, config, m.WorkspaceClient, port, false)
+	cfg := runlocal.NewConfig("https://workspace.databricks.test", "123", t.TempDir(), runlocal.DEFAULT_HOST, runlocal.DEFAULT_PORT)
+	err = setupProxy(t.Context(), &cobra.Command{}, cfg, m.WorkspaceClient, port, false)
 	require.ErrorContains(t, err, "failed to start app proxy")
 }
 

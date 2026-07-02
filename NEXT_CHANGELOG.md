@@ -7,6 +7,7 @@
 ### CLI
 
 * An explicitly selected profile (`--profile` or a bundle's `workspace.profile`) now takes precedence over auth environment variables (`DATABRICKS_HOST`, `DATABRICKS_TOKEN`, etc.) instead of being silently shadowed by them; env vars still fill auth fields the profile leaves empty ([#5096](https://github.com/databricks/cli/issues/5096)).
+* `databricks apps run-local` now injects an `X-Forwarded-Access-Token` header minted from your CLI credentials, matching the deployed Apps OAuth2 proxy, so on-behalf-of (OBO) code paths can be exercised locally ([#5795](https://github.com/databricks/cli/pull/5795)).
 
 ### Bundles
 
