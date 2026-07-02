@@ -18,5 +18,6 @@
  * Fixed `bundle deployment migrate` failing on `model_serving_endpoints`/`database_instances` with permissions (regression since v1.5.0) ([#5775](https://github.com/databricks/cli/pull/5775)).
 
 ### Dependency updates
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.147.0 to v0.152.0 ([#5773](https://github.com/databricks/cli/pull/5773)).
 
 ### API Changes

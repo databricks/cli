@@ -178,7 +178,11 @@ resources:
 
   # jobs: no api field behaviors
 
-  # model_serving_endpoints: no api field behaviors
+  model_serving_endpoints:
+
+    ignore_remote_changes:
+      - field: telemetry_config.inference_table_config.name
+        reason: spec:output_only
 
   # models: no api field behaviors
 
