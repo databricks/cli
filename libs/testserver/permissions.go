@@ -77,6 +77,39 @@ func (s *FakeWorkspace) upsertPermission(objectKey string, entry iam.AccessContr
 	s.Permissions[objectKey] = perms
 }
 
+// jobPrincipalHasAccess reports whether the principal has a direct ACL entry
+// (hasAccess) and whether the ACL names an explicit owner (hasOwner). hasOwner
+// lets callers grant the creator implicit access only until ownership moves.
+func jobPrincipalHasAccess(perms iam.ObjectPermissions, principal string) (hasAccess, hasOwner bool) {
+	for _, acl := range perms.AccessControlList {
+		for _, p := range acl.AllPermissions {
+			if p.PermissionLevel == "IS_OWNER" {
+				hasOwner = true
+			}
+		}
+		if len(acl.AllPermissions) > 0 && (acl.UserName == principal || acl.ServicePrincipalName == principal) {
+			hasAccess = true
+		}
+	}
+	return hasAccess, hasOwner
+}
+
+// guestHasJobAccess reports whether a guest may access a job: via a direct ACL
+// entry, or as the creator while no explicit owner is set. Call with s.mu held.
+func (s *FakeWorkspace) guestHasJobAccess(jobId int64, principal string) bool {
+	perms := s.Permissions[fmt.Sprintf("/jobs/%d", jobId)]
+	hasAccess, hasOwner := jobPrincipalHasAccess(perms, principal)
+	if hasAccess {
+		return true
+	}
+	if !hasOwner {
+		if job, ok := s.Jobs[jobId]; ok && job.CreatorUserName == principal {
+			return true
+		}
+	}
+	return false
+}
+
 // GetPermissions retrieves permissions for a given object type and ID
 func (s *FakeWorkspace) GetPermissions(req Request) any {
 	defer s.LockUnlock()()
@@ -86,6 +119,14 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 	prefix := req.Vars["prefix"]
 	if prefix != "" {
 		requestObjectType = prefix + "/" + requestObjectType
+	}
+
+	// A guest without manage access cannot read a job's permissions, mirroring
+	// the backend's pre-existence permission check.
+	if requestObjectType == "jobs" && isGuestToken(req.Token) {
+		if jobId, err := strconv.ParseInt(objectId, 10, 64); err == nil && !s.guestHasJobAccess(jobId, userForToken(req.Token).UserName) {
+			return jobManagePermissionDenied(userForToken(req.Token).UserName, jobId)
+		}
 	}
 
 	if requestObjectType == "" {
