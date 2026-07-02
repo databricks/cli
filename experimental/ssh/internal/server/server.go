@@ -37,6 +37,9 @@ type ServerOptions struct {
 	SessionID string
 	// Serverless indicates whether the server is running on serverless compute.
 	Serverless bool
+	// UsagePolicyID the job was submitted with. Persisted to metadata.json so reconnects
+	// can tell which usage policy the running server was started under.
+	UsagePolicyID string
 	// The directory to store sshd configuration
 	ConfigDir string
 	// The name of the secrets scope to use for client and server keys
@@ -66,8 +69,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 
 	// Save metadata including ClusterID (required for Driver Proxy connections in serverless mode)
 	metadata := &workspace.WorkspaceMetadata{
-		Port:      port,
-		ClusterID: opts.ClusterID,
+		Port:          port,
+		ClusterID:     opts.ClusterID,
+		UsagePolicyID: opts.UsagePolicyID,
 	}
 	err = workspace.SaveWorkspaceMetadata(ctx, client, opts.Version, opts.SessionID, metadata)
 	if err != nil {

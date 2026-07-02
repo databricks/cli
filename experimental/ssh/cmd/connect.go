@@ -41,6 +41,7 @@ Connect to a dedicated cluster:
 	var environmentVersion int
 	var baseEnvironment string
 	var autoApprove bool
+	var usagePolicyID string
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks dedicated cluster ID")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
@@ -50,6 +51,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
 	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
 	cmd.Flags().StringVar(&ide, "ide", "", "Open remote IDE window (vscode or cursor)")
+	cmd.Flags().StringVar(&usagePolicyID, "usage-policy-id", "", "Usage policy ID for the serverless SSH server job (serverless only)")
 
 	cmd.Flags().BoolVar(&proxyMode, "proxy", false, "ProxyCommand mode")
 	cmd.Flags().MarkHidden("proxy")
@@ -130,6 +132,7 @@ Connect to a dedicated cluster:
 			BaseEnvironment:      baseEnvironment,
 			AdditionalArgs:       args,
 			AutoApprove:          autoApprove,
+			UsagePolicyID:        usagePolicyID,
 		}
 		if err := opts.Validate(); err != nil {
 			return err
