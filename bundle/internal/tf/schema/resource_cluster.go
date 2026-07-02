@@ -26,10 +26,11 @@ type ResourceClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceClusterAzureAttributes struct {
-	Availability     string                                          `json:"availability,omitempty"`
-	FirstOnDemand    int                                             `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                             `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                          `json:"availability,omitempty"`
+	CapacityReservationGroup string                                          `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                             `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                             `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceClusterClusterLogConfDbfs struct {

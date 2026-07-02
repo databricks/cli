@@ -27,10 +27,11 @@ type ResourcePipelineClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourcePipelineClusterAzureAttributes struct {
-	Availability     string                                                  `json:"availability,omitempty"`
-	FirstOnDemand    int                                                     `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                     `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourcePipelineClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                  `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                  `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                     `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                     `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourcePipelineClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourcePipelineClusterClusterLogConfDbfs struct {
@@ -807,6 +808,7 @@ type ResourcePipeline struct {
 	RunAsUserName        string                               `json:"run_as_user_name,omitempty"`
 	Schema               string                               `json:"schema,omitempty"`
 	Serverless           bool                                 `json:"serverless,omitempty"`
+	ServerlessComputeId  string                               `json:"serverless_compute_id,omitempty"`
 	State                string                               `json:"state,omitempty"`
 	Storage              string                               `json:"storage,omitempty"`
 	Tags                 map[string]string                    `json:"tags,omitempty"`

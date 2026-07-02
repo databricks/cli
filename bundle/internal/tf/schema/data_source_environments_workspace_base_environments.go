@@ -10,6 +10,11 @@ type DataSourceEnvironmentsWorkspaceBaseEnvironmentsWorkspaceBaseEnvironmentsPro
 	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
+type DataSourceEnvironmentsWorkspaceBaseEnvironmentsWorkspaceBaseEnvironmentsSpec struct {
+	Dependencies       []string `json:"dependencies,omitempty"`
+	EnvironmentVersion string   `json:"environment_version,omitempty"`
+}
+
 type DataSourceEnvironmentsWorkspaceBaseEnvironmentsWorkspaceBaseEnvironments struct {
 	BaseEnvironmentType          string                                                                                  `json:"base_environment_type,omitempty"`
 	CreateTime                   string                                                                                  `json:"create_time,omitempty"`
@@ -22,6 +27,7 @@ type DataSourceEnvironmentsWorkspaceBaseEnvironmentsWorkspaceBaseEnvironments st
 	Message                      string                                                                                  `json:"message,omitempty"`
 	Name                         string                                                                                  `json:"name"`
 	ProviderConfig               *DataSourceEnvironmentsWorkspaceBaseEnvironmentsWorkspaceBaseEnvironmentsProviderConfig `json:"provider_config,omitempty"`
+	Spec                         *DataSourceEnvironmentsWorkspaceBaseEnvironmentsWorkspaceBaseEnvironmentsSpec           `json:"spec,omitempty"`
 	Status                       string                                                                                  `json:"status,omitempty"`
 	UpdateTime                   string                                                                                  `json:"update_time,omitempty"`
 }

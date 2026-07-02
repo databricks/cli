@@ -24,7 +24,7 @@ type ResourceDisasterRecoveryFailoverGroupUnityCatalogAssets struct {
 
 type ResourceDisasterRecoveryFailoverGroupWorkspaceSets struct {
 	Name                     string   `json:"name"`
-	ReplicateWorkspaceAssets bool     `json:"replicate_workspace_assets"`
+	ReplicateWorkspaceAssets bool     `json:"replicate_workspace_assets,omitempty"`
 	StableUrlNames           []string `json:"stable_url_names,omitempty"`
 	WorkspaceIds             []string `json:"workspace_ids"`
 }

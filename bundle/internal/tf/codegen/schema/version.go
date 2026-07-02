@@ -1,4 +1,4 @@
 package schema
 
 // ProviderVersion is the version of the Databricks Terraform provider used for codegen.
-const ProviderVersion = "1.118.0"
+const ProviderVersion = "1.120.0"

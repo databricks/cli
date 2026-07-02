@@ -2,6 +2,10 @@
 
 package schema
 
+type ResourcePostgresProjectInitialBranchSpec struct {
+	IsProtected bool `json:"is_protected,omitempty"`
+}
+
 type ResourcePostgresProjectInitialEndpointSpecGroup struct {
 	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
 	Max                       int  `json:"max"`
@@ -9,7 +13,11 @@ type ResourcePostgresProjectInitialEndpointSpecGroup struct {
 }
 
 type ResourcePostgresProjectInitialEndpointSpec struct {
-	Group *ResourcePostgresProjectInitialEndpointSpecGroup `json:"group,omitempty"`
+	AutoscalingLimitMaxCu  int                                              `json:"autoscaling_limit_max_cu,omitempty"`
+	AutoscalingLimitMinCu  int                                              `json:"autoscaling_limit_min_cu,omitempty"`
+	Group                  *ResourcePostgresProjectInitialEndpointSpecGroup `json:"group,omitempty"`
+	NoSuspension           bool                                             `json:"no_suspension,omitempty"`
+	SuspendTimeoutDuration string                                           `json:"suspend_timeout_duration,omitempty"`
 }
 
 type ResourcePostgresProjectProviderConfig struct {
@@ -56,6 +64,7 @@ type ResourcePostgresProjectStatusDefaultEndpointSettings struct {
 type ResourcePostgresProjectStatus struct {
 	BranchLogicalSizeLimitBytes int                                                   `json:"branch_logical_size_limit_bytes,omitempty"`
 	BudgetPolicyId              string                                                `json:"budget_policy_id,omitempty"`
+	ComputeLastActiveTime       string                                                `json:"compute_last_active_time,omitempty"`
 	CustomTags                  []ResourcePostgresProjectStatusCustomTags             `json:"custom_tags,omitempty"`
 	DefaultBranch               string                                                `json:"default_branch,omitempty"`
 	DefaultEndpointSettings     *ResourcePostgresProjectStatusDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
@@ -71,6 +80,7 @@ type ResourcePostgresProjectStatus struct {
 type ResourcePostgresProject struct {
 	CreateTime          string                                      `json:"create_time,omitempty"`
 	DeleteTime          string                                      `json:"delete_time,omitempty"`
+	InitialBranchSpec   *ResourcePostgresProjectInitialBranchSpec   `json:"initial_branch_spec,omitempty"`
 	InitialEndpointSpec *ResourcePostgresProjectInitialEndpointSpec `json:"initial_endpoint_spec,omitempty"`
 	Name                string                                      `json:"name,omitempty"`
 	ProjectId           string                                      `json:"project_id"`
