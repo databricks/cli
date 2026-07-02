@@ -123,8 +123,36 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"tasks": {
+			"ai_runtime_task": {
+				"code_source_path": {}, // jobs.*.tasks.ai_runtime_task.code_source_path
+				"deployments": {
+					"command_path": {}, // jobs.*.tasks.ai_runtime_task.deployments.command_path
+					"compute": {
+						"accelerator_count": {}, // jobs.*.tasks.ai_runtime_task.deployments.compute.accelerator_count
+						"accelerator_type":  {}, // jobs.*.tasks.ai_runtime_task.deployments.compute.accelerator_type
+					},
+					"name": {}, // jobs.*.tasks.ai_runtime_task.deployments.name
+				},
+				"experiment":                  {}, // jobs.*.tasks.ai_runtime_task.experiment
+				"mlflow_experiment_directory": {}, // jobs.*.tasks.ai_runtime_task.mlflow_experiment_directory
+				"mlflow_run":                  {}, // jobs.*.tasks.ai_runtime_task.mlflow_run
+			},
 			"for_each_task": {
 				"task": {
+					"ai_runtime_task": {
+						"code_source_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.code_source_path
+						"deployments": {
+							"command_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.command_path
+							"compute": {
+								"accelerator_count": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.compute.accelerator_count
+								"accelerator_type":  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.compute.accelerator_type
+							},
+							"name": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.name
+						},
+						"experiment":                  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.experiment
+						"mlflow_experiment_directory": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.mlflow_experiment_directory
+						"mlflow_run":                  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.mlflow_run
+					},
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -137,6 +165,14 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
+			},
+		},
+	},
+	"model_serving_endpoints": {
+		"telemetry_config": {
+			"inference_table_config": {
+				"name":              {}, // model_serving_endpoints.*.telemetry_config.inference_table_config.name
+				"sampling_fraction": {}, // model_serving_endpoints.*.telemetry_config.inference_table_config.sampling_fraction
 			},
 		},
 	},
