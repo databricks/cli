@@ -48,7 +48,9 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		// root
 		l := b.Config.GetLocation("resources.jobs." + name)
 		if l.File == "" {
-			// b.Config.Resources.Jobs may include a job that only exists in state but not in config
+			// Skip resources that exist only in the deployment state: statemgmt.Load,
+			// which runs before this mutator, injects them into the config without a
+			// file location.
 			continue
 		}
 
@@ -72,6 +74,13 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		// Compute config file path the pipeline is defined in, relative to the bundle
 		// root
 		l := b.Config.GetLocation("resources.pipelines." + name)
+		if l.File == "" {
+			// Skip resources that exist only in the deployment state: statemgmt.Load,
+			// which runs before this mutator, injects them into the config without a
+			// file location.
+			continue
+		}
+
 		relativePath, err := filepath.Rel(b.BundleRootPath, l.File)
 		if err != nil {
 			return diag.Errorf("failed to compute relative path for pipeline %s: %v", name, err)
@@ -90,6 +99,13 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		// Compute config file path the dashboard is defined in, relative to the bundle
 		// root
 		l := b.Config.GetLocation("resources.dashboards." + name)
+		if l.File == "" {
+			// Skip resources that exist only in the deployment state: statemgmt.Load,
+			// which runs before this mutator, injects them into the config without a
+			// file location.
+			continue
+		}
+
 		relativePath, err := filepath.Rel(b.BundleRootPath, l.File)
 		if err != nil {
 			return diag.Errorf("failed to compute relative path for dashboard %s: %v", name, err)
