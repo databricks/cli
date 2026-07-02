@@ -12,9 +12,10 @@ unset MSYS_NO_PATHCONV
 trace $CLI bundle deploy
 replace_ids.py
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
-ETAG_1=$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')
+DASHBOARD=$(retry $CLI lakeview get $DASHBOARD_ID)
+ETAG_1=$(echo "$DASHBOARD" | jq -r '.etag')
 add_repl.py "$ETAG_1" ETAG_1
-trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
+echo "$DASHBOARD" | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 trace $CLI bundle plan -o json | gron.py | grep -E "etag|published"
 rm out.requests.txt
@@ -30,7 +31,8 @@ update_file.py databricks.yml "my dashboard" "my dashboard renamed"
 errcode trace $CLI bundle deploy
 trace print_requests.py //lakeview/dashboards
 # The PATCH bumped the remote etag to ETAG_2; retry until it is visible (eventual consistency).
-add_repl.py "$(retry.py --until-not "$ETAG_1" $CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_2
+ETAG_2=$(retry --until-not "$ETAG_1" $CLI lakeview get $DASHBOARD_ID | jq -r '.etag')
+add_repl.py "$ETAG_2" ETAG_2
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 trace $CLI bundle plan -o json | gron.py | grep -E "etag|published"
@@ -47,7 +49,9 @@ trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 # which fixes the stale published content.
 trace $CLI bundle deploy --force
 trace print_requests.py //lakeview/dashboards
-add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_3
+# --force did another PATCH; retry until the new etag is visible (eventual consistency).
+ETAG_3=$(retry --until-not "$ETAG_2" $CLI lakeview get $DASHBOARD_ID | jq -r '.etag')
+add_repl.py "$ETAG_3" ETAG_3
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 trace $CLI bundle plan

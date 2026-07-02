@@ -22,11 +22,12 @@ DASHBOARD_ID=$(jq -r '.id' out.summary.json)
 
 # Capture the dashboard ID as a replacement.
 echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
-echo "$($CLI lakeview get "$DASHBOARD_ID" | jq -r '.etag'):ETAG_1" >> ACC_REPLS
+DASHBOARD=$(retry $CLI lakeview get "$DASHBOARD_ID")
+echo "$(echo "$DASHBOARD" | jq -r '.etag'):ETAG_1" >> ACC_REPLS
 
 rm out.summary.json
 title "Load the dashboard by its ID and confirm its display name: "
-$CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name,page_display_name: (.serialized_dashboard | fromjson | .pages[0].displayName)}'
+echo "$DASHBOARD" | jq '{display_name,page_display_name: (.serialized_dashboard | fromjson | .pages[0].displayName)}'
 
 title "Make an out of band modification to the dashboard and confirm that it is detected:\n"
 RESOURCE_ID=$($CLI workspace get-status "${DASHBOARD_PATH}" | jq -r '.resource_id')

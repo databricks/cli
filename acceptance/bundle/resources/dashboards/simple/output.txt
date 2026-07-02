@@ -4,8 +4,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-t
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> [CLI] lakeview get [DASHBOARD_ID]
 {
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]",
