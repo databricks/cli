@@ -442,10 +442,10 @@ jobs:
 
       - name: Run tests
         env:
-          # start = monotonic GITHUB_RUN_NUMBER * COUNT keeps each nightly window
-          # non-overlapping, so CI explores new configs every run.
           FUZZ_SEED_COUNT: "25"
         run: |
+          # start = monotonic GITHUB_RUN_NUMBER * COUNT keeps each nightly window
+          # non-overlapping, so CI explores new configs every run.
           export FUZZ_SEED_START=$(( GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
-Edit one updatable field in a generated databricks.yml in place, for the `update`
-invariant. It targets a `comment` or `description` scalar -- plain string fields the
-update API accepts across resource types -- so a redeploy issues an in-place update
-rather than a recreate.
+Edit a `comment`/`description` scalar in a generated databricks.yml so a redeploy is an
+in-place update, not a recreate. Used by the `update` invariant. These fields are safe
+to edit across resource types.
 
-gen_fuzz_config.py emits every scalar on its own line as `key: <json>`, so a line
-match is enough and avoids a YAML dependency.
+gen_fuzz_config.py emits one scalar per line as `key: <json>`, so a regex match suffices
+(no YAML dependency).
 
   edit_fuzz_config.py PATH            edit in place; exit 1 if no editable field
   edit_fuzz_config.py PATH --detect   exit 0 if an editable field exists, else 1

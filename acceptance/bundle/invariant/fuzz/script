@@ -1,17 +1,14 @@
-# Invariant: the CLI never panics on a schema-generated config, and a config that
-# deploys cleanly has no drift. gen_fuzz_config.py produces a random schema-valid
-# config; the invariant body ../$FUZZ_INVARIANT.sh (shared with the matching curated
-# invariant test, e.g. no_drift or migrate) does the deploy/drift/destroy checks.
-# Output goes to LOG.* so a violation fails via exit code, not diff, letting the same
-# test run under any seed window [START, START+COUNT).
+# Invariant: the CLI never panics on a schema-generated config, and a clean deploy has
+# no drift. gen_fuzz_config.py produces a random config; the body ../$FUZZ_INVARIANT.sh
+# (shared with the curated invariant tests) runs the deploy/drift/destroy checks. Output
+# goes to LOG.* so a violation fails by exit code, letting the same test run under any
+# seed window [START, START+COUNT).
 #
-# A rejected config is not a bug: every invariant body prints INPUT_CONFIG_OK once a
-# config deploys, so a non-zero result before that marker (no panic) is just a
-# rejection, while a panic anywhere or a failure after it (drift, destroy) is a real bug.
+# Rejection vs bug: bodies print INPUT_CONFIG_OK once a config deploys, so a non-zero
+# result before the marker is a rejection; a panic anywhere, or a failure after it, is a bug.
 #
-# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a random config can deploy yet
-# legitimately differ from the fake server's state, so the committed run only asserts
-# no-panic and skips the drift assertion.
+# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a random config can deploy yet legitimately
+# differ from the fake server, so the committed run asserts only no-panic.
 
 START="${FUZZ_SEED_START:-0}"
 COUNT="${FUZZ_SEED_COUNT:-5}"
@@ -25,7 +22,10 @@ export READPLAN=""
 
 # Emit the schema from the CLI under test so the generator always matches it.
 $CLI bundle schema > schema.json 2>LOG.schema.err
-cat LOG.schema.err | contains.py '!panic' '!internal error' > /dev/null
+cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
+
+# Fail loud on a schema type the generator can't produce (the loop below would hide it).
+check_schema_types.py --schema schema.json
 
 for ((offset = 0; offset < COUNT; offset++)); do
     seed=$((START + offset))
@@ -49,11 +49,10 @@ for ((offset = 0; offset < COUNT; offset++)); do
 
     bug=""
 
-    # A panic or internal error anywhere is a bug even when the CLI then rejects the
-    # config. Invariant bodies write different LOG.* files (no_drift has LOG.validate,
-    # migrate has LOG.migrate), so scan whatever this run produced rather than naming
-    # specific files -- a missing name would otherwise fail the pipe under pipefail.
-    if ! cat "$dir"/LOG.* 2>/dev/null | contains.py '!panic' '!internal error' > /dev/null; then
+    # A panic anywhere is a bug even if the CLI then rejects the config. Bodies write
+    # different LOG.* names, so scan them all rather than naming one (a missing name
+    # would fail the pipe under pipefail).
+    if ! cat "$dir"/LOG.* 2>/dev/null | contains.py '!panic:' '!internal error' > /dev/null; then
         bug=1
     fi
 

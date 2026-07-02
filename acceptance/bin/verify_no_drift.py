@@ -3,22 +3,16 @@
 Check that all actions in plan are "skip".
 """
 
-import json
+import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from util import load_plan
 
 
 def check_plan(path):
-    with open(path) as fobj:
-        raw = fobj.read()
-
-    # Empty or unparseable output means `bundle plan` itself failed; report that
-    # cleanly instead of crashing with a traceback.
-    if not raw.strip():
-        sys.exit(f"{path}: empty plan output (bundle plan failed)")
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError as e:
-        sys.exit(f"{path}: invalid plan JSON: {e}\n{raw}")
+    data, raw = load_plan(path)
 
     changes_detected = 0
     for key, value in data["plan"].items():

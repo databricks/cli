@@ -11,8 +11,12 @@ no-drift.
 Action vocabulary mirrors bundle/deployplan/action.go.
 """
 
-import json
+import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from util import load_plan
 
 # update_id/resize keep the resource (no recreate), so they count as in-place updates.
 ALLOWED = {
@@ -29,15 +33,7 @@ def main():
     allowed = ALLOWED[expected]
     skip_ok = SKIP_OK[expected]
 
-    with open(path) as fobj:
-        raw = fobj.read()
-
-    if not raw.strip():
-        sys.exit(f"{path}: empty plan output (bundle plan failed)")
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError as e:
-        sys.exit(f"{path}: invalid plan JSON: {e}\n{raw}")
+    data, raw = load_plan(path)
 
     matched = 0
     bad = 0

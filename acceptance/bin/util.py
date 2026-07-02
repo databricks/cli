@@ -31,3 +31,16 @@ def run(cmd):
     if result.returncode != 0:
         raise RunError(f"{cmd} failed with code {result.returncode}")
     return result
+
+
+def load_plan(path):
+    # Empty or invalid output means `bundle plan` failed; exit cleanly (no traceback)
+    # so the fuzzer treats it as a rejected config, not a bug. Returns (data, raw).
+    with open(path) as fobj:
+        raw = fobj.read()
+    if not raw.strip():
+        sys.exit(f"{path}: empty plan output (bundle plan failed)")
+    try:
+        return json.loads(raw), raw
+    except json.JSONDecodeError as e:
+        sys.exit(f"{path}: invalid plan JSON: {e}\n{raw}")
