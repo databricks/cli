@@ -929,7 +929,7 @@ password = pass
 	w := cmdctx.WorkspaceClient(cmd.Context())
 	require.NotNil(t, w)
 	// Host and token in the environment fully determine auth, so the default
-	// profile must not be pinned (see resolveDefaultProfile).
+	// profile must not be pinned (see ResolveDefaultProfile).
 	assert.Empty(t, w.Config.Profile)
 	assert.Equal(t, "https://env.test", w.Config.Host)
 	assert.Equal(t, "env-token", w.Config.Token)
