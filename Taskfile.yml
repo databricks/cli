@@ -701,6 +701,22 @@ tasks:
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/cmd/sandbox"
 
+  test-fuzz:
+    desc: Run schema fuzz invariant tests (random configs, direct engine)
+    # No `sources:` fingerprint: the window depends on FUZZ_* env vars Task can't
+    # see, so always run rather than no-op a repro or shifted nightly window.
+    cmds:
+      - |
+        # Wider window than the committed run, with drift checking on; a repro can
+        # narrow it via FUZZ_SEED_START/COUNT.
+        export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-200}"
+        export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/bundle/invariant/fuzz"
+
   # --- Integration tests ---
 
   integration:

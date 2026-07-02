@@ -370,6 +370,78 @@ jobs:
         run: |
           go tool -modfile=tools/task/go.mod task test-sandbox
 
+  test-fuzz:
+    needs:
+      - cleanups
+
+    # Wide rotating seed window with drift checking on: too slow for every PR, so
+    # nightly only and not part of test-result. The committed acceptance test still
+    # checks the no-panic invariant on a small fixed window per PR.
+    if: ${{ github.event_name == 'schedule' }}
+    name: "task test-fuzz"
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+      # Failure-reporting step comments on the PR that introduced the failing commit.
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-fuzz
+
+      - name: Run tests
+        env:
+          # start = monotonic GITHUB_RUN_NUMBER * COUNT keeps each nightly window
+          # non-overlapping, so CI explores new configs every run.
+          FUZZ_SEED_COUNT: "25"
+        run: |
+          export FUZZ_SEED_START=$(( GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT ))
+          go tool -modfile=tools/task/go.mod task test-fuzz
+
+      # Not in test-result, so surface failures by commenting on the PR that
+      # introduced the commit under test.
+      - name: Report failure
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          body=$(cat <<EOF
+          The nightly schema fuzz invariant job (\`task test-fuzz\`) failed on commit \`$COMMIT\`.
+
+          Run: $RUN_URL
+
+          The failing seed is printed in the job log as \`reproduce with: ...\`.
+          Reproduce locally with:
+
+          \`\`\`
+          FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 task test-fuzz
+          \`\`\`
+          EOF
+          )
+
+          # The commit's pulls endpoint returns the merged PR that introduced it.
+          pr=$(gh api "repos/$GITHUB_REPOSITORY/commits/$COMMIT/pulls" --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then
+            gh pr comment "$pr" --body "$body"
+          else
+            echo "No PR found for commit $COMMIT; skipping failure comment" >&2
+          fi
+
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
   #

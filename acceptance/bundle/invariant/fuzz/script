@@ -1,0 +1,70 @@
+# Invariant: the CLI never panics on a schema-generated config, and a config that
+# deploys cleanly has no drift. gen_fuzz_config.py produces a random schema-valid
+# config; the invariant body ../$FUZZ_INVARIANT.sh (shared with the matching curated
+# invariant test, e.g. no_drift or migrate) does the deploy/drift/destroy checks.
+# Output goes to LOG.* so a violation fails via exit code, not diff, letting the same
+# test run under any seed window [START, START+COUNT).
+#
+# A rejected config is not a bug: every invariant body prints INPUT_CONFIG_OK once a
+# config deploys, so a non-zero result before that marker (no panic) is just a
+# rejection, while a panic anywhere or a failure after it (drift, destroy) is a real bug.
+#
+# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a random config can deploy yet
+# legitimately differ from the fake server's state, so the committed run only asserts
+# no-panic and skips the drift assertion.
+
+START="${FUZZ_SEED_START:-0}"
+COUNT="${FUZZ_SEED_COUNT:-5}"
+
+if [ -z "${FUZZ_CHECK_DRIFT:-}" ]; then
+    export SKIP_DRIFT_CHECK=1
+fi
+
+# no_drift.sh reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
+export READPLAN=""
+
+# Emit the schema from the CLI under test so the generator always matches it.
+$CLI bundle schema > schema.json 2>LOG.schema.err
+cat LOG.schema.err | contains.py '!panic' '!internal error' > /dev/null
+
+for ((offset = 0; offset < COUNT; offset++)); do
+    seed=$((START + offset))
+    dir="seed-$seed"
+    mkdir -p "$dir"
+
+    # Subshell so a generator crash or shared-check failure is contained per seed.
+    set +e
+    (
+        cd "$dir"
+        gen_fuzz_config.py --schema ../schema.json --seed "$seed" --unique "$UNIQUE_NAME-$seed" --resources "${FUZZ_RESOURCES:-}" > databricks.yml 2>LOG.gen.err
+        cat LOG.gen.err | contains.py '!Traceback' > /dev/null
+        source "$TESTDIR/../${FUZZ_INVARIANT:-no_drift}.sh"
+    ) > "$dir/LOG.check" 2>&1
+    rc=$?
+    set -e
+
+    if [ "$rc" -eq 0 ]; then
+        continue
+    fi
+
+    bug=""
+
+    # A panic or internal error anywhere is a bug even when the CLI then rejects the
+    # config. Invariant bodies write different LOG.* files (no_drift has LOG.validate,
+    # migrate has LOG.migrate), so scan whatever this run produced rather than naming
+    # specific files -- a missing name would otherwise fail the pipe under pipefail.
+    if ! cat "$dir"/LOG.* 2>/dev/null | contains.py '!panic' '!internal error' > /dev/null; then
+        bug=1
+    fi
+
+    # Failing after INPUT_CONFIG_OK means the config deployed but drifted (or destroy
+    # failed); failing before it with no panic just means the config was rejected.
+    if grep -q INPUT_CONFIG_OK "$dir/LOG.check"; then
+        bug=1
+    fi
+
+    if [ -n "$bug" ]; then
+        echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 task test-fuzz" >&2
+        exit 1
+    fi
+done
