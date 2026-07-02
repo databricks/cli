@@ -292,7 +292,6 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,
 				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
-				TerraformToDirectMigration:   b.Metrics.TerraformToDirectMigration,
 			},
 		},
 	})

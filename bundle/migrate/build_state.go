@@ -25,11 +25,10 @@ import (
 // references using TF state attributes, and writes each resource's state entry.
 // configRoot should be an un-interpolated config (with ${resources.*} references).
 //
-// When downgradeWarnings is true, warnings (e.g. skipped unsupported resource
-// types) are logged at info level instead of warn level. This is used by the
-// dry-run migration that runs after a terraform deploy, where these conditions
-// are reported via telemetry rather than surfaced to the user. The returned bool
-// reports whether any such warning was emitted, regardless of its log level.
+// warnPrefix is prepended to every warning (e.g. skipped unsupported resource
+// types). Callers that run the conversion in the background (the post-deploy
+// dry-run) set it so their warnings are attributable and not confused with the
+// user-invoked migration. The returned bool reports whether any warning fired.
 func BuildStateFromTF(
 	ctx context.Context,
 	configRoot *config.Root,
@@ -37,16 +36,12 @@ func BuildStateFromTF(
 	stateDB *dstate.DeploymentState,
 	tfAttrs TFStateAttrs,
 	tfIDs map[string]string,
-	downgradeWarnings bool,
+	warnPrefix string,
 ) (bool, error) {
 	warningsSeen := false
 	warnf := func(format string, args ...any) {
 		warningsSeen = true
-		if downgradeWarnings {
-			log.Infof(ctx, format, args...)
-		} else {
-			log.Warnf(ctx, format, args...)
-		}
+		log.Warnf(ctx, warnPrefix+format, args...)
 	}
 	// Collect all resource nodes (same patterns as makePlan).
 	var nodes []string

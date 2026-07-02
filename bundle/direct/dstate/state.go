@@ -31,20 +31,11 @@ const (
 // The caller should delete the stale WAL and proceed normally.
 var errStaleWAL = errors.New("stale WAL")
 
-// inMemoryPath is the placeholder Path for a state opened in in-memory write
-// mode. It is never used for I/O; it only keeps the "opened" asserts happy.
-const inMemoryPath = "(in-memory)"
-
 type DeploymentState struct {
 	Path    string
 	Data    Database
 	mu      sync.Mutex
 	walFile *os.File
-
-	// When true, SaveState/DeleteState mutate Data.State directly instead of
-	// appending to an on-disk WAL, so nothing is written to disk. Used for
-	// dry-run migrations (see OpenInMemoryForWrite).
-	inMemory bool
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
@@ -110,12 +101,6 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		DependsOn: dependsOn,
 	}
 
-	if db.inMemory {
-		db.Data.State[key] = entry
-		db.stateIDs[key] = newID
-		return nil
-	}
-
 	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
 	if err == nil {
 		db.stateIDs[key] = newID
@@ -129,12 +114,6 @@ func (db *DeploymentState) DeleteState(key string) error {
 	defer db.mu.Unlock()
 
 	if db.Data.State == nil {
-		return nil
-	}
-
-	if db.inMemory {
-		delete(db.Data.State, key)
-		delete(db.stateIDs, key)
 		return nil
 	}
 
@@ -284,31 +263,6 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 	}
 }
 
-// OpenInMemoryForWrite initializes the state from an in-memory database in write
-// mode without touching disk. SaveState and DeleteState mutate Data.State
-// directly instead of appending to an on-disk WAL, and no state file is ever
-// written. It backs dry-run migrations that must not persist any state locally
-// or remotely.
-func (db *DeploymentState) OpenInMemoryForWrite(data Database) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	if db.Path != "" {
-		panic(fmt.Sprintf("state already opened: %v, cannot open in memory", db.Path))
-	}
-
-	db.Path = inMemoryPath
-	db.inMemory = true
-	db.Data = data
-	if db.Data.State == nil {
-		db.Data.State = make(map[string]ResourceEntry)
-	}
-	db.stateIDs = make(map[string]string)
-	for key, entry := range db.Data.State {
-		db.stateIDs[key] = entry.ID
-	}
-}
-
 func (db *DeploymentState) replayWAL(ctx context.Context) error {
 	walPath := db.Path + walSuffix
 	hasEntries, err := db.mergeWalIntoState(ctx)
@@ -448,7 +402,6 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 	db.Path = ""
 	db.Data = Database{}
 	db.stateIDs = nil
-	db.inMemory = false
 
 	return state, err
 }
@@ -500,7 +453,7 @@ func (db *DeploymentState) AssertOpenedForRead() {
 
 func (db *DeploymentState) AssertOpenedForWrite() {
 	db.AssertOpenedForReadOrWrite()
-	if db.walFile == nil && !db.inMemory {
+	if db.walFile == nil {
 		panic("internal error: DeploymentState must be opened in write mode")
 	}
 }

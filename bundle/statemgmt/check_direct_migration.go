@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -12,41 +14,39 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/migrate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/telemetry"
-	"github.com/databricks/cli/libs/telemetry/protos"
 )
 
-// CheckDirectMigration performs an in-memory dry-run migration of the just-deployed
-// terraform state to the direct engine and records the outcome in deploy telemetry.
+// warnPrefix labels warnings emitted by the post-deploy dry-run so they are not
+// confused with warnings from the user-invoked `bundle migrate` command.
+const warnPrefix = "post-deploy dry-run migration to direct: "
+
+// CheckDirectMigration performs a dry-run migration of the just-deployed terraform
+// state to the direct engine and records the outcome in deploy telemetry.
 //
-// It writes nothing to local disk or the workspace; its only purpose is to measure,
-// across the fleet, how many terraform deploys could migrate to the direct engine
-// cleanly. Any error is surfaced to the user as a warning so it never fails a deploy
-// that already succeeded; warnings raised during the migration are downgraded to
-// info level and reported only via telemetry.
+// The converted state is written to a temporary file that is deleted before
+// returning, so nothing is persisted locally or uploaded to the workspace; its
+// only purpose is to measure, across the fleet, how many terraform deploys could
+// migrate to the direct engine cleanly. Any error is surfaced to the user as a
+// warning so it never fails a deploy that already succeeded.
 func CheckDirectMigration(ctx context.Context, b *bundle.Bundle) {
-	result := &protos.BundleDirectMigration{}
-	b.Metrics.TerraformToDirectMigration = result
-
-	hasWarnings, err := migrateInMemory(ctx, b)
+	hasWarnings, err := dryRunMigrate(ctx, b)
+	b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, err == nil)
+	b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, hasWarnings)
 	if err != nil {
-		result.ErrorMessage = telemetry.ScrubErrorMessage(err.Error())
-		log.Warnf(ctx, "Dry-run migration to direct engine failed: %v", err)
-		return
+		log.Warnf(ctx, "%s%v", warnPrefix, err)
 	}
-
-	result.Success = true
-	result.HasWarnings = hasWarnings
 }
 
-// migrateInMemory converts the local terraform state to the direct engine state
-// entirely in memory, returning whether any warnings were emitted. It mirrors the
-// `bundle migrate` command but never persists or uploads the resulting state.
-func migrateInMemory(ctx context.Context, b *bundle.Bundle) (bool, error) {
+// dryRunMigrate converts the local terraform state to the direct engine state,
+// returning whether any warnings were emitted. It mirrors the `bundle migrate`
+// command but writes the result to a throwaway temp file that is deleted before
+// returning, and never uploads anything.
+func dryRunMigrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
@@ -58,6 +58,16 @@ func migrateInMemory(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if tfState == nil {
 		return false, nil
 	}
+
+	// The converted state is a throwaway: write it to a temp dir that is removed
+	// (along with the WAL the state DB creates) before returning, so the dry run
+	// leaves nothing behind on disk.
+	tempDir, err := os.MkdirTemp("", "databricks-direct-migration-")
+	if err != nil {
+		return false, fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tempDir)
+	tempStatePath := filepath.Join(tempDir, "resources.json")
 
 	// SecretScopeFixups and the direct-engine state builder report failures via
 	// logdiag. Run them in an isolated context so a dry-run failure never affects
@@ -76,7 +86,7 @@ func migrateInMemory(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	migratedDB.State = state
 
 	var stateDB dstate.DeploymentState
-	stateDB.OpenInMemoryForWrite(migratedDB)
+	stateDB.OpenWithData(tempStatePath, migratedDB)
 
 	// Apply SecretScopeFixups so the config matches what the direct engine expects.
 	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
@@ -107,10 +117,17 @@ func migrateInMemory(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
-	// downgradeWarnings=true: warnings are reported via telemetry, not surfaced to
-	// the user, since this is a background dry run on a deploy that already succeeded.
-	hasWarnings, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, true)
+	if err := stateDB.UpgradeToWrite(); err != nil {
+		return false, fmt.Errorf("upgrading state for apply: %w", err)
+	}
+
+	// warnPrefix labels the conversion's warnings as coming from the background dry run.
+	hasWarnings, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
 	if err != nil {
+		return hasWarnings, err
+	}
+
+	if _, err := stateDB.Finalize(ctx); err != nil {
 		return hasWarnings, err
 	}
 

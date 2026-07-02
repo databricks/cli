@@ -1,3 +1,10 @@
-{
-  "success": true
-}
+[
+  {
+    "key": "direct_migration_success",
+    "value": true
+  },
+  {
+    "key": "direct_migration_has_warnings",
+    "value": false
+  }
+]

@@ -172,7 +172,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return false, fmt.Errorf("upgrading state for apply: %w", err)
 	}
 
-	if _, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, false); err != nil {
+	if _, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, ""); err != nil {
 		return false, err
 	}
 

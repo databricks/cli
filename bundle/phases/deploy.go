@@ -111,15 +111,15 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		statemgmt.UploadStateForYamlSync(targetEngine),
 	)
 
-	// After a successful terraform deploy, dry-run the migration to the direct
-	// engine in memory and record the outcome in telemetry. It writes nothing and
-	// never fails the deploy.
-	if !targetEngine.IsDirect() && !logdiag.HasError(ctx) {
-		statemgmt.CheckDirectMigration(ctx, b)
-	}
-
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
+	}
+
+	// Once the deploy is complete, dry-run the migration to the direct engine in
+	// memory and record the outcome in telemetry. It writes nothing and never
+	// fails the deploy.
+	if !targetEngine.IsDirect() && !logdiag.HasError(ctx) {
+		statemgmt.CheckDirectMigration(ctx, b)
 	}
 }
 

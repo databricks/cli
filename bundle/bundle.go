@@ -62,11 +62,6 @@ type Metrics struct {
 	// bytes so deploy telemetry can be derived without re-reading or re-parsing
 	// the state file. Nil for terraform deploys.
 	ResourceState resourcestate.ExportedResourcesMap
-
-	// TerraformToDirectMigration holds the result of the in-memory dry-run
-	// migration to the direct engine attempted after a successful terraform
-	// deploy. Nil unless a terraform deploy attempted the migration.
-	TerraformToDirectMigration *protos.BundleDirectMigration
 }
 
 // SetBoolValue sets the value of a boolean metric.
