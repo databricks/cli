@@ -32,5 +32,9 @@ func DefaultMutators(ctx context.Context, b *bundle.Bundle) {
 		// See the mutators for more details.
 		validate.NoVariableReferenceInResourceKey(),
 		validate.UniqueResourceKeys(),
+
+		// Must run before the target overrides are merged: it inspects the
+		// "targets" section, which is dropped from the config tree by the merge.
+		CollectNullTelemetry(),
 	)
 }
