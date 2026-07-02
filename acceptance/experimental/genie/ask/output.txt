@@ -28,6 +28,7 @@ Alpha leads with 1,250 total sales.
 >>> [CLI] experimental genie ask What are total sales by franchise? --output json
 {
   "status": "completed",
+  "conversation_id": "conv_1",
   "text": "Alpha leads with 1,250 total sales.\n\n![Total by Franchise](#viz_1)",
   "tool_calls": [
     {
