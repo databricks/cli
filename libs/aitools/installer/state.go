@@ -7,12 +7,29 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/env"
 )
 
+// clearFileRecords removes all file-provenance entries belonging to a skill
+// (keys are "<skill>/<file>"), so refetching or removing a skill never leaves
+// orphaned records behind.
+func clearFileRecords(files map[string]FileRecord, skillName string) {
+	prefix := skillName + "/"
+	for path := range files {
+		if strings.HasPrefix(path, prefix) {
+			delete(files, path)
+		}
+	}
+}
+
 const stateFileName = ".state.json"
+
+// schemaVersionV2 is the current on-disk state schema version. v2 adds the
+// additive Plugins and Files maps; v1 state loads forward without data changes.
+const schemaVersionV2 = 2
 
 // Scope constants for skill installation.
 const (
@@ -29,6 +46,44 @@ type InstallState struct {
 	Skills              map[string]string `json:"skills"`
 	RepoDirs            map[string]string `json:"repo_dirs,omitempty"`
 	Scope               string            `json:"scope,omitempty"`
+
+	// Plugins records databricks plugins installed through an agent's own CLI,
+	// keyed by registry agent name (e.g. "claude-code"). Added in schema v2;
+	// omitted for files-only installs.
+	Plugins map[string]PluginRecord `json:"plugins,omitempty"`
+	// Files records provenance for skill files the CLI wrote, keyed by the
+	// file path relative to the scope's canonical skills dir (forward slashes,
+	// e.g. "databricks/SKILL.md"). Added in schema v2; used to prune only the
+	// skills we wrote that the user hasn't modified.
+	Files map[string]FileRecord `json:"files,omitempty"`
+}
+
+// PluginRecord records a databricks plugin installed for an agent through the
+// agent's own plugin CLI, so update/uninstall act on exactly where we
+// installed and list/version can report real plugin state.
+type PluginRecord struct {
+	// Marketplace is the marketplace registry name the plugin was installed from.
+	Marketplace string `json:"marketplace"`
+	// Plugin is the installed plugin id (e.g. "databricks").
+	Plugin string `json:"plugin"`
+	// Scope is the agent-native install scope (e.g. "user" or "project").
+	Scope string `json:"scope,omitempty"`
+	// Version is the last seen plugin/release version, when known.
+	Version string `json:"version,omitempty"`
+	// InstalledMarketplace is true when this CLI registered the marketplace,
+	// so uninstall may de-register it. False when it was already present and we
+	// must leave it for whatever else shares it.
+	InstalledMarketplace bool `json:"installed_marketplace,omitempty"`
+}
+
+// FileRecord records provenance for a single skill file the CLI wrote, so
+// update can prune a vanished skill only when the on-disk file still matches
+// what we wrote (i.e. the user hasn't modified it).
+type FileRecord struct {
+	// SHA256 is the hex-encoded checksum of the file content the CLI wrote.
+	SHA256 string `json:"sha256"`
+	// Origin is the skills ref the file was fetched from, when known.
+	Origin string `json:"origin,omitempty"`
 }
 
 // LoadState reads install state from the given directory.
@@ -46,7 +101,18 @@ func LoadState(dir string) (*InstallState, error) {
 	if err := json.Unmarshal(data, &state); err != nil {
 		return nil, fmt.Errorf("failed to parse state file: %w", err)
 	}
+	migrateState(&state)
 	return &state, nil
+}
+
+// migrateState brings a loaded state forward to the current schema version. It
+// is forward-only and idempotent. v1 -> v2 needs no data transformation (the
+// Plugins/Files maps are additive and optional), so it only stamps the version;
+// writers lazily initialize the maps, matching how RepoDirs is handled.
+func migrateState(state *InstallState) {
+	if state.SchemaVersion < schemaVersionV2 {
+		state.SchemaVersion = schemaVersionV2
+	}
 }
 
 // SaveState writes install state to the given directory atomically.

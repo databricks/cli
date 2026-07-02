@@ -14,6 +14,6 @@
 >>> [CLI] repos delete /Repos/me@databricks.com/test-repo
 
 >>> [CLI] repos get /Repos/me@databricks.com/test-repo -o json
-Error: failed to look up repo by path: Workspace path not found
+Error: failed to look up repo by path: Path (/Repos/me@databricks.com/test-repo) doesn't exist.
 
 Exit code: 1

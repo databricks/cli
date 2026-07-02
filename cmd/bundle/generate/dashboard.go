@@ -85,7 +85,7 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
 
 func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) string {
 	w := b.WorkspaceClient(ctx)
-	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath)
 	if err != nil {
 		if apierr.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("dashboard %q not found", path.Base(d.existingPath)))
@@ -263,7 +263,7 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 	}
 
 	for {
-		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

@@ -1,0 +1,172 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] lakeview get [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard",
+  "etag": "[ETAG_1]"
+}
+
+>>> [CLI] lakeview get-published [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard"
+}
+
+>>> [CLI] bundle plan -o json
+json.plan.resources.dashboards.dashboard1.remote_state.etag = "[ETAG_1]";
+json.plan.resources.dashboards.dashboard1.remote_state.published = true;
+json.plan.resources.dashboards.dashboard1.changes.etag.action = "skip";
+json.plan.resources.dashboards.dashboard1.changes.etag.reason = "custom";
+json.plan.resources.dashboards.dashboard1.changes.etag.old = "[ETAG_1]";
+json.plan.resources.dashboards.dashboard1.changes.etag.remote = "[ETAG_1]";
+json.plan.resources.dashboards.dashboard1.changes.serialized_dashboard.reason = "etag_based";
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
+Deploying resources...
+Error: cannot update resources.dashboards.dashboard1: updating id=[DASHBOARD1_ID]: Fault injected by test. (400 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published
+HTTP Status: 400 Bad Request
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Updating deployment state...
+
+Exit code: 1
+
+>>> print_requests.py //lakeview/dashboards
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
+  "body": {
+    "display_name": "my dashboard renamed",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published",
+  "body": {
+    "embed_credentials": false,
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+
+>>> [CLI] lakeview get [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard renamed",
+  "etag": "[ETAG_2]"
+}
+
+>>> [CLI] lakeview get-published [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard"
+}
+
+>>> [CLI] bundle plan -o json
+Warning: dashboard "dashboard1" has been modified remotely
+  at resources.dashboards.dashboard1
+  in databricks.yml:7:7
+
+This dashboard has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
+
+Make sure that the local dashboard definition matches what you intend to deploy
+before proceeding with the deployment.
+
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be lost.
+
+json.plan.resources.dashboards.dashboard1.new_state.value.published = true;
+json.plan.resources.dashboards.dashboard1.remote_state.etag = "[ETAG_2]";
+json.plan.resources.dashboards.dashboard1.remote_state.published = true;
+json.plan.resources.dashboards.dashboard1.changes.etag.action = "update";
+json.plan.resources.dashboards.dashboard1.changes.etag.old = "[ETAG_1]";
+json.plan.resources.dashboards.dashboard1.changes.etag.remote = "[ETAG_2]";
+json.plan.resources.dashboards.dashboard1.changes.serialized_dashboard.reason = "etag_based";
+
+>>> [CLI] bundle deploy
+Error: dashboard "dashboard1" has been modified remotely
+  at resources.dashboards.dashboard1
+  in databricks.yml:7:7
+
+This dashboard has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
+
+Make sure that the local dashboard definition matches what you intend to deploy
+before proceeding with the deployment.
+
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be lost.
+
+
+Exit code: 1
+
+>>> print_requests.py //lakeview/dashboards
+
+>>> [CLI] lakeview get [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard renamed",
+  "etag": "[ETAG_2]"
+}
+
+>>> [CLI] lakeview get-published [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard"
+}
+
+>>> [CLI] bundle deploy --force
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //lakeview/dashboards
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
+  "body": {
+    "display_name": "my dashboard renamed",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published",
+  "body": {
+    "embed_credentials": false,
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+
+>>> [CLI] lakeview get [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard renamed",
+  "etag": "[ETAG_3]"
+}
+
+>>> [CLI] lakeview get-published [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard renamed"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.dashboards.dashboard1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default
+
+Deleting files...
+Destroy complete!

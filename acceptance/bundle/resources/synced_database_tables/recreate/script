@@ -1,0 +1,22 @@
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl | sed "s/POLICY_PLACEHOLDER/SNAPSHOT/" > databricks.yml
+
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Change an immutable synced-table field: no update API, so the plan recreates it"
+sed "s/scheduling_policy: SNAPSHOT/scheduling_policy: TRIGGERED/" databricks.yml > databricks.yml.new
+mv databricks.yml.new databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+
+# The change must be a DELETE of the old synced table plus a POST creating the
+# new one. A PATCH would return 501 (the bug this guards against).
+jq --sort-keys 'select(.method != "GET" and (.path | contains("/database/synced_tables")))' < out.requests.txt > out.requests.recreate.txt
+rm -f out.requests.txt

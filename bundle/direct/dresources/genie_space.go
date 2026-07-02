@@ -158,7 +158,7 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 	// error or as INVALID_PARAMETER_VALUE with a "Tree node ... does not exist"
 	// message depending on the backend.
 	if err != nil && isMissingGenieParentPathError(err) {
-		err = r.client.Workspace.MkdirsByPath(ctx, config.ParentPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		err = r.client.Workspace.MkdirsByPath(ctx, config.ParentPath)
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
 		}

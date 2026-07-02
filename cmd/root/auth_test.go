@@ -762,3 +762,42 @@ token = named-token
 	assert.Equal(t, "DEFAULT", w.Config.Profile)
 	assert.Equal(t, "https://default.cloud.databricks.com", w.Config.Host)
 }
+
+func TestMustWorkspaceClientEnvHostSkipsDefaultProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	// The default profile uses basic auth on the same host as the environment.
+	// If it were pinned and merged with the PAT from the environment, the SDK
+	// would fail validation with "more than one authorization method configured"
+	// (matching hosts do not make the auth methods compatible).
+	err := os.WriteFile(configFile, []byte(`
+[__settings__]
+default_profile = basic-profile
+
+[basic-profile]
+host = https://env.test
+username = user
+password = pass
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("DATABRICKS_HOST", "https://env.test")
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	// Host and token in the environment fully determine auth, so the default
+	// profile must not be pinned (see resolveDefaultProfile).
+	assert.Empty(t, w.Config.Profile)
+	assert.Equal(t, "https://env.test", w.Config.Host)
+	assert.Equal(t, "env-token", w.Config.Token)
+}

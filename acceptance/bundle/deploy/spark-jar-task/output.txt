@@ -8,7 +8,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run jar_job
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "[default] Test Spark Jar Job [UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "[default] Test Spark Jar Job [UNIQUE_NAME]" TERMINATED SUCCESS

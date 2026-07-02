@@ -18,13 +18,13 @@
 Each field with special plan/deploy behavior must be declared in `resources.yml`. Choose the right category:
 
  - **`backend_defaults`**: The backend may fill in a value when the user doesn't specify one. Suppresses the diff when the user's config is nil/empty but remote has a value. Optionally restrict to specific allowed remote values via `values:`. Use for fields the API fills in as defaults (e.g., `format`, `run_if`, `node_type_id`). Link to TF provider suppression comment in the same format as existing entries.
- - **`ignore_remote_changes`**: Ignore changes the remote makes to this field. Use for fields the backend manages (e.g., cloud-provider attributes like `aws_attributes`, `gcp_attributes`) or fields not returned by the update endpoint. Reason codes:
+ - **`ignore_remote_changes`**: Ignore changes the remote makes to this field. Use for fields the backend manages (e.g., cloud-provider attributes like `aws_attributes`, `gcp_attributes`) or fields not returned by the update endpoint. Do not zero out such fields in `RemapState` to hide them from diff computation: carry the real remote value through and declare the field here instead, since zeroing discards information and duplicates the suppression logic. For `output_only` fields this rule is often already produced by `resources.generated.yml` from the OpenAPI annotation. Reason codes:
    - `output_only` — the field is computed by the backend; the user never sets it
    - `input_only` — accepted on create/update but not returned by GET (e.g., write-only tokens, flags)
    - `managed` — managed by the cloud provider or platform, not by the user config
  - **`ignore_local_changes`**: Ignore changes the user makes to this field. Use for fields that cannot be updated via API — either they are immutable after creation or require a separate API that is not yet implemented. Must have a comment in resources.yml explaining why.
  - **`recreate_on_changes`**: Changing this field requires delete + create. Use for truly immutable fields (name, type, location). The reason should reference API docs or TF provider.
- - **`update_id_on_changes`**: Changing this field changes the resource's ID. Requires `DoUpdateWithID` to be implemented.
+ - **`updatable_id_fields`**: Changing this field changes the resource's ID. Requires `DoUpdateWithID` to be implemented.
 
 ## Update mask
 
@@ -56,6 +56,18 @@ A field qualifies if it is large (a small field gains nothing — the hash place
 **`hashed_in_state` is orthogonal to `ignore_remote_changes`.** Because the remote side is hashed too, remote drift on a hashed field is detected as `hash != hash` — so a field can be `hashed_in_state` *without* being `ignore_remote_changes` (as long as the server echoes the value back unchanged). The two are declared independently.
 
 `dashboards.serialized_dashboard` happens to need both, for unrelated reasons: it is `hashed_in_state` because the inlined dashboard JSON is large, and it is *separately* `ignore_remote_changes` because the **server normalizes** it (adds `pageType`, reorders keys) so its remote hash never equals the config hash — drift is detected via `etag` instead. The plan therefore reports the field as a hash on all three sides. No state version bump is needed: legacy full-content state is hashed on read for comparison and rewritten compactly on the next save.
+
+## RemapState and missing remote fields
+
+Do not populate a field in `RemapState` by mapping it from a differently-named field in `RemoteType`. When a field is absent from `RemoteType` the engine automatically suppresses remote drift for it (reason: `missing_in_remote`), which means any value `RemapState` sets there is invisible to drift detection — real remote changes go undetected.
+
+The correct pattern is:
+
+1. Add the field to `RemoteType` (the struct returned by `DoRead`).
+2. Populate it in `DoRead` by mapping from whatever the API returns under the other name.
+3. Keep `RemapState` trivial (a direct struct copy or no-op).
+
+This makes the field present in `InputType`, `StateType`, and `RemoteType`, so it participates in normal drift detection and is no longer subject to the `missing_in_remote` suppression.
 
 ## OverrideChangeDesc
 

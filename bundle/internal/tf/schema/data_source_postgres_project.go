@@ -73,6 +73,7 @@ type DataSourcePostgresProject struct {
 	DeleteTime          string                                        `json:"delete_time,omitempty"`
 	InitialEndpointSpec *DataSourcePostgresProjectInitialEndpointSpec `json:"initial_endpoint_spec,omitempty"`
 	Name                string                                        `json:"name"`
+	ProjectId           string                                        `json:"project_id,omitempty"`
 	ProviderConfig      *DataSourcePostgresProjectProviderConfig      `json:"provider_config,omitempty"`
 	PurgeTime           string                                        `json:"purge_time,omitempty"`
 	Spec                *DataSourcePostgresProjectSpec                `json:"spec,omitempty"`

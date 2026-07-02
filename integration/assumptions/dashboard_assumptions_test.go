@@ -54,7 +54,7 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 
 	// Cross-check consistency with the workspace object.
 	{
-		obj, err := wt.W.Workspace.GetStatusByPath(ctx, dashboard.Path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		obj, err := wt.W.Workspace.GetStatusByPath(ctx, dashboard.Path)
 		require.NoError(t, err)
 
 		// Confirm that the resource ID included in the response is equal to the dashboard ID.

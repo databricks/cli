@@ -122,6 +122,12 @@ for p := range changes {
 return fieldPaths
 ```
 
+### Encoding
+
+**RULE: When mutating an API response by round-tripping JSON, decode with `json.Decoder` + `UseNumber()`.** The naive `json.Marshal` → `map[string]any` → `Marshal` path corrupts any int64 larger than 2^53 (it degrades to a float64 mantissa — e.g. a real `spark_context_id`) and alphabetizes object keys. `libs/dyn/jsonloader` preserves key order but also lacks `UseNumber`, so it shares the int64 hazard.
+
+**RULE: Be careful with `encoding/csv` `Writer.UseCRLF = true`.** It rewrites both record terminators AND embedded newlines inside quoted fields to `\r\n`, so tests for quoted multiline fields must expect `\r\n`, not just the line endings between rows.
+
 ### Environment variables
 
 **RULE: In library and product code, use `github.com/databricks/cli/libs/env` for reading environment variables, not `os.Getenv`.** `env.Get(ctx, name)` and `env.Lookup(ctx, name)` can be overridden per-context in tests, so you don't have to mutate process-wide state to exercise a code path. `os.Getenv` is still fine in `main`, tests, and acceptance/integration harnesses where no `ctx` is available and overrides aren't needed.

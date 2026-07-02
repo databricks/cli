@@ -245,6 +245,35 @@ func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
 	return all.Iter(), nil
 }
 
+// GetFileList returns the list of files that would be synced given opts,
+// applying the same git-aware include/exclude logic as RunOnce.
+// Unlike New, it does not verify the remote path or load a sync snapshot.
+func GetFileList(ctx context.Context, opts SyncOptions) ([]fileset.File, error) {
+	paths := opts.Paths
+	if len(paths) == 0 {
+		paths = []string{"."}
+	}
+	fileSet, err := git.NewFileSet(ctx, opts.WorktreeRoot, opts.LocalRoot, paths)
+	if err != nil {
+		return nil, fmt.Errorf("build file set: %w", err)
+	}
+	includeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Include)
+	if err != nil {
+		return nil, err
+	}
+	excludeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Exclude)
+	if err != nil {
+		return nil, err
+	}
+	s := &Sync{
+		SyncOptions:    &opts,
+		fileSet:        fileSet,
+		includeFileSet: includeFileSet,
+		excludeFileSet: excludeFileSet,
+	}
+	return s.GetFileList(ctx)
+}
+
 func (s *Sync) RunContinuous(ctx context.Context) error {
 	ticker := time.NewTicker(s.PollInterval)
 	defer ticker.Stop()

@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle
+
+resources:
+  postgres_roles:
+    role1:
+      parent: projects/test-project/branches/main
+      role_id: test-role
+      postgres_role: app_role

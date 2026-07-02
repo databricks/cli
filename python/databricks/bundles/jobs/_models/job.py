@@ -17,7 +17,10 @@ from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
-from databricks.bundles.jobs._models.git_source import GitSource, GitSourceParam
+from databricks.bundles.jobs._models.git_source import (
+    GitSource,
+    GitSourceParam,
+)
 from databricks.bundles.jobs._models.job_cluster import JobCluster, JobClusterParam
 from databricks.bundles.jobs._models.job_email_notifications import (
     JobEmailNotifications,
@@ -110,6 +113,9 @@ class Job(Resource):
     """
 
     health: VariableOrOptional[JobsHealthRules] = None
+    """
+    An optional set of health rules that can be defined for this job.
+    """
 
     job_clusters: VariableOrList[JobCluster] = field(default_factory=list)
     """
@@ -118,7 +124,7 @@ class Job(Resource):
 
     lifecycle: VariableOrOptional[Lifecycle] = None
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     max_concurrent_runs: VariableOrOptional[int] = None
@@ -156,6 +162,9 @@ class Job(Resource):
     """
 
     permissions: VariableOrList[JobPermission] = field(default_factory=list)
+    """
+    The permissions to apply to this resource.
+    """
 
     queue: VariableOrOptional[QueueSettings] = None
     """
@@ -163,6 +172,11 @@ class Job(Resource):
     """
 
     run_as: VariableOrOptional[JobRunAs] = None
+    """
+    The user or service principal that the job runs as, if specified in the request.
+    This field indicates the explicit configuration of `run_as` for the job.
+    To find the value in all cases, explicit or implicit, use `run_as_user_name`.
+    """
 
     schedule: VariableOrOptional[CronSchedule] = None
     """
@@ -255,6 +269,9 @@ class JobDict(TypedDict, total=False):
     """
 
     health: VariableOrOptional[JobsHealthRulesParam]
+    """
+    An optional set of health rules that can be defined for this job.
+    """
 
     job_clusters: VariableOrList[JobClusterParam]
     """
@@ -263,7 +280,7 @@ class JobDict(TypedDict, total=False):
 
     lifecycle: VariableOrOptional[LifecycleParam]
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     max_concurrent_runs: VariableOrOptional[int]
@@ -301,6 +318,9 @@ class JobDict(TypedDict, total=False):
     """
 
     permissions: VariableOrList[JobPermissionParam]
+    """
+    The permissions to apply to this resource.
+    """
 
     queue: VariableOrOptional[QueueSettingsParam]
     """
@@ -308,6 +328,11 @@ class JobDict(TypedDict, total=False):
     """
 
     run_as: VariableOrOptional[JobRunAsParam]
+    """
+    The user or service principal that the job runs as, if specified in the request.
+    This field indicates the explicit configuration of `run_as` for the job.
+    To find the value in all cases, explicit or implicit, use `run_as_user_name`.
+    """
 
     schedule: VariableOrOptional[CronScheduleParam]
     """

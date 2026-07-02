@@ -12,6 +12,8 @@ type AllResources struct {
 	AccountNetworkPolicy                         ResourceAccountNetworkPolicy                         `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2               ResourceAccountSettingUserPreferenceV2               `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                             ResourceAccountSettingV2                             `json:"databricks_account_setting_v2,omitempty"`
+	AiSearchEndpoint                             ResourceAiSearchEndpoint                             `json:"databricks_ai_search_endpoint,omitempty"`
+	AiSearchIndex                                ResourceAiSearchIndex                                `json:"databricks_ai_search_index,omitempty"`
 	AibiDashboardEmbeddingAccessPolicySetting    ResourceAibiDashboardEmbeddingAccessPolicySetting    `json:"databricks_aibi_dashboard_embedding_access_policy_setting,omitempty"`
 	AibiDashboardEmbeddingApprovedDomainsSetting ResourceAibiDashboardEmbeddingApprovedDomainsSetting `json:"databricks_aibi_dashboard_embedding_approved_domains_setting,omitempty"`
 	Alert                                        ResourceAlert                                        `json:"databricks_alert,omitempty"`

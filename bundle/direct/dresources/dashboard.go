@@ -95,12 +95,13 @@ func (r *ResourceDashboard) RemapState(state *DashboardState) *DashboardState {
 
 			ForceSendFields: forceSendFields,
 
-			// Clear output only fields. They should not show up on remote diff computation.
-			CreateTime:     "",
-			DashboardId:    "",
-			LifecycleState: dashboards.LifecycleState(""),
-			Path:           "",
-			UpdateTime:     "",
+			// Output only fields. Remote changes to these are ignored via
+			// ignore_remote_changes in resources.yml rather than zeroed here.
+			CreateTime:     state.CreateTime,
+			DashboardId:    state.DashboardId,
+			LifecycleState: state.LifecycleState,
+			Path:           state.Path,
+			UpdateTime:     state.UpdateTime,
 		},
 		Published: state.Published,
 	}
@@ -281,7 +282,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 	// The API returns 404 if the parent directory doesn't exist.
 	// If the parent directory doesn't exist, create it and try again.
 	if err != nil && apierr.IsMissing(err) {
-		err = r.client.Workspace.MkdirsByPath(ctx, config.ParentPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		err = r.client.Workspace.MkdirsByPath(ctx, config.ParentPath)
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
 		}

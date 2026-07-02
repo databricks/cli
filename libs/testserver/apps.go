@@ -118,18 +118,28 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) Response {
 	defer s.LockUnlock()()
 
-	_, ok := s.Apps[name]
+	app, ok := s.Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
-	return Response{Body: apps.AppDeployment{
-		DeploymentId: deploymentID,
-		Status: &apps.AppDeploymentStatus{
-			State:   apps.AppDeploymentStateSucceeded,
-			Message: "Deployment succeeded",
-		},
-	}}
+	if app.ActiveDeployment == nil || app.ActiveDeployment.DeploymentId != deploymentID {
+		return Response{StatusCode: 404}
+	}
+
+	// Return a copy so the masking below does not mutate the stored deployment.
+	deployment := *app.ActiveDeployment
+
+	// The real GET response strips env var values, returning only the name of
+	// each variable. Reproduce that masking so the local golden matches
+	// recorded cloud behavior.
+	maskedEnvVars := make([]apps.EnvVar, len(deployment.EnvVars))
+	for i, ev := range deployment.EnvVars {
+		maskedEnvVars[i] = apps.EnvVar{Name: ev.Name}
+	}
+	deployment.EnvVars = maskedEnvVars
+
+	return Response{Body: deployment}
 }
 
 func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {

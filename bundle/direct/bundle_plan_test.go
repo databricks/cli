@@ -3,8 +3,12 @@ package direct
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDynPathToStructPath(t *testing.T) {
@@ -34,4 +38,98 @@ func TestDynPathToStructPath(t *testing.T) {
 		node := dynPathToStructPath(tc.path)
 		assert.Equal(t, tc.expected, node.String())
 	}
+}
+
+func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
+	// Rules mirror the schemas backend_defaults in resources.yml, but the test is
+	// deliberately self-contained so that edits to resources.yml don't break it.
+	// The real wiring is covered by acceptance/bundle/resources/schemas/drift.
+	rowTracking, err := structpath.ParsePattern("properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']")
+	require.NoError(t, err)
+	catalogManaged, err := structpath.ParsePattern("properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']")
+	require.NoError(t, err)
+	cfg := &dresources.ResourceLifecycleConfig{
+		BackendDefaults: []dresources.BackendDefaultRule{
+			{Field: rowTracking},
+			{Field: catalogManaged},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		path     string
+		remote   any
+		expected bool
+	}{
+		{
+			name:     "managed delta row tracking property",
+			path:     "properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']",
+			remote:   "true",
+			expected: true,
+		},
+		{
+			name:     "managed iceberg catalog property",
+			path:     "properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']",
+			remote:   "true",
+			expected: true,
+		},
+		{
+			name:     "unmanaged remote-only property is not skipped",
+			path:     "properties['custom.remote_only']",
+			remote:   "true",
+			expected: false,
+		},
+		{
+			name:     "managed-only parent properties map is skipped",
+			path:     "properties",
+			remote:   map[string]string{"unity.catalog.managed.delta.defaults.delta.enableRowTracking": "true"},
+			expected: true,
+		},
+		{
+			name:     "mixed parent properties map is not skipped",
+			path:     "properties",
+			remote:   map[string]string{"unity.catalog.managed.delta.defaults.delta.enableRowTracking": "true", "custom.remote_only": "true"},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, err := structpath.ParsePath(tt.path)
+			require.NoError(t, err)
+
+			reason, ok := shouldSkipBackendDefault(cfg, path, &deployplan.ChangeDesc{
+				Old:    nil,
+				New:    nil,
+				Remote: tt.remote,
+			})
+
+			assert.Equal(t, tt.expected, ok)
+			if tt.expected {
+				assert.Equal(t, deployplan.ReasonBackendDefault, reason)
+			} else {
+				assert.Empty(t, reason)
+			}
+		})
+	}
+}
+
+// Map drift handling synthesizes child paths to match against rules. structdiff
+// always emits map keys in bracket notation, so synthetic child paths must too;
+// otherwise rules wouldn't match for identifier-like keys.
+func TestShouldSkipBackendDefault_MapDriftUsesBracketKeys(t *testing.T) {
+	field, err := structpath.ParsePattern("properties['simple']")
+	require.NoError(t, err)
+	cfg := &dresources.ResourceLifecycleConfig{
+		BackendDefaults: []dresources.BackendDefaultRule{{Field: field}},
+	}
+
+	path, err := structpath.ParsePath("properties")
+	require.NoError(t, err)
+
+	reason, ok := shouldSkipBackendDefault(cfg, path, &deployplan.ChangeDesc{
+		Remote: map[string]string{"simple": "v"},
+	})
+	assert.True(t, ok)
+	assert.Equal(t, deployplan.ReasonBackendDefault, reason)
 }

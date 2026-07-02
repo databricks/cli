@@ -12,7 +12,7 @@ import (
 
 func TestHasDatabricksSkillsInstalledNoAgents(t *testing.T) {
 	origRegistry := Registry
-	Registry = []Agent{}
+	Registry = []*Agent{}
 	defer func() { Registry = origRegistry }()
 
 	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
@@ -25,7 +25,7 @@ func TestHasDatabricksSkillsInstalledCanonicalOnly(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, CanonicalSkillsDir, "databricks"), 0o755))
 
 	origRegistry := Registry
-	Registry = []Agent{
+	Registry = []*Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
@@ -46,7 +46,7 @@ func TestHasDatabricksSkillsInstalledIgnoresAgentDir(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(agentDir, "skills", "databricks"), 0o755))
 
 	origRegistry := Registry
-	Registry = []Agent{
+	Registry = []*Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
@@ -67,7 +67,7 @@ func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "skills", "rust-webapp"), 0o755))
 
 	origRegistry := Registry
-	Registry = []Agent{
+	Registry = []*Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
@@ -85,7 +85,7 @@ func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
 	t.Setenv("USERPROFILE", tmpDir)
 
 	origRegistry := Registry
-	Registry = []Agent{
+	Registry = []*Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
@@ -105,7 +105,7 @@ func TestHasDatabricksSkillsInstalledCustomSubdirNotChecked(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, ".gemini", "antigravity", "global_skills", "databricks"), 0o755))
 
 	origRegistry := Registry
-	Registry = []Agent{
+	Registry = []*Agent{
 		{
 			Name:         "test-agent",
 			DisplayName:  "Test Agent",
@@ -129,7 +129,7 @@ func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
 	require.NoError(t, os.MkdirAll(agentDir, 0o755))
 
 	origRegistry := Registry
-	Registry = []Agent{
+	Registry = []*Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
@@ -152,7 +152,7 @@ func TestHasDatabricksSkillsInstalledLegacyPath(t *testing.T) {
 	require.NoError(t, os.MkdirAll(agentDir, 0o755))
 
 	origRegistry := Registry
-	Registry = []Agent{
+	Registry = []*Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",

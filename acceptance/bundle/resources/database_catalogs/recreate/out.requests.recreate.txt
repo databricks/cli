@@ -1,0 +1,14 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/database/catalogs/my_catalog_[UNIQUE_NAME]"
+}
+{
+  "body": {
+    "create_database_if_not_exists": true,
+    "database_instance_name": "test-db-catalog-recreate-[UNIQUE_NAME]",
+    "database_name": "my_database_v2",
+    "name": "my_catalog_[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/database/catalogs"
+}

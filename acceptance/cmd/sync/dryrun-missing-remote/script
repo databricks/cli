@@ -20,6 +20,8 @@ trap cleanup EXIT
 # A dry run must not create the missing remote dir or upload anything.
 # Note: output line starting with Action lists files in non-deterministic order so we filter it out
 # MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from converting /Users/... to C:/Program Files/Git/Users/...
+# It is set per-command, not exported for the whole script: a global setting also
+# breaks Git Bash's path resolution of the print_requests.py helper below.
 MSYS_NO_PATHCONV=1 trace $CLI sync . "$remote_dir" --dry-run | grep -v "^Action" | sort
 
 trace print_requests.py --sort //api/ | jq '{method, path}'

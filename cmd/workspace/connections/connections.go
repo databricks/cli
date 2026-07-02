@@ -20,18 +20,16 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connections",
-		Short: `Connections allow for creating a connection to an external data source.`,
-		Long: `Connections allow for creating a connection to an external data source.
+		Short: `A connection represents an external data source for use within Databricks.`,
+		Long: `A connection represents an external data source for use within Databricks.
 
-  A connection is an abstraction of an external data source that can be
-  connected from Databricks Compute. Creating a connection object is the first
-  step to managing external data sources within Unity Catalog, with the second
-  step being creating a data object (catalog, schema, or table) using the
-  connection. Data objects derived from a connection can be written to or read
-  from similar to other Unity Catalog data objects based on cloud storage. Users
-  may create different types of connections with each connection having a unique
-  set of configuration options to support credential management and other
-  settings.`,
+  Creating a connection object is the first step to managing external data
+  sources within Unity Catalog. The second step is creating a data object
+  (catalog, schema, or table) using the connection. Data objects derived from a
+  connection can be written to or read from similar to other Unity Catalog data
+  objects based on cloud storage. You can create different types of connections,
+  and each connection has a unique set of configuration options to support
+  credential management and other settings.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -73,6 +71,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	// TODO: complex arg: environment_settings
 	// TODO: map via StringToStringVar: properties
 	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `If the connection is read only.`)
 
@@ -366,6 +365,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: environment_settings
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the connection.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the connection.`)
 

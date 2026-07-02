@@ -4,7 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrDict, VariableOrOptional
-from databricks.bundles.jobs._models.subscription import Subscription, SubscriptionParam
+from databricks.bundles.jobs._models.subscription import (
+    Subscription,
+    SubscriptionParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -17,6 +20,9 @@ class DashboardTask:
     """
 
     dashboard_id: VariableOrOptional[str] = None
+    """
+    The identifier of the dashboard to refresh.
+    """
 
     filters: VariableOrDict[str] = field(default_factory=dict)
     """
@@ -31,6 +37,9 @@ class DashboardTask:
     """
 
     subscription: VariableOrOptional[Subscription] = None
+    """
+    Optional: subscription configuration for sending the dashboard snapshot.
+    """
 
     warehouse_id: VariableOrOptional[str] = None
     """
@@ -50,6 +59,9 @@ class DashboardTaskDict(TypedDict, total=False):
     """"""
 
     dashboard_id: VariableOrOptional[str]
+    """
+    The identifier of the dashboard to refresh.
+    """
 
     filters: VariableOrDict[str]
     """
@@ -64,6 +76,9 @@ class DashboardTaskDict(TypedDict, total=False):
     """
 
     subscription: VariableOrOptional[SubscriptionParam]
+    """
+    Optional: subscription configuration for sending the dashboard snapshot.
+    """
 
     warehouse_id: VariableOrOptional[str]
     """

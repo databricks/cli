@@ -1,0 +1,15 @@
+# Isolate HOME: this test reconciles the whole install state, so it must not
+# share ~/.databricks with the sibling aitools acceptance tests.
+sethome home
+# Detect Cursor, a skills-only agent (no databricks plugin), so update exercises
+# the raw-skill prune path without shelling out to a plugin-capable agent's CLI.
+# A plugin agent (e.g. Claude Code) would run `claude plugin install` during
+# update, making the output depend on whether `claude` is on the host PATH.
+# sethome sets HOME on Windows too, so $HOME is enough here.
+mkdir -p "$HOME/.cursor"
+
+title "install two skills"
+trace $CLI experimental aitools install --skills-only --global
+
+title "update against a release where beta is gone: alpha updates, beta is pruned"
+trace DATABRICKS_SKILLS_REF=v2-ref $CLI experimental aitools update --scope global

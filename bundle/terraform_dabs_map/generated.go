@@ -6,24 +6,29 @@ package terraform_dabs_map
 // alerts / databricks_alert_v2: 3 tf-only
 // apps / databricks_app: 16 dabs-only
 // apps / databricks_app: 1 tf-only
+// clusters / databricks_cluster: 1 dabs-only
 // clusters / databricks_cluster: 25 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 32 dabs-only
 // jobs / databricks_job: 257 tf-only
+// model_serving_endpoints / databricks_model_serving: 4 dabs-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
-// models / databricks_mlflow_model: 1 tf-only
+// models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 5 dabs-only
+// pipelines / databricks_pipeline: 7 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
+// postgres_databases / databricks_postgres_database: 1 unwraps
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
 // postgres_projects / databricks_postgres_project: 1 unwraps
+// postgres_roles / databricks_postgres_role: 1 unwraps
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
+// schemas / databricks_schema: 1 dabs-only
 // schemas / databricks_schema: 1 tf-only
 // secret_scopes / databricks_secret_scope: 1 tf-only
 // sql_warehouses / databricks_sql_endpoint: 2 tf-only
@@ -52,6 +57,9 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 			"library": {NewName: "libraries"},
 		}},
 	},
+	"models": {
+		"registered_model_id": {NewName: "model_id"},
+	},
 	"pipelines": {
 		"cluster":      {NewName: "clusters"},
 		"library":      {NewName: "libraries"},
@@ -63,10 +71,16 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 	"postgres_catalogs": {
 		"spec": {Unwrap: true},
 	},
+	"postgres_databases": {
+		"spec": {Unwrap: true},
+	},
 	"postgres_endpoints": {
 		"spec": {Unwrap: true},
 	},
 	"postgres_projects": {
+		"spec": {Unwrap: true},
+	},
+	"postgres_roles": {
 		"spec": {Unwrap: true},
 	},
 	"postgres_synced_tables": {
@@ -101,15 +115,51 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 		"source_code_path": {},
 	},
+	"clusters": {
+		"azure_attributes": {
+			"capacity_reservation_group": {}, // clusters.*.azure_attributes.capacity_reservation_group
+		},
+	},
 	"jobs": {
 		"job_clusters": {
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
+				"azure_attributes": {
+					"capacity_reservation_group": {}, // jobs.*.job_clusters.new_cluster.azure_attributes.capacity_reservation_group
+				},
 			},
 		},
 		"tasks": {
+			"ai_runtime_task": {
+				"code_source_path": {}, // jobs.*.tasks.ai_runtime_task.code_source_path
+				"deployments": {
+					"command_path": {}, // jobs.*.tasks.ai_runtime_task.deployments.command_path
+					"compute": {
+						"accelerator_count": {}, // jobs.*.tasks.ai_runtime_task.deployments.compute.accelerator_count
+						"accelerator_type":  {}, // jobs.*.tasks.ai_runtime_task.deployments.compute.accelerator_type
+					},
+					"name": {}, // jobs.*.tasks.ai_runtime_task.deployments.name
+				},
+				"experiment":                  {}, // jobs.*.tasks.ai_runtime_task.experiment
+				"mlflow_experiment_directory": {}, // jobs.*.tasks.ai_runtime_task.mlflow_experiment_directory
+				"mlflow_run":                  {}, // jobs.*.tasks.ai_runtime_task.mlflow_run
+			},
 			"for_each_task": {
 				"task": {
+					"ai_runtime_task": {
+						"code_source_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.code_source_path
+						"deployments": {
+							"command_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.command_path
+							"compute": {
+								"accelerator_count": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.compute.accelerator_count
+								"accelerator_type":  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.compute.accelerator_type
+							},
+							"name": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.deployments.name
+						},
+						"experiment":                  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.experiment
+						"mlflow_experiment_directory": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.mlflow_experiment_directory
+						"mlflow_run":                  {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.mlflow_run
+					},
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -117,16 +167,33 @@ var DABsOnlyFields = map[string]FieldSet{
 					},
 					"new_cluster": {
 						"autotermination_minutes": {}, // jobs.*.tasks.for_each_task.task.new_cluster.autotermination_minutes
+						"azure_attributes": {
+							"capacity_reservation_group": {}, // jobs.*.tasks.for_each_task.task.new_cluster.azure_attributes.capacity_reservation_group
+						},
 					},
 				},
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
+				"azure_attributes": {
+					"capacity_reservation_group": {}, // jobs.*.tasks.new_cluster.azure_attributes.capacity_reservation_group
+				},
+			},
+		},
+	},
+	"model_serving_endpoints": {
+		"telemetry_config": {
+			"inference_table_config": {
+				"name":              {}, // model_serving_endpoints.*.telemetry_config.inference_table_config.name
+				"sampling_fraction": {}, // model_serving_endpoints.*.telemetry_config.inference_table_config.sampling_fraction
 			},
 		},
 	},
 	"pipelines": {
 		"clusters": {
+			"azure_attributes": {
+				"capacity_reservation_group": {}, // pipelines.*.clusters.azure_attributes.capacity_reservation_group
+			},
 			"gcp_attributes": {
 				"boot_disk_size":            {}, // pipelines.*.clusters.gcp_attributes.boot_disk_size
 				"use_preemptible_executors": {}, // pipelines.*.clusters.gcp_attributes.use_preemptible_executors
@@ -136,6 +203,10 @@ var DABsOnlyFields = map[string]FieldSet{
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
 		},
+		"serverless_compute_id": {},
+	},
+	"schemas": {
+		"custom_max_retention_hours": {},
 	},
 }
 
@@ -539,9 +610,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"endpoint_url":        {},
 		"serving_endpoint_id": {},
 	},
-	"models": {
-		"registered_model_id": {},
-	},
 	"pipelines": {
 		"expected_last_modified": {},
 		"url":                    {},
@@ -587,6 +655,9 @@ var DABsToTerraformRenameMap = map[string]RenameTree{
 			"libraries": {NewName: "library"},
 		}},
 	},
+	"models": {
+		"model_id": {NewName: "registered_model_id"},
+	},
 	"pipelines": {
 		"clusters":      {NewName: "cluster"},
 		"libraries":     {NewName: "library"},
@@ -600,7 +671,73 @@ var DABsToTerraformRenameMap = map[string]RenameTree{
 var DABsToTerraformWrappers = map[string]string{
 	"postgres_branches":      "spec",
 	"postgres_catalogs":      "spec",
+	"postgres_databases":     "spec",
 	"postgres_endpoints":     "spec",
 	"postgres_projects":      "spec",
+	"postgres_roles":         "spec",
 	"postgres_synced_tables": "spec",
+}
+
+// DABsToTerraformWrapperFields maps DABs group name → first-level DABs field names that
+// live under the TF wrapper. For wrapper groups, a DABs path is prefixed with the wrapper
+// in DABsPathToTerraform only when its first segment appears here.
+var DABsToTerraformWrapperFields = map[string]FieldSet{
+	"postgres_branches": {
+		"expire_time":        {},
+		"is_protected":       {},
+		"no_expiry":          {},
+		"source_branch":      {},
+		"source_branch_lsn":  {},
+		"source_branch_time": {},
+		"ttl":                {},
+	},
+	"postgres_catalogs": {
+		"branch":                     {},
+		"create_database_if_missing": {},
+		"postgres_database":          {},
+	},
+	"postgres_databases": {
+		"postgres_database": {},
+		"role":              {},
+	},
+	"postgres_endpoints": {
+		"autoscaling_limit_max_cu": {},
+		"autoscaling_limit_min_cu": {},
+		"disabled":                 {},
+		"endpoint_type":            {},
+		"group":                    {},
+		"no_suspension":            {},
+		"settings":                 {},
+		"suspend_timeout_duration": {},
+	},
+	"postgres_projects": {
+		"budget_policy_id":           {},
+		"custom_tags":                {},
+		"default_branch":             {},
+		"default_endpoint_settings":  {},
+		"display_name":               {},
+		"enable_pg_native_login":     {},
+		"history_retention_duration": {},
+		"pg_version":                 {},
+	},
+	"postgres_roles": {
+		"attributes":       {},
+		"auth_method":      {},
+		"identity_type":    {},
+		"membership_roles": {},
+		"postgres_role":    {},
+	},
+	"postgres_synced_tables": {
+		"accelerated_sync":                   {},
+		"branch":                             {},
+		"create_database_objects_if_missing": {},
+		"existing_pipeline_id":               {},
+		"new_pipeline_spec":                  {},
+		"postgres_database":                  {},
+		"primary_key_columns":                {},
+		"scheduling_policy":                  {},
+		"source_table_full_name":             {},
+		"timeseries_key":                     {},
+		"type_overrides":                     {},
+	},
 }
