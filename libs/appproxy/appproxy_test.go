@@ -2,9 +2,12 @@ package appproxy
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -151,4 +154,56 @@ func TestProxyHandleWebSocket(t *testing.T) {
 	if !found {
 		t.Errorf("Expected one of the expected errors, got %s", err)
 	}
+}
+
+func TestProxyInjectHeaderFunc(t *testing.T) {
+	// Echo the injected header back so we can assert its per-request value.
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, r.Header.Get("X-Forwarded-Access-Token"))
+	}))
+	go server.Start()
+	defer server.Close()
+
+	proxy, addr := startProxy(t, server.Listener.Addr().String())
+	defer func() {
+		require.NoError(t, proxy.Stop())
+	}()
+
+	calls := 0
+	proxy.InjectHeaderFunc("X-Forwarded-Access-Token", func(context.Context) (string, error) {
+		calls++
+		return fmt.Sprintf("token-%d", calls), nil
+	})
+
+	code, body := sendTestRequest(t, "http://"+addr, "/")
+	require.Equal(t, http.StatusOK, code)
+	require.Equal(t, "token-1", string(body))
+
+	// A second request resolves the value again rather than reusing it.
+	code, body = sendTestRequest(t, "http://"+addr, "/")
+	require.Equal(t, http.StatusOK, code)
+	require.Equal(t, "token-2", string(body))
+}
+
+func TestProxyInjectHeaderFuncError(t *testing.T) {
+	// The app would 200 if reached; a resolution error must 502 instead.
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	go server.Start()
+	defer server.Close()
+
+	proxy, addr := startProxy(t, server.Listener.Addr().String())
+	defer func() {
+		require.NoError(t, proxy.Stop())
+	}()
+
+	proxy.InjectHeaderFunc("X-Forwarded-Access-Token", func(context.Context) (string, error) {
+		return "", errors.New("token refresh failed")
+	})
+
+	code, body := sendTestRequest(t, "http://"+addr, "/")
+	require.Equal(t, http.StatusBadGateway, code)
+	require.Contains(t, string(body), "token refresh failed")
 }

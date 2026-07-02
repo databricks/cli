@@ -5,6 +5,10 @@ import (
 	"github.com/google/uuid"
 )
 
+// HeaderForwardedAccessToken carries the caller's OBO access token, matching
+// the deployed Apps OAuth2 proxy.
+const HeaderForwardedAccessToken = "X-Forwarded-Access-Token"
+
 func GetXHeaders(user *iam.User) map[string]string {
 	return map[string]string{
 		"X-Forwarded-Host":               "localhost",
