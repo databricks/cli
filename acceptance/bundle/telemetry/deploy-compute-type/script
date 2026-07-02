@@ -1,6 +1,6 @@
 trace $CLI bundle deploy -t one
 trace $CLI bundle deploy -t two
 
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values'
+cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values' > out.bool_values.$DATABRICKS_BUNDLE_ENGINE.txt
 
 rm out.requests.txt

@@ -1,0 +1,10 @@
+[
+  {
+    "key": "direct_drymigrate_success",
+    "value": true
+  },
+  {
+    "key": "direct_drymigrate_warnings",
+    "value": false
+  }
+]

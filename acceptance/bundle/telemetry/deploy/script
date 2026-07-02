@@ -18,12 +18,19 @@ trace cat telemetry.json | jq ' .entry.databricks_cli_log.bundle_deploy_event.ex
 # 0.0.0-dev on windows) — it is still emitted in real telemetry.
 cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata | if . then del(.state_file_size_bytes) else . end' > out.resources_metadata.$DATABRICKS_BUNDLE_ENGINE.txt
 
+# The dry-run migration to the direct engine runs only after a terraform deploy,
+# so its bool_values entries (direct_drymigrate_*) diverge across the
+# DATABRICKS_BUNDLE_ENGINE matrix (absent for direct). Capture them per-engine and
+# drop them from the engine-agnostic out.telemetry.txt below.
+title "Assert the dry-run migration to the direct engine is reported"
+cat telemetry.json | jq '[.entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values[] | select(.key | startswith("direct_drymigrate_"))]' > out.migration.$DATABRICKS_BUNDLE_ENGINE.txt
+
 # bundle_mutator_execution_time_ms can have variable number of entries depending upon the runtime of the mutators. Thus we omit it from
 # being asserted here.
 #
 # upload_file_count and upload_file_sizes are asserted here and kept deterministic by
 # the sync.paths restriction in databricks.yml (see the comment there).
-cat telemetry.json | jq 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms, .entry.databricks_cli_log.bundle_deploy_event.resources_metadata)' > out.telemetry.txt
+cat telemetry.json | jq 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms, .entry.databricks_cli_log.bundle_deploy_event.resources_metadata) | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values |= map(select(.key | startswith("direct_drymigrate_") | not))' > out.telemetry.txt
 
 cmd_exec_id=$(extract_command_exec_id.py)
 deployment_id=$(cat .databricks/bundle/default/deployment.json | jq -r .id)

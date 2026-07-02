@@ -16,6 +16,7 @@
  * direct: Fix spurious update when `apply_policy_default_values: true` is set on job task, for-each-task, or job cluster new_cluster ([#5731](https://github.com/databricks/cli/pull/5731)). Also fix spurious updates for for-each-task clusters due to missing backend defaults for `data_security_mode`, `node_type_id`, `driver_node_type_id`, `driver_instance_pool_id`, `enable_elastic_disk`, and `enable_local_disk_encryption`.
  * direct: Cluster resize now falls back to regular update if resize fails due to `INVALID_STATE` ([#5716](https://github.com/databricks/cli/pull/5716)).
  * Fixed `bundle deployment migrate` failing on `model_serving_endpoints`/`database_instances` with permissions (regression since v1.5.0) ([#5775](https://github.com/databricks/cli/pull/5775)).
+ * After a terraform deploy, the CLI now dry-runs an in-memory migration to the direct engine (writing nothing locally or remotely) and reports the outcome via telemetry, warning if the migration could not be completed.
 
 ### Dependency updates
  * Bump `github.com/databricks/databricks-sdk-go` from v0.147.0 to v0.152.0 ([#5773](https://github.com/databricks/cli/pull/5773)).

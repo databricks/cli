@@ -10,3 +10,5 @@ Deployment complete!
 === Assert that mutator execution times are being recorded
 >>> cat telemetry.json
 true
+
+=== Assert the dry-run migration to the direct engine is reported
