@@ -1096,7 +1096,8 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
 		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
 		databaseID := req.URL.Query().Get("database_id")
-		return req.Workspace.PostgresDatabaseCreate(req, parent, databaseID)
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresDatabaseCreate(req, parent, databaseID, replaceExisting)
 	})
 
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
@@ -1123,7 +1124,8 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
 		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
 		roleID := req.URL.Query().Get("role_id")
-		return req.Workspace.PostgresRoleCreate(req, parent, roleID)
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresRoleCreate(req, parent, roleID, replaceExisting)
 	})
 
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
@@ -1173,7 +1175,8 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
 		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
 		roleID := req.URL.Query().Get("role_id")
-		return req.Workspace.PostgresRoleCreate(req, parent, roleID)
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresRoleCreate(req, parent, roleID, replaceExisting)
 	})
 
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {

@@ -1562,6 +1562,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
+                        "description": "When true, take over an existing branch with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring the implicitly-created production branch of a new Lakebase project under bundle management. Only takes effect when the branch is created.",
                         "$ref": "#/$defs/bool"
                       },
                       "source_branch": {
@@ -1641,6 +1642,10 @@
                       "postgres_database": {
                         "$ref": "#/$defs/string"
                       },
+                      "replace_existing": {
+                        "description": "When true, take over an existing database with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a database that already exists on the branch under bundle management. Only takes effect when the database is created.",
+                        "$ref": "#/$defs/bool"
+                      },
                       "role": {
                         "$ref": "#/$defs/string"
                       }
@@ -1691,6 +1696,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
+                        "description": "When true, take over an existing endpoint with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring the implicitly-created primary read-write endpoint of a branch under bundle management. Only takes effect when the endpoint is created.",
                         "$ref": "#/$defs/bool"
                       },
                       "settings": {
@@ -1801,6 +1807,10 @@
                       "postgres_role": {
                         "description": "The name of the Postgres role. Required when creating the role.",
                         "$ref": "#/$defs/string"
+                      },
+                      "replace_existing": {
+                        "description": "When true, take over an existing role with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a role that already exists on the branch (for example, one inherited from the parent branch) under bundle management. Only takes effect when the role is created.",
+                        "$ref": "#/$defs/bool"
                       },
                       "role_id": {
                         "description": "The user-specified role ID; becomes the final component of the role's resource name. Must be 4-63 characters, lowercase letters, numbers, and hyphens (RFC 1123).",
