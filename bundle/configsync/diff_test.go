@@ -384,6 +384,66 @@ func TestShouldSkipForSync(t *testing.T) {
 			want:         true,
 		},
 		{
+			name:         "backend default pipeline_task full_refresh false",
+			resourceType: "jobs",
+			path:         "tasks[task_key='t1'].pipeline_task.full_refresh",
+			value:        false,
+			want:         true,
+		},
+		{
+			name:         "pipeline_task full_refresh true is not a backend default",
+			resourceType: "jobs",
+			path:         "tasks[task_key='t1'].pipeline_task.full_refresh",
+			value:        true,
+			want:         false,
+		},
+		// Policy-injected fields on job and standalone clusters: skipped only
+		// when absent from config. The classification ladder is shared with the
+		// deploy plan, so these pin the resources.yml rules for all cluster sites.
+		{
+			name:         "backend default custom_tags on for_each task cluster",
+			resourceType: "jobs",
+			path:         "tasks[task_key='t1'].for_each_task.task.new_cluster.custom_tags",
+			value:        map[string]any{"CostCenter": "dev-1234"},
+			want:         true,
+		},
+		{
+			name:         "backend default custom_tags on standalone cluster",
+			resourceType: "clusters",
+			path:         "custom_tags",
+			value:        map[string]any{"CostCenter": "dev-1234"},
+			want:         true,
+		},
+		{
+			name:           "custom_tags on standalone cluster kept when in config",
+			resourceType:   "clusters",
+			path:           "custom_tags",
+			value:          map[string]any{"CostCenter": "dev-1234"},
+			hasConfigValue: true,
+			want:           false,
+		},
+		{
+			name:         "backend default cluster_log_conf on standalone cluster",
+			resourceType: "clusters",
+			path:         "cluster_log_conf",
+			value:        map[string]any{"dbfs": map[string]any{"destination": "dbfs:/cluster-logs/dev"}},
+			want:         true,
+		},
+		{
+			name:         "backend default driver_node_type_flexibility on standalone cluster",
+			resourceType: "clusters",
+			path:         "driver_node_type_flexibility",
+			value:        map[string]any{"alternate_node_type_ids": []any{"i4i.xlarge"}},
+			want:         true,
+		},
+		{
+			name:         "backend default worker_node_type_flexibility on standalone cluster",
+			resourceType: "clusters",
+			path:         "worker_node_type_flexibility",
+			value:        map[string]any{"alternate_node_type_ids": []any{"i4i.xlarge"}},
+			want:         true,
+		},
+		{
 			name:         "regular field is not skipped",
 			resourceType: "jobs",
 			path:         "description",

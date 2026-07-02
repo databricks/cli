@@ -145,6 +145,12 @@ resources:
       - field: tasks[*].for_each_task.task.disabled
         values: [false]
 
+      # The backend returns full_refresh: false for pipeline tasks when not
+      # set. Same as timeout_seconds above: inert for the plan, needed by
+      # config-remote-sync for remotely added pipeline tasks.
+      - field: tasks[*].pipeline_task.full_refresh
+        values: [false]
+
       # When notifications are not configured, the backend returns
       # email_notifications populated with the deprecated
       # no_alert_for_skipped_runs: false field. Inert for the plan: the
