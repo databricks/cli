@@ -1063,33 +1063,45 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 		sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 		defer sp.Close()
 		sp.Update("Waiting for the SSH server to start...")
-		maxRetries := 30
-		for retries := range maxRetries {
-			if ctx.Err() != nil {
-				return "", 0, "", ctx.Err()
-			}
+		// After the task reaches RUNNING the driver proxy still answers /metadata with 503
+		// until the container's HTTP endpoint is reachable; with a custom base environment
+		// that install happens post-RUNNING, so warmup can outlast a short fixed window. Poll
+		// for the same budget we allowed for the task to start (accelerator-aware), backing
+		// off between attempts rather than hammering the proxy every 2s during a long wait.
+		_, pollErr := retries.Poll(ctx, opts.TaskStartupTimeout, func() (*struct{}, *retries.Err) {
 			serverPort, userName, effectiveClusterID, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
 			if err == nil {
-				cmdio.LogString(ctx, "Health check successful, starting ssh WebSocket connection...")
-				break
+				return &struct{}{}, nil
 			}
 			// The metadata never appears if the bootstrap job dies after reaching RUNNING.
 			// Surface the job's actual error instead of waiting out the full timeout with a
 			// generic "metadata.json doesn't exist" message.
 			if failure, terminated := runFailureIfTerminated(ctx, client, runID); terminated {
-				return "", 0, "", fmt.Errorf("ssh server bootstrap job failed:\n%s", failure)
+				return nil, retries.Halt(fmt.Errorf("ssh server bootstrap job failed:\n%s", failure))
 			}
-			if retries < maxRetries-1 {
-				time.Sleep(2 * time.Second)
-			} else {
-				return "", 0, "", fmt.Errorf("failed to start the ssh server: %w\n%s", err, describeRunFailure(ctx, client, runID))
-			}
+			return nil, retries.Continue(fmt.Errorf("waiting for ssh server health check: %w", err))
+		})
+		if pollErr != nil {
+			return "", 0, "", formatServerStartError(ctx, client, runID, pollErr)
 		}
+		cmdio.LogString(ctx, "Health check successful, starting ssh WebSocket connection...")
 	} else if err != nil {
 		return "", 0, "", err
 	}
 
 	return userName, serverPort, effectiveClusterID, nil
+}
+
+// formatServerStartError turns a failed health-check poll into the error returned to the user.
+// A halted poll (the bootstrap job terminated) already carries the job's failure details, so it
+// is returned as-is. A timeout carries only the last generic health-check error, so the run's
+// diagnostics are appended. Splitting on the timeout case avoids printing the failure trace twice.
+func formatServerStartError(ctx context.Context, client *databricks.WorkspaceClient, runID int64, pollErr error) error {
+	var timedOut *retries.ErrTimedOut
+	if errors.As(pollErr, &timedOut) {
+		return fmt.Errorf("failed to start the ssh server: %w\n%s", pollErr, describeRunFailure(ctx, client, runID))
+	}
+	return pollErr
 }
 
 func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isReconnect bool, serverStartTimeMs int64) {

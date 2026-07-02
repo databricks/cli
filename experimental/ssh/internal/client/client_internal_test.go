@@ -1,12 +1,14 @@
 package client
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -191,6 +193,36 @@ func TestRunFailureIfTerminated(t *testing.T) {
 		_, terminated := runFailureIfTerminated(ctx, m.WorkspaceClient, 1)
 		assert.False(t, terminated)
 	})
+}
+
+func TestFormatServerStartErrorTimeoutAppendsRunFailure(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	api := m.GetMockJobsAPI()
+	api.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 1}).Return(
+		terminatedRun(1, 99, "Could not reach driver of cluster 0605-x.", "https://example.test/run/1"), nil)
+	api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
+		&jobs.RunOutput{}, nil)
+
+	pollErr := &retries.ErrTimedOut{}
+	err := formatServerStartError(ctx, m.WorkspaceClient, 1, pollErr)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to start the ssh server")
+	// The run diagnostics are fetched and appended for the timeout case.
+	assert.Contains(t, err.Error(), "Could not reach driver of cluster 0605-x.")
+}
+
+func TestFormatServerStartErrorHaltReturnedAsIs(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	// A halted poll already carries the job failure details, so formatServerStartError must not
+	// fetch the run again (no GetRun expectation) nor re-append the trace.
+	m := mocks.NewMockWorkspaceClient(t)
+	pollErr := fmt.Errorf("ssh server bootstrap job failed:\n%s", "Could not reach driver of cluster 0605-x.")
+	err := formatServerStartError(ctx, m.WorkspaceClient, 1, pollErr)
+	require.Error(t, err)
+	assert.Equal(t, pollErr.Error(), err.Error())
+	assert.Equal(t, 1, strings.Count(err.Error(), "Could not reach driver of cluster 0605-x."))
+	assert.NotContains(t, err.Error(), "failed to start the ssh server")
 }
 
 func TestWaitForJobToStartSurfacesFailure(t *testing.T) {
