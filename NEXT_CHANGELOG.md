@@ -15,7 +15,9 @@
  * direct: Fixed persistent drift on `model_serving_endpoints` caused by the `traffic_config` field ([#5708](https://github.com/databricks/cli/pull/5708)).
  * direct: Fix spurious update when `apply_policy_default_values: true` is set on job task, for-each-task, or job cluster new_cluster ([#5731](https://github.com/databricks/cli/pull/5731)). Also fix spurious updates for for-each-task clusters due to missing backend defaults for `data_security_mode`, `node_type_id`, `driver_node_type_id`, `driver_instance_pool_id`, `enable_elastic_disk`, and `enable_local_disk_encryption`.
  * direct: Cluster resize now falls back to regular update if resize fails due to `INVALID_STATE` ([#5716](https://github.com/databricks/cli/pull/5716)).
+ * `bundle generate dashboard` now honors the `--key` flag when naming the generated resource, and rejects combining `--existing-path`, `--existing-id`, and `--resource` instead of silently ignoring all but one ([#5492](https://github.com/databricks/cli/pull/5492)).
  * Fixed `bundle deployment migrate` failing on `model_serving_endpoints`/`database_instances` with permissions (regression since v1.5.0) ([#5775](https://github.com/databricks/cli/pull/5775)).
+ * After a terraform deploy, the CLI now dry-runs a migration to the direct engine (writing nothing locally or remotely) and reports the outcome via telemetry, warning if the migration could not be completed ([#5797](https://github.com/databricks/cli/pull/5797)).
  * direct: Fix deploy bug when a `postgres_projects`, `postgres_branches`, or `postgres_endpoints` field is set to its zero value (e.g. `enable_pg_native_login: false`, `replace_existing: false`).
  * Support `purge_on_delete: true` on `postgres_branches` so bundles can hard-delete a Lakebase branch on destroy (skipping the soft-delete retention window) ([#5781](https://github.com/databricks/cli/pull/5781)).
 

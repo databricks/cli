@@ -5,3 +5,8 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+Warn: post-deploy dry-run migration to direct: resource jobs.bar field url: method A value "[DATABRICKS_URL]/#job/[NUMID]" and method B value "[DATABRICKS_URL]/#job/[NUMID]" disagree; using longer (method A)
+Warn: post-deploy dry-run migration to direct: resources.jobs.bar: cannot set resolved value for field "url": field "url" not found in jobs.JobSettings
+Warn: The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
+Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
+Please forward these warnings to dabs-feedback@databricks.com
