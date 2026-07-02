@@ -1,8 +1,3 @@
 # The pre-existing role is staged locally via `bundle deployment unbind` (the
 # testserver does not model branch role inheritance), so this is local-only.
 Cloud = false
-
-# The Terraform provider does not support replace_existing for postgres roles
-# yet (only branches and endpoints, as of the v1.118.0 schema). Lock to direct
-# until the provider catches up, then drop this to run on both engines.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
