@@ -121,7 +121,6 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 // the plan is computed solely from the difference between the saved local state and the config.
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, localOnly bool) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
-	b.localOnly = localOnly
 
 	err := b.init(client)
 	if err != nil {
@@ -314,8 +313,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		// Note, remoteState may be updated post-deploy, so whether it can be used for
 		// variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy.
-		// In --local mode we skip the store entirely (remoteState is nil here): a reference that needs it
-		// fetches the target on demand via remoteStateForRef, which relies on the cache being absent.
+		// In --local mode the store is skipped so remoteStateForRef fetches on demand (it keys off cache absence).
 		if !localOnly {
 			b.RemoteStateCache.Store(resourceKey, remoteState)
 		}
@@ -342,9 +340,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	// target's read lock, where writing its entry would race with sibling dependents.
 	if localOnly {
 		for key, entry := range plan.Plan {
-			if entry.RemoteState != nil {
-				continue
-			}
 			if remoteState, ok := b.RemoteStateCache.Load(key); ok {
 				entry.RemoteState = remoteState
 			}
@@ -861,7 +856,7 @@ func (b *DeploymentBundle) remoteStateForRef(ctx context.Context, targetResource
 		return remoteState, true, nil
 	}
 
-	if !b.localOnly {
+	if !b.Plan.LocalOnly {
 		return nil, false, nil
 	}
 
