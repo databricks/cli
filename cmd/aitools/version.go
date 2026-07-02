@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
+	"golang.org/x/mod/semver"
 )
 
 func NewVersionCmd() *cobra.Command {
@@ -81,15 +82,25 @@ func NewVersionCmd() *cobra.Command {
 func printPluginLines(ctx context.Context, state *installer.InstallState, scope string) {
 	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 		rec := state.Plugins[name]
-		cmdio.LogString(ctx, fmt.Sprintf("  Plugin (%s, %s): %s", agentDisplayName(name), scope, versionToken(rec.Version)))
+		scopeLabel := scope
+		if rec.Scope != "" {
+			scopeLabel += ", " + rec.Scope + " scope"
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("  Plugin (%s, %s): %s", agentDisplayName(name), scopeLabel, versionToken(rec.Version)))
 	}
 }
 
-// versionToken renders a skills/plugin version for output: the "latest" sentinel
-// is shown as-is; a concrete version gets a leading "v".
+// versionToken renders a skills/plugin version for output: the "latest"
+// sentinel is explicit about tracking main; a concrete version gets a leading "v".
 func versionToken(v string) string {
+	if v == "" {
+		return "version unknown"
+	}
 	if v == "latest" {
-		return "latest"
+		return "latest (tracking main)"
+	}
+	if !semver.IsValid("v" + v) {
+		return v
 	}
 	return "v" + v
 }

@@ -20,5 +20,7 @@
  * Support `purge_on_delete: true` on `postgres_branches` so bundles can hard-delete a Lakebase branch on destroy (skipping the soft-delete retention window) ([#5781](https://github.com/databricks/cli/pull/5781)).
 
 ### Dependency updates
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.147.0 to v0.152.0 ([#5773](https://github.com/databricks/cli/pull/5773)).
+ * Bump Terraform provider from v1.118.0 to v1.120.0 ([#5792](https://github.com/databricks/cli/pull/5792)).
 
 ### API Changes
