@@ -141,10 +141,12 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 }
 
 func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, entry *PlanEntry) (*PostgresBranchRemote, error) {
-	// Build update mask from fields that have action="update" in the changes map.
-	// This excludes immutable fields and fields that haven't changed.
-	// Prefix with "spec." because the API expects paths relative to the Branch object,
-	// not relative to our flattened state type.
+	// Build the mask from the plan's change list and prefix with "spec." (the
+	// API expects paths relative to Branch). The API rejects mask entries
+	// that aren't also populated in the request body, and a wildcard "*"
+	// expands to nested attributes the body would have to set too — so we
+	// can't use a static all-fields mask. The change list naturally tracks
+	// what the user actually set, so the body and mask stay consistent.
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
 
 	// purge_on_delete is an input-only flag consulted at delete time; it is
