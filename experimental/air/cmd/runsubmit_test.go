@@ -30,7 +30,6 @@ func TestBuildSubmitPayload(t *testing.T) {
 		ExperimentName:            "exp",
 		Command:                   new("python train.py"),
 		Compute:                   &computeConfig{AcceleratorType: "GPU_8xH100", NumAccelerators: 16},
-		MaxRetries:                new(2),
 		TimeoutMinutes:            new(30),
 		MLflowRunName:             new("run-v2"),
 		MLflowExperimentDirectory: new("/Workspace/Users/me/exp"),
@@ -49,8 +48,6 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, "exp", task.TaskKey)
 	assert.Equal(t, "ALL_SUCCESS", task.RunIf)
 	assert.Equal(t, aiRuntimeEnvironmentKey, task.EnvironmentKey)
-	assert.Equal(t, 2, task.MaxRetries)
-	assert.True(t, task.RetryOnTimeout)
 
 	at := task.AiRuntimeTask
 	assert.Equal(t, "exp", at.Experiment)
@@ -59,24 +56,13 @@ func TestBuildSubmitPayload(t *testing.T) {
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, "/d/command.sh", at.Deployments[0].CommandPath)
 	assert.Equal(t, aiRuntimeCompute{AcceleratorType: "GPU_8xH100", AcceleratorCount: 16}, at.Deployments[0].Compute)
-}
 
-func TestBuildSubmitPayload_NoRetries(t *testing.T) {
-	cfg := &runConfig{
-		ExperimentName: "exp",
-		Command:        new("x"),
-		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
-		MaxRetries:     new(0),
-	}
-
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4").Tasks[0]
-	assert.Equal(t, 0, task.MaxRetries)
-	assert.False(t, task.RetryOnTimeout)
-
-	// max_retries: 0 must be sent, not omitted, so the server honors "no retries".
+	// max_retries / retry_on_timeout are not sent: the ai_runtime_task path does
+	// not honor them (retries are driven by the AI Runtime service).
 	b, err := json.Marshal(task)
 	require.NoError(t, err)
-	assert.Contains(t, string(b), `"max_retries":0`)
+	assert.NotContains(t, string(b), "max_retries")
+	assert.NotContains(t, string(b), "retry_on_timeout")
 }
 
 func TestSubmitToken(t *testing.T) {

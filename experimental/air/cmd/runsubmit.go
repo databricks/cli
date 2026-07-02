@@ -66,13 +66,15 @@ type jobEnvironment struct {
 }
 
 // submitTask is the single task air submits: a native ai_runtime_task.
+//
+// max_retries / retry_on_timeout are intentionally omitted: on the ai_runtime_task
+// path retries are driven by the AI Runtime service, not the Jobs task field, so
+// setting it here has no effect (matches the Python CLI's native path).
 type submitTask struct {
 	TaskKey        string        `json:"task_key"`
 	RunIf          string        `json:"run_if"`
 	AiRuntimeTask  aiRuntimeTask `json:"ai_runtime_task"`
 	EnvironmentKey string        `json:"environment_key"`
-	MaxRetries     int           `json:"max_retries"`
-	RetryOnTimeout bool          `json:"retry_on_timeout,omitempty"`
 }
 
 // jobsSubmitRun is the Jobs runs/submit payload.
@@ -123,11 +125,7 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string) jobsSubmitR
 		RunIf:          "ALL_SUCCESS",
 		AiRuntimeTask:  task,
 		EnvironmentKey: aiRuntimeEnvironmentKey,
-		MaxRetries:     cfg.maxRetries(),
 	}
-	// max_retries 0 (no retries) is sent explicitly; retry_on_timeout only
-	// applies when retries are allowed.
-	st.RetryOnTimeout = st.MaxRetries > 0
 
 	return jobsSubmitRun{
 		RunName:        cfg.ExperimentName,
