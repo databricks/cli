@@ -1,0 +1,14 @@
+
+>>> errcode uv run [UV_ARGS] -q [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
+Deploying resources...
+Error: cannot create resources.pipelines.my_pipeline.permissions: The pipeline must have exactly one owner. (400 <nil>)
+
+Endpoint: PUT [DATABRICKS_URL]/api/2.0/permissions/pipelines/[UUID]
+HTTP Status: 400 Bad Request
+API error_code: <nil>
+API message: The pipeline must have exactly one owner.
+
+Updating deployment state...
+
+Exit code: 1

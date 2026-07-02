@@ -1,0 +1,11 @@
+bundle:
+  name: my_project
+
+python:
+  mutators:
+    - "mutators:add_pipeline_permission"
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: my_pipeline
