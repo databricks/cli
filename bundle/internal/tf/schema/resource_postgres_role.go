@@ -36,12 +36,13 @@ type ResourcePostgresRoleStatus struct {
 }
 
 type ResourcePostgresRole struct {
-	CreateTime     string                              `json:"create_time,omitempty"`
-	Name           string                              `json:"name,omitempty"`
-	Parent         string                              `json:"parent"`
-	ProviderConfig *ResourcePostgresRoleProviderConfig `json:"provider_config,omitempty"`
-	RoleId         string                              `json:"role_id,omitempty"`
-	Spec           *ResourcePostgresRoleSpec           `json:"spec,omitempty"`
-	Status         *ResourcePostgresRoleStatus         `json:"status,omitempty"`
-	UpdateTime     string                              `json:"update_time,omitempty"`
+	CreateTime      string                              `json:"create_time,omitempty"`
+	Name            string                              `json:"name,omitempty"`
+	Parent          string                              `json:"parent"`
+	ProviderConfig  *ResourcePostgresRoleProviderConfig `json:"provider_config,omitempty"`
+	ReplaceExisting bool                                `json:"replace_existing,omitempty"`
+	RoleId          string                              `json:"role_id,omitempty"`
+	Spec            *ResourcePostgresRoleSpec           `json:"spec,omitempty"`
+	Status          *ResourcePostgresRoleStatus         `json:"status,omitempty"`
+	UpdateTime      string                              `json:"update_time,omitempty"`
 }

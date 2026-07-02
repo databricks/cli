@@ -147,15 +147,15 @@ func TestAgentChoicesOnlyOffersActionableAgents(t *testing.T) {
 	fakeBinsOnPath(t, "claude")
 	ctx := cmdio.MockDiscard(t.Context())
 
-	// Project scope: only Claude (plugin) and Cursor (skills) support it; the
-	// user-only plugin agents and files-only agents are not offered as choices.
+	// Project scope: only Claude (plugin) supports it; the user-only plugin
+	// agents and files-only agents are not offered as choices.
 	choices := agentChoices(ctx, installer.ScopeProject, false)
 	var names []string
 	for _, c := range choices {
 		names = append(names, c.agent.Name)
 	}
 	assert.Contains(t, names, agents.NameClaudeCode)
-	assert.Contains(t, names, agents.NameCursor)
+	assert.NotContains(t, names, agents.NameCursor)
 	assert.NotContains(t, names, agents.NameCodex)
 	assert.NotContains(t, names, agents.NameOpenCode)
 	assert.NotContains(t, names, agents.NameCopilot)
@@ -286,7 +286,7 @@ func TestInstallPluginFirstDefault(t *testing.T) {
 	plugins := setupPluginMock(t)
 	skills := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 
@@ -298,6 +298,7 @@ func TestInstallPluginFirstDefault(t *testing.T) {
 	// plugin) does, plus a plugin recommendation.
 	require.Len(t, *skills, 1)
 	assert.Equal(t, []string{agents.NameCursor}, (*skills)[0].agents)
+	assert.Contains(t, stderr.String(), "Installing databricks plugin for Claude Code...")
 }
 
 func TestInstallInteractivePickerAndConfirm(t *testing.T) {

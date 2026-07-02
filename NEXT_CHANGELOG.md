@@ -19,5 +19,7 @@
  * Support `replace_existing: true` on `postgres_databases` and `postgres_roles` so bundles can take over a database or role that already exists on a Lakebase branch instead of failing with `ALREADY_EXISTS`.
 
 ### Dependency updates
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.147.0 to v0.152.0 ([#5773](https://github.com/databricks/cli/pull/5773)).
+ * Bump Terraform provider from v1.118.0 to v1.120.0 ([#5792](https://github.com/databricks/cli/pull/5792)).
 
 ### API Changes
