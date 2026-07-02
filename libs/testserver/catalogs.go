@@ -25,14 +25,14 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 	}
 
 	catalogInfo := catalog.CatalogInfo{
-		Name:    createRequest.Name,
-		Comment: createRequest.Comment,
-		// Round-trip the remaining create-request fields so a re-read matches the
-		// deployed config. Dropping them made connection_name (recreate_on_changes)
-		// re-plan as a perpetual recreate and managed_encryption_settings as drift.
-		StorageRoot:               createRequest.StorageRoot,
-		ProviderName:              createRequest.ProviderName,
-		ShareName:                 createRequest.ShareName,
+		Name:         createRequest.Name,
+		Comment:      createRequest.Comment,
+		StorageRoot:  createRequest.StorageRoot,
+		ProviderName: createRequest.ProviderName,
+		ShareName:    createRequest.ShareName,
+		// Round-trip these so a re-read matches the deployed config: connection_name is
+		// recreate_on_changes (immutable), so dropping it re-planned as a perpetual
+		// recreate, and managed_encryption_settings showed as drift.
 		ConnectionName:            createRequest.ConnectionName,
 		ManagedEncryptionSettings: createRequest.ManagedEncryptionSettings,
 		CustomMaxRetentionHours:   createRequest.CustomMaxRetentionHours,
