@@ -39,4 +39,28 @@ const (
 	DMSCompatAuto               = "dms_compat_auto"
 	DMSCompatOnlySelfUndeclared = "dms_compat_only_self_undeclared"
 	DMSCompatNot                = "dms_compat_not"
+
+	// Breakdown dimensions recorded on every deploy alongside the verdict above, so the
+	// DMS auto-migration population can be sliced without inferring it from the verdict.
+	// Each is an independent boolean.
+
+	// Whether a top-level permissions section is set. The no-permissions case is always
+	// auto-migration compatible (folder ACLs are mirrored), so this separates the two
+	// populations that both land on dms_compat_auto.
+	PermissionsSectionSet = "permissions_section_set"
+
+	// Where the deployment state folder lives. Exactly one of StatePathIsShared,
+	// StatePathInDeployerHome, StatePathInOtherUserHome, and StatePathOther is true per
+	// deploy. StatePathOther is any other /Workspace folder (not a user home or shared).
+	StatePathInDeployerHome  = "state_path_in_deployer_home"
+	StatePathInOtherUserHome = "state_path_in_other_user_home"
+	StatePathOther           = "state_path_other"
+
+	// Which principal types have undeclared write access to the state folder — the
+	// access an auto-migration governed by the permissions section would drop. These can
+	// co-occur; all false when the deploy is auto-migration compatible.
+	DMSUndeclaredDeployingUser    = "dms_undeclared_deploying_user"
+	DMSUndeclaredOtherUser        = "dms_undeclared_other_user"
+	DMSUndeclaredServicePrincipal = "dms_undeclared_service_principal"
+	DMSUndeclaredGroup            = "dms_undeclared_group"
 )

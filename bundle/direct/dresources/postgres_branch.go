@@ -78,13 +78,9 @@ func makePostgresBranchRemote(branch *postgres.Branch) *PostgresBranchRemote {
 	if branch.Spec != nil {
 		spec = *branch.Spec
 	}
-	var branchID string
-	if branch.Status != nil {
-		branchID = branch.Status.BranchId
-	}
 	return &PostgresBranchRemote{
 		BranchSpec: spec,
-		BranchId:   branchID,
+		BranchId:   branch.BranchId,
 		Parent:     branch.Parent,
 		Name:       branch.Name,
 		Status:     branch.Status,

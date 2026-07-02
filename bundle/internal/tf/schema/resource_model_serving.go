@@ -229,6 +229,15 @@ type ResourceModelServingTags struct {
 	Value string `json:"value,omitempty"`
 }
 
+type ResourceModelServingTelemetryConfigInferenceTableConfig struct {
+	Name             string `json:"name,omitempty"`
+	SamplingFraction int    `json:"sampling_fraction,omitempty"`
+}
+
+type ResourceModelServingTelemetryConfig struct {
+	InferenceTableConfig *ResourceModelServingTelemetryConfigInferenceTableConfig `json:"inference_table_config,omitempty"`
+}
+
 type ResourceModelServing struct {
 	BudgetPolicyId     string                                  `json:"budget_policy_id,omitempty"`
 	Description        string                                  `json:"description,omitempty"`
@@ -243,4 +252,5 @@ type ResourceModelServing struct {
 	ProviderConfig     *ResourceModelServingProviderConfig     `json:"provider_config,omitempty"`
 	RateLimits         []ResourceModelServingRateLimits        `json:"rate_limits,omitempty"`
 	Tags               []ResourceModelServingTags              `json:"tags,omitempty"`
+	TelemetryConfig    *ResourceModelServingTelemetryConfig    `json:"telemetry_config,omitempty"`
 }

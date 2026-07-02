@@ -1,0 +1,30 @@
+
+>>> [CLI] bundle validate -o json
+Warning: Pattern user_repls.json does not match any files
+  at sync.exclude[1]
+  in databricks.yml:11:7
+
+{
+  "workspace": {
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/artifacts",
+    "current_user": {
+      "domain_friendly_name": "[USERNAME]",
+      "id": "[USERID]",
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/resources",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/state"
+  },
+  "tasks": [
+    {
+      "existing_cluster_id": "0101-120000-aaaaaaaa",
+      "spark_python_task": {
+        "python_file": "${workspace.snapshot_path}/src/files/src/main.py"
+      },
+      "task_key": "my_task"
+    }
+  ]
+}

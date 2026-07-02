@@ -26,7 +26,8 @@
             "ready": "NOT_READY"
           }
         },
-        "endpoint_id": "[ENDPOINT_ID_1]"
+        "endpoint_id": "[ENDPOINT_ID_1]",
+        "name": "[ENDPOINT_NAME_1]"
       },
       "changes": {
         "description": {

@@ -21,6 +21,16 @@
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },
       "changes": {
+        "create_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
+        },
+        "dashboard_id": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[DASHBOARD_ID]"
+        },
         "dataset_catalog": {
           "action": "skip",
           "reason": "input_only",
@@ -39,10 +49,25 @@
           "old": "[ETAG]",
           "remote": "[ETAG]"
         },
+        "lifecycle_state": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "ACTIVE"
+        },
+        "path": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "/Users/[USERNAME]/test bundle-deploy-dashboard-dataset [UUID].lvdash.json"
+        },
         "serialized_dashboard": {
           "action": "skip",
           "old": "[SERIALIZED_FIXTURE_OLD]",
           "new": "[SERIALIZED_FIXTURE_NEW]"
+        },
+        "update_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
         }
       }
     }

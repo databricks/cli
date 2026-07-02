@@ -1,11 +1,7 @@
-print_requests() {
-    print_requests.py //pipelines
-}
-
 trace $CLI pipelines deploy
 rm out.requests.txt
 
 title "Running pipeline with --restart flag"
 # Should stop the current pipeline and start a new update
 trace $CLI pipelines run --restart
-trace print_requests
+trace print_requests.py //pipelines

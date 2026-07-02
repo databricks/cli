@@ -4,35 +4,35 @@ package terraform_dabs_map
 
 // alerts / databricks_alert_v2: 1 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
-// apps / databricks_app: 17 dabs-only
+// apps / databricks_app: 16 dabs-only
 // apps / databricks_app: 1 tf-only
-// clusters / databricks_cluster: 1 dabs-only
 // clusters / databricks_cluster: 25 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 10 dabs-only
-// jobs / databricks_job: 257 tf-only
+// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 258 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
-// models / databricks_mlflow_model: 1 tf-only
+// models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 23 dabs-only
+// pipelines / databricks_pipeline: 5 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
+// postgres_databases / databricks_postgres_database: 1 tf-only
 // postgres_databases / databricks_postgres_database: 1 unwraps
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
+// postgres_projects / databricks_postgres_project: 2 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
+// postgres_roles / databricks_postgres_role: 1 tf-only
 // postgres_roles / databricks_postgres_role: 1 unwraps
-// postgres_synced_tables / databricks_postgres_synced_table: 5 dabs-only
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 dabs-only
 // schemas / databricks_schema: 1 tf-only
 // secret_scopes / databricks_secret_scope: 1 tf-only
 // sql_warehouses / databricks_sql_endpoint: 2 tf-only
-// synced_database_tables / databricks_database_synced_database_table: 5 dabs-only
 // volumes / databricks_volume: 1 tf-only
 
 // TerraformToDABsFieldMap maps DABs group name → nested TF segments → DABs segment name.
@@ -57,6 +57,9 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 			}},
 			"library": {NewName: "libraries"},
 		}},
+	},
+	"models": {
+		"registered_model_id": {NewName: "model_id"},
 	},
 	"pipelines": {
 		"cluster":      {NewName: "clusters"},
@@ -92,9 +95,6 @@ var DABsOnlyFields = map[string]FieldSet{
 		"file_path": {},
 	},
 	"apps": {
-		"app_status": {
-			"running_instances": {}, // apps.*.app_status.running_instances
-		},
 		"config": {
 			"command": {}, // apps.*.config.command
 			"env": {
@@ -116,18 +116,10 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 		"source_code_path": {},
 	},
-	"clusters": {
-		"azure_attributes": {
-			"capacity_reservation_group": {}, // clusters.*.azure_attributes.capacity_reservation_group
-		},
-	},
 	"jobs": {
 		"job_clusters": {
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
-				"azure_attributes": {
-					"capacity_reservation_group": {}, // jobs.*.job_clusters.new_cluster.azure_attributes.capacity_reservation_group
-				},
 			},
 		},
 		"tasks": {
@@ -140,94 +132,28 @@ var DABsOnlyFields = map[string]FieldSet{
 					},
 					"new_cluster": {
 						"autotermination_minutes": {}, // jobs.*.tasks.for_each_task.task.new_cluster.autotermination_minutes
-						"azure_attributes": {
-							"capacity_reservation_group": {}, // jobs.*.tasks.for_each_task.task.new_cluster.azure_attributes.capacity_reservation_group
-						},
 					},
 				},
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
-				"azure_attributes": {
-					"capacity_reservation_group": {}, // jobs.*.tasks.new_cluster.azure_attributes.capacity_reservation_group
-				},
 			},
 		},
 	},
 	"pipelines": {
 		"clusters": {
-			"azure_attributes": {
-				"capacity_reservation_group": {}, // pipelines.*.clusters.azure_attributes.capacity_reservation_group
-			},
 			"gcp_attributes": {
 				"boot_disk_size":            {}, // pipelines.*.clusters.gcp_attributes.boot_disk_size
 				"use_preemptible_executors": {}, // pipelines.*.clusters.gcp_attributes.use_preemptible_executors
 			},
 		},
 		"dry_run": {},
-		"ingestion_definition": {
-			"objects": {
-				"report": {
-					"table_configuration": {
-						"clustering_columns":     {}, // pipelines.*.ingestion_definition.objects.report.table_configuration.clustering_columns
-						"enable_auto_clustering": {}, // pipelines.*.ingestion_definition.objects.report.table_configuration.enable_auto_clustering
-						"table_properties": {
-							"*": {}, // pipelines.*.ingestion_definition.objects.report.table_configuration.table_properties.*
-						},
-					},
-				},
-				"schema": {
-					"table_configuration": {
-						"clustering_columns":     {}, // pipelines.*.ingestion_definition.objects.schema.table_configuration.clustering_columns
-						"enable_auto_clustering": {}, // pipelines.*.ingestion_definition.objects.schema.table_configuration.enable_auto_clustering
-						"table_properties": {
-							"*": {}, // pipelines.*.ingestion_definition.objects.schema.table_configuration.table_properties.*
-						},
-					},
-				},
-				"table": {
-					"table_configuration": {
-						"clustering_columns":     {}, // pipelines.*.ingestion_definition.objects.table.table_configuration.clustering_columns
-						"enable_auto_clustering": {}, // pipelines.*.ingestion_definition.objects.table.table_configuration.enable_auto_clustering
-						"table_properties": {
-							"*": {}, // pipelines.*.ingestion_definition.objects.table.table_configuration.table_properties.*
-						},
-					},
-				},
-			},
-			"table_configuration": {
-				"clustering_columns":     {}, // pipelines.*.ingestion_definition.table_configuration.clustering_columns
-				"enable_auto_clustering": {}, // pipelines.*.ingestion_definition.table_configuration.enable_auto_clustering
-				"table_properties": {
-					"*": {}, // pipelines.*.ingestion_definition.table_configuration.table_properties.*
-				},
-			},
-		},
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
-		},
-		"serverless_compute_id": {},
-	},
-	"postgres_synced_tables": {
-		"accelerated_sync": {},
-		"type_overrides": {
-			"column_name": {}, // postgres_synced_tables.*.type_overrides.column_name
-			"pg_type":     {}, // postgres_synced_tables.*.type_overrides.pg_type
-			"size":        {}, // postgres_synced_tables.*.type_overrides.size
 		},
 	},
 	"schemas": {
 		"custom_max_retention_hours": {},
-	},
-	"synced_database_tables": {
-		"spec": {
-			"accelerated_sync": {}, // synced_database_tables.*.spec.accelerated_sync
-			"type_overrides": {
-				"column_name": {}, // synced_database_tables.*.spec.type_overrides.column_name
-				"pg_type":     {}, // synced_database_tables.*.spec.type_overrides.pg_type
-				"size":        {}, // synced_database_tables.*.spec.type_overrides.size
-			},
-		},
 	},
 }
 
@@ -375,8 +301,9 @@ var TerraformOnlyFields = map[string]FieldSet{
 				"zone_id":                {}, // databricks_job.*.new_cluster.aws_attributes.zone_id
 			},
 			"azure_attributes": {
-				"availability":    {}, // databricks_job.*.new_cluster.azure_attributes.availability
-				"first_on_demand": {}, // databricks_job.*.new_cluster.azure_attributes.first_on_demand
+				"availability":               {}, // databricks_job.*.new_cluster.azure_attributes.availability
+				"capacity_reservation_group": {}, // databricks_job.*.new_cluster.azure_attributes.capacity_reservation_group
+				"first_on_demand":            {}, // databricks_job.*.new_cluster.azure_attributes.first_on_demand
 				"log_analytics_info": {
 					"log_analytics_primary_key":  {}, // databricks_job.*.new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key
 					"log_analytics_workspace_id": {}, // databricks_job.*.new_cluster.azure_attributes.log_analytics_info.log_analytics_workspace_id
@@ -631,15 +558,23 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"endpoint_url":        {},
 		"serving_endpoint_id": {},
 	},
-	"models": {
-		"registered_model_id": {},
-	},
 	"pipelines": {
 		"expected_last_modified": {},
 		"url":                    {},
 	},
 	"postgres_branches": {
 		"purge_on_delete": {},
+	},
+	"postgres_databases": {
+		"replace_existing": {},
+	},
+	"postgres_projects": {
+		"initial_branch_spec": {
+			"is_protected": {}, // databricks_postgres_project.*.initial_branch_spec.is_protected
+		},
+	},
+	"postgres_roles": {
+		"replace_existing": {},
 	},
 	"schemas": {
 		"force_destroy": {},
@@ -679,6 +614,9 @@ var DABsToTerraformRenameMap = map[string]RenameTree{
 			"libraries": {NewName: "library"},
 		}},
 	},
+	"models": {
+		"model_id": {NewName: "registered_model_id"},
+	},
 	"pipelines": {
 		"clusters":      {NewName: "cluster"},
 		"libraries":     {NewName: "library"},
@@ -697,4 +635,68 @@ var DABsToTerraformWrappers = map[string]string{
 	"postgres_projects":      "spec",
 	"postgres_roles":         "spec",
 	"postgres_synced_tables": "spec",
+}
+
+// DABsToTerraformWrapperFields maps DABs group name → first-level DABs field names that
+// live under the TF wrapper. For wrapper groups, a DABs path is prefixed with the wrapper
+// in DABsPathToTerraform only when its first segment appears here.
+var DABsToTerraformWrapperFields = map[string]FieldSet{
+	"postgres_branches": {
+		"expire_time":        {},
+		"is_protected":       {},
+		"no_expiry":          {},
+		"source_branch":      {},
+		"source_branch_lsn":  {},
+		"source_branch_time": {},
+		"ttl":                {},
+	},
+	"postgres_catalogs": {
+		"branch":                     {},
+		"create_database_if_missing": {},
+		"postgres_database":          {},
+	},
+	"postgres_databases": {
+		"postgres_database": {},
+		"role":              {},
+	},
+	"postgres_endpoints": {
+		"autoscaling_limit_max_cu": {},
+		"autoscaling_limit_min_cu": {},
+		"disabled":                 {},
+		"endpoint_type":            {},
+		"group":                    {},
+		"no_suspension":            {},
+		"settings":                 {},
+		"suspend_timeout_duration": {},
+	},
+	"postgres_projects": {
+		"budget_policy_id":           {},
+		"custom_tags":                {},
+		"default_branch":             {},
+		"default_endpoint_settings":  {},
+		"display_name":               {},
+		"enable_pg_native_login":     {},
+		"history_retention_duration": {},
+		"pg_version":                 {},
+	},
+	"postgres_roles": {
+		"attributes":       {},
+		"auth_method":      {},
+		"identity_type":    {},
+		"membership_roles": {},
+		"postgres_role":    {},
+	},
+	"postgres_synced_tables": {
+		"accelerated_sync":                   {},
+		"branch":                             {},
+		"create_database_objects_if_missing": {},
+		"existing_pipeline_id":               {},
+		"new_pipeline_spec":                  {},
+		"postgres_database":                  {},
+		"primary_key_columns":                {},
+		"scheduling_policy":                  {},
+		"source_table_full_name":             {},
+		"timeseries_key":                     {},
+		"type_overrides":                     {},
+	},
 }

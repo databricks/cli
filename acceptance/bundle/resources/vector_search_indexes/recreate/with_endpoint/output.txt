@@ -36,6 +36,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
           "state": "ONLINE"
         },
         "endpoint_type": "STANDARD",
+        "endpoint_uuid": "[UUID]",
         "id": "[UUID]",
         "last_updated_timestamp": [UNIX_TIME_MILLIS][0],
         "last_updated_user": "[USERNAME]",

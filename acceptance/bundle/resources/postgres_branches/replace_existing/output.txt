@@ -16,6 +16,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/production
 {
+  "branch_id": "production",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {
@@ -28,7 +29,7 @@ Deployment complete!
   "uid": "[BRANCH_UID]"
 }
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 === bundle destroy
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/

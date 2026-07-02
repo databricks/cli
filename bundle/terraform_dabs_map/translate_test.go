@@ -11,11 +11,10 @@ import (
 
 func TestTerraformPathToDABs(t *testing.T) {
 	tests := []struct {
-		group       string
-		terrPath    string
-		dabsPath    string
-		noRoundtrip bool // if true, DABsPathToTerraform(dabsPath) != terrPath (non-invertible path)
-		expectErr   bool // if true, translation must return an error (Terraform-only field)
+		group     string
+		terrPath  string
+		dabsPath  string
+		expectErr bool // if true, translation must return an error (Terraform-only field)
 	}{
 		// Top-level renames - jobs
 		{
@@ -140,19 +139,35 @@ func TestTerraformPathToDABs(t *testing.T) {
 			dabsPath: "endpoint_type",
 		},
 
-		// TF-computed paths (status, timestamps) pass through unchanged but are not
-		// roundtrippable: DABsPathToTerraform would incorrectly prepend the spec wrapper.
+		// TF root-level paths (status, timestamps, IDs) pass through unchanged and
+		// round-trip correctly: DABsPathToTerraform recognises them as root fields.
 		{
-			group:       "postgres_projects",
-			terrPath:    "status.display_name",
-			dabsPath:    "status.display_name",
-			noRoundtrip: true,
+			group:    "postgres_projects",
+			terrPath: "status.display_name",
+			dabsPath: "status.display_name",
 		},
 		{
-			group:       "postgres_projects",
-			terrPath:    "create_time",
-			dabsPath:    "create_time",
-			noRoundtrip: true,
+			group:    "postgres_projects",
+			terrPath: "create_time",
+			dabsPath: "create_time",
+		},
+		{
+			group:    "postgres_projects",
+			terrPath: "project_id",
+			dabsPath: "project_id",
+		},
+		{
+			group:    "postgres_projects",
+			terrPath: "name",
+			dabsPath: "name",
+		},
+
+		// Manual rename: registered_model_id is a state-computed field whose DABs name
+		// (model_id) is lexically unrelated, so it is wired up via manualRenames in codegen.
+		{
+			group:    "models",
+			terrPath: "registered_model_id",
+			dabsPath: "model_id",
 		},
 
 		// Terraform-only fields: must return an error
@@ -199,12 +214,20 @@ func TestTerraformPathToDABs(t *testing.T) {
 			require.NotNil(t, result)
 			assert.Equal(t, tt.dabsPath, result.String())
 
-			if !tt.noRoundtrip {
-				back, err := terraform_dabs_map.DABsPathToTerraform(tt.group, result)
-				require.NoError(t, err)
-				require.NotNil(t, back)
-				assert.Equal(t, tt.terrPath, back.String(), "roundtrip DABsPathToTerraform(TerraformPathToDABs(terrPath))")
-			}
+			// Fixed-point: the DABs result is already in DABs format, so a second
+			// TerraformPathToDABs pass must leave it unchanged.
+			// DABsPathToTerraform does NOT have this property: spec fields like
+			// "display_name" map to "spec.display_name", and applying the function
+			// again would incorrectly prepend another "spec." prefix.
+			result2, err := terraform_dabs_map.TerraformPathToDABs(tt.group, result)
+			require.NoError(t, err)
+			require.NotNil(t, result2)
+			assert.Equal(t, result.String(), result2.String(), "TerraformPathToDABs(TerraformPathToDABs(terrPath)) == TerraformPathToDABs(terrPath)")
+
+			back, err := terraform_dabs_map.DABsPathToTerraform(tt.group, result)
+			require.NoError(t, err)
+			require.NotNil(t, back)
+			assert.Equal(t, tt.terrPath, back.String(), "roundtrip DABsPathToTerraform(TerraformPathToDABs(terrPath))")
 		})
 	}
 }

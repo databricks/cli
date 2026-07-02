@@ -59,6 +59,11 @@ type resolveVariableReferences struct {
 	includeResources bool
 
 	artifactsReferenceUsed bool
+
+	// excludePaths lists variable reference paths (e.g. "workspace.file_path") whose
+	// resolution should be skipped. References to these paths remain unresolved so a
+	// later mutator can set the value and re-run resolution.
+	excludePaths []string
 }
 
 func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
@@ -71,6 +76,24 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 		extraRounds:      maxResolutionRounds - 1,
 		pattern:          dyn.NewPattern(dyn.Key("resources")),
 		includeResources: true,
+	}
+}
+
+// ResolveVariableReferencesOnlyResourcesExcluding is like ResolveVariableReferencesOnlyResources
+// but leaves the listed variable reference paths unresolved. Use this when a workspace path will
+// be updated by a later mutator (e.g. snapshot.Upload sets workspace.file_path to the snapshot
+// location) and the final value should be substituted at that later point.
+func ResolveVariableReferencesOnlyResourcesExcluding(excluded []string, prefixes ...string) bundle.Mutator {
+	if len(prefixes) == 0 {
+		prefixes = defaultPrefixes
+	}
+	return &resolveVariableReferences{
+		prefixes:         prefixes,
+		lookupFn:         lookup,
+		extraRounds:      maxResolutionRounds - 1,
+		pattern:          dyn.NewPattern(dyn.Key("resources")),
+		includeResources: true,
+		excludePaths:     excluded,
 	}
 }
 
@@ -229,6 +252,9 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				if slices.ContainsFunc(prefixes, path.HasPrefix) {
+					if slices.Contains(m.excludePaths, path.String()) {
+						return dyn.InvalidValue, dynvar.ErrSkipResolution
+					}
 					value, err := m.lookupFn(normalized, path, b)
 					hasUpdates = hasUpdates || (err == nil && value.IsValid())
 					return value, err

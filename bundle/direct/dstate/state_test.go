@@ -109,3 +109,31 @@ func TestDeleteState(t *testing.T) {
 	assert.Empty(t, db3.GetResourceID("jobs.my_job"))
 	mustFinalize(t, &db3)
 }
+
+func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	// Fresh state opened read-only, as the deploy does before planning: no
+	// lineage yet.
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false)))
+	require.Empty(t, db.Data.Lineage)
+
+	// GetOrInitLineage initializes the lineage and makes it readable before any
+	// write (i.e. before planning), and is stable across calls.
+	lineage := db.GetOrInitLineage()
+	require.NotEmpty(t, lineage)
+	require.Equal(t, lineage, db.GetOrInitLineage())
+
+	// Upgrading to write reuses the same lineage (it goes into the WAL header),
+	// and a write makes it durable.
+	require.NoError(t, db.UpgradeToWrite())
+	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{}, nil))
+	mustFinalize(t, &db)
+
+	// Re-open: the persisted lineage matches the one read before the write.
+	var reopened DeploymentState
+	require.NoError(t, reopened.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
+	assert.Equal(t, lineage, reopened.Data.Lineage)
+	mustFinalize(t, &reopened)
+}

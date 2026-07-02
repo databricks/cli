@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -12,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -48,6 +48,10 @@ var destroyApprovalGroups = []approvalGroup{
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	deleteActions := plan.GetActions()
 
+	// Deletes of resources that are already gone remotely only clean up the state,
+	// so they don't count as destructive actions and are not listed as deletions.
+	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.Gone })
+
 	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {
 		return false, err
@@ -78,7 +82,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())

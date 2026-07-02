@@ -148,6 +148,39 @@ func TestComputeMetadataMutator(t *testing.T) {
 	assert.Equal(t, expectedMetadata, b.Metadata)
 }
 
+func TestComputeMetadataMutatorStateOnlyResources(t *testing.T) {
+	// State-only resources (in state but not in config) have no location and must be skipped, not error.
+	b := &bundle.Bundle{
+		BundleRootPath: "/tmp/some/root",
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"state-only-job": {
+						BaseResource: resources.BaseResource{ID: "1111"},
+					},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"state-only-pipeline": {
+						BaseResource: resources.BaseResource{ID: "2222"},
+					},
+				},
+				Dashboards: map[string]*resources.Dashboard{
+					"state-only-dashboard": {
+						BaseResource: resources.BaseResource{ID: "3333"},
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, Compute())
+	require.NoError(t, diags.Error())
+
+	assert.Empty(t, b.Metadata.Config.Resources.Jobs)
+	assert.Empty(t, b.Metadata.Config.Resources.Pipelines)
+	assert.Empty(t, b.Metadata.Config.Resources.Dashboards)
+}
+
 func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
 	syncRootPath := "/Users/shreyas.goenka@databricks.com/source"
 	enabled := true

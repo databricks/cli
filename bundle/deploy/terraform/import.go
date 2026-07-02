@@ -44,6 +44,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	if err != nil {
 		return diag.Errorf("terraform init: %v", err)
 	}
+	defer os.RemoveAll(tmpDir)
 	relPath, _ := b.StateFilenameTerraform(ctx)
 	tmpState := filepath.Join(tmpDir, filepath.Base(relPath))
 
@@ -61,8 +62,6 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	if err != nil {
 		return diag.Errorf("terraform plan: %v", err)
 	}
-
-	defer os.RemoveAll(tmpDir)
 
 	if changed && !m.opts.AutoApprove {
 		output := buf.String()
@@ -99,6 +98,12 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	defer tmpF.Close()
 
 	_, err = io.Copy(f, tmpF)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// A failed Close can mean a truncated state file; the deferred Close above covers error paths.
+	err = f.Close()
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -46,6 +46,12 @@ resources:
         reason: managed
       - field: tasks[*].new_cluster.gcp_attributes
         reason: managed
+      - field: tasks[*].for_each_task.task.new_cluster.aws_attributes
+        reason: managed
+      - field: tasks[*].for_each_task.task.new_cluster.azure_attributes
+        reason: managed
+      - field: tasks[*].for_each_task.task.new_cluster.gcp_attributes
+        reason: managed
       - field: job_clusters[*].new_cluster.aws_attributes
         reason: managed
       - field: job_clusters[*].new_cluster.azure_attributes
@@ -53,30 +59,45 @@ resources:
       - field: job_clusters[*].new_cluster.gcp_attributes
         reason: managed
 
+      # The Jobs API accepts apply_policy_default_values but does not return it
+      # in GET responses, so the remote is always nil even when the user sets it.
+      # Ignore remote-side nil so old==new (no user change) doesn't trigger drift.
+      - field: tasks[*].new_cluster.apply_policy_default_values
+        reason: not_returned_by_api
+      - field: tasks[*].for_each_task.task.new_cluster.apply_policy_default_values
+        reason: not_returned_by_api
+      - field: job_clusters[*].new_cluster.apply_policy_default_values
+        reason: not_returned_by_api
+
     backend_defaults:
       # Same as clusters.enable_elastic_disk — see clusters/resource_cluster.go#L331
       # s.SchemaPath("enable_elastic_disk").SetComputed()
       - field: tasks[*].new_cluster.enable_elastic_disk
+      - field: tasks[*].for_each_task.task.new_cluster.enable_elastic_disk
       - field: job_clusters[*].new_cluster.enable_elastic_disk
 
       # Same as clusters.enable_local_disk_encryption — see clusters/resource_cluster.go#L332
       # s.SchemaPath("enable_local_disk_encryption").SetComputed()
       - field: tasks[*].new_cluster.enable_local_disk_encryption
+      - field: tasks[*].for_each_task.task.new_cluster.enable_local_disk_encryption
       - field: job_clusters[*].new_cluster.enable_local_disk_encryption
 
       # Same as clusters.node_type_id — see clusters/resource_cluster.go#L333
       # s.SchemaPath("node_type_id").SetComputed()
       - field: tasks[*].new_cluster.node_type_id
+      - field: tasks[*].for_each_task.task.new_cluster.node_type_id
       - field: job_clusters[*].new_cluster.node_type_id
 
       # Same as clusters.driver_node_type_id — see clusters/resource_cluster.go#L334
       # s.SchemaPath("driver_node_type_id").SetComputed()
       - field: tasks[*].new_cluster.driver_node_type_id
+      - field: tasks[*].for_each_task.task.new_cluster.driver_node_type_id
       - field: job_clusters[*].new_cluster.driver_node_type_id
 
       # Same as clusters.driver_instance_pool_id — see clusters/resource_cluster.go#L335
       # s.SchemaPath("driver_instance_pool_id").SetComputed()
       - field: tasks[*].new_cluster.driver_instance_pool_id
+      - field: tasks[*].for_each_task.task.new_cluster.driver_instance_pool_id
       - field: job_clusters[*].new_cluster.driver_instance_pool_id
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L531
@@ -114,6 +135,7 @@ resources:
 
       # Same as clusters.data_security_mode: backend sets this when not specified
       - field: tasks[*].new_cluster.data_security_mode
+      - field: tasks[*].for_each_task.task.new_cluster.data_security_mode
       - field: job_clusters[*].new_cluster.data_security_mode
 
   pipelines:
@@ -236,16 +258,11 @@ resources:
       - field: route_optimized
         reason: immutable
     ignore_remote_changes:
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
-      # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
-      # Routes have custom SuppressDiff (lines 387-388)
-      - field: config.traffic_config
-        reason: managed
+      # budget_policy_id is in ServingEndpointDetailed but GET never populates it
+      # (the API returns effective_budget_policy_id instead), so the remote always
+      # reports empty. This is not a backend default, so suppress remote changes.
       - field: budget_policy_id
         reason: no_update_api
-        # There is PublicPreview endpoints but we're not using it https://docs.databricks.com/api/workspace/servingendpoints/put
-      - field: rate_limits
-        reason: not_implemented
     ignore_local_changes:
       - field: budget_policy_id
         reason: no_update_api
@@ -269,10 +286,18 @@ resources:
       - field: route_optimized
         values: [false]
 
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
+      # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
+      # The backend defaults traffic_config (100% to the served entity) when the user
+      # does not specify one. Suppress only that default: if the user sets traffic_config
+      # and the remote diverges, normal drift detection still applies.
+      - field: config.traffic_config
+
   registered_models:
     ignore_remote_changes:
-      # Output-only timestamp/user fields zeroed in RemapState but still show up
-      # via ForceSendFields. These should never participate in diffs.
+      # Output-only timestamp/user fields populated by the backend on read.
+      # The user never sets them, so remote-only differences are ignored here
+      # rather than zeroed in RemapState.
       - field: created_at
         reason: output_only
       - field: created_by
@@ -309,13 +334,6 @@ resources:
     recreate_on_changes:
       - field: assets_dir
         reason: immutable
-    ignore_remote_changes:
-      - field: warehouse_id
-        reason: input_only
-      # skip_builtin_dashboard is input-only, not returned by the Get API.
-      # TF preserves it from state; see resource_quality_monitor.go.
-      - field: skip_builtin_dashboard
-        reason: input_only
 
   catalogs:
     recreate_on_changes:
@@ -362,10 +380,6 @@ resources:
     updatable_id_fields:
       - field: name
         reason: id_changes
-    ignore_remote_changes:
-      # skip_validation is input-only and not returned by the API
-      - field: skip_validation
-        reason: input_only
 
   volumes:
     provided_id_fields:
@@ -607,12 +621,6 @@ resources:
       # project_id is immutable (part of hierarchical name, not in API spec)
       - field: project_id
         reason: id_field
-    ignore_remote_changes:
-      # purge_on_delete is a delete-time query parameter; not returned by GET.
-      # When the user changes it locally we still want the new value to land
-      # in state so the next destroy honors it.
-      - field: purge_on_delete
-        reason: input_only
 
   postgres_branches:
     provided_id_fields:
@@ -621,10 +629,6 @@ resources:
         reason: id_field
       - field: branch_id
         reason: id_field
-    ignore_remote_changes:
-      # replace_existing is a create-time query parameter; not returned by GET.
-      - field: replace_existing
-        reason: input_only
     ignore_local_changes:
       # replace_existing only takes effect on create; toggling it later is a no-op.
       - field: replace_existing
@@ -645,10 +649,6 @@ resources:
         reason: id_field
       - field: endpoint_id
         reason: id_field
-    ignore_remote_changes:
-      # replace_existing is a create-time query parameter; not returned by GET.
-      - field: replace_existing
-        reason: input_only
     ignore_local_changes:
       # replace_existing only takes effect on create; toggling it later is a no-op.
       - field: replace_existing

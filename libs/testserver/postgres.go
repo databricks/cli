@@ -107,6 +107,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 
 	now := nowTime()
 	project.Name = name
+	project.ProjectId = projectID
 	project.Uid = nextUUID()
 	project.CreateTime = now
 	project.UpdateTime = now
@@ -311,6 +312,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 	}
 
 	now := nowTime()
+	branch.BranchId = branchID
 	if exists {
 		// Preserve identifying / output-only fields; apply incoming spec to status.
 		branch.Name = existing.Name
@@ -527,6 +529,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 	}
 
 	now := nowTime()
+	endpoint.EndpointId = endpointID
 	if exists {
 		endpoint.Name = existing.Name
 		endpoint.Parent = existing.Parent
@@ -756,6 +759,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 
 	now := nowTime()
 	database.Name = name
+	database.DatabaseId = databaseID
 	database.Parent = parent
 	database.CreateTime = now
 	database.UpdateTime = now
@@ -949,6 +953,7 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 
 	now := nowTime()
 	catalog.Name = name
+	catalog.CatalogId = catalogID
 	catalog.Uid = nextUUID()
 	catalog.CreateTime = now
 	catalog.UpdateTime = now
@@ -1081,6 +1086,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) R
 
 	now := nowTime()
 	role.Name = name
+	role.RoleId = roleID
 	role.Parent = parent
 	role.CreateTime = now
 	role.UpdateTime = now
@@ -1370,6 +1376,7 @@ func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 
 	defaultBranch := postgres.Branch{
 		Name:       branchName,
+		BranchId:   "production",
 		Parent:     projectName,
 		Uid:        branchUID,
 		CreateTime: now,
@@ -1418,6 +1425,7 @@ func (s *FakeWorkspace) createDefaultEndpointLocked(branchName string) {
 
 	s.PostgresEndpoints[endpointName] = postgres.Endpoint{
 		Name:       endpointName,
+		EndpointId: "primary",
 		Parent:     branchName,
 		Uid:        endpointUID,
 		CreateTime: now,

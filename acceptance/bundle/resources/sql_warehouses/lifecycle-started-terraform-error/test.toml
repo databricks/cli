@@ -1,6 +1,8 @@
 Local = true
-Cloud = true
 RecordRequests = false
+
+# This test performs static validation; no need to run on cloud.
+Cloud = false
 
 Ignore = [".databricks", "databricks.yml"]
 
