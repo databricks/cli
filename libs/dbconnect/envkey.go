@@ -8,10 +8,15 @@ import (
 
 var pythonVersionRe = regexp.MustCompile(`(\d+)\.(\d+)`)
 
+// NormalizeServerless returns the canonical "vN" spelling of a serverless
+// version accepting "4", "v4", or "V4".
+func NormalizeServerless(version string) string {
+	return "v" + strings.TrimPrefix(strings.ToLower(version), "v")
+}
+
 // EnvKeyForServerless returns the environment key for a serverless version.
 func EnvKeyForServerless(version string) string {
-	normalized := strings.TrimPrefix(strings.ToLower(version), "v")
-	return "serverless/serverless-v" + normalized
+	return "serverless/serverless-" + NormalizeServerless(version)
 }
 
 // EnvKeyForSparkVersion returns the environment key for a Spark version.

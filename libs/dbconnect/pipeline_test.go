@@ -48,56 +48,60 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	defer srv.Close()
 
 	p := &Pipeline{
-		Mode: ModeSync, Check: true, ProjectDir: dir,
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
-	assert.True(t, res.Check)
+	assert.True(t, res.DryRun)
+	assert.True(t, res.OK)
 	require.NotNil(t, res.Plan)
 	assert.Contains(t, res.Plan.Diff, "==3.12.*")
 	after, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	assert.Equal(t, string(before), string(after)) // unchanged
 }
 
-func TestPipelineSyncProvisionsAndValidates(t *testing.T) {
+func TestPipelineProvisionsAndValidatesExisting(t *testing.T) {
 	dir := writeProject(t)
 	srv := newTestServer(t)
 	defer srv.Close()
 
 	p := &Pipeline{
-		Mode: ModeSync, ProjectDir: dir,
+		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
-	require.NotNil(t, res.Result)
-	assert.Equal(t, "success", res.Result.Status)
-	assert.Equal(t, "3.12", res.Result.PythonVersion)
+	assert.True(t, res.OK)
+	assert.False(t, res.Greenfield)
+	require.NotNil(t, res.Resolved)
+	assert.Equal(t, "3.12", res.Resolved.PythonVersion)
+	assert.Equal(t, "17.2.0", res.Resolved.DBConnectVersion)
+	assert.Equal(t, ".venv", filepath.Base(res.VenvPath))
 	merged, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	assert.Contains(t, string(merged), `"databricks-connect~=17.2.0"`)
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 }
 
-func TestPipelineInitCreatesNewPyproject(t *testing.T) {
+func TestPipelineGreenfieldCreatesNewPyproject(t *testing.T) {
 	dir := t.TempDir()
 	srv := newTestServer(t)
 	defer srv.Close()
 
 	p := &Pipeline{
-		Mode: ModeInit, ProjectDir: dir,
+		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
-	require.NotNil(t, res.Result)
-	assert.Equal(t, "success", res.Result.Status)
+	assert.True(t, res.OK)
+	assert.True(t, res.Greenfield)
 	data, readErr := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	require.NoError(t, readErr)
 	assert.Contains(t, string(data), `"databricks-connect~=17.2.0",`)
@@ -105,21 +109,50 @@ func TestPipelineInitCreatesNewPyproject(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 }
 
-func TestPipelineInitBacksUpExistingPyproject(t *testing.T) {
+func TestPipelineExistingBacksUp(t *testing.T) {
 	dir := writeProject(t)
 	srv := newTestServer(t)
 	defer srv.Close()
 
 	p := &Pipeline{
-		Mode: ModeInit, ProjectDir: dir,
+		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
-	require.NotNil(t, res.Result)
+	assert.True(t, res.OK)
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
+	assert.Equal(t, "pyproject.toml.bak", filepath.Base(res.BackupPath))
+}
+
+func TestPipelineConstraintsOnlyOmitsDBConnect(t *testing.T) {
+	dir := t.TempDir()
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	// Even though databricks-connect is present in the venv (fakePM reports a
+	// version), constraints-only must not assert it, not write the pin, and not
+	// report dbconnectVersion (spec §6 omits it in this mode).
+	p := &Pipeline{
+		Mode: ModeConstraintsOnly, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	assert.Equal(t, "constraints-only", res.Mode)
+	require.NotNil(t, res.Resolved)
+	assert.Empty(t, res.Resolved.DBConnectVersion, "constraints-only must omit dbconnectVersion")
+	data, readErr := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	require.NoError(t, readErr)
+	assert.NotContains(t, string(data), "databricks-connect")
+	// The dev group is emitted empty, not with a blank-string entry.
+	assert.Contains(t, string(data), "dev = []")
+	assert.NotContains(t, string(data), `""`)
 }
 
 func TestPipelineNoTarget(t *testing.T) {
@@ -128,7 +161,7 @@ func TestPipelineNoTarget(t *testing.T) {
 	defer srv.Close()
 
 	p := &Pipeline{
-		Mode: ModeSync, ProjectDir: dir,
+		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
 		Flags:   TargetFlags{},
 		Compute: stubCompute{}, PM: fakePM{},
@@ -137,10 +170,18 @@ func TestPipelineNoTarget(t *testing.T) {
 	require.Error(t, err)
 	require.NotNil(t, res)
 	require.NotNil(t, res.Error)
-	assert.Equal(t, ErrNoTargetSelected, res.Error.Code)
+	assert.False(t, res.OK)
+	assert.Equal(t, ErrNoTarget, res.Error.Code)
+	// No-target is detected during target resolution, so it is reported at the
+	// resolve phase (the failing phase in phases[] and error.failurePhase agree).
+	assert.Equal(t, PhaseResolve, res.Error.FailurePhase)
+	// Preflight succeeded, resolve errored, everything after stays pending.
+	assert.Equal(t, StatusOK, phaseStatus(res, PhasePreflight))
+	assert.Equal(t, StatusError, phaseStatus(res, PhaseResolve))
+	assert.Equal(t, StatusPending, phaseStatus(res, PhaseProvision))
 }
 
-func TestPipelineSyncRestoresBackupBeforeMerge(t *testing.T) {
+func TestPipelineRestoresBackupBeforeMerge(t *testing.T) {
 	dir := t.TempDir()
 	// Write an original pyproject.toml and a pre-existing .bak.
 	original := []byte(`[project]
@@ -165,7 +206,7 @@ dev = ["databricks-connect~=17.2.0"]
 	defer srv.Close()
 
 	p := &Pipeline{
-		Mode: ModeSync, ProjectDir: dir,
+		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
@@ -180,23 +221,23 @@ dev = ["databricks-connect~=17.2.0"]
 	assert.Contains(t, string(data), `requires-python = "==3.12.*"`)
 }
 
-func TestPipelineResultPopulatesConstraintInfo(t *testing.T) {
+func TestPipelineResultPopulatesResolved(t *testing.T) {
 	dir := writeProject(t)
 	srv := newTestServer(t)
 	defer srv.Close()
 
 	p := &Pipeline{
-		Mode: ModeSync, Check: true, ProjectDir: dir,
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
-	require.NotNil(t, res.Constraints)
-	assert.Equal(t, "==3.12.*", res.Constraints.RequiresPython)
-	assert.Equal(t, "databricks-connect~=17.2.0", res.Constraints.DatabricksConnect)
-	assert.Equal(t, 2, res.Constraints.ConstraintCount)
+	require.NotNil(t, res.Resolved)
+	assert.Equal(t, "3.12", res.Resolved.PythonVersion)
+	assert.Equal(t, "17.2.0", res.Resolved.DBConnectVersion)
+	assert.Equal(t, "network", res.Resolved.ArtifactSource)
 }
 
 // newServerWithDBC returns a test server that serves a constraints TOML with the
@@ -225,7 +266,7 @@ func TestPipelineValidateRejectsUnparseablePin(t *testing.T) {
 	defer srv.Close()
 
 	p := &Pipeline{
-		Mode: ModeSync, ProjectDir: dir,
+		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
@@ -233,20 +274,19 @@ func TestPipelineValidateRejectsUnparseablePin(t *testing.T) {
 	res, err := p.Run(t.Context())
 	require.Error(t, err)
 	require.NotNil(t, res.Error)
-	assert.Equal(t, ErrValidationFailed, res.Error.Code)
+	assert.Equal(t, ErrValidate, res.Error.Code)
+	assert.Equal(t, PhaseValidate, res.Error.FailurePhase)
 }
 
 func TestPipelineValidateRejectsUnparseableInstalledVersion(t *testing.T) {
 	dir := writeProject(t)
-	// sampleToml has databricks-connect~=17.2.0 as the pin; fakePM returns a
-	// bare integer "17" as the installed version — majorVersion("17") must now
-	// return "17" (not ""), so this actually passes. Use an empty installed
+	// sampleToml has databricks-connect~=17.2.0 as the pin; use an empty installed
 	// version string to simulate an installed version that can't be parsed.
 	srv := newTestServer(t)
 	defer srv.Close()
 
 	p := &Pipeline{
-		Mode: ModeSync, ProjectDir: dir,
+		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: ""},
@@ -254,7 +294,7 @@ func TestPipelineValidateRejectsUnparseableInstalledVersion(t *testing.T) {
 	res, err := p.Run(t.Context())
 	require.Error(t, err)
 	require.NotNil(t, res.Error)
-	assert.Equal(t, ErrValidationFailed, res.Error.Code)
+	assert.Equal(t, ErrValidate, res.Error.Code)
 }
 
 func TestMajorVersion(t *testing.T) {
@@ -270,4 +310,14 @@ func TestMajorVersion(t *testing.T) {
 	for _, tc := range cases {
 		assert.Equal(t, tc.want, majorVersion(tc.input), "input=%q", tc.input)
 	}
+}
+
+// phaseStatus returns the status recorded for the named phase in res.
+func phaseStatus(res *Result, name PhaseName) string {
+	for _, ph := range res.Phases {
+		if ph.Phase == name {
+			return ph.Status
+		}
+	}
+	return ""
 }

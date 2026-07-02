@@ -2,39 +2,110 @@ package dbconnect
 
 import "fmt"
 
-// Mode represents the dbconnect operation mode.
+// Command path components, defined once so a rename touches a single place
+// (spec §0 / invariant 8 / scenario 21). The cmd layer builds the Cobra
+// command from CommandGroup/CommandVerb; the --json "command" field uses
+// CommandName. No other string re-spells the command path.
+const (
+	CommandGroup = "dbconnect"
+	CommandVerb  = "sync"
+	CommandName  = CommandGroup + " " + CommandVerb
+
+	// SchemaVersion is the version of the --json output contract (spec §6).
+	// Bump it on any breaking change to the JSON shape.
+	SchemaVersion = 1
+)
+
+// Filenames and directories this command reads and writes.
+const (
+	pyprojectFile = "pyproject.toml"
+	backupFile    = "pyproject.toml.bak"
+	venvDir       = ".venv"
+)
+
+// artifactSource values reported in --json resolved.artifactSource (spec §6).
+const (
+	artifactNetwork = "network"
+	artifactCache   = "cache"
+)
+
+// Mode is the provisioning mode: a full environment (default) or the
+// constraints-only variant that omits the databricks-connect dependency.
 type Mode int
 
 const (
-	ModeInit Mode = iota
-	ModeSync
+	ModeDefault Mode = iota
+	ModeConstraintsOnly
 )
 
-// String returns the string representation of the Mode.
+// String returns the JSON/text spelling of the mode ("default" | "constraints-only").
 func (m Mode) String() string {
-	if m == ModeInit {
-		return "init"
+	if m == ModeConstraintsOnly {
+		return "constraints-only"
 	}
-	return "sync"
+	return "default"
 }
 
-// ErrorCode represents a dbconnect error code.
+// PhaseName is a canonical execution phase (spec §3 / §6). The set is fixed and
+// ordered; the --json "phases" array reports every phase in this order.
+type PhaseName string
+
+const (
+	PhasePreflight PhaseName = "preflight"
+	PhaseResolve   PhaseName = "resolve"
+	PhaseFetch     PhaseName = "fetch"
+	PhaseMerge     PhaseName = "merge"
+	PhaseProvision PhaseName = "provision"
+	PhaseValidate  PhaseName = "validate"
+)
+
+// allPhases is the canonical phase order for the --json "phases" array.
+var allPhases = []PhaseName{
+	PhasePreflight,
+	PhaseResolve,
+	PhaseFetch,
+	PhaseMerge,
+	PhaseProvision,
+	PhaseValidate,
+}
+
+// Phase status values (spec §6.2).
+const (
+	StatusOK      = "ok"
+	StatusError   = "error"
+	StatusPending = "pending"
+)
+
+// ErrorCode is a stable failure-class identifier surfaced in --json error.code
+// (spec §7). Values are compared via the ErrorCode constants, never by
+// string-matching messages, and are defined once here.
 type ErrorCode string
 
 const (
-	ErrNoTargetSelected      ErrorCode = "no_target_selected"
-	ErrConstraintFetchFailed ErrorCode = "constraint_fetch_failed"
-	ErrMergeFailed           ErrorCode = "merge_failed"
-	ErrProvisionFailed       ErrorCode = "provision_failed"
-	ErrValidationFailed      ErrorCode = "validation_failed"
-	ErrUvUnavailable         ErrorCode = "uv_unavailable"
+	ErrNoTarget           ErrorCode = "E_NO_TARGET"
+	ErrManagerUnsupported ErrorCode = "E_MANAGER_UNSUPPORTED"
+	ErrUvMissing          ErrorCode = "E_UV_MISSING"
+	ErrNotWritable        ErrorCode = "E_NOT_WRITABLE"
+	ErrResolve            ErrorCode = "E_RESOLVE"
+	ErrEnvUnsupported     ErrorCode = "E_ENV_UNSUPPORTED"
+	ErrFetch              ErrorCode = "E_FETCH"
+	ErrWrite              ErrorCode = "E_WRITE"
+	ErrMerge              ErrorCode = "E_MERGE"
+	ErrPythonInstall      ErrorCode = "E_PYTHON_INSTALL"
+	ErrProvision          ErrorCode = "E_PROVISION"
+	ErrValidate           ErrorCode = "E_VALIDATE"
 )
 
-// PipelineError represents an error during the dbconnect pipeline.
+// PipelineError is a failure carrying a stable code, the phase at which it
+// occurred, and whether disk was mutated before the failure. It marshals to the
+// --json error object (spec §6.2). Code and FailurePhase are the stable
+// contract; Err holds the wrapped cause for errors.Is/As and is not serialized.
 type PipelineError struct {
-	Code ErrorCode `json:"code"`
-	Msg  string    `json:"message"`
-	Err  error     `json:"-"`
+	Code         ErrorCode `json:"code"`
+	FailurePhase PhaseName `json:"failurePhase"`
+	Msg          string    `json:"message"`
+	DiskMutated  bool      `json:"diskMutated"`
+	Err          error     `json:"-"`
 }
 
 func (e *PipelineError) Error() string {
@@ -48,8 +119,9 @@ func (e *PipelineError) Unwrap() error {
 	return e.Err
 }
 
-// NewError creates a new PipelineError. The message is formatted using fmt.Sprintf(format, args...),
-// and err may be nil.
+// NewError creates a PipelineError with a code and message. FailurePhase and
+// DiskMutated are filled in by the pipeline when it records the failure. The
+// message is formatted with fmt.Sprintf(format, args...); err may be nil.
 func NewError(code ErrorCode, err error, format string, args ...any) *PipelineError {
 	return &PipelineError{
 		Code: code,
@@ -58,55 +130,73 @@ func NewError(code ErrorCode, err error, format string, args ...any) *PipelineEr
 	}
 }
 
-// TargetInfo contains information about the target environment.
+// TargetInfo is the resolved compute target (spec §6 "target"). Source records
+// which of the four precedence sources was used. SparkVersion is the raw cluster
+// runtime string the resolver read; it is folded into EnvKey (dbr/<SparkVersion>)
+// and is not part of the JSON contract, kept only as intermediate resolver state.
 type TargetInfo struct {
-	Kind          string `json:"kind"`
-	ClusterID     string `json:"cluster_id"`
-	SparkVersion  string `json:"spark_version"`
-	EnvKey        string `json:"env_key"`
-	PythonVersion string `json:"python_version"`
+	Source            string `json:"source"`
+	ClusterID         string `json:"clusterId,omitempty"`
+	ServerlessVersion string `json:"serverlessVersion,omitempty"`
+	EnvKey            string `json:"envKey"`
+
+	SparkVersion string `json:"-"`
 }
 
-// ConstraintInfo contains constraint information.
-type ConstraintInfo struct {
-	SourceURL         string `json:"source_url"`
-	FromCache         bool   `json:"from_cache"`
-	RequiresPython    string `json:"requires_python"`
-	DatabricksConnect string `json:"databricks_connect"`
-	ConstraintCount   int    `json:"constraint_count"`
+// ResolvedInfo is the resolved environment definition (spec §6 "resolved").
+// DBConnectVersion is omitted in constraints-only mode.
+type ResolvedInfo struct {
+	PythonVersion    string `json:"pythonVersion"`
+	DBConnectVersion string `json:"dbconnectVersion,omitempty"`
+	ArtifactSource   string `json:"artifactSource"`
 }
 
-// Plan contains the deployment plan.
+// Plan describes the changes a --check run would apply (spec §6.3).
+// ChangedRegions is retained for text output only and is not serialized.
 type Plan struct {
-	PyprojectPath  string   `json:"pyproject_path"`
-	BackupPath     string   `json:"backup_path"`
-	Diff           string   `json:"diff"`
-	ChangedRegions []string `json:"changed_regions"`
+	WouldWrite         string `json:"wouldWrite"`
+	WouldBackup        string `json:"wouldBackup,omitempty"`
+	WouldInstallPython string `json:"wouldInstallPython,omitempty"`
+	Diff               string `json:"diff"`
+
+	ChangedRegions []string `json:"-"`
 }
 
-// PhaseResult contains the result of a single phase.
-type PhaseResult struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Detail string `json:"detail"`
+// PhaseStatus is one entry in the --json "phases" array (spec §6). Detail is
+// used for human-readable text output only and is not serialized.
+type PhaseStatus struct {
+	Phase  PhaseName `json:"phase"`
+	Status string    `json:"status"`
+
+	Detail string `json:"-"`
 }
 
-// ResultDetail contains the final result details.
-type ResultDetail struct {
-	Status                     string `json:"status"`
-	VenvPath                   string `json:"venv_path"`
-	PythonVersion              string `json:"python_version"`
-	DatabricksConnectInstalled string `json:"databricks_connect_installed"`
+// Warning is a non-fatal advisory surfaced in --json "warnings" (spec §6).
+type Warning struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
-// Result contains the overall result of the dbconnect operation.
+// Result is the full outcome of a sync run and the root of the --json object
+// (spec §6). Field order matches the spec's schema so JSON key order is stable.
 type Result struct {
-	Mode        string          `json:"mode"`
-	Check       bool            `json:"check"`
-	Target      *TargetInfo     `json:"target,omitempty"`
-	Constraints *ConstraintInfo `json:"constraints,omitempty"`
-	Plan        *Plan           `json:"plan,omitempty"`
-	Phases      []PhaseResult   `json:"phases,omitempty"`
-	Result      *ResultDetail   `json:"result,omitempty"`
-	Error       *PipelineError  `json:"error,omitempty"`
+	SchemaVersion int            `json:"schemaVersion"`
+	Command       string         `json:"command"`
+	OK            bool           `json:"ok"`
+	Mode          string         `json:"mode"`
+	DryRun        bool           `json:"dryRun"`
+	Target        *TargetInfo    `json:"target,omitempty"`
+	Resolved      *ResolvedInfo  `json:"resolved,omitempty"`
+	Greenfield    bool           `json:"greenfield"`
+	Plan          *Plan          `json:"plan,omitempty"`
+	VenvPath      string         `json:"venvPath,omitempty"`
+	Phases        []PhaseStatus  `json:"phases"`
+	Warnings      []Warning      `json:"warnings"`
+	Error         *PipelineError `json:"error"`
+	BackupPath    string         `json:"backupPath,omitempty"`
+	// DurationMs is part of the §6 contract but reserved for now: the pipeline
+	// does not measure wall time (a real clock would make acceptance goldens
+	// non-deterministic), so it is always emitted as 0 until timing is wired
+	// through a clock the tests can control.
+	DurationMs int64 `json:"durationMs"`
 }

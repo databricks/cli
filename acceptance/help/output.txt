@@ -168,6 +168,7 @@ Environments
 
 Developer Tools
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
+  dbconnect                              Set up a local Python environment matched to your Databricks compute
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:

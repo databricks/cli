@@ -1,0 +1,1 @@
+trace $CLI dbconnect sync --serverless v4 --constraints-only --check --output json

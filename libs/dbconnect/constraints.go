@@ -2,6 +2,7 @@ package dbconnect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,12 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/log"
 )
+
+// errEnvKeyNotFound is returned by fetchURL when the constraint artifact does
+// not exist for the requested env key (HTTP 404). It is distinct from a
+// transport failure so FetchConstraints can classify it as E_ENV_UNSUPPORTED
+// (a resolvable target with no published environment) rather than E_FETCH.
+var errEnvKeyNotFound = errors.New("environment key not found")
 
 // Constraints holds the parsed contents of a per-environment pyproject.toml.
 type Constraints struct {
@@ -34,11 +41,14 @@ func sanitizeEnvKey(envKey string) string {
 	return strings.ReplaceAll(envKey, "/", "__")
 }
 
-// FetchConstraints fetches the pyproject.toml for envKey from baseURL, caches it in cacheDir,
-// and falls back to the cached copy on network or HTTP errors.
+// FetchConstraints fetches the pyproject.toml for envKey from baseURL and caches it in
+// cacheDir. On a transport or non-404 HTTP failure it falls back to the cached copy if one
+// exists (E_FETCH otherwise). A 404 means the env key is not published (E_ENV_UNSUPPORTED)
+// and does not fall back to cache — a resolvable target with no environment is a distinct,
+// non-transient condition.
 //
 // Constraint files are hosted at:
-// https://github.com/pietern/databricks-environments
+// https://github.com/rugpanov/databricks-environments
 func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*Constraints, error) {
 	url := baseURL + "/" + envKey + "/pyproject.toml"
 	cachePath := filepath.Join(cacheDir, sanitizeEnvKey(envKey)+".toml")
@@ -63,10 +73,17 @@ func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*C
 		}, nil
 	}
 
+	// A missing env key (404) is not a transport failure and has no useful cache
+	// fallback: the target resolved to an environment that isn't published.
+	if errors.Is(fetchErr, errEnvKeyNotFound) {
+		return nil, NewError(ErrEnvUnsupported, fetchErr,
+			"no published environment for %q. If this is a new runtime, try the latest LTS target (e.g. --serverless v4 or a supported --cluster DBR)", envKey)
+	}
+
 	// Network or HTTP failure: attempt to serve from cache.
 	cached, readErr := os.ReadFile(cachePath)
 	if readErr != nil {
-		return nil, NewError(ErrConstraintFetchFailed, fetchErr, "fetch constraints for %s", envKey)
+		return nil, NewError(ErrFetch, fetchErr, "fetch constraints for %s", envKey)
 	}
 
 	log.Warnf(ctx, "constraint fetch failed, using cached copy: %v", fetchErr)
@@ -95,6 +112,9 @@ func fetchURL(ctx context.Context, url string) ([]byte, error) {
 		return nil, fmt.Errorf("GET %s: %w", url, err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("GET %s: %w", url, errEnvKeyNotFound)
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("GET %s: unexpected status %s", url, resp.Status)
 	}

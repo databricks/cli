@@ -2,9 +2,7 @@ package dbconnect
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -16,20 +14,11 @@ import (
 // renderResult renders the pipeline result to the command's output.
 // In JSON mode it renders the full structured result (even on error).
 // In text mode it prints phase headers and a summary, then returns the error.
+//
+// res is always non-nil: Pipeline.Run constructs and returns a fully-populated
+// Result (with the canonical phase list and error object) on every path,
+// including failures, so no nil guard is needed here.
 func renderResult(ctx context.Context, cmd *cobra.Command, res *libsdbconnect.Result, pipelineErr error) error {
-	// Guard against a nil result (e.g. pipeline failed before constructing one).
-	// Always emit a structured object in JSON mode so callers can rely on the schema.
-	if res == nil {
-		res = &libsdbconnect.Result{}
-		if pipelineErr != nil {
-			if pe, ok := errors.AsType[*libsdbconnect.PipelineError](pipelineErr); ok {
-				res.Error = pe
-			} else {
-				res.Error = libsdbconnect.NewError(libsdbconnect.ErrProvisionFailed, pipelineErr, "%s", pipelineErr.Error())
-			}
-		}
-	}
-
 	if root.OutputType(cmd) == flags.OutputJSON {
 		if err := cmdio.Render(ctx, res); err != nil {
 			return err
@@ -43,14 +32,17 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libsdbconnect.Re
 		return nil
 	}
 
-	// Text mode: print phase headers.
-	for i, phase := range res.Phases {
-		cmdio.LogString(ctx, fmt.Sprintf("=== Phase %d: %s ===", i+1, phase.Name))
+	// Text mode: print each phase in execution order.
+	for _, phase := range res.Phases {
 		if phase.Detail != "" {
-			cmdio.LogString(ctx, fmt.Sprintf("    status=%s  %s", phase.Status, phase.Detail))
+			cmdio.LogString(ctx, fmt.Sprintf("%-10s %s  %s", phase.Phase, phase.Status, phase.Detail))
 		} else {
-			cmdio.LogString(ctx, "    status="+phase.Status)
+			cmdio.LogString(ctx, fmt.Sprintf("%-10s %s", phase.Phase, phase.Status))
 		}
+	}
+
+	for _, w := range res.Warnings {
+		cmdio.LogString(ctx, "warning: "+w.Message)
 	}
 
 	if pipelineErr != nil {
@@ -59,25 +51,26 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libsdbconnect.Re
 	}
 
 	// Print a final success / check summary.
-	if res.Check {
+	if res.DryRun {
 		if res.Plan != nil {
-			cmdio.LogString(ctx, "Plan: "+filepath.ToSlash(res.Plan.PyprojectPath))
-			if len(res.Plan.ChangedRegions) > 0 {
-				for _, region := range res.Plan.ChangedRegions {
-					cmdio.LogString(ctx, "  changed region: "+region)
-				}
+			cmdio.LogString(ctx, "Plan: "+res.Plan.WouldWrite)
+			for _, region := range res.Plan.ChangedRegions {
+				cmdio.LogString(ctx, "  changed region: "+region)
 			}
 		}
 		cmdio.LogString(ctx, "Check complete. No files were modified.")
 		return nil
 	}
 
-	if res.Result != nil {
-		cmdio.LogString(ctx, fmt.Sprintf("Success: python=%s databricks-connect=%s venv=%s",
-			res.Result.PythonVersion,
-			res.Result.DatabricksConnectInstalled,
-			filepath.ToSlash(res.Result.VenvPath),
-		))
+	if res.Resolved != nil {
+		summary := "Success: python=" + res.Resolved.PythonVersion
+		if res.Resolved.DBConnectVersion != "" {
+			summary += " databricks-connect=" + res.Resolved.DBConnectVersion
+		}
+		if res.VenvPath != "" {
+			summary += " venv=" + res.VenvPath
+		}
+		cmdio.LogString(ctx, summary)
 	}
 	return nil
 }

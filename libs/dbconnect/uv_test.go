@@ -101,8 +101,8 @@ func TestUvFailureIncludesStderr(t *testing.T) {
 			Err:     errors.New("exit status 2"),
 			Stderr:  "error: Connection refused\n",
 		}
-		pe := uvFailure(ErrProvisionFailed, underlying, "uv sync")
-		assert.Equal(t, ErrProvisionFailed, pe.Code)
+		pe := uvFailure(ErrProvision, underlying, "uv sync")
+		assert.Equal(t, ErrProvision, pe.Code)
 		assert.Contains(t, pe.Msg, "Connection refused")
 		assert.NotEqual(t, '\n', pe.Msg[len(pe.Msg)-1], "Msg must not end with a newline")
 	})
@@ -113,14 +113,14 @@ func TestUvFailureIncludesStderr(t *testing.T) {
 			Err:     errors.New("exit status 2"),
 			Stderr:  "",
 		}
-		pe := uvFailure(ErrProvisionFailed, underlying, "uv sync")
-		assert.Equal(t, ErrProvisionFailed, pe.Code)
+		pe := uvFailure(ErrProvision, underlying, "uv sync")
+		assert.Equal(t, ErrProvision, pe.Code)
 		assert.Equal(t, "uv sync failed", pe.Msg)
 	})
 
 	t.Run("non_process_error_uses_action_only", func(t *testing.T) {
-		pe := uvFailure(ErrProvisionFailed, errors.New("some other error"), "uv sync")
-		assert.Equal(t, ErrProvisionFailed, pe.Code)
+		pe := uvFailure(ErrProvision, errors.New("some other error"), "uv sync")
+		assert.Equal(t, ErrProvision, pe.Code)
 		assert.Equal(t, "uv sync failed", pe.Msg)
 	})
 }

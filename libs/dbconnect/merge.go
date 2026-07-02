@@ -132,7 +132,12 @@ var dbconnectLineRe = regexp.MustCompile(`^(\s*)"databricks-connect[^"]*"(\s*,?\
 // mergeDatabricksConnect replaces the databricks-connect element inside
 // [dependency-groups].dev. It handles both the multi-line array form (one element per
 // line) and the single-line array form (dev = ["databricks-connect~=..."]).
+// An empty value (constraints-only mode) is a no-op: the user's dev group is left
+// untouched rather than having its databricks-connect pin blanked out.
 func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
+	if value == "" {
+		return lines, false
+	}
 	header, end, found := tableBounds(lines, "[dependency-groups]")
 	if !found {
 		return lines, false
@@ -332,19 +337,32 @@ func equalLines(a, b []string) bool {
 	return true
 }
 
+// freshProjectVersion is the placeholder version written into a greenfield
+// [project] table. uv rejects a [project] table that has neither project.version
+// nor project.dynamic containing "version", even for a non-distributed local
+// environment, so a concrete value is required for `uv sync` to succeed.
+const freshProjectVersion = "0.0.0"
+
 // RenderFreshPyproject produces a complete managed pyproject.toml for a project that has
 // none, with [project], [dependency-groups].dev (carrying the databricks-connect pin), and
-// the marker-bracketed [tool.uv] constraint block.
+// the marker-bracketed [tool.uv] constraint block. When c.DatabricksConnect is empty
+// (constraints-only mode) the dev group is emitted empty rather than with a blank entry.
 func RenderFreshPyproject(projectName string, c Constraints) []byte {
 	var b strings.Builder
 	b.WriteString("[project]\n")
 	fmt.Fprintf(&b, "name = %q\n", projectName)
+	// uv requires project.version when a [project] table is present.
+	fmt.Fprintf(&b, "version = %q\n", freshProjectVersion)
 	fmt.Fprintf(&b, "requires-python = %q\n", c.RequiresPython)
 	b.WriteString("\n")
 	b.WriteString("[dependency-groups]\n")
-	b.WriteString("dev = [\n")
-	fmt.Fprintf(&b, "    %q,\n", c.DatabricksConnect)
-	b.WriteString("]\n")
+	if c.DatabricksConnect != "" {
+		b.WriteString("dev = [\n")
+		fmt.Fprintf(&b, "    %q,\n", c.DatabricksConnect)
+		b.WriteString("]\n")
+	} else {
+		b.WriteString("dev = []\n")
+	}
 	b.WriteString("\n")
 	for _, line := range renderToolUvBlock(c.ConstraintDeps) {
 		b.WriteString(line)

@@ -7,7 +7,6 @@ import (
 )
 
 // ComputeClient is a narrow seam over the SDK so tests can stub it.
-// The real adapter is wired in Task 9.
 type ComputeClient interface {
 	// GetClusterSparkVersion returns the Spark version string for a cluster.
 	GetClusterSparkVersion(ctx context.Context, clusterID string) (string, error)
@@ -30,6 +29,10 @@ type BundleTarget struct {
 	Serverless bool
 	Selected   bool
 }
+
+// noTargetMessage is the actionable message shown when no target is selected,
+// matching spec §2.3.
+const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster / --serverless / --job"
 
 // ValidateTargetFlags returns an error if more than one of the three flags is set.
 // Cobra marks them mutually exclusive too; this guards the library path.
@@ -57,10 +60,10 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 	if f.Cluster != "" {
 		v, err := c.GetClusterSparkVersion(ctx, f.Cluster)
 		if err != nil {
-			return nil, fmt.Errorf("resolving cluster %s: %w", f.Cluster, err)
+			return nil, NewError(ErrResolve, err, "resolving cluster %s", f.Cluster)
 		}
 		return &TargetInfo{
-			Kind:         "cluster",
+			Source:       "cluster",
 			ClusterID:    f.Cluster,
 			SparkVersion: v,
 			EnvKey:       EnvKeyForSparkVersion(v),
@@ -69,31 +72,33 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 
 	if f.Serverless != "" {
 		return &TargetInfo{
-			Kind:   "serverless",
-			EnvKey: EnvKeyForServerless(f.Serverless),
+			Source:            "serverless",
+			ServerlessVersion: NormalizeServerless(f.Serverless),
+			EnvKey:            EnvKeyForServerless(f.Serverless),
 		}, nil
 	}
 
 	if f.Job != "" {
 		_, isServerless, version, err := c.GetJobSparkVersion(ctx, f.Job)
 		if err != nil {
-			return nil, fmt.Errorf("resolving job %s: %w", f.Job, err)
+			return nil, NewError(ErrResolve, err, "resolving job %s", f.Job)
 		}
 		if isServerless {
 			// Default to v4 when the job is serverless; the serverless env version
 			// is not recorded in the bundle/project (documented stand-in from the
-			// original script).
+			// original script, spec §4.3).
 			v := version
 			if v == "" {
 				v = "v4"
 			}
 			return &TargetInfo{
-				Kind:   "serverless",
-				EnvKey: EnvKeyForServerless(v),
+				Source:            "job",
+				ServerlessVersion: NormalizeServerless(v),
+				EnvKey:            EnvKeyForServerless(v),
 			}, nil
 		}
 		return &TargetInfo{
-			Kind:         "cluster",
+			Source:       "job",
 			SparkVersion: version,
 			EnvKey:       EnvKeyForSparkVersion(version),
 		}, nil
@@ -101,26 +106,26 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 
 	// Fall back to bundle target.
 	if !bt.Selected {
-		return nil, NewError(ErrNoTargetSelected, nil,
-			"No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job")
+		return nil, NewError(ErrNoTarget, nil, "%s", noTargetMessage)
 	}
 
 	if bt.Serverless {
 		// Default to serverless-v4: the serverless env version is not recorded
 		// in the bundle/project (documented stand-in from the original script).
 		return &TargetInfo{
-			Kind:   "serverless",
-			EnvKey: EnvKeyForServerless("v4"),
+			Source:            "bundle",
+			ServerlessVersion: "v4",
+			EnvKey:            EnvKeyForServerless("v4"),
 		}, nil
 	}
 
 	if bt.ClusterID != "" {
 		v, err := c.GetClusterSparkVersion(ctx, bt.ClusterID)
 		if err != nil {
-			return nil, fmt.Errorf("resolving bundle cluster %s: %w", bt.ClusterID, err)
+			return nil, NewError(ErrResolve, err, "resolving bundle cluster %s", bt.ClusterID)
 		}
 		return &TargetInfo{
-			Kind:         "cluster",
+			Source:       "bundle",
 			ClusterID:    bt.ClusterID,
 			SparkVersion: v,
 			EnvKey:       EnvKeyForSparkVersion(v),
@@ -129,6 +134,5 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 
 	// Bundle target is selected but has neither serverless nor a cluster ID —
 	// treat this the same as nothing selected so the user gets a clear message.
-	return nil, NewError(ErrNoTargetSelected, nil,
-		"No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job.")
+	return nil, NewError(ErrNoTarget, nil, "%s", noTargetMessage)
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/hexops/gotextdiff/span"
 )
 
-// Pipeline orchestrates the dbconnect init/sync phases against a project directory.
+// Pipeline orchestrates the dbconnect sync phases against a project directory.
 type Pipeline struct {
 	Mode              Mode
 	Check             bool
@@ -25,418 +25,398 @@ type Pipeline struct {
 	Bundle            BundleTarget
 	Compute           ComputeClient
 	PM                PackageManager
+
+	// res accumulates phase statuses and result fields as the run progresses.
+	res *Result
 }
 
 // Run executes all pipeline phases in order and returns a fully populated Result.
-// On a phase error, Result.Error is set and the same error is also returned.
+// On a phase error, Result.Error is set and the same error is also returned. The
+// Result always carries the full canonical phase list: phases completed before a
+// failure are "ok", the failing phase is "error", and the rest are "pending".
 func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
-	log.Debugf(ctx, "dbconnect: mode=%s project=%s cacheDir=%s constraintBaseURL=%s flags=%+v",
+	log.Debugf(ctx, "dbconnect: mode=%s check=%v project=%s cacheDir=%s constraintBaseURL=%s flags=%+v",
 		p.Mode,
+		p.Check,
 		filepath.ToSlash(p.ProjectDir),
 		filepath.ToSlash(p.CacheDir),
 		p.ConstraintBaseURL,
 		p.Flags,
 	)
 
-	res := &Result{
-		Mode:  p.Mode.String(),
-		Check: p.Check,
+	p.res = &Result{
+		SchemaVersion: SchemaVersion,
+		Command:       CommandName,
+		Mode:          p.Mode.String(),
+		DryRun:        p.Check,
+		// Phases start as pending and flip to ok/error as the run progresses.
+		Phases:   initialPhases(),
+		Warnings: []Warning{},
 	}
 
-	// Phase 0: ensure the package manager is available.
-	phase := PhaseResult{Name: "preflight"}
-	version, err := p.PM.EnsureAvailable(ctx)
-	if err != nil {
-		phase.Status = "failed"
-		phase.Detail = err.Error()
-		res.Phases = append(res.Phases, phase)
-		pe := NewError(ErrUvUnavailable, err, "%s unavailable", p.PM.Name())
-		res.Error = pe
-		return res, pe
+	if err := p.run(ctx); err != nil {
+		return p.res, err
 	}
-	phase.Status = "ok"
-	phase.Detail = p.PM.Name() + " " + version
-	res.Phases = append(res.Phases, phase)
-
-	// Phase 1: resolve the compute target.
-	target, err := p.resolve(ctx, res)
-	if err != nil {
-		return res, err
-	}
-
-	// Phase 2: fetch constraints.
-	c, err := p.fetch(ctx, res, target)
-	if err != nil {
-		return res, err
-	}
-
-	// Phase 2b: fill in the python version on the target info from the constraints.
-	pyMinor, err := PythonMinorFromRequires(c.RequiresPython)
-	if err != nil {
-		pe := NewError(ErrValidationFailed, err, "failed to parse python version from constraints")
-		res.Phases = append(res.Phases, PhaseResult{Name: "parse-python-version", Status: "failed", Detail: pe.Error()})
-		res.Error = pe
-		return res, pe
-	}
-	res.Phases = append(res.Phases, PhaseResult{Name: "parse-python-version", Status: "ok", Detail: pyMinor})
-	target.PythonVersion = pyMinor
-
-	// Phase 3: compute the merge plan (in-memory, no disk writes yet).
-	plan, mergedBytes, err := p.mergePlan(ctx, res, c)
-	if err != nil {
-		return res, err
-	}
-	res.Plan = plan
-
-	// Check mode stops here — phases 4+ mutate disk.
-	if p.Check {
-		return res, nil
-	}
-
-	// Phase 4: write the merged content to disk (mode-specific backup/restore).
-	if err := p.applyMerge(ctx, res, mergedBytes); err != nil {
-		return res, err
-	}
-
-	// Phase 5: ensure the required Python version is installed.
-	if err := p.ensurePython(ctx, res, pyMinor); err != nil {
-		return res, err
-	}
-
-	// Phase 6: provision the virtual environment.
-	if err := p.provision(ctx, res); err != nil {
-		return res, err
-	}
-
-	// Phase 7: post-provision (pip seed).
-	if err := p.postProvision(ctx, res); err != nil {
-		return res, err
-	}
-
-	// Phase 8: validate the environment.
-	if err := p.validate(ctx, res, pyMinor, c.DatabricksConnect); err != nil {
-		return res, err
-	}
-
-	return res, nil
+	p.res.OK = true
+	return p.res, nil
 }
 
-// resolve runs ResolveTarget and appends a phase result.
-func (p *Pipeline) resolve(ctx context.Context, res *Result) (*TargetInfo, error) {
-	phase := PhaseResult{Name: "resolve"}
+// run drives the phases and returns the first phase error. Result bookkeeping
+// (phase status, error object) is handled by fail / markOK.
+func (p *Pipeline) run(ctx context.Context) error {
+	// Phase: preflight — manager detection, writability, package-manager availability.
+	// P0 supports only uv; any other detected manager is a clean, non-blaming exit.
+	if m := detectManager(p.ProjectDir); m != managerUv {
+		return p.fail(PhasePreflight, false, NewError(ErrManagerUnsupported, nil, "%s", managerGuidance(m)))
+	}
+	if err := ensureWritable(p.ProjectDir); err != nil {
+		return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "project directory %s is not writable", filepath.ToSlash(p.ProjectDir)))
+	}
+	version, err := p.PM.EnsureAvailable(ctx)
+	if err != nil {
+		return p.fail(PhasePreflight, false, asPipelineError(err, ErrUvMissing, "%s unavailable", p.PM.Name()))
+	}
+	p.markOK(PhasePreflight, p.PM.Name()+" "+version)
+
+	// Phase: resolve — compute target → environment key.
+	target, err := p.resolve(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Phase: fetch — constraint artifact for the resolved env key.
+	c, err := p.fetch(ctx, target)
+	if err != nil {
+		return err
+	}
+
+	// Parse the required Python minor from the artifact; a failure here reflects a
+	// bad artifact, reported at the fetch phase.
+	pyMinor, err := PythonMinorFromRequires(c.RequiresPython)
+	if err != nil {
+		return p.fail(PhaseFetch, false, NewError(ErrFetch, err, "cannot parse python version from constraints %q", c.RequiresPython))
+	}
+
+	dbcPin := c.DatabricksConnect
+	if p.Mode == ModeConstraintsOnly {
+		// constraints-only omits the databricks-connect dependency entirely.
+		dbcPin = ""
+	}
+	p.res.Resolved = &ResolvedInfo{
+		PythonVersion:    pyMinor,
+		DBConnectVersion: versionFromPin(dbcPin),
+		ArtifactSource:   artifactSource(c.FromCache),
+	}
+
+	// Phase: merge — compute the merged pyproject.toml (in-memory, no writes yet).
+	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin)
+	if err != nil {
+		return err
+	}
+	p.res.Greenfield = greenfield
+
+	// Check mode stops after planning — nothing below mutates disk.
+	if p.Check {
+		p.markOK(PhaseMerge, "")
+		p.markOK(PhaseProvision, "")
+		p.markOK(PhaseValidate, "")
+		return nil
+	}
+
+	// Apply the merged content to disk (backup first for existing projects).
+	if err := p.applyMerge(ctx, mergedBytes, greenfield); err != nil {
+		return err
+	}
+	p.markOK(PhaseMerge, "")
+
+	// Phase: provision — ensure Python, run uv sync, seed pip.
+	if err := p.provision(ctx, pyMinor); err != nil {
+		return err
+	}
+
+	// Phase: validate — assert the venv matches the target.
+	return p.validate(ctx, pyMinor, dbcPin)
+}
+
+// resolve runs ResolveTarget and records the resolve phase.
+func (p *Pipeline) resolve(ctx context.Context) (*TargetInfo, error) {
 	target, err := ResolveTarget(ctx, p.Flags, p.Compute, p.Bundle)
 	if err != nil {
-		phase.Status = "failed"
-		phase.Detail = err.Error()
-		res.Phases = append(res.Phases, phase)
-		pe, ok := errors.AsType[*PipelineError](err)
-		if !ok {
-			pe = NewError(ErrNoTargetSelected, err, "target resolution failed")
-		}
-		res.Error = pe
-		return nil, pe
+		return nil, p.fail(PhaseResolve, false, asPipelineError(err, ErrResolve, "target resolution failed"))
 	}
-	phase.Status = "ok"
-	phase.Detail = fmt.Sprintf("kind=%s envKey=%s", target.Kind, target.EnvKey)
-	res.Phases = append(res.Phases, phase)
-	res.Target = target
+	p.res.Target = target
+	p.markOK(PhaseResolve, fmt.Sprintf("source=%s envKey=%s", target.Source, target.EnvKey))
 	return target, nil
 }
 
-// fetch fetches constraints for the resolved target and appends a phase result.
-func (p *Pipeline) fetch(ctx context.Context, res *Result, target *TargetInfo) (*Constraints, error) {
-	phase := PhaseResult{Name: "fetch"}
+// fetch fetches constraints for the resolved target and records the fetch phase.
+func (p *Pipeline) fetch(ctx context.Context, target *TargetInfo) (*Constraints, error) {
 	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, target.EnvKey, p.CacheDir)
 	if err != nil {
-		phase.Status = "failed"
-		phase.Detail = err.Error()
-		res.Phases = append(res.Phases, phase)
-		pe, ok := errors.AsType[*PipelineError](err)
-		if !ok {
-			pe = NewError(ErrConstraintFetchFailed, err, "fetch constraints failed")
-		}
-		res.Error = pe
-		return nil, pe
+		// FetchConstraints classifies the cause: E_ENV_UNSUPPORTED for a missing
+		// key (404) versus E_FETCH for transport failure with no cache. Both are
+		// discovered here, so both are reported at the fetch phase (the JSON keeps
+		// the failing phase and error.failurePhase in agreement).
+		return nil, p.fail(PhaseFetch, false, asPipelineError(err, ErrFetch, "fetch constraints failed"))
 	}
-	phase.Status = "ok"
-	phase.Detail = fmt.Sprintf("source=%s fromCache=%v", c.SourceURL, c.FromCache)
-	res.Phases = append(res.Phases, phase)
-	res.Constraints = &ConstraintInfo{
-		SourceURL:         c.SourceURL,
-		FromCache:         c.FromCache,
-		RequiresPython:    c.RequiresPython,
-		DatabricksConnect: c.DatabricksConnect,
-		ConstraintCount:   len(c.ConstraintDeps),
-	}
+	p.markOK(PhaseFetch, fmt.Sprintf("source=%s fromCache=%v", c.SourceURL, c.FromCache))
 	return c, nil
 }
 
 // pyprojectPath returns the path to pyproject.toml in the project directory.
 func (p *Pipeline) pyprojectPath() string {
-	return filepath.Join(p.ProjectDir, "pyproject.toml")
+	return filepath.Join(p.ProjectDir, pyprojectFile)
 }
 
 // backupPath returns the path to the pyproject.toml backup file.
 func (p *Pipeline) backupPath() string {
-	return filepath.Join(p.ProjectDir, "pyproject.toml.bak")
+	return filepath.Join(p.ProjectDir, backupFile)
 }
 
-// mergePlan computes the merged pyproject.toml bytes (without writing to disk)
-// and builds the Plan with a unified diff.
-func (p *Pipeline) mergePlan(_ context.Context, res *Result, c *Constraints) (*Plan, []byte, error) {
-	phase := PhaseResult{Name: "plan"}
+// mergePlan computes the merged pyproject.toml bytes (without writing to disk),
+// decides greenfield vs. existing, and builds the Plan (populated only under
+// --check). dbcPin is the databricks-connect pin to inject, or "" in
+// constraints-only mode.
+func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin string) (merged []byte, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
 	backup := p.backupPath()
 
-	// Determine base bytes for the merge. For sync with a backup, the backup is
-	// the canonical base so the merge starts from the original unmanaged state.
+	// Determine base bytes for the merge. For an existing project with a backup,
+	// the backup is the canonical base so the merge starts from the original
+	// unmanaged state.
 	var baseBytes []byte
-	if p.Mode == ModeSync {
-		if data, err := os.ReadFile(backup); err == nil {
-			baseBytes = data
-		}
+	if data, rerr := os.ReadFile(backup); rerr == nil {
+		baseBytes = data
 	}
-
-	// Fall back to the current pyproject.toml if no base was found above.
 	if baseBytes == nil {
-		if data, err := os.ReadFile(pyproject); err == nil {
+		if data, rerr := os.ReadFile(pyproject); rerr == nil {
 			baseBytes = data
 		}
 	}
+	greenfield = baseBytes == nil
 
-	var mergedBytes []byte
+	// The artifact drives the merge; in constraints-only mode we clear the
+	// databricks-connect pin so it is neither written nor asserted.
+	effective := *c
+	effective.DatabricksConnect = dbcPin
+
 	var changedRegions []string
-
-	if baseBytes == nil {
-		// No existing pyproject.toml — render a fresh one.
-		// Extract the project name from the directory name as a reasonable default.
+	if greenfield {
+		// No existing pyproject.toml — render a fresh one. The project name comes
+		// from the directory name as a reasonable default.
 		projectName := filepath.Base(p.ProjectDir)
-		mergedBytes = RenderFreshPyproject(projectName, *c)
-		changedRegions = []string{regionRequiresPython, regionDatabricksConnect, regionToolUv}
+		merged = RenderFreshPyproject(projectName, effective)
+		changedRegions = []string{regionRequiresPython, regionToolUv}
+		if dbcPin != "" {
+			changedRegions = append(changedRegions, regionDatabricksConnect)
+		}
 	} else {
-		var err error
-		mergedBytes, changedRegions, err = MergeManaged(baseBytes, *c)
+		merged, changedRegions, err = MergeManaged(baseBytes, effective)
 		if err != nil {
-			pe := NewError(ErrMergeFailed, err, "merge managed regions failed")
-			phase.Status = "failed"
-			phase.Detail = pe.Error()
-			res.Phases = append(res.Phases, phase)
-			res.Error = pe
-			return nil, nil, pe
+			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
 	}
 
-	// Build a unified diff for the plan.
-	oldStr := ""
-	newStr := string(mergedBytes)
-	oldName := "pyproject.toml"
-	newName := "pyproject.toml"
-	if baseBytes != nil {
-		oldStr = string(baseBytes)
-		oldName = "pyproject.toml"
-		newName = "pyproject.toml.new"
-	}
-	edits := myers.ComputeEdits(span.URIFromPath(oldName), oldStr, newStr)
-	diff := fmt.Sprint(gotextdiff.ToUnified(oldName, newName, oldStr, edits))
+	// Under --check, build the plan (with a diff) for reporting. A real run does
+	// not need the diff.
+	if p.Check {
+		oldStr := ""
+		newStr := string(merged)
+		oldName := pyprojectFile
+		newName := pyprojectFile
+		if !greenfield {
+			oldStr = string(baseBytes)
+			newName = pyprojectFile + ".new"
+		}
+		edits := myers.ComputeEdits(span.URIFromPath(oldName), oldStr, newStr)
+		diff := fmt.Sprint(gotextdiff.ToUnified(oldName, newName, oldStr, edits))
 
-	plan := &Plan{
-		PyprojectPath:  pyproject,
-		BackupPath:     backup,
-		Diff:           diff,
-		ChangedRegions: changedRegions,
+		plan := &Plan{
+			WouldWrite:         filepath.ToSlash(pyproject),
+			Diff:               diff,
+			ChangedRegions:     changedRegions,
+			WouldInstallPython: pyMinor,
+		}
+		if !greenfield {
+			plan.WouldBackup = filepath.ToSlash(backup)
+		}
+		p.res.Plan = plan
 	}
-
-	phase.Status = "ok"
-	phase.Detail = "changed=" + strings.Join(changedRegions, ",")
-	res.Phases = append(res.Phases, phase)
-	return plan, mergedBytes, nil
+	return merged, greenfield, nil
 }
 
-// applyMerge writes the merged bytes to disk, performing the mode-specific
-// backup or restore first.
-func (p *Pipeline) applyMerge(_ context.Context, res *Result, mergedBytes []byte) error {
-	phase := PhaseResult{Name: "apply"}
+// applyMerge writes the merged bytes to disk, backing up an existing
+// pyproject.toml first. From this point on, disk has been mutated.
+func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield bool) error {
 	pyproject := p.pyprojectPath()
 	backup := p.backupPath()
 
-	switch p.Mode {
-	case ModeInit:
-		// Back up only if a pyproject.toml already exists.
-		if _, err := os.Stat(pyproject); err == nil {
-			if err := copyFile(pyproject, backup); err != nil {
-				pe := NewError(ErrMergeFailed, err, "backup pyproject.toml failed")
-				phase.Status = "failed"
-				phase.Detail = pe.Error()
-				res.Phases = append(res.Phases, phase)
-				res.Error = pe
-				return pe
-			}
-		}
-	case ModeSync:
+	if !greenfield {
+		// Back up before modifying so the user's original is recoverable
+		// (invariant 2). Only create the backup when one does not already exist:
+		// on a re-run the existing .bak is the canonical original unmanaged state
+		// (mergePlan used it as the base), so overwriting it with the already-merged
+		// pyproject.toml would destroy that baseline.
 		if _, err := os.Stat(backup); err != nil {
-			// No backup yet — create one from the current pyproject.toml.
-			if _, statErr := os.Stat(pyproject); statErr == nil {
-				if err := copyFile(pyproject, backup); err != nil {
-					pe := NewError(ErrMergeFailed, err, "backup pyproject.toml failed")
-					phase.Status = "failed"
-					phase.Detail = pe.Error()
-					res.Phases = append(res.Phases, phase)
-					res.Error = pe
-					return pe
-				}
+			if err := copyFile(pyproject, backup); err != nil {
+				return p.fail(PhaseMerge, false, NewError(ErrMerge, err, "backup pyproject.toml failed"))
 			}
 		}
-		// When a backup already exists, mergePlan already used it as the base — no
-		// additional restore step is needed here.
+		p.res.BackupPath = filepath.ToSlash(backup)
 	}
 
 	if err := os.WriteFile(pyproject, mergedBytes, 0o644); err != nil {
-		pe := NewError(ErrMergeFailed, err, "write pyproject.toml failed")
-		phase.Status = "failed"
-		phase.Detail = pe.Error()
-		res.Phases = append(res.Phases, phase)
-		res.Error = pe
-		return pe
+		code := ErrMerge
+		if greenfield {
+			code = ErrWrite
+		}
+		return p.fail(PhaseMerge, true, NewError(code, err, "write pyproject.toml failed"))
 	}
-
-	phase.Status = "ok"
-	res.Phases = append(res.Phases, phase)
 	return nil
 }
 
-// ensurePython ensures the required Python version is installed.
-func (p *Pipeline) ensurePython(ctx context.Context, res *Result, pyMinor string) error {
-	phase := PhaseResult{Name: "ensure-python"}
+// provision ensures the required Python version is installed, runs uv sync, and
+// seeds pip. All three are reported under the provision phase.
+func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	if err := p.PM.EnsurePython(ctx, pyMinor); err != nil {
-		pe := NewError(ErrProvisionFailed, err, "ensure python %s failed", pyMinor)
-		phase.Status = "failed"
-		phase.Detail = pe.Error()
-		res.Phases = append(res.Phases, phase)
-		res.Error = pe
-		return pe
+		return p.fail(PhaseProvision, true, asPipelineError(err, ErrPythonInstall, "ensure python %s failed", pyMinor))
 	}
-	phase.Status = "ok"
-	phase.Detail = pyMinor
-	res.Phases = append(res.Phases, phase)
-	return nil
-}
-
-// provision installs project dependencies into the virtual environment.
-func (p *Pipeline) provision(ctx context.Context, res *Result) error {
-	phase := PhaseResult{Name: "provision"}
 	if err := p.PM.Provision(ctx, p.ProjectDir); err != nil {
-		pe := NewError(ErrProvisionFailed, err, "provision failed")
-		phase.Status = "failed"
-		phase.Detail = pe.Error()
-		res.Phases = append(res.Phases, phase)
-		res.Error = pe
-		return pe
+		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}
-	phase.Status = "ok"
-	res.Phases = append(res.Phases, phase)
-	return nil
-}
-
-// postProvision seeds pip into the virtual environment.
-func (p *Pipeline) postProvision(ctx context.Context, res *Result) error {
-	phase := PhaseResult{Name: "post-provision"}
 	if err := p.PM.PostProvision(ctx, p.ProjectDir); err != nil {
-		pe := NewError(ErrProvisionFailed, err, "post-provision failed")
-		phase.Status = "failed"
-		phase.Detail = pe.Error()
-		res.Phases = append(res.Phases, phase)
-		res.Error = pe
-		return pe
+		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "post-provision failed"))
 	}
-	phase.Status = "ok"
-	res.Phases = append(res.Phases, phase)
+	p.markOK(PhaseProvision, "")
 	return nil
 }
 
 // validate reads the Python and databricks-connect versions from the venv and
-// populates Result.Result.
-func (p *Pipeline) validate(ctx context.Context, res *Result, expectedPyMinor, dbcPin string) error {
-	phase := PhaseResult{Name: "validate"}
+// populates the venv path. dbcPin is "" in constraints-only mode, where the DB
+// Connect assertion is skipped.
+func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string) error {
 	pyVer, dbcVer, err := p.PM.Validate(ctx, p.ProjectDir)
 	if err != nil {
-		pe := NewError(ErrValidationFailed, err, "validation failed")
-		phase.Status = "failed"
-		phase.Detail = pe.Error()
-		res.Phases = append(res.Phases, phase)
-		res.Error = pe
-		return pe
+		return p.fail(PhaseValidate, true, asPipelineError(err, ErrValidate, "validation failed"))
 	}
 
 	// Assert the installed Python minor matches the target.
 	if pyVer != expectedPyMinor {
-		pe := NewError(ErrValidationFailed, nil,
-			"python version mismatch: want %s, got %s", expectedPyMinor, pyVer)
-		phase.Status = "failed"
-		phase.Detail = pe.Error()
-		res.Phases = append(res.Phases, phase)
-		res.Error = pe
-		return pe
+		return p.fail(PhaseValidate, true, NewError(ErrValidate, nil,
+			"python version mismatch: want %s, got %s", expectedPyMinor, pyVer))
 	}
 
-	// Assert the installed databricks-connect major matches the pin's major.
-	// dbcPin is e.g. "databricks-connect~=17.2.0"; dbcVer is e.g. "17.2.0".
+	// In default mode, assert the installed databricks-connect major matches the
+	// pin's major. dbcPin is e.g. "databricks-connect~=17.2.0"; dbcVer is "17.2.0".
 	if dbcPin != "" {
 		pinMajor := dbcMajorFromPin(dbcPin)
 		if pinMajor == "" {
-			pe := NewError(ErrValidationFailed, nil,
-				"cannot determine databricks-connect major version from pin %q", dbcPin)
-			phase.Status = "failed"
-			phase.Detail = pe.Error()
-			res.Phases = append(res.Phases, phase)
-			res.Error = pe
-			return pe
+			return p.fail(PhaseValidate, true, NewError(ErrValidate, nil,
+				"cannot determine databricks-connect major version from pin %q", dbcPin))
 		}
 		installedMajor := majorVersion(dbcVer)
 		if installedMajor == "" {
-			pe := NewError(ErrValidationFailed, nil,
-				"cannot determine installed databricks-connect major version from %q", dbcVer)
-			phase.Status = "failed"
-			phase.Detail = pe.Error()
-			res.Phases = append(res.Phases, phase)
-			res.Error = pe
-			return pe
+			return p.fail(PhaseValidate, true, NewError(ErrValidate, nil,
+				"cannot determine installed databricks-connect major version from %q", dbcVer))
 		}
 		if pinMajor != installedMajor {
-			pe := NewError(ErrValidationFailed, nil,
-				"databricks-connect major version mismatch: want %s.x, got %s", pinMajor, dbcVer)
-			phase.Status = "failed"
-			phase.Detail = pe.Error()
-			res.Phases = append(res.Phases, phase)
-			res.Error = pe
-			return pe
+			return p.fail(PhaseValidate, true, NewError(ErrValidate, nil,
+				"databricks-connect major version mismatch: want %s.x, got %s", pinMajor, dbcVer))
 		}
 	}
 
-	phase.Status = "ok"
-	phase.Detail = fmt.Sprintf("python=%s databricks-connect=%s", pyVer, dbcVer)
-	res.Phases = append(res.Phases, phase)
+	// Report the installed databricks-connect version only in default mode. In
+	// constraints-only mode databricks-connect is not a managed dependency, so the
+	// spec omits dbconnectVersion even if the package is present transitively.
+	defaultMode := dbcPin != ""
 
-	venvPath := filepath.Join(p.ProjectDir, ".venv")
-	res.Result = &ResultDetail{
-		Status:                     "success",
-		VenvPath:                   venvPath,
-		PythonVersion:              pyVer,
-		DatabricksConnectInstalled: dbcVer,
+	detail := "python=" + pyVer
+	if defaultMode && dbcVer != "" {
+		detail += " databricks-connect=" + dbcVer
+	}
+	p.markOK(PhaseValidate, detail)
+
+	p.res.VenvPath = filepath.ToSlash(filepath.Join(p.ProjectDir, venvDir))
+	if p.res.Resolved != nil {
+		if defaultMode {
+			p.res.Resolved.DBConnectVersion = dbcVer
+		} else {
+			p.res.Resolved.DBConnectVersion = ""
+		}
 	}
 	return nil
+}
+
+// initialPhases returns the canonical phase list with every phase pending.
+func initialPhases() []PhaseStatus {
+	phases := make([]PhaseStatus, len(allPhases))
+	for i, name := range allPhases {
+		phases[i] = PhaseStatus{Phase: name, Status: StatusPending}
+	}
+	return phases
+}
+
+// markOK marks a phase ok with an optional human-readable detail.
+func (p *Pipeline) markOK(name PhaseName, detail string) {
+	for i := range p.res.Phases {
+		if p.res.Phases[i].Phase == name {
+			p.res.Phases[i].Status = StatusOK
+			p.res.Phases[i].Detail = detail
+			return
+		}
+	}
+}
+
+// fail marks the given phase as errored, attaches the error (with its phase and
+// disk-mutation flag) to the Result, and returns it. Phases after the failing
+// one remain pending.
+func (p *Pipeline) fail(phase PhaseName, diskMutated bool, pe *PipelineError) error {
+	pe.FailurePhase = phase
+	pe.DiskMutated = diskMutated
+	for i := range p.res.Phases {
+		if p.res.Phases[i].Phase == phase {
+			p.res.Phases[i].Status = StatusError
+			p.res.Phases[i].Detail = pe.Error()
+			break
+		}
+	}
+	p.res.Error = pe
+	return pe
+}
+
+// asPipelineError returns err as a *PipelineError if it already is one, otherwise
+// wraps it with the fallback code and message.
+func asPipelineError(err error, fallback ErrorCode, format string, args ...any) *PipelineError {
+	if pe, ok := errors.AsType[*PipelineError](err); ok {
+		return pe
+	}
+	return NewError(fallback, err, format, args...)
+}
+
+// artifactSource maps the from-cache flag to the JSON artifactSource value.
+func artifactSource(fromCache bool) string {
+	if fromCache {
+		return artifactCache
+	}
+	return artifactNetwork
+}
+
+// versionFromPin extracts the bare version from a dependency pin such as
+// "databricks-connect~=17.2.0" → "17.2.0". Returns "" when pin is empty or has
+// no version component.
+func versionFromPin(pin string) string {
+	for i, c := range pin {
+		if c >= '0' && c <= '9' {
+			return pin[i:]
+		}
+	}
+	return ""
 }
 
 // dbcMajorFromPin extracts the major version number from a databricks-connect
 // pin string such as "databricks-connect~=17.2.0". Returns "" if unparseable.
 func dbcMajorFromPin(pin string) string {
-	// Strip the "databricks-connect" prefix and any operator (~=, ==, >=, etc.).
-	// The first digit sequence is the major version.
-	for i, c := range pin {
-		if c >= '0' && c <= '9' {
-			return majorVersion(pin[i:])
-		}
-	}
-	return ""
+	return majorVersion(versionFromPin(pin))
 }
 
 // majorVersion returns the major portion of a version string (digits before the
@@ -448,7 +428,6 @@ func majorVersion(v string) string {
 	}
 	before, _, ok := strings.Cut(v, ".")
 	if !ok {
-		// No dot — the whole string is the major component.
 		return v
 	}
 	return before

@@ -50,7 +50,7 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 		// https://astral.sh/uv/install.sh
 		_, installErr := process.Background(ctx, []string{"sh", "-c", "curl -LsSf https://astral.sh/uv/install.sh | sh"})
 		if installErr != nil {
-			return "", NewError(ErrUvUnavailable, installErr, "uv installation failed")
+			return "", NewError(ErrUvMissing, installErr, "uv installation failed")
 		}
 		bin, err = discoverUv(ctx)
 		if err != nil {
@@ -63,7 +63,7 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 	// Use --version (not "version") to avoid project-scoped sub-command that requires pyproject.toml.
 	version, err := process.Background(ctx, []string{m.bin, "--version"})
 	if err != nil {
-		return "", uvFailure(ErrProvisionFailed, err, "uv version check")
+		return "", uvFailure(ErrUvMissing, err, "uv version check")
 	}
 	return strings.TrimSpace(version), nil
 }
@@ -79,7 +79,7 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor string) error {
 		_, err = process.Background(ctx, args)
 	}
 	if err != nil {
-		return uvFailure(ErrProvisionFailed, err, "uv python install "+minor)
+		return uvFailure(ErrPythonInstall, err, "uv python install "+minor)
 	}
 	return nil
 }
@@ -95,7 +95,7 @@ func (m *uvManager) Provision(ctx context.Context, projectDir string) error {
 		_, err = process.Background(ctx, args, process.WithDir(projectDir))
 	}
 	if err != nil {
-		return uvFailure(ErrProvisionFailed, err, "uv sync")
+		return uvFailure(ErrProvision, err, "uv sync")
 	}
 	return nil
 }
@@ -104,9 +104,9 @@ func (m *uvManager) Provision(ctx context.Context, projectDir string) error {
 // accounting for the Windows (Scripts/python.exe) vs Unix (bin/python) layout.
 func venvPython(projectDir string) string {
 	if runtime.GOOS == "windows" {
-		return filepath.Join(projectDir, ".venv", "Scripts", "python.exe")
+		return filepath.Join(projectDir, venvDir, "Scripts", "python.exe")
 	}
-	return filepath.Join(projectDir, ".venv", "bin", "python")
+	return filepath.Join(projectDir, venvDir, "bin", "python")
 }
 
 // PostProvision seeds pip into the project's virtual environment.
@@ -127,15 +127,23 @@ func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error 
 		_, err = process.Background(ctx, args, process.WithDir(projectDir))
 	}
 	if err != nil {
-		return uvFailure(ErrProvisionFailed, err, "uv pip seed")
+		return uvFailure(ErrProvision, err, "uv pip seed")
 	}
 	return nil
 }
 
 // Validate reads the Python minor version and databricks-connect package
-// version from the project's virtual environment.
+// version from the project's virtual environment. When databricks-connect is not
+// installed (constraints-only mode), the second line is empty rather than an
+// error: PackageNotFoundError is caught so the probe never fails just because the
+// package is absent. The caller decides whether an empty version is acceptable.
 func (m *uvManager) Validate(ctx context.Context, projectDir string) (string, string, error) {
-	pyCode := `import sys, importlib.metadata; print(f"{sys.version_info.major}.{sys.version_info.minor}"); print(importlib.metadata.version("databricks-connect"))`
+	pyCode := `import sys, importlib.metadata
+print(f"{sys.version_info.major}.{sys.version_info.minor}")
+try:
+    print(importlib.metadata.version("databricks-connect"))
+except importlib.metadata.PackageNotFoundError:
+    print("")`
 	// --no-project runs the interpreter from the created .venv without re-resolving/syncing
 	// the project's declared dependencies, so validation observes exactly what was installed.
 	out, err := process.Background(ctx,
@@ -143,13 +151,18 @@ func (m *uvManager) Validate(ctx context.Context, projectDir string) (string, st
 		process.WithDir(projectDir),
 	)
 	if err != nil {
-		return "", "", uvFailure(ErrValidationFailed, err, "uv run python validation")
+		return "", "", uvFailure(ErrValidate, err, "uv run python validation")
 	}
 	lines := strings.Split(strings.TrimSpace(out), "\n")
-	if len(lines) < 2 {
-		return "", "", NewError(ErrValidationFailed, nil, "unexpected output from uv run: %q", out)
+	if len(lines) < 1 || strings.TrimSpace(lines[0]) == "" {
+		return "", "", NewError(ErrValidate, nil, "unexpected output from uv run: %q", out)
 	}
-	return strings.TrimSpace(lines[0]), strings.TrimSpace(lines[1]), nil
+	// The databricks-connect line is empty when the package is not installed.
+	dbcVer := ""
+	if len(lines) >= 2 {
+		dbcVer = strings.TrimSpace(lines[len(lines)-1])
+	}
+	return strings.TrimSpace(lines[0]), dbcVer, nil
 }
 
 // syncArgs returns the argument slice for `uv sync` (without the binary).
@@ -226,7 +239,7 @@ func uvFailure(code ErrorCode, err error, action string) *PipelineError {
 }
 
 // discoverUv searches for the uv binary on PATH and in well-known install
-// locations. It returns NewError(ErrUvUnavailable, ...) if uv is not found.
+// locations. It returns NewError(ErrUvMissing, ...) if uv is not found.
 //
 // Candidate locations follow the uv installer defaults:
 // https://docs.astral.sh/uv/getting-started/installation/
@@ -260,6 +273,6 @@ func discoverUv(ctx context.Context) (string, error) {
 		}
 	}
 
-	return "", NewError(ErrUvUnavailable, nil,
+	return "", NewError(ErrUvMissing, nil,
 		"uv not found on PATH or in well-known locations (%s)", strings.Join(candidates, ", "))
 }

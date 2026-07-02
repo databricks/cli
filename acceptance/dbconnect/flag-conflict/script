@@ -1,1 +1,1 @@
-musterr $CLI dbconnect init --cluster abc --serverless v4
+musterr $CLI dbconnect sync --cluster abc --serverless v4

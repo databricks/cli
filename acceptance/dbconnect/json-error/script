@@ -1,1 +1,1 @@
-musterr $CLI dbconnect init --output json
+musterr $CLI dbconnect sync --output json

@@ -47,6 +47,32 @@ func TestFetchConstraintsHTTP(t *testing.T) {
 	assert.Len(t, c.ConstraintDeps, 2)
 }
 
+func TestFetchConstraintsEnvKeyNotFound(t *testing.T) {
+	// A 404 for a resolved env key means the environment is not published; this
+	// must classify as E_ENV_UNSUPPORTED, not E_FETCH, and not fall back to cache.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "not found", http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	_, err := FetchConstraints(t.Context(), srv.URL, "dbr/99.9.x-scala2.12", t.TempDir())
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrEnvUnsupported, pe.Code)
+}
+
+func TestFetchConstraintsTransportFailureNoCache(t *testing.T) {
+	// A transport failure with no cache classifies as E_FETCH.
+	down := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	url := down.URL
+	down.Close()
+
+	_, err := FetchConstraints(t.Context(), url, "serverless/serverless-v4", t.TempDir())
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrFetch, pe.Code)
+}
+
 func TestFetchConstraintsFallsBackToCache(t *testing.T) {
 	cacheDir := t.TempDir()
 	// First, a successful fetch populates the cache.

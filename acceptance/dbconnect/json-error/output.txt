@@ -1,20 +1,42 @@
 {
-  "mode": "init",
-  "check": false,
+  "schemaVersion": 1,
+  "command": "dbconnect sync",
+  "ok": false,
+  "mode": "default",
+  "dryRun": false,
+  "greenfield": false,
   "phases": [
     {
-      "name": "preflight",
-      "status": "ok",
-      "detail": "uv [UV_VERSION]"
+      "phase": "preflight",
+      "status": "ok"
     },
     {
-      "name": "resolve",
-      "status": "failed",
-      "detail": "No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job"
+      "phase": "resolve",
+      "status": "error"
+    },
+    {
+      "phase": "fetch",
+      "status": "pending"
+    },
+    {
+      "phase": "merge",
+      "status": "pending"
+    },
+    {
+      "phase": "provision",
+      "status": "pending"
+    },
+    {
+      "phase": "validate",
+      "status": "pending"
     }
   ],
+  "warnings": [],
   "error": {
-    "code": "no_target_selected",
-    "message": "No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job"
-  }
+    "code": "E_NO_TARGET",
+    "failurePhase": "resolve",
+    "message": "No compute target is selected. Select a cluster or serverless target, or pass --cluster / --serverless / --job",
+    "diskMutated": false
+  },
+  "durationMs": 0
 }

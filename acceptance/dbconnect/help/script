@@ -1,2 +1,2 @@
 $CLI dbconnect --help
-$CLI dbconnect init --help
+$CLI dbconnect sync --help
