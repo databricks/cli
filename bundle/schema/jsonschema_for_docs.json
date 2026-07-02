@@ -1239,6 +1239,11 @@
                     "description": "Tags to be attached to the serving endpoint and automatically propagated to billing logs.",
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.EndpointTag",
                     "x-since-version": "v0.229.0"
+                  },
+                  "telemetry_config": {
+                    "description": "[Public Preview] Configuration for persisting endpoint telemetry (logs, traces, and metrics) to Unity Catalog tables.",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.TelemetryConfig",
+                    "x-since-version": "v1.6.0"
                   }
                 },
                 "additionalProperties": false,
@@ -2732,6 +2737,11 @@
             "config.Experimental": {
               "type": "object",
               "properties": {
+                "immutable_folder": {
+                  "description": "Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.",
+                  "$ref": "#/$defs/bool",
+                  "x-since-version": "v1.6.0"
+                },
                 "pydabs": {
                   "description": "The PyDABs configuration.",
                   "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs",
@@ -3723,7 +3733,13 @@
               "type": "string",
               "enum": [
                 "MEDIUM",
-                "LARGE"
+                "LARGE",
+                "XLARGE"
+              ],
+              "enumDescriptions": [
+                "",
+                "",
+                "[Private Preview]"
               ]
             },
             "apps.ComputeState": {
@@ -4905,7 +4921,7 @@
             },
             "compute.InitScriptInfo": {
               "type": "object",
-              "description": "Config for an individual init script\nNext ID: 11",
+              "description": "Config for an individual init script",
               "properties": {
                 "abfss": {
                   "description": "Contains the Azure Data Lake Storage destination path",
@@ -5566,6 +5582,52 @@
                 "[Private Preview]"
               ]
             },
+            "jobs.AiRuntimeTask": {
+              "type": "object",
+              "description": "AiRuntimeTask: multi-node GPU compute task definition for Databricks AI\nRuntime workloads.\n\nJobs-framework-level concepts (retries, per-task timeout, idempotency\ntoken, usage/budget policy, permissions) live on the surrounding\nTaskSettings / run-submit request and are intentionally NOT duplicated\nhere. Users compose `ai_runtime_task` with the standard Jobs/DABs task\nwrapper to get those.",
+              "properties": {
+                "code_source_path": {
+                  "description": "[Private Preview] Optional workspace or UC volume path of the uploaded code-source\narchive. The CLI packages the user's local code directory into an\narchive and populates this. Customers calling the Jobs API directly\nshould upload their archive to the workspace or a UC volume first and\nsupply the resulting path here.\n\nWhen set, the training node exposes the value via the `$CODE_SOURCE`\nenvironment variable.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                },
+                "deployments": {
+                  "description": "[Private Preview] Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.DeploymentSpec",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                },
+                "experiment": {
+                  "description": "[Private Preview] MLflow experiment name for this run. If an experiment with this name\nalready exists under the calling user, the run is appended to it;\notherwise a new experiment is created. To target a specific MLflow\nstorage location (for example, when running as a service principal), set\n`mlflow_experiment_directory`.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                },
+                "mlflow_experiment_directory": {
+                  "description": "[Private Preview] Optional workspace directory under which the MLflow experiment named in\n`experiment` is created. Must start with `/Workspace`. Set this when\nrunning as a service principal that has no default user directory; for\nregular users the experiment defaults to the user's home directory.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                },
+                "mlflow_run": {
+                  "description": "[Private Preview] Optional display name for the MLflow run created under `experiment`. If\nomitted, MLflow generates a default name.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "deployments",
+                "experiment"
+              ]
+            },
             "jobs.AlertTask": {
               "type": "object",
               "properties": {
@@ -5690,6 +5752,45 @@
               "additionalProperties": false,
               "required": [
                 "num_gpus"
+              ]
+            },
+            "jobs.ComputeSpec": {
+              "type": "object",
+              "description": "ComputeSpec: compute configuration — accelerator type and total\naccelerator count across all nodes.",
+              "properties": {
+                "accelerator_count": {
+                  "description": "[Private Preview] Total number of accelerators across all nodes. Must be a positive\nmultiple of the per-node accelerator count encoded in `accelerator_type`.\nFor example, `GPU_8xH100` with `accelerator_count: 16` allocates 2 nodes\n(8 GPUs per node).",
+                  "$ref": "#/$defs/int",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                },
+                "accelerator_type": {
+                  "description": "[Private Preview] Hardware accelerator type (for example, `GPU_1xA10` or `GPU_8xH100`).\nThe number of accelerators per node is encoded in the enum value —\n`GPU_8xH100` means 8 H100 GPUs per node.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeSpecAcceleratorType",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "accelerator_count",
+                "accelerator_type"
+              ]
+            },
+            "jobs.ComputeSpecAcceleratorType": {
+              "type": "string",
+              "description": "Customer-facing AcceleratorType: hardware accelerator type for the\nAiRuntime workload. Per-node accelerator count is encoded in the value\nname (e.g. `GPU_8xH100` means 8 H100s per node).",
+              "enum": [
+                "GPU_1xA10",
+                "GPU_1xH100",
+                "GPU_8xH100"
+              ],
+              "enumDescriptions": [
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "jobs.Condition": {
@@ -5890,6 +5991,38 @@
               "additionalProperties": false,
               "required": [
                 "commands"
+              ]
+            },
+            "jobs.DeploymentSpec": {
+              "type": "object",
+              "description": "DeploymentSpec: configuration for one deployment within an AiRuntimeTask.\nEach entry in `AiRuntimeTask.deployments` describes a group of nodes that\nshare the same command and compute. Many single-program training\nalgorithms use a single entry where every node runs the same command;\nrole-split workloads (driver + worker, parameter server, separate eval\nnode, etc.) use multiple entries.",
+              "properties": {
+                "command_path": {
+                  "description": "[Private Preview] Workspace path of the bash script to execute on each node in this\ndeployment. The CLI uploads the user's script and populates this.\nCustomers calling the Jobs API directly should upload their script to\nthe workspace first and supply the resulting path here.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                },
+                "compute": {
+                  "description": "[Private Preview] Compute resources allocated to each node in this deployment.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeSpec",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                },
+                "name": {
+                  "description": "[Private Preview] Optional human-readable name for this deployment (for example, `driver`,\n`worker`, `param_server`). Used for log and UI display. Distinct names\nare recommended so deployments can be told apart, but uniqueness is not\nenforced.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "command_path",
+                "compute"
               ]
             },
             "jobs.FileArrivalTriggerConfiguration": {
@@ -7169,6 +7302,13 @@
             "jobs.Task": {
               "type": "object",
               "properties": {
+                "ai_runtime_task": {
+                  "description": "[Private Preview] The task runs a multi-node GPU compute workload on Databricks AI Runtime.\nExternal-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiRuntimeTask",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.6.0"
+                },
                 "alert_task": {
                   "description": "[Public Preview] The task evaluates a Databricks alert and sends notifications to subscribers\nwhen the `alert_task` field is present.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AlertTask",
@@ -8914,10 +9054,8 @@
                   "x-since-version": "v0.257.0"
                 },
                 "environment_version": {
-                  "description": "[Private Preview] The environment version of the serverless Python environment used to execute\ncustomer Python code. Each environment version includes a specific Python\nversion and a curated set of pre-installed libraries with defined versions,\nproviding a stable and reproducible execution environment.\n\nDatabricks supports a three-year lifecycle for each environment version.\nFor available versions and their included packages, see\nhttps://docs.databricks.com/aws/en/release-notes/serverless/environment-version/\n\nThe value should be a string representing the environment version number, for example: `\"4\"`.",
+                  "description": "[Beta] The environment version of the serverless Python environment used to execute\ncustomer Python code. Each environment version includes a specific Python\nversion and a curated set of pre-installed libraries with defined versions,\nproviding a stable and reproducible execution environment.\n\nDatabricks supports a three-year lifecycle for each environment version.\nFor available versions and their included packages, see\nhttps://docs.databricks.com/aws/en/release-notes/serverless/environment-version/\n\nThe value should be a string representing the environment version number, for example: `\"4\"`.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
                   "x-since-version": "v0.294.0"
                 }
               },
@@ -10677,6 +10815,29 @@
                 "[Beta]"
               ]
             },
+            "serving.TelemetryConfig": {
+              "type": "object",
+              "properties": {
+                "inference_table_config": {
+                  "description": "[Public Preview] Configuration for inference table payload logging, including sampling.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.TelemetryInferenceTableConfig",
+                  "x-since-version": "v1.6.0"
+                }
+              },
+              "additionalProperties": false
+            },
+            "serving.TelemetryInferenceTableConfig": {
+              "type": "object",
+              "description": "Inference table payload logging configuration",
+              "properties": {
+                "sampling_fraction": {
+                  "description": "[Public Preview] Fraction of requests sampled for payload logging, in the range [0.0, 1.0], where 1.0 logs all requests.",
+                  "$ref": "#/$defs/float64",
+                  "x-since-version": "v1.6.0"
+                }
+              },
+              "additionalProperties": false
+            },
             "serving.TrafficConfig": {
               "type": "object",
               "properties": {
@@ -11600,6 +11761,12 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AlertTaskSubscriber"
+                }
+              },
+              "jobs.DeploymentSpec": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DeploymentSpec"
                 }
               },
               "jobs.JobCluster": {
