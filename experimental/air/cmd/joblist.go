@@ -2,17 +2,27 @@ package aircmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"golang.org/x/sync/errgroup"
 )
 
-// jobsRunsListPath is the Jobs runs/list endpoint. We call it directly (rather
-// than via the typed SDK) because the SDK's RunTask omits ai_runtime_task, the
-// task type the AI runtime now submits.
-const jobsRunsListPath = "/api/2.2/jobs/runs/list"
+// jobsRunsListPath and jobsRunsGetPath are the Jobs endpoints we call directly
+// (rather than via the typed SDK) because the SDK's RunTask omits
+// ai_runtime_task, the task type the AI runtime now submits.
+const (
+	jobsRunsListPath = "/api/2.2/jobs/runs/list"
+	jobsRunsGetPath  = "/api/2.2/jobs/runs/get"
+)
+
+// hydrateConcurrency bounds the parallel runs/get calls when hydrating a batch
+// of run ids from the AiTrainingService index.
+const hydrateConcurrency = 16
 
 type jobsRunsListResponse struct {
 	Runs          []jobRun `json:"runs"`
@@ -155,6 +165,16 @@ func jobTiming(r *jobRun) (startMillis, endMillis int64) {
 	return startMillis, endMillis
 }
 
+// isTerminal reports whether a run has finished and its details are immutable,
+// so its row is safe to cache.
+func isTerminal(r *jobRun) bool {
+	switch r.State.LifeCycleState {
+	case "TERMINATED", "INTERNAL_ERROR", "SKIPPED":
+		return true
+	}
+	return false
+}
+
 // fetchJobRunsPage fetches one page of Jobs runs/list. query carries the request
 // params (and page_token across calls).
 func fetchJobRunsPage(ctx context.Context, w *databricks.WorkspaceClient, query map[string]any) (*jobsRunsListResponse, error) {
@@ -169,4 +189,56 @@ func fetchJobRunsPage(ctx context.Context, w *databricks.WorkspaceClient, query 
 		return nil, fmt.Errorf("failed to list runs: %w", err)
 	}
 	return &resp, nil
+}
+
+// fetchJobRun fetches a single run via runs/get. The response mirrors one
+// runs/list element, so it deserializes into jobRun directly.
+func fetchJobRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (*jobRun, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	var run jobRun
+	query := map[string]any{"run_id": runID, "expand_tasks": true}
+	err = apiClient.Do(ctx, http.MethodGet, jobsRunsGetPath, nil, nil, query, &run)
+	if err != nil {
+		return nil, err
+	}
+	return &run, nil
+}
+
+// hydrateJobRuns fetches the given run ids concurrently via runs/get, preserving
+// input order. runs/get enforces per-run view ACLs, so an id the caller can't
+// view (403) or that has been purged (404) is dropped; any other error is
+// systemic and fails the whole batch.
+func hydrateJobRuns(ctx context.Context, w *databricks.WorkspaceClient, ids []int64) ([]*jobRun, error) {
+	runs := make([]*jobRun, len(ids))
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(hydrateConcurrency)
+	for i, id := range ids {
+		g.Go(func() error {
+			run, err := fetchJobRun(gctx, w, id)
+			if err != nil {
+				if apiErr, ok := errors.AsType[*apierr.APIError](err); ok &&
+					(apiErr.StatusCode == http.StatusForbidden || apiErr.StatusCode == http.StatusNotFound) {
+					return nil // not viewable or purged: drop this id
+				}
+				return fmt.Errorf("failed to get run %d: %w", id, err)
+			}
+			runs[i] = run
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	hydrated := make([]*jobRun, 0, len(runs))
+	for _, run := range runs {
+		if run != nil {
+			hydrated = append(hydrated, run)
+		}
+	}
+	return hydrated, nil
 }
