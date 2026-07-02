@@ -20,6 +20,10 @@ MAX_DEPTH = 6
 # bundle/internal/schema/main.go addInterpolationPatterns); we emit concrete values.
 INTERPOLATION_MARKER = "\\$\\{"
 
+# Types the generator can produce; keep in sync with libs/jsonschema.Type.
+SCALAR_TYPES = {"boolean", "integer", "number", "string"}
+HANDLED_TYPES = SCALAR_TYPES | {"object", "array"}
+
 
 class Generator:
     def __init__(self, schema, rng, unique):
@@ -111,6 +115,9 @@ class Generator:
             return self.rng.choice([0, 1, self.rng.randint(2, 1000)])
         if t == "number":
             return round(self.rng.uniform(0, 1000), 2)
+        # Fail loud on an unknown type; a missing type is "any" and falls through to string.
+        if t is not None and t not in SCALAR_TYPES:
+            sys.exit(f"gen_fuzz_config: unhandled schema type {t!r}")
         # string (default)
         if name in ("name", "display_name"):
             return f"fuzz-{name}-{self.unique}"
