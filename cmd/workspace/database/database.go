@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/inputonly"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/spf13/cobra"
 )
@@ -146,7 +147,11 @@ Create a Database Catalog.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"create_database_if_not_exists"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -535,7 +540,11 @@ Create a Synced Database Table.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"database_instance_name", "logical_database_name", "spec.create_database_objects_if_missing", "spec.existing_pipeline_id", "spec.new_pipeline_spec"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -881,7 +890,11 @@ Find a Database Instance by uid.`
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"custom_tags", "enable_pg_native_login", "enable_readable_secondaries", "node_count", "parent_instance_ref.lsn", "retention_window_in_days", "stopped", "usage_policy_id"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1011,7 +1024,11 @@ Get a Database Catalog.`
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"create_database_if_not_exists"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1070,7 +1087,11 @@ Get a Database Instance.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"custom_tags", "enable_pg_native_login", "enable_readable_secondaries", "node_count", "parent_instance_ref.lsn", "retention_window_in_days", "stopped", "usage_policy_id"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1242,7 +1263,11 @@ Get a Synced Database Table.`
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"database_instance_name", "logical_database_name", "spec.create_database_objects_if_missing", "spec.existing_pipeline_id", "spec.new_pipeline_spec"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1644,7 +1669,11 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"create_database_if_not_exists"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1735,7 +1764,11 @@ Update a Database Instance.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"custom_tags", "enable_pg_native_login", "enable_readable_secondaries", "node_count", "parent_instance_ref.lsn", "retention_window_in_days", "stopped", "usage_policy_id"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1820,7 +1853,11 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"database_instance_name", "logical_database_name", "spec.create_database_objects_if_missing", "spec.existing_pipeline_id", "spec.new_pipeline_spec"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.

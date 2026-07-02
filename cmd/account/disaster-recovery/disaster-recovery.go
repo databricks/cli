@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/inputonly"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/disasterrecovery"
 	"github.com/spf13/cobra"
@@ -152,7 +153,11 @@ Create a Failover Group.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"initial_primary_region"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -248,7 +253,11 @@ Create a Stable URL.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"initial_workspace_id"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -473,7 +482,11 @@ Failover a Failover Group to a new primary region.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"initial_primary_region"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -535,7 +548,11 @@ Get a Failover Group.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"initial_primary_region"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -597,7 +614,11 @@ Get a Stable URL.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"initial_workspace_id"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -869,7 +890,11 @@ Update a Failover Group.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"initial_primary_region"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.

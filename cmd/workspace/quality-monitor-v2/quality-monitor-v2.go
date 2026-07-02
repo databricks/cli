@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/inputonly"
 	"github.com/databricks/databricks-sdk-go/service/qualitymonitorv2"
 	"github.com/spf13/cobra"
 )
@@ -128,7 +129,11 @@ Create a quality monitor.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"validity_check_configurations"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -255,7 +260,11 @@ Read a quality monitor.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"validity_check_configurations"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -427,7 +436,11 @@ Update a quality monitor.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"validity_check_configurations"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
