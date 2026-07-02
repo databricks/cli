@@ -1,4 +1,0 @@
-# Direct engine only for now: the Terraform provider gained purge_on_delete on
-# databricks_postgres_branch, but the provider bump that exposes it to DABs has
-# not landed in this tree yet. Scope to direct until then.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
