@@ -1,0 +1,67 @@
+# Invariant to test: deleting all resources from a deployed bundle leaves an empty plan and summary
+# Additional checks: no internal errors / panics in validate/plan/deploy/destroy
+
+# Copy data files to test directory
+cp -r "$TESTDIR/../data/." . &> LOG.cp
+
+# Run init script if present
+INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
+if [ -f "$INIT_SCRIPT" ]; then
+    source "$INIT_SCRIPT" &> LOG.init
+fi
+
+envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
+
+cp databricks.yml LOG.config
+
+# We redirect output rather than record it because some configs that are being tested may produce warnings
+trace $CLI bundle validate &> LOG.validate
+cat LOG.validate | contains.py '!panic' '!internal error' > /dev/null
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve &> LOG.destroy
+    cat LOG.destroy | contains.py '!panic' '!internal error' > /dev/null
+
+    # Run cleanup script if present
+    CLEANUP_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-cleanup.sh"
+    if [ -f "$CLEANUP_SCRIPT" ]; then
+        source "$CLEANUP_SCRIPT" &> LOG.cleanup
+    fi
+}
+
+trap cleanup EXIT
+
+# Deploy the config with all its resources
+trace $CLI bundle deploy &> LOG.deploy
+cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
+
+# Special message to fuzzer that generated config was fine.
+# Any failures after this point will be considered as "bug detected" by fuzzer.
+echo INPUT_CONFIG_OK
+
+# Replace the config with an empty bundle, keeping only the bundle name so the
+# deployment continues to target the same state root.
+head -n2 databricks.yml > databricks.empty.yml
+mv databricks.empty.yml databricks.yml
+cp databricks.yml LOG.config.empty
+
+# Save a plan for the emptied config; the second variant deploys with it via --plan
+$CLI bundle plan -o json > plan.json 2>LOG.plan_delete.err
+cat LOG.plan_delete.err | contains.py '!panic' '!internal error' > /dev/null
+
+# Deploy the emptied config, deleting all resources
+trace $CLI bundle deploy --auto-approve $(readplanarg plan.json) &> LOG.deploy_delete
+cat LOG.deploy_delete | contains.py '!panic' '!internal error' > /dev/null
+
+# After deleting all resources, the plan must be empty (no drift, no resources)
+$CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
+cat LOG.planjson.err | contains.py '!panic' '!internal error' > /dev/null
+verify_no_drift.py LOG.planjson
+
+$CLI bundle plan 2>LOG.plan.err | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged' > LOG.plan
+cat LOG.plan.err | contains.py '!panic' '!internal error' > /dev/null
+
+# The summary must also report no resources
+$CLI bundle summary -o json > LOG.summary 2>LOG.summary.err
+cat LOG.summary.err | contains.py '!panic' '!internal error' > /dev/null
+cat LOG.summary | jq -e '(.resources // {}) == {}' > /dev/null
