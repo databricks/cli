@@ -3,16 +3,15 @@ line-length = 120
 
 # Excluded from BOTH linting and formatting. These must be pruned during
 # directory traversal (not lint-only) because they either follow different rules
-# entirely (tagging_upstream.py is synced from universe) or live under their own
-# nested ruff config that a root-level lint exclude cannot reach: the
-# instantiated `bundle init` projects (acceptance/**/output) carry their own
-# pyproject [tool.ruff], and some testdata carries its own .ruff.toml. Formatting
-# these is unnecessary anyway — they are generated outputs and
-# intentionally-varied test inputs. extend-exclude (not exclude) keeps ruff's
-# built-in defaults. The hand-maintained internal/genkit/tagging.py wrapper is
-# linted normally.
+# entirely (tagging.py is synced from universe) or live under their own nested
+# ruff config that a root-level lint exclude cannot reach: the instantiated
+# `bundle init` projects (acceptance/**/output) carry their own pyproject
+# [tool.ruff], and some testdata carries its own .ruff.toml. Formatting these is
+# unnecessary anyway — they are generated outputs and intentionally-varied test
+# inputs. extend-exclude (not exclude) keeps ruff's built-in defaults. The
+# hand-maintained internal/genkit/release_tagging.py wrapper is linted normally.
 extend-exclude = [
-    "tagging_upstream.py",
+    "tagging.py",
     "acceptance/**/output",
     # default-sql carries its own .ruff.toml above output/, which re-roots
     # traversal and shields output/ from the acceptance/**/output prune above.

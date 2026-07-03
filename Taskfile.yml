@@ -882,14 +882,20 @@ tasks:
       - git checkout -- .gitattributes
       - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
       - rm .github/workflows/next-changelog.yml
-      # tagging.yml is repo-owned (it runs the internal/genkit/tagging.py
-      # wrapper); discard genkit's regenerated copy rather than sed-rewriting it.
-      - git checkout -- .github/workflows/tagging.yml
-      # The synced file becomes tagging_upstream.py; the repo-owned wrapper keeps
-      # the tagging.py name (and reuses the synced lock, since it shares deps).
-      - mv tagging.py internal/genkit/tagging_upstream.py
-      - mv tagging.py.lock internal/genkit/tagging_upstream.py.lock
-      - cp internal/genkit/tagging_upstream.py.lock internal/genkit/tagging.py.lock
+      - mv tagging.py internal/genkit/tagging.py
+      - mv tagging.py.lock internal/genkit/tagging.py.lock
+      # The release runs internal/genkit/release_tagging.py, a repo-owned wrapper
+      # that renders CHANGELOG.md from .nextchanges/ around the synced tagging.py.
+      # Point the workflow at it (genkit emits `uv run --locked tagging.py`), and
+      # give the wrapper a matching lock (it declares the same deps).
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          sed -i '' 's|uv run --locked tagging.py|uv run --locked internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
+        else
+          sed -i 's|uv run --locked tagging.py|uv run --locked internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
+        fi
+      - cp internal/genkit/tagging.py.lock internal/genkit/release_tagging.py.lock
+      - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
       - task: ws
 
   # Refreshes out.fields.txt, which records the field paths / types emitted by
