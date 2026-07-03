@@ -1,8 +1,5 @@
 
 >>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
 [
-  {
-    "group_name": "some-group",
-    "level": "CAN_RUN"
-  }
+  "CAN_RUN"
 ]

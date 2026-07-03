@@ -4,14 +4,16 @@ from databricks.bundles.core import pipeline_mutator, Bundle
 
 
 # Reproduces https://github.com/databricks/cli/issues/5682.
-# Adds a permission to a pipeline that is already defined in YAML. Resources updated
-# by a PythonMutator go through NormalizeResources, which does NOT run FixPermissions,
-# so the deploying user is never added as IS_OWNER. The resulting ownerless permissions
-# PUT is rejected by the backend with "The pipeline must have exactly one owner".
+# Adds a permission to a pipeline that is already defined in YAML (mirrors the
+# reporter's mutator, which reads a bundle variable). Resources updated by a
+# PythonMutator go through NormalizeResources, which does NOT run FixPermissions,
+# so the deploying user is never added as IS_OWNER. The resulting ownerless
+# permissions PUT is rejected with "The pipeline must have exactly one owner".
 @pipeline_mutator
 def add_pipeline_permission(bundle: Bundle, pipeline: Pipeline) -> Pipeline:
+    group = bundle.resolve_variable(bundle.variables["grantee_group"])
     permissions = [
         *pipeline.permissions,
-        PipelinePermission.from_dict({"group_name": "some-group", "level": "CAN_RUN"}),
+        PipelinePermission.from_dict({"group_name": group, "level": "CAN_RUN"}),
     ]
     return replace(pipeline, permissions=permissions)

@@ -331,7 +331,10 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		if owners != 1 {
 			return Response{
 				StatusCode: 400,
-				Body:       map[string]string{"message": "The " + ownerNoun + " must have exactly one owner."},
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    "The " + ownerNoun + " must have exactly one owner.",
+				},
 			}
 		}
 	}
