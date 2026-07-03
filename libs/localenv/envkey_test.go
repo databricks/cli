@@ -23,11 +23,19 @@ func TestPythonMinorFromRequires(t *testing.T) {
 		">=3.12":   "3.12",
 		"==3.12.3": "3.12",
 		"~=3.11":   "3.11",
+		// Multi-clause specifiers: the lower bound is the version to install,
+		// regardless of clause order. Taking the first number would pick the
+		// excluded upper bound (e.g. 3.13 from "<3.13").
+		"<3.13,>=3.10":  "3.10",
+		">=3.10,<3.13":  "3.10",
+		">=3.10, <3.13": "3.10",
+		"<4.0,>=3.9":    "3.9",
+		"===3.11":       "3.11",
 	}
 	for in, want := range cases {
 		got, err := PythonMinorFromRequires(in)
 		require.NoError(t, err)
-		assert.Equal(t, want, got)
+		assert.Equal(t, want, got, "input %q", in)
 	}
 	_, err := PythonMinorFromRequires("garbage")
 	assert.Error(t, err)
