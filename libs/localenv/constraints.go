@@ -2,6 +2,8 @@ package localenv
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -36,14 +38,17 @@ type Constraints struct {
 	ConstraintDeps []string
 }
 
-// sanitizeEnvKey flattens an env key to a single filename component by replacing
-// every path separator (both "/" and the OS separator, e.g. "\\" on Windows) with
-// double-underscores. Collapsing both keeps the cache file inside cacheDir even on
-// Windows, where filepath.Join would otherwise treat a backslash as a separator.
-func sanitizeEnvKey(envKey string) string {
-	s := strings.ReplaceAll(envKey, "/", "__")
-	s = strings.ReplaceAll(s, "\\", "__")
-	return s
+// cacheFileName maps an env key to a single, collision-free cache filename.
+// It keeps a readable slug (path separators flattened to double-underscores so
+// the file stays inside cacheDir on every OS) and appends a short hash of the
+// raw env key. The hash guarantees injectivity: distinct env keys that would
+// otherwise flatten to the same slug (e.g. "a/b" and "a__b") get distinct
+// filenames, so a cache hit can never serve another environment's constraints.
+func cacheFileName(envKey string) string {
+	slug := strings.ReplaceAll(envKey, "/", "__")
+	slug = strings.ReplaceAll(slug, "\\", "__")
+	sum := sha256.Sum256([]byte(envKey))
+	return fmt.Sprintf("%s-%s.toml", slug, hex.EncodeToString(sum[:8]))
 }
 
 // writeCacheAtomic writes data to path via a temp file and rename, creating the
@@ -90,7 +95,7 @@ func writeCacheAtomic(path string, data []byte) error {
 // https://github.com/rugpanov/databricks-environments
 func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*Constraints, error) {
 	url := baseURL + "/" + envKey + "/pyproject.toml"
-	cachePath := filepath.Join(cacheDir, sanitizeEnvKey(envKey)+".toml")
+	cachePath := filepath.Join(cacheDir, cacheFileName(envKey))
 
 	data, fetchErr := fetchURL(ctx, url)
 	if fetchErr == nil {

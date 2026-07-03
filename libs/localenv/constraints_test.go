@@ -71,9 +71,18 @@ func TestFetchConstraintsCreatesCacheDir(t *testing.T) {
 	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", cacheDir)
 	require.NoError(t, err)
 	// The cache file was written into the freshly created directory.
-	written, err := os.ReadFile(filepath.Join(cacheDir, "serverless__serverless-v4.toml"))
+	written, err := os.ReadFile(filepath.Join(cacheDir, cacheFileName("serverless/serverless-v4")))
 	require.NoError(t, err)
 	assert.Equal(t, sampleToml, string(written))
+}
+
+func TestCacheFileNameInjective(t *testing.T) {
+	// Distinct env keys that flatten to the same slug must not collide, so a
+	// cache hit can never serve another environment's constraints.
+	assert.NotEqual(t, cacheFileName("a/b"), cacheFileName("a__b"))
+	// The filename stays inside cacheDir (no separators leak through).
+	assert.NotContains(t, cacheFileName("a/b"), "/")
+	assert.NotContains(t, cacheFileName("a\\b"), "\\")
 }
 
 func TestFetchConstraintsHTTP(t *testing.T) {
