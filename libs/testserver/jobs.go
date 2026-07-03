@@ -414,9 +414,8 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
 }
 
-// runJobParameters mirrors how GetRun resolves job-level parameters: it returns
-// every parameter the job defines, with the run's overrides applied on top of
-// the job's defaults (so a run surfaces params it never overrode), sorted by
+// runJobParameters mirrors how GetRun resolves job-level parameters: every
+// parameter the job defines, with the run's overrides applied on top, sorted by
 // name for deterministic output.
 func runJobParameters(settings *jobs.JobSettings, overrides map[string]string) []jobs.JobParameter {
 	resolved := map[string]jobs.JobParameter{}
@@ -796,6 +795,17 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	}
 
 	return Response{Body: run}
+}
+
+func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {
+	var request jobs.DeleteRun
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+	return MapDelete(s, s.JobRuns, request.RunId)
 }
 
 func (s *FakeWorkspace) JobsGetRunOutput(req Request) Response {

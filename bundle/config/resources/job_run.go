@@ -13,11 +13,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// JobRun is the bundle config for a triggered job run. The run is described by
-// the same fields as the Jobs RunNow API request, so we embed jobs.RunNow
-// directly instead of re-declaring them. The run re-triggers only when its own
-// RunNow config changes; edits to the targeted job (addressed by the stable
-// job_id) do not re-trigger it.
+// JobRun is the bundle config for a triggered job run, described by the same
+// fields as the Jobs RunNow request (embedded). It re-triggers only when its own
+// config changes, not when the targeted job (stable job_id) changes.
 type JobRun struct {
 	BaseResource
 	jobs.RunNow
@@ -31,9 +29,8 @@ func (r JobRun) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(r)
 }
 
-// Exists reports whether the run with the given numeric id still exists. Once
-// triggered, a run is retrievable via GetRun for as long as the workspace
-// retains its run history.
+// Exists reports whether the run with the given numeric id still exists, for as
+// long as the workspace retains its run history.
 func (r *JobRun) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
 	runID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
@@ -61,8 +58,7 @@ func (r *JobRun) ResourceDescription() ResourceDescription {
 	}
 }
 
-// GetName returns the in-product name. A run has no user-assigned name, so this
-// is empty.
+// GetName returns the in-product name, which is empty: a run has no name.
 func (r *JobRun) GetName() string {
 	return ""
 }
@@ -71,10 +67,10 @@ func (r *JobRun) GetURL() string {
 	return r.URL
 }
 
-// InitializeURL sets the run's workspace URL once both IDs that address it are
-// known. Before deploy neither is populated: the run id is backfilled from
-// state and the job id may still be an unresolved ${resources.jobs.*.id}
-// reference, so we skip rather than emit a broken jobs/0 URL.
+// InitializeURL sets the run's workspace URL once both addressing IDs are known.
+// Before deploy the run id (from state) or job id (an unresolved
+// ${resources.jobs.*.id} reference) may be missing, so we skip rather than emit
+// a broken jobs/0 URL.
 func (r *JobRun) InitializeURL(baseURL url.URL) {
 	if r.ID == "" || r.JobId == 0 {
 		return

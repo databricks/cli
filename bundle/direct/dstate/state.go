@@ -462,9 +462,9 @@ func (db *DeploymentState) AssertOpenedForWrite() {
 func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range data.State {
-		// Match on the exact resource type rather than substring-matching the
-		// key, so a sub-resource entry like resources.<group>.<name>.permissions
-		// (type "<group>.permissions") is not mistaken for the resource itself.
+		// Match on the exact resource type, not a substring of the key, so a
+		// sub-resource entry like resources.<group>.<name>.permissions is not
+		// mistaken for the resource itself.
 		resourceType := config.GetResourceTypeFromKey(key)
 
 		var etag string

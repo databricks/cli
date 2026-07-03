@@ -46,10 +46,9 @@ func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMa
 		return diag.FromErr(err)
 	}
 
-	// Restore each job run's resolved job_id into the dynamic config. job_id is a
-	// serialized field, so it must go through Mutate; doing it here (before the
-	// dashboard etag assignment below) keeps that typed-only write last, since
-	// Mutate would otherwise rebuild the typed struct and drop the etag.
+	// Restore each job run's resolved job_id into the dynamic config via Mutate.
+	// Do it before the dashboard etag assignment below: that write is typed-only,
+	// and Mutate would rebuild the typed struct and drop the etag.
 	if err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		for resourceKey, rstate := range state {
 			if !strings.HasPrefix(resourceKey, "resources.job_runs.") || rstate.JobID == 0 {

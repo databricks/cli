@@ -21,8 +21,7 @@ func TestGetResourceConfig(t *testing.T) {
 }
 
 // TestFieldRuleOmittedIsRoot verifies that a FieldRule with no field is a root
-// rule matching every field (HasPatternPrefix treats a nil pattern as root),
-// which is what the job_runs root recreate rule relies on.
+// rule matching every field, which the job_runs root recreate rule relies on.
 func TestFieldRuleOmittedIsRoot(t *testing.T) {
 	someField := structpath.MustParsePath("dbt_commands")
 

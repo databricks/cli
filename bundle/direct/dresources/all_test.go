@@ -1056,9 +1056,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	// job_runs has a no-op DoDelete (a triggered run cannot be "undeployed"), so
-	// the run remains readable after delete, like permissions and grants.
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "job_runs"
+	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
 	if deleteIsNoop {
@@ -1152,9 +1150,8 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 		// provided_id_fields, or ignore_local_changes; output-only fields are
 		// covered by ignore_remote_changes since the user never sets them.
 		covered := map[string]bool{}
-		// A root rule (nil Field) matches every path via HasPatternPrefix, so it
-		// covers all fields at once. Coverage here is by exact path string, which
-		// a root rule (Field.String() == "") would never hit, so track it apart.
+		// A root rule covers every field at once, but coverage below is tracked by
+		// exact path string, which a root rule never hits, so track it separately.
 		rootCovered := false
 		markCovered := func(r FieldRule) {
 			if r.Field.IsRoot() {

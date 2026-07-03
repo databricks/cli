@@ -18,5 +18,6 @@ trace $CLI bundle deploy
 trace $CLI bundle plan
 trace $CLI bundle summary
 
-title "the config change triggered a second, different run"
+title "the config change deleted the previous run and triggered a second, different run"
+trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
