@@ -56,7 +56,16 @@ func ValidateTargetFlags(f TargetFlags) error {
 // ResolveTarget resolves the compute target using ordered precedence:
 // --cluster flag → --serverless flag → --job flag → bundle target.
 // PythonVersion is left empty; it is filled later from constraint data.
+//
+// Incompatible flags are rejected up front: without this a library caller that
+// bypasses Cobra (which also marks the flags mutually exclusive) and passes more
+// than one target flag would have all but the first precedence branch silently
+// ignored, resolving a different target than requested.
 func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt BundleTarget) (*TargetInfo, error) {
+	if err := ValidateTargetFlags(f); err != nil {
+		return nil, NewError(ErrResolve, err, "invalid compute target flags")
+	}
+
 	if f.Cluster != "" {
 		v, err := c.GetClusterSparkVersion(ctx, f.Cluster)
 		if err != nil {

@@ -94,3 +94,13 @@ func TestValidateTargetFlagsMutuallyExclusive(t *testing.T) {
 	assert.Error(t, ValidateTargetFlags(TargetFlags{Cluster: "a", Serverless: "v4"}))
 	assert.NoError(t, ValidateTargetFlags(TargetFlags{Cluster: "a"}))
 }
+
+func TestResolveTargetRejectsConflictingFlags(t *testing.T) {
+	// ResolveTarget must reject incompatible flags rather than silently taking
+	// the first precedence branch, so a library caller bypassing Cobra can't
+	// resolve a different target than it asked for.
+	_, err := ResolveTarget(t.Context(), TargetFlags{Cluster: "c", Serverless: "v4"}, stubCompute{}, BundleTarget{})
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrResolve, pe.Code)
+}
