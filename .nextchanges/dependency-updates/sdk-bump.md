@@ -1,1 +1,0 @@
-Bump the Go SDK to the latest release (#5519).
