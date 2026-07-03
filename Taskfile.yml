@@ -295,8 +295,15 @@ tasks:
     cmds:
       - ./tools/check_deadcode.py
 
+  check-uv-lock:
+    desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock
+    # pydabs-codegen reverts this proxy-URL churn after regenerating; this is a
+    # backstop against a proxy URL reaching a committed lock any other way.
+    cmds:
+      - "! git grep -lF databricks.com -- '*uv.lock'"
+
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode)
+    desc: Run quick checks (tidy, whitespace, links, deadcode, uv.lock)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with whitespace/link scanners.
     cmds:
@@ -304,6 +311,7 @@ tasks:
       - task: ws
       - task: links
       - task: deadcode
+      - task: check-uv-lock
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv

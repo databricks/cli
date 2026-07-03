@@ -57,8 +57,11 @@ func evaluateTemplate(state TFStateAttrs, template string) (string, error) {
 //   - Method A: read the field from the source resource's own TF state.
 //   - Method B: evaluate the template by reading each referenced field from TF state.
 //
-// Returns the reconciled value or an error if both methods fail.
-func ResolveFieldRef(ctx context.Context, state TFStateAttrs, srcGroup, srcName string, fieldPath *structpath.PathNode, refTemplate string) (any, error) {
+// Returns the reconciled value or an error if both methods fail. The bool return
+// reports whether a warning was logged (methods disagreed); warnPrefix is
+// prepended to that warning so background callers (the post-deploy dry-run) can
+// attribute it.
+func ResolveFieldRef(ctx context.Context, state TFStateAttrs, srcGroup, srcName string, fieldPath *structpath.PathNode, refTemplate, warnPrefix string) (any, bool, error) {
 	// Method A: read field from source resource's TF state.
 	valueA, errA := LookupTFField(state, srcGroup, srcName, fieldPath)
 
@@ -69,23 +72,23 @@ func ResolveFieldRef(ctx context.Context, state TFStateAttrs, srcGroup, srcName 
 	case errA == nil && errB == nil:
 		aStr := fmt.Sprintf("%v", valueA)
 		if aStr == valueB {
-			return valueA, nil
+			return valueA, false, nil
 		}
 		// Both succeeded but disagree: prefer longer string and warn.
 		if len(valueB) > len(aStr) {
-			log.Warnf(ctx, "resource %s.%s field %s: method A value %q and method B value %q disagree; using longer (method B)",
+			log.Warnf(ctx, warnPrefix+"resource %s.%s field %s: method A value %q and method B value %q disagree; using longer (method B)",
 				srcGroup, srcName, fieldPath, aStr, valueB)
-			return valueB, nil
+			return valueB, true, nil
 		}
-		log.Warnf(ctx, "resource %s.%s field %s: method A value %q and method B value %q disagree; using longer (method A)",
+		log.Warnf(ctx, warnPrefix+"resource %s.%s field %s: method A value %q and method B value %q disagree; using longer (method A)",
 			srcGroup, srcName, fieldPath, aStr, valueB)
-		return valueA, nil
+		return valueA, true, nil
 	case errA == nil:
-		return valueA, nil
+		return valueA, false, nil
 	case errB == nil:
-		return valueB, nil
+		return valueB, false, nil
 	default:
-		return nil, fmt.Errorf("%s.%s field %s: method A: %w; method B: %w",
+		return nil, false, fmt.Errorf("%s.%s field %s: method A: %w; method B: %w",
 			srcGroup, srcName, fieldPath, errA, errB)
 	}
 }
