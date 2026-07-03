@@ -2,11 +2,11 @@
 >>> [CLI] bundle validate
 Error: custom_max_retention_hours must be 0 or between 168 and 720 hours (7 to 30 days), got 7
   at resources.catalogs.invalid_catalog.custom_max_retention_hours
-  in databricks.yml:10:35
+  in databricks.yml:9:35
 
 Error: custom_max_retention_hours must be 0 or between 168 and 720 hours (7 to 30 days), got 1000
   at resources.schemas.invalid_schema.custom_max_retention_hours
-  in databricks.yml:20:35
+  in databricks.yml:19:35
 
 Name: test-bundle
 Target: default
