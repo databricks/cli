@@ -398,8 +398,41 @@ func TestHeaderName(t *testing.T) {
 	assert.Equal(t, "[project]", headerName("[project]"))
 	assert.Equal(t, "[project]", headerName("  [project] # note"))
 	assert.Equal(t, "[tool.uv]", headerName("[tool.uv]#x"))
+	// Array-of-tables headers are distinct from their parent table.
+	assert.Equal(t, "[[tool.uv.index]]", headerName("[[tool.uv.index]]"))
+	assert.Equal(t, "[[tool.uv.index]]", headerName("  [[tool.uv.index]] # note"))
 	assert.Empty(t, headerName("requires-python = \"3.12\""))
 	assert.Empty(t, headerName("dev = [\"a\"]"))
+}
+
+func TestMergeToolUvWithArrayOfTablesChild(t *testing.T) {
+	// A [tool.uv] table followed by its [[tool.uv.index]] array-of-tables child:
+	// the managed constraint block must attach to [tool.uv], not leak into the
+	// index item, and the result must be valid TOML.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.uv]
+
+[[tool.uv.index]]
+name = "internal"
+url = "https://packages.example/simple"
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	requireValidTOML(t, out)
+	// The index array-of-tables is preserved intact.
+	assert.Contains(t, s, `[[tool.uv.index]]`)
+	assert.Contains(t, s, `name = "internal"`)
+	assert.Contains(t, s, "pydantic~=2.10.6")
+	// Merge-twice is byte-identical.
+	twice, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, s, string(twice))
 }
 
 func countOccurrences(s, substr string) int {

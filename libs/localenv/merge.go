@@ -22,11 +22,13 @@ const (
 )
 
 var (
-	// tableHeaderRe matches a TOML table header line such as "[project]" or
-	// "[tool.uv]", tolerating a trailing inline comment ("[project] # note"). Not
-	// tolerating the comment would both miss a commented [project] header and let
-	// a table's end bound run past a commented sibling header into the next table.
-	tableHeaderRe = regexp.MustCompile(`^\s*\[[^\]]+\]\s*(#.*)?$`)
+	// tableHeaderRe matches a TOML table header line: a standard table like
+	// "[project]" / "[tool.uv]" or an array-of-tables like "[[tool.uv.index]]",
+	// tolerating a trailing inline comment ("[project] # note"). Recognizing both
+	// forms matters for bounds: an unrecognized "[[...]]" header would let a
+	// table's end run past it (e.g. [tool.uv] swallowing its child [[tool.uv.index]]
+	// items), and a commented header would similarly be missed.
+	tableHeaderRe = regexp.MustCompile(`^\s*\[\[?[^\]]+\]\]?\s*(#.*)?$`)
 	// requiresPythonRe captures the leading whitespace of a requires-python assignment so it
 	// can be preserved when the value is replaced.
 	requiresPythonRe = regexp.MustCompile(`^(\s*)requires-python\s*=`)
@@ -75,13 +77,22 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 }
 
 // headerName returns the bracketed table name of a TOML table-header line (e.g.
-// "[project]" from "  [project] # note"), or "" if the line is not a table header.
-// It strips a trailing inline comment so a commented header still matches by name.
+// "[project]" from "  [project] # note", or "[[tool.uv.index]]" from an
+// array-of-tables header), or "" if the line is not a table header. It strips a
+// trailing inline comment so a commented header still matches by name, and keeps
+// the full "[[...]]" form so an array-of-tables header is never treated as the
+// same table as its "[...]" parent.
 func headerName(line string) string {
 	if !tableHeaderRe.MatchString(line) {
 		return ""
 	}
 	s := strings.TrimSpace(line)
+	// Array-of-tables: "[[name]]" — return through the closing "]]".
+	if strings.HasPrefix(s, "[[") {
+		if i := strings.Index(s, "]]"); i >= 0 {
+			return s[:i+2]
+		}
+	}
 	if i := strings.Index(s, "]"); i >= 0 {
 		return s[:i+1]
 	}
