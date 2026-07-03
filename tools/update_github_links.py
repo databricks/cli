@@ -15,7 +15,7 @@ import pathlib
 import re
 import sys
 
-DEFAULT_FILES = ("NEXT_CHANGELOG.md", "CHANGELOG.md")
+DEFAULT_FILES = ("CHANGELOG.md",)
 
 # Canonical form: ([#1234](https://github.com/databricks/cli/pull/1234))
 CONVERTED_LINK_RE = re.compile(
