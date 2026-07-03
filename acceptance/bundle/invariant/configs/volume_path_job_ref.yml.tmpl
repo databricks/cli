@@ -2,10 +2,11 @@ bundle:
   name: test-bundle-$UNIQUE_NAME
 
 # A job parameter references a volume's computed volume_path, and the volume's
-# schema_name/name are references to another job's remote creator_user_name. So
-# volume_path embeds a reference at initialize that only resolves at deploy,
-# exercising the deferred-resolution chain (foo -> data.volume_path -> process)
-# end to end with no drift afterwards.
+# schema_name/name are references to another job's id, which is only known after
+# deploy. So volume_path embeds a reference at initialize that only resolves at
+# deploy, exercising the deferred-resolution chain (foo -> data.volume_path ->
+# process) end to end with no drift afterwards. job.id is exported by Terraform
+# too, so this chain resolves on both engines (see migrate).
 resources:
   jobs:
     foo:
@@ -20,5 +21,5 @@ resources:
   volumes:
     data:
       catalog_name: main
-      schema_name: ${resources.jobs.foo.creator_user_name}
-      name: ${resources.jobs.foo.creator_user_name}
+      schema_name: ${resources.jobs.foo.id}
+      name: ${resources.jobs.foo.id}
