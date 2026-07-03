@@ -8,8 +8,7 @@ line-length = 120
 # `bundle init` projects (acceptance/**/output) carry their own pyproject
 # [tool.ruff], and some testdata carries its own .ruff.toml. Formatting these is
 # unnecessary anyway — they are generated outputs and intentionally-varied test
-# inputs. extend-exclude (not exclude) keeps ruff's built-in defaults. The
-# hand-maintained internal/genkit/release_tagging.py wrapper is linted normally.
+# inputs. extend-exclude (not exclude) keeps ruff's built-in defaults.
 extend-exclude = [
     "tagging.py",
     "acceptance/**/output",
