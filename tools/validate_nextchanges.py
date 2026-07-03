@@ -27,25 +27,39 @@ SECTIONS = ("notable-changes", "cli", "bundles", "dependency-updates", "api-chan
 VERSION_FILE = "version"
 SEMVER_RE = re.compile(r"^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 
-
-def iter_fragment_files(changelog_dir):
-    """Yield every ``*.md`` fragment under *changelog_dir*, excluding READMEs."""
-    for path in sorted(changelog_dir.rglob("*.md")):
-        if path.name == "README.md":
-            continue
-        yield path
+# Non-fragment files allowed to sit alongside fragments at any depth.
+SCAFFOLDING = ("README.md", ".gitkeep")
 
 
 def find_problems(changelog_dir):
-    """Return a list of ``(path, message)`` for misplaced/empty fragments or a
-    missing/malformed version file."""
+    """Return a list of ``(path, message)`` for anything unexpected under
+    ``.nextchanges/``: files that aren't a section fragment or known scaffolding,
+    empty fragments, and a missing/malformed version file."""
     problems = []
-    for path in iter_fragment_files(changelog_dir):
+    for path in sorted(changelog_dir.rglob("*")):
+        if path.is_dir():
+            continue
         rel = path.relative_to(changelog_dir)
-        if len(rel.parts) != 2 or rel.parts[0] not in SECTIONS:
-            problems.append((path, "not in a known section directory"))
-        elif not path.read_text(encoding="utf-8").strip():
-            problems.append((path, "empty fragment"))
+        name = path.name
+
+        # Root-level: only the version file and scaffolding belong here.
+        if len(rel.parts) == 1:
+            if name != VERSION_FILE and name not in SCAFFOLDING:
+                problems.append((path, "unexpected file at .nextchanges root"))
+            continue
+
+        # Section-level: .nextchanges/<section>/<file>.
+        if len(rel.parts) == 2 and rel.parts[0] in SECTIONS:
+            if name in SCAFFOLDING:
+                continue
+            if not name.endswith(".md"):
+                problems.append((path, "unexpected file (fragments must be *.md)"))
+            elif not path.read_text(encoding="utf-8").strip():
+                problems.append((path, "empty fragment"))
+            continue
+
+        # Wrong depth or an unknown section directory.
+        problems.append((path, "not in a known section directory"))
 
     version_path = changelog_dir / VERSION_FILE
     if not version_path.is_file():
