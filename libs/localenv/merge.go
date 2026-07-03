@@ -99,8 +99,8 @@ func mergeRequiresPython(lines []string, value string) ([]string, bool) {
 		return lines, false
 	}
 
-	want := func(indent string) string {
-		return fmt.Sprintf(`%srequires-python = "%s"`, indent, value)
+	want := func(indent, comment string) string {
+		return fmt.Sprintf(`%srequires-python = "%s"%s`, indent, value, comment)
 	}
 
 	for i := header + 1; i < end; i++ {
@@ -108,7 +108,9 @@ func mergeRequiresPython(lines []string, value string) ([]string, bool) {
 		if m == nil {
 			continue
 		}
-		replacement := want(m[1])
+		// Preserve a trailing inline comment; only the value is managed, so
+		// "requires-python = \"...\" # note" keeps its note.
+		replacement := want(m[1], trailingComment(lines[i]))
 		if lines[i] == replacement {
 			return lines, false
 		}
@@ -119,9 +121,42 @@ func mergeRequiresPython(lines []string, value string) ([]string, bool) {
 	// Key absent: insert directly under the [project] header.
 	inserted := make([]string, 0, len(lines)+1)
 	inserted = append(inserted, lines[:header+1]...)
-	inserted = append(inserted, want(""))
+	inserted = append(inserted, want("", ""))
 	inserted = append(inserted, lines[header+1:]...)
 	return inserted, true
+}
+
+// trailingComment returns the inline TOML comment suffix of a line (including the
+// leading whitespace and "#"), or "" if there is none. It ignores "#" characters
+// inside a quoted string so a value like requires-python = ">=3.10 # x" is not
+// mistaken for a comment.
+func trailingComment(line string) string {
+	var quote byte
+	for i := 0; i < len(line); i++ {
+		c := line[i]
+		if quote != 0 {
+			if c == '\\' && quote == '"' {
+				i++
+				continue
+			}
+			if c == quote {
+				quote = 0
+			}
+			continue
+		}
+		switch c {
+		case '"', '\'':
+			quote = c
+		case '#':
+			// Include any whitespace immediately preceding the "#".
+			start := i
+			for start > 0 && (line[start-1] == ' ' || line[start-1] == '\t') {
+				start--
+			}
+			return line[start:]
+		}
+	}
+	return ""
 }
 
 // dbconnectLineRe captures, for a line holding a databricks-connect dependency element:
@@ -129,11 +164,20 @@ func mergeRequiresPython(lines []string, value string) ([]string, bool) {
 // so that indentation and comma style are preserved when the quoted token is replaced.
 var dbconnectLineRe = regexp.MustCompile(`^(\s*)"databricks-connect[^"]*"(\s*,?\s*)$`)
 
+// devKeyRe matches the start of the dev array assignment within [dependency-groups]
+// (e.g. "dev = [" or "dev=["), capturing leading whitespace. Only this key is
+// managed; sibling groups such as test/docs are user-owned and left untouched.
+var devKeyRe = regexp.MustCompile(`^\s*dev\s*=`)
+
 // mergeDatabricksConnect replaces the databricks-connect element inside
-// [dependency-groups].dev. It handles both the multi-line array form (one element per
-// line) and the single-line array form (dev = ["databricks-connect~=..."]).
+// [dependency-groups].dev only. It handles both the multi-line array form (one
+// element per line) and the single-line array form (dev = ["databricks-connect~=..."]).
 // An empty value (constraints-only mode) is a no-op: the user's dev group is left
 // untouched rather than having its databricks-connect pin blanked out.
+//
+// The rewrite is scoped to the dev array's own span (found via bracket depth), so a
+// databricks-connect pin sitting in a sibling group (e.g. docs/test) or inside a
+// trailing comment on some other line is never clobbered.
 func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
 	if value == "" {
 		return lines, false
@@ -143,8 +187,38 @@ func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
 		return lines, false
 	}
 
+	// Locate the dev assignment and the line span of its array value.
+	devStart := -1
 	for i := header + 1; i < end; i++ {
-		// Multi-line element form: a standalone line holding only the quoted token.
+		if devKeyRe.MatchString(lines[i]) {
+			devStart = i
+			break
+		}
+	}
+	if devStart == -1 {
+		return lines, false
+	}
+	arrayLast, _ := arrayLineSpan(lines, devStart, end)
+
+	// Single-line form: the whole array is on the dev line itself. Only rewrite
+	// within the array (through its closing "]"); a trailing comment after it is
+	// user content and must be left byte-for-byte intact.
+	if devStart == arrayLast {
+		line := lines[devStart]
+		arrayPart, commentPart := splitAtArrayClose(line)
+		if !strings.Contains(arrayPart, `"databricks-connect`) {
+			return lines, false
+		}
+		replaced := dbconnectTokenRe.ReplaceAllString(arrayPart, `"`+value+`"`) + commentPart
+		if replaced == line {
+			return lines, false
+		}
+		lines[devStart] = replaced
+		return lines, true
+	}
+
+	// Multi-line form: one element per line, between the dev line and the closing "]".
+	for i := devStart + 1; i <= arrayLast; i++ {
 		if m := dbconnectLineRe.FindStringSubmatch(lines[i]); m != nil {
 			replacement := fmt.Sprintf(`%s"%s"%s`, m[1], value, m[2])
 			if lines[i] == replacement {
@@ -153,17 +227,63 @@ func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
 			lines[i] = replacement
 			return lines, true
 		}
-		// Single-line array form: replace the quoted databricks-connect token in place.
-		if strings.Contains(lines[i], `"databricks-connect`) {
-			replaced := dbconnectTokenRe.ReplaceAllString(lines[i], `"`+value+`"`)
-			if replaced == lines[i] {
-				return lines, false
-			}
-			lines[i] = replaced
-			return lines, true
-		}
 	}
 	return lines, false
+}
+
+// splitAtArrayClose splits a single-line array assignment into the part up to and
+// including the array's closing "]" and the remainder (a trailing comment, if any),
+// tracking bracket depth outside quoted strings. This keeps token replacement inside
+// the array from touching a trailing comment. If no balanced close is found the whole
+// line is returned as the array part.
+func splitAtArrayClose(line string) (arrayPart, rest string) {
+	depth := 0
+	var quote byte
+	opened := false
+	for i := 0; i < len(line); i++ {
+		c := line[i]
+		if quote != 0 {
+			if c == '\\' && quote == '"' {
+				i++
+				continue
+			}
+			if c == quote {
+				quote = 0
+			}
+			continue
+		}
+		switch c {
+		case '"', '\'':
+			quote = c
+		case '[':
+			depth++
+			opened = true
+		case ']':
+			depth--
+			if opened && depth == 0 {
+				return line[:i+1], line[i+1:]
+			}
+		}
+	}
+	return line, ""
+}
+
+// arrayLineSpan returns the index of the line on which the array opened at
+// lines[start] closes (brackets balance), scanning outside strings/comments. A
+// single-line array returns start. It bounds in-place edits of an array value to
+// the array's own lines.
+func arrayLineSpan(lines []string, start, limit int) (last int, multiline bool) {
+	depth := bracketDepthDelta(lines[start])
+	if depth <= 0 {
+		return start, false
+	}
+	for j := start + 1; j < limit; j++ {
+		depth += bracketDepthDelta(lines[j])
+		if depth <= 0 {
+			return j, true
+		}
+	}
+	return limit - 1, true
 }
 
 // dbconnectTokenRe matches a quoted databricks-connect element anywhere in a line, used

@@ -317,6 +317,58 @@ func TestBracketDepthDeltaIgnoresStringsAndComments(t *testing.T) {
 	}
 }
 
+func TestMergeDatabricksConnectOnlyTouchesDevGroup(t *testing.T) {
+	// A databricks-connect pin in a sibling group (docs) must be left alone; only
+	// the dev group's entry is managed.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+docs = ["databricks-connect~=14.3"]
+dev = [
+    "databricks-connect~=16.0.0",
+]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	// docs untouched; dev updated to the managed pin.
+	assert.Contains(t, s, `docs = ["databricks-connect~=14.3"]`)
+	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
+	requireValidTOML(t, out)
+}
+
+func TestMergeDatabricksConnectDoesNotClobberComment(t *testing.T) {
+	// A databricks-connect token inside a trailing comment is user content and
+	// must not be rewritten.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["pytest"] # keep "databricks-connect~=14.3" for docs
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	// The comment's databricks-connect~=14.3 is preserved verbatim.
+	assert.Contains(t, s, `# keep "databricks-connect~=14.3" for docs`)
+	requireValidTOML(t, out)
+}
+
+func TestMergeRequiresPythonPreservesInlineComment(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10" # maintained by platform team
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `requires-python = "==3.12.*" # maintained by platform team`)
+	requireValidTOML(t, out)
+}
+
 func countOccurrences(s, substr string) int {
 	return strings.Count(s, substr)
 }
