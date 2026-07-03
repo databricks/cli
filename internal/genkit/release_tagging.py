@@ -67,9 +67,13 @@ def render_nextchanges(package_path: str) -> Optional[str]:
     """
     Render ``<package_path>/.nextchanges/<section>/*.md`` into the changelog
     body: one ``### <Section>`` block per non-empty section in
-    NEXTCHANGES_SECTIONS order, fragments sorted by filename. A leading
-    ``* ``/``- `` marker is optional in a fragment. Returns None when there
-    are no fragments.
+    NEXTCHANGES_SECTIONS order, fragments sorted by filename. Returns None when
+    there are no fragments.
+
+    The output matches the CHANGELOG.md convention: a blank line after each
+    ``### <Section>`` heading, and every entry as a `` * `` bullet (a leading
+    space before the ``*``). A leading ``* ``/``- `` marker is optional in a
+    fragment and is normalized; continuation lines are left as authored.
     """
     base = os.path.join(os.getcwd(), package_path, NEXTCHANGES_DIR)
     if not os.path.isdir(base):
@@ -89,10 +93,13 @@ def render_nextchanges(package_path: str) -> Optional[str]:
             if not text:
                 continue
             first, _, rest = text.partition("\n")
-            first = "* " + first[2:] if first.startswith(("* ", "- ")) else "* " + first
-            entries.append(first + (("\n" + rest) if rest else ""))
+            if first.startswith(("* ", "- ")):
+                first = first[2:]
+            # Leading-space bullet to match CHANGELOG.md (e.g. " * entry").
+            entries.append(f" * {first}" + (("\n" + rest) if rest else ""))
         if entries:
-            blocks.append(f"### {header}\n" + "\n".join(entries))
+            # Blank line after the heading, matching CHANGELOG.md.
+            blocks.append(f"### {header}\n\n" + "\n".join(entries))
 
     if not blocks:
         return None
