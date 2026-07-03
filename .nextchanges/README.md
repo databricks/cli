@@ -38,7 +38,14 @@ for when an entry is warranted.
 
 ## How it's released
 
-You don't run anything. At release time, `tools/collate_changelog.py` folds
-every fragment into the matching section of `NEXT_CHANGELOG.md`, deletes the
-fragments, and the release tooling generates `CHANGELOG.md` as before.
-`./task changelog-check` validates fragment placement on every PR.
+You don't run anything. At release time the tagging workflow renders every
+fragment into the matching section of `CHANGELOG.md`, deletes the consumed
+fragments, and bumps `version` to the next minor (see
+`internal/genkit/tagging.py`). `./task changelog-check` validates fragment
+placement and the `version` file on every PR.
+
+### `version`
+
+`.nextchanges/version` holds the version of the next release (e.g. `1.4.0`).
+It's bumped to the next minor automatically after each release — edit it in a
+PR only to cut a patch or major release instead.

@@ -55,7 +55,7 @@ If an agent (you) authored or substantially helped author the PR, disclose it on
 
 ## Changelog entry
 
-Add a changelog fragment under `.nextchanges/` when your change is user-visible. Each PR adds its own file, so entries never conflict between PRs. CI collates the fragments and generates the real `CHANGELOG.md` at release time, so never hand-edit `CHANGELOG.md` or `NEXT_CHANGELOG.md` directly.
+Add a changelog fragment under `.nextchanges/` when your change is user-visible. Each PR adds its own file, so entries never conflict between PRs. The release renders these fragments into the real `CHANGELOG.md`, so never hand-edit `CHANGELOG.md` directly.
 
 **When to add an entry:**
 - New or changed CLI command, flag, or subcommand behavior
