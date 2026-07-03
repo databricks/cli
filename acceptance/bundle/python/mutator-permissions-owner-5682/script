@@ -8,17 +8,15 @@ if [ -n "$CLOUD_ENV" ]; then
 fi
 
 cleanup() {
-    trace errcode uv run $UV_ARGS -q $CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
+    uv run $UV_ARGS -q $CLI bundle destroy --auto-approve &> LOG.destroy
     rm -fr .databricks __pycache__
 }
 trap cleanup EXIT
 
-# The Python mutator adds a permission but no owner. FixPermissions does not run on
-# resources updated by PythonMutator, so no IS_OWNER is added for the current user.
+# The Python mutator adds a CAN_RUN permission; FixPermissions then adds IS_OWNER for
+# the current user (issue #5682 - previously it did not run on Python-updated resources).
 trace uv run $UV_ARGS -q $CLI bundle validate --output json | \
   jq ".resources.pipelines.my_pipeline.permissions | map(.level)"
 
-# BUG #5682: the direct engine PUTs the ownerless ACL and the backend rejects it with
-# "The pipeline must have exactly one owner". The terraform provider re-injects the
-# owner at PUT time, so it succeeds. Deploy output therefore differs per engine.
-trace errcode uv run $UV_ARGS -q $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+# With the owner present, the deploy succeeds on both engines.
+trace uv run $UV_ARGS -q $CLI bundle deploy
