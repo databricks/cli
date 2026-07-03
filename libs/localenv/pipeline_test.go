@@ -2,6 +2,7 @@ package localenv
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -22,6 +23,32 @@ func (fakePM) Provision(context.Context, string) error         { return nil }
 func (fakePM) PostProvision(context.Context, string) error     { return nil }
 func (f fakePM) Validate(context.Context, string) (string, string, error) {
 	return f.py, f.dbc, nil
+}
+
+// noProvisionPM fails any method that could touch the machine (install the
+// manager, install Python, sync, seed pip, validate). It asserts that --check
+// never reaches those write-side operations.
+type noProvisionPM struct{}
+
+func (noProvisionPM) Name() string { return "noprov" }
+func (noProvisionPM) EnsureAvailable(context.Context) (string, error) {
+	return "", errors.New("EnsureAvailable must not be called under --check")
+}
+
+func (noProvisionPM) EnsurePython(context.Context, string) error {
+	return errors.New("EnsurePython must not be called under --check")
+}
+
+func (noProvisionPM) Provision(context.Context, string) error {
+	return errors.New("Provision must not be called under --check")
+}
+
+func (noProvisionPM) PostProvision(context.Context, string) error {
+	return errors.New("PostProvision must not be called under --check")
+}
+
+func (noProvisionPM) Validate(context.Context, string) (string, string, error) {
+	return "", "", errors.New("Validate must not be called under --check")
 }
 
 func writeProject(t *testing.T) string {
@@ -62,6 +89,26 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	assert.Contains(t, res.Plan.Diff, "==3.12.*")
 	after, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	assert.Equal(t, string(before), string(after)) // unchanged
+}
+
+func TestPipelineCheckDoesNotProvision(t *testing.T) {
+	// --check must not call any PackageManager method that could mutate the
+	// machine (EnsureAvailable may install uv). noProvisionPM errors on all of
+	// them; the dry run must still succeed and produce a plan.
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: noProvisionPM{},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	require.NotNil(t, res.Plan)
 }
 
 func TestPipelineCheckWorksOnReadOnlyDir(t *testing.T) {

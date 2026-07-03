@@ -95,20 +95,25 @@ func (p *Pipeline) run(ctx context.Context) error {
 	if m := detectManager(p.ProjectDir); m != managerUv {
 		return p.fail(PhasePreflight, false, NewError(ErrManagerUnsupported, nil, "%s", managerGuidance(m)))
 	}
-	// Skip the writability probe under --check: it creates and removes a temp
-	// file, which would be a disk mutation in a dry run, and a read-only project
-	// the user only wants to inspect must not fail. The probe exists to fail fast
-	// before a real write, which --check never performs.
-	if !p.Check {
+	// Under --check the pipeline only reads and reports a plan, so it must not
+	// mutate anything at preflight. Two preflight steps can write:
+	//   - ensureWritable creates and removes a temp file (and would fail a
+	//     read-only project the user only wants to inspect);
+	//   - PackageManager.EnsureAvailable may install the manager (uv) if missing.
+	// Both exist to fail fast before real writes, which --check never performs, so
+	// they are skipped in a dry run. Neither result is needed to compute the plan.
+	if p.Check {
+		p.markOK(PhasePreflight, "check")
+	} else {
 		if err := ensureWritable(p.ProjectDir); err != nil {
 			return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "project directory %s is not writable", filepath.ToSlash(p.ProjectDir)))
 		}
+		version, err := p.PM.EnsureAvailable(ctx)
+		if err != nil {
+			return p.fail(PhasePreflight, false, asPipelineError(err, ErrUvMissing, "%s unavailable", p.PM.Name()))
+		}
+		p.markOK(PhasePreflight, p.PM.Name()+" "+version)
 	}
-	version, err := p.PM.EnsureAvailable(ctx)
-	if err != nil {
-		return p.fail(PhasePreflight, false, asPipelineError(err, ErrUvMissing, "%s unavailable", p.PM.Name()))
-	}
-	p.markOK(PhasePreflight, p.PM.Name()+" "+version)
 
 	// Phase: resolve — compute target → environment key.
 	target, err := p.resolve(ctx)
