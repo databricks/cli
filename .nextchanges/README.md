@@ -19,8 +19,9 @@ type the path (e.g. `.nextchanges/cli/quickstart.md`), write a sentence, commit.
 - `<name>` is arbitrary — a feature name (`quickstart.md`) or your PR number
   (`5464.md`), whatever you like, as long as it's unique.
 - The leading `* ` is optional.
-- A PR link is optional: write `(#5464)` anywhere in the text and it becomes a
-  full link automatically (see `tools/update_github_links.py`).
+- A PR link is optional: write `(#5464)` anywhere in the text and
+  `tools/update_github_links.py` (the `links` task, run by `task fmt`/CI)
+  expands it to a full markdown link.
 - One file is usually one entry; for several, put each on its own `* ` line.
 
 ### Sections

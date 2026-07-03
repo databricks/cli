@@ -279,9 +279,10 @@ tasks:
       - "./tools/validate_whitespace.py --fix"
 
   links:
-    desc: Update GitHub links in docs
+    desc: Update GitHub links in CHANGELOG.md and .nextchanges/ fragments
     sources:
-      - "**/*.md"
+      - CHANGELOG.md
+      - ".nextchanges/**/*.md"
       - tools/update_github_links.py
     cmds:
       - "./tools/update_github_links.py"

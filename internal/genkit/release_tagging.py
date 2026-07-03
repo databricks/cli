@@ -22,7 +22,6 @@ untouched ``process()`` for all commit/tag/race/recovery logic.
 """
 
 import os
-import re
 from typing import Optional
 
 import tagging
@@ -46,23 +45,6 @@ NEXTCHANGES_SECTIONS = (
 )
 
 
-def _expand_pr_links(text: str) -> str:
-    """
-    Convert raw PR references to canonical markdown links, matching
-    ``tools/update_github_links.py``: ``(#1234)`` and bare ``#1234`` become
-    ``([#1234](https://github.com/<repo>/pull/1234))``. Existing links are
-    left alone.
-    """
-    repo = os.environ.get("GITHUB_REPOSITORY", "databricks/cli")
-
-    def link(n: str) -> str:
-        return f"([#{n}](https://github.com/{repo}/pull/{n}))"
-
-    text = re.sub(r"\(#(\d+)\)", lambda m: link(m.group(1)), text)
-    # Bare #1234 not already inside a link ('[') or paren-wrapped ('(').
-    return re.sub(r"(?<![\[(])#(\d+)\b", lambda m: link(m.group(1)), text)
-
-
 def render_nextchanges(package_path: str) -> Optional[str]:
     """
     Render ``<package_path>/.nextchanges/<section>/*.md`` into the changelog
@@ -74,6 +56,10 @@ def render_nextchanges(package_path: str) -> Optional[str]:
     ``### <Section>`` heading, and every entry as a `` * `` bullet (a leading
     space before the ``*``). A leading ``* ``/``- `` marker is optional in a
     fragment and is normalized; continuation lines are left as authored.
+
+    Raw PR references (``(#1234)``/``#1234``) in fragments are converted to
+    markdown links before release by ``tools/update_github_links.py`` (the
+    ``links`` task, enforced in CI), so no link expansion happens here.
     """
     base = os.path.join(os.getcwd(), package_path, NEXTCHANGES_DIR)
     if not os.path.isdir(base):
@@ -103,7 +89,7 @@ def render_nextchanges(package_path: str) -> Optional[str]:
 
     if not blocks:
         return None
-    return _expand_pr_links("\n\n".join(blocks))
+    return "\n\n".join(blocks)
 
 
 def _version_path(package_path: str) -> str:

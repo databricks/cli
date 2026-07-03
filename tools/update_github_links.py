@@ -8,6 +8,10 @@
    `([#1234](https://github.com/databricks/cli/pull/1234))`.
 2. Validate that for existing converted references the PR number in the text
    and in the URL match.
+
+By default this processes CHANGELOG.md and every .nextchanges/ fragment, so
+raw references in fragments are expanded here (via the `links` task, enforced
+in CI) before the release renders them into CHANGELOG.md.
 """
 
 import argparse
@@ -15,7 +19,13 @@ import pathlib
 import re
 import sys
 
-DEFAULT_FILES = ("CHANGELOG.md",)
+
+def default_files():
+    """CHANGELOG.md plus every .nextchanges/ fragment (README excluded)."""
+    files = [pathlib.Path("CHANGELOG.md")]
+    files += sorted(p for p in pathlib.Path(".nextchanges").glob("*/*.md") if p.name != "README.md")
+    return files
+
 
 # Canonical form: ([#1234](https://github.com/databricks/cli/pull/1234))
 CONVERTED_LINK_RE = re.compile(
@@ -128,12 +138,16 @@ def process_file(path):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Convert #PR references in changelogs to links.")
-    parser.add_argument("files", nargs="*", help=f"Markdown files to process (default: {DEFAULT_FILES})")
+    parser.add_argument(
+        "files",
+        nargs="*",
+        help="Markdown files to process (default: CHANGELOG.md and .nextchanges/ fragments)",
+    )
     args = parser.parse_args(argv)
 
+    files = [pathlib.Path(f) for f in args.files] if args.files else default_files()
     modified_any = False
-    for file_path in args.files or DEFAULT_FILES:
-        file_path = pathlib.Path(file_path)
+    for file_path in files:
         modified_any |= process_file(file_path)
 
 
