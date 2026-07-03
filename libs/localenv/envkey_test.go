@@ -37,6 +37,16 @@ func TestPythonMinorFromRequires(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, want, got, "input %q", in)
 	}
-	_, err := PythonMinorFromRequires("garbage")
-	assert.Error(t, err)
+
+	// A bare version with no operator is a valid floor.
+	got, err := PythonMinorFromRequires("3.12")
+	require.NoError(t, err)
+	assert.Equal(t, "3.12", got)
+
+	// No usable floor: only upper-bound / exclusion clauses. Must error rather
+	// than select a forbidden/capped version.
+	for _, in := range []string{"<3.13", "<=3.12", "!=3.12", "<3.13,!=3.12", "garbage"} {
+		_, err := PythonMinorFromRequires(in)
+		assert.Error(t, err, "input %q must error", in)
+	}
 }
