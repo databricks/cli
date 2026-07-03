@@ -110,6 +110,7 @@ var envAlwaysSkipAttrs = map[string]bool{
 	"discovery_url": true,
 	"audience":      true,
 	"cloud":         true,
+	"group_id":      true,
 }
 
 // envLoader reads config attributes from environment variables. It always skips
