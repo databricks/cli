@@ -297,10 +297,20 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 		// on a re-run the existing .bak is the canonical original unmanaged state
 		// (mergePlan used it as the base), so overwriting it with the already-merged
 		// pyproject.toml would destroy that baseline.
-		if _, err := os.Stat(backup); err != nil {
+		_, statErr := os.Stat(backup)
+		switch {
+		case statErr == nil:
+			// Backup already exists — keep it as the canonical baseline.
+		case errors.Is(statErr, os.ErrNotExist):
+			// copyFile creates/truncates the backup path, so a failure mid-copy may
+			// leave a partial .bak: report disk as mutated.
 			if err := copyFile(pyproject, backup); err != nil {
-				return p.fail(PhaseMerge, false, NewError(ErrMerge, err, "backup pyproject.toml failed"))
+				return p.fail(PhaseMerge, true, NewError(ErrMerge, err, "backup pyproject.toml failed"))
 			}
+		default:
+			// An existing-but-unstattable backup must not be overwritten (that would
+			// destroy the recoverable original); fail before any write instead.
+			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "cannot stat backup %s", filepath.ToSlash(backup)))
 		}
 		p.res.BackupPath = filepath.ToSlash(backup)
 	}
@@ -461,16 +471,34 @@ func dbcMajorFromPin(pin string) string {
 
 // majorVersion returns the major portion of a version string (digits before the
 // first dot), e.g. "17" from "17.2.0". A bare integer like "17" returns "17".
-// Returns "" for an empty string.
+// Returns "" for an empty string or a non-numeric major component, so the
+// validate phase rejects a malformed version rather than comparing arbitrary
+// strings as major versions.
 func majorVersion(v string) string {
 	if v == "" {
 		return ""
 	}
 	before, _, ok := strings.Cut(v, ".")
 	if !ok {
-		return v
+		before = v
+	}
+	if before == "" || !isAllDigits(before) {
+		return ""
 	}
 	return before
+}
+
+// isAllDigits reports whether s is non-empty and every rune is an ASCII digit.
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // copyFile copies src to dst, creating or overwriting dst.

@@ -128,6 +128,38 @@ func TestPipelineExistingBacksUp(t *testing.T) {
 	assert.Equal(t, "pyproject.toml.bak", filepath.Base(res.BackupPath))
 }
 
+func TestApplyMergeFailsOnUnstattableBackupWithoutOverwrite(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Getuid() == 0 {
+		// chmod-based stat blocking does not apply for root or on Windows.
+		t.Skip("stat-permission enforcement not available")
+	}
+	// Both pyproject.toml and its .bak live in a project dir that is made
+	// unsearchable, so os.Stat of the backup fails with a permission error rather
+	// than not-exist — isolating applyMerge's "can't stat" branch. applyMerge is
+	// called directly, bypassing the writability preflight.
+	dir := filepath.Join(t.TempDir(), "proj")
+	require.NoError(t, os.Mkdir(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte("[project]\n"), 0o644))
+	backup := filepath.Join(dir, "pyproject.toml.bak")
+	require.NoError(t, os.WriteFile(backup, []byte("ORIGINAL BACKUP\n"), 0o644))
+	require.NoError(t, os.Chmod(dir, 0o000))
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
+
+	p := &Pipeline{ProjectDir: dir, res: &Result{Phases: initialPhases()}}
+	err := p.applyMerge(t.Context(), []byte("merged"), false)
+	require.Error(t, err)
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, PhaseMerge, pe.FailurePhase)
+	assert.False(t, pe.DiskMutated, "no write should have happened before the stat check")
+
+	// The original backup must be intact.
+	require.NoError(t, os.Chmod(dir, 0o755))
+	got, readErr := os.ReadFile(backup)
+	require.NoError(t, readErr)
+	assert.Equal(t, "ORIGINAL BACKUP\n", string(got), "the canonical backup must not be overwritten")
+}
+
 func TestPipelineConstraintsOnlyOmitsDBConnect(t *testing.T) {
 	dir := t.TempDir()
 	srv := newTestServer(t)
@@ -352,6 +384,11 @@ func TestMajorVersion(t *testing.T) {
 		{"17", "17"},
 		{"", ""},
 		{"3.12", "3"},
+		// Non-numeric major components are rejected (empty) so validation does
+		// not compare arbitrary strings as versions.
+		{"bad.version", ""},
+		{"v17.2", ""},
+		{"abc", ""},
 	}
 	for _, tc := range cases {
 		assert.Equal(t, tc.want, majorVersion(tc.input), "input=%q", tc.input)
