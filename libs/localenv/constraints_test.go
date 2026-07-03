@@ -59,6 +59,20 @@ dev = [
 	assert.Equal(t, "databricks-connect~=17.2.0", dbc)
 }
 
+func TestParseConstraintsDatabricksConnectCaseInsensitive(t *testing.T) {
+	// Python package names are case-insensitive (PEP 503), so a differently-cased
+	// entry must still be detected; the original casing is preserved in the result.
+	toml := `[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["Databricks-Connect==16.4.0"]
+`
+	_, dbc, _, err := parseConstraints([]byte(toml))
+	require.NoError(t, err)
+	assert.Equal(t, "Databricks-Connect==16.4.0", dbc)
+}
+
 func TestFetchConstraintsCreatesCacheDir(t *testing.T) {
 	// The cache directory may not exist yet on a fresh machine; the fetch must
 	// create it so the cache actually populates (and offline fallback works).

@@ -223,8 +223,10 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 // end of the string.
 func isDatabricksConnectDep(entry string) bool {
 	const name = "databricks-connect"
-	// Despace so whitespace variants like "databricks-connect ~=17" also match.
-	s := strings.ReplaceAll(entry, " ", "")
+	// Despace so whitespace variants like "databricks-connect ~=17" also match,
+	// and lowercase because Python package names are case-insensitive (PEP 503),
+	// so "Databricks-Connect==16.4.0" is the same requirement.
+	s := strings.ToLower(strings.ReplaceAll(entry, " ", ""))
 	rest, ok := strings.CutPrefix(s, name)
 	if !ok {
 		return false
