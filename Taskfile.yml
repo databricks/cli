@@ -886,13 +886,13 @@ tasks:
       - mv tagging.py.lock internal/genkit/tagging.py.lock
       # The release runs internal/genkit/release_tagging.py, a repo-owned wrapper
       # that renders CHANGELOG.md from .nextchanges/ around the synced tagging.py.
-      # Point the workflow at it (genkit emits `uv run --locked tagging.py`), and
-      # give the wrapper a matching lock (it declares the same deps).
+      # Point the workflow at it (genkit emits a bare `tagging.py`) and give the
+      # wrapper a matching lock (it declares the same deps).
       - |
         if [ "$(uname)" = "Darwin" ]; then
-          sed -i '' 's|uv run --locked tagging.py|uv run --locked internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
+          sed -i '' 's|tagging.py|internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
         else
-          sed -i 's|uv run --locked tagging.py|uv run --locked internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
+          sed -i 's|tagging.py|internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
         fi
       - cp internal/genkit/tagging.py.lock internal/genkit/release_tagging.py.lock
       - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
