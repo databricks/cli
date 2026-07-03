@@ -43,6 +43,15 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		Profile:           c.Name,
 		DatabricksCliPath: env.Get(ctx, "DATABRICKS_CLI_PATH"),
 	}
+	if skipValidate {
+		// EnsureResolved fetches <host>/.well-known/databricks-config to enrich
+		// the config, so without this stub a skip-validate listing still makes
+		// one network call per profile (and warns when offline). Resolve from
+		// the config file alone; cloud detection falls back to the host pattern.
+		cfg.HostMetadataResolver = func(context.Context, string) (*config.HostMetadata, error) {
+			return nil, nil
+		}
+	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
 		c.Cloud = "aws"

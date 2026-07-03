@@ -8,7 +8,7 @@
         "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
-          "node_type_id": "[NODE_TYPE_ID]",
+          "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
           "num_workers": 2,
           "spark_conf": {
             "spark.executor.memory": "2g"
@@ -31,7 +31,7 @@
         "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
-          "node_type_id": "[NODE_TYPE_ID]",
+          "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
           "num_workers": 3,
           "spark_conf": {
             "spark.executor.memory": "2g"
@@ -47,12 +47,11 @@
         },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
-        "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
+        "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
         "lifecycle": {
           "started": true
         },
-        "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 2,
         "spark_conf": {
           "spark.executor.memory": "2g"
@@ -68,11 +67,6 @@
             "availability": "SPOT_WITH_FALLBACK",
             "zone_id": "us-east-1c"
           }
-        },
-        "driver_node_type_id": {
-          "action": "skip",
-          "reason": "backend_default",
-          "remote": "[NODE_TYPE_ID]"
         },
         "enable_elastic_disk": {
           "action": "skip",
@@ -109,7 +103,7 @@
         "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
-          "node_type_id": "[NODE_TYPE_ID]",
+          "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
           "num_workers": 4,
           "spark_conf": {
             "spark.executor.memory": "2g"
@@ -125,12 +119,11 @@
         },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
-        "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
+        "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
         "lifecycle": {
           "started": true
         },
-        "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 3,
         "spark_conf": {
           "spark.executor.memory": "2g"
@@ -146,11 +139,6 @@
             "availability": "SPOT_WITH_FALLBACK",
             "zone_id": "us-east-1c"
           }
-        },
-        "driver_node_type_id": {
-          "action": "skip",
-          "reason": "backend_default",
-          "remote": "[NODE_TYPE_ID]"
         },
         "enable_elastic_disk": {
           "action": "skip",
@@ -187,7 +175,7 @@
         "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
-          "node_type_id": "[NODE_TYPE_ID]",
+          "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
           "num_workers": 5,
           "spark_conf": {
             "spark.executor.memory": "4g"
@@ -203,12 +191,11 @@
         },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
-        "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
+        "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
         "lifecycle": {
           "started": true
         },
-        "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 4,
         "spark_conf": {
           "spark.executor.memory": "2g"
@@ -224,11 +211,6 @@
             "availability": "SPOT_WITH_FALLBACK",
             "zone_id": "us-east-1c"
           }
-        },
-        "driver_node_type_id": {
-          "action": "skip",
-          "reason": "backend_default",
-          "remote": "[NODE_TYPE_ID]"
         },
         "enable_elastic_disk": {
           "action": "skip",

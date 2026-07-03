@@ -1,0 +1,13 @@
+# No bundle engine needed for this command.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+
+# Wire shape observed live when the backend cannot interpret the request body
+# (e.g. the expected request shape changed): a 500 INTERNAL_ERROR with an
+# empty message, which would otherwise render as a blank "Error: ".
+[[Server]]
+Pattern = "POST /api/2.0/data-rooms/tools/onechat/responses"
+Response.StatusCode = 500
+Response.Body = '''
+{"error_code":"INTERNAL_ERROR","message":""}
+'''

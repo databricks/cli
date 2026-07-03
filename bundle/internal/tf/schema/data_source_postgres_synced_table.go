@@ -12,7 +12,14 @@ type DataSourcePostgresSyncedTableSpecNewPipelineSpec struct {
 	StorageSchema  string `json:"storage_schema,omitempty"`
 }
 
+type DataSourcePostgresSyncedTableSpecTypeOverrides struct {
+	ColumnName string `json:"column_name"`
+	PgType     string `json:"pg_type"`
+	Size       int    `json:"size,omitempty"`
+}
+
 type DataSourcePostgresSyncedTableSpec struct {
+	AcceleratedSync                bool                                              `json:"accelerated_sync,omitempty"`
 	Branch                         string                                            `json:"branch,omitempty"`
 	CreateDatabaseObjectsIfMissing bool                                              `json:"create_database_objects_if_missing,omitempty"`
 	ExistingPipelineId             string                                            `json:"existing_pipeline_id,omitempty"`
@@ -22,6 +29,7 @@ type DataSourcePostgresSyncedTableSpec struct {
 	SchedulingPolicy               string                                            `json:"scheduling_policy,omitempty"`
 	SourceTableFullName            string                                            `json:"source_table_full_name,omitempty"`
 	TimeseriesKey                  string                                            `json:"timeseries_key,omitempty"`
+	TypeOverrides                  []DataSourcePostgresSyncedTableSpecTypeOverrides  `json:"type_overrides,omitempty"`
 }
 
 type DataSourcePostgresSyncedTableStatusLastSyncDeltaTableSyncInfo struct {
@@ -62,5 +70,6 @@ type DataSourcePostgresSyncedTable struct {
 	ProviderConfig *DataSourcePostgresSyncedTableProviderConfig `json:"provider_config,omitempty"`
 	Spec           *DataSourcePostgresSyncedTableSpec           `json:"spec,omitempty"`
 	Status         *DataSourcePostgresSyncedTableStatus         `json:"status,omitempty"`
+	SyncedTableId  string                                       `json:"synced_table_id,omitempty"`
 	Uid            string                                       `json:"uid,omitempty"`
 }

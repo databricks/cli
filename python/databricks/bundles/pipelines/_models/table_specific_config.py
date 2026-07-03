@@ -3,7 +3,11 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.core._variable import (
+    VariableOrDict,
+    VariableOrList,
+    VariableOrOptional,
+)
 from databricks.bundles.pipelines._models.auto_full_refresh_policy import (
     AutoFullRefreshPolicy,
     AutoFullRefreshPolicyParam,
@@ -31,7 +35,7 @@ class TableSpecificConfig:
 
     auto_full_refresh_policy: VariableOrOptional[AutoFullRefreshPolicy] = None
     """
-    (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try
+    [Public Preview] (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try
     to fix issues by doing a full refresh on the table in the retry run. auto_full_refresh_policy
     in table configuration will override the above level auto_full_refresh_policy.
     For example,
@@ -44,9 +48,33 @@ class TableSpecificConfig:
     If unspecified, auto full refresh is disabled.
     """
 
+    clustering_columns: VariableOrList[str] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] List of column names to use for clustering the destination table.
+    When specified, the destination Delta table will be clustered by these columns.
+    This can improve query performance when filtering on these columns.
+    Note: clustering_columns in table specific configuration will override the pipeline definition.
+    Note: we can only provide enable_auto_clustering or clustering_columns,
+    added as separate fields as we cannot have repeated field in oneof.
+    """
+
+    enable_auto_clustering: VariableOrOptional[bool] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Whether to enable auto clustering on the destination table.
+    When enabled, Delta will automatically optimize the data layout
+    based on the clustering columns for improved query performance.
+    Note: enable_auto_clustering in table specific configuration will override the pipeline definition.
+    Note: we can only provide enable_auto_clustering or clustering_columns,
+    added as separate fields as we cannot have repeated field in oneof.
+    """
+
     exclude_columns: VariableOrList[str] = field(default_factory=list)
     """
-    A list of column names to be excluded for the ingestion.
+    [Public Preview] A list of column names to be excluded for the ingestion.
     When not specified, include_columns fully controls what columns to be ingested.
     When specified, all other columns including future ones will be automatically included for ingestion.
     This field in mutually exclusive with `include_columns`.
@@ -54,7 +82,7 @@ class TableSpecificConfig:
 
     include_columns: VariableOrList[str] = field(default_factory=list)
     """
-    A list of column names to be included for the ingestion.
+    [Public Preview] A list of column names to be included for the ingestion.
     When not specified, all columns except ones in exclude_columns will be included. Future
     columns will be automatically included.
     When specified, all other future columns will be automatically excluded from ingestion.
@@ -63,19 +91,19 @@ class TableSpecificConfig:
 
     primary_keys: VariableOrList[str] = field(default_factory=list)
     """
-    The primary key of the table used to apply changes.
+    [Public Preview] The primary key of the table used to apply changes.
     """
 
     query_based_connector_config: VariableOrOptional[
         IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig
     ] = None
     """
-    Configurations that are only applicable for query-based ingestion connectors.
+    [Public Preview] Configurations that are only applicable for query-based ingestion connectors.
     """
 
     row_filter: VariableOrOptional[str] = None
     """
-    (Optional, Immutable) The row filter condition to be applied to the table.
+    [Public Preview] (Optional, Immutable) The row filter condition to be applied to the table.
     It must not contain the WHERE keyword, only the actual filter condition.
     It must be in DBSQL format.
     """
@@ -84,17 +112,27 @@ class TableSpecificConfig:
     """
     :meta private: [EXPERIMENTAL]
     
-    If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
+    [Private Preview] If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
     """
 
     scd_type: VariableOrOptional[TableSpecificConfigScdType] = None
     """
-    The SCD type to use to ingest the table.
+    [Public Preview] The SCD type to use to ingest the table.
     """
 
     sequence_by: VariableOrList[str] = field(default_factory=list)
     """
-    The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
+    [Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
+    """
+
+    table_properties: VariableOrDict[str] = field(default_factory=dict)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Table properties to set on the destination table.
+    These are key-value pairs that configure various Delta table behaviors or any user defined properties.
+    Example: {"delta.feature.variantType": "supported", "delta.enableTypeWidening": "true"}
+    Note: table_properties in table specific configuration will override the table_properties of the pipeline definition.
     """
 
     workday_report_parameters: VariableOrOptional[
@@ -102,6 +140,8 @@ class TableSpecificConfig:
     ] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Additional custom parameters for Workday Report
     """
 
     @classmethod
@@ -117,7 +157,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     auto_full_refresh_policy: VariableOrOptional[AutoFullRefreshPolicyParam]
     """
-    (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try
+    [Public Preview] (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try
     to fix issues by doing a full refresh on the table in the retry run. auto_full_refresh_policy
     in table configuration will override the above level auto_full_refresh_policy.
     For example,
@@ -130,9 +170,33 @@ class TableSpecificConfigDict(TypedDict, total=False):
     If unspecified, auto full refresh is disabled.
     """
 
+    clustering_columns: VariableOrList[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] List of column names to use for clustering the destination table.
+    When specified, the destination Delta table will be clustered by these columns.
+    This can improve query performance when filtering on these columns.
+    Note: clustering_columns in table specific configuration will override the pipeline definition.
+    Note: we can only provide enable_auto_clustering or clustering_columns,
+    added as separate fields as we cannot have repeated field in oneof.
+    """
+
+    enable_auto_clustering: VariableOrOptional[bool]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Whether to enable auto clustering on the destination table.
+    When enabled, Delta will automatically optimize the data layout
+    based on the clustering columns for improved query performance.
+    Note: enable_auto_clustering in table specific configuration will override the pipeline definition.
+    Note: we can only provide enable_auto_clustering or clustering_columns,
+    added as separate fields as we cannot have repeated field in oneof.
+    """
+
     exclude_columns: VariableOrList[str]
     """
-    A list of column names to be excluded for the ingestion.
+    [Public Preview] A list of column names to be excluded for the ingestion.
     When not specified, include_columns fully controls what columns to be ingested.
     When specified, all other columns including future ones will be automatically included for ingestion.
     This field in mutually exclusive with `include_columns`.
@@ -140,7 +204,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     include_columns: VariableOrList[str]
     """
-    A list of column names to be included for the ingestion.
+    [Public Preview] A list of column names to be included for the ingestion.
     When not specified, all columns except ones in exclude_columns will be included. Future
     columns will be automatically included.
     When specified, all other future columns will be automatically excluded from ingestion.
@@ -149,19 +213,19 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     primary_keys: VariableOrList[str]
     """
-    The primary key of the table used to apply changes.
+    [Public Preview] The primary key of the table used to apply changes.
     """
 
     query_based_connector_config: VariableOrOptional[
         IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam
     ]
     """
-    Configurations that are only applicable for query-based ingestion connectors.
+    [Public Preview] Configurations that are only applicable for query-based ingestion connectors.
     """
 
     row_filter: VariableOrOptional[str]
     """
-    (Optional, Immutable) The row filter condition to be applied to the table.
+    [Public Preview] (Optional, Immutable) The row filter condition to be applied to the table.
     It must not contain the WHERE keyword, only the actual filter condition.
     It must be in DBSQL format.
     """
@@ -170,17 +234,27 @@ class TableSpecificConfigDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
+    [Private Preview] If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
     """
 
     scd_type: VariableOrOptional[TableSpecificConfigScdTypeParam]
     """
-    The SCD type to use to ingest the table.
+    [Public Preview] The SCD type to use to ingest the table.
     """
 
     sequence_by: VariableOrList[str]
     """
-    The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
+    [Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
+    """
+
+    table_properties: VariableOrDict[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Table properties to set on the destination table.
+    These are key-value pairs that configure various Delta table behaviors or any user defined properties.
+    Example: {"delta.feature.variantType": "supported", "delta.enableTypeWidening": "true"}
+    Note: table_properties in table specific configuration will override the table_properties of the pipeline definition.
     """
 
     workday_report_parameters: VariableOrOptional[
@@ -188,6 +262,8 @@ class TableSpecificConfigDict(TypedDict, total=False):
     ]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Additional custom parameters for Workday Report
     """
 
 

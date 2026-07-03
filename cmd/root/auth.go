@@ -79,16 +79,26 @@ func patSPOGNoWorkspaceIDError(profileName string) error {
 // client so account-only profiles still describe cleanly.
 type ErrAccountOnlyProfile struct {
 	profileName string
+	// host is the profile's canonical host name (config.CanonicalHostName);
+	// IsClassicAccountHost only matches the canonical form.
+	host string
 }
 
 func (e ErrAccountOnlyProfile) Error() string {
+	// A classic account console host serves no workspace APIs at all, so the
+	// generic "set workspace_id" advice below can never make workspace
+	// commands work there; following it is how broken profiles get created
+	// (https://github.com/databricks/cli/issues/5479).
+	if auth.IsClassicAccountHost(e.host) {
+		return fmt.Sprintf("profile %q points to a Databricks account console host (%s), which serves only account-level APIs; this command requires a workspace. Run `databricks auth login --host https://<workspace-url>` to create a workspace profile, or use `databricks account ...` commands with this profile", e.profileName, e.host)
+	}
 	return fmt.Sprintf("profile %q has no workspace_id set (account-only); this command requires a workspace. Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile", e.profileName)
 }
 
 // accountOnlyProfileError describes why a workspace command can't run against
 // a profile that has an account_id but no workspace_id.
-func accountOnlyProfileError(profileName string) error {
-	return ErrAccountOnlyProfile{profileName: profileName}
+func accountOnlyProfileError(cfg *config.Config) error {
+	return ErrAccountOnlyProfile{profileName: cfg.Profile, host: cfg.CanonicalHostName()}
 }
 
 func profileFlagValue(cmd *cobra.Command) (string, bool) {
@@ -98,6 +108,17 @@ func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	}
 	value := profileFlag.Value.String()
 	return value, value != ""
+}
+
+// applyProfileAuthPrecedence makes an explicit --profile win over auth env vars
+// via ProfileAuthLoaders (#5096), skipping env host normalization since the host
+// comes from the profile. Without a profile flag, env-first behavior is kept.
+func applyProfileAuthPrecedence(ctx context.Context, cfg *config.Config, hasProfileFlag bool) {
+	if hasProfileFlag {
+		cfg.Loaders = databrickscfg.ProfileAuthLoaders
+		return
+	}
+	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 }
 
 // Helper function to create an account client or prompt once if the given configuration is not valid.
@@ -185,21 +206,21 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
+	ctx := cmd.Context()
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	pr, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = pr
 	}
+	applyProfileAuthPrecedence(ctx, cfg, hasProfileFlag)
 
-	ctx := cmd.Context()
-	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
 	profiler := profile.GetProfiler(ctx)
 
-	resolveDefaultProfile(ctx, cfg)
+	ResolveDefaultProfile(ctx, cfg)
 
 	if cfg.Profile == "" {
 		// account-level CLI was not really done before, so here are the assumptions:
@@ -245,7 +266,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		// can recognize ErrAccountOnlyProfile and fall through to the account
 		// client; the PAT-on-SPOG check below handles the remaining cases
 		// (env-var-only configs and profiles without account_id resolved).
-		return nil, accountOnlyProfileError(cfg.Profile)
+		return nil, accountOnlyProfileError(cfg)
 	}
 	if err == nil && isPATOnSPOGWithoutWorkspaceID(cfg) {
 		// PATs are workspace-scoped. On a SPOG host without workspace_id the
@@ -315,9 +336,8 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	if hasProfileFlag {
 		cfg.Profile = profile
 	}
-
-	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
-	resolveDefaultProfile(ctx, cfg)
+	applyProfileAuthPrecedence(ctx, cfg, hasProfileFlag)
+	ResolveDefaultProfile(ctx, cfg)
 
 	_, isTargetFlagSet := targetFlagValue(cmd)
 	// If the profile flag is set but the target flag is not, we should skip loading the bundle configuration.
@@ -359,10 +379,17 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveDefaultProfile applies the [__settings__].default_profile setting
-// when no profile is specified via --profile flag or DATABRICKS_CONFIG_PROFILE.
-func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
+// ResolveDefaultProfile applies [__settings__].default_profile when no profile
+// is set via --profile or DATABRICKS_CONFIG_PROFILE.
+//
+// It skips when DATABRICKS_HOST is set: the SDK ignores .databrickscfg while
+// cfg.Profile is empty, so pinning a default profile would merge it with the env
+// config and fail with "more than one authorization method configured" (#5616).
+func ResolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
+		return
+	}
+	if envlib.Get(ctx, "DATABRICKS_HOST") != "" {
 		return
 	}
 	if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {

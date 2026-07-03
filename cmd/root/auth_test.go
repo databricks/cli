@@ -442,6 +442,139 @@ token = flag-token
 	}
 }
 
+func TestMustWorkspaceClientProfileFlagOverridesAuthEnv(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[tst-svc]
+host = https://tst.cloud.databricks.test
+token = tst-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	// Auth env vars for a different workspace; before #5096 these shadowed --profile.
+	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = cmd.Flag("profile").Value.Set("tst-svc")
+	require.NoError(t, err)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	// The selected profile must win over the auth env vars.
+	assert.Equal(t, "tst-svc", w.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.test", w.Config.Host)
+	assert.Equal(t, "tst-token", w.Config.Token)
+}
+
+func TestMustWorkspaceClientProfileFlagFillsAuthFromEnv(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	// Host-only profile + DATABRICKS_TOKEN from env, a common CI pattern: the
+	// profile wins for the host, but env fills the token it omits (#5096).
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[host-only]
+host = https://tst.cloud.databricks.test
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = cmd.Flag("profile").Value.Set("host-only")
+	require.NoError(t, err)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	assert.Equal(t, "host-only", w.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.test", w.Config.Host)
+	// The token is not in the profile, so it is filled from the environment.
+	assert.Equal(t, "env-token", w.Config.Token)
+}
+
+func TestMustWorkspaceClientConfigProfileEnvKeepsAuthEnvPrecedence(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[tst-svc]
+host = https://tst.cloud.databricks.test
+token = tst-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	// Selected via DATABRICKS_CONFIG_PROFILE, not --profile, so env-first
+	// precedence is kept and the auth env vars below still win (#5096).
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "tst-svc")
+	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	// The profile name is resolved, but the auth env vars win over its host and
+	// credentials.
+	assert.Equal(t, "tst-svc", w.Config.Profile)
+	assert.Equal(t, "https://dev.cloud.databricks.test", w.Config.Host)
+	assert.Equal(t, "dev-token", w.Config.Token)
+}
+
+func TestMustAccountClientProfileFlagOverridesAuthEnv(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[acc-tst]
+host = https://accounts.cloud.databricks.test
+account_id = 1111
+token = tst-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	// Auth env vars for a different account host; the profile must win.
+	t.Setenv("DATABRICKS_HOST", "https://accounts.dev.databricks.test")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	cmd := New(t.Context())
+	err = cmd.Flag("profile").Value.Set("acc-tst")
+	require.NoError(t, err)
+
+	err = MustAccountClient(cmd, []string{})
+	require.NoError(t, err)
+
+	a := cmdctx.AccountClient(cmd.Context())
+	require.NotNil(t, a)
+	// The selected profile must win over the auth env vars.
+	assert.Equal(t, "acc-tst", a.Config.Profile)
+	assert.Equal(t, "https://accounts.cloud.databricks.test", a.Config.Host)
+	assert.Equal(t, "tst-token", a.Config.Token)
+}
+
 func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("PATH", "")
@@ -547,6 +680,57 @@ func TestWorkspaceClientOrPromptRejectsAccountOnlyProfile(t *testing.T) {
 			assert.Contains(t, err.Error(), "no workspace_id set")
 		})
 	}
+}
+
+func TestErrAccountOnlyProfileMessage(t *testing.T) {
+	tests := []struct {
+		name string
+		err  ErrAccountOnlyProfile
+		want string
+	}{
+		{
+			name: "account console host",
+			err:  ErrAccountOnlyProfile{profileName: "acc", host: "https://accounts.test"},
+			want: "profile \"acc\" points to a Databricks account console host (https://accounts.test), which serves only account-level APIs; " +
+				"this command requires a workspace. Run `databricks auth login --host https://<workspace-url>` to create a workspace profile, " +
+				"or use `databricks account ...` commands with this profile",
+		},
+		{
+			// On non-account-console hosts (SPOG/unified) workspace APIs are
+			// served, so setting workspace_id is still the right fix.
+			name: "other host keeps workspace_id advice",
+			err:  ErrAccountOnlyProfile{profileName: "spog", host: "https://unified.test"},
+			want: "profile \"spog\" has no workspace_id set (account-only); this command requires a workspace. " +
+				"Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.err.Error())
+		})
+	}
+}
+
+func TestWorkspaceClientOrPromptAccountOnlyProfileOnAccountConsoleHost(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	cfg := &config.Config{
+		Host:          "https://accounts.test/",
+		AccountID:     "abc-123",
+		Token:         "foobar",
+		Profile:       "acc",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.Nil(t, w)
+	require.Error(t, err)
+	var accountOnly ErrAccountOnlyProfile
+	require.ErrorAs(t, err, &accountOnly)
+	assert.Contains(t, err.Error(), "account console host (https://accounts.test)")
+	assert.Contains(t, err.Error(), "databricks auth login --host")
+	assert.NotContains(t, err.Error(), "set workspace_id to a real ID")
 }
 
 func TestWorkspaceClientOrPromptRejectsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
@@ -710,4 +894,43 @@ token = named-token
 	// Pinned so the OAuth cache key matches what `databricks auth login` writes.
 	assert.Equal(t, "DEFAULT", w.Config.Profile)
 	assert.Equal(t, "https://default.cloud.databricks.com", w.Config.Host)
+}
+
+func TestMustWorkspaceClientEnvHostSkipsDefaultProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	// The default profile uses basic auth on the same host as the environment.
+	// If it were pinned and merged with the PAT from the environment, the SDK
+	// would fail validation with "more than one authorization method configured"
+	// (matching hosts do not make the auth methods compatible).
+	err := os.WriteFile(configFile, []byte(`
+[__settings__]
+default_profile = basic-profile
+
+[basic-profile]
+host = https://env.test
+username = user
+password = pass
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("DATABRICKS_HOST", "https://env.test")
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	// Host and token in the environment fully determine auth, so the default
+	// profile must not be pinned (see ResolveDefaultProfile).
+	assert.Empty(t, w.Config.Profile)
+	assert.Equal(t, "https://env.test", w.Config.Host)
+	assert.Equal(t, "env-token", w.Config.Token)
 }

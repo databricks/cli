@@ -112,6 +112,27 @@ func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
 	return fmt.Errorf("%w\n%s", err, b.String())
 }
 
+// AppendAccountHostHint appends a note to errors from commands that ran with a
+// workspace client configured against a classic account console host. Such
+// hosts serve only account-level APIs, so a workspace command can never
+// succeed there and the note is relevant for any error. The console's
+// responses to workspace API paths are unstructured (HTML pages, bare-string
+// 400s), so there is no reliable way to detect "this API is not served here"
+// from the error itself; callers gate on the command type instead.
+func AppendAccountHostHint(cfg *config.Config, err error) error {
+	host := cfg.CanonicalHostName()
+	if !IsClassicAccountHost(host) {
+		return err
+	}
+	subject := "this configuration"
+	scope := ""
+	if cfg.Profile != "" {
+		subject = fmt.Sprintf("profile %q", cfg.Profile)
+		scope = " with this profile"
+	}
+	return fmt.Errorf("%w\n\nNote: %s points to a Databricks account console host (%s), which serves only account-level APIs.\nWorkspace commands need a workspace host: run `databricks auth login --host https://<workspace-url>`, or use `databricks account ...` commands%s", err, subject, host, scope)
+}
+
 // writeReauthSteps writes auth-type-aware re-authentication suggestions for 401 errors.
 func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builder) {
 	switch strings.ToLower(cfg.AuthType) {

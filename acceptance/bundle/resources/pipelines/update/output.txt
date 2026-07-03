@@ -7,6 +7,8 @@ Deployment complete!
 
 >>> print_requests
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
     "deployment": {
@@ -22,9 +24,7 @@ Deployment complete!
       }
     ],
     "name": "test-pipeline-[UNIQUE_NAME]"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
+  }
 }
 pipelines my id='[MY_ID]' name='test-pipeline-[UNIQUE_NAME]'
 

@@ -379,3 +379,8 @@ func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
 func (b *Bundle) StateFilenameConfigSnapshot(ctx context.Context) (string, string) {
 	return configSnapshotFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), configSnapshotFilename))
 }
+
+// IsImmutableFolder reports whether experimental.immutable_folder is enabled.
+func (b *Bundle) IsImmutableFolder() bool {
+	return b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder
+}

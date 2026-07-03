@@ -99,6 +99,8 @@ DIFF  experiments/current_can_manage/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/experiments/[NUMID]"
 +  }
 +]
+DIRECT_ONLY genie_spaces/current_can_manage/out.requests.deploy.direct.json
+DIRECT_ONLY genie_spaces/current_can_manage/out.requests.destroy.direct.json
 MATCH jobs/current_can_manage/out.requests.deploy.direct.json
 DIFF  jobs/current_can_manage/out.requests.destroy.direct.json
 --- jobs/current_can_manage/out.requests.destroy.direct.json

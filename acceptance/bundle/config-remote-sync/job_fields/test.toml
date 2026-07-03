@@ -1,7 +1,10 @@
 Cloud = true
 RequiresUnityCatalog = true
 
-RecordRequests = false
+# RecordRequests captures the config-remote-sync telemetry event so the script
+# can assert the per-operation change counts (add_count/remove_count/...).
+# out.requests.txt is removed in the script's cleanup so it is not compared.
+RecordRequests = true
 Ignore = [".databricks", "dummy.whl", "databricks.yml", "databricks.yml.backup"]
 
 [Env]

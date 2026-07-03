@@ -28,9 +28,9 @@ func New() *cobra.Command {
   An MLflow registered model resides in the third layer of Unity Catalog’s
   three-level namespace. Registered models contain model versions, which
   correspond to actual ML models (MLflow models). Creating new model versions
-  currently requires use of the MLflow Python client. Once model versions are
-  created, you can load them for batch inference using MLflow Python client
-  APIs, or deploy them for real-time serving using Databricks Model Serving.
+  requires use of the MLflow Python client. After model versions are created,
+  you can load them for batch inference using MLflow Python client APIs, or
+  deploy them for real-time serving using Databricks Model Serving.
 
   All operations on registered models and model versions require USE_CATALOG
   permissions on the enclosing catalog and USE_SCHEMA permissions on the
@@ -47,9 +47,9 @@ func New() *cobra.Command {
   update permissions on the registered model, users must be owners of the
   registered model.
 
-  Note: The securable type for models is FUNCTION. When using REST APIs (e.g.
-  tagging, grants) that specify a securable type, use FUNCTION as the securable
-  type.`,
+  Note: The securable type for models is FUNCTION. When using REST APIs (for
+  example, tagging, grants) that specify a securable type, use FUNCTION as the
+  securable type.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -431,7 +431,7 @@ func newList() *cobra.Command {
   The returned models are filtered based on the privileges of the calling user.
   For example, the metastore admin is able to list all the registered models. A
   regular user needs to be the owner or have the **EXECUTE** privilege on the
-  registered model to recieve the registered models in the response. For the
+  registered model to receive the registered models in the response. For the
   latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
   schema.

@@ -1,4 +1,5 @@
 touch hello.whl
 trace $CLI bundle deploy
-trace print_telemetry_bool_values > out.telemetry.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_telemetry_bool_values | grep -v direct_drymigrate
+print_telemetry_bool_values | grep direct_drymigrate > out.drymigrate.$DATABRICKS_BUNDLE_ENGINE.txt || true
 rm out.requests.txt hello.whl

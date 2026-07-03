@@ -1,8 +1,9 @@
 # Acceptance tests for `databricks sandbox` subcommands.
 #
-# Ignore the local state file the CLI writes (sandbox.json) so it
-# doesn't bleed into the test directory's diff.
-Ignore = [".databricks"]
+# Ignore the local state file the CLI writes (sandbox.json) and the
+# generated SSH key + managed SSH config — register-path tests would
+# otherwise produce these on every run.
+Ignore = [".databricks", ".ssh"]
 
 # Sandbox commands are independent of the bundle engine. Override the
 # root EnvMatrix so the two engines don't both run in parallel for

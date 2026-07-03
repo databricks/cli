@@ -1,0 +1,5 @@
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+RecordRequests = true
+
+# Full plan fed to `deploy --plan`; the committed golden keeps only the role entry.
+Ignore = ["plan.json"]

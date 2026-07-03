@@ -1,0 +1,12 @@
+trace $CLI bundle deploy
+
+job_id="$(read_id.py foo)"
+edit_resource.py jobs $job_id <<EOF
+r["name"] = "renamed remotely"
+EOF
+
+trace $CLI bundle config-remote-sync
+
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null)'
+
+rm out.requests.txt

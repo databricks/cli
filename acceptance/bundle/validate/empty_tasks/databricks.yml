@@ -1,0 +1,16 @@
+bundle:
+  name: empty_tasks
+
+resources:
+  jobs:
+    empty_tasks:
+      name: job with empty tasks
+      tasks:
+    valid:
+      name: valid job
+      tasks:
+        - task_key: t
+          sql_task:
+            warehouse_id: w123
+            query:
+              query_id: abc

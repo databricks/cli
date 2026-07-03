@@ -3,6 +3,7 @@ package notebook
 import (
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,4 +30,15 @@ func TestStripExtension(t *testing.T) {
 	} {
 		assert.Equal(t, tc.want, StripExtension(tc.in), "input=%q", tc.in)
 	}
+}
+
+func TestFixedExportFormat(t *testing.T) {
+	// Designer files report no export format and must round-trip as Jupyter.
+	format, ok := FixedExportFormat(ObjectTypeDesignerFile)
+	assert.True(t, ok)
+	assert.Equal(t, workspace.ExportFormatJupyter, format)
+
+	// Regular notebooks report their own export format.
+	_, ok = FixedExportFormat(workspace.ObjectTypeNotebook)
+	assert.False(t, ok)
 }

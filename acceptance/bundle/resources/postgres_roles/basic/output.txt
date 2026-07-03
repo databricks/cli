@@ -1,0 +1,94 @@
+
+>>> [CLI] bundle validate
+Name: deploy-postgres-role-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-role-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-[UNIQUE_NAME]/default
+Resources:
+  Postgres branches:
+    main:
+      Name: 
+      URL:  (not deployed)
+  Postgres projects:
+    my_project:
+      Name: Test Project for Role
+      URL:  (not deployed)
+  Postgres roles:
+    my_role:
+      Name: 
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "role_id": "test-role",
+  "status": {
+    "attributes": {
+      "bypassrls": false,
+      "createdb": true,
+      "createrole": false
+    },
+    "auth_method": "PG_PASSWORD_SCRAM_SHA_256",
+    "identity_type": "IDENTITY_TYPE_UNSPECIFIED",
+    "postgres_role": "app_role",
+    "role_id": "test-role"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-role-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-[UNIQUE_NAME]/default
+Resources:
+  Postgres branches:
+    main:
+      Name: 
+      URL:  (not deployed)
+  Postgres projects:
+    my_project:
+      Name: Test Project for Role
+      URL:  (not deployed)
+  Postgres roles:
+    my_role:
+      Name: 
+      URL:  (not deployed)
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.my_role
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

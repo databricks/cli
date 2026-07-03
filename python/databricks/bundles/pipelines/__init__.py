@@ -94,9 +94,6 @@ __all__ = [
     "IngestionPipelineDefinitionWorkdayReportParameters",
     "IngestionPipelineDefinitionWorkdayReportParametersDict",
     "IngestionPipelineDefinitionWorkdayReportParametersParam",
-    "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue",
-    "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueDict",
-    "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueParam",
     "InitScriptInfo",
     "InitScriptInfoDict",
     "InitScriptInfoParam",
@@ -211,10 +208,6 @@ __all__ = [
     "TikTokAdsOptions",
     "TikTokAdsOptionsDict",
     "TikTokAdsOptionsParam",
-    "TikTokAdsOptionsTikTokDataLevel",
-    "TikTokAdsOptionsTikTokDataLevelParam",
-    "TikTokAdsOptionsTikTokReportType",
-    "TikTokAdsOptionsTikTokReportTypeParam",
     "Transformer",
     "TransformerDict",
     "TransformerFormat",
@@ -393,11 +386,6 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition_workday_
     IngestionPipelineDefinitionWorkdayReportParameters,
     IngestionPipelineDefinitionWorkdayReportParametersDict,
     IngestionPipelineDefinitionWorkdayReportParametersParam,
-)
-from databricks.bundles.pipelines._models.ingestion_pipeline_definition_workday_report_parameters_query_key_value import (
-    IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue,
-    IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueDict,
-    IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueParam,
 )
 from databricks.bundles.pipelines._models.init_script_info import (
     InitScriptInfo,
@@ -588,14 +576,6 @@ from databricks.bundles.pipelines._models.tik_tok_ads_options import (
     TikTokAdsOptions,
     TikTokAdsOptionsDict,
     TikTokAdsOptionsParam,
-)
-from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_data_level import (
-    TikTokAdsOptionsTikTokDataLevel,
-    TikTokAdsOptionsTikTokDataLevelParam,
-)
-from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_report_type import (
-    TikTokAdsOptionsTikTokReportType,
-    TikTokAdsOptionsTikTokReportTypeParam,
 )
 from databricks.bundles.pipelines._models.transformer import (
     Transformer,

@@ -1,0 +1,240 @@
+
+>>> cat databricks.yml
+bundle:
+  name: deploy-postgres-database-recreate-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "Test Project for Database"
+      pg_version: 16
+      history_retention_duration: "604800s"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: app-owner
+      postgres_role: app_owner
+
+  postgres_databases:
+    my_database:
+      parent: ${resources.postgres_branches.main.id}
+      database_id: test-database-[UNIQUE_NAME]
+      postgres_database: app_db
+      role: ${resources.postgres_roles.owner.id}
+
+>>> [CLI] bundle plan
+create postgres_branches.main
+create postgres_databases.my_database
+create postgres_projects.my_project
+create postgres_roles.owner
+
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Database",
+      "history_retention_duration": "604800s",
+      "pg_version": 16
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
+  "q": {
+    "branch_id": "main"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles",
+  "q": {
+    "role_id": "app-owner"
+  },
+  "body": {
+    "spec": {
+      "postgres_role": "app_owner"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases",
+  "q": {
+    "database_id": "test-database-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "postgres_database": "app_db",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+    }
+  }
+}
+
+>>> cat databricks.yml
+bundle:
+  name: deploy-postgres-database-recreate-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "Test Project for Database"
+      pg_version: 16
+      history_retention_duration: "604800s"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: app-owner
+      postgres_role: app_owner
+
+  postgres_databases:
+    my_database:
+      parent: ${resources.postgres_branches.main.id}
+      database_id: test-database-[UNIQUE_NAME]-v2
+      postgres_database: app_db
+      role: ${resources.postgres_roles.owner.id}
+
+>>> [CLI] bundle plan
+recreate postgres_databases.my_database
+
+Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged
+
+=== Recreate requires approval: non-interactive deploy must abort, not silently delete the database
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following Lakebase databases.
+All data stored in them will be permanently lost:
+  recreate resources.postgres_databases.my_database
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve after reviewing the plan above.
+
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following Lakebase databases.
+All data stored in them will be permanently lost:
+  recreate resources.postgres_databases.my_database
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/[MY_DATABASE_ID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases",
+  "q": {
+    "database_id": "test-database-[UNIQUE_NAME]-v2"
+  },
+  "body": {
+    "spec": {
+      "postgres_database": "app_db",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+    }
+  }
+}
+
+=== Fetch database and verify it exists after recreation
+>>> [CLI] postgres get-database [MY_DATABASE_ID]-v2
+{
+  "database_id": "test-database-[UNIQUE_NAME]-v2",
+  "name": "[MY_DATABASE_ID]-v2",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "status": {
+    "database_id": "test-database-[UNIQUE_NAME]-v2",
+    "postgres_database": "app_db",
+    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+  }
+}
+
+=== Destroy and verify cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_databases.my_database
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.owner
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+This action will result in the deletion of the following Lakebase databases.
+All data stored in them will be permanently lost:
+  delete resources.postgres_databases.my_database
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/[MY_DATABASE_ID]-v2"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+No active deployment found to destroy!

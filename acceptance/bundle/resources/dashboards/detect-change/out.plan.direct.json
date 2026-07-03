@@ -21,7 +21,7 @@
         "dashboard_id": "[DASHBOARD_ID]",
         "display_name": "test-dashboard-[UNIQUE_NAME]",
         "embed_credentials": false,
-        "etag": [ETAG],
+        "etag": "[ETAG_2]",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
         "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json",
@@ -31,10 +31,30 @@
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },
       "changes": {
+        "create_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
+        },
+        "dashboard_id": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[DASHBOARD_ID]"
+        },
         "etag": {
           "action": "update",
-          "old": [ETAG],
-          "remote": [ETAG]
+          "old": "[ETAG_1]",
+          "remote": "[ETAG_2]"
+        },
+        "lifecycle_state": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "ACTIVE"
+        },
+        "path": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json"
         },
         "serialized_dashboard": {
           "action": "skip",
@@ -42,6 +62,11 @@
           "old": "{\n  \"pages\": [\n    {\n      \"displayName\": \"New Page\",\n      \"layout\": [\n        {\n          \"position\": {\n            \"height\": 2,\n            \"width\": 6,\n            \"x\": 0,\n            \"y\": 0\n          },\n          \"widget\": {\n            \"name\": \"82eb9107\",\n            \"textbox_spec\": \"# I'm a title\"\n          }\n        },\n        {\n          \"position\": {\n            \"height\": 2,\n            \"width\": 6,\n            \"x\": 0,\n            \"y\": 2\n          },\n          \"widget\": {\n            \"name\": \"ffa6de4f\",\n            \"textbox_spec\": \"Text\"\n          }\n        }\n      ],\n      \"name\": \"fdd21a3c\"\n    }\n  ]\n}\n",
           "new": "{\n  \"pages\": [\n    {\n      \"displayName\": \"New Page\",\n      \"layout\": [\n        {\n          \"position\": {\n            \"height\": 2,\n            \"width\": 6,\n            \"x\": 0,\n            \"y\": 0\n          },\n          \"widget\": {\n            \"name\": \"82eb9107\",\n            \"textbox_spec\": \"# I'm a title\"\n          }\n        },\n        {\n          \"position\": {\n            \"height\": 2,\n            \"width\": 6,\n            \"x\": 0,\n            \"y\": 2\n          },\n          \"widget\": {\n            \"name\": \"ffa6de4f\",\n            \"textbox_spec\": \"Text\"\n          }\n        }\n      ],\n      \"name\": \"fdd21a3c\"\n    }\n  ]\n}\n",
           "remote": "{}\n"
+        },
+        "update_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
         }
       }
     }

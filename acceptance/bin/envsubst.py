@@ -14,9 +14,9 @@ Examples:
   echo 'Hello $USER from $HOME' | python envsubst.py
 """
 
-import sys
 import os
 import re
+import sys
 
 
 def substitute_variables(text):

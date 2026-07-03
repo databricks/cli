@@ -23,7 +23,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py
-Error: Workspace path not found
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py) doesn't exist.
 
 === Removing the sync snapshot forces a full re-upload, restoring the python_file
 >>> rm -rf .databricks/bundle/default/sync-snapshots

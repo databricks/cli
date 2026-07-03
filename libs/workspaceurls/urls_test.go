@@ -31,6 +31,10 @@ func TestNormalizeDotSeparatedID(t *testing.T) {
 	}
 }
 
+func TestJobRunPath(t *testing.T) {
+	assert.Equal(t, "jobs/123/runs/456", JobRunPath("123", "456"))
+}
+
 func TestResourceTypes(t *testing.T) {
 	types := ResourceTypes()
 	assert.NotEmpty(t, types)
@@ -111,6 +115,7 @@ func TestResourceURL(t *testing.T) {
 		{"jobs", "jobs", "123", "https://host.com/jobs/123"},
 		{"experiments", "experiments", "exp-1", "https://host.com/ml/experiments/exp-1"},
 		{"dashboards", "dashboards", "d-1", "https://host.com/dashboardsv3/d-1/published"},
+		{"genie_spaces", "genie_spaces", "space-1", "https://host.com/genie/rooms/space-1"},
 		{"notebooks", "notebooks", "12345", "https://host.com/#notebook/12345"},
 		{"notebooks with path", "notebooks", "/Users/u/nb", "https://host.com/#notebook//Users/u/nb"},
 		{"registered_models normalizes dots", "registered_models", "cat.sch.model", "https://host.com/explore/data/models/cat/sch/model"},

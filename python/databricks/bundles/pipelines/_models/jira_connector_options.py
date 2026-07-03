@@ -17,7 +17,7 @@ class JiraConnectorOptions:
 
     include_jira_spaces: VariableOrList[str] = field(default_factory=list)
     """
-    (Optional) Projects to filter Jira data on
+    [Beta] (Optional) Projects to filter Jira data on
     """
 
     @classmethod
@@ -33,7 +33,7 @@ class JiraConnectorOptionsDict(TypedDict, total=False):
 
     include_jira_spaces: VariableOrList[str]
     """
-    (Optional) Projects to filter Jira data on
+    [Beta] (Optional) Projects to filter Jira data on
     """
 
 

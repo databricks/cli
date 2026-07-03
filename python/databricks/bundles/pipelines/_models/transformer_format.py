@@ -9,10 +9,6 @@ class TransformerFormat(Enum):
 
     STRING = "STRING"
     JSON = "JSON"
-    AVRO = "AVRO"
-    PROTOBUF = "PROTOBUF"
 
 
-TransformerFormatParam = (
-    Literal["STRING", "JSON", "AVRO", "PROTOBUF"] | TransformerFormat
-)
+TransformerFormatParam = Literal["STRING", "JSON"] | TransformerFormat

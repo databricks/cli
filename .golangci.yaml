@@ -62,10 +62,10 @@ linters:
         no-stdlib-log:
           files:
             - "**"
-            - "!**/bundle/docsgen/**"
             - "!**/bundle/internal/schema/**"
             - "!**/bundle/internal/tf/codegen/**"
             - "!**/bundle/internal/validation/**"
+            - "!**/internal/cligen/**"
           deny:
             - pkg: "log$"
               desc: "use libs/log instead of the standard library log package"

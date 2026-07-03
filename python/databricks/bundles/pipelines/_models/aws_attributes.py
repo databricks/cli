@@ -24,6 +24,11 @@ class AwsAttributes:
     """
 
     availability: VariableOrOptional[AwsAvailability] = None
+    """
+    Availability type used for all subsequent nodes past the `first_on_demand` ones.
+    
+    Note: If `first_on_demand` is zero, this availability type will be used for the entire cluster.
+    """
 
     ebs_volume_count: VariableOrOptional[int] = None
     """
@@ -63,6 +68,9 @@ class AwsAttributes:
     """
 
     ebs_volume_type: VariableOrOptional[EbsVolumeType] = None
+    """
+    The type of EBS volumes that will be launched with this cluster.
+    """
 
     first_on_demand: VariableOrOptional[int] = None
     """
@@ -124,6 +132,11 @@ class AwsAttributesDict(TypedDict, total=False):
     """"""
 
     availability: VariableOrOptional[AwsAvailabilityParam]
+    """
+    Availability type used for all subsequent nodes past the `first_on_demand` ones.
+    
+    Note: If `first_on_demand` is zero, this availability type will be used for the entire cluster.
+    """
 
     ebs_volume_count: VariableOrOptional[int]
     """
@@ -163,6 +176,9 @@ class AwsAttributesDict(TypedDict, total=False):
     """
 
     ebs_volume_type: VariableOrOptional[EbsVolumeTypeParam]
+    """
+    The type of EBS volumes that will be launched with this cluster.
+    """
 
     first_on_demand: VariableOrOptional[int]
     """

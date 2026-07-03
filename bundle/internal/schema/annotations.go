@@ -1,44 +1,103 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"maps"
-	"os"
 	"reflect"
 	"regexp"
-	"slices"
 	"strings"
 
-	yaml3 "go.yaml.in/yaml/v3"
-
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
 type annotationHandler struct {
-	// Annotations read from all annotation files including all overrides
+	// Annotations from cli.json merged with the annotations file.
 	parsedAnnotations annotation.File
+	// Annotations from the annotations file only: the content the CLI owns
+	// and rewrites during sync.
+	fileAnnotations annotation.File
 	// Missing annotations for fields that are found in config that need to be added to the annotation file
 	missingAnnotations annotation.File
 }
 
 // Adds annotations to the JSON schema reading from the annotation files.
 // More details https://json-schema.org/understanding-json-schema/reference/annotations
-func newAnnotationHandler(sources []string) (*annotationHandler, error) {
-	data, err := annotation.LoadAndMerge(sources)
+func newAnnotationHandler(extracted, fromFile annotation.File) (*annotationHandler, error) {
+	merged, err := mergeAnnotationFiles(extracted, fromFile)
 	if err != nil {
 		return nil, err
 	}
-	d := &annotationHandler{}
-	d.parsedAnnotations = data
-	d.missingAnnotations = annotation.File{}
-	return d, nil
+	return &annotationHandler{
+		parsedAnnotations:  merged,
+		fileAnnotations:    fromFile,
+		missingAnnotations: annotation.File{},
+	}, nil
+}
+
+// dropShadowingPlaceholders removes PLACEHOLDER descriptions from fromFile for
+// fields that cli.json documents. A PLACEHOLDER marks a field with no
+// documentation anywhere, so once upstream gains a description the marker is
+// stale and would otherwise shadow it in the merge, leaving the schema with no
+// description at all. fromFile is mutated in place: the sync step then rewrites
+// the annotations file without the stale markers. Entries that carry other
+// hand-authored fields (e.g. deprecation_message) lose only the placeholder.
+func dropShadowingPlaceholders(fromFile, extracted annotation.File) {
+	for typePath, ta := range fromFile {
+		for key, d := range ta.Fields {
+			if d.Description != annotation.Placeholder {
+				continue
+			}
+			if extracted[typePath].Fields[key].Description == "" {
+				// Genuinely undocumented: keep the TODO marker.
+				continue
+			}
+			d.Description = ""
+			if isEmptyDescriptor(d) {
+				delete(ta.Fields, key)
+			} else {
+				ta.Fields[key] = d
+			}
+		}
+		if len(ta.Fields) == 0 && isEmptyDescriptor(ta.Self) {
+			delete(fromFile, typePath)
+		}
+	}
+}
+
+// isEmptyDescriptor reports whether d carries no annotation data. It runs after
+// a stale placeholder is cleared, to decide whether the whole entry can be
+// dropped. Comparing against the zero value stays correct as new Descriptor
+// fields are added.
+func isEmptyDescriptor(d annotation.Descriptor) bool {
+	return reflect.DeepEqual(d, annotation.Descriptor{})
+}
+
+// mergeAnnotationFiles merges later layers over earlier ones with the same
+// semantics the on-disk annotation files used to be merged with: maps merge
+// recursively, scalars take the later value, sequences concatenate.
+func mergeAnnotationFiles(files ...annotation.File) (annotation.File, error) {
+	prev := dyn.NilValue
+	for _, f := range files {
+		v, err := convert.FromTyped(f, dyn.NilValue)
+		if err != nil {
+			return nil, err
+		}
+		prev, err = merge.Merge(prev, v)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var data annotation.File
+	err := convert.ToTyped(&data, prev)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
@@ -48,70 +107,35 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 		return s
 	}
 
-	annotations := d.parsedAnnotations[refPath]
-	if annotations == nil {
-		annotations = map[string]annotation.Descriptor{}
-	}
-
-	rootTypeAnnotation, ok := annotations[RootTypeKey]
-	if ok {
-		assignAnnotation(&s, rootTypeAnnotation)
-	}
+	ta := d.parsedAnnotations[refPath]
+	assignAnnotation(&s, ta.Self)
 
 	for k, v := range s.Properties {
-		item := annotations[k]
+		item := ta.Fields[k]
 		if item.Description == "" {
 			item.Description = annotation.Placeholder
-
-			emptyAnnotations := d.missingAnnotations[refPath]
-			if emptyAnnotations == nil {
-				emptyAnnotations = map[string]annotation.Descriptor{}
-				d.missingAnnotations[refPath] = emptyAnnotations
-			}
-			emptyAnnotations[k] = item
+			d.missingAnnotations.SetField(refPath, k, annotation.Descriptor{Description: annotation.Placeholder})
 		}
 		assignAnnotation(v, item)
 	}
 	return s
 }
 
-// Writes missing annotations with placeholder values back to the annotation file
-func (d *annotationHandler) syncWithMissingAnnotations(outputPath string) error {
-	existingFile, err := os.ReadFile(outputPath)
-	if err != nil {
-		return err
-	}
-	existing, err := yamlloader.LoadYAML("", bytes.NewBuffer(existingFile))
-	if err != nil {
-		return err
-	}
-
-	for k := range d.missingAnnotations {
-		if !isCliPath(k) {
-			delete(d.missingAnnotations, k)
-			fmt.Printf("Missing annotations for `%s` that are not in CLI package, try to fetch latest OpenAPI spec and regenerate annotations\n", k)
-		}
-	}
-
-	missingAnnotations, err := convert.FromTyped(d.missingAnnotations, dyn.NilValue)
+// Writes the annotations file back in canonical form, adding placeholder
+// descriptions for fields that have no documentation anywhere. Entries for
+// fields that no longer exist in the config are dropped with a warning.
+func (d *annotationHandler) syncWithMissingAnnotations(outputPath string, g *typeGraph) error {
+	updated, err := mergeAnnotationFiles(d.fileAnnotations, d.missingAnnotations)
 	if err != nil {
 		return err
 	}
 
-	output, err := merge.Merge(existing, missingAnnotations)
+	detached, err := saveAnnotationsFile(outputPath, updated, g)
 	if err != nil {
 		return err
 	}
-
-	var outputTyped annotation.File
-	err = convert.ToTyped(&outputTyped, output)
-	if err != nil {
-		return err
-	}
-
-	err = saveYamlWithStyle(outputPath, outputTyped)
-	if err != nil {
-		return err
+	for _, k := range detached {
+		fmt.Printf("Dropping annotation for `%s`: no matching field in the bundle configuration\n", k)
 	}
 	return nil
 }
@@ -134,9 +158,15 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.DeprecationMessage = a.DeprecationMessage
 	}
 
-	if a.Preview == "PRIVATE" {
+	// Private-preview fields are hidden from completions and surfaced to
+	// downstream codegen via the launch stage: pydabs reads
+	// x-databricks-launch-stage from jsonschema.json to mark these fields
+	// experimental. Only the private-preview stage is emitted into the published
+	// schema — nothing consumes the others there; they surface only as the
+	// description prefix below and the per-value enumDescriptions labels.
+	if a.LaunchStage == clijson.LaunchStagePrivatePreview {
 		s.DoNotSuggest = true
-		s.Preview = a.Preview
+		s.LaunchStage = string(a.LaunchStage)
 	}
 
 	if a.OutputOnly != nil && *a.OutputOnly {
@@ -146,45 +176,54 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 	s.MarkdownDescription = convertLinksToAbsoluteUrl(a.MarkdownDescription)
 	s.Title = a.Title
 	s.Enum = a.Enum
+	s.EnumDescriptions = buildEnumDescriptions(a.Enum, a.EnumLaunchStages, a.EnumDescriptions)
+
+	// Surface launch stage in hover tooltips. Editors only render the standard
+	// description field, so the tag is baked into the text.
+	if tag := annotation.PreviewTag(a.LaunchStage); tag != "" {
+		s.Description = prefixWithPreviewTag(s.Description, tag)
+	}
 }
 
-func saveYamlWithStyle(outputPath string, annotations annotation.File) error {
-	annotationOrder := yamlsaver.NewOrder([]string{"description", "markdown_description", "title", "default", "enum"})
-	style := map[string]yaml3.Style{}
-
-	order := getAlphabeticalOrder(annotations)
-	dynMap := map[string]dyn.Value{}
-	for k, v := range annotations {
-		style[k] = yaml3.LiteralStyle
-
-		properties := map[string]dyn.Value{}
-		propertiesOrder := getAlphabeticalOrder(v)
-		for key, value := range v {
-			d, err := convert.FromTyped(value, dyn.NilValue)
-			if d.Kind() == dyn.KindNil || err != nil {
-				properties[key] = dyn.NewValue(map[string]dyn.Value{}, []dyn.Location{{Line: propertiesOrder.Get(key)}})
-				continue
-			}
-			val, err := yamlsaver.ConvertToMapValue(value, annotationOrder, []string{}, map[string]dyn.Value{})
-			if err != nil {
-				return err
-			}
-			properties[key] = val.WithLocations([]dyn.Location{{Line: propertiesOrder.Get(key)}})
+// buildEnumDescriptions produces the parallel enumDescriptions array VSCode
+// renders next to each enum value. Each entry combines the launch-stage tag
+// and the per-value description text. Returns nil when every entry would be
+// empty so the field is omitted from the schema. The enum slice is the same
+// one assigned to s.Enum, so the arrays stay index-aligned.
+func buildEnumDescriptions(enum []any, launchStages map[string]clijson.LaunchStage, descriptions map[string]string) []string {
+	if len(enum) == 0 || (len(launchStages) == 0 && len(descriptions) == 0) {
+		return nil
+	}
+	result := make([]string, len(enum))
+	hasContent := false
+	for i, v := range enum {
+		key, ok := v.(string)
+		if !ok {
+			continue
 		}
-
-		dynMap[k] = dyn.NewValue(properties, []dyn.Location{{Line: order.Get(k)}})
+		result[i] = prefixWithPreviewTag(descriptions[key], annotation.PreviewTag(launchStages[key]))
+		if result[i] != "" {
+			hasContent = true
+		}
 	}
-
-	saver := yamlsaver.NewSaverWithStyle(style)
-	err := saver.SaveAsYAML(dynMap, outputPath, true)
-	if err != nil {
-		return err
+	if !hasContent {
+		return nil
 	}
-	return nil
+	return result
 }
 
-func getAlphabeticalOrder[T any](mapping map[string]T) *yamlsaver.Order {
-	return yamlsaver.NewOrder(slices.Sorted(maps.Keys(mapping)))
+// prefixWithPreviewTag prepends the launch-stage tag to a description while
+// guarding against double-tagging — if the description already starts with
+// the tag, it is returned unchanged. An empty tag (GA) also takes the
+// HasPrefix path, returning the description as-is.
+func prefixWithPreviewTag(description, tag string) string {
+	if description == "" {
+		return tag
+	}
+	if strings.HasPrefix(description, tag) {
+		return description
+	}
+	return tag + " " + description
 }
 
 func convertLinksToAbsoluteUrl(s string) string {
@@ -231,8 +270,4 @@ func convertLinksToAbsoluteUrl(s string) string {
 	})
 
 	return result
-}
-
-func isCliPath(path string) bool {
-	return !strings.HasPrefix(path, "github.com/databricks/databricks-sdk-go")
 }

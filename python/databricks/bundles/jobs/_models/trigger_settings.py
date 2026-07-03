@@ -38,6 +38,8 @@ class TriggerSettings:
     model: VariableOrOptional[ModelTriggerConfiguration] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     pause_status: VariableOrOptional[PauseStatus] = None
@@ -71,6 +73,8 @@ class TriggerSettingsDict(TypedDict, total=False):
     model: VariableOrOptional[ModelTriggerConfigurationParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     pause_status: VariableOrOptional[PauseStatusParam]

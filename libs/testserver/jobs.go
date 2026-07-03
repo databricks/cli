@@ -73,11 +73,12 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 
 	// CreatorUserName field is used by TF to check if the resource exists or not. CreatorUserName should be non-empty for the resource to be considered as "exists"
 	// https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go#L108
+	creator := userForToken(req.Token).UserName
 	s.Jobs[jobId] = jobs.Job{
 		JobId:           jobId,
 		Settings:        &jobSettings,
-		CreatorUserName: s.CurrentUser().UserName,
-		RunAsUserName:   s.CurrentUser().UserName,
+		CreatorUserName: creator,
+		RunAsUserName:   creator,
 		CreatedTime:     nowMilli(),
 	}
 	return Response{Body: jobs.CreateResponse{JobId: jobId}}
@@ -103,6 +104,14 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 	prevjob, ok := s.Jobs[jobId]
 	if !ok {
 		return Response{StatusCode: 403, Body: "{}"}
+	}
+
+	// Known cloud quirk (see the test's Badness note): jobs/reset is a full
+	// replace, but omitting run_as from new_settings does NOT clear it — cloud
+	// keeps the previously configured identity. Mirror that so the local
+	// testserver matches cloud against one golden.
+	if request.NewSettings.RunAs == nil {
+		request.NewSettings.RunAs = prevjob.Settings.RunAs
 	}
 
 	s.Jobs[jobId] = jobs.Job{
@@ -173,7 +182,23 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 
 			// Set enable_elastic_disk to false (server-side default)
 			task.NewCluster.ForceSendFields = append(task.NewCluster.ForceSendFields, "EnableElasticDisk")
+
+			// The real Jobs API consumes apply_policy_default_values but does not
+			// return it in GET responses; clear it so testserver matches cloud.
+			task.NewCluster.ApplyPolicyDefaultValues = false
 		}
+
+		// Handle for_each_task inner cluster.
+		if task.ForEachTask != nil && task.ForEachTask.Task.NewCluster != nil {
+			// Same as above: not returned in GET responses.
+			task.ForEachTask.Task.NewCluster.ApplyPolicyDefaultValues = false
+		}
+	}
+
+	// Handle job cluster new_clusters.
+	for i := range jobSettings.JobClusters {
+		// Same as above: not returned in GET responses.
+		jobSettings.JobClusters[i].NewCluster.ApplyPolicyDefaultValues = false
 	}
 }
 
@@ -193,9 +218,19 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 
 	defer s.LockUnlock()()
 
+	// The backend checks permissions before existence, so a guest without access
+	// gets a permission error rather than a 404, even after the job is deleted.
+	if isGuestToken(req.Token) && !s.guestHasJobAccess(jobIdInt, userForToken(req.Token).UserName) {
+		return jobReadPermissionDenied(userForToken(req.Token).UserName, jobIdInt)
+	}
+
 	job, ok := s.Jobs[jobIdInt]
 	if !ok {
-		return Response{StatusCode: 404}
+		// Match the real Jobs API, which echoes the job id in the error message.
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Job %d does not exist.", jobIdInt)},
+		}
 	}
 
 	job = setSourceIfNotSet(job)
@@ -236,6 +271,45 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 	}
 
 	return Response{Body: job}
+}
+
+// JobsDelete deletes a job. A guest without admin/owner access gets a permission
+// error, even after the job is gone (permission check precedes existence check).
+func (s *FakeWorkspace) JobsDelete(req Request, jobId int64) Response {
+	defer s.LockUnlock()()
+
+	if isGuestToken(req.Token) && !s.guestHasJobAccess(jobId, userForToken(req.Token).UserName) {
+		return jobDeletePermissionDenied(userForToken(req.Token).UserName, jobId)
+	}
+
+	if _, ok := s.Jobs[jobId]; !ok {
+		return Response{StatusCode: 404}
+	}
+	delete(s.Jobs, jobId)
+	return Response{}
+}
+
+const permissionDeniedErrorCode = "PERMISSION_DENIED"
+
+func jobPermissionDenied(message string) Response {
+	return Response{
+		StatusCode: 403,
+		Body:       map[string]string{"error_code": permissionDeniedErrorCode, "message": message},
+	}
+}
+
+// jobManagePermissionDenied is returned when reading a job's permissions without
+// Manage access. ElasticJobId mirrors the backend error's identifier shape.
+func jobManagePermissionDenied(principal string, jobId int64) Response {
+	return jobPermissionDenied(fmt.Sprintf("%s does not have Manage permissions on Job with ID: ElasticJobId(%d). Please contact the owner or an administrator for access.", principal, jobId))
+}
+
+func jobReadPermissionDenied(principal string, jobId int64) Response {
+	return jobPermissionDenied(fmt.Sprintf("User %s does not have View or Admin or Manage Run or Owner permissions on job %d", principal, jobId))
+}
+
+func jobDeletePermissionDenied(principal string, jobId int64) Response {
+	return jobPermissionDenied(fmt.Sprintf("User %s does not have Admin or Owner permissions on job %d", principal, jobId))
 }
 
 func (s *FakeWorkspace) JobsList() Response {
@@ -308,6 +382,8 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 				logs, err = s.executePythonWheelTask(job.Settings, taskToExecute)
 			} else if t.NotebookTask != nil {
 				logs, err = s.executeNotebookTask(t, request.NotebookParams)
+			} else if t.SparkPythonTask != nil {
+				logs, err = s.executeSparkPythonTask(t)
 			}
 
 			if err != nil {
@@ -505,6 +581,52 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(output), fmt.Errorf("notebook task execution failed: %s\n%s", err, output)
+	}
+
+	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
+	return strings.TrimRight(string(output), "\r\n") + "\n", nil
+}
+
+// executeSparkPythonTask runs a spark_python_task locally by reading the
+// python_file from the workspace and executing it in a uv-created venv.
+// For tasks using existing_cluster_id, the venv is cached per cluster to match
+// cloud behavior where libraries are cached on running clusters.
+func (s *FakeWorkspace) executeSparkPythonTask(task jobs.Task) (string, error) {
+	if task.SparkPythonTask == nil {
+		return "", errors.New("task has no spark_python_task")
+	}
+
+	// Read python file from workspace (lock already held by caller)
+	pythonPath := task.SparkPythonTask.PythonFile
+	if !strings.HasPrefix(pythonPath, "/") {
+		pythonPath = "/" + pythonPath
+	}
+
+	pythonData := s.files[pythonPath].Data
+	if len(pythonData) == 0 {
+		return "", fmt.Errorf("python file not found in workspace: %s", pythonPath)
+	}
+
+	env, cleanup, err := s.getOrCreateClusterEnv(task)
+	if err != nil {
+		return "", err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	// Write python file into the cluster env so it can be executed by the venv.
+	pythonFile := filepath.Join(env.dir, filepath.Base(pythonPath))
+	if err := os.WriteFile(pythonFile, pythonData, 0o644); err != nil {
+		return "", fmt.Errorf("failed to write python file: %w", err)
+	}
+
+	runArgs := []string{pythonFile}
+	runArgs = append(runArgs, task.SparkPythonTask.Parameters...)
+
+	output, err := exec.Command(venvPython(env.venvDir), runArgs...).CombinedOutput()
+	if err != nil {
+		return string(output), fmt.Errorf("spark python task execution failed: %s\n%s", err, output)
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)

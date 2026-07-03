@@ -1,0 +1,21 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+# Capture the serialized_space sent to the Genie create API:
+#   - from_file must be sent verbatim from space.geniespace.json.
+#   - from_inline must be the inline YAML rendered as valid JSON (the fromjson
+#     below fails the test if the payload is not valid JSON).
+jq -s '[.[] | select(.method == "POST" and .path == "/api/2.0/genie/spaces")
+        | {title: .body.title,
+           serialized_space: .body.serialized_space,
+           parsed: (.body.serialized_space | fromjson)}]
+       | sort_by(.title)' out.requests.txt > out.create_requests.json
+rm -f out.requests.txt

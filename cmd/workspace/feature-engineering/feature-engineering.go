@@ -195,6 +195,7 @@ func newCreateKafkaConfig() *cobra.Command {
 
 	// TODO: complex arg: backfill_source
 	// TODO: map via StringToStringVar: extra_options
+	// TODO: complex arg: ingestion_config
 	// TODO: complex arg: key_schema
 	// TODO: complex arg: value_schema
 
@@ -1388,6 +1389,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 
 	// TODO: complex arg: backfill_source
 	// TODO: map via StringToStringVar: extra_options
+	// TODO: complex arg: ingestion_config
 	// TODO: complex arg: key_schema
 	// TODO: complex arg: value_schema
 

@@ -72,7 +72,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// For each glob, find all files to load.
 	// Ordering of the list of globs is maintained in the output.
 	// For matches that appear in multiple globs, only the first is kept.
-	for _, entry := range b.Config.Include {
+	for entryIndex, entry := range b.Config.Include {
 		// Include paths must be relative.
 		if filepath.IsAbs(entry) {
 			return diag.Errorf("%s: includes must be relative paths", entry)
@@ -92,7 +92,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 
 		// Filter matches to ones we haven't seen yet.
 		var includes []string
-		for i, match := range matches {
+		for _, match := range matches {
 			rel, err := filepath.Rel(b.BundleRootPath, match)
 			if err != nil {
 				return diag.FromErr(err)
@@ -103,10 +103,11 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 			seen[rel] = true
 			if filepath.Ext(rel) != ".yaml" && filepath.Ext(rel) != ".yml" && filepath.Ext(rel) != ".json" {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "Files in the 'include' configuration section must be YAML or JSON files.",
-					Detail:    fmt.Sprintf("The file %s in the 'include' configuration section is not a YAML or JSON file, and only such files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.", rel),
-					Locations: b.Config.GetLocations(fmt.Sprintf("include[%d]", i)),
+					Severity: diag.Error,
+					Summary:  "Files in the 'include' configuration section must be YAML or JSON files.",
+					Detail:   fmt.Sprintf("The file %s in the 'include' configuration section is not a YAML or JSON file, and only such files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.", rel),
+					// The match's index within the glob is unrelated to the entry's position in the include list.
+					Locations: b.Config.GetLocations(fmt.Sprintf("include[%d]", entryIndex)),
 				})
 				continue
 			}

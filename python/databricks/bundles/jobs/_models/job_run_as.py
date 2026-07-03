@@ -21,7 +21,7 @@ class JobRunAs:
     """
     :meta private: [EXPERIMENTAL]
     
-    Group name of an account group assigned to the workspace. Setting this field requires being a member of the group.
+    [Private Preview] Group name of an account group assigned to the workspace. Setting this field requires being a member of the group.
     """
 
     service_principal_name: VariableOrOptional[str] = None
@@ -49,7 +49,7 @@ class JobRunAsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Group name of an account group assigned to the workspace. Setting this field requires being a member of the group.
+    [Private Preview] Group name of an account group assigned to the workspace. Setting this field requires being a member of the group.
     """
 
     service_principal_name: VariableOrOptional[str]

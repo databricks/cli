@@ -1,0 +1,20 @@
+
+=== version stays lightweight
+
+>>> [CLI] version
+Databricks CLI v[DEV_VERSION]
+
+=== version --check
+
+>>> [CLI] version --check
+Databricks CLI v[DEV_VERSION]
+This is a development build; skipping the update check.
+
+=== version --check --output json
+
+>>> [CLI] version --check --output json
+{
+  "current_version": "[DEV_VERSION]",
+  "update_available": false,
+  "development_build": true
+}

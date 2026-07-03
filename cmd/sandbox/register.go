@@ -59,11 +59,14 @@ Examples:
 				return fmt.Errorf("failed to ensure sandbox SSH key: %w", err)
 			}
 
+			// Always print paths with forward slashes so acceptance
+			// goldens are stable across Linux/macOS/Windows.
+			displayKeyPath := filepath.ToSlash(keyPath)
 			stderr := cmd.ErrOrStderr()
 			if generated {
-				ok(ctx, "Generated SSH key at "+cmdio.Faint(ctx, keyPath))
+				ok(ctx, "Generated SSH key at "+cmdio.Faint(ctx, displayKeyPath))
 			} else {
-				field(ctx, stderr, "key", keyPath)
+				field(ctx, stderr, "key", displayKeyPath)
 			}
 
 			pubKeyData, err := os.ReadFile(keyPath + ".pub")
@@ -94,18 +97,26 @@ Examples:
 				_ = setGatewayHost(ctx, profile, registered.GatewayHost)
 			}
 
-			// Write the `Host <gateway>` block to ~/.ssh/config so
+			// Write the `Host <gateway>` block(s) to ~/.ssh/config so
 			// editor Remote-SSH ("Open in VS Code/Cursor") deep links
 			// and plain `ssh <id>@<gateway>` both work without the
-			// user pasting any config block. The gateway host comes
-			// straight from the registerKey response — no probe call
-			// needed, no heuristic.
-			if err := maybeWriteSSHConfig(ctx, keyPath, registered.GatewayHost); err != nil {
+			// user pasting any config block. Reads the full gateway
+			// set from local state so a user with profiles in
+			// multiple regions accumulates one block per gateway
+			// across registers, rather than overwriting.
+			if err := maybeWriteSSHConfig(ctx, keyPath); err != nil {
 				warn(ctx, fmt.Sprintf("Registered key, but failed to update ~/.ssh/config: %v", err))
 			}
 
+			// Tell the user what to do next based on whether they
+			// already have a sandbox: a brand-new register with no
+			// default yet should land on `create`, not `ssh`.
 			blank(stderr)
-			fmt.Fprintf(stderr, "  Run %s to connect.\n\n", cmdio.Bold(ctx, "databricks sandbox ssh"))
+			if getDefault(ctx, profile) == "" {
+				fmt.Fprintf(stderr, "  Run %s to provision your first sandbox.\n\n", cmdio.Bold(ctx, "databricks sandbox create"))
+			} else {
+				fmt.Fprintf(stderr, "  Run %s to connect.\n\n", cmdio.Bold(ctx, "databricks sandbox ssh"))
+			}
 			return nil
 		},
 	}

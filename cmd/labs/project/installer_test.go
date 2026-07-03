@@ -193,8 +193,8 @@ func TestInstallerWorksForReleases(t *testing.T) {
 			})
 			return
 		}
-		t.Logf("Requested: %s", r.URL.Path)
-		t.FailNow()
+		t.Errorf("unexpected request: %s", r.URL.Path)
+		http.Error(w, "unexpected request", http.StatusInternalServerError)
 	}))
 	defer server.Close()
 
@@ -262,8 +262,8 @@ func TestOfflineInstallerWorksForReleases(t *testing.T) {
 			})
 			return
 		}
-		t.Logf("Requested: %s", r.URL.Path)
-		t.FailNow()
+		t.Errorf("unexpected request: %s", r.URL.Path)
+		http.Error(w, "unexpected request", http.StatusInternalServerError)
 	}))
 	defer server.Close()
 
@@ -362,8 +362,8 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 			})
 			return
 		}
-		t.Logf("Requested: %s", r.URL.Path)
-		t.FailNow()
+		t.Errorf("unexpected request: %s", r.URL.Path)
+		http.Error(w, "unexpected request", http.StatusInternalServerError)
 	}))
 	defer server.Close()
 
@@ -453,8 +453,8 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 			})
 			return
 		}
-		t.Logf("Requested: %s", r.URL.Path)
-		t.FailNow()
+		t.Errorf("unexpected request: %s", r.URL.Path)
+		http.Error(w, "unexpected request", http.StatusInternalServerError)
 	}))
 	defer server.Close()
 
@@ -496,7 +496,6 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 		}
 	}
 	if !pi {
-		t.Logf(`Expected stub command 'python[\S]+ -m pip install --upgrade --upgrade-strategy eager .' not found`)
-		t.FailNow()
+		t.Fatal(`Expected stub command 'python[\S]+ -m pip install --upgrade --upgrade-strategy eager .' not found`)
 	}
 }

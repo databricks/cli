@@ -81,6 +81,33 @@ func TestPagerModelInitFetchesFirstBatch(t *testing.T) {
 	assert.True(t, m.fetching, "Init must mark the model as fetching")
 }
 
+func TestPagerModelDoFetchLimit(t *testing.T) {
+	cases := []struct {
+		name      string
+		pageSize  int
+		limit     int
+		total     int
+		wantCount int
+		wantDone  bool
+	}{
+		{"exact boundary marks done", 5, 5, 0, 5, true},
+		{"limit reached mid-page", 5, 12, 10, 2, true},
+		{"page boundary below limit not done", 5, 100, 0, 5, false},
+		{"no limit not done", 5, 0, 0, 5, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := newTestPager(t, &numberIterator{n: 100}, tc.pageSize)
+			msg := m.doFetch(t.Context(), tc.pageSize, tc.limit, tc.total)
+			b, ok := msg.(batchMsg)
+			require.True(t, ok, "expected batchMsg, got %T", msg)
+			require.NoError(t, b.err)
+			assert.Equal(t, tc.wantCount, b.count)
+			assert.Equal(t, tc.wantDone, b.done)
+		})
+	}
+}
+
 func TestPagerModelBatchPrintsAndQuitsWhenDone(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 3}, 10)
 	_, cmd := m.Update(batchMsg{lines: []string{"1", "2", "3"}, done: true})

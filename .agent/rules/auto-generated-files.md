@@ -14,11 +14,8 @@ globs:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/*.generated.yml"
-  - "bundle/docsgen/output/**/*.md"
-  - "bundle/internal/schema/annotations_openapi.yml"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
-  - "bundle/schema/jsonschema_for_docs.json"
   - "python/databricks/bundles/version.py"
   - "python/databricks/bundles/*/__init__.py"
   - "python/databricks/bundles/*/_models/*.py"
@@ -36,11 +33,8 @@ paths:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/*.generated.yml"
-  - "bundle/docsgen/output/**/*.md"
-  - "bundle/internal/schema/annotations_openapi.yml"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
-  - "bundle/schema/jsonschema_for_docs.json"
   - "python/databricks/bundles/version.py"
   - "python/databricks/bundles/*/__init__.py"
   - "python/databricks/bundles/*/_models/*.py"
@@ -67,16 +61,14 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
 - Everything, in one shot:
   - `./task generate` — aggregator that runs all generators below
 - OpenAPI SDK/CLI command stubs and related generated artifacts:
-  - `./task generate-genkit`
-  - Includes generated `cmd/account/**`, `cmd/workspace/**`, `.gitattributes`, `internal/genkit/tagging.py`.
+  - `./task generate-cligen` — regenerates `cmd/account/**`, `cmd/workspace/**` and `.gitattributes` from the checked-in `.codegen/cli.json`.
+  - `./task generate-clijson` — refreshes `.codegen/cli.json` from the OpenAPI spec via genkit (requires universe repo); also updates `internal/genkit/tagging.py`.
 - Direct engine generated YAML:
   - `./task generate-direct` (or `./task generate-direct-apitypes`, `./task generate-direct-resources`)
 - Bundle schemas:
   - `./task generate-schema`
-  - `./task generate-schema-docs`
-  - This can also refresh `bundle/internal/schema/annotations_openapi.yml` when OpenAPI annotation extraction is enabled.
-- Bundle docs:
-  - `./task generate-docs`
+  - Rewrites `bundle/internal/schema/annotations.yml` in place: upstream docs are sourced from `.codegen/cli.json` at generation time, and the file is synced with the config structure (placeholders added, stale entries dropped).
+  - The docs schema (`jsonschema_for_docs.json`) is not generated on main; it is built and published to the `docgen` branch on release by `.github/workflows/update-schema-docs.yml`.
 - Validation generated code:
   - `./task generate-validation`
 - Mock files:

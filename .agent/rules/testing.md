@@ -91,6 +91,12 @@ acceptance/cmd/fs/cp/file-to-dir/
 
 If the only reason for divergence is a server-side default that one engine sets and the other doesn't, set the field explicitly in `databricks.yml` so both engines produce identical output. Don't paper over it with per-engine files.
 
+**RULE: On Windows, Git Bash auto-converts a leading-`/` path argument (e.g. `/api/2.0/...`) into a Windows path, so `$CLI` sees the wrong path and the testserver 404s.** Set `MSYS_NO_PATHCONV = "1"` in the test directory's `test.toml` under `[Env]`. Quoting the argument in bash does NOT help — the conversion is done by the Windows binary's argument processing. Precedent: `acceptance/cmd/workspace/export-dir-*/test.toml`.
+
+**RULE: `EnvMatrix.<VAR> = []` removes that variable from the inherited matrix** (see `ExpandEnvMatrix` in `acceptance/internal/config.go`). The root `test.toml` matrixes `DATABRICKS_BUNDLE_ENGINE = [terraform, direct]`, so a non-bundle test opts out of both engine runs with `EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []`. The `out.test.toml` snapshot of inherited values is generated and committed by design.
+
+**RULE: If a test's `out.test.toml` is still in the older `[EnvMatrix]` block format, a regen rewrites it to the inline form and the post-test `git diff --exit-code` check fails** ("out.test.toml files that are out of date"). Regenerate just those files with `go test ./acceptance -run "^TestAccept$" -only-out-test-toml`, then commit.
+
 ### Reference
 
 - Tests live in `acceptance/` with a nested directory structure.
@@ -102,6 +108,24 @@ If the only reason for divergence is a server-side default that one engine sets 
 - Useful flags: `-v` for verbose output, `-tail` to follow test output (requires `-v`), `-logrequests` to log all HTTP requests/responses (requires `-v`).
 - Run tests on cloud: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires `deco` tool and access to test env).
 - `script.prepare` files from parent directories are concatenated into the test script. Use them for shared bash helpers.
+
+### Built-in shell helpers
+
+`acceptance/script.prepare` defines shell helpers that are in scope for every `script`. Prefer them over hand-rolled equivalents — they keep `output.txt` consistent across tests and make intent obvious to the next reader.
+
+- `trace CMD...`: print `>>> CMD` to stderr, then run CMD. Wrap commands whose invocation should appear in `output.txt` so the captured output explains what produced it. Leading `KEY=value` arguments are exported for the command (e.g. `trace FOO=bar $CLI ...`).
+- `title "TEXT"`: print a `=== TEXT` section header. Use `\n` escapes for spacing. Use it to label the phases of a multi-step script.
+- `errcode CMD...`: run CMD; if it exits non-zero, append `Exit code: N` to the output but let the script continue (scripts run under `bash -e`, which would otherwise abort). Use when a command is *allowed* to fail and later steps must still run.
+- `musterr CMD...`: run CMD and fail the whole test if it *succeeds*; on the expected failure the script continues. Use to assert a command must error.
+- `withdir DIR CMD...`: run CMD with the working directory set to DIR, restoring it afterwards.
+- `git-repo-init`: initialize a deterministic git repo (fixed user/email, no hooks) and commit `databricks.yml`.
+- `uuid`, `sethome DIR`, `venv_activate`, `as-test-sp CMD...`, `readplanarg FILE`, `envsubst`: see `acceptance/script.prepare` for the full list and exact semantics.
+
+**RULE: Wrap commands whose invocation should be visible in `output.txt` with `trace`.** The `>>> ...` line ties each block of output to the command that produced it; without it the output is an unlabeled wall of text.
+
+**RULE: Assert an expected failure with `musterr`, not `! cmd` or a bare `errcode`.** Only `musterr` fails the test when the command unexpectedly *succeeds*. `! cmd` is exempt from `set -e` and silently passes on success; `errcode` is for *tolerated* failures, not required ones.
+
+**RULE: Capture a tolerated non-zero exit with `errcode`, not `cmd || true`.** `errcode` records `Exit code: N` in the output so the failure stays visible and asserted; `|| true` hides it entirely.
 
 ### Helper scripts
 
@@ -124,7 +148,7 @@ BAD:
 Available on `PATH` during test execution (from `acceptance/bin/`):
 
 - `contains.py SUBSTR [!SUBSTR_NOT]`: passthrough filter (stdin→stdout) that checks substrings are present (or absent with `!` prefix). Errors are reported on stderr.
-- `print_requests.py //path [^//exclude] [--get] [--sort] [--keep]`: print recorded HTTP requests matching path filters. Requires `RecordRequests=true` in `test.toml`. Clears `out.requests.txt` afterwards unless `--keep`. Use `--get` to include GET requests (excluded by default). Use `^` prefix to exclude paths.
+- `print_requests.py //path [^//exclude] [--get] [--sort] [--unique] [--oneline] [--keep]`: print recorded HTTP requests matching path filters. Requires `RecordRequests = true` in `test.toml`. Excludes GET by default (`--get` includes them); clears `out.requests.txt` afterwards (`--keep` retains it). `^` prefix excludes a path; multiple positive filters are OR'd together. `--sort` orders output deterministically (use when the request set is order-independent), `--unique` collapses consecutive duplicates (e.g. repeated polls), `--oneline` prints one request per line.
 - `replace_ids.py [-t TARGET]`: read deployment state and add `[NAME_ID]` replacements for all resource IDs.
 - `read_id.py [-t TARGET] NAME`: read ID of a single resource from state, print it, and add a `[NAME_ID]` replacement.
 - `add_repl.py VALUE REPLACEMENT`: add a custom replacement (VALUE will be replaced with `[REPLACEMENT]` in output).
@@ -140,7 +164,44 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 
 **RULE: Don't pass `--keep` to `print_requests.py` if a later `print_requests.py` call follows.** The buffer accumulates, so the second call double-prints the earlier requests.
 
+**RULE: Filter recorded requests with `print_requests.py`, never with a hand-written `jq 'select(...)' out.requests.txt` pipeline** — inline, or hidden inside a local `print_requests()` shell function. The helper already excludes GET, normalizes query strings, optionally sorts, and deletes `out.requests.txt` afterwards. A copy-pasted `jq` wrapper reimplements all of that, drifts from the canonical output format, and is the single most common acceptance-test anti-pattern in this repo. Wrapping `print_requests.py` *itself* in a local function is fine — e.g. to send each variant's output to its own `out.requests.<name>.json`. Reach for `jq` on `out.requests.txt` only for what `print_requests.py` genuinely can't express: filtering on request *body* content, or deleting noisy body fields (prefer a `Repls` entry in `test.toml` even then).
+
+GOOD:
+
+```bash
+trace print_requests.py //pipelines --sort
+```
+
+BAD:
+
+```bash
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+    rm out.requests.txt
+}
+trace print_requests
+```
+
 **RULE: Route noisy or non-deterministic command output to `LOG.<name>` instead of `output.txt` or `/dev/null`.** `LOG.*` files are visible under `go test -v` but excluded from the diff — see `acceptance/selftest/log/`. Use `&> LOG.<name>` to capture both streams (then `contains.py` to assert invariants like `'!panic' '!internal error'`), or `2>>LOG.<name>` for cleanup-step stderr you'd otherwise drop to `/dev/null`.
+
+### Test server
+
+Acceptance tests run against an in-process fake of the Databricks API in `libs/testserver/` (`FakeWorkspace` and the per-service handler files). The fake keeps real in-memory state and returns the same errors the backend does: 404 on a missing parent, 409 on a duplicate create, 400 on a missing required field, and so on. `test.toml` can also stub a single route with a canned response:
+
+```toml
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.StatusCode = 400
+Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "..."}'''
+```
+
+**RULE: Model API behavior in `libs/testserver/`, not in per-test `[[Server]]` response stubs.** When a test needs the fake server to validate input or return an error, add or extend the handler in `libs/testserver/` so the behavior is stateful and shared by every test. A `[[Server]]` stub hijacks the route with a static response that ignores request state, diverges from the real API, and only helps the one test that declares it — so the next test re-stubs the same error and the fake never converges on the real contract.
+
+GOOD: teach the create handler in `libs/testserver/postgres.go` to return 404 when the referenced role does not exist, so every test that creates a database against a missing role observes the real error.
+
+BAD: add `[[Server]]` with `Pattern = "POST .../databases"` and `Response.StatusCode = 404` to a single test's `test.toml` to fake that same error.
+
+Reserve `[[Server]]` for routes the testserver does not model at all (a one-off endpoint exercised by a single test) and for injecting a response a stateful handler genuinely can't express (for transient faults and forced disconnects, prefer the `fault.py` / kill helpers instead).
 
 ### Update workflow
 

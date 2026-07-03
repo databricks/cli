@@ -1,0 +1,22 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# Reproduce: the UC API lowercases identifier names, causing false drift on the
+# second deploy when the config uses mixed-case names. This covers a volume's
+# catalog_name, schema_name and name on the direct engine.
+#
+# Excluded from the migrate invariant: that test deploys via Terraform first,
+# and the TF provider rejects an uppercase volume schema_name ("inconsistent
+# final plan").
+resources:
+  schemas:
+    foo:
+      catalog_name: main
+      name: MySCHEMA-$UNIQUE_NAME
+
+  volumes:
+    bar:
+      catalog_name: main
+      schema_name: ${resources.schemas.foo.name}
+      name: MyVOL-$UNIQUE_NAME
+      volume_type: MANAGED

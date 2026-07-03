@@ -84,6 +84,7 @@
             "tags": null,
             "task": [
               {
+                "ai_runtime_task": [],
                 "alert_task": [],
                 "clean_rooms_notebook_task": [],
                 "compute": [],
@@ -364,6 +365,7 @@
             "run_as_user_name": "[USERNAME]",
             "schema": null,
             "serverless": false,
+            "serverless_compute_id": null,
             "state": "IDLE",
             "storage": "dbfs:/pipelines/[UUID]",
             "tags": null,
