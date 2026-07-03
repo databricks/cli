@@ -3,23 +3,13 @@ package localenv
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
-var pythonVersionRe = regexp.MustCompile(`(\d+)\.(\d+)`)
-
-// lowerBoundClauseRe matches a single requires-python clause that establishes
-// the Python floor to install: a lower-bound or pinning operator (>=, >, ==,
-// ~=, ===) followed by a MAJOR.MINOR version. Upper-bound (<, <=) and exclusion
-// (!=) clauses are deliberately not matched — they must not be chosen as the
-// version to install.
-var lowerBoundClauseRe = regexp.MustCompile(`(?:>=|===|==|~=|>)\s*(\d+)\.(\d+)`)
-
-// boundedClauseRe matches a MAJOR.MINOR that is governed by an upper-bound or
-// exclusion operator (<, <=, !=). Such a version is forbidden or capped, never a
-// version to install, so a spec whose only version is bounded this way has no
-// usable floor.
-var boundedClauseRe = regexp.MustCompile(`(?:<=|<|!=)\s*(\d+)\.(\d+)`)
+// clauseRe splits a single requires-python clause into its operator (optional)
+// and MAJOR.MINOR version. A clause with no operator is a bare floor.
+var clauseRe = regexp.MustCompile(`^(>=|<=|===|==|~=|!=|<|>)?\s*(\d+)\.(\d+)`)
 
 // NormalizeServerless returns the canonical "vN" spelling of a serverless
 // version accepting "4", "v4", or "V4".
@@ -37,28 +27,48 @@ func EnvKeyForSparkVersion(sparkVersion string) string {
 	return "dbr/" + sparkVersion
 }
 
-// PythonMinorFromRequires parses a PEP 440 requires-python string and extracts
-// the MAJOR.MINOR of the Python version to install.
+// PythonMinorFromRequires parses a PEP 440 requires-python string and returns
+// the MAJOR.MINOR of the Python version to install: the effective lower bound.
 //
-// A requires-python may hold several comma-separated clauses in any order
-// (e.g. "<3.13,>=3.10"). The version to install is the lower bound, so a
-// lower-bound / pinning clause (>=, >, ==, ~=, ===) is preferred. A bare
-// MAJOR.MINOR with no operator (e.g. "3.12") is also accepted as the floor.
-// But a spec whose only version is governed by an upper-bound/exclusion
-// operator (e.g. "<3.13" or "!=3.12") has no usable floor: picking that number
-// would select a version the specifier forbids, so we error instead of guessing.
+// A requires-python is a comma-separated list of clauses in any order (e.g.
+// "<3.13,>=3.10"). Each clause is classified by operator:
+//   - lower-bound / pinning (>=, >, ==, ~=, ===) or a bare MAJOR.MINOR with no
+//     operator establishes a floor;
+//   - upper-bound / exclusion (<, <=, !=) does not — those versions are capped
+//     or forbidden and must never be installed.
+//
+// The result is the highest floor across all floor clauses (so ">=3.8,>=3.11"
+// yields 3.11, the version that satisfies every clause). A spec with no floor
+// clause at all (e.g. "<3.13" or "!=3.12") is an error rather than a guess.
 func PythonMinorFromRequires(requiresPython string) (string, error) {
-	if m := lowerBoundClauseRe.FindStringSubmatch(requiresPython); m != nil {
-		return fmt.Sprintf("%s.%s", m[1], m[2]), nil
+	bestMajor, bestMinor := -1, -1
+	sawClause := false
+	for clause := range strings.SplitSeq(requiresPython, ",") {
+		clause = strings.TrimSpace(clause)
+		if clause == "" {
+			continue
+		}
+		m := clauseRe.FindStringSubmatch(clause)
+		if m == nil {
+			continue
+		}
+		sawClause = true
+		op := m[1]
+		// Upper-bound and exclusion operators never establish a floor.
+		if op == "<" || op == "<=" || op == "!=" {
+			continue
+		}
+		major, _ := strconv.Atoi(m[2])
+		minor, _ := strconv.Atoi(m[3])
+		if major > bestMajor || (major == bestMajor && minor > bestMinor) {
+			bestMajor, bestMinor = major, minor
+		}
 	}
-	match := pythonVersionRe.FindStringSubmatch(requiresPython)
-	if match == nil {
-		return "", fmt.Errorf("cannot parse python version from %q", requiresPython)
+	if bestMajor >= 0 {
+		return fmt.Sprintf("%d.%d", bestMajor, bestMinor), nil
 	}
-	// A version exists but not behind a lower-bound/pin operator. If it is behind
-	// an upper-bound/exclusion operator, there is no floor to install.
-	if boundedClauseRe.MatchString(requiresPython) {
+	if sawClause {
 		return "", fmt.Errorf("requires-python %q has no lower bound to install from", requiresPython)
 	}
-	return fmt.Sprintf("%s.%s", match[1], match[2]), nil
+	return "", fmt.Errorf("cannot parse python version from %q", requiresPython)
 }

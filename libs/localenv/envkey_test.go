@@ -31,6 +31,16 @@ func TestPythonMinorFromRequires(t *testing.T) {
 		">=3.10, <3.13": "3.10",
 		"<4.0,>=3.9":    "3.9",
 		"===3.11":       "3.11",
+		// The effective floor is the HIGHEST lower bound, regardless of order.
+		">=3.8,>=3.11": "3.11",
+		">=3.11,>=3.8": "3.11",
+		// A bare floor alongside an exclusion is still a floor.
+		"!=3.11,3.12":   "3.12",
+		"3.12,!=3.12.4": "3.12",
+		// Bare version with no operator.
+		"3.12": "3.12",
+		// Whitespace and patch components tolerated.
+		">= 3.10 , < 3.13": "3.10",
 	}
 	for in, want := range cases {
 		got, err := PythonMinorFromRequires(in)
@@ -38,14 +48,9 @@ func TestPythonMinorFromRequires(t *testing.T) {
 		assert.Equal(t, want, got, "input %q", in)
 	}
 
-	// A bare version with no operator is a valid floor.
-	got, err := PythonMinorFromRequires("3.12")
-	require.NoError(t, err)
-	assert.Equal(t, "3.12", got)
-
 	// No usable floor: only upper-bound / exclusion clauses. Must error rather
 	// than select a forbidden/capped version.
-	for _, in := range []string{"<3.13", "<=3.12", "!=3.12", "<3.13,!=3.12", "garbage"} {
+	for _, in := range []string{"<3.13", "<=3.12", "!=3.12", "<3.13,!=3.12", "garbage", ""} {
 		_, err := PythonMinorFromRequires(in)
 		assert.Error(t, err, "input %q must error", in)
 	}
