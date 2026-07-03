@@ -3,6 +3,8 @@ package localenv
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,6 +33,47 @@ func TestParseConstraints(t *testing.T) {
 	assert.Equal(t, "==3.12.*", rp)
 	assert.Equal(t, "databricks-connect~=17.2.0", dbc)
 	assert.Equal(t, []string{"pydantic~=2.10.6", "anyio~=4.6.2"}, deps)
+}
+
+func TestParseConstraintsRejectsMissingRequiresPython(t *testing.T) {
+	// Valid TOML but no requires-python is not a usable artifact; it must error
+	// rather than return an empty result that would be cached and fail later.
+	_, _, _, err := parseConstraints([]byte("[project]\nname = \"x\"\n"))
+	require.Error(t, err)
+}
+
+func TestParseConstraintsDatabricksConnectNameBoundary(t *testing.T) {
+	// A sibling package whose name merely starts with "databricks-connect" must
+	// not be mistaken for the databricks-connect requirement.
+	toml := `[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = [
+    "databricks-connectors==1.0",
+    "databricks-connect~=17.2.0",
+]
+`
+	_, dbc, _, err := parseConstraints([]byte(toml))
+	require.NoError(t, err)
+	assert.Equal(t, "databricks-connect~=17.2.0", dbc)
+}
+
+func TestFetchConstraintsCreatesCacheDir(t *testing.T) {
+	// The cache directory may not exist yet on a fresh machine; the fetch must
+	// create it so the cache actually populates (and offline fallback works).
+	cacheDir := filepath.Join(t.TempDir(), "does", "not", "exist", "yet")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(sampleToml))
+	}))
+	defer srv.Close()
+
+	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", cacheDir)
+	require.NoError(t, err)
+	// The cache file was written into the freshly created directory.
+	written, err := os.ReadFile(filepath.Join(cacheDir, "serverless__serverless-v4.toml"))
+	require.NoError(t, err)
+	assert.Equal(t, sampleToml, string(written))
 }
 
 func TestFetchConstraintsHTTP(t *testing.T) {

@@ -36,9 +36,48 @@ type Constraints struct {
 	ConstraintDeps []string
 }
 
-// sanitizeEnvKey replaces path separators with double-underscores to produce a flat filename.
+// sanitizeEnvKey flattens an env key to a single filename component by replacing
+// every path separator (both "/" and the OS separator, e.g. "\\" on Windows) with
+// double-underscores. Collapsing both keeps the cache file inside cacheDir even on
+// Windows, where filepath.Join would otherwise treat a backslash as a separator.
 func sanitizeEnvKey(envKey string) string {
-	return strings.ReplaceAll(envKey, "/", "__")
+	s := strings.ReplaceAll(envKey, "/", "__")
+	s = strings.ReplaceAll(s, "\\", "__")
+	return s
+}
+
+// writeCacheAtomic writes data to path via a temp file and rename, creating the
+// parent directory first. The rename is atomic on the same filesystem, so a
+// concurrent reader never observes a truncated or partial cache file (os.WriteFile
+// truncates in place, which a fallback reader could catch mid-write).
+func writeCacheAtomic(path string, data []byte) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(dir, ".constraints-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	if err := os.Chmod(tmpName, 0o600); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	return nil
 }
 
 // FetchConstraints fetches the pyproject.toml for envKey from baseURL and caches it in
@@ -62,8 +101,9 @@ func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*C
 		if err != nil {
 			return nil, fmt.Errorf("parse constraints for %s: %w", envKey, err)
 		}
-		// Write the cache copy; non-fatal so a read-only cacheDir doesn't break the command.
-		if err := os.WriteFile(cachePath, data, 0o600); err != nil {
+		// Write the cache copy (creating cacheDir if needed, atomically); non-fatal
+		// so a read-only cacheDir doesn't break the command.
+		if err := writeCacheAtomic(cachePath, data); err != nil {
 			log.Debugf(ctx, "failed to write constraint cache %s: %v", filepath.ToSlash(cachePath), err)
 		}
 		return &Constraints{
@@ -145,6 +185,9 @@ type pyprojectTOML struct {
 
 // parseConstraints parses a pyproject.toml byte slice and extracts requires-python,
 // the databricks-connect entry from dependency-groups.dev, and constraint-dependencies.
+// A body that is valid TOML but carries no requires-python is rejected: it is not a
+// usable constraint artifact, and silently accepting it would cache an empty result
+// and only surface a confusing failure later in the pipeline.
 func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []string, err error) {
 	var p pyprojectTOML
 	if err = toml.Unmarshal(data, &p); err != nil {
@@ -152,10 +195,12 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 	}
 
 	requiresPython = p.Project.RequiresPython
+	if strings.TrimSpace(requiresPython) == "" {
+		return "", "", nil, errors.New("constraint artifact has no [project].requires-python")
+	}
 
 	for _, entry := range p.DependencyGroups.Dev {
-		// Despace before matching so whitespace variants like "databricks-connect ~=17" also match.
-		if strings.HasPrefix(strings.ReplaceAll(entry, " ", ""), "databricks-connect") {
+		if isDatabricksConnectDep(entry) {
 			dbconnect = entry
 			break
 		}
@@ -163,4 +208,31 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 
 	deps = p.Tool.UV.ConstraintDependencies
 	return requiresPython, dbconnect, deps, nil
+}
+
+// isDatabricksConnectDep reports whether a dependency-group entry is the
+// databricks-connect requirement. It matches on a package-name boundary rather
+// than a bare prefix so a sibling package such as "databricks-connectors" (whose
+// name merely starts with "databricks-connect") is not mistaken for it. The next
+// character after the name must be a PEP 508 version/extra/marker delimiter or the
+// end of the string.
+func isDatabricksConnectDep(entry string) bool {
+	const name = "databricks-connect"
+	// Despace so whitespace variants like "databricks-connect ~=17" also match.
+	s := strings.ReplaceAll(entry, " ", "")
+	rest, ok := strings.CutPrefix(s, name)
+	if !ok {
+		return false
+	}
+	if rest == "" {
+		return true
+	}
+	// A real requirement continues with a version specifier, extra, marker, or
+	// separator — never an identifier character (which would mean a longer name).
+	switch rest[0] {
+	case '=', '<', '>', '!', '~', '[', ';', '@', ',', '(':
+		return true
+	default:
+		return false
+	}
 }
