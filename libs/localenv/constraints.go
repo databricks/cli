@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -215,31 +216,29 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 	return requiresPython, dbconnect, deps, nil
 }
 
+// depNameSepRe matches the first PEP 508 delimiter that ends a requirement's
+// package name: a version specifier, extra, marker, url, or list separator.
+var depNameSepRe = regexp.MustCompile(`[<>=!~;,@\[( \t]`)
+
 // isDatabricksConnectDep reports whether a dependency-group entry is the
-// databricks-connect requirement. It matches on a package-name boundary rather
-// than a bare prefix so a sibling package such as "databricks-connectors" (whose
-// name merely starts with "databricks-connect") is not mistaken for it. The next
-// character after the name must be a PEP 508 version/extra/marker delimiter or the
-// end of the string.
+// databricks-connect requirement. It extracts the leading package name (up to
+// the first PEP 508 delimiter) and compares it under PEP 503 normalization, so
+// case, and runs of "-", "_", or "." are all treated as equivalent:
+// "Databricks-Connect", "databricks_connect", and "databricks.connect" all match,
+// while a distinct package like "databricks-connectors" does not.
 func isDatabricksConnectDep(entry string) bool {
-	const name = "databricks-connect"
-	// Despace so whitespace variants like "databricks-connect ~=17" also match,
-	// and lowercase because Python package names are case-insensitive (PEP 503),
-	// so "Databricks-Connect==16.4.0" is the same requirement.
-	s := strings.ToLower(strings.ReplaceAll(entry, " ", ""))
-	rest, ok := strings.CutPrefix(s, name)
-	if !ok {
-		return false
+	name := strings.TrimSpace(entry)
+	if i := depNameSepRe.FindStringIndex(name); i != nil {
+		name = name[:i[0]]
 	}
-	if rest == "" {
-		return true
-	}
-	// A real requirement continues with a version specifier, extra, marker, or
-	// separator — never an identifier character (which would mean a longer name).
-	switch rest[0] {
-	case '=', '<', '>', '!', '~', '[', ';', '@', ',', '(':
-		return true
-	default:
-		return false
-	}
+	return normalizePackageName(name) == "databricks-connect"
+}
+
+// pep503SepRe matches runs of "-", "_", or "." for PEP 503 name normalization.
+var pep503SepRe = regexp.MustCompile(`[-_.]+`)
+
+// normalizePackageName applies PEP 503 normalization: lowercase and collapse any
+// run of "-", "_", or "." to a single "-".
+func normalizePackageName(name string) string {
+	return pep503SepRe.ReplaceAllString(strings.ToLower(strings.TrimSpace(name)), "-")
 }

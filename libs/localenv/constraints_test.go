@@ -59,18 +59,26 @@ dev = [
 	assert.Equal(t, "databricks-connect~=17.2.0", dbc)
 }
 
-func TestParseConstraintsDatabricksConnectCaseInsensitive(t *testing.T) {
-	// Python package names are case-insensitive (PEP 503), so a differently-cased
-	// entry must still be detected; the original casing is preserved in the result.
-	toml := `[project]
-requires-python = ">=3.10"
-
-[dependency-groups]
-dev = ["Databricks-Connect==16.4.0"]
-`
+func TestParseConstraintsDatabricksConnectPEP503(t *testing.T) {
+	// PEP 503: package names are case-insensitive and runs of -, _, . are
+	// equivalent. Every spelling of databricks-connect must be detected, with the
+	// original entry preserved verbatim in the result.
+	for _, entry := range []string{
+		"Databricks-Connect==16.4.0",
+		"databricks_connect==16.4.0",
+		"databricks.connect==16.4.0",
+		"databricks-connect ~= 17.2",
+	} {
+		toml := "[project]\nrequires-python = \">=3.10\"\n\n[dependency-groups]\ndev = [\"" + entry + "\"]\n"
+		_, dbc, _, err := parseConstraints([]byte(toml))
+		require.NoError(t, err, entry)
+		assert.Equal(t, entry, dbc, "entry %q", entry)
+	}
+	// A distinct sibling package must NOT match.
+	toml := "[project]\nrequires-python = \">=3.10\"\n\n[dependency-groups]\ndev = [\"databricks-connectors==1.0\"]\n"
 	_, dbc, _, err := parseConstraints([]byte(toml))
 	require.NoError(t, err)
-	assert.Equal(t, "Databricks-Connect==16.4.0", dbc)
+	assert.Empty(t, dbc)
 }
 
 func TestFetchConstraintsCreatesCacheDir(t *testing.T) {
