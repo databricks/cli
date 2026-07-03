@@ -369,6 +369,39 @@ dev = ["databricks-connect~=16.0.0"]
 	requireValidTOML(t, out)
 }
 
+func TestMergeHandlesTableHeaderInlineComments(t *testing.T) {
+	// Table headers may carry a trailing comment. requires-python under a
+	// commented [project] must still be updated, and the [dependency-groups] end
+	// bound must not run past a commented sibling header into another table's dev.
+	in := []byte(`[project] # package metadata
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.custom] # user table
+dev = ["databricks-connect==1.0.0"] # must not be managed
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	// [project].requires-python was found and updated despite the header comment.
+	assert.Contains(t, s, `requires-python = "==3.12.*"`)
+	// The real dev group was updated...
+	assert.Contains(t, s, `"databricks-connect~=17.2.0"`)
+	// ...but the lookalike dev under [tool.custom] was left untouched.
+	assert.Contains(t, s, `dev = ["databricks-connect==1.0.0"] # must not be managed`)
+	requireValidTOML(t, out)
+}
+
+func TestHeaderName(t *testing.T) {
+	assert.Equal(t, "[project]", headerName("[project]"))
+	assert.Equal(t, "[project]", headerName("  [project] # note"))
+	assert.Equal(t, "[tool.uv]", headerName("[tool.uv]#x"))
+	assert.Empty(t, headerName("requires-python = \"3.12\""))
+	assert.Empty(t, headerName("dev = [\"a\"]"))
+}
+
 func countOccurrences(s, substr string) int {
 	return strings.Count(s, substr)
 }

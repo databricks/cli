@@ -22,8 +22,11 @@ const (
 )
 
 var (
-	// tableHeaderRe matches a TOML table header line such as "[project]" or "[tool.uv]".
-	tableHeaderRe = regexp.MustCompile(`^\s*\[[^\]]+\]\s*$`)
+	// tableHeaderRe matches a TOML table header line such as "[project]" or
+	// "[tool.uv]", tolerating a trailing inline comment ("[project] # note"). Not
+	// tolerating the comment would both miss a commented [project] header and let
+	// a table's end bound run past a commented sibling header into the next table.
+	tableHeaderRe = regexp.MustCompile(`^\s*\[[^\]]+\]\s*(#.*)?$`)
 	// requiresPythonRe captures the leading whitespace of a requires-python assignment so it
 	// can be preserved when the value is replaced.
 	requiresPythonRe = regexp.MustCompile(`^(\s*)requires-python\s*=`)
@@ -36,7 +39,12 @@ var (
 func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string, err error) {
 	s := string(target)
 
-	// Detect and normalize line endings. We process on "\n" and restore "\r\n" on exit.
+	// Detect and normalize line endings. We process on "\n" and restore "\r\n" on
+	// exit. Line endings are treated as a whole-file property: a file that uses
+	// CRLF anywhere is emitted entirely as CRLF. Real pyproject.toml files use one
+	// consistent ending, so this is faithful in practice; a file that deliberately
+	// mixes LF and CRLF would be normalized to CRLF (a benign whitespace-only
+	// change), which we accept rather than track a terminator per line.
 	crlf := strings.Contains(s, "\r\n")
 	if crlf {
 		s = strings.ReplaceAll(s, "\r\n", "\n")
@@ -66,13 +74,27 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 	return []byte(out), regions, nil
 }
 
+// headerName returns the bracketed table name of a TOML table-header line (e.g.
+// "[project]" from "  [project] # note"), or "" if the line is not a table header.
+// It strips a trailing inline comment so a commented header still matches by name.
+func headerName(line string) string {
+	if !tableHeaderRe.MatchString(line) {
+		return ""
+	}
+	s := strings.TrimSpace(line)
+	if i := strings.Index(s, "]"); i >= 0 {
+		return s[:i+1]
+	}
+	return s
+}
+
 // tableBounds returns the line index of the header matching name (e.g. "[project]") and
 // the index of the first line after the table body (the next table header or EOF). If the
 // table is absent, found is false.
 func tableBounds(lines []string, name string) (header, end int, found bool) {
 	header = -1
 	for i, line := range lines {
-		if strings.TrimSpace(line) == name {
+		if headerName(line) == name {
 			header = i
 			break
 		}
@@ -352,8 +374,8 @@ func mergeToolUv(lines, deps []string) ([]string, bool) {
 // [tool.uv] header, because a second header for the same table is invalid TOML.
 func markerAttachedToToolUv(lines []string, start int) bool {
 	for i := start - 1; i >= 0; i-- {
-		if tableHeaderRe.MatchString(lines[i]) {
-			return strings.TrimSpace(lines[i]) == "[tool.uv]"
+		if name := headerName(lines[i]); name != "" {
+			return name == "[tool.uv]"
 		}
 	}
 	return false
