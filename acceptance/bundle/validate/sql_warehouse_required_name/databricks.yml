@@ -3,7 +3,7 @@ bundle:
 
 resources:
   sql_warehouses:
-    # Missing name: required by the backend on create, but modeled as optional
-    # (json:"name,omitempty") in the SDK. See DECO-27550.
+    # Missing name: required by the backend, optional in the SDK
+    # (json:"name,omitempty").
     my_warehouse:
       cluster_size: "2X-Small"

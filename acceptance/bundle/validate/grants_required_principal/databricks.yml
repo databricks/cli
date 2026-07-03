@@ -6,8 +6,8 @@ resources:
     my_catalog:
       name: my_catalog
       grants:
-        # Missing principal: required by the backend but modeled as optional
-        # (json:"principal,omitempty") in the SDK. See DECO-27550.
+        # Missing principal: required by the backend, optional in the SDK
+        # (json:"principal,omitempty").
         - privileges:
             - ALL_PRIVILEGES
   schemas:

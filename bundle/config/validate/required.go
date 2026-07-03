@@ -14,10 +14,8 @@ import (
 
 type required struct{}
 
-// The backend expresses custom_max_retention_hours in hours but only accepts 0
-// (disabled) or a value corresponding to 7-30 days. Out-of-range values fail at
-// deploy with a low-context "recovery period must be 0 or between 7 and 30 days"
-// error, so we reject them early. See DECO-27550.
+// custom_max_retention_hours accepts 0 (disabled) or 7-30 days; other values
+// fail at deploy with a low-context error, so we reject them early.
 const (
 	minCustomRetentionHours = 168 // 7 days
 	maxCustomRetentionHours = 720 // 30 days
@@ -128,9 +126,8 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		})
 	}
 
-	// sql_warehouses.name is required by the backend on create, but the SDK models it
-	// as optional (json:"name,omitempty"), so warnForMissingFields never flags it.
-	// Without a name deploy fails with a low-context error. See DECO-27550.
+	// sql_warehouses.name is required by the backend but optional in the SDK
+	// (json:"name,omitempty"), so warnForMissingFields never flags it.
 	_, err := dyn.MapByPattern(
 		b.Config.Value(),
 		dyn.NewPattern(dyn.Key("resources"), dyn.Key("sql_warehouses"), dyn.AnyKey()),
@@ -150,10 +147,8 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		return diag.FromErr(err)
 	}
 
-	// grants[*].principal is required by the backend but modeled as optional
-	// (json:"principal,omitempty"). Without it deploy fails with "400 Invalid
-	// PermissionsChange". Grants exist on every securable (catalogs, schemas, volumes,
-	// external_locations, registered_models, vector_search_indexes). See DECO-27550.
+	// grants[*].principal is required by the backend but optional in the SDK
+	// (json:"principal,omitempty"). Grants exist on every securable, so match any.
 	_, err = dyn.MapByPattern(
 		b.Config.Value(),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants"), dyn.AnyIndex()),
@@ -189,7 +184,7 @@ func isMissingOrEmptyString(v dyn.Value) bool {
 }
 
 // errorForInvalidRetentionHours rejects out-of-range custom_max_retention_hours on
-// catalogs and schemas before deploy. See DECO-27550.
+// catalogs and schemas before deploy.
 func errorForInvalidRetentionHours(b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 	for _, section := range []string{"catalogs", "schemas"} {
