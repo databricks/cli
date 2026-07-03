@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle
+
+resources:
+  catalogs:
+    invalid_catalog:
+      name: invalid_catalog
+      # The field is named in hours, but the backend only accepts 0 or 168-720
+      # (7-30 days). 7 hours is rejected at deploy. See DECO-27550.
+      custom_max_retention_hours: 7
+    valid_catalog:
+      name: valid_catalog
+      # 240 hours = 10 days, within range.
+      custom_max_retention_hours: 240
+  schemas:
+    invalid_schema:
+      catalog_name: valid_catalog
+      name: invalid_schema
+      # 1000 hours is out of range (> 30 days).
+      custom_max_retention_hours: 1000

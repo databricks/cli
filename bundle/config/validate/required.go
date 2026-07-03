@@ -14,6 +14,15 @@ import (
 
 type required struct{}
 
+// The backend expresses custom_max_retention_hours in hours but only accepts 0
+// (disabled) or a value corresponding to 7-30 days. Out-of-range values fail at
+// deploy with a low-context "recovery period must be 0 or between 7 and 30 days"
+// error, so we reject them early. See DECO-27550.
+const (
+	minCustomRetentionHours = 168 // 7 days
+	maxCustomRetentionHours = 720 // 30 days
+)
+
 func Required() bundle.Mutator {
 	return &required{}
 }
@@ -119,11 +128,101 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		})
 	}
 
+	// sql_warehouses.name is required by the backend on create, but the SDK models it
+	// as optional (json:"name,omitempty"), so warnForMissingFields never flags it.
+	// Without a name deploy fails with a low-context error. See DECO-27550.
+	_, err := dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("sql_warehouses"), dyn.AnyKey()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			if isMissingOrEmptyString(v.Get("name")) {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "sql_warehouse name is required",
+					Locations: v.Locations(),
+					Paths:     []dyn.Path{slices.Clone(p)},
+				})
+			}
+			return v, nil
+		},
+	)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// grants[*].principal is required by the backend but modeled as optional
+	// (json:"principal,omitempty"). Without it deploy fails with "400 Invalid
+	// PermissionsChange". Grants exist on every securable (catalogs, schemas, volumes,
+	// external_locations, registered_models, vector_search_indexes). See DECO-27550.
+	_, err = dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants"), dyn.AnyIndex()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			if isMissingOrEmptyString(v.Get("principal")) {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "grant principal is required",
+					Locations: v.Locations(),
+					Paths:     []dyn.Path{slices.Clone(p)},
+				})
+			}
+			return v, nil
+		},
+	)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
+}
+
+// isMissingOrEmptyString reports whether v is unset, null, or an empty string.
+func isMissingOrEmptyString(v dyn.Value) bool {
+	switch v.Kind() {
+	case dyn.KindInvalid, dyn.KindNil:
+		return true
+	case dyn.KindString:
+		return v.MustString() == ""
+	default:
+		return false
+	}
+}
+
+// errorForInvalidRetentionHours rejects out-of-range custom_max_retention_hours on
+// catalogs and schemas before deploy. See DECO-27550.
+func errorForInvalidRetentionHours(b *bundle.Bundle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	for _, section := range []string{"catalogs", "schemas"} {
+		_, err := dyn.MapByPattern(
+			b.Config.Value(),
+			dyn.NewPattern(dyn.Key("resources"), dyn.Key(section), dyn.AnyKey(), dyn.Key("custom_max_retention_hours")),
+			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				hours, ok := v.AsInt()
+				if !ok {
+					return v, nil
+				}
+				if hours == 0 || (hours >= minCustomRetentionHours && hours <= maxCustomRetentionHours) {
+					return v, nil
+				}
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf("custom_max_retention_hours must be 0 or between %d and %d hours (7 to 30 days), got %d", minCustomRetentionHours, maxCustomRetentionHours, hours),
+					Locations: v.Locations(),
+					Paths:     []dyn.Path{slices.Clone(p)},
+				})
+				return v, nil
+			},
+		)
+		if err != nil {
+			diags = diags.Extend(diag.FromErr(err))
+		}
+	}
 	return diags
 }
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := errorForMissingFields(ctx, b)
+	diags = diags.Extend(errorForInvalidRetentionHours(b))
 	if diags.HasError() {
 		return diags
 	}
