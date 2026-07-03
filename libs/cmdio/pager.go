@@ -134,6 +134,10 @@ func (m *pagerModel[T]) doFetch(ctx context.Context, pageSize, limit, total int)
 	if err != nil {
 		return batchMsg{err: err}
 	}
+	// The loop exits on len(buf) == pageSize before re-checking the limit,
+	// so a page that lands exactly on the limit leaves done false. Re-check
+	// here to avoid scheduling one more (empty) fetch on drain/advance.
+	done = done || (limit > 0 && total+len(buf) >= limit)
 	return batchMsg{lines: lines, count: len(buf), done: done}
 }
 
