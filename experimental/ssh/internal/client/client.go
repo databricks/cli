@@ -52,6 +52,10 @@ const (
 	sshServerTaskKey         = "start_ssh_server"
 	serverlessEnvironmentKey = "ssh_tunnel_serverless"
 	minEnvironmentVersion    = 4
+	// Serverless environment_version 5+ is not supported by the SSH tunnel: the driver
+	// proxy does not route to the server's port on that runtime, so the health check
+	// never passes and connect times out. Reject known-v5 base environments up front.
+	maxSupportedEnvironmentVersion = 4
 )
 
 // acceleratorProvisioningNotice maps a GPU accelerator type to the upfront notice
@@ -269,6 +273,18 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	if !opts.ProxyMode {
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
+	}
+
+	// Reject an unsupported serverless environment version before any workspace side
+	// effects (secret scope, key upload, notebook import) so the user gets an immediate,
+	// actionable error instead of a multi-minute health-check timeout. The env.yaml path
+	// form can't be checked here, so warn that its version is unverified.
+	if opts.BaseEnvironment != "" && !opts.ProxyMode {
+		if strings.HasPrefix(opts.BaseEnvironment, "/") {
+			cmdio.LogString(ctx, fmt.Sprintf("WARNING: cannot verify the serverless environment version of base environment %q (specified as an env.yaml path); ssh connect only supports environment_version <= %d, and a newer version will fail to connect", opts.BaseEnvironment, maxSupportedEnvironmentVersion))
+		} else if err := validateBaseEnvironmentVersion(ctx, client, opts.BaseEnvironment); err != nil {
+			return err
+		}
 	}
 
 	if opts.IDE != "" && !opts.ProxyMode {
@@ -690,6 +706,44 @@ func resolveBaseEnvironment(ctx context.Context, client *databricks.WorkspaceCli
 	default:
 		return "", fmt.Errorf("multiple workspace base environments found with display name %q", input)
 	}
+}
+
+// validateBaseEnvironmentVersion rejects a base environment whose serverless runtime is
+// unsupported (environment_version > maxSupportedEnvironmentVersion). It only applies to the
+// display-name and resource-ID forms, whose version is carried in the base-environment
+// listing; the env.yaml path form (leading "/") is not checkable here and is warned about
+// separately by the caller. It is fail-open: any inability to determine the version (list
+// error, no matching entry, nil spec, empty/unparseable version) returns nil so a valid
+// connect is never blocked on a transient error or an uncheckable input.
+func validateBaseEnvironmentVersion(ctx context.Context, client *databricks.WorkspaceClient, input string) error {
+	if strings.HasPrefix(input, "/") {
+		return nil
+	}
+
+	envs, err := client.Environments.ListWorkspaceBaseEnvironmentsAll(ctx, environments.ListWorkspaceBaseEnvironmentsRequest{})
+	if err != nil {
+		return nil
+	}
+
+	isResourceID := strings.HasPrefix(input, "workspace-base-environments/")
+	for _, e := range envs {
+		matched := e.Name == input
+		if !isResourceID {
+			matched = e.DisplayName == input
+		}
+		if !matched || e.Spec == nil {
+			continue
+		}
+		version, err := strconv.Atoi(e.Spec.EnvironmentVersion)
+		if err != nil {
+			return nil
+		}
+		if version > maxSupportedEnvironmentVersion {
+			return fmt.Errorf("base environment %q uses serverless environment version %d, which is not supported by ssh connect (supported: version <= %d) — use a base environment created with environment_version %d", input, version, maxSupportedEnvironmentVersion, maxSupportedEnvironmentVersion)
+		}
+		return nil
+	}
+	return nil
 }
 
 // shellSingleQuote wraps s in single quotes for safe inclusion in a shell

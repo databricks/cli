@@ -7,6 +7,7 @@
 ### CLI
 
 * An explicitly selected profile (`--profile` or a bundle's `workspace.profile`) now takes precedence over auth environment variables (`DATABRICKS_HOST`, `DATABRICKS_TOKEN`, etc.) instead of being silently shadowed by them; env vars still fill auth fields the profile leaves empty ([#5096](https://github.com/databricks/cli/issues/5096)).
+* `databricks ssh connect` now fails fast with an actionable error when `--base-environment` refers to a serverless environment on version 5 or newer, which is not supported, instead of hanging until the startup timeout ([#5825](https://github.com/databricks/cli/pull/5825)).
 
 ### Bundles
 

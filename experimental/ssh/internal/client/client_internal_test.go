@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -87,6 +88,83 @@ func TestResolveBaseEnvironment(t *testing.T) {
 		_, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "my-env")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), `multiple workspace base environments found with display name "my-env"`)
+	})
+}
+
+func TestValidateBaseEnvironmentVersion(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+
+	listReturns := func(m *mocks.MockWorkspaceClient, envs []environments.WorkspaceBaseEnvironment, err error) {
+		m.GetMockEnvironmentsAPI().EXPECT().
+			ListWorkspaceBaseEnvironmentsAll(mock.Anything, environments.ListWorkspaceBaseEnvironmentsRequest{}).
+			Return(envs, err)
+	}
+	specV5 := &environments.EnvironmentSpec{EnvironmentVersion: "5"}
+	specV4 := &environments.EnvironmentSpec{EnvironmentVersion: "4"}
+
+	t.Run("display name v5 rejected", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		listReturns(m, []environments.WorkspaceBaseEnvironment{
+			{DisplayName: "my-env", Name: "workspace-base-environments/dbe_mine", Spec: specV5},
+		}, nil)
+		err := validateBaseEnvironmentVersion(ctx, m.WorkspaceClient, "my-env")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `base environment "my-env" uses serverless environment version 5`)
+	})
+
+	t.Run("resource ID v5 rejected", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		listReturns(m, []environments.WorkspaceBaseEnvironment{
+			{DisplayName: "my-env", Name: "workspace-base-environments/dbe_mine", Spec: specV5},
+		}, nil)
+		err := validateBaseEnvironmentVersion(ctx, m.WorkspaceClient, "workspace-base-environments/dbe_mine")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "serverless environment version 5")
+	})
+
+	t.Run("display name v4 allowed", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		listReturns(m, []environments.WorkspaceBaseEnvironment{
+			{DisplayName: "my-env", Name: "workspace-base-environments/dbe_mine", Spec: specV4},
+		}, nil)
+		assert.NoError(t, validateBaseEnvironmentVersion(ctx, m.WorkspaceClient, "my-env"))
+	})
+
+	// env.yaml path form is not checkable and must not hit the API.
+	t.Run("path form skipped", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		assert.NoError(t, validateBaseEnvironmentVersion(ctx, m.WorkspaceClient, "/Workspace/path/to/env.yaml"))
+	})
+
+	// Fail-open cases: the version can't be determined, so connect proceeds.
+	t.Run("list error fails open", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		listReturns(m, nil, errors.New("boom"))
+		assert.NoError(t, validateBaseEnvironmentVersion(ctx, m.WorkspaceClient, "my-env"))
+	})
+
+	t.Run("no match fails open", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		listReturns(m, []environments.WorkspaceBaseEnvironment{
+			{DisplayName: "other", Name: "workspace-base-environments/dbe_other", Spec: specV5},
+		}, nil)
+		assert.NoError(t, validateBaseEnvironmentVersion(ctx, m.WorkspaceClient, "my-env"))
+	})
+
+	t.Run("nil spec fails open", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		listReturns(m, []environments.WorkspaceBaseEnvironment{
+			{DisplayName: "my-env", Name: "workspace-base-environments/dbe_mine", Spec: nil},
+		}, nil)
+		assert.NoError(t, validateBaseEnvironmentVersion(ctx, m.WorkspaceClient, "my-env"))
+	})
+
+	t.Run("unparseable version fails open", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		listReturns(m, []environments.WorkspaceBaseEnvironment{
+			{DisplayName: "my-env", Name: "workspace-base-environments/dbe_mine", Spec: &environments.EnvironmentSpec{EnvironmentVersion: ""}},
+		}, nil)
+		assert.NoError(t, validateBaseEnvironmentVersion(ctx, m.WorkspaceClient, "my-env"))
 	})
 }
 
