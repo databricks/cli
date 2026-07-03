@@ -2,7 +2,6 @@ package direct
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -393,10 +392,10 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonMissingInRemote
-		} else if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
+		} else if reason, ok := dresources.FindMatchingRule(path, cfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
-		} else if reason, ok := findMatchingRule(path, generatedCfg.RecreateOnChanges); ok {
+		} else if reason, ok := dresources.FindMatchingRule(path, generatedCfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
 		} else {
@@ -439,23 +438,14 @@ func isFieldMissingInRemote(adapter *dresources.Adapter, path *structpath.PathNo
 	return structaccess.ValidatePath(adapter.RemoteType(), path) != nil
 }
 
-func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
-	for _, r := range rules {
-		if path.HasPatternPrefix(r.Field) {
-			return r.Reason, true
-		}
-	}
-	return "", false
-}
-
 func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
 	if cfg == nil {
 		return "", false
 	}
-	if reason, ok := findMatchingRule(path, cfg.IgnoreLocalChanges); ok && !structdiff.IsEqual(ch.Old, ch.New) {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.IgnoreLocalChanges); ok && !structdiff.IsEqual(ch.Old, ch.New) {
 		return reason, true
 	}
-	if reason, ok := findMatchingRule(path, cfg.IgnoreRemoteChanges); ok && structdiff.IsEqual(ch.Old, ch.New) {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.IgnoreRemoteChanges); ok && structdiff.IsEqual(ch.Old, ch.New) {
 		return reason, true
 	}
 	return "", false
@@ -476,13 +466,13 @@ func classifyIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath.P
 		return deployplan.Undefined, "", false
 	}
 	localChange := !structdiff.IsEqual(ch.Old, ch.New)
-	if reason, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.ProvidedIDFields); ok {
 		if localChange {
 			return deployplan.Recreate, reason, true
 		}
 		return deployplan.Skip, reason, true
 	}
-	if reason, ok := findMatchingRule(path, cfg.UpdatableIDFields); ok {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.UpdatableIDFields); ok {
 		if localChange {
 			return deployplan.UpdateWithID, reason, true
 		}
@@ -505,7 +495,7 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 	if !newOk || !remoteOk {
 		return "", false
 	}
-	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
 		return reason, true
 	}
 	return "", false
@@ -515,64 +505,13 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 // is a known backend default. Applies when old and new are nil but remote is set.
 // If the rule has allowed values, the remote value must match one of them.
 func shouldSkipBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
-	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
+	if ch.Old != nil || ch.New != nil {
 		return "", false
 	}
-	if matchesAnyBackendDefault(cfg, path, ch.Remote) {
+	if cfg.MatchesBackendDefault(path, ch.Remote) {
 		return deployplan.ReasonBackendDefault, true
 	}
-
-	// Nil-vs-map case from structdiff: a remote-only map change is emitted at the
-	// parent path rather than per key. Only skip the parent map if every remote
-	// entry matches a configured backend-default child rule; any unmanaged key
-	// must still surface as drift. rv is always valid here (ch.Remote != nil
-	// above) and a nil map is excluded by Len() == 0.
-	rv := reflect.ValueOf(ch.Remote)
-	if rv.Kind() != reflect.Map || rv.Type().Key().Kind() != reflect.String || rv.Len() == 0 {
-		return "", false
-	}
-	iter := rv.MapRange()
-	for iter.Next() {
-		childPath := structpath.NewBracketString(path, iter.Key().String())
-		if !matchesAnyBackendDefault(cfg, childPath, iter.Value().Interface()) {
-			return "", false
-		}
-	}
-	return deployplan.ReasonBackendDefault, true
-}
-
-// matchesAnyBackendDefault reports whether the remote value at path matches any of
-// the resource's configured backend-default rules (and the rule's allowed values,
-// if specified).
-func matchesAnyBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, remote any) bool {
-	for _, rule := range cfg.BackendDefaults {
-		if !path.HasPatternPrefix(rule.Field) {
-			continue
-		}
-		if len(rule.Values) == 0 {
-			return true
-		}
-		if matchesAllowedValue(remote, rule.Values) {
-			return true
-		}
-	}
-	return false
-}
-
-// matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
-// Each json.RawMessage is unmarshaled into the same type as remote for comparison.
-func matchesAllowedValue(remote any, values []json.RawMessage) bool {
-	remoteType := reflect.TypeOf(remote)
-	for _, raw := range values {
-		candidate := reflect.New(remoteType).Interface()
-		if err := json.Unmarshal(raw, candidate); err != nil {
-			continue
-		}
-		if structdiff.IsEqual(remote, reflect.ValueOf(candidate).Elem().Interface()) {
-			return true
-		}
-	}
-	return false
+	return "", false
 }
 
 func allEmpty(values ...any) bool {

@@ -1,0 +1,26 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Simulate a cluster policy injecting custom_tags and cluster_log_conf
+These fields exist only remotely (the user never set them in config).
+
+=== Plan after injection: policy-injected fields alone must not produce an update
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== A real remote edit must still be detected
+>>> [CLI] bundle plan
+update jobs.job1
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
