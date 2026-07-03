@@ -64,6 +64,37 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	assert.Equal(t, string(before), string(after)) // unchanged
 }
 
+func TestPipelineCheckWorksOnReadOnlyDir(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Getuid() == 0 {
+		t.Skip("read-only-dir enforcement not available")
+	}
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	// Make the project dir read-only: --check must still compute the plan without
+	// a writability probe (which would both mutate disk and fail here).
+	require.NoError(t, os.Chmod(dir, 0o555))
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	require.NotNil(t, res.Plan)
+	// No writecheck temp file was left behind in the project dir.
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	for _, e := range entries {
+		assert.NotContains(t, e.Name(), "writecheck", "dry run must not create temp files")
+	}
+}
+
 func TestPipelineProvisionsAndValidatesExisting(t *testing.T) {
 	dir := writeProject(t)
 	srv := newTestServer(t)

@@ -95,8 +95,14 @@ func (p *Pipeline) run(ctx context.Context) error {
 	if m := detectManager(p.ProjectDir); m != managerUv {
 		return p.fail(PhasePreflight, false, NewError(ErrManagerUnsupported, nil, "%s", managerGuidance(m)))
 	}
-	if err := ensureWritable(p.ProjectDir); err != nil {
-		return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "project directory %s is not writable", filepath.ToSlash(p.ProjectDir)))
+	// Skip the writability probe under --check: it creates and removes a temp
+	// file, which would be a disk mutation in a dry run, and a read-only project
+	// the user only wants to inspect must not fail. The probe exists to fail fast
+	// before a real write, which --check never performs.
+	if !p.Check {
+		if err := ensureWritable(p.ProjectDir); err != nil {
+			return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "project directory %s is not writable", filepath.ToSlash(p.ProjectDir)))
+		}
 	}
 	version, err := p.PM.EnsureAvailable(ctx)
 	if err != nil {
