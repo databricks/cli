@@ -60,6 +60,12 @@ func PythonMinorFromRequires(requiresPython string) (string, error) {
 		}
 		major, _ := strconv.Atoi(m[2])
 		minor, _ := strconv.Atoi(m[3])
+		// A strict ">" excludes the whole given minor series (PEP 440: ">3.10"
+		// matches neither 3.10 nor any 3.10.x), so the lowest installable minor is
+		// the next one up.
+		if op == ">" {
+			minor++
+		}
 		if major > bestMajor || (major == bestMajor && minor > bestMinor) {
 			bestMajor, bestMinor = major, minor
 		}
