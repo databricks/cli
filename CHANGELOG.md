@@ -1,20 +1,5 @@
 # Version changelog
 
-## Release v1.7.0 (2026-07-03)
-
-### CLI
-
- * Added the `databricks quickstart` command ([#5464](https://github.com/databricks/cli/pull/5464)).
-
-### Bundles
-
- * Set the default `data_security_mode` to `DATA_SECURITY_MODE_AUTO` in bundle templates ([#5452](https://github.com/databricks/cli/pull/5452)).
-
-### Dependency updates
-
- * Bump the Go SDK to the latest release ([#5519](https://github.com/databricks/cli/pull/5519)).
-
-
 ## Release v1.6.0 (2026-07-02)
 
 ### CLI
