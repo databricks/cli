@@ -286,7 +286,7 @@ tasks:
     cmds:
       - "./tools/update_github_links.py"
 
-  changelog-check:
+  check-changelog:
     desc: Validate .nextchanges fragment placement
     cmds:
       - "./tools/validate_nextchanges.py"
@@ -316,7 +316,7 @@ tasks:
       - task: ws
       - task: links
       - task: deadcode
-      - task: changelog-check
+      - task: check-changelog
       - task: check-uv-lock
 
   install-pythons:

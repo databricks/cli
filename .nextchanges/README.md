@@ -41,7 +41,7 @@ for when an entry is warranted.
 You don't run anything. At release time the tagging workflow renders every
 fragment into the matching section of `CHANGELOG.md`, deletes the consumed
 fragments, and bumps `version` to the next minor (see
-`internal/genkit/tagging.py`). `./task changelog-check` validates fragment
+`internal/genkit/tagging.py`). `./task check-changelog` validates fragment
 placement and the `version` file on every PR.
 
 ### `version`
