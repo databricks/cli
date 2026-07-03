@@ -11,14 +11,12 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-// EnsurePython makes `python3` on PATH resolve to a Python >= minVersion (e.g.
-// "3.11"). Acceptance scripts invoke `python3` directly and some import stdlib
-// modules added in newer versions, but a host's default python3 may be older.
-// On non-Windows hosts uv (see RequireUV) selects a compatible interpreter,
-// which we symlink as python3/python into a temp dir prepended to PATH. On
-// Windows os.Symlink needs extra privileges, so we instead require that the
-// python3 already on PATH satisfies the floor.
-func EnsurePython(t *testing.T, minVersion string) {
+// RequirePython fails the test if no Python >= minVersion (e.g. "3.11") is
+// available for the acceptance suite. It only verifies; ConfigurePython performs
+// the PATH setup. On Windows os.Symlink needs extra privileges, so we require the
+// python3 already on PATH to satisfy the floor; elsewhere uv must be able to find
+// a compatible interpreter.
+func RequirePython(t *testing.T, minVersion string) {
 	if runtime.GOOS == "windows" {
 		out, err := exec.Command("python3", "--version").Output()
 		if err != nil {
@@ -28,6 +26,27 @@ func EnsurePython(t *testing.T, minVersion string) {
 		if !pythonVersionOK(version, minVersion) {
 			t.Fatalf("acceptance tests require python >= %s (found %q)", minVersion, version)
 		}
+		return
+	}
+
+	if _, err := exec.Command("uv", "python", "find", ">="+minVersion).Output(); err != nil {
+		t.Fatalf("uv could not find python >= %s: %v", minVersion, err)
+	}
+}
+
+// ConfigurePython makes `python3` on PATH resolve to a Python >= minVersion for
+// the rest of the run. Acceptance scripts invoke `python3` directly and some
+// import stdlib modules added in newer versions, but a host's default python3
+// may be older. On non-Windows hosts uv (see RequireUV) selects a compatible
+// interpreter, which we symlink as python3/python into a temp dir prepended to
+// PATH. On Windows we rely on the python3 already on PATH, which RequirePython
+// has verified satisfies the floor.
+//
+// It must run on the top-level test's t: the t.Setenv and t.TempDir below are
+// undone when that test returns, so calling it from a subtest would revert the
+// PATH change before the rest of the suite runs.
+func ConfigurePython(t *testing.T, minVersion string) {
+	if runtime.GOOS == "windows" {
 		return
 	}
 

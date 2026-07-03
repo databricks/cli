@@ -368,6 +368,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		}
 		records := map[string]installer.PluginRecord{}
 		for _, it := range pluginItems {
+			cmdio.LogString(ctx, fmt.Sprintf("Installing databricks plugin for %s...", it.agent.DisplayName))
 			rec, err := installPluginForAgentFn(ctx, it.agent, it.scope, ref)
 			if err != nil {
 				cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %v", it.agent.DisplayName, err)))

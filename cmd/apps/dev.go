@@ -12,7 +12,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -22,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/apps/vite"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -184,7 +184,8 @@ Examples:
 				return domainErr
 			})
 			if err != nil {
-				if strings.Contains(err.Error(), "does not exist") || strings.Contains(err.Error(), "is deleted") {
+				// The Apps API reports both a never-created and a deleted app with a 404.
+				if errors.Is(err, apierr.ErrNotFound) {
 					return fmt.Errorf("application '%s' has not been deployed yet. Run `databricks apps deploy` to deploy and then try again", appName)
 				}
 				return fmt.Errorf("failed to get app domain: %w", err)

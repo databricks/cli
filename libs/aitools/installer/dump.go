@@ -6,7 +6,6 @@ import (
 	"maps"
 	"path/filepath"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 )
@@ -21,7 +20,7 @@ func DumpSkillsToPath(ctx context.Context, src ManifestSource, destDir string, o
 	if err != nil {
 		return 0, err
 	}
-	cmdio.LogString(ctx, "Using skills version "+strings.TrimPrefix(ref, "v"))
+	cmdio.LogString(ctx, "Using skills version "+DisplaySkillsVersion(ref))
 
 	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref, !explicit)
 	if err != nil {

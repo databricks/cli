@@ -56,7 +56,10 @@ func RenderDebug(r io.Reader, w io.Writer) error {
 // error: the most damaging historical failure mode of this command was a wire
 // format change making every item unparseable, which rendered nothing and
 // exited 0.
-func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts RenderOptions) error {
+//
+// Returns the conversation id (for follow-up turns), whether any output was
+// written to stdout, and any error.
+func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts RenderOptions) (string, bool, error) {
 	reader := NewSSEReader(r)
 
 	// The spinner degrades to no output on non-interactive terminals, so
@@ -80,7 +83,9 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 
 	var vizBuffer []*VizEvent
 	var finalResponse string
+	var conversationID string
 	var rendered strings.Builder // all text shown so far, for final-response dedupe
+	wrote := false               // any bytes written to stdout (gates a safe fail-open retry)
 	events := 0
 	unparsed := 0
 	sawDone := false
@@ -91,7 +96,7 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("reading SSE stream: %w", err)
+			return conversationID, wrote, fmt.Errorf("reading SSE stream: %w", err)
 		}
 		events++
 
@@ -102,6 +107,7 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 			case EventText:
 				stopStatus()
 				if c := renderMarkdown(stdout, se.Text); c != "" {
+					wrote = true
 					rendered.WriteString(c)
 					rendered.WriteString("\n")
 				}
@@ -113,17 +119,19 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 				if se.ToolCall != nil && opts.ShowSQL && isSQLTool(se.ToolCall.Name) {
 					stopStatus()
 					renderSQL(stdout, se.ToolCall.Name, se.ToolCall.Arguments)
+					wrote = true
 				}
 			case EventViz:
 				if se.Viz != nil {
 					vizBuffer = append(vizBuffer, se.Viz)
 				}
 			case EventError:
-				return apiError(se)
+				return conversationID, wrote, apiError(se)
 			case EventDone:
 				sawDone = true
+				conversationID = se.ConversationID
 				if se.Status != "" && se.Status != statusCompleted {
-					return fmt.Errorf("response finished with status %q", se.Status)
+					return conversationID, wrote, fmt.Errorf("response finished with status %q", se.Status)
 				}
 			case EventUnparsed:
 				unparsed++
@@ -141,6 +149,7 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 	if final := strings.TrimSpace(cleanMarkdown(finalResponse)); final != "" && !strings.Contains(rendered.String(), final) {
 		renderMarkdown(stdout, finalResponse)
 		answered = true
+		wrote = true
 	}
 
 	// Render charts after all text output. A chart that cannot be mapped to
@@ -148,6 +157,7 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 	// already had its chart references stripped, so silence here would leave
 	// the user staring at "as shown below" with nothing below.
 	for _, viz := range vizBuffer {
+		wrote = true // every branch writes to stdout, even the placeholder
 		if RenderChart(stdout, viz, defaultChartWidth, opts.Color) {
 			answered = true
 			continue
@@ -161,12 +171,12 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 
 	warnUnparsed(stderr, unparsed)
 	if !answered {
-		return noAnswerError(events)
+		return conversationID, wrote, noAnswerError(events)
 	}
 	if !sawDone {
 		fmt.Fprintln(stderr, "Warning: the stream ended without a completion event; the answer may be incomplete.")
 	}
-	return nil
+	return conversationID, wrote, nil
 }
 
 // RenderJSON accumulates all stream events and emits a single StreamResult
@@ -175,7 +185,9 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 // CLI exit non-zero. Status starts as "incomplete" and is only promoted to
 // "completed" by a completion event, so a truncated stream cannot masquerade
 // as a successful one.
-func RenderJSON(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc) error {
+//
+// Returns the conversation id for follow-up turns.
+func RenderJSON(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc) (string, error) {
 	reader := NewSSEReader(r)
 	result := StreamResult{Status: statusIncomplete}
 	var finalResponse string
@@ -193,7 +205,7 @@ loop:
 			result.Status = statusError
 			result.Error = err.Error()
 			writeStreamResult(stdout, result)
-			return fmt.Errorf("reading SSE stream: %w", err)
+			return result.ConversationID, fmt.Errorf("reading SSE stream: %w", err)
 		}
 		events++
 
@@ -222,6 +234,7 @@ loop:
 				apiErr = apiError(se)
 				break loop
 			case EventDone:
+				result.ConversationID = se.ConversationID
 				if se.Status != "" && se.Status != statusCompleted {
 					result.Status = statusError
 					result.Error = fmt.Sprintf("response finished with status %q", se.Status)
@@ -262,7 +275,7 @@ loop:
 
 	warnUnparsed(stderr, unparsed)
 	writeStreamResult(stdout, result)
-	return apiErr
+	return result.ConversationID, apiErr
 }
 
 // writeStreamResult encodes the result to w. Encoding errors are reported on

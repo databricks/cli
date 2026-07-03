@@ -105,10 +105,11 @@ type ResourceJobJobClusterNewClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceJobJobClusterNewClusterAzureAttributes struct {
-	Availability     string                                                          `json:"availability,omitempty"`
-	FirstOnDemand    int                                                             `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                             `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobJobClusterNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                          `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                          `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                             `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                             `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobJobClusterNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterClusterLogConfDbfs struct {
@@ -365,10 +366,11 @@ type ResourceJobNewClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceJobNewClusterAzureAttributes struct {
-	Availability     string                                                `json:"availability,omitempty"`
-	FirstOnDemand    int                                                   `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                   `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                   `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                   `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobNewClusterClusterLogConfDbfs struct {
@@ -634,6 +636,25 @@ type ResourceJobSparkSubmitTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
+type ResourceJobTaskAiRuntimeTaskDeploymentsCompute struct {
+	AcceleratorCount int    `json:"accelerator_count"`
+	AcceleratorType  string `json:"accelerator_type"`
+}
+
+type ResourceJobTaskAiRuntimeTaskDeployments struct {
+	CommandPath string                                          `json:"command_path"`
+	Name        string                                          `json:"name,omitempty"`
+	Compute     *ResourceJobTaskAiRuntimeTaskDeploymentsCompute `json:"compute,omitempty"`
+}
+
+type ResourceJobTaskAiRuntimeTask struct {
+	CodeSourcePath            string                                    `json:"code_source_path,omitempty"`
+	Experiment                string                                    `json:"experiment"`
+	MlflowExperimentDirectory string                                    `json:"mlflow_experiment_directory,omitempty"`
+	MlflowRun                 string                                    `json:"mlflow_run,omitempty"`
+	Deployments               []ResourceJobTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
+}
+
 type ResourceJobTaskAlertTaskSubscribers struct {
 	DestinationId string `json:"destination_id,omitempty"`
 	UserName      string `json:"user_name,omitempty"`
@@ -713,6 +734,25 @@ type ResourceJobTaskEmailNotifications struct {
 	OnStart                            []string `json:"on_start,omitempty"`
 	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeploymentsCompute struct {
+	AcceleratorCount int    `json:"accelerator_count"`
+	AcceleratorType  string `json:"accelerator_type"`
+}
+
+type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments struct {
+	CommandPath string                                                         `json:"command_path"`
+	Name        string                                                         `json:"name,omitempty"`
+	Compute     *ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeploymentsCompute `json:"compute,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskAiRuntimeTask struct {
+	CodeSourcePath            string                                                   `json:"code_source_path,omitempty"`
+	Experiment                string                                                   `json:"experiment"`
+	MlflowExperimentDirectory string                                                   `json:"mlflow_experiment_directory,omitempty"`
+	MlflowRun                 string                                                   `json:"mlflow_run,omitempty"`
+	Deployments               []ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskAlertTaskSubscribers struct {
@@ -878,10 +918,11 @@ type ResourceJobTaskForEachTaskTaskNewClusterAzureAttributesLogAnalyticsInfo str
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterAzureAttributes struct {
-	Availability     string                                                                   `json:"availability,omitempty"`
-	FirstOnDemand    int                                                                      `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                                      `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobTaskForEachTaskTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                                   `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                                   `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                                      `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                                      `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobTaskForEachTaskTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterClusterLogConfDbfs struct {
@@ -1260,6 +1301,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	RunIf                   string                                                `json:"run_if,omitempty"`
 	TaskKey                 string                                                `json:"task_key"`
 	TimeoutSeconds          int                                                   `json:"timeout_seconds,omitempty"`
+	AiRuntimeTask           *ResourceJobTaskForEachTaskTaskAiRuntimeTask          `json:"ai_runtime_task,omitempty"`
 	AlertTask               *ResourceJobTaskForEachTaskTaskAlertTask              `json:"alert_task,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
 	Compute                 *ResourceJobTaskForEachTaskTaskCompute                `json:"compute,omitempty"`
@@ -1376,10 +1418,11 @@ type ResourceJobTaskNewClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceJobTaskNewClusterAzureAttributes struct {
-	Availability     string                                                    `json:"availability,omitempty"`
-	FirstOnDemand    int                                                       `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                       `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                    `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                    `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                       `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                       `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobTaskNewClusterClusterLogConfDbfs struct {
@@ -1759,6 +1802,7 @@ type ResourceJobTask struct {
 	RunIf                   string                                 `json:"run_if,omitempty"`
 	TaskKey                 string                                 `json:"task_key"`
 	TimeoutSeconds          int                                    `json:"timeout_seconds,omitempty"`
+	AiRuntimeTask           *ResourceJobTaskAiRuntimeTask          `json:"ai_runtime_task,omitempty"`
 	AlertTask               *ResourceJobTaskAlertTask              `json:"alert_task,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
 	Compute                 *ResourceJobTaskCompute                `json:"compute,omitempty"`

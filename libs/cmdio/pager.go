@@ -38,8 +38,11 @@ type pagerModel[T any] struct {
 	spinner bubblespinner.Model
 	// fetch is bound at construction with the caller's context captured
 	// so we don't have to stash ctx on the struct (tea.Cmd has no ctx
-	// parameter of its own).
-	fetch    func() tea.Msg
+	// parameter of its own). It takes the paging state as arguments and
+	// returns a pure Cmd: bubbletea runs Cmds on their own goroutine
+	// concurrently with Update, so the returned closure must not read or
+	// write the model.
+	fetch    func(pageSize, limit, total int) tea.Cmd
 	pageSize int
 	limit    int
 	total    int
@@ -70,7 +73,9 @@ func newPagerModel[T any](
 		pageSize: pageSize,
 		limit:    limit,
 	}
-	m.fetch = func() tea.Msg { return m.doFetch(ctx) }
+	m.fetch = func(pageSize, limit, total int) tea.Cmd {
+		return func() tea.Msg { return m.doFetch(ctx, pageSize, limit, total) }
+	}
 	return m
 }
 
@@ -86,27 +91,32 @@ func newPagerSpinner() bubblespinner.Model {
 	return s
 }
 
-// batchMsg carries the rendered lines from one fetch. done is true when
-// the iterator is exhausted or the limit is reached.
+// batchMsg carries the rendered lines from one fetch. count is the number
+// of rows fetched, added to m.total in Update. done is true when the
+// iterator is exhausted or the limit is reached.
 type batchMsg struct {
 	lines []string
+	count int
 	done  bool
 	err   error
 }
 
 func (m *pagerModel[T]) Init() tea.Cmd {
 	m.fetching = true
-	return tea.Batch(m.fetch, m.spinner.Tick)
+	return tea.Batch(m.fetch(m.pageSize, m.limit, m.total), m.spinner.Tick)
 }
 
 // doFetch reads one page from the iterator and renders it into lines.
 // It runs off the update loop so a slow network fetch doesn't stall
-// key handling.
-func (m *pagerModel[T]) doFetch(ctx context.Context) tea.Msg {
-	buf := make([]any, 0, m.pageSize)
+// key handling. The paging state is passed in rather than read off the
+// model: bubbletea runs this on its own goroutine concurrently with
+// Update, so it must not touch shared model fields. m.iter and m.pager
+// are exempt because only one fetch is ever in flight at a time.
+func (m *pagerModel[T]) doFetch(ctx context.Context, pageSize, limit, total int) tea.Msg {
+	buf := make([]any, 0, pageSize)
 	done := false
-	for len(buf) < m.pageSize {
-		if m.limit > 0 && m.total+len(buf) >= m.limit {
+	for len(buf) < pageSize {
+		if limit > 0 && total+len(buf) >= limit {
 			done = true
 			break
 		}
@@ -124,8 +134,11 @@ func (m *pagerModel[T]) doFetch(ctx context.Context) tea.Msg {
 	if err != nil {
 		return batchMsg{err: err}
 	}
-	m.total += len(buf)
-	return batchMsg{lines: lines, done: done}
+	// The loop exits on len(buf) == pageSize before re-checking the limit,
+	// so a page that lands exactly on the limit leaves done false. Re-check
+	// here to avoid scheduling one more (empty) fetch on drain/advance.
+	done = done || (limit > 0 && total+len(buf) >= limit)
+	return batchMsg{lines: lines, count: len(buf), done: done}
 }
 
 func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -145,6 +158,7 @@ func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			return m, tea.Quit
 		}
+		m.total += msg.count
 		m.hasPrinted = true
 		// One Println cmd (not N) keeps the batch ordered even though
 		// tea.Sequence dispatches each cmd on its own goroutine.
@@ -158,7 +172,7 @@ func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Sequence(printCmd, tea.Quit)
 		case m.drainAll:
 			m.fetching = true
-			return m, tea.Sequence(printCmd, m.fetch)
+			return m, tea.Sequence(printCmd, m.fetch(m.pageSize, m.limit, m.total))
 		default:
 			return m, printCmd
 		}
@@ -196,7 +210,7 @@ func (m *pagerModel[T]) startAdvance() tea.Cmd {
 		return nil
 	}
 	m.fetching = true
-	return m.fetch
+	return m.fetch(m.pageSize, m.limit, m.total)
 }
 
 func (m *pagerModel[T]) startDrain() tea.Cmd {
@@ -210,7 +224,7 @@ func (m *pagerModel[T]) startDrain() tea.Cmd {
 		return nil
 	}
 	m.fetching = true
-	return m.fetch
+	return m.fetch(m.pageSize, m.limit, m.total)
 }
 
 func (m *pagerModel[T]) View() string {

@@ -1,6 +1,68 @@
 line-length = 120
 
 
-exclude = [
-    "tagging.py" # tagging.py is synced from universe in the `openapi/tagging` directory and follows different format rules.
+# Excluded from BOTH linting and formatting. These must be pruned during
+# directory traversal (not lint-only) because they either follow different rules
+# entirely (tagging.py is synced from universe) or live under their own nested
+# ruff config that a root-level lint exclude cannot reach: the instantiated
+# `bundle init` projects (acceptance/**/output) carry their own pyproject
+# [tool.ruff], and some testdata carries its own .ruff.toml. Formatting these is
+# unnecessary anyway — they are generated outputs and intentionally-varied test
+# inputs. extend-exclude (not exclude) keeps ruff's built-in defaults.
+extend-exclude = [
+    "tagging.py",
+    "acceptance/**/output",
+    # default-sql carries its own .ruff.toml above output/, which re-roots
+    # traversal and shields output/ from the acceptance/**/output prune above.
+    "acceptance/bundle/templates/default-sql",
+    "**/testdata",
 ]
+
+[lint]
+select = [
+    "E4",   # pycodestyle: import formatting (E501 line-length is left to the formatter)
+    "E7",   # pycodestyle: statement errors (e.g. `== None`, type comparisons)
+    "E9",   # pycodestyle: syntax / runtime errors
+    "F",    # pyflakes: undefined names, unused imports/variables, f-strings
+    "I",    # isort: import ordering
+    "B",    # flake8-bugbear: likely bugs (mutable defaults, zip without strict, ...)
+    "C4",   # flake8-comprehensions: simpler/clearer comprehensions
+    "PIE",  # flake8-pie: misc lints (unnecessary placeholders, dict literals, ...)
+    "FLY",  # flynt: prefer f-strings over str.join on literals
+    "FURB", # refurb: modernizations that don't change the target Python version
+    "LOG",  # flake8-logging: logging API misuse
+    "ISC",  # flake8-implicit-str-concat
+    "RUF",  # ruff-specific rules (RUF022 sorts __all__, RUF100 flags stale noqa, ...)
+]
+
+ignore = [
+    # ISC001/ISC002 are handled by the formatter; enabling them as lint rules
+    # conflicts with `ruff format`.
+    "ISC001",
+    "ISC002",
+    # The generated SDK docstrings carry non-ASCII characters copied verbatim
+    # from the OpenAPI spec; flagging them as ambiguous is a false positive.
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+# Excluded from LINTING only — these are still formatted (whole-repo `ruff
+# format` coverage is unchanged). They are acceptance fixtures and template
+# sources that intentionally don't satisfy the lint rules: Databricks notebooks
+# using the injected `spark`/`dbutils` globals, sample wheels, bundle input
+# scripts, and `.py.tmpl` template sources. The /** glob is required (a bare dir
+# name only prunes via the top-level exclude, not here).
+exclude = [
+    ".vscode/**",                 # Pylance __builtins__.pyi stub uses a star-import by design
+    "acceptance/bundle/**",       # acceptance fixtures
+    "acceptance/pipelines/**",    # acceptance fixtures
+    "acceptance/cmd/**",          # acceptance fixtures
+    "libs/template/templates/**", # template sources (.py.tmpl + fixture .py)
+]
+
+[lint.per-file-ignores]
+# dbutils and spark are injected into the global namespace by the Databricks
+# runtime where these scripts execute; they are never imported.
+"experimental/ssh/internal/client/ssh-server-bootstrap.py" = ["F821"]
+"acceptance/dbr_runner.py" = ["F821"]

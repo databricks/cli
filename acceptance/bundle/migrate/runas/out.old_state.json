@@ -145,6 +145,7 @@
             "run_as_user_name": "[USERNAME]",
             "schema": null,
             "serverless": true,
+            "serverless_compute_id": null,
             "state": "IDLE",
             "storage": null,
             "tags": null,

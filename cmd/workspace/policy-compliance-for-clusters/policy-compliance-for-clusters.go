@@ -40,6 +40,7 @@ func New() *cobra.Command {
 	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
+	cmd.AddCommand(newCancelPendingClusterEnforcement())
 	cmd.AddCommand(newEnforceCompliance())
 	cmd.AddCommand(newGetCompliance())
 	cmd.AddCommand(newListCompliance())
@@ -47,6 +48,94 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start cancel-pending-cluster-enforcement command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cancelPendingClusterEnforcementOverrides []func(
+	*cobra.Command,
+	*compute.CancelPendingClusterEnforcementRequest,
+)
+
+func newCancelPendingClusterEnforcement() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var cancelPendingClusterEnforcementReq compute.CancelPendingClusterEnforcementRequest
+	var cancelPendingClusterEnforcementJson flags.JsonFlag
+
+	cmd.Flags().Var(&cancelPendingClusterEnforcementJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().BoolVar(&cancelPendingClusterEnforcementReq.AllowMissing, "allow-missing", cancelPendingClusterEnforcementReq.AllowMissing, `If true and no pending enforcement exists, the request will succeed but no action will be taken.`)
+
+	cmd.Use = "cancel-pending-cluster-enforcement CLUSTER_ID"
+	cmd.Short = `Cancel pending policy enforcement for a cluster.`
+	cmd.Long = `Cancel pending policy enforcement for a cluster.
+
+  Cancels a pending enforcement on a cluster. After canceling the pending
+  enforcement, the cluster will no longer update on the next termination or
+  restart. Pending enforcements cannot be canceled when a cluster is in
+  TERMINATING state. Only workspace admins can cancel pending enforcements.
+
+  Arguments:
+    CLUSTER_ID: The ID of the cluster to cancel the pending enforcement for.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := cancelPendingClusterEnforcementJson.Unmarshal(&cancelPendingClusterEnforcementReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			cancelPendingClusterEnforcementReq.ClusterId = args[0]
+		}
+
+		response, err := w.PolicyComplianceForClusters.CancelPendingClusterEnforcement(ctx, cancelPendingClusterEnforcementReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range cancelPendingClusterEnforcementOverrides {
+		fn(cmd, &cancelPendingClusterEnforcementReq)
 	}
 
 	return cmd
@@ -69,21 +158,20 @@ func newEnforceCompliance() *cobra.Command {
 
 	cmd.Flags().Var(&enforceComplianceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().Var(&enforceComplianceReq.EnforceMode, "enforce-mode", `Determines how changes should be made to clusters that are not in TERMINATED state. Supported values: [ENFORCE_IMMEDIATELY, WAIT_FOR_TERMINATION]`)
 	cmd.Flags().BoolVar(&enforceComplianceReq.ValidateOnly, "validate-only", enforceComplianceReq.ValidateOnly, `If set, previews the changes that would be made to a cluster to enforce compliance but does not update the cluster.`)
 
 	cmd.Use = "enforce-compliance CLUSTER_ID"
 	cmd.Short = `Enforce cluster policy compliance.`
 	cmd.Long = `Enforce cluster policy compliance.
 
-  Updates a cluster to be compliant with the current version of its policy. A
-  cluster can be updated if it is in a RUNNING or TERMINATED state.
-
-  If a cluster is updated while in a RUNNING state, it will be restarted so
-  that the new attributes can take effect.
+  Updates a cluster to be compliant with the current version of its policy.
 
   If a cluster is updated while in a TERMINATED state, it will remain
   TERMINATED. The next time the cluster is started, the new attributes will
   take effect.
+
+  For clusters in other states, the behavior depends on the enforce_mode used.
 
   Clusters created by the Databricks Jobs, SDP, or Models services cannot be
   enforced by this API. Instead, use the "Enforce job policy compliance" API to

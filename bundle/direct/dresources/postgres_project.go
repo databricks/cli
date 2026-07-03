@@ -107,6 +107,7 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
 			Spec:                &config.ProjectSpec,
+			InitialBranchSpec:   nil,
 			InitialEndpointSpec: nil,
 
 			// Output-only fields.
@@ -158,6 +159,7 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
 		Project: postgres.Project{
 			Spec:                &config.ProjectSpec,
+			InitialBranchSpec:   nil,
 			InitialEndpointSpec: nil,
 
 			// Output-only fields.
