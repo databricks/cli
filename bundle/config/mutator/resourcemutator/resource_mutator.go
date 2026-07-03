@@ -301,7 +301,7 @@ func NormalizeResources(
 	// it on resources that already have an owner is a no-op. ApplyBundlePermissions is
 	// intentionally not re-run here: it is not idempotent (it appends bundle-level
 	// permissions) and already ran for these resources in ProcessStaticResources.
-	bundle.ApplySeqContext(ctx, b, FixPermissions())
+	bundle.ApplyContext(ctx, b, FixPermissions())
 	if logdiag.HasError(ctx) {
 		return
 	}
