@@ -1,4 +1,7 @@
-# Generated file. DO NOT EDIT.
+# Synced from universe, then relocated to run internal/genkit/tagging.py (a
+# repo-owned wrapper that renders CHANGELOG.md from .nextchanges/ fragments;
+# see that file). The `generate-genkit` task handles the path rewrite, so the
+# only divergence from the synced workflow is the script path.
 name: tagging
 
 on:

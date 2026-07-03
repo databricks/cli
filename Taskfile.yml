@@ -262,16 +262,10 @@ tasks:
     cmds:
       - "./tools/update_github_links.py"
 
-  changelog-collate:
-    desc: Collate .nextchanges fragments into NEXT_CHANGELOG.md (run at release time)
-    cmds:
-      - "./tools/collate_changelog.py"
-      - "./tools/update_github_links.py NEXT_CHANGELOG.md"
-
   changelog-check:
     desc: Validate .nextchanges fragment placement
     cmds:
-      - "./tools/collate_changelog.py --check"
+      - "./tools/validate_nextchanges.py"
 
   deadcode:
     desc: Check for dead code
@@ -766,9 +760,11 @@ tasks:
   # don't keep. Genkit does NOT modify go.mod/go.sum — SDK bumps are a manual
   # `go get` step before running this task. The cmds below then post-process
   # genkit's output: assert the SDK version matches the OpenAPI SHA, drop the
-  # next-changelog workflow, relocate tagging.py under internal/genkit/ and
-  # rewrite the tagging.yml workflow to match, then yamlfmt + whitespace fix
-  # so the tree is clean.
+  # next-changelog workflow, relocate the synced tagging.py (+ lock) to
+  # internal/genkit/tagging_upstream.py, and discard genkit's tagging.yml.
+  # internal/genkit/tagging.py is NOT genkit's file — it's a repo-owned wrapper
+  # that renders CHANGELOG.md from .nextchanges/ around tagging_upstream.py; the
+  # tagging.yml workflow runs it, so we keep our copy rather than the synced one.
   generate-genkit:
     desc: Run genkit to generate CLI commands and tagging workflow (requires universe repo)
     sources:
@@ -802,15 +798,14 @@ tasks:
       - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
       - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
       - rm .github/workflows/next-changelog.yml
-      - mv tagging.py internal/genkit/tagging.py
-      - mv tagging.py.lock internal/genkit/tagging.py.lock
-      - |
-        if [ "$(uname)" = "Darwin" ]; then
-          sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
-        else
-          sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
-        fi
-      - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
+      # tagging.yml is repo-owned (it runs the internal/genkit/tagging.py
+      # wrapper); discard genkit's regenerated copy rather than sed-rewriting it.
+      - git checkout -- .github/workflows/tagging.yml
+      # The synced file becomes tagging_upstream.py; the repo-owned wrapper keeps
+      # the tagging.py name (and reuses the synced lock, since it shares deps).
+      - mv tagging.py internal/genkit/tagging_upstream.py
+      - mv tagging.py.lock internal/genkit/tagging_upstream.py.lock
+      - cp internal/genkit/tagging_upstream.py.lock internal/genkit/tagging.py.lock
       - task: ws
 
   # Refreshes out.fields.txt, which records the field paths / types emitted by
