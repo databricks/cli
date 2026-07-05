@@ -1079,9 +1079,10 @@ func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map
 		if !ok {
 			return nil
 		}
-		// Convert dyn.Path to structpath: dyn.Path.String() uses dot notation
-		// which is ambiguous for keys containing dots; structpath uses bracket
-		// notation (['key.with.dots']) which round-trips correctly.
+		// ValidatePath and the refs keys both operate on structpath (keys are
+		// re-parsed and applied to the typed state in structvar.ResolveRef).
+		// structpath's bracket notation (['key.with.dots']) also round-trips
+		// keys with dots, which dyn.Path.String()'s dot notation cannot.
 		fieldPath := dynPathToStructPath(p)
 
 		// References resolve against the state type, not the input config (see PlanResources
