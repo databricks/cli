@@ -64,12 +64,29 @@ func TestListAiTrainingWorkflowsPaginates(t *testing.T) {
 }
 
 func TestListAiTrainingWorkflowsStopsOnRepeatedToken(t *testing.T) {
-	// A cursor that always returns the same token must not loop forever.
+	// A cursor that always returns the same token must not loop forever. The
+	// repeated id is also deduped, so only one ref survives.
 	page := `{"training_workflows":[{"job_run_id":1,"submit_time":"2023-11-14T22:13:20Z"}],"next_page_token":"tok"}`
 	var hit bool
 	srv := indexServer(t, &hit, page)
 
 	refs, err := listAiTrainingWorkflows(t.Context(), newTestWorkspaceClient(t, srv.URL), false)
 	require.NoError(t, err)
-	require.Len(t, refs, 2) // first page + one more before the repeated token stops it
+	require.Len(t, refs, 1)
+	assert.Equal(t, int64(1), refs[0].jobRunID)
+}
+
+func TestListAiTrainingWorkflowsDedupesIDs(t *testing.T) {
+	// The same job_run_id on multiple pages must be counted once, so the
+	// newest-limit truncation doesn't silently return fewer unique runs.
+	page1 := `{"training_workflows":[{"job_run_id":1,"submit_time":"2023-11-14T22:13:20Z"},{"job_run_id":2,"submit_time":"2023-11-14T22:13:21Z"}],"next_page_token":"tok"}`
+	page2 := `{"training_workflows":[{"job_run_id":2,"submit_time":"2023-11-14T22:13:21Z"},{"job_run_id":3,"submit_time":"2023-11-14T22:13:22Z"}]}`
+	var hit bool
+	srv := indexServer(t, &hit, page1, page2)
+
+	refs, err := listAiTrainingWorkflows(t.Context(), newTestWorkspaceClient(t, srv.URL), false)
+	require.NoError(t, err)
+	require.Len(t, refs, 3)
+	got := []int64{refs[0].jobRunID, refs[1].jobRunID, refs[2].jobRunID}
+	assert.ElementsMatch(t, []int64{1, 2, 3}, got)
 }

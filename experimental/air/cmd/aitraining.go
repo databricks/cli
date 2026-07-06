@@ -45,7 +45,10 @@ func listAiTrainingWorkflows(ctx context.Context, w *databricks.WorkspaceClient,
 	}
 
 	var refs []workflowRef
-	seen := map[string]bool{}
+	seenTokens := map[string]bool{}
+	// The index can return the same job_run_id on more than one page; dedupe so
+	// the newest-`limit` truncation counts unique runs, not repeats.
+	seenIDs := map[int64]bool{}
 	var pageToken string
 	for {
 		query := map[string]any{}
@@ -64,16 +67,17 @@ func listAiTrainingWorkflows(ctx context.Context, w *databricks.WorkspaceClient,
 
 		for _, wf := range resp.TrainingWorkflows {
 			id, err := wf.JobRunID.Int64()
-			if err != nil || id == 0 {
+			if err != nil || id == 0 || seenIDs[id] {
 				continue
 			}
+			seenIDs[id] = true
 			refs = append(refs, workflowRef{jobRunID: id, submitTimeMs: parseSubmitTimeMs(wf.SubmitTime)})
 		}
 
-		if resp.NextPageToken == "" || seen[resp.NextPageToken] {
+		if resp.NextPageToken == "" || seenTokens[resp.NextPageToken] {
 			break
 		}
-		seen[resp.NextPageToken] = true
+		seenTokens[resp.NextPageToken] = true
 		pageToken = resp.NextPageToken
 	}
 	return refs, nil
