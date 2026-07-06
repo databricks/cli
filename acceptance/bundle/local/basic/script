@@ -22,9 +22,19 @@ trace print_requests.py --get //jobs/get
 # The JSON plan is self-describing: local_only is true and no entry carries
 # remote_state (nothing was fetched), so deploy --plan can warn before applying it.
 title "Plan --local as JSON:\n"
-trace $CLI bundle plan --local -o json
+trace $CLI bundle plan --local -o json | tee plan.local.json
 title "Job reads during 'bundle plan --local -o json':\n"
 trace print_requests.py --get //jobs/get
+
+# deploy --plan with a --local plan warns that the plan may miss out-of-band drift.
+# READPLAN matrix runs this twice: once applying the saved plan (warns), once without.
+title "Deploy --plan with --local plan (warns):\n"
+$CLI bundle deploy $(readplanarg plan.local.json) > LOG.deploy_plan 2>&1
+cat LOG.deploy_plan | contains.py '!panic' '!internal error'
+if [[ -n "$READPLAN" ]]; then
+    cat LOG.deploy_plan | contains.py 'does not reflect the remote state'
+fi
+rm -f out.requests.txt
 
 # A --local deploy likewise does not read remote state up front and reports its use via telemetry.
 trace $CLI bundle deploy --local
