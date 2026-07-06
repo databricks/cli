@@ -1,0 +1,1 @@
+trace $CLI bundle validate -o json -t dev | jq '{run_as: .run_as}'

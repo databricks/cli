@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+run_as:
+  user_name: base-user
+
+targets:
+  dev:
+    # Null on a struct-typed field: the target override sets run_as to null,
+    # which currently leaves the base run_as value in place after merge.
+    # When null-merge semantics change this field should become absent.
+    run_as:
+
+resources:
+  jobs:
+    my_job:
+      name: my job

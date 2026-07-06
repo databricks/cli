@@ -30,6 +30,12 @@ type Root struct { //nolint:recvcheck // value receivers for read-only accessors
 	value dyn.Value
 	depth int
 
+	// nullInTargets records whether the raw YAML of this file (or any file merged
+	// into it) had a null value anywhere under the "targets" section. It is computed
+	// before normalization, which drops nulls on scalar-typed fields, so it reflects
+	// the config as authored. Surfaced as telemetry by CollectNullTelemetry.
+	nullInTargets bool
+
 	// Contains user defined variables
 	Variables map[string]*variable.Variable `json:"variables,omitempty"`
 
@@ -123,6 +129,10 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
 	}
 
+	// Detect nulls under "targets" before normalization drops nulls on
+	// scalar-typed fields, so the telemetry reflects the config as authored.
+	r.nullInTargets = hasNullUnderTargets(v)
+
 	// Normalize dynamic configuration tree according to configuration type.
 	v, diags := convert.Normalize(r, v)
 
@@ -133,6 +143,35 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 		return nil, diags
 	}
 	return &r, diags
+}
+
+// hasNullUnderTargets reports whether v has a null value anywhere under the
+// "targets" section. It operates on the raw (pre-normalization) tree, so it also
+// catches nulls on scalar-typed fields that normalization would otherwise drop.
+// YAML aliases are expanded inline by the loader, so a null inside an anchor that
+// is referenced from within a target is counted as well.
+func hasNullUnderTargets(v dyn.Value) bool {
+	targets := v.Get("targets")
+	if targets.Kind() != dyn.KindMap {
+		return false
+	}
+
+	found := false
+	_ = dyn.WalkReadOnly(targets, func(_ dyn.Path, v dyn.Value) error {
+		if v.Kind() == dyn.KindNil {
+			found = true
+			return dyn.ErrSkip
+		}
+		return nil
+	})
+	return found
+}
+
+// NullInTargets reports whether the config had a null value anywhere under the
+// "targets" section, as authored (before normalization and before target overrides
+// are merged).
+func (r *Root) NullInTargets() bool {
+	return r.nullInTargets
 }
 
 func (r *Root) initializeDynamicValue() error {
@@ -155,9 +194,11 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	// Hack: restore state; it may be cleared by [ToTyped] if
 	// the configuration equals nil (happens in tests).
 	depth := r.depth
+	nullInTargets := r.nullInTargets
 
 	defer func() {
 		r.depth = depth
+		r.nullInTargets = nullInTargets
 	}()
 
 	// Convert normalized configuration tree to typed configuration.
@@ -288,6 +329,9 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
+	// Carry over the null-in-targets signal from included files.
+	r.nullInTargets = r.nullInTargets || other.nullInTargets
+
 	// Merge dynamic configuration values.
 	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return merge.Merge(root, other.value)

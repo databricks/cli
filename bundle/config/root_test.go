@@ -170,6 +170,94 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 	assert.Equal(t, "complex var", root.Variables["complex"].Description)
 }
 
+func TestNullInTargets(t *testing.T) {
+	tests := []struct {
+		name     string
+		yaml     string
+		expected bool
+	}{
+		{
+			name: "no null under targets",
+			yaml: `
+targets:
+  dev:
+    workspace:
+      host: https://example.test
+`,
+			expected: false,
+		},
+		{
+			name: "null map value under targets",
+			yaml: `
+targets:
+  dev:
+    resources:
+`,
+			expected: true,
+		},
+		{
+			name: "scalar null under targets",
+			yaml: `
+targets:
+  dev:
+    workspace:
+      host:
+`,
+			expected: true,
+		},
+		{
+			name: "null outside targets is ignored",
+			yaml: `
+targets:
+  dev:
+    workspace:
+      host: https://example.test
+variables:
+  foo:
+`,
+			expected: false,
+		},
+		{
+			name: "no targets section",
+			yaml: `
+bundle:
+  name: test
+`,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root, diags := LoadFromBytes("databricks.yml", []byte(tt.yaml))
+			require.NoError(t, diags.Error())
+			assert.Equal(t, tt.expected, root.NullInTargets())
+		})
+	}
+}
+
+func TestNullInTargetsAccumulatesOnMerge(t *testing.T) {
+	main, diags := LoadFromBytes("databricks.yml", []byte(`
+targets:
+  dev:
+    workspace:
+      host: https://example.test
+`))
+	require.NoError(t, diags.Error())
+	require.False(t, main.NullInTargets())
+
+	included, diags := LoadFromBytes("included.yml", []byte(`
+targets:
+  dev:
+    resources:
+`))
+	require.NoError(t, diags.Error())
+	require.True(t, included.NullInTargets())
+
+	require.NoError(t, main.Merge(included))
+	assert.True(t, main.NullInTargets())
+}
+
 func TestIsFullVariableOverrideDef(t *testing.T) {
 	testCases := []struct {
 		value    dyn.Value
