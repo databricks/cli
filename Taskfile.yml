@@ -584,6 +584,11 @@ tasks:
     cmds:
       - "go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
+  update-mlops-stacks-template:
+    desc: Refresh the vendored mlops-stacks acceptance template from github.com/databricks/mlops-stacks HEAD
+    cmds:
+      - "./tools/update_mlops_stacks_template.py"
+
   test-update-aws:
     desc: Update acceptance test output (integration, requires deco access)
     sources: *ACC_SOURCES_UPDATE
