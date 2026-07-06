@@ -1,18 +1,73 @@
 # Invariant to test: migrate is successful, no drift after deploy
 # Additional checks: no internal errors / panics in any commands
 
-# Copy data files to test directory
-cp -r "$TESTDIR/../data/." . &> LOG.cp
+unset DATABRICKS_BUNDLE_ENGINE
 
-# Run init script if present
-INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
-if [ -f "$INIT_SCRIPT" ]; then
-    source "$INIT_SCRIPT" &> LOG.init
+if [ -n "${FUZZ_SEED:-}" ]; then
+    gen_fuzz_config.py --schema "${FUZZ_SCHEMA}" --seed "$FUZZ_SEED" --unique "$UNIQUE_NAME-$FUZZ_SEED" --resources "${FUZZ_RESOURCES:-}" > databricks.yml 2>LOG.gen.err
+    cat LOG.gen.err | contains.py '!Traceback' > /dev/null
+    cp databricks.yml LOG.config
+else
+    # Copy data files to test directory
+    cp -r "$TESTDIR/../data/." . &> LOG.cp
+
+    # Run init script if present
+    INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
+    if [ -f "$INIT_SCRIPT" ]; then
+        source "$INIT_SCRIPT" &> LOG.init
+    fi
+
+    envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
+
+    cp databricks.yml LOG.config
 fi
 
-envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
+cleanup() {
+    # A rejected fuzz config deployed nothing; destroying nothing hits unstubbed URLs.
+    if [ -z "${deployed:-}" ]; then
+        return
+    fi
 
-cp databricks.yml LOG.config
+    trace $CLI bundle destroy --auto-approve &> LOG.destroy
+    cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
 
-# Migrate then assert no drift. Shared with the fuzz invariant test.
-source "$TESTDIR/../migrate.sh"
+    # Run cleanup script if present
+    CLEANUP_SCRIPT="$TESTDIR/../configs/${INPUT_CONFIG:-}-cleanup.sh"
+    if [ -f "$CLEANUP_SCRIPT" ]; then
+        source "$CLEANUP_SCRIPT" &> LOG.cleanup
+    fi
+}
+
+trap cleanup EXIT
+
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy &> LOG.deploy
+deploy_rc=$?
+cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
+if [ "$deploy_rc" -ne 0 ]; then
+    exit "$deploy_rc"
+fi
+deployed=1
+
+echo INPUT_CONFIG_OK
+
+MIGRATE_ARGS=""
+# The terraform provider sorts depends_on entries alphabetically by task_key on Read
+# (see terraform-provider-databricks PR #3000). Since depends_on uses TypeList
+# (order-sensitive), terraform plan reports positional drift when the bundle config
+# specifies depends_on in a different order than the provider's sorted state.
+# This is a false positive -- the logical dependencies are identical.
+if [[ "${INPUT_CONFIG:-}" == "job_with_depends_on.yml.tmpl" ]]; then
+    MIGRATE_ARGS="--noplancheck"
+fi
+
+trace $CLI bundle deployment migrate $MIGRATE_ARGS &> LOG.migrate
+
+cat LOG.migrate | contains.py '!panic:' '!internal error' > /dev/null
+
+# A fuzzed config can migrate yet legitimately differ from the fake server, so the
+# fuzzer sets SKIP_DRIFT_CHECK to assert only no-panic; curated configs check drift.
+if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
+    $CLI bundle plan -o json > plan.json 2>plan.json.err
+    cat plan.json.err | contains.py '!panic:' '!internal error' > /dev/null
+    verify_no_drift.py plan.json
+fi

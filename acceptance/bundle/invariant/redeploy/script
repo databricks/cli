@@ -1,5 +1,8 @@
-# Invariant to test: no drift after deploy
+# Invariant to test: a second deploy of an unchanged config is a clean no-op
 # Additional checks: no internal errors / panics in validate/plan/deploy
+#
+# Catches create handlers that don't round-trip their inputs (or mutators that
+# re-derive a field), which surface as a redeploy wanting to change or recreate.
 
 if [ -n "${FUZZ_SEED:-}" ]; then
     gen_fuzz_config.py --schema "${FUZZ_SCHEMA}" --seed "$FUZZ_SEED" --unique "$UNIQUE_NAME-$FUZZ_SEED" --resources "${FUZZ_RESOURCES:-}" > databricks.yml 2>LOG.gen.err
@@ -43,10 +46,7 @@ cleanup() {
 
 trap cleanup EXIT
 
-$CLI bundle plan -o json > plan.json 2>LOG.plan_initial.err
-cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
-
-trace $CLI bundle deploy $(readplanarg plan.json) &> LOG.deploy
+trace $CLI bundle deploy &> LOG.deploy
 deploy_rc=$?
 cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
 if [ "$deploy_rc" -ne 0 ]; then
@@ -58,11 +58,13 @@ deployed=1
 # Any failures after this point will be considered as "bug detected" by fuzzer.
 echo INPUT_CONFIG_OK
 
-# A fuzzed config can deploy yet legitimately differ from the fake server, so the
-# fuzzer sets SKIP_DRIFT_CHECK to assert only no-panic; curated configs check drift.
+# A fuzzed config can deploy yet legitimately fail to redeploy or differ, so the fuzzer
+# sets SKIP_DRIFT_CHECK to assert only no-panic; curated configs check the no-op.
 if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
+    trace $CLI bundle deploy &> LOG.redeploy
+    cat LOG.redeploy | contains.py '!panic:' '!internal error' > /dev/null
+
     # Check both text and JSON plan for no changes
-    # Note, expect that there maybe more than one resource unchanged
     $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
     cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
     verify_no_drift.py LOG.planjson

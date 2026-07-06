@@ -1,11 +1,7 @@
-# Invariant: the CLI never panics on a schema-generated config, and a clean deploy has
-# no drift. gen_fuzz_config.py produces a random config; the body ../$FUZZ_INVARIANT.sh
-# (shared with the curated invariant tests) runs the deploy/drift/destroy checks. Output
-# goes to LOG.* so a violation fails by exit code, letting the same test run under any
-# seed window [START, START+COUNT).
-#
-# Rejection vs bug: bodies print INPUT_CONFIG_OK once a config deploys, so a non-zero
-# result before the marker is a rejection; a panic anywhere, or a failure after it, is a bug.
+# Invariant fuzzing: generate a random config per seed and run the real invariant test
+# script (no_drift/script or migrate/script). Rejection vs bug: those scripts print
+# INPUT_CONFIG_OK once a config deploys, so a non-zero result before the marker is a
+# rejection; a panic anywhere, or a failure after it, is a bug.
 #
 # Drift checking is opt-in (FUZZ_CHECK_DRIFT): a random config can deploy yet legitimately
 # differ from the fake server, so the committed run asserts only no-panic.
@@ -17,7 +13,7 @@ if [ -z "${FUZZ_CHECK_DRIFT:-}" ]; then
     export SKIP_DRIFT_CHECK=1
 fi
 
-# no_drift.sh reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
+# no_drift/script reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
 export READPLAN=""
 
 # Emit the schema from the CLI under test so the generator always matches it.
@@ -32,13 +28,13 @@ for ((offset = 0; offset < COUNT; offset++)); do
     dir="seed-$seed"
     mkdir -p "$dir"
 
-    # Subshell so a generator crash or shared-check failure is contained per seed.
+    # Subshell so a generator crash or invariant failure is contained per seed.
     set +e
     (
         cd "$dir"
-        gen_fuzz_config.py --schema ../schema.json --seed "$seed" --unique "$UNIQUE_NAME-$seed" --resources "${FUZZ_RESOURCES:-}" > databricks.yml 2>LOG.gen.err
-        cat LOG.gen.err | contains.py '!Traceback' > /dev/null
-        source "$TESTDIR/../${FUZZ_INVARIANT:-no_drift}.sh"
+        export FUZZ_SEED="$seed"
+        export FUZZ_SCHEMA="../schema.json"
+        source "$TESTDIR/../${FUZZ_TARGET:-no_drift}/script"
     ) > "$dir/LOG.check" 2>&1
     rc=$?
     set -e
@@ -49,9 +45,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
 
     bug=""
 
-    # A panic anywhere is a bug even if the CLI then rejects the config. Bodies write
-    # different LOG.* names, so scan them all rather than naming one (a missing name
-    # would fail the pipe under pipefail).
+    # A panic anywhere is a bug even if the CLI then rejects the config.
     if ! cat "$dir"/LOG.* 2>/dev/null | contains.py '!panic:' '!internal error' > /dev/null; then
         bug=1
     fi
@@ -63,7 +57,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
     fi
 
     if [ -n "$bug" ]; then
-        echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 task test-fuzz" >&2
+        echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} task test-fuzz" >&2
         exit 1
     fi
 done

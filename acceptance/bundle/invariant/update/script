@@ -1,4 +1,6 @@
-# Invariant to test: no drift after deploy
+# Invariant to test: editing a comment/description redeploys as an in-place update, not
+# a recreate, and converges. Exercises the update (PATCH) path create-only deploys never
+# touch.
 # Additional checks: no internal errors / panics in validate/plan/deploy
 
 if [ -n "${FUZZ_SEED:-}" ]; then
@@ -43,10 +45,7 @@ cleanup() {
 
 trap cleanup EXIT
 
-$CLI bundle plan -o json > plan.json 2>LOG.plan_initial.err
-cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
-
-trace $CLI bundle deploy $(readplanarg plan.json) &> LOG.deploy
+trace $CLI bundle deploy &> LOG.deploy
 deploy_rc=$?
 cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
 if [ "$deploy_rc" -ne 0 ]; then
@@ -58,15 +57,28 @@ deployed=1
 # Any failures after this point will be considered as "bug detected" by fuzzer.
 echo INPUT_CONFIG_OK
 
-# A fuzzed config can deploy yet legitimately differ from the fake server, so the
-# fuzzer sets SKIP_DRIFT_CHECK to assert only no-panic; curated configs check drift.
+# A fuzzed config can deploy yet legitimately differ on update, so the fuzzer sets
+# SKIP_DRIFT_CHECK to assert only no-panic; curated configs check the update path.
 if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
-    # Check both text and JSON plan for no changes
-    # Note, expect that there maybe more than one resource unchanged
-    $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
-    cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
-    verify_no_drift.py LOG.planjson
+    # Only configs with an editable comment/description exercise the update path;
+    # others just verify the deploy above (edit_fuzz_config.py --detect exits 1).
+    if edit_fuzz_config.py databricks.yml --detect 2>LOG.detect.err; then
+        # Change the comment/description; the re-plan must show an in-place update.
+        edit_fuzz_config.py databricks.yml 2>LOG.edit.err
+        cat LOG.edit.err | contains.py '!Traceback' > /dev/null
 
-    $CLI bundle plan 2>LOG.plan.err | contains.py '!panic:' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
-    cat LOG.plan.err | contains.py '!panic:' '!internal error' > /dev/null
+        $CLI bundle plan -o json > LOG.update_plan.json 2>LOG.update_plan.err
+        cat LOG.update_plan.err | contains.py '!panic:' '!internal error' > /dev/null
+
+        trace $CLI bundle deploy &> LOG.redeploy
+        cat LOG.redeploy | contains.py '!panic:' '!internal error' > /dev/null
+
+        # The edit must update in place, not recreate.
+        verify_plan_action.py LOG.update_plan.json update
+
+        # And the applied update must converge: a re-plan shows no further changes.
+        $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
+        cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
+        verify_no_drift.py LOG.planjson
+    fi
 fi
