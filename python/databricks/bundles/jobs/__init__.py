@@ -2,6 +2,9 @@ __all__ = [
     "Adlsgen2Info",
     "Adlsgen2InfoDict",
     "Adlsgen2InfoParam",
+    "AiRuntimeTask",
+    "AiRuntimeTaskDict",
+    "AiRuntimeTaskParam",
     "AlertTask",
     "AlertTaskDict",
     "AlertTaskParam",
@@ -41,6 +44,11 @@ __all__ = [
     "ComputeConfigParam",
     "ComputeDict",
     "ComputeParam",
+    "ComputeSpec",
+    "ComputeSpecAcceleratorType",
+    "ComputeSpecAcceleratorTypeParam",
+    "ComputeSpecDict",
+    "ComputeSpecParam",
     "Condition",
     "ConditionParam",
     "ConditionTask",
@@ -70,6 +78,9 @@ __all__ = [
     "DbtTask",
     "DbtTaskDict",
     "DbtTaskParam",
+    "DeploymentSpec",
+    "DeploymentSpecDict",
+    "DeploymentSpecParam",
     "DockerBasicAuth",
     "DockerBasicAuthDict",
     "DockerBasicAuthParam",
@@ -307,6 +318,11 @@ from databricks.bundles.jobs._models.adlsgen2_info import (
     Adlsgen2InfoDict,
     Adlsgen2InfoParam,
 )
+from databricks.bundles.jobs._models.ai_runtime_task import (
+    AiRuntimeTask,
+    AiRuntimeTaskDict,
+    AiRuntimeTaskParam,
+)
 from databricks.bundles.jobs._models.alert_task import (
     AlertTask,
     AlertTaskDict,
@@ -370,6 +386,15 @@ from databricks.bundles.jobs._models.compute_config import (
     ComputeConfigDict,
     ComputeConfigParam,
 )
+from databricks.bundles.jobs._models.compute_spec import (
+    ComputeSpec,
+    ComputeSpecDict,
+    ComputeSpecParam,
+)
+from databricks.bundles.jobs._models.compute_spec_accelerator_type import (
+    ComputeSpecAcceleratorType,
+    ComputeSpecAcceleratorTypeParam,
+)
 from databricks.bundles.jobs._models.condition import Condition, ConditionParam
 from databricks.bundles.jobs._models.condition_task import (
     ConditionTask,
@@ -414,6 +439,11 @@ from databricks.bundles.jobs._models.dbt_platform_task import (
     DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskDict, DbtTaskParam
+from databricks.bundles.jobs._models.deployment_spec import (
+    DeploymentSpec,
+    DeploymentSpecDict,
+    DeploymentSpecParam,
+)
 from databricks.bundles.jobs._models.docker_basic_auth import (
     DockerBasicAuth,
     DockerBasicAuthDict,

@@ -1,0 +1,12 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+[
+  "CAN_RUN",
+  "IS_OWNER"
+]
+
+>>> uv run [UV_ARGS] -q [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

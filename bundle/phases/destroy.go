@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -46,6 +47,10 @@ var destroyApprovalGroups = []approvalGroup{
 
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	deleteActions := plan.GetActions()
+
+	// Deletes of resources that are already gone remotely only clean up the state,
+	// so they don't count as destructive actions and are not listed as deletions.
+	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.Gone })
 
 	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {

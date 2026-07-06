@@ -496,6 +496,7 @@ func newCreateDatabase() *cobra.Command {
 	cmd.Flags().Var(&createDatabaseJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createDatabaseReq.DatabaseId, "database-id", createDatabaseReq.DatabaseId, `The ID to use for the Database, which will become the final component of the database's resource name.`)
+	cmd.Flags().BoolVar(&createDatabaseReq.ReplaceExisting, "replace-existing", createDatabaseReq.ReplaceExisting, `If true, update the database if it already exists instead of returning an error.`)
 	cmd.Flags().StringVar(&createDatabaseReq.Database.Name, "name", createDatabaseReq.Database.Name, `The resource name of the database.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
@@ -752,6 +753,7 @@ func newCreateProject() *cobra.Command {
 
 	cmd.Flags().Var(&createProjectJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: initial_branch_spec
 	// TODO: complex arg: initial_endpoint_spec
 	cmd.Flags().StringVar(&createProjectReq.Project.Name, "name", createProjectReq.Project.Name, `Output only.`)
 	// TODO: complex arg: spec
@@ -879,6 +881,7 @@ func newCreateRole() *cobra.Command {
 
 	cmd.Flags().Var(&createRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createRoleReq.ReplaceExisting, "replace-existing", createRoleReq.ReplaceExisting, `If true, update the role if it already exists instead of returning an error.`)
 	cmd.Flags().StringVar(&createRoleReq.RoleId, "role-id", createRoleReq.RoleId, `The ID to use for the Role, which will become the final component of the role's resource name.`)
 	cmd.Flags().StringVar(&createRoleReq.Role.Name, "name", createRoleReq.Role.Name, `Output only.`)
 	// TODO: complex arg: spec
@@ -3728,6 +3731,7 @@ func newUpdateProject() *cobra.Command {
 
 	cmd.Flags().Var(&updateProjectJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: initial_branch_spec
 	// TODO: complex arg: initial_endpoint_spec
 	cmd.Flags().StringVar(&updateProjectReq.Project.Name, "name", updateProjectReq.Project.Name, `Output only.`)
 	// TODO: complex arg: spec

@@ -201,3 +201,89 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 		})
 	}
 }
+
+func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) {
+	for _, tc := range []struct {
+		name                 string
+		language             workspace.Language
+		notebookExportFormat workspace.ExportFormat
+		expectedNames        []string
+	}{
+		{
+			name:                 "source notebook with empty language is skipped",
+			language:             "",
+			notebookExportFormat: workspace.ExportFormatSource,
+			expectedNames:        []string{"bar.py"},
+		},
+		{
+			name:                 "source notebook with unknown language is skipped",
+			language:             workspace.Language("FUTURELANG"),
+			notebookExportFormat: workspace.ExportFormatSource,
+			expectedNames:        []string{"bar.py"},
+		},
+		{
+			name:                 "jupyter notebook with unknown language keeps the .ipynb extension",
+			language:             workspace.Language("FUTURELANG"),
+			notebookExportFormat: workspace.ExportFormatJupyter,
+			expectedNames:        []string{"bar.py", "foo.ipynb"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mockedWorkspaceClient := mocks.NewMockWorkspaceClient(t)
+			mockedApiClient := mockApiClient{}
+
+			workspaceApi := mockedWorkspaceClient.GetMockWorkspaceAPI()
+			workspaceApi.EXPECT().ListAll(mock.Anything, workspace.ListWorkspaceRequest{
+				Path: "/dir",
+			}).Return([]workspace.ObjectInfo{
+				{
+					Path:       "/dir/bar.py",
+					ObjectType: workspace.ObjectTypeFile,
+				},
+				{
+					Path:       "/dir/foo",
+					Language:   tc.language,
+					ObjectType: workspace.ObjectTypeNotebook,
+				},
+			}, nil)
+
+			// Mock the get-status call used to figure out the notebook's file extension.
+			statNotebook := wsfsFileInfo{
+				ObjectInfo: workspace.ObjectInfo{
+					Path:       "/dir/foo",
+					Language:   tc.language,
+					ObjectType: workspace.ObjectTypeNotebook,
+				},
+				ReposExportFormat: tc.notebookExportFormat,
+			}
+
+			mockedApiClient.On("Do", mock.Anything, http.MethodGet, "/api/2.0/workspace/get-status", map[string]string(nil), map[string]string{
+				"path":               "/dir/foo",
+				"return_export_info": "true",
+			}, mock.AnythingOfType("*filer.wsfsFileInfo"), []func(*http.Request) error(nil)).Return(nil, statNotebook)
+
+			workspaceFilesClient := WorkspaceFilesClient{
+				workspaceClient: mockedWorkspaceClient.WorkspaceClient,
+				apiClient:       &mockedApiClient,
+				root:            NewWorkspaceRootPath("/dir"),
+			}
+
+			workspaceFilesExtensionsClient := WorkspaceFilesExtensionsClient{
+				workspaceClient: mockedWorkspaceClient.WorkspaceClient,
+				wsfs:            &workspaceFilesClient,
+			}
+
+			entries, err := workspaceFilesExtensionsClient.ReadDir(t.Context(), "/")
+			assert.NoError(t, err)
+
+			names := make([]string, len(entries))
+			for i, entry := range entries {
+				names[i] = entry.Name()
+			}
+			assert.Equal(t, tc.expectedNames, names)
+
+			workspaceApi.AssertNumberOfCalls(t, "ListAll", 1)
+			mockedApiClient.AssertNumberOfCalls(t, "Do", 1)
+		})
+	}
+}

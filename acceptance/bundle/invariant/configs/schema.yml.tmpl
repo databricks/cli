@@ -6,3 +6,7 @@ resources:
     foo:
       catalog_name: main
       name: test-schema-$UNIQUE_NAME
+      grants:
+        - principal: account users
+          privileges:
+            - USE_SCHEMA
