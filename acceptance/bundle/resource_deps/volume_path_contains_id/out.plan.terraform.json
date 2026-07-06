@@ -1,0 +1,14 @@
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.volumes.bar": {
+      "action": "create"
+    },
+    "resources.volumes.baz": {
+      "action": "create"
+    },
+    "resources.volumes.foo": {
+      "action": "create"
+    }
+  }
+}

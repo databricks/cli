@@ -1,0 +1,58 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.volumes.bar": {
+      "depends_on": [
+        {
+          "node": "resources.volumes.baz",
+          "label": "${resources.volumes.baz.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "mycatalog",
+          "name": "${resources.volumes.baz.id}",
+          "schema_name": "myschema",
+          "volume_type": "MANAGED"
+        },
+        "vars": {
+          "name": "${resources.volumes.baz.id}"
+        }
+      }
+    },
+    "resources.volumes.baz": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "mycatalog",
+          "name": "bazname",
+          "schema_name": "myschema",
+          "volume_type": "MANAGED"
+        }
+      }
+    },
+    "resources.volumes.foo": {
+      "depends_on": [
+        {
+          "node": "resources.volumes.baz",
+          "label": "${resources.volumes.baz.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "mycatalog",
+          "comment": "/Volumes/mycatalog/myschema/${resources.volumes.baz.id}",
+          "name": "fooname",
+          "schema_name": "myschema",
+          "volume_type": "MANAGED"
+        },
+        "vars": {
+          "comment": "/Volumes/mycatalog/myschema/${resources.volumes.baz.id}"
+        }
+      }
+    }
+  }
+}

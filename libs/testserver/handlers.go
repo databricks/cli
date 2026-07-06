@@ -315,7 +315,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// Dashboards:
 	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+		return req.Workspace.DashboardGet(req)
 	})
 	server.Handle("POST", "/api/2.0/lakeview/dashboards", func(req Request) any {
 		return req.Workspace.DashboardCreate(req)
