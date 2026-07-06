@@ -12,11 +12,25 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 rm -f out.requests.txt
 
+BAR_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.bar.id')
+
 # A --local plan reports no drift without reading the remote state of the jobs:
 # no GET is issued. The ${resources.jobs.bar.id} reference still resolves because
 # it comes from the local state, not a remote read.
 trace $CLI bundle plan --local
 title "Job reads during 'bundle plan --local':\n"
+trace print_requests.py --get //jobs/get
+
+# Rename bar out-of-band (simulates remote drift). --local plan still shows
+# no changes: it never reads remote state, so the rename is invisible to it.
+edit_resource.py jobs $BAR_ID <<'EOF'
+r["name"] = r["name"] + "-drifted"
+EOF
+rm -f out.requests.txt
+
+title "After out-of-band rename of bar: --local plan still shows no drift:\n"
+trace $CLI bundle plan --local
+title "Job reads during --local plan after drift:\n"
 trace print_requests.py --get //jobs/get
 
 # The JSON plan is self-describing: local_only is true and no entry carries

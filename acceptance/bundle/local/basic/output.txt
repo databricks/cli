@@ -12,6 +12,15 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> print_requests.py --get //jobs/get
 
+=== After out-of-band rename of bar: --local plan still shows no drift:
+
+>>> [CLI] bundle plan --local
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Job reads during --local plan after drift:
+
+>>> print_requests.py --get //jobs/get
+
 === Plan --local as JSON:
 
 >>> [CLI] bundle plan --local -o json

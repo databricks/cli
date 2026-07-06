@@ -19,6 +19,30 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   }
 }
 
+=== After out-of-band rename of bar: --local plan still shows no drift:
+
+>>> [CLI] bundle plan --local
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Job reads during --local plan after drift:
+
+>>> print_requests.py --get //jobs/get
+{
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+
+=== Normal plan detects the drift:
+
+>>> [CLI] bundle plan
+update jobs.bar
+update jobs.foo
+
+Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
+
 === Destroy
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
