@@ -104,6 +104,52 @@ func TestListModelPaging(t *testing.T) {
 	assert.Equal(t, 0, m.cursor)
 }
 
+func TestListModelMoreRows(t *testing.T) {
+	m := testListModel()
+	m.loading = true
+	before := len(m.rows)
+
+	next, cmd := m.Update(moreRowsMsg{rows: []listRow{{RunID: "4"}, {RunID: "5"}}})
+	m = next.(listModel)
+
+	assert.False(t, m.loading, "loading cleared after a batch arrives")
+	assert.NoError(t, m.loadErr)
+	require.Len(t, m.rows, before+2)
+	assert.Equal(t, "5", m.rows[len(m.rows)-1].RunID, "new rows appended")
+	assert.Nil(t, cmd)
+}
+
+func TestListModelMoreRowsError(t *testing.T) {
+	m := testListModel()
+	m.loading = true
+	before := len(m.rows)
+
+	next, cmd := m.Update(moreRowsMsg{err: io.ErrUnexpectedEOF})
+	m = next.(listModel)
+
+	assert.False(t, m.loading)
+	assert.ErrorIs(t, m.loadErr, io.ErrUnexpectedEOF)
+	assert.Len(t, m.rows, before, "rows unchanged on error")
+	assert.Nil(t, cmd)
+}
+
+func TestListModelMoreRowsEmptyKeepsPaging(t *testing.T) {
+	r := lipgloss.NewRenderer(io.Discard)
+	r.SetColorProfile(termenv.Ascii)
+
+	// An empty page while more runs remain re-fetches; once exhausted it stops.
+	m := newListModel(r, &runFetcher{}, testListRows(), false)
+	m.loading = true
+	next, cmd := m.Update(moreRowsMsg{})
+	m = next.(listModel)
+	assert.NotNil(t, cmd, "empty page with more to scan keeps paging")
+
+	m.fetcher.exhausted = true
+	m.loading = true
+	_, cmd = m.Update(moreRowsMsg{})
+	assert.Nil(t, cmd, "empty page stops once the fetcher is exhausted")
+}
+
 func TestListModelQuit(t *testing.T) {
 	m := testListModel()
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})

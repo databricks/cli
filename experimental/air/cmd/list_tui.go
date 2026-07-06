@@ -113,12 +113,12 @@ type moreRowsMsg struct {
 	err  error
 }
 
-// fetchCmd pulls the next batch of rows in the background; guarded by loading so
-// only one runs at a time.
-func (m *listModel) fetchCmd() tea.Cmd {
+// fetchCmd pulls the next batch of rows in the background; sets loading so only
+// one runs at a time, and returns the updated model with the fetch command.
+func (m listModel) fetchCmd() (listModel, tea.Cmd) {
 	m.loading = true
 	f := m.fetcher
-	return func() tea.Msg {
+	return m, func() tea.Msg {
 		rows, err := f.next(listPageRows)
 		return moreRowsMsg{rows: rows, err: err}
 	}
@@ -126,12 +126,12 @@ func (m *listModel) fetchCmd() tea.Cmd {
 
 // maybeFetch starts a fetch when the cursor nears the end of the loaded rows and
 // more runs may still exist.
-func (m *listModel) maybeFetch() tea.Cmd {
+func (m listModel) maybeFetch() (listModel, tea.Cmd) {
 	if m.fetcher == nil || m.loading || m.loadErr != nil || m.fetcher.exhausted {
-		return nil
+		return m, nil
 	}
 	if m.cursor < len(m.rows)-m.visibleCount() {
-		return nil
+		return m, nil
 	}
 	return m.fetchCmd()
 }
@@ -154,7 +154,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.offset = m.clampedOffset()
-		return m, m.maybeFetch()
+		return m.maybeFetch()
 
 	case moreRowsMsg:
 		m.loading = false
@@ -168,7 +168,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// A page with no matches but more to scan: keep paging so the cursor isn't
 		// stuck at the end of the loaded rows.
 		if len(msg.rows) == 0 && !m.fetcher.exhausted {
-			return m, m.fetchCmd()
+			return m.fetchCmd()
 		}
 		return m, nil
 
@@ -194,12 +194,14 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor = len(m.rows) - 1
 		case "enter":
 			// Open the selected run's MLflow page in the browser.
-			if url := m.rows[m.cursor].MLflowURL; url != "" && url != "-" {
-				return m, openURL(url)
+			if len(m.rows) > 0 {
+				if url := m.rows[m.cursor].MLflowURL; url != "" && url != "-" {
+					return m, openURL(url)
+				}
 			}
 		}
 		m.offset = m.clampedOffset()
-		return m, m.maybeFetch()
+		return m.maybeFetch()
 	}
 	return m, nil
 }
