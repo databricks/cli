@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/log"
@@ -22,6 +23,15 @@ import (
 // transport failure so FetchConstraints can classify it as E_ENV_UNSUPPORTED
 // (a resolvable target with no published environment) rather than E_FETCH.
 var errEnvKeyNotFound = errors.New("environment key not found")
+
+// maxConstraintBytes caps the constraint artifact read. The body is untrusted
+// remote content and a pyproject.toml is small; 1 MiB is far above any real
+// artifact while preventing a misbehaving or hostile host from exhausting memory.
+const maxConstraintBytes int64 = 1 << 20
+
+// constraintHTTPClient fetches constraint artifacts with an explicit timeout, so
+// the request is bounded even when the caller's context has no deadline.
+var constraintHTTPClient = &http.Client{Timeout: 30 * time.Second}
 
 // Constraints holds the parsed contents of a per-environment pyproject.toml.
 type Constraints struct {
@@ -156,7 +166,10 @@ func fetchURL(ctx context.Context, url string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build request for %s: %w", url, err)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	// Use a client with an explicit timeout rather than http.DefaultClient, which
+	// has none: the fetch of remote content must be bounded even if the caller's
+	// context carries no deadline.
+	resp, err := constraintHTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("GET %s: %w", url, err)
 	}
@@ -167,9 +180,15 @@ func fetchURL(ctx context.Context, url string) ([]byte, error) {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("GET %s: unexpected status %s", url, resp.Status)
 	}
-	data, err := io.ReadAll(resp.Body)
+	// Cap the read: the body is untrusted remote content and a pyproject.toml is
+	// small, so an oversized (or hostile) response must not be read into memory
+	// unbounded. Read one byte past the cap to detect an over-limit body.
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxConstraintBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("read body from %s: %w", url, err)
+	}
+	if int64(len(data)) > maxConstraintBytes {
+		return nil, fmt.Errorf("constraint artifact from %s exceeds %d bytes", url, maxConstraintBytes)
 	}
 	return data, nil
 }

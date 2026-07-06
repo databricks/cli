@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -142,6 +143,21 @@ func TestFetchConstraintsTransportFailureNoCache(t *testing.T) {
 	down.Close()
 
 	_, err := FetchConstraints(t.Context(), url, "serverless/serverless-v4", t.TempDir())
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrFetch, pe.Code)
+}
+
+func TestFetchConstraintsRejectsOversizedBody(t *testing.T) {
+	// An over-cap response body must be rejected (classified E_FETCH here, with no
+	// cache to fall back to) rather than read unbounded into memory.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		big := strings.Repeat("x", int(maxConstraintBytes)+100)
+		_, _ = w.Write([]byte(big))
+	}))
+	defer srv.Close()
+
+	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", t.TempDir())
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrFetch, pe.Code)
