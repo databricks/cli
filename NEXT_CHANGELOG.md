@@ -11,6 +11,7 @@
 ### Bundles
 
 * Fix permissions added to a job or pipeline by a Python (PyDABs) mutator failing to deploy with "must have exactly one owner"; the deploying identity is now set as owner, matching resources whose permissions are declared in YAML ([#5821](https://github.com/databricks/cli/pull/5821)).
+* Fix duplicate `enum` values for `catalog.SseEncryptionDetailsAlgorithm` in the generated bundle JSON schema, which caused strict JSON Schema validators (e.g. OPA) to reject the schema ([#5713](https://github.com/databricks/cli/issues/5713)).
 
 ### Dependency updates
 
