@@ -70,15 +70,15 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 		p.Flags,
 	)
 
-	p.res = &Result{
-		SchemaVersion: SchemaVersion,
-		Command:       CommandName,
-		Mode:          p.Mode.String(),
-		DryRun:        p.Check,
-		// Phases start as pending and flip to ok/error as the run progresses.
-		Phases:   initialPhases(),
-		Warnings: []Warning{},
-	}
+	// NewResult seeds Phases/Warnings to non-nil slices so --json always emits
+	// [] not null; override Phases with the canonical pending phase list.
+	p.res = NewResult()
+	p.res.SchemaVersion = SchemaVersion
+	p.res.Command = CommandName
+	p.res.Mode = p.Mode.String()
+	p.res.DryRun = p.Check
+	// Phases start as pending and flip to ok/error as the run progresses.
+	p.res.Phases = initialPhases()
 
 	if err := p.run(ctx); err != nil {
 		return p.res, err
