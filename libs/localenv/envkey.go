@@ -7,9 +7,12 @@ import (
 	"strings"
 )
 
-// clauseRe splits a single requires-python clause into its operator (optional)
-// and MAJOR.MINOR version. A clause with no operator is a bare floor.
-var clauseRe = regexp.MustCompile(`^(>=|<=|===|==|~=|!=|<|>)?\s*(\d+)\.(\d+)`)
+// clauseRe splits a single requires-python clause into its operator (optional),
+// MAJOR.MINOR version, and an optional patch component. A clause with no operator
+// is a bare floor. The patch capture (group 4) is needed to interpret a strict
+// ">" correctly: ">3.10" excludes all of 3.10.x, but ">3.10.5" is still satisfied
+// by 3.10.6, so only the former bumps the minor.
+var clauseRe = regexp.MustCompile(`^(>=|<=|===|==|~=|!=|<|>)?\s*(\d+)\.(\d+)(\.\d+)?`)
 
 // NormalizeServerless returns the canonical "vN" spelling of a serverless
 // version accepting "4", "v4", or "V4".
@@ -60,10 +63,12 @@ func PythonMinorFromRequires(requiresPython string) (string, error) {
 		}
 		major, _ := strconv.Atoi(m[2])
 		minor, _ := strconv.Atoi(m[3])
-		// A strict ">" excludes the whole given minor series (PEP 440: ">3.10"
-		// matches neither 3.10 nor any 3.10.x), so the lowest installable minor is
-		// the next one up.
-		if op == ">" {
+		hasPatch := m[4] != ""
+		// A strict ">" with no patch excludes the whole given minor series (PEP 440:
+		// ">3.10" matches neither 3.10 nor any 3.10.x), so the lowest installable
+		// minor is the next one up. But ">3.10.5" is still satisfied by 3.10.6, so a
+		// patch-qualified strict bound leaves the minor unchanged.
+		if op == ">" && !hasPatch {
 			minor++
 		}
 		if major > bestMajor || (major == bestMajor && minor > bestMinor) {

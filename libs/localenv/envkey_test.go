@@ -41,11 +41,16 @@ func TestPythonMinorFromRequires(t *testing.T) {
 		"3.12": "3.12",
 		// Whitespace and patch components tolerated.
 		">= 3.10 , < 3.13": "3.10",
-		// Strict ">" excludes the whole minor series (PEP 440), so the floor is
-		// the next minor up.
+		// Strict ">" with no patch excludes the whole minor series (PEP 440), so
+		// the floor is the next minor up.
 		">3.10":       "3.11",
 		">3.10,<3.13": "3.11",
 		">=3.9,>3.10": "3.11",
+		// Strict ">" WITH a patch does not exclude the minor series: 3.10.6
+		// satisfies ">3.10.5", so the floor stays 3.10.
+		">3.10.5":       "3.10",
+		">3.10.5,<3.13": "3.10",
+		">=3.10.2":      "3.10",
 	}
 	for in, want := range cases {
 		got, err := PythonMinorFromRequires(in)

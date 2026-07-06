@@ -157,6 +157,11 @@ type Warning struct {
 
 // Result is the full outcome of a sync run and the root of the --json object
 // (spec §6). Field order matches the spec's schema so JSON key order is stable.
+//
+// Phases and Warnings are non-omitempty slices, so they must always be non-nil
+// before marshalling or the --json contract would emit "null" instead of "[]" —
+// a distinction that trips JSON consumers and golden diffs. Construct a Result
+// with NewResult (or otherwise seed both) rather than a bare Result{} literal.
 type Result struct {
 	SchemaVersion int            `json:"schemaVersion"`
 	Command       string         `json:"command"`
@@ -177,4 +182,14 @@ type Result struct {
 	// non-deterministic), so it is always emitted as 0 until timing is wired
 	// through a clock the tests can control.
 	DurationMs int64 `json:"durationMs"`
+}
+
+// NewResult returns a Result with the non-omitempty slice fields initialized to
+// empty (non-nil) slices, so the --json output always renders "phases": [] and
+// "warnings": [] rather than "null". Callers fill in the remaining fields.
+func NewResult() *Result {
+	return &Result{
+		Phases:   []PhaseStatus{},
+		Warnings: []Warning{},
+	}
 }
