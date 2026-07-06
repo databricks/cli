@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-// collectNullTelemetry records whether the config has any null value anywhere
+// collectNullTelemetry records per-category flags for null values found anywhere
 // under the "targets" section, as authored. The signal is computed at load time
 // (before normalization drops nulls on scalar-typed fields) and accumulated across
 // all included files; this mutator just surfaces it as telemetry.
@@ -22,6 +22,12 @@ func (*collectNullTelemetry) Name() string {
 }
 
 func (*collectNullTelemetry) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	b.Metrics.SetBoolValue("null-in-targets", b.Config.NullInTargets())
+	info := b.Config.NullInTargets()
+	b.Metrics.SetBoolValue("null-in-targets", info.Any())
+	b.Metrics.SetBoolValue("null-in-targets.scalar", info.Scalar)
+	b.Metrics.SetBoolValue("null-in-targets.complex", info.Complex)
+	b.Metrics.SetBoolValue("null-in-targets.map-key", info.MapKey)
+	b.Metrics.SetBoolValue("null-in-targets.array-index", info.ArrayIndex)
+	b.Metrics.SetBoolValue("null-in-targets.resource", info.Resource)
 	return nil
 }

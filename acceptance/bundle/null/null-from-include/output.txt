@@ -22,3 +22,8 @@ Deployment complete!
 
 >>> print_telemetry_bool_values
 null-in-targets true
+null-in-targets.array-index false
+null-in-targets.complex false
+null-in-targets.map-key false
+null-in-targets.resource false
+null-in-targets.scalar true

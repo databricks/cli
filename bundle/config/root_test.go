@@ -174,7 +174,7 @@ func TestNullInTargets(t *testing.T) {
 	tests := []struct {
 		name     string
 		yaml     string
-		expected bool
+		expected NullInTargetsInfo
 	}{
 		{
 			name: "no null under targets",
@@ -184,26 +184,59 @@ targets:
     workspace:
       host: https://example.test
 `,
-			expected: false,
+			expected: NullInTargetsInfo{},
 		},
 		{
-			name: "null map value under targets",
-			yaml: `
-targets:
-  dev:
-    resources:
-`,
-			expected: true,
-		},
-		{
-			name: "scalar null under targets",
+			name: "scalar null: workspace.host",
 			yaml: `
 targets:
   dev:
     workspace:
       host:
 `,
-			expected: true,
+			expected: NullInTargetsInfo{Scalar: true},
+		},
+		{
+			name: "complex null: run_as at top level of target",
+			yaml: `
+targets:
+  dev:
+    run_as:
+`,
+			expected: NullInTargetsInfo{Complex: true},
+		},
+		{
+			name: "resource null: resources.jobs.foo",
+			yaml: `
+targets:
+  dev:
+    resources:
+      jobs:
+        foo:
+`,
+			expected: NullInTargetsInfo{Resource: true},
+		},
+		{
+			name: "scalar null inside resource: resources.jobs.foo.description",
+			yaml: `
+targets:
+  dev:
+    resources:
+      jobs:
+        foo:
+          description:
+`,
+			expected: NullInTargetsInfo{Scalar: true},
+		},
+		{
+			name: "map-key null: variables.foo",
+			yaml: `
+targets:
+  dev:
+    variables:
+      foo:
+`,
+			expected: NullInTargetsInfo{MapKey: true},
 		},
 		{
 			name: "null outside targets is ignored",
@@ -215,7 +248,7 @@ targets:
 variables:
   foo:
 `,
-			expected: false,
+			expected: NullInTargetsInfo{},
 		},
 		{
 			name: "no targets section",
@@ -223,7 +256,7 @@ variables:
 bundle:
   name: test
 `,
-			expected: false,
+			expected: NullInTargetsInfo{},
 		},
 	}
 
@@ -244,18 +277,18 @@ targets:
       host: https://example.test
 `))
 	require.NoError(t, diags.Error())
-	require.False(t, main.NullInTargets())
+	require.Equal(t, NullInTargetsInfo{}, main.NullInTargets())
 
 	included, diags := LoadFromBytes("included.yml", []byte(`
 targets:
   dev:
-    resources:
+    run_as:
 `))
 	require.NoError(t, diags.Error())
-	require.True(t, included.NullInTargets())
+	require.Equal(t, NullInTargetsInfo{Complex: true}, included.NullInTargets())
 
 	require.NoError(t, main.Merge(included))
-	assert.True(t, main.NullInTargets())
+	assert.Equal(t, NullInTargetsInfo{Complex: true}, main.NullInTargets())
 }
 
 func TestIsFullVariableOverrideDef(t *testing.T) {

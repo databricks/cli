@@ -22,6 +22,11 @@ has_serverless_compute false
 local.cache.attempt true
 local.cache.miss true
 null-in-targets false
+null-in-targets.array-index false
+null-in-targets.complex false
+null-in-targets.map-key false
+null-in-targets.resource false
+null-in-targets.scalar false
 permissions_section_set false
 presets_name_prefix_is_set false
 python_wheel_wrapper_is_set false

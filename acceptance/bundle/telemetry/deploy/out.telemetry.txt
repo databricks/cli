@@ -47,6 +47,26 @@
               "value": false
             },
             {
+              "key": "null-in-targets.scalar",
+              "value": false
+            },
+            {
+              "key": "null-in-targets.complex",
+              "value": false
+            },
+            {
+              "key": "null-in-targets.map-key",
+              "value": false
+            },
+            {
+              "key": "null-in-targets.array-index",
+              "value": false
+            },
+            {
+              "key": "null-in-targets.resource",
+              "value": false
+            },
+            {
               "key": "local.cache.attempt",
               "value": true
             },
