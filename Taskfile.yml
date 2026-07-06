@@ -385,22 +385,24 @@ tasks:
 
   test:
     desc: Run unit and acceptance tests
-    deps:
-      - task: test-unit
-      - task: test-acc
-        vars:
-          ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
+    # Run the legs as sequential cmds (not parallel deps) so the concatenating
+    # cat can be a `defer`, which runs even when a leg fails. When the legs are
+    # deps, the cat in cmds is skipped on failure, so test-output.json is never
+    # produced for a failed run and CI has no gotestsum output to upload.
     sources:
       - test-output-unit.json
       - test-output-acc.json
     generates:
       - test-output.json
     cmds:
-      - cat test-output-unit.json test-output-acc.json > test-output.json
+      - defer: cat test-output-unit.json test-output-acc.json > test-output.json
+      - task: test-unit
+      - task: test-acc
+        vars:
+          ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
 
   test-unit:
     desc: Run unit tests across all Go modules (root, tools, codegen)
-    deps: ['test-unit-root', 'test-unit-tools', 'test-unit-codegen']
     sources:
       - test-output-unit-root.json
       - tools/test-output-unit-tools.json
@@ -408,7 +410,10 @@ tasks:
     generates:
       - test-output-unit.json
     cmds:
-      - cat test-output-unit-root.json tools/test-output-unit-tools.json bundle/internal/tf/codegen/test-output-unit-codegen.json > test-output-unit.json
+      - defer: cat test-output-unit-root.json tools/test-output-unit-tools.json bundle/internal/tf/codegen/test-output-unit-codegen.json > test-output-unit.json
+      - task: test-unit-root
+      - task: test-unit-tools
+      - task: test-unit-codegen
 
   test-unit-root:
     desc: Run unit tests in root module

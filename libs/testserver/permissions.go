@@ -314,25 +314,27 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		})
 	}
 
-	// Validate job ownership requirements
-	if requestObjectType == "jobs" {
-		hasOwner := false
+	// Jobs and pipelines require exactly one owner. The real Permissions API rejects
+	// a PUT with zero owners OR more than one owner (verified against the backend);
+	// both cases return "The <type> must have exactly one owner."
+	ownerNoun := map[string]string{"jobs": "job", "pipelines": "pipeline"}[requestObjectType]
+	if ownerNoun != "" {
+		owners := 0
 		for _, acl := range existingPermissions.AccessControlList {
 			for _, perm := range acl.AllPermissions {
 				if perm.PermissionLevel == "IS_OWNER" {
-					hasOwner = true
-					break
+					owners++
 				}
-			}
-			if hasOwner {
-				break
 			}
 		}
 
-		if !hasOwner {
+		if owners != 1 {
 			return Response{
 				StatusCode: 400,
-				Body:       map[string]string{"message": "The job must have exactly one owner."},
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    "The " + ownerNoun + " must have exactly one owner.",
+				},
 			}
 		}
 	}
