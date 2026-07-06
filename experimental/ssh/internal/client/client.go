@@ -722,7 +722,7 @@ func validateBaseEnvironmentVersion(ctx context.Context, client *databricks.Work
 
 	envs, err := client.Environments.ListWorkspaceBaseEnvironmentsAll(ctx, environments.ListWorkspaceBaseEnvironmentsRequest{})
 	if err != nil {
-		return nil
+		return nil //nolint:nilerr // fail-open: don't block a valid connect on a transient list error
 	}
 
 	isResourceID := strings.HasPrefix(input, "workspace-base-environments/")
@@ -736,7 +736,7 @@ func validateBaseEnvironmentVersion(ctx context.Context, client *databricks.Work
 		}
 		version, err := strconv.Atoi(e.Spec.EnvironmentVersion)
 		if err != nil {
-			return nil
+			return nil //nolint:nilerr // fail-open: an empty/unparseable version is not checkable, so don't block
 		}
 		if version > maxSupportedEnvironmentVersion {
 			return fmt.Errorf("base environment %q uses serverless environment version %d, which is not supported by ssh connect (supported: version <= %d) — use a base environment created with environment_version %d", input, version, maxSupportedEnvironmentVersion, maxSupportedEnvironmentVersion)
