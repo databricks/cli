@@ -10,5 +10,14 @@ Ignore = [
     "databricks.yml",
 ]
 
+# Also run with --local: plan/deploy issue the same requests with or without --local
+# so the recorded output is identical across variants.
+EnvRepl.LOCAL = false
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["direct"]
+  LOCAL = ["", "--local"]
+
+[[Repls]]
+Old = " --local"
+New = ""
