@@ -41,10 +41,10 @@ const (
 	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
 	// consistency: the first GET after a create returns 404 (not yet visible).
 	EventualConsistencyTokenPrefix = "dbapi3"
-	UserID                           = "1000012345"
-	TestDefaultClusterId             = "0123-456789-cluster0"
-	TestDefaultWarehouseId           = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId        = "0123-456789-pool0"
+	UserID                         = "1000012345"
+	TestDefaultClusterId           = "0123-456789-cluster0"
+	TestDefaultWarehouseId         = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId      = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
