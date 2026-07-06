@@ -1,0 +1,18 @@
+bundle:
+  name: local-references-$UNIQUE_NAME
+
+resources:
+  jobs:
+    bar:
+      name: bar-$UNIQUE_NAME
+
+    foo:
+      name: foo-$UNIQUE_NAME
+      tasks:
+        - task_key: tag_owner
+          notebook_task:
+            # creator_user_name is a remote-only field: it exists in the remote
+            # schema but not in config. Under --local, bar's remote state is not
+            # fetched during planning, but resolving this reference forces a
+            # targeted fetch of bar on demand.
+            notebook_path: /path/${resources.jobs.bar.creator_user_name}

@@ -1,0 +1,19 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Destroy"
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy so that bar's ID and creator_user_name are recorded in the local state.
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+# A --local plan skips proactive remote reads but still resolves references.
+# foo references bar.creator_user_name, which is remote-only (absent from config),
+# so remoteStateForRef fetches bar on demand. Only that one GET is issued.
+trace $CLI bundle plan --local
+title "Job reads during 'bundle plan --local':\n"
+trace print_requests.py --get //jobs/get
