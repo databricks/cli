@@ -111,9 +111,9 @@ func TestValidate(t *testing.T) {
 		{
 			name: "base environment with serverless GPU accelerator",
 			opts: client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10", BaseEnvironment: "my-gpu-env"},
-    },
-    {
-      name:    "usage policy with cluster ID",
+		},
+		{
+			name:    "usage policy with cluster ID",
 			opts:    client.ClientOptions{ClusterID: "abc-123", UsagePolicyID: "pol-1"},
 			wantErr: "--usage-policy-id flag can only be used with serverless compute (--name flag)",
 		},
