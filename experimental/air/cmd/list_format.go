@@ -5,9 +5,8 @@ import (
 	"time"
 )
 
-// buildListRow extracts the columns shown for one run. Optional text columns fall
-// back to "-" so the table stays aligned. MLflow links aren't carried by
-// runs/list, so the column shows "-".
+// buildListRow extracts the columns shown for one run. Optional cells fall back
+// to "-"; MLflowURL starts as "-" and setMLflowLinks fills it in for text output.
 func buildListRow(run *jobRun) listRow {
 	experiment := "-"
 	if e := jobExperiment(run); e != "" {
