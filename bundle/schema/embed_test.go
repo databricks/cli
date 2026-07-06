@@ -94,11 +94,10 @@ func duplicateEnumPaths(v any, path string) []string {
 			}
 		}
 		for key, value := range v {
-			childPath := key
 			if path != "" {
-				childPath = path + "/" + key
+				key = path + "/" + key
 			}
-			duplicates = append(duplicates, duplicateEnumPaths(value, childPath)...)
+			duplicates = append(duplicates, duplicateEnumPaths(value, key)...)
 		}
 	case []any:
 		for i, value := range v {
