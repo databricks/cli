@@ -40,43 +40,42 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	}
 }
 
-// DoRead reads the run's job_id back via GetRun. A not-found (out-of-band delete
-// or run-history expiry) lets the planner re-trigger. RemoteType == StateType,
-// so no RemapState is needed.
+// DoRead returns a faithful view of the remote run; a 404 lets the planner
+// re-trigger. Remote-only diffs never count as drift (root ignore_remote_changes);
+// only a local change recreates it. RemoteType == StateType.
 func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunState, error) {
 	runID, err := parseRunID(id)
 	if err != nil {
 		return nil, err
 	}
-	run, err := r.client.Jobs.GetRun(ctx, jobs.GetRunRequest{
-		RunId:                 runID,
-		IncludeHistory:        false,
-		IncludeResolvedValues: false,
-		PageToken:             "",
-		ForceSendFields:       nil,
-	})
+	var req jobs.GetRunRequest
+	req.RunId = runID
+	run, err := r.client.Jobs.GetRun(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	// Record only job_id: a run is immutable and re-triggers only on local config
-	// changes, so reading its parameters back would just feed drift we suppress.
-	return &JobRunState{RunNow: jobs.RunNow{
-		DbtCommands:       nil,
-		IdempotencyToken:  "",
-		JarParams:         nil,
-		JobId:             run.JobId,
-		JobParameters:     nil,
-		NotebookParams:    nil,
-		Only:              nil,
-		PerformanceTarget: "",
-		PipelineParams:    nil,
-		PythonNamedParams: nil,
-		PythonParams:      nil,
-		Queue:             nil,
-		SparkSubmitParams: nil,
-		SqlParams:         nil,
-		ForceSendFields:   nil,
-	}}, nil
+	var state JobRunState
+	state.JobId = run.JobId
+	if p := run.OverridingParameters; p != nil {
+		state.DbtCommands = p.DbtCommands
+		state.JarParams = p.JarParams
+		state.NotebookParams = p.NotebookParams
+		state.PipelineParams = p.PipelineParams
+		state.PythonNamedParams = p.PythonNamedParams
+		state.PythonParams = p.PythonParams
+		state.SparkSubmitParams = p.SparkSubmitParams
+		state.SqlParams = p.SqlParams
+	}
+	// GetRun returns job_parameters resolved to the job's full set, not the
+	// override map we sent, so it never round-trips; ignore_remote_changes
+	// absorbs the diff.
+	if len(run.JobParameters) > 0 {
+		state.JobParameters = make(map[string]string, len(run.JobParameters))
+		for _, p := range run.JobParameters {
+			state.JobParameters[p.Name] = p.Value
+		}
+	}
+	return &state, nil
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunState, error) {

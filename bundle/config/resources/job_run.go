@@ -19,6 +19,11 @@ import (
 type JobRun struct {
 	BaseResource
 	jobs.RunNow
+
+	// ResolvedJobID holds the run's job_id loaded from state, used only to build
+	// the run URL. Keeping it separate from RunNow.JobId (a ${resources.jobs.*.id}
+	// reference) lets state loading preserve that reference and its plan dependency.
+	ResolvedJobID int64 `json:"resolved_job_id,omitempty" bundle:"internal"`
 }
 
 func (r *JobRun) UnmarshalJSON(b []byte) error {
@@ -67,13 +72,16 @@ func (r *JobRun) GetURL() string {
 	return r.URL
 }
 
-// InitializeURL sets the run's workspace URL once both addressing IDs are known.
-// Before deploy the run id (from state) or job id (an unresolved
-// ${resources.jobs.*.id} reference) may be missing, so we skip rather than emit
-// a broken jobs/0 URL.
+// InitializeURL sets the run's workspace URL. The job id comes from RunNow.JobId
+// when resolved (deploy) or ResolvedJobID from state (read-only commands); if
+// either id is missing we skip rather than emit a broken jobs/0 URL.
 func (r *JobRun) InitializeURL(baseURL url.URL) {
-	if r.ID == "" || r.JobId == 0 {
+	jobID := r.JobId
+	if jobID == 0 {
+		jobID = r.ResolvedJobID
+	}
+	if r.ID == "" || jobID == 0 {
 		return
 	}
-	r.URL = workspaceurls.JobRunURL(baseURL, strconv.FormatInt(r.JobId, 10), r.ID)
+	r.URL = workspaceurls.JobRunURL(baseURL, strconv.FormatInt(jobID, 10), r.ID)
 }

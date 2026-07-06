@@ -46,34 +46,24 @@ func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMa
 		return diag.FromErr(err)
 	}
 
-	// Restore each job run's resolved job_id into the dynamic config via Mutate.
-	// Do it before the dashboard etag assignment below: that write is typed-only,
-	// and Mutate would rebuild the typed struct and drop the etag.
-	if err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		for resourceKey, rstate := range state {
-			if !strings.HasPrefix(resourceKey, "resources.job_runs.") || rstate.JobID == 0 {
-				continue
-			}
-			parts := strings.Split(resourceKey, ".")
-			if len(parts) != 3 {
-				continue
-			}
-
-			// A run in state but not config was deleted; skip it.
-			runPath := dyn.Path{dyn.Key("resources"), dyn.Key("job_runs"), dyn.Key(parts[2])}
-			if run, _ := dyn.GetByPath(v, runPath); !run.IsValid() {
-				continue
-			}
-
-			var err error
-			v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key("job_runs"), dyn.Key(parts[2]), dyn.Key("job_id")}, dyn.V(rstate.JobID))
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
+	// Load each run's resolved job_id into ResolvedJobID (for the URL only). We
+	// leave config's job_id ${resources.jobs.*.id} reference intact so it keeps
+	// its plan dependency. Typed-only write, like the dashboard etag below.
+	for resourceKey, rstate := range state {
+		if !strings.HasPrefix(resourceKey, "resources.job_runs.") || rstate.JobID == 0 {
+			continue
 		}
-		return v, nil
-	}); err != nil {
-		return diag.FromErr(err)
+		parts := strings.Split(resourceKey, ".")
+		if len(parts) != 3 {
+			continue
+		}
+
+		// A run in state but not config was deleted; skip it.
+		jrconfig, ok := b.Config.Resources.JobRuns[parts[2]]
+		if !ok {
+			continue
+		}
+		jrconfig.ResolvedJobID = rstate.JobID
 	}
 
 	// Merge dashboard etags into configuration.
