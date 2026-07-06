@@ -50,7 +50,7 @@ func runBuildStateFromTF(
 	db.OpenWithData(statePath, dstate.NewDatabase("lineage", 1))
 	require.NoError(t, db.UpgradeToWrite())
 
-	err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs)
+	_, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
 	require.NoError(t, err)
 
 	_, err = db.Finalize(t.Context())
@@ -194,6 +194,58 @@ resources:
 			// job_id must be stored as 9007199254740993, not 9007199254740992 (float64 truncation).
 			// Check raw bytes because json.Unmarshal would silently re-truncate when reading back.
 			wantStateRaw: `"job_id": 9007199254740993`,
+		},
+		{
+			// model_serving_endpoints permissions reference object_id via the parent's
+			// "endpoint_id", which is absent from the parent's TF state attributes. The
+			// object_id must come from the permissions node's own TF state ID instead.
+			name: "model_serving_endpoints permissions object_id from node ID",
+			yaml: `
+resources:
+  model_serving_endpoints:
+    foo:
+      name: my-endpoint
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_model_serving": {"foo": json.RawMessage(`{"id": "my-endpoint", "name": "my-endpoint"}`)},
+			},
+			tfIDs: map[string]string{
+				"resources.model_serving_endpoints.foo":             "my-endpoint",
+				"resources.model_serving_endpoints.foo.permissions": "/serving-endpoints/abc123",
+			},
+			wantKey:   "resources.model_serving_endpoints.foo.permissions",
+			wantID:    "/serving-endpoints/abc123",
+			wantState: map[string]any{"object_id": "/serving-endpoints/abc123"},
+			wantDeps:  []deployplan.DependsOnEntry{{Node: "resources.model_serving_endpoints.foo"}},
+		},
+		{
+			// database_instances permissions reference object_id via the parent's "id",
+			// which is absent from the parent's TF state attributes (it is stored under
+			// "name"). The object_id must come from the permissions node's own TF state ID.
+			name: "database_instances permissions object_id from node ID",
+			yaml: `
+resources:
+  database_instances:
+    foo:
+      name: my-db-instance
+      permissions:
+        - level: CAN_USE
+          group_name: users
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_database_instance": {"foo": json.RawMessage(`{"name": "my-db-instance"}`)},
+			},
+			tfIDs: map[string]string{
+				"resources.database_instances.foo":             "my-db-instance",
+				"resources.database_instances.foo.permissions": "/database-instances/my-db-instance",
+			},
+			wantKey:   "resources.database_instances.foo.permissions",
+			wantID:    "/database-instances/my-db-instance",
+			wantState: map[string]any{"object_id": "/database-instances/my-db-instance"},
+			wantDeps:  []deployplan.DependsOnEntry{{Node: "resources.database_instances.foo"}},
 		},
 		{
 			name: "dashboard etag stored from TF attributes",

@@ -37,12 +37,11 @@ func TestResolveFieldRefInt(t *testing.T) {
 	// Remove dst from state so Method A fails and Method B must be used.
 	delete(state["databricks_job"], "dst")
 
-	ctx := t.Context()
 	fieldPath, err := structpath.ParsePath("max_concurrent_runs")
 	require.NoError(t, err)
 
-	value, err := migrate.ResolveFieldRef(ctx, state, "jobs", "dst", fieldPath,
-		"${resources.jobs.src.max_concurrent_runs}")
+	value, _, err := migrate.ResolveFieldRef(t.Context(), state, "jobs", "dst", fieldPath,
+		"${resources.jobs.src.max_concurrent_runs}", "")
 	require.NoError(t, err)
 
 	// Method B succeeds: returns string "4". Verify Set converts it to int.
@@ -60,12 +59,11 @@ func TestResolveFieldRefBool(t *testing.T) {
 	state := testState()
 	delete(state["databricks_job"], "dst")
 
-	ctx := t.Context()
 	fieldPath, err := structpath.ParsePath("always_running")
 	require.NoError(t, err)
 
-	value, err := migrate.ResolveFieldRef(ctx, state, "jobs", "dst", fieldPath,
-		"${resources.jobs.src.always_running}")
+	value, _, err := migrate.ResolveFieldRef(t.Context(), state, "jobs", "dst", fieldPath,
+		"${resources.jobs.src.always_running}", "")
 	require.NoError(t, err)
 
 	type target struct {

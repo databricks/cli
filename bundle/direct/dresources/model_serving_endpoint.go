@@ -101,6 +101,7 @@ func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemot
 		Name:               state.Name,
 		RouteOptimized:     state.RouteOptimized,
 		Tags:               state.Tags,
+		TelemetryConfig:    state.TelemetryConfig,
 		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](state.EndpointDetails.ForceSendFields),
 
 		// Rate limits are a deprecated field that are not returned by the API on GET calls. Thus we map them to nil.
@@ -123,6 +124,7 @@ type ModelServingEndpointRemote struct {
 	Name               string                           `json:"name,omitempty"`
 	RouteOptimized     bool                             `json:"route_optimized,omitempty"`
 	Tags               []serving.EndpointTag            `json:"tags,omitempty"`
+	TelemetryConfig    *serving.TelemetryConfig         `json:"telemetry_config,omitempty"`
 }
 
 func newModelServingEndpointRemote(details *serving.ServingEndpointDetailed) *ModelServingEndpointRemote {
@@ -137,6 +139,7 @@ func newModelServingEndpointRemote(details *serving.ServingEndpointDetailed) *Mo
 		Name:               details.Name,
 		RouteOptimized:     details.RouteOptimized,
 		Tags:               details.Tags,
+		TelemetryConfig:    details.TelemetryConfig,
 	}
 }
 

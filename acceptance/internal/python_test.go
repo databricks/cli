@@ -16,12 +16,13 @@ func TestPythonVersionOK(t *testing.T) {
 	assert.False(t, pythonVersionOK("garbage", "3.11"))
 }
 
-func TestEnsurePython(t *testing.T) {
+func TestConfigurePython(t *testing.T) {
 	if _, err := exec.LookPath("uv"); err != nil {
 		t.Skip("uv not installed")
 	}
 
-	EnsurePython(t, "3.11")
+	RequirePython(t, "3.11")
+	ConfigurePython(t, "3.11")
 
 	// After setup, the python3 resolved from PATH must satisfy the floor.
 	out, err := exec.Command("python3", "-c", "import sys; print(sys.version_info >= (3, 11))").Output()

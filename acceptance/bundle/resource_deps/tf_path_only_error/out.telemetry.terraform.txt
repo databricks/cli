@@ -1,3 +1,5 @@
+direct_drymigrate_success true
+direct_drymigrate_warnings false
 dms_compat_auto true
 dms_undeclared_deploying_user false
 dms_undeclared_group false

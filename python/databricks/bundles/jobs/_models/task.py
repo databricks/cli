@@ -8,6 +8,10 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
+from databricks.bundles.jobs._models.ai_runtime_task import (
+    AiRuntimeTask,
+    AiRuntimeTaskParam,
+)
 from databricks.bundles.jobs._models.alert_task import AlertTask, AlertTaskParam
 from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
     CleanRoomsNotebookTask,
@@ -28,10 +32,7 @@ from databricks.bundles.jobs._models.dbt_platform_task import (
     DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
-from databricks.bundles.jobs._models.for_each_task import (
-    ForEachTask,
-    ForEachTaskParam,
-)
+from databricks.bundles.jobs._models.for_each_task import ForEachTask, ForEachTaskParam
 from databricks.bundles.jobs._models.gen_ai_compute_task import (
     GenAiComputeTask,
     GenAiComputeTaskParam,
@@ -106,6 +107,14 @@ class Task:
     A unique name for the task. This field is used to refer to this task from other tasks.
     This field is required and must be unique within its parent job.
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
+    """
+
+    ai_runtime_task: VariableOrOptional[AiRuntimeTask] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The task runs a multi-node GPU compute workload on Databricks AI Runtime.
+    External-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.
     """
 
     alert_task: VariableOrOptional[AlertTask] = None
@@ -336,6 +345,14 @@ class TaskDict(TypedDict, total=False):
     A unique name for the task. This field is used to refer to this task from other tasks.
     This field is required and must be unique within its parent job.
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
+    """
+
+    ai_runtime_task: VariableOrOptional[AiRuntimeTaskParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The task runs a multi-node GPU compute workload on Databricks AI Runtime.
+    External-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.
     """
 
     alert_task: VariableOrOptional[AlertTaskParam]
