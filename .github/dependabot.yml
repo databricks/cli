@@ -30,6 +30,7 @@ updates:
     exclude-paths:
       - "acceptance/**"
       - "cmd/labs/project/testdata/**"
+      - "python/codegen/**"
   - package-ecosystem: "uv"
     directory: "/"
     schedule:
@@ -39,6 +40,7 @@ updates:
     exclude-paths:
       - "acceptance/**"
       - "cmd/labs/project/testdata/**"
+      - "python/codegen/**"
   # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#directories
   - package-ecosystem: "github-actions"
     directories:
