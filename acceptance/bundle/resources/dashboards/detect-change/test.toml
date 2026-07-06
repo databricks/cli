@@ -15,7 +15,7 @@ MSYS_NO_PATHCONV = "1"
 # Under eventual consistency the plan's own read (CheckDashboardsModifiedRemotely)
 # would observe the stale pre-update value and miss the change -- an engine-level read
 # that no test-level retry can fix -- so opt out of the simulation here.
-TESTS_STALE_ONCE = "0"
+TESTS_STALE_ONCE_IF_DIRECT = "0"
 
 [[Repls]]
 Old = "[0-9a-z]{16,}"

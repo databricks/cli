@@ -14,4 +14,4 @@ MSYS_NO_PATHCONV = "1"
 # Direct-engine eventual consistency: the first GET of a freshly created dashboard
 # returns 404, so reads right after deploy must be retried (retry.py). Skipped on
 # terraform, whose provider reads the dashboard back after create and fails on the 404.
-TESTS_STALE_ONCE = "1"
+TESTS_STALE_ONCE_IF_DIRECT = "1"
