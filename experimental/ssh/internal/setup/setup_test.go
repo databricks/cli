@@ -174,6 +174,7 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 
 	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
 		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
 	}, nil)
 
 	opts := SetupOptions{
@@ -224,6 +225,7 @@ func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
 	clustersAPI := m.GetMockClustersAPI()
 	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
 		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
 	}, nil)
 
 	opts := SetupOptions{
@@ -268,6 +270,7 @@ func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
 	clustersAPI := m.GetMockClustersAPI()
 	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "picked-cluster"}).Return(&compute.ClusterDetails{
 		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
 	}, nil)
 
 	opts := SetupOptions{
@@ -308,6 +311,7 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 
 	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-456"}).Return(&compute.ClusterDetails{
 		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
 	}, nil)
 
 	opts := SetupOptions{

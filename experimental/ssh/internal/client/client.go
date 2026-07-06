@@ -826,14 +826,19 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, createConn)
 }
 
-// accessModeUILabel maps a DataSecurityMode to the access-mode name shown in the
-// Databricks UI. The API enum (e.g. USER_ISOLATION) differs from the label the user
-// picked when creating the cluster (e.g. "Standard"), so the error message uses the UI
-// label to stay recognizable. Legacy/auto/unknown modes fall back to their raw value.
-func accessModeUILabel(mode compute.DataSecurityMode) string {
+// accessModeUILabel maps a cluster's access mode to the name shown in the Databricks UI.
+// The API enum (e.g. USER_ISOLATION) differs from the label the user picked when creating
+// the cluster (e.g. "Standard"), so the error message uses the UI label to stay recognizable.
+// A Dedicated cluster can be assigned to a single user or to a group; only the single-user
+// form works with the SSH tunnel, so the two are distinguished by whether single_user_name is
+// set. Legacy/auto/unknown modes fall back to their raw value.
+func accessModeUILabel(mode compute.DataSecurityMode, singleUserName string) string {
 	switch mode {
 	case compute.DataSecurityModeSingleUser, compute.DataSecurityModeDataSecurityModeDedicated:
-		return "Dedicated"
+		if singleUserName == "" {
+			return "Dedicated (group)"
+		}
+		return "Dedicated (single user)"
 	case compute.DataSecurityModeUserIsolation, compute.DataSecurityModeDataSecurityModeStandard:
 		return "Standard"
 	case compute.DataSecurityModeNone:
@@ -843,16 +848,21 @@ func accessModeUILabel(mode compute.DataSecurityMode) string {
 	}
 }
 
-// ValidateClusterAccess ensures the cluster uses dedicated (single-user) access mode.
-// The SSH tunnel runs as a job on the cluster and only works on dedicated clusters,
-// so we fail early with an actionable message rather than letting the connection fail later.
+// ValidateClusterAccess ensures the cluster is a dedicated single-user cluster.
+// The SSH tunnel runs as a job that attaches as a single user, so the cluster must be in
+// Dedicated access mode and assigned to one user (single_user_name set), not a group. We fail
+// early with an actionable message rather than letting the connection fail later.
 func ValidateClusterAccess(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) error {
 	clusterInfo, err := client.Clusters.Get(ctx, compute.GetClusterRequest{ClusterId: clusterID})
 	if err != nil {
 		return fmt.Errorf("failed to get cluster information for cluster ID '%s': %w", clusterID, err)
 	}
-	if clusterInfo.DataSecurityMode != compute.DataSecurityModeSingleUser {
-		return fmt.Errorf("cluster '%s' does not have Dedicated access mode. Current access mode: %s. Please ensure the cluster is configured with Dedicated (single user) access mode", clusterID, accessModeUILabel(clusterInfo.DataSecurityMode))
+	// SINGLE_USER is the legacy alias for the newer DATA_SECURITY_MODE_DEDICATED enum; the API
+	// may return either for a dedicated cluster, so accept both.
+	isDedicated := clusterInfo.DataSecurityMode == compute.DataSecurityModeSingleUser ||
+		clusterInfo.DataSecurityMode == compute.DataSecurityModeDataSecurityModeDedicated
+	if !isDedicated || clusterInfo.SingleUserName == "" {
+		return fmt.Errorf("cluster '%s' must be a dedicated single-user cluster. Current access mode: %s. Please reconfigure it to Dedicated (single user) access mode", clusterID, accessModeUILabel(clusterInfo.DataSecurityMode, clusterInfo.SingleUserName))
 	}
 	return nil
 }
