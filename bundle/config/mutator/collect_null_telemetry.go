@@ -24,10 +24,20 @@ func (*collectNullTelemetry) Name() string {
 func (*collectNullTelemetry) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	info := b.Config.NullInTargets()
 	b.Metrics.SetBoolValue("null-in-targets", info.Any())
-	b.Metrics.SetBoolValue("null-in-targets-scalar", info.Scalar)
-	b.Metrics.SetBoolValue("null-in-targets-complex", info.Complex)
-	b.Metrics.SetBoolValue("null-in-targets-key", info.MapKey)
-	b.Metrics.SetBoolValue("null-in-targets-index", info.ArrayIndex)
-	b.Metrics.SetBoolValue("null-in-targets-resource", info.Resource)
+	if info.Scalar {
+		b.Metrics.SetBoolValue("null-in-targets-scalar", true)
+	}
+	if info.Complex {
+		b.Metrics.SetBoolValue("null-in-targets-complex", true)
+	}
+	if info.MapKey {
+		b.Metrics.SetBoolValue("null-in-targets-key", true)
+	}
+	if info.ArrayIndex {
+		b.Metrics.SetBoolValue("null-in-targets-index", true)
+	}
+	if info.Resource {
+		b.Metrics.SetBoolValue("null-in-targets-resource", true)
+	}
 	return nil
 }

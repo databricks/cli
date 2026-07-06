@@ -76,7 +76,6 @@ Deployment complete!
 >>> print_telemetry_bool_values
 null-in-targets true
 null-in-targets-complex true
-null-in-targets-index false
 null-in-targets-key true
 null-in-targets-resource true
 null-in-targets-scalar true
