@@ -1,7 +1,33 @@
 
->>> [CLI] bundle validate -o json -t dev
+>>> [CLI] bundle validate -o json -t dev-run-as
+Warning: expected a string value, found null
+  at targets.dev-job-field.resources.jobs.my_job.description
+  in databricks.yml:28:23
+
 {
   "run_as": {
     "user_name": "base-user"
   }
 }
+
+>>> [CLI] bundle validate -o json -t dev-job-field
+Warning: expected a string value, found null
+  at targets.dev-job-field.resources.jobs.my_job.description
+  in databricks.yml:28:23
+
+{
+  "description": "base description"
+}
+
+>>> [CLI] bundle deploy -t dev-run-as
+Warning: expected a string value, found null
+  at targets.dev-job-field.resources.jobs.my_job.description
+  in databricks.yml:28:23
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev-run-as/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+null-in-targets true
