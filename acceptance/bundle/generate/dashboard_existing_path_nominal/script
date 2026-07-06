@@ -1,2 +1,4 @@
 # Test generating dashboard from existing path
 trace $CLI bundle generate dashboard --existing-path /path/to/dashboard --dashboard-dir out/dashboard --resource-dir out/resource
+
+trace $CLI bundle generate dashboard --existing-path /path/to/dashboard --key custom_key --dashboard-dir out/dashboard --resource-dir out/resource
