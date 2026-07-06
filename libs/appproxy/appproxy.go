@@ -109,6 +109,15 @@ func (p *Proxy) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Inject headers on the upgrade request too, matching the HTTP path.
+	// This must happen before Hijack: once the connection is hijacked, w is
+	// detached and http.Error no longer reaches the client, so the error
+	// branch would otherwise send nothing.
+	if err := p.applyInjectedHeaders(r); err != nil {
+		http.Error(w, "Error resolving injected header: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+
 	// We need to hijack the connection to be able to proxy the request
 	// to the websocket server. We can use the hijacked connection to
 	// read and write messages back and forth from the client to the app.
@@ -118,12 +127,6 @@ func (p *Proxy) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer middlewareConn.Close()
-
-	// Inject headers on the upgrade request too, matching the HTTP path.
-	if err := p.applyInjectedHeaders(r); err != nil {
-		http.Error(w, "Error resolving injected header: "+err.Error(), http.StatusBadGateway)
-		return
-	}
 
 	err = r.Write(targetServerConn)
 	if err != nil {

@@ -207,3 +207,36 @@ func TestProxyInjectHeaderFuncError(t *testing.T) {
 	require.Equal(t, http.StatusBadGateway, code)
 	require.Contains(t, string(body), "token refresh failed")
 }
+
+func TestProxyInjectHeaderFuncErrorWebSocket(t *testing.T) {
+	// On the WebSocket upgrade path the 502 must be written before Hijack,
+	// otherwise the client sees a closed connection instead of the error.
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	go server.Start()
+	defer server.Close()
+
+	proxy, addr := startProxy(t, server.Listener.Addr().String())
+	defer func() {
+		require.NoError(t, proxy.Stop())
+	}()
+
+	proxy.InjectHeaderFunc("X-Forwarded-Access-Token", func(context.Context) (string, error) {
+		return "", errors.New("token refresh failed")
+	})
+
+	req, err := http.NewRequest(http.MethodGet, "http://"+addr+"/", nil)
+	require.NoError(t, err)
+	req.Header.Set("Upgrade", "websocket")
+	req.Header.Set("Connection", "Upgrade")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusBadGateway, resp.StatusCode)
+	require.Contains(t, string(body), "token refresh failed")
+}

@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
@@ -130,14 +131,22 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 	// X-Forwarded-Access-Token; locally that header is absent, so OBO paths
 	// can't be run. Inject a token from the CLI's own credentials, resolved
 	// per request so a browser session outliving the token still refreshes.
+	//
+	// GetTokenSource only yields OAuth tokens; for PAT/basic auth it returns a
+	// source that errors. Probe it once here so those users still get a working
+	// proxy (without the OBO header, as before) rather than a 502 per request.
 	tokenSource := w.Config.GetTokenSource()
-	proxy.InjectHeaderFunc(runlocal.HeaderForwardedAccessToken, func(ctx context.Context) (string, error) {
-		token, err := tokenSource.Token(ctx)
-		if err != nil {
-			return "", err
-		}
-		return token.AccessToken, nil
-	})
+	if _, err := tokenSource.Token(ctx); err != nil {
+		log.Warnf(ctx, "Not injecting %s: could not mint an OAuth token from the current credentials (%v). OBO code paths will not work locally; log in with OAuth (databricks auth login) to exercise them.", runlocal.HeaderForwardedAccessToken, err)
+	} else {
+		proxy.InjectHeaderFunc(runlocal.HeaderForwardedAccessToken, func(ctx context.Context) (string, error) {
+			token, err := tokenSource.Token(ctx)
+			if err != nil {
+				return "", err
+			}
+			return token.AccessToken, nil
+		})
+	}
 
 	proxyAddr := fmt.Sprintf("localhost:%d", port)
 	// Bind synchronously so a taken port fails the command instead of only printing an error from the goroutine.

@@ -1,13 +1,18 @@
 package apps
 
 import (
+	"io"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/apps/runlocal"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -31,6 +36,39 @@ func TestSetupProxyPortInUse(t *testing.T) {
 	cfg := runlocal.NewConfig("https://workspace.databricks.test", "123", t.TempDir(), runlocal.DEFAULT_HOST, runlocal.DEFAULT_PORT)
 	err = setupProxy(t.Context(), &cobra.Command{}, cfg, m.WorkspaceClient, port, false)
 	require.ErrorContains(t, err, "failed to start app proxy")
+}
+
+func TestSetupProxyPATOmitsTokenHeader(t *testing.T) {
+	// A PAT config has no OAuth token source, so setupProxy must forward
+	// requests without the OBO token header rather than 502 on every one.
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, r.Header.Get(runlocal.HeaderForwardedAccessToken))
+	}))
+	defer backend.Close()
+
+	ln, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	port := ln.Addr().(*net.TCPAddr).Port
+	require.NoError(t, ln.Close())
+
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "test-user"}, nil)
+	m.WorkspaceClient.Config = &config.Config{Host: "https://workspace.databricks.test", Token: "dapi-token"}
+
+	cfg := runlocal.NewConfig("https://workspace.databricks.test", "123", t.TempDir(), runlocal.DEFAULT_HOST, runlocal.DEFAULT_PORT)
+	cfg.AppURL = backend.URL
+
+	require.NoError(t, setupProxy(cmdio.MockDiscard(t.Context()), &cobra.Command{}, cfg, m.WorkspaceClient, port, false))
+
+	resp, err := http.Get("http://" + net.JoinHostPort("localhost", strconv.Itoa(port)))
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Empty(t, string(body))
 }
 
 // TestAppHelperProcess is not a real test: TestKillAppProcess re-invokes the
