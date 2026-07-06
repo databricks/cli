@@ -1,0 +1,85 @@
+# Invariant to test: after deploy then destroy, a re-plan wants to CREATE everything
+# again -- proving destroy cleared all tracked state. A resource destroy forgets shows
+# up as "skip" (still present), a bug.
+# Additional checks: no internal errors / panics in validate/plan/deploy/destroy
+
+if [ -n "${FUZZ_SEED:-}" ]; then
+    gen_fuzz_config.py --schema "${FUZZ_SCHEMA}" --seed "$FUZZ_SEED" --unique "$UNIQUE_NAME-$FUZZ_SEED" --resources "${FUZZ_RESOURCES:-}" > databricks.yml 2>LOG.gen.err
+    cat LOG.gen.err | contains.py '!Traceback' > /dev/null
+    cp databricks.yml LOG.config
+else
+    # Copy data files to test directory
+    cp -r "$TESTDIR/../data/." . &> LOG.cp
+
+    # Run init script if present
+    INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
+    if [ -f "$INIT_SCRIPT" ]; then
+        source "$INIT_SCRIPT" &> LOG.init
+    fi
+
+    envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
+
+    cp databricks.yml LOG.config
+fi
+
+# We redirect output rather than record it because some configs that are being tested may produce warnings
+trace $CLI bundle validate &> LOG.validate
+
+cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
+
+cleanup() {
+    # A rejected fuzz config deployed nothing; destroying nothing hits unstubbed URLs.
+    if [ -z "${deployed:-}" ]; then
+        return
+    fi
+
+    # This test destroys to LOG.destroy itself, so the trap logs elsewhere to keep
+    # the body's destroy output (and any panic) intact for the post-run scan.
+    trace $CLI bundle destroy --auto-approve &> LOG.destroy_cleanup
+    cat LOG.destroy_cleanup | contains.py '!panic:' '!internal error' > /dev/null
+
+    # Run cleanup script if present
+    CLEANUP_SCRIPT="$TESTDIR/../configs/${INPUT_CONFIG:-}-cleanup.sh"
+    if [ -f "$CLEANUP_SCRIPT" ]; then
+        source "$CLEANUP_SCRIPT" &> LOG.cleanup
+    fi
+}
+
+trap cleanup EXIT
+
+trace $CLI bundle deploy &> LOG.deploy
+deploy_rc=$?
+cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
+if [ "$deploy_rc" -ne 0 ]; then
+    exit "$deploy_rc"
+fi
+deployed=1
+
+# Special message to fuzzer that generated config was fine.
+# Any failures after this point will be considered as "bug detected" by fuzzer.
+echo INPUT_CONFIG_OK
+
+# Destroy unconditionally so any panic lands in LOG.destroy for the post-scan;
+# completeness (re-plan recreates everything) is gated below.
+trace $CLI bundle destroy --auto-approve &> LOG.destroy
+destroy_rc=$?
+cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
+
+# A clean destroy leaves nothing, so stop the cleanup trap from destroying again
+# (which would hit unstubbed URLs on the fake server).
+if [ "$destroy_rc" -eq 0 ]; then
+    deployed=""
+fi
+
+# A fuzzed config can deploy yet legitimately leave state a re-plan reads differently,
+# so the fuzzer sets SKIP_DRIFT_CHECK to assert only no-panic; curated configs check
+# that a re-plan recreates everything.
+if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
+    if [ "$destroy_rc" -ne 0 ]; then
+        exit "$destroy_rc"
+    fi
+
+    $CLI bundle plan -o json > LOG.recreate_plan.json 2>LOG.recreate_plan.err
+    cat LOG.recreate_plan.err | contains.py '!panic:' '!internal error' > /dev/null
+    verify_plan_action.py LOG.recreate_plan.json create
+fi
