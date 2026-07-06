@@ -38,10 +38,13 @@ const (
 	// identity's workspace, kept distinct from a test whose primary identity is
 	// itself a service principal.
 	GuestServicePrincipalTokenPrefix = "dbapi2"
-	UserID                           = "1000012345"
-	TestDefaultClusterId             = "0123-456789-cluster0"
-	TestDefaultWarehouseId           = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId        = "0123-456789-pool0"
+	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
+	// consistency: the first GET after a create returns 404 (not yet visible).
+	EventualConsistencyTokenPrefix = "dbapi3"
+	UserID                         = "1000012345"
+	TestDefaultClusterId           = "0123-456789-cluster0"
+	TestDefaultWarehouseId         = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId      = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -173,7 +176,7 @@ type FakeWorkspace struct {
 	Schemas               map[string]catalog.SchemaInfo
 	Grants                map[string][]catalog.PrivilegeAssignment
 	Volumes               map[string]catalog.VolumeInfo
-	Dashboards            map[string]fakeDashboard
+	Dashboards            *EventualMap[string, *fakeDashboard]
 	PublishedDashboards   map[string]dashboards.PublishedDashboard
 	GenieSpaces           map[string]dashboards.GenieSpace
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
@@ -341,7 +344,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Schemas:             map[string]catalog.SchemaInfo{},
 		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
 		Volumes:             map[string]catalog.VolumeInfo{},
-		Dashboards:          map[string]fakeDashboard{},
+		Dashboards:          NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
 		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
 		GenieSpaces:         map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
