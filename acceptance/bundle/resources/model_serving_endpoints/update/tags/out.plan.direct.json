@@ -47,10 +47,22 @@
                 },
                 "name": "prod"
               }
-            ]
+            ],
+            "traffic_config": {
+              "routes": [
+                {
+                  "served_entity_name": "prod",
+                  "served_model_name": "prod",
+                  "traffic_percentage": 100
+                }
+              ]
+            }
           },
+          "creation_timestamp": [UNIX_TIME_MILLIS][0],
           "creator": "[USERNAME]",
+          "description": "",
           "id": "[UUID]",
+          "last_updated_timestamp": [UNIX_TIME_MILLIS][0],
           "name": "[ENDPOINT_ID]",
           "permission_level": "CAN_MANAGE",
           "route_optimized": false,
@@ -65,9 +77,58 @@
             }
           ]
         },
-        "endpoint_id": "[UUID]"
+        "endpoint_id": "[UUID]",
+        "config": {
+          "served_entities": [
+            {
+              "external_model": {
+                "name": "gpt-4o-mini",
+                "openai_config": {
+                  "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                },
+                "provider": "openai",
+                "task": "llm/v1/chat"
+              },
+              "name": "prod"
+            }
+          ],
+          "traffic_config": {
+            "routes": [
+              {
+                "served_entity_name": "prod",
+                "served_model_name": "prod",
+                "traffic_percentage": 100
+              }
+            ]
+          }
+        },
+        "name": "[ENDPOINT_ID]",
+        "tags": [
+          {
+            "key": "team",
+            "value": "my-team-one"
+          }
+        ]
       },
       "changes": {
+        "config.traffic_config": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "routes": [
+              {
+                "served_entity_name": "prod",
+                "served_model_name": "prod",
+                "traffic_percentage": 100
+              }
+            ]
+          }
+        },
+        "description": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": ""
+        },
         "route_optimized": {
           "action": "skip",
           "reason": "empty",

@@ -3,6 +3,6 @@ mkdir myrepo
 cd myrepo
 cp ../databricks.yml .
 git-repo-init
-errcode $CLI bundle validate
+musterr $CLI bundle validate
 cd ..
 rm -fr myrepo

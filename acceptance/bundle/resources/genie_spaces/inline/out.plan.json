@@ -9,7 +9,7 @@
       "remote_state": {
         "description": "Inline serialized_space test",
         "etag": "1",
-        "parent_path": "/Workspace/Users/[USERNAME]",
+        "parent_path": "/Workspace/Users/[USERNAME]/.bundle/deploy-genie-space-inline-[UNIQUE_NAME]/default/resources",
         "serialized_space": "{\"config\":{\"sample_questions\":[{\"id\":\"sq-001\",\"question\":[\"What is the total revenue?\"]}]},\"data_sources\":{\"tables\":[{\"column_configs\":[{\"column_name\":\"amount\",\"get_example_values\":true}],\"identifier\":\"main.sales.orders\"}]},\"version\":2}",
         "title": "Sales Analytics Inline Genie",
         "warehouse_id": "test-warehouse-id"

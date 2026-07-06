@@ -1,0 +1,19 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.postgres_branches.branch",
+      "label": "${resources.postgres_branches.branch.name}"
+    }
+  ],
+  "action": "create",
+  "new_state": {
+    "value": {
+      "parent": "${resources.postgres_branches.branch.name}",
+      "postgres_role": "app_role",
+      "role_id": "test-role"
+    },
+    "vars": {
+      "parent": "${resources.postgres_branches.branch.name}"
+    }
+  }
+}

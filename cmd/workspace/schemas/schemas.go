@@ -22,7 +22,7 @@ func New() *cobra.Command {
 		Use:   "schemas",
 		Short: `A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.`,
 		Long: `A schema (also called a database) is the second layer of Unity Catalog’s
-  three-level namespace. A schema organizes tables, views and functions. To
+  three-level namespace. A schema organizes tables, views, and functions. To
   access (or list) a table or view in a schema, users must have the USE_SCHEMA
   data permission on the schema and its parent catalog, and they must have the
   SELECT permission on the table or view.`,
@@ -67,6 +67,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().Int64Var(&createReq.CustomMaxRetentionHours, "custom-max-retention-hours", createReq.CustomMaxRetentionHours, `Custom maximum retention period in hours for the schema.`)
 	// TODO: map via StringToStringVar: properties
 	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for managed tables within schema.`)
 
@@ -373,6 +374,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().Int64Var(&updateReq.CustomMaxRetentionHours, "custom-max-retention-hours", updateReq.CustomMaxRetentionHours, `Custom maximum retention period in hours for the schema.`)
 	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the schema.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of schema.`)

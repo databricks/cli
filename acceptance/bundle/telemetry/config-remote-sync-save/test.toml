@@ -1,0 +1,11 @@
+# --save rewrites databricks.yml; it's a mutated input, not asserted output.
+Ignore = ["databricks.yml", "databricks.yml.backup"]
+
+# config-remote-sync is not supported on Windows.
+[GOOS]
+windows = false
+
+# overwritten_local_edits is computed from the per-field deployed base, which
+# only the direct engine materializes (the terraform sync snapshot is empty).
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

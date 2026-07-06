@@ -381,7 +381,10 @@ func newListWorkspaceAssignmentDetailsProxy() *cobra.Command {
 	cmd.Short = `List workspace assignment details for a workspace.`
 	cmd.Long = `List workspace assignment details for a workspace.
 
-  Lists workspace assignment details for a workspace (workspace-level proxy).`
+  Lists workspace assignment details for a workspace (workspace-level proxy).
+  For scalability, the response omits the per-principal entitlement fields
+  (entitlements and effective_entitlements); call
+  GetWorkspaceAssignmentDetailProxy to read entitlements for a single principal.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true

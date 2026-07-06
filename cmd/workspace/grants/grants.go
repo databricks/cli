@@ -25,11 +25,10 @@ func New() *cobra.Command {
   object. Securable objects in Unity Catalog are hierarchical and privileges are
   inherited downward.
 
-  Securable objects in Unity Catalog are hierarchical and privileges are
-  inherited downward. This means that granting a privilege on the catalog
-  automatically grants the privilege to all current and future objects within
-  the catalog. Similarly, privileges granted on a schema are inherited by all
-  current and future objects within that schema.`,
+  This means that granting a privilege on the catalog automatically grants the
+  privilege to all current and future objects within the catalog. Similarly,
+  privileges granted on a schema are inherited by all current and future objects
+  within that schema.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}

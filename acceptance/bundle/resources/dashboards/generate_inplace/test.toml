@@ -1,5 +1,5 @@
 Cloud = true
-Local = false
+Local = true
 RecordRequests = false
 RunsOnDbr = true
 

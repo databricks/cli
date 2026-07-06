@@ -147,6 +147,26 @@ func (db *DeploymentState) GetResourceID(key string) string {
 	return db.stateIDs[key]
 }
 
+// GetOrInitLineage returns the deployment lineage, generating and storing a new
+// one if the state does not have one yet. It is the single place the lineage is
+// initialized, shared so the direct deployment engine (when it writes state, via
+// Open/UpgradeToWrite) and DMS (when it records a deployment) always agree on the
+// value.
+//
+// DMS needs this before the engine writes state: it records the version at lock
+// time, which is before the engine assigns the lineage at plan-apply time.
+// Seeding db.Data.Lineage here means the subsequent write reuses the same value
+// instead of minting a different one.
+//
+// It does not take db.mu: Open and UpgradeToWrite already hold it, and the DMS
+// recorder calls it during deploy setup, before any concurrent state writes.
+func (db *DeploymentState) GetOrInitLineage() string {
+	if db.Data.Lineage == "" {
+		db.Data.Lineage = uuid.New().String()
+	}
+	return db.Data.Lineage
+}
+
 type (
 	// If true, then Open reads the WAL and merges it in the state. If false, and WAL is present, Open returns an error.
 	WithRecovery bool
@@ -213,13 +233,8 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 			return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
 		}
 		db.walFile = walFile
-		lineage := db.Data.Lineage
-		if lineage == "" {
-			// state file is new, does not have lineage yet; store lineage in the WAL only
-			lineage = uuid.New().String()
-		}
 		walHead := Header{
-			Lineage:      lineage,
+			Lineage:      db.GetOrInitLineage(),
 			Serial:       db.Data.Serial + 1,
 			StateVersion: currentStateVersion,
 			CLIVersion:   build.GetInfo().Version,
@@ -414,12 +429,8 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	}
 	db.walFile = walFile
 
-	lineage := db.Data.Lineage
-	if lineage == "" {
-		lineage = uuid.New().String()
-	}
 	walHead := Header{
-		Lineage:      lineage,
+		Lineage:      db.GetOrInitLineage(),
 		Serial:       db.Data.Serial + 1,
 		StateVersion: currentStateVersion,
 		CLIVersion:   build.GetInfo().Version,

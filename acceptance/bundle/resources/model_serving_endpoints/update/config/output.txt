@@ -19,7 +19,15 @@ Deployment complete!
       },
       "name": "prod"
     }
-  ]
+  ],
+  "traffic_config": {
+    "routes": [
+      {
+        "served_model_name": "prod",
+        "traffic_percentage": 100
+      }
+    ]
+  }
 }
 
 >>> update_file.py databricks.yml name: gpt-4o-mini name: gpt-5o-mini
@@ -50,7 +58,15 @@ Deployment complete!
           },
           "name": "prod"
         }
-      ]
+      ],
+      "traffic_config": {
+        "routes": [
+          {
+            "served_model_name": "prod",
+            "traffic_percentage": 100
+          }
+        ]
+      }
     },
     "name": "[ENDPOINT_ID]"
   }
@@ -71,7 +87,15 @@ Deployment complete!
         },
         "name": "prod"
       }
-    ]
+    ],
+    "traffic_config": {
+      "routes": [
+        {
+          "served_model_name": "prod",
+          "traffic_percentage": 100
+        }
+      ]
+    }
   }
 }
 
@@ -89,7 +113,15 @@ Deployment complete!
       },
       "name": "prod"
     }
-  ]
+  ],
+  "traffic_config": {
+    "routes": [
+      {
+        "served_model_name": "prod",
+        "traffic_percentage": 100
+      }
+    ]
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve

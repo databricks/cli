@@ -11,6 +11,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+const (
+	appStatusRunningMessage     = "App has status: App is running"
+	appStatusUnavailableMessage = "App status is unavailable."
+)
+
 func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 	var updateReq apps.AsyncUpdateAppRequest
 	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
@@ -118,18 +123,28 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) Response {
 	defer s.LockUnlock()()
 
-	_, ok := s.Apps[name]
+	app, ok := s.Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
-	return Response{Body: apps.AppDeployment{
-		DeploymentId: deploymentID,
-		Status: &apps.AppDeploymentStatus{
-			State:   apps.AppDeploymentStateSucceeded,
-			Message: "Deployment succeeded",
-		},
-	}}
+	if app.ActiveDeployment == nil || app.ActiveDeployment.DeploymentId != deploymentID {
+		return Response{StatusCode: 404}
+	}
+
+	// Return a copy so the masking below does not mutate the stored deployment.
+	deployment := *app.ActiveDeployment
+
+	// The real GET response strips env var values, returning only the name of
+	// each variable. Reproduce that masking so the local golden matches
+	// recorded cloud behavior.
+	maskedEnvVars := make([]apps.EnvVar, len(deployment.EnvVars))
+	for i, ev := range deployment.EnvVars {
+		maskedEnvVars[i] = apps.EnvVar{Name: ev.Name}
+	}
+	deployment.EnvVars = maskedEnvVars
+
+	return Response{Body: deployment}
 }
 
 func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
@@ -143,6 +158,11 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 	app.ComputeStatus = &apps.ComputeStatus{
 		State:   apps.ComputeStateActive,
 		Message: "App compute is active.",
+	}
+	// Starting the compute brings the application up.
+	app.AppStatus = &apps.ApplicationStatus{
+		State:   "RUNNING",
+		Message: appStatusRunningMessage,
 	}
 	s.Apps[name] = app
 
@@ -159,7 +179,12 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 
 	app.ComputeStatus = &apps.ComputeStatus{
 		State:   apps.ComputeStateStopped,
-		Message: "App compute is stopped.",
+		Message: "Start the app compute to deploy the app.",
+	}
+	// Stopping the compute takes the application down.
+	app.AppStatus = &apps.ApplicationStatus{
+		State:   "UNAVAILABLE",
+		Message: appStatusUnavailableMessage,
 	}
 	s.Apps[name] = app
 
@@ -205,18 +230,22 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		}
 	}
 
-	app.AppStatus = &apps.ApplicationStatus{
-		State:   "RUNNING",
-		Message: "Application is running.",
-	}
-
-	// Respect no_compute query param: if true, start the app in STOPPED state.
+	// A no_compute app is created without running compute, so on cloud it
+	// reports an UNAVAILABLE application status until it is started.
 	if req.URL.Query().Get("no_compute") == "true" {
+		app.AppStatus = &apps.ApplicationStatus{
+			State:   "UNAVAILABLE",
+			Message: appStatusUnavailableMessage,
+		}
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   apps.ComputeStateStopped,
 			Message: "App compute is stopped.",
 		}
 	} else {
+		app.AppStatus = &apps.ApplicationStatus{
+			State:   "RUNNING",
+			Message: "Application is running.",
+		}
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   "ACTIVE",
 			Message: "App compute is active.",

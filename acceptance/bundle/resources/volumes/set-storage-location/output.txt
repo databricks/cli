@@ -5,9 +5,9 @@ create volumes.volume1
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> print_requests
+>>> print_requests.py //unity
 
->>> print_requests
+>>> print_requests.py //unity
 {
   "method": "POST",
   "path": "/api/2.1/unity-catalog/schemas",
@@ -41,7 +41,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests
+>>> print_requests.py //unity
 {
   "method": "DELETE",
   "path": "/api/2.1/unity-catalog/schemas/main.testschema-[UNIQUE_NAME]",

@@ -92,7 +92,7 @@ Flags:
       --budget-policy-id string     
       --compute-max-instances int   Maximum number of app instances.
       --compute-min-instances int   Minimum number of app instances.
-      --compute-size ComputeSize    Supported values: [LARGE, MEDIUM]
+      --compute-size ComputeSize    Supported values: [LARGE, MEDIUM, XLARGE]
       --description string          The description of the app.
   -h, --help                        help for update
       --json JSON                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))

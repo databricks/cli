@@ -97,6 +97,12 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 			cfg = &sdkconfig.Config{
 				Host:  host,
 				Token: token,
+				// Preserve the resolved config-file path (e.g. deco sets it to /dev/null)
+				// so the CLI subprocess stays isolated from the developer's ~/.databrickscfg,
+				// matching the non-proxy path. Otherwise the subprocess re-reads the default
+				// config and can fall back to a default_profile (e.g. via [__settings__]),
+				// which breaks auth on cloud record-requests runs.
+				ConfigFile: cfg.ConfigFile,
 			}
 		}
 

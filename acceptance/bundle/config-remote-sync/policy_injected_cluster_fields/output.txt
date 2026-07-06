@@ -1,0 +1,38 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Simulate a cluster policy injecting custom_tags and cluster_log_conf
+These fields exist only remotely (the user never set them in config).
+A legitimate edit (max_concurrent_runs) is made too, to show real edits still sync.
+
+=== Detect and save all changes
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job1
+  max_concurrent_runs: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -9,5 +9,5 @@
+   jobs:
+     job1:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 5
+       job_clusters:
+         - job_cluster_key: shared
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

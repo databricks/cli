@@ -1,0 +1,44 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job1_id="$(read_id.py job1)"
+
+title "Simulate a cluster policy injecting custom_tags and cluster_log_conf"
+echo
+echo "These fields exist only remotely (the user never set them in config)."
+echo "A legitimate edit (max_concurrent_runs) is made too, to show real edits still sync."
+edit_resource.py jobs $job1_id <<'EOF'
+r["max_concurrent_runs"] = 5
+
+# A DBFS destination is used instead of S3: the real backend rejects an S3
+# cluster log destination without a per-cluster instance-profile ARN, and the
+# field's value is irrelevant here — only that it exists remotely and not in config.
+policy_tags = {"CostCenter": "dev-1234", "Team": "finops"}
+policy_log_conf = {"dbfs": {"destination": "dbfs:/cluster-logs/dev"}}
+
+for task in r.get("tasks", []):
+    if "new_cluster" in task:
+        task["new_cluster"]["custom_tags"] = dict(policy_tags)
+        task["new_cluster"]["cluster_log_conf"] = dict(policy_log_conf)
+
+for jc in r.get("job_clusters", []):
+    jc["new_cluster"]["custom_tags"] = dict(policy_tags)
+    jc["new_cluster"]["cluster_log_conf"] = dict(policy_log_conf)
+EOF
+
+title "Detect and save all changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

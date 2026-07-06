@@ -23,13 +23,13 @@ func TemporaryWorkspaceDir(t *WorkspaceT, name ...string) string {
 	basePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName(name...))
 
 	t.Logf("Creating workspace directory %s", basePath)
-	err = t.W.Workspace.MkdirsByPath(ctx, basePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	err = t.W.Workspace.MkdirsByPath(ctx, basePath)
 	require.NoError(t, err)
 
 	// Remove test directory on test completion.
 	t.Cleanup(func() {
 		t.Logf("Removing workspace directory %s", basePath)
-		err := t.W.Workspace.Delete(context.WithoutCancel(ctx), workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		err := t.W.Workspace.Delete(context.WithoutCancel(ctx), workspace.Delete{
 			Path:      basePath,
 			Recursive: true,
 		})

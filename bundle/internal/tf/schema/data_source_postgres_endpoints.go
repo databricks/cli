@@ -58,6 +58,7 @@ type DataSourcePostgresEndpointsEndpointsStatus struct {
 
 type DataSourcePostgresEndpointsEndpoints struct {
 	CreateTime     string                                              `json:"create_time,omitempty"`
+	EndpointId     string                                              `json:"endpoint_id,omitempty"`
 	Name           string                                              `json:"name"`
 	Parent         string                                              `json:"parent,omitempty"`
 	ProviderConfig *DataSourcePostgresEndpointsEndpointsProviderConfig `json:"provider_config,omitempty"`

@@ -96,7 +96,7 @@ Create a Database Catalog.
   Arguments:
     NAME: The name of the catalog in UC.
     DATABASE_INSTANCE_NAME: The name of the DatabaseInstance housing the database.
-    DATABASE_NAME: The name of the database (in a instance) associated with the catalog.`
+    DATABASE_NAME: The name of the database (in an instance) associated with the catalog.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -619,7 +619,7 @@ func newDeleteDatabaseInstance() *cobra.Command {
 
 	var deleteDatabaseInstanceReq database.DeleteDatabaseInstanceRequest
 
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Force, "force", deleteDatabaseInstanceReq.Force, `By default, a instance cannot be deleted if it has descendant instances created via PITR.`)
+	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Force, "force", deleteDatabaseInstanceReq.Force, `By default, an instance cannot be deleted if it has descendant instances created via PITR.`)
 	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Deprecated.`)
 
 	cmd.Use = "delete-database-instance NAME"
@@ -1592,7 +1592,7 @@ func newUpdateDatabaseCatalog() *cobra.Command {
     NAME: The name of the catalog in UC.
     UPDATE_MASK: The list of fields to update. Setting this field is not yet supported.
     DATABASE_INSTANCE_NAME: The name of the DatabaseInstance housing the database.
-    DATABASE_NAME: The name of the database (in a instance) associated with the catalog.`
+    DATABASE_NAME: The name of the database (in an instance) associated with the catalog.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true

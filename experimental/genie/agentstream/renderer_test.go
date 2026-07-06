@@ -57,7 +57,7 @@ func TestRenderText_MessageAndThinking(t *testing.T) {
 	})
 	input := fakeSSE("reasoning", "message", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 
 	assert.Contains(t, stdout.String(), "Total sales were $1,234,567.")
@@ -75,7 +75,7 @@ func TestRenderText_SQLExecution(t *testing.T) {
 	})
 	input := fakeSSE("sql", "message", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{ShowSQL: true})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{ShowSQL: true})
 	require.NoError(t, err)
 
 	assert.Contains(t, stdout.String(), "SQL executed (Total Sales):")
@@ -93,7 +93,7 @@ func TestRenderText_SQLHiddenByDefault(t *testing.T) {
 	})
 	input := fakeSSE("sql", "message", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 
 	assert.NotContains(t, stdout.String(), "SQL executed")
@@ -110,7 +110,7 @@ func TestRenderText_ExecuteSQLQuery(t *testing.T) {
 	})
 	input := fakeSSE("sql", "message", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{ShowSQL: true})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{ShowSQL: true})
 	require.NoError(t, err)
 
 	assert.Contains(t, stdout.String(), "SQL executed:")
@@ -123,7 +123,7 @@ func TestRenderText_Error(t *testing.T) {
 	})
 	input := fakeSSE("error")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "RESOURCE_DOES_NOT_EXIST")
 	assert.Contains(t, err.Error(), "No eligible SQL warehouse found")
@@ -137,7 +137,7 @@ func TestRenderText_ErrorWithoutCode(t *testing.T) {
 		"error": {{Kind: EventError, Text: "boom"}},
 	})
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(fakeSSE("error")), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(fakeSSE("error")), &stdout, &stderr, adapt, RenderOptions{})
 	require.Error(t, err)
 	assert.Equal(t, "API error: boom", err.Error())
 }
@@ -149,7 +149,7 @@ func TestRenderText_FailedResponseStatus(t *testing.T) {
 	})
 	input := fakeSSE("msg", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed")
 }
@@ -162,7 +162,7 @@ func TestRenderText_ThoughtsNotInStdout(t *testing.T) {
 	})
 	input := fakeSSE("thought", "response", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 
 	assert.NotContains(t, stdout.String(), "I will search for tables...")
@@ -176,7 +176,7 @@ func TestRenderText_FinalResponseOnly(t *testing.T) {
 	})
 	input := fakeSSE("final", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), "The answer is 42.")
 }
@@ -189,7 +189,7 @@ func TestRenderText_FinalResponseNotSuppressedByIntermediateText(t *testing.T) {
 	})
 	input := fakeSSE("preamble", "final", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), "Let me look at the sales table first.")
 	assert.Contains(t, stdout.String(), "The answer is 42.")
@@ -203,7 +203,7 @@ func TestRenderText_FinalResponseDuplicateSuppressed(t *testing.T) {
 	})
 	input := fakeSSE("message", "final", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, 1, strings.Count(stdout.String(), "The answer is 42."))
 }
@@ -218,7 +218,7 @@ func TestRenderText_VizOnlyMessageIsNotAnAnswer(t *testing.T) {
 	})
 	input := fakeSSE("message", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "without an answer")
 }
@@ -230,7 +230,7 @@ func TestRenderText_NoAnswerFails(t *testing.T) {
 	})
 	input := fakeSSE("thinking", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "without an answer")
 	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
@@ -243,7 +243,7 @@ func TestRenderText_MissingDoneWarns(t *testing.T) {
 	})
 	input := fakeSSE("message")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), "Partial answer.")
 	assert.Contains(t, stderr.String(), "may be incomplete")
@@ -257,7 +257,7 @@ func TestRenderText_UnparsedEventsWarn(t *testing.T) {
 	})
 	input := fakeSSE("message", "junk", "junk", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 	assert.Contains(t, stderr.String(), "2 stream event(s) could not be parsed")
 	assert.Contains(t, stderr.String(), "update the Databricks CLI to the latest version")
@@ -276,7 +276,7 @@ func TestRenderText_VizChartAfterText(t *testing.T) {
 	// Viz arrives before the text: the chart must still render after it.
 	input := fakeSSE("viz", "message", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 
 	out := stdout.String()
@@ -297,7 +297,7 @@ func TestRenderText_VizPlaceholderWhenUnrenderable(t *testing.T) {
 	})
 	input := fakeSSE("message", "viz", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	_, _, err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), `[chart "Totals" could not be rendered in the terminal]`)
 }
@@ -314,7 +314,7 @@ func TestRenderJSON_FullStream(t *testing.T) {
 	})
 	input := fakeSSE("thinking", "text", "sql", "done")
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
 	require.NoError(t, err)
 
 	var result StreamResult
@@ -338,7 +338,7 @@ func TestRenderJSON_AppendsTextEvents(t *testing.T) {
 	})
 	input := fakeSSE("text", "done")
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
 	require.NoError(t, err)
 
 	var result StreamResult
@@ -352,7 +352,7 @@ func TestRenderJSON_ErrorEvent(t *testing.T) {
 	})
 	input := fakeSSE("error")
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "RESOURCE_DOES_NOT_EXIST")
 
@@ -369,7 +369,7 @@ func TestRenderJSON_ErrorPreservesAccumulatedText(t *testing.T) {
 	})
 	input := fakeSSE("text", "error")
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
 	require.Error(t, err)
 
 	var result StreamResult
@@ -386,7 +386,7 @@ func TestRenderJSON_FailedResponseStatus(t *testing.T) {
 	})
 	input := fakeSSE("msg", "done")
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed")
 
@@ -400,7 +400,7 @@ func TestRenderJSON_EmptyStreamFails(t *testing.T) {
 	// failure mode was a wire format change that dropped every item.
 	adapt := testAdapter(map[string][]StreamEvent{})
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(""), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(""), &buf, &stderr, adapt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "without an answer")
 	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
@@ -417,7 +417,7 @@ func TestRenderJSON_MissingDoneIsIncomplete(t *testing.T) {
 	})
 	input := fakeSSE("text")
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "without a completion event")
 
@@ -434,7 +434,7 @@ func TestRenderJSON_FinalResponseFallback(t *testing.T) {
 	})
 	input := fakeSSE("final", "done")
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
 	require.NoError(t, err)
 
 	var result StreamResult
@@ -450,7 +450,7 @@ func TestRenderJSON_FinalResponseAppendedToDistinctText(t *testing.T) {
 	})
 	input := fakeSSE("preamble", "final", "done")
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
 	require.NoError(t, err)
 
 	var result StreamResult
@@ -466,7 +466,7 @@ func TestRenderJSON_FinalResponseDuplicateSuppressed(t *testing.T) {
 	})
 	input := fakeSSE("message", "final", "done")
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
 	require.NoError(t, err)
 
 	var result StreamResult
@@ -480,7 +480,7 @@ func TestRenderJSON_ReadErrorStillWritesJSON(t *testing.T) {
 	})
 	r := io.MultiReader(strings.NewReader(fakeSSE("text")), iotest.ErrReader(errors.New("connection reset")))
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(r, &buf, &stderr, adapt)
+	_, err := RenderJSON(r, &buf, &stderr, adapt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "connection reset")
 
@@ -500,7 +500,7 @@ func TestRenderJSON_ExecuteSQLQuery(t *testing.T) {
 	})
 	input := fakeSSE("sql", "done")
 	var buf, stderr bytes.Buffer
-	err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
+	_, err := RenderJSON(strings.NewReader(input), &buf, &stderr, adapt)
 	require.NoError(t, err)
 
 	var result StreamResult
