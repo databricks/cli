@@ -37,11 +37,26 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   }
 }
 
+=== Job reads during 'bundle plan --local -o json':
+
+>>> print_requests.py --get //jobs/get
+
 >>> [CLI] bundle deploy --local
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+=== Job reads during 'bundle deploy --local':
+
+>>> print_requests.py --get //jobs/get --keep
+{
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
 
 === Telemetry:
 local_used true

@@ -23,9 +23,12 @@ trace print_requests.py --get //jobs/get
 # remote_state (nothing was fetched), so deploy --plan can warn before applying it.
 title "Plan --local as JSON:\n"
 trace $CLI bundle plan --local -o json
-rm -f out.requests.txt
+title "Job reads during 'bundle plan --local -o json':\n"
+trace print_requests.py --get //jobs/get
 
 # A --local deploy likewise does not read remote state up front and reports its use via telemetry.
 trace $CLI bundle deploy --local
+title "Job reads during 'bundle deploy --local':\n"
+trace print_requests.py --get //jobs/get --keep
 title "Telemetry:\n"
 print_telemetry_bool_values | grep '^local_used '
