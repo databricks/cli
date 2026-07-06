@@ -8,6 +8,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+// catalogNameManagedDefaults scopes the managed-property injection to the
+// backend-default drift test, keeping unrelated tests free of it. Mirrors
+// schemaNameManagedDefaults.
+const catalogNameManagedDefaults = "catalog_managed_defaults"
+
 func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -36,6 +41,13 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		CatalogType:  catalog.CatalogTypeManagedCatalog,
 	}
 	catalogInfo.UpdatedAt = catalogInfo.CreatedAt
+	if catalogInfo.Properties == nil && createRequest.Name == catalogNameManagedDefaults {
+		// Mirror UC: managed system defaults are populated when the user sets none.
+		catalogInfo.Properties = map[string]string{
+			"unity.catalog.managed.delta.defaults.delta.enableRowTracking":        "true",
+			"unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged": "true",
+		}
+	}
 
 	s.Catalogs[createRequest.Name] = catalogInfo
 	return Response{
