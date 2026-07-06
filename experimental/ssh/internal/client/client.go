@@ -281,7 +281,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// form can't be checked here, so warn that its version is unverified.
 	if opts.BaseEnvironment != "" && !opts.ProxyMode {
 		if strings.HasPrefix(opts.BaseEnvironment, "/") {
-			cmdio.LogString(ctx, fmt.Sprintf("WARNING: cannot verify the serverless environment version of base environment %q (specified as an env.yaml path); ssh connect only supports environment_version <= %d, and a newer version will fail to connect", opts.BaseEnvironment, maxSupportedEnvironmentVersion))
+			cmdio.LogString(ctx, "WARNING: The serverless environment version is not verified when --base-environment points to an env.yaml path.\nPlease ensure you are using a base environment created with serverless environment version 4 or below, as the SSH tunnel does not yet support version 5.")
 		} else if err := validateBaseEnvironmentVersion(ctx, client, opts.BaseEnvironment); err != nil {
 			return err
 		}
