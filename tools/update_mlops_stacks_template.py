@@ -1,23 +1,11 @@
 #!/usr/bin/env python3
-"""Refresh the vendored MLOps Stacks acceptance template from upstream HEAD.
+"""Refresh the vendored mlops-stacks acceptance template to upstream HEAD.
 
-The acceptance test at acceptance/bundle/deploy/mlops-stacks/ runs against a
-pinned, pruned copy of https://github.com/databricks/mlops-stacks so it can run
-offline (local runs cannot git-clone from GitHub). This script upgrades that
-copy to the latest upstream commit while keeping two local invariants:
-
-  1. Pruning: only files that are already vendored are refreshed. Upstream files
-     that were intentionally dropped (docs, images, CICD, tests, feature-store /
-     MLflow-recipe / monitoring variants) are not re-added.
-  2. The illegal-Go-module-path rename: upstream names a directory with a
-     backtick-quoted named-template invocation, which breaks Go module packaging
-     repo-wide. It is vendored under {{.input_project_name}} instead (see the
-     acc commit that introduced .wsignore for this tree); we undo the rename when
-     mapping vendored paths back to upstream.
-
-After running, review the diff and regenerate the golden output with
-`./task test-update-templates` (or the mlops-stacks test) since upstream changes
-can shift rendered output.
+The mlops-stacks acceptance test runs offline against a pinned, pruned copy of
+https://github.com/databricks/mlops-stacks. This upgrades that copy, preserving
+two local invariants: only already-vendored files are refreshed (pruning kept),
+and the upstream project directory (a backtick named-template that is an illegal
+Go module path) stays renamed to {{.input_project_name}}.
 """
 
 import os
@@ -32,8 +20,7 @@ REPO_URL = "https://github.com/databricks/mlops-stacks"
 TEMPLATE_DIR = "acceptance/bundle/deploy/mlops-stacks/template"
 REVISION_FILE = "acceptance/bundle/deploy/mlops-stacks/template.REVISION"
 
-# Upstream names the project directory with a named-template invocation that is
-# an illegal Go module file path; it is vendored under a plain variable instead.
+# Upstream's project dir name is an illegal Go module path; vendored plainer.
 VENDORED_PROJECT_DIR = "{{.input_project_name}}"
 UPSTREAM_PROJECT_DIR = "{{template `project_name_alphanumeric_underscore` .}}"
 
