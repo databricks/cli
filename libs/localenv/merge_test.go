@@ -435,6 +435,42 @@ url = "https://packages.example/simple"
 	assert.Equal(t, s, string(twice))
 }
 
+func TestMergeBailsOnMultilineString(t *testing.T) {
+	// A TOML multi-line string can contain lines that look like headers/keys/
+	// brackets; the line-based merge can't track it, so it must refuse rather than
+	// risk corrupting the file. The body here contains a fake table header and a
+	// fake constraint-dependencies line.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[tool.uv]
+note = """
+[project]
+constraint-dependencies = ["not really"]
+"""
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`)
+	_, _, err := MergeManaged(in, testConstraints())
+	require.Error(t, err)
+	assert.ErrorIs(t, err, errMultilineString)
+}
+
+func TestMergeBailsWhenNoProjectTable(t *testing.T) {
+	// A partial existing file with no [project] table can't receive requires-python;
+	// merging it would silently skip the pin, so it must error instead.
+	in := []byte(`[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.uv]
+constraint-dependencies = ["old~=1.0"]
+`)
+	_, _, err := MergeManaged(in, testConstraints())
+	require.Error(t, err)
+	assert.ErrorIs(t, err, errNoProjectTable)
+}
+
 func countOccurrences(s, substr string) int {
 	return strings.Count(s, substr)
 }

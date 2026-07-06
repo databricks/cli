@@ -1,9 +1,18 @@
 package localenv
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
+)
+
+// errMultilineString and errNoProjectTable are the conditions under which
+// MergeManaged refuses to merge rather than risk corrupting the file. The caller
+// surfaces both as E_MERGE.
+var (
+	errMultilineString = errors.New("pyproject.toml uses a TOML multi-line string, which the formatting-preserving merge cannot safely edit; edit requires-python / [tool.uv] manually")
+	errNoProjectTable  = errors.New("pyproject.toml has no [project] table to hold requires-python")
 )
 
 // managedMarkerStart and managedMarkerEnd bracket the region of pyproject.toml that
@@ -53,6 +62,24 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 	}
 
 	lines := strings.Split(s, "\n")
+
+	// The merge is line-based and does not track TOML multi-line string state
+	// ("""...""" / '''...''') across lines. A line inside such a string can look
+	// like a table header, a key assignment, or a bracket, which would mis-scope
+	// the managed-region edits and silently corrupt the file. Rather than risk
+	// that, bail out: this is the guarantee the merge exists to uphold. Multi-line
+	// strings are rare in a pyproject.toml, and the caller surfaces this as E_MERGE.
+	if containsMultilineString(lines) {
+		return nil, nil, errMultilineString
+	}
+
+	// requires-python is a managed value; if there is no [project] table to hold
+	// it, this is not a file we can faithfully merge (greenfield goes through
+	// RenderFreshPyproject, which always writes [project]). Fail loudly rather
+	// than silently skip the version pin.
+	if _, _, ok := tableBounds(lines, "[project]"); !ok {
+		return nil, nil, errNoProjectTable
+	}
 
 	lines, rpChanged := mergeRequiresPython(lines, c.RequiresPython)
 	if rpChanged {
@@ -395,6 +422,51 @@ func markerAttachedToToolUv(lines []string, start int) bool {
 // constraintDepsRe matches the start of a constraint-dependencies assignment within a
 // [tool.uv] table, capturing its leading whitespace.
 var constraintDepsRe = regexp.MustCompile(`^\s*constraint-dependencies\s*=`)
+
+// containsMultilineString reports whether the input contains a TOML multi-line
+// string delimiter (""" or ”'), taking a line-outside-comment view. The
+// line-based merge cannot track such a string's body across lines, so its
+// presence anywhere is treated as unmergeable rather than risking corruption.
+// This is conservative: a single-line """x""" is also refused, but those are
+// vanishingly rare in a pyproject.toml and refusing is safe.
+func containsMultilineString(lines []string) bool {
+	for _, line := range lines {
+		// Ignore a delimiter that appears only within a "#" comment.
+		if i := commentStart(line); i >= 0 {
+			line = line[:i]
+		}
+		if strings.Contains(line, `"""`) || strings.Contains(line, "'''") {
+			return true
+		}
+	}
+	return false
+}
+
+// commentStart returns the index of the "#" that begins an inline comment on
+// line, or -1 if there is none. A "#" inside a quoted string is not a comment.
+func commentStart(line string) int {
+	var quote byte
+	for i := 0; i < len(line); i++ {
+		c := line[i]
+		if quote != 0 {
+			if c == '\\' && quote == '"' {
+				i++
+				continue
+			}
+			if c == quote {
+				quote = 0
+			}
+			continue
+		}
+		switch c {
+		case '"', '\'':
+			quote = c
+		case '#':
+			return i
+		}
+	}
+	return -1
+}
 
 // bracketDepthDelta returns the net change in "[" nesting contributed by line.
 // It scans outside TOML strings and stops at an unquoted "#" comment, so a "]"
