@@ -11,34 +11,11 @@
 # acceptance TestAccept/bundle/resources/jobs/  # jobs undergoing maintenance
 #
 
-# Error: Invalid access token. [ReqId: [UUID]] on aws-prod, but not on aws-prod-ucws
-# Cannot reproduce it locally though - works for me via "deco env run -i -n aws-prod"
-acceptance TestAccept/bundle/resources/permissions/jobs/destroy_without_mgmtperms/
-
 # SSH test is flaky due to concurrent test suites (Linux/Windows) running on same cluster.
 # Current implementation uses cluster-id as server identifier, causing SIGTERM conflicts.
 # Fix exists in serverless connection mode (not yet merged).
 # Slack: https://databricks.slack.com/archives/C03AV2J5FSR/p1767964913136479
 acceptance TestAccept/ssh/connection
-
-# Cannot create more than 20 synced database table(s) per source table.
-* TestAccept/bundle/resources/synced_database_tables/basic/
-
-# TF provider doesn't retry on 409 "endpoint reconciliation in progress" during delete.
-# Direct deployer handles this with a 2-minute retry loop. TF provider has no retry logic.
-# https://github.com/databricks/terraform-provider-databricks/issues/5482
-* TestAccept/bundle/resources/postgres_endpoints/basic/DATABRICKS_BUNDLE_ENGINE=terraform
-
-# TF provider includes invalid 'initial_endpoint_spec' in update_mask, causing
-# "Unknown field path" error. Direct deployer sets InitialEndpointSpec to nil and
-# computes the update mask dynamically from only changed spec.* fields.
-# https://github.com/databricks/terraform-provider-databricks/issues/5481
-* TestAccept/bundle/resources/postgres_projects/update_display_name/DATABRICKS_BUNDLE_ENGINE=terraform
-
-# Fails with this diff:
-#        -    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
-#        +    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
-* TestAccept/bundle/resources/postgres_branches/
 
 # Broken vector search test. Needs fixing -
 * TestAccept/bundle/resources/vector_search_endpoints/drift/recreated_same_name
@@ -56,7 +33,3 @@ acceptance TestAccept/ssh/connection
 * TestSparkJarTaskDeployAndRunOnVolumes
 * TestSparkJarTaskDeployAndRunOnWorkspace
 * TestGenerateFromExistingJobAndDeploy
-
-# This is broken on Azure; it times out.
-integration/libs/git TestFetchRepositoryInfoAPI_FromRepo
-integration/libs/git TestFetchRepositoryInfoAPI_FromRepo/
