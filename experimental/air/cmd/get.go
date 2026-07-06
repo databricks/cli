@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -41,6 +44,8 @@ type getData struct {
 	AcceleratorsDisplay string `json:"-"`
 	EnvironmentDisplay  string `json:"-"`
 	MaxRetriesDisplay   string `json:"-"`
+	// TrainingConfigPath is the run's config file, downloaded for the config box.
+	TrainingConfigPath string `json:"-"`
 	// Sweep replaces the single-run view for foreach runs.
 	Sweep *sweepInfo `json:"-"`
 }
@@ -151,6 +156,9 @@ func newGetCommand() *cobra.Command {
 		}
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
+		} else if genAIComputeTask(run) == nil {
+			// The typed SDK drops ai_runtime_task, so read it from the raw run.
+			enrichFromRawRun(ctx, w, runID, &data)
 		}
 
 		if root.OutputType(cmd) != flags.OutputText {
@@ -170,6 +178,27 @@ func newGetCommand() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// enrichFromRawRun fills the config path, experiment, and accelerators from the
+// raw run. Best-effort: on failure the existing "N/A" fallbacks stand.
+func enrichFromRawRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64, data *getData) {
+	raw, err := fetchJobRun(ctx, w, runID)
+	if err != nil {
+		log.Debugf(ctx, "air get: raw run lookup failed for run %d: %v", runID, err)
+		return
+	}
+
+	if cmdPath := raw.commandPath(); cmdPath != "" {
+		data.TrainingConfigPath = path.Join(path.Dir(cmdPath), trainingConfigName)
+	}
+	if exp := jobExperiment(raw); exp != "" {
+		data.ExperimentName = &exp
+		data.ExperimentDisplay = exp
+	}
+	if a := acceleratorLabel(jobCompute(raw)); a != "" {
+		data.AcceleratorsDisplay = a
+	}
 }
 
 // buildGetData extracts the fields we display from a run. The text-view cells

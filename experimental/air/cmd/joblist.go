@@ -66,6 +66,8 @@ type jobAiRuntimeTask struct {
 
 type aiRuntimeDeploy struct {
 	Compute airCompute `json:"compute"`
+	// CommandPath is command.sh; training_config.yaml sits beside it.
+	CommandPath string `json:"command_path"`
 }
 
 type airCompute struct {
@@ -192,7 +194,8 @@ func fetchJobRunsPage(ctx context.Context, w *databricks.WorkspaceClient, query 
 }
 
 // fetchJobRun fetches a single run via runs/get. The response mirrors one
-// runs/list element, so it deserializes into jobRun directly.
+// runs/list element, so it deserializes into jobRun directly; expand_tasks
+// pulls the ai_runtime_task the typed SDK omits.
 func fetchJobRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (*jobRun, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -203,7 +206,7 @@ func fetchJobRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64
 	query := map[string]any{"run_id": runID, "expand_tasks": true}
 	err = apiClient.Do(ctx, http.MethodGet, jobsRunsGetPath, nil, nil, query, &run)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get run %d: %w", runID, err)
 	}
 	return &run, nil
 }
@@ -241,4 +244,13 @@ func hydrateJobRuns(ctx context.Context, w *databricks.WorkspaceClient, ids []in
 		}
 	}
 	return hydrated, nil
+}
+
+// commandPath returns the run's command.sh path, or "" when it has no deployment.
+func (r *jobRun) commandPath() string {
+	ai, _ := r.airTask()
+	if ai == nil || len(ai.Deployments) == 0 {
+		return ""
+	}
+	return ai.Deployments[0].CommandPath
 }

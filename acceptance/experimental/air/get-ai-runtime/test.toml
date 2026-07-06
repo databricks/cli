@@ -1,0 +1,55 @@
+# This command does not deploy a bundle, so no engine matrix is needed.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# The typed SDK GetRun response: an ai_runtime_task run has no gen_ai_compute_task,
+# so the task comes back empty (the SDK has no field for ai_runtime_task).
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
+  "creator_user_name": "user@example.com",
+  "start_time": 1700000000000,
+  "end_time": 1700000012000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "tasks": [
+    {
+      "task_key": "train",
+      "run_id": 456,
+      "attempt_number": 0,
+      "max_retries": 3,
+      "ai_runtime_task": {
+        "experiment": "my-exp",
+        "deployments": [
+          {
+            "command_path": "/Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/command.sh",
+            "compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}
+          }
+        ]
+      }
+    }
+  ]
+}
+'''
+
+# MLflow identifiers for the deep-link (runs/get-output is not modeled by the typed SDK).
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{"gen_ai_compute_output": {"run_info": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}}
+'''
+
+# The MLflow Run cell shows the run's name, fetched from the MLflow REST API.
+[[Server]]
+Pattern = "GET /api/2.0/mlflow/runs/get"
+Response.Body = '''
+{"run": {"info": {"run_name": "my-run"}}}
+'''

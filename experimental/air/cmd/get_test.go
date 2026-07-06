@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"text/template"
 
@@ -188,6 +190,44 @@ func TestBuildGetData(t *testing.T) {
 	assert.Equal(t, "exp", *d.ExperimentName)
 	require.NotNil(t, d.DurationSeconds)
 	assert.Equal(t, int64(12), *d.DurationSeconds)
+}
+
+func TestEnrichFromRawRun(t *testing.T) {
+	t.Run("fills config path, experiment, and accelerators", func(t *testing.T) {
+		body := `{"run_id":5,"tasks":[{"ai_runtime_task":{
+			"experiment":"/Users/me@example.com/my-exp",
+			"deployments":[{"command_path":"/Workspace/run/command.sh","compute":{"accelerator_type":"GPU_1xA10","accelerator_count":1}}]
+		}}]}`
+		srv := runGetServer(t, body)
+		data := &getData{ExperimentDisplay: na, AcceleratorsDisplay: na}
+		enrichFromRawRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5, data)
+		assert.Equal(t, "/Workspace/run/training_config.yaml", data.TrainingConfigPath)
+		assert.Equal(t, "my-exp", data.ExperimentDisplay)
+		require.NotNil(t, data.ExperimentName)
+		assert.Equal(t, "my-exp", *data.ExperimentName)
+		assert.Equal(t, "1x A10", data.AcceleratorsDisplay)
+	})
+
+	t.Run("leaves fallbacks when the run has no ai_runtime_task", func(t *testing.T) {
+		srv := runGetServer(t, `{"run_id":5,"tasks":[{}]}`)
+		data := &getData{ExperimentDisplay: na, AcceleratorsDisplay: na}
+		enrichFromRawRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5, data)
+		assert.Empty(t, data.TrainingConfigPath)
+		assert.Equal(t, na, data.ExperimentDisplay)
+		assert.Equal(t, na, data.AcceleratorsDisplay)
+	})
+
+	t.Run("leaves fallbacks when the raw lookup fails", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		}))
+		t.Cleanup(srv.Close)
+		data := &getData{ExperimentDisplay: na, AcceleratorsDisplay: na}
+		enrichFromRawRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5, data)
+		assert.Empty(t, data.TrainingConfigPath)
+		assert.Equal(t, na, data.ExperimentDisplay)
+		assert.Equal(t, na, data.AcceleratorsDisplay)
+	})
 }
 
 func TestBuildGetDataEmpty(t *testing.T) {

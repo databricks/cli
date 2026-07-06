@@ -115,10 +115,8 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	}
 
 	var sections []string
-	if task := genAIComputeTask(run); task != nil {
-		if body := colorizeConfig(p, configYAML(ctx, w, task)); body != "" {
-			sections = append(sections, renderBox(p, configBoxTitle, body))
-		}
+	if body := colorizeConfig(p, resolveConfigYAML(ctx, w, run, data)); body != "" {
+		sections = append(sections, renderBox(p, configBoxTitle, body))
 	}
 	sections = append(sections, renderBox(p, metadataBoxTitle, renderFields(p, colorOn, view)))
 
@@ -146,6 +144,20 @@ func genAIComputeTask(run *jobs.Run) *jobs.GenAiComputeTask {
 		return nil
 	}
 	return run.Tasks[0].GenAiComputeTask
+}
+
+// resolveConfigYAML returns the config box body: from the downloaded config file
+// when we have its path, else from the legacy task.
+func resolveConfigYAML(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, data *getData) string {
+	if data.TrainingConfigPath != "" {
+		if raw := downloadConfig(ctx, w, data.TrainingConfigPath); len(raw) > 0 {
+			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n")
+		}
+	}
+	if task := genAIComputeTask(run); task != nil {
+		return configYAML(ctx, w, task)
+	}
+	return ""
 }
 
 // configYAML returns the run's resolved training config as YAML for the box. The
