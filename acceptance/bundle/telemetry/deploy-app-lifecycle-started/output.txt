@@ -14,23 +14,23 @@ Deployment complete!
       "value": false
     },
     {
-      "key": "null-in-targets.scalar",
+      "key": "null-in-targets-scalar",
       "value": false
     },
     {
-      "key": "null-in-targets.complex",
+      "key": "null-in-targets-complex",
       "value": false
     },
     {
-      "key": "null-in-targets.map-key",
+      "key": "null-in-targets-key",
       "value": false
     },
     {
-      "key": "null-in-targets.array-index",
+      "key": "null-in-targets-index",
       "value": false
     },
     {
-      "key": "null-in-targets.resource",
+      "key": "null-in-targets-resource",
       "value": false
     },
     {
