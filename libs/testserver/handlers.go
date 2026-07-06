@@ -74,7 +74,7 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req Request) any {
 		return Response{
 			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
-			Body:    req.Workspace.CurrentUser(),
+			Body:    req.Workspace.MeUser(req.Token),
 		}
 	})
 
@@ -259,7 +259,7 @@ func AddDefaultHandlers(server *Server) {
 				Body:       fmt.Sprintf("request parsing error: %s", err),
 			}
 		}
-		return MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
+		return req.Workspace.JobsDelete(req, request.JobId)
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {

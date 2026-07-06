@@ -128,6 +128,9 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
+		// ReplaceExisting adopts an existing role with the same ID instead of
+		// returning ALREADY_EXISTS. Not exposed in bundle config, so always false.
+		ReplaceExisting: false,
 		ForceSendFields: nil,
 	})
 	if err != nil {

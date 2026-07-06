@@ -4,6 +4,9 @@ package genie
 type GenieRequest struct {
 	Input       []InputItem `json:"input"`
 	WarehouseID string      `json:"warehouseId,omitempty"`
+	// Tag is camelCase (conversationId), unlike the response's snake_case
+	// conversation_id; the server does not read the snake_case form on input.
+	ConversationID string `json:"conversationId,omitempty"`
 }
 
 // InputItem is a message in the input array.

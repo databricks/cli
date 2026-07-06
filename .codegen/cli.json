@@ -144,14 +144,14 @@
       "fields": {
         "name": {
           "description": "Name of the column.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "type_text": {
           "description": "Data type of the column (e.g., \"string\", \"int\", \"array\u003cfloat\u003e\").",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -163,11 +163,11 @@
         "endpoint": {
           "description": "The Endpoint resource to create. Fields other than `endpoint.name` carry the desired\nconfiguration; `endpoint.name` is server-assigned from `parent` and `endpoint_id`.",
           "ref": "aisearch.Endpoint",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "endpoint_id": {
           "description": "The user-supplied short name for the Endpoint, per AIP-133. The server composes the\nfull `Endpoint.name` as `{parent}/endpoints/{endpoint_id}`. AIP-133 does not list\n`endpoint_id` as a fields-may-be-required entry, so we annotate it OPTIONAL on the\nwire; the server still rejects empty values with INVALID_PARAMETER_VALUE.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -179,11 +179,11 @@
         "index": {
           "description": "The Index resource to create. Fields other than `index.name` carry the desired\nconfiguration; `index.name` is server-assigned from `parent` and `index_id`.",
           "ref": "aisearch.Index",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "index_id": {
           "description": "The user-supplied Unity Catalog table name for the Index, per AIP-133. The server\ncomposes the full `Index.name` as `{parent}/indexes/{index_id}`. AIP-133 does not\nlist `index_id` as a fields-may-be-required entry, so we annotate it OPTIONAL on the\nwire; the server still rejects empty values with INVALID_PARAMETER_VALUE.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -195,11 +195,11 @@
       "fields": {
         "key": {
           "description": "Key field for an AI Search endpoint tag.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "value": {
           "description": "[Optional] Value field for an AI Search endpoint tag.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -211,14 +211,14 @@
       "fields": {
         "failed_primary_keys": {
           "description": "Primary keys of rows that failed to process.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "success_row_count": {
           "description": "Count of rows processed successfully.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -233,9 +233,9 @@
         "FAILURE"
       ],
       "enum_launch_stages": {
-        "FAILURE": "PRIVATE_PREVIEW",
-        "PARTIAL_SUCCESS": "PRIVATE_PREVIEW",
-        "SUCCESS": "PRIVATE_PREVIEW"
+        "FAILURE": "PUBLIC_BETA",
+        "PARTIAL_SUCCESS": "PUBLIC_BETA",
+        "SUCCESS": "PUBLIC_BETA"
       }
     },
     "aisearch.DeleteEndpointRequest": {},
@@ -245,35 +245,35 @@
       "fields": {
         "columns_to_sync": {
           "description": "[Optional] Select the columns to sync with the index. If left blank, all columns\nfrom the source table are synced. The primary key column and embedding source or\nvector column are always synced.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "embedding_source_columns": {
           "description": "The columns that contain the embedding source.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "embedding_vector_columns": {
           "description": "The columns that contain the embedding vectors.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "embedding_writeback_table": {
           "description": "[Optional] Name of the Delta table to sync the index contents and computed embeddings to.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "pipeline_id": {
           "description": "The ID of the pipeline that is used to sync the index.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -281,11 +281,11 @@
         "pipeline_type": {
           "description": "Pipeline execution mode. Required on create — the backend rejects an unset value.\nStorage Optimized endpoints accept only `TRIGGERED`; Standard endpoints accept both.\nNo explicit `stage` — a REQUIRED field staged below its service would be dropped from\ncombined specs while remaining in `required`, tripping the OpenAPI required-vs-properties\nconsistency check. The field inherits the service's launch stage.",
           "ref": "aisearch.PipelineType",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "source_table": {
           "description": "The full name of the source Delta table.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -297,21 +297,21 @@
       "fields": {
         "embedding_source_columns": {
           "description": "The columns that contain the embedding source.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "embedding_vector_columns": {
           "description": "The columns that contain the embedding vectors.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "schema_json": {
           "description": "The schema of the index in JSON format. Supported types are `integer`, `long`,\n`float`, `double`, `boolean`, `string`, `date`, `timestamp`. Supported types for\nvector columns: `array\u003cfloat\u003e`, `array\u003cdouble\u003e`.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -323,15 +323,15 @@
       "fields": {
         "embedding_model_endpoint": {
           "description": "Name of the embedding model endpoint, used by default for both ingestion and querying.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "model_endpoint_name_for_query": {
           "description": "Name of the embedding model endpoint which, if specified, is used for querying (not ingestion).",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "name": {
           "description": "Name of the source column.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -340,11 +340,11 @@
       "fields": {
         "embedding_dimension": {
           "description": "Dimension of the embedding vector.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "name": {
           "description": "Name of the column.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -353,35 +353,35 @@
       "fields": {
         "budget_policy_id": {
           "description": "The user-selected budget policy id for the endpoint.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "create_time": {
           "description": "Time the endpoint was created.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "creator": {
           "description": "Creator of the endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "custom_tags": {
           "description": "The custom tags assigned to the endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "effective_budget_policy_id": {
           "description": "The budget policy id applied to the endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -389,7 +389,7 @@
         "endpoint_status": {
           "description": "Current status of the endpoint",
           "ref": "aisearch.EndpointStatus",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -397,39 +397,39 @@
         "endpoint_type": {
           "description": "Type of endpoint. Required on create and immutable thereafter.",
           "ref": "aisearch.EndpointType",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "IMMUTABLE"
           ]
         },
         "id": {
           "description": "Unique identifier of the endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "index_count": {
           "description": "Number of indexes on the endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "last_updated_user": {
           "description": "User who last updated the endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "name": {
           "description": "Name of the AI Search endpoint. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}`) on output. On create, the\nuser-supplied short name is conveyed via `CreateEndpointRequest.endpoint_id`;\nthe server composes the full `name` and returns it on the response.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "replica_count": {
           "description": "The client-supplied desired number of replicas for the endpoint, applied at\ncreate/update time. Mutually exclusive with `target_qps`.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -437,14 +437,14 @@
         "scaling_info": {
           "description": "Scaling information for the endpoint",
           "ref": "aisearch.EndpointScalingInfo",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "target_qps": {
           "description": "Target QPS for the endpoint. Mutually exclusive with `replica_count`. Best-effort;\nthe system does not guarantee this QPS will be achieved.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -452,21 +452,21 @@
         "throughput_info": {
           "description": "Throughput information for the endpoint",
           "ref": "aisearch.EndpointThroughputInfo",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "update_time": {
           "description": "Time the endpoint was last updated.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "usage_policy_id": {
           "description": "The usage policy id applied to the endpoint.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -478,7 +478,7 @@
       "fields": {
         "requested_target_qps": {
           "description": "The requested QPS target for the endpoint. Best-effort; the system does not\nguarantee this QPS will be achieved.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -486,7 +486,7 @@
         "state": {
           "description": "The current state of the scaling change request.",
           "ref": "aisearch.ScalingChangeState",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -498,7 +498,7 @@
       "fields": {
         "message": {
           "description": "Human-readable detail about the endpoint's current state or the reason for a state transition.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -506,7 +506,7 @@
         "state": {
           "description": "Current lifecycle state of the endpoint. See `State` for the meaning of each value.",
           "ref": "aisearch.EndpointStatusState",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -524,12 +524,12 @@
         "DELETED"
       ],
       "enum_launch_stages": {
-        "DELETED": "PRIVATE_PREVIEW",
-        "OFFLINE": "PRIVATE_PREVIEW",
-        "ONLINE": "PRIVATE_PREVIEW",
-        "PROVISIONING": "PRIVATE_PREVIEW",
-        "RED_STATE": "PRIVATE_PREVIEW",
-        "YELLOW_STATE": "PRIVATE_PREVIEW"
+        "DELETED": "PUBLIC_BETA",
+        "OFFLINE": "PUBLIC_BETA",
+        "ONLINE": "PUBLIC_BETA",
+        "PROVISIONING": "PUBLIC_BETA",
+        "RED_STATE": "PUBLIC_BETA",
+        "YELLOW_STATE": "PUBLIC_BETA"
       }
     },
     "aisearch.EndpointThroughputInfo": {
@@ -537,7 +537,7 @@
       "fields": {
         "change_request_message": {
           "description": "Additional information about the throughput change request",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -545,56 +545,56 @@
         "change_request_state": {
           "description": "The state of the most recent throughput change request",
           "ref": "aisearch.ThroughputChangeRequestState",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "current_concurrency": {
           "description": "The current concurrency (total CPU) allocated to the endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "current_concurrency_utilization_percentage": {
           "description": "The current utilization of concurrency as a percentage (0-100)",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "current_num_replicas": {
           "description": "The current number of replicas allocated to the endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "maximum_concurrency_allowed": {
           "description": "The maximum concurrency allowed for this endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "minimal_concurrency_allowed": {
           "description": "The minimum concurrency allowed for this endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "requested_concurrency": {
           "description": "The requested concurrency (total CPU) for the endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "requested_num_replicas": {
           "description": "The requested number of replicas for the endpoint",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -608,8 +608,8 @@
         "STANDARD"
       ],
       "enum_launch_stages": {
-        "STANDARD": "PRIVATE_PREVIEW",
-        "STORAGE_OPTIMIZED": "PRIVATE_PREVIEW"
+        "STANDARD": "PUBLIC_BETA",
+        "STORAGE_OPTIMIZED": "PUBLIC_BETA"
       }
     },
     "aisearch.FacetResultData": {
@@ -617,14 +617,14 @@
       "fields": {
         "facet_array": {
           "description": "Facet rows; each row is `[facet_column_name, value_or_range, count]`.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "facet_row_count": {
           "description": "Number of facet rows returned.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -638,7 +638,7 @@
       "fields": {
         "creator": {
           "description": "Creator of the index.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -646,7 +646,7 @@
         "delta_sync_index_spec": {
           "description": "Specification for a Delta Sync index. Set when `index_type` is `DELTA_SYNC`.",
           "ref": "aisearch.DeltaSyncIndexSpec",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "IMMUTABLE",
             "OPTIONAL"
@@ -655,7 +655,7 @@
         "direct_access_index_spec": {
           "description": "Specification for a Direct Access index. Set when `index_type` is `DIRECT_ACCESS`.",
           "ref": "aisearch.DirectAccessIndexSpec",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "IMMUTABLE",
             "OPTIONAL"
@@ -663,7 +663,7 @@
         },
         "endpoint": {
           "description": "Name of the endpoint associated with the index. Ignored on create — the endpoint is\ntaken from `CreateIndexRequest.parent`; populated only on output.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -671,7 +671,7 @@
         "index_subtype": {
           "description": "The subtype of the index. Set on create and immutable thereafter.",
           "ref": "aisearch.IndexSubtype",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "IMMUTABLE",
             "OPTIONAL"
@@ -680,18 +680,18 @@
         "index_type": {
           "description": "Type of index. Required on create and immutable thereafter.",
           "ref": "aisearch.IndexType",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "IMMUTABLE"
           ]
         },
         "name": {
           "description": "Name of the AI Search index. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}/indexes/{index}`) on output, where\n`{index}` is the index's Unity Catalog table name. On create, the user-supplied UC\ntable name is conveyed via `CreateIndexRequest.index_id`; the server composes the\nfull `name` and returns it on the response.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "primary_key": {
           "description": "Primary key of the index. Set on create and immutable thereafter.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "IMMUTABLE"
           ]
@@ -699,7 +699,7 @@
         "status": {
           "description": "Current status of the index.",
           "ref": "aisearch.IndexStatus",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -711,28 +711,28 @@
       "fields": {
         "index_url": {
           "description": "Index API URL used to perform operations on the index.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "indexed_row_count": {
           "description": "Number of rows indexed.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "message": {
           "description": "Human-readable detail about the index's current state.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "ready": {
           "description": "Whether the index is ready for search.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -747,9 +747,9 @@
         "HYBRID"
       ],
       "enum_launch_stages": {
-        "FULL_TEXT": "PRIVATE_PREVIEW",
-        "HYBRID": "PRIVATE_PREVIEW",
-        "VECTOR": "PRIVATE_PREVIEW"
+        "FULL_TEXT": "PUBLIC_BETA",
+        "HYBRID": "PUBLIC_BETA",
+        "VECTOR": "PUBLIC_BETA"
       },
       "enum_descriptions": {
         "FULL_TEXT": "An index that uses full-text search without vector embeddings.",
@@ -764,8 +764,8 @@
         "DIRECT_ACCESS"
       ],
       "enum_launch_stages": {
-        "DELTA_SYNC": "PRIVATE_PREVIEW",
-        "DIRECT_ACCESS": "PRIVATE_PREVIEW"
+        "DELTA_SYNC": "PUBLIC_BETA",
+        "DIRECT_ACCESS": "PUBLIC_BETA"
       },
       "enum_descriptions": {
         "DELTA_SYNC": "An index that automatically syncs with a source Delta Table,",
@@ -776,14 +776,14 @@
       "fields": {
         "page_size": {
           "description": "Best-effort upper bound on the number of results to return. Honored as an upper\nbound by the shim: `page_size` only narrows the legacy backend's response, never\nwidens it, so the practical cap is `min(page_size, legacy_fixed_page_size)`.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "Page token from a previous response. If not provided, returns the first page.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -795,14 +795,14 @@
       "fields": {
         "endpoints": {
           "description": "The endpoints in the workspace.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "next_page_token": {
           "description": "A token that can be used to get the next page of results. Empty when there are no more results.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -813,14 +813,14 @@
       "fields": {
         "page_size": {
           "description": "Best-effort upper bound on the number of results to return. Honored as an upper\nbound by the shim: `page_size` only narrows the legacy backend's response, never\nwidens it, so the practical cap is `min(page_size, legacy_fixed_page_size)`.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "Page token from a previous response. If not provided, returns the first page.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -832,14 +832,14 @@
       "fields": {
         "indexes": {
           "description": "The indexes on the endpoint. The field is named `indexes` (not the irregular plural\n`indices`) to satisfy core::0132, which derives the response field name from the\nListIndexes method. core::0158::response-plural-first-field independently computes the\nresource plural as `indices` and is satisfied via a scoped field exception below.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "next_page_token": {
           "description": "A token that can be used to get the next page of results. Empty when there are no more results.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -853,8 +853,8 @@
         "CONTINUOUS"
       ],
       "enum_launch_stages": {
-        "CONTINUOUS": "PRIVATE_PREVIEW",
-        "TRIGGERED": "PRIVATE_PREVIEW"
+        "CONTINUOUS": "PUBLIC_BETA",
+        "TRIGGERED": "PUBLIC_BETA"
       },
       "enum_descriptions": {
         "CONTINUOUS": "the pipeline processes new data as it arrives in the source table to",
@@ -866,60 +866,60 @@
       "fields": {
         "columns": {
           "description": "Column names to include in each result row.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "columns_to_rerank": {
           "description": "Columns whose values are sent to the reranker.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "facets": {
           "description": "Facets to compute over the matched results (e.g. `\"category TOP 5\"`).",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "filters_json": {
           "description": "JSON string describing query filters (e.g. `{\"id \u003e\": 5}`).",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "max_results": {
           "description": "Maximum number of results to return (the legacy `num_results`). Defaults to 10.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "query_columns": {
           "description": "Text columns to search for `query_text`. When empty, all text columns are searched.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "query_text": {
           "description": "Query text. Required for Delta Sync indexes that compute embeddings from a model endpoint.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "query_type": {
           "description": "Query type: `ANN`, `HYBRID`, or `FULL_TEXT`. Defaults to `ANN`.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "query_vector": {
           "description": "Query vector. Required for Direct Access indexes and Delta Sync indexes with self-managed\nvectors.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -927,21 +927,21 @@
         "reranker": {
           "description": "If set, results are reranked before being returned.",
           "ref": "aisearch.RerankerConfig",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "score_threshold": {
           "description": "Score threshold for the approximate nearest-neighbor search. Defaults to 0.0.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "sort_columns": {
           "description": "Sort clauses, e.g. `[\"rating DESC\", \"price ASC\"]`. Overrides relevance ordering.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -954,7 +954,7 @@
         "facet_result": {
           "description": "Facet aggregation rows, when facets were requested.",
           "ref": "aisearch.FacetResultData",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -962,7 +962,7 @@
         "manifest": {
           "description": "Metadata describing the result columns.",
           "ref": "aisearch.ResultManifest",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -970,7 +970,7 @@
         "result": {
           "description": "The matched result rows.",
           "ref": "aisearch.ResultData",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -982,7 +982,7 @@
       "fields": {
         "primary_keys": {
           "description": "Primary keys of the rows to remove.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -992,7 +992,7 @@
         "result": {
           "description": "Per-row outcome of the delete.",
           "ref": "aisearch.DataModificationResult",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -1000,7 +1000,7 @@
         "status": {
           "description": "Overall status of the delete.",
           "ref": "aisearch.DataModificationStatus",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -1012,7 +1012,7 @@
       "fields": {
         "model": {
           "description": "Reranker identifier: \"databricks_reranker\" for the base model, or a Model Serving\nendpoint name when `model_type` is MODEL_TYPE_FINETUNED.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -1020,7 +1020,7 @@
         "model_type": {
           "description": "Discriminator for how `model` is interpreted.",
           "ref": "aisearch.RerankerConfigModelType",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -1028,7 +1028,7 @@
         "parameters": {
           "description": "Parameters controlling reranking.",
           "ref": "aisearch.RerankerConfigRerankerParameters",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -1042,8 +1042,8 @@
         "MODEL_TYPE_FINETUNED"
       ],
       "enum_launch_stages": {
-        "MODEL_TYPE_BASE": "PRIVATE_PREVIEW",
-        "MODEL_TYPE_FINETUNED": "PRIVATE_PREVIEW"
+        "MODEL_TYPE_BASE": "PUBLIC_BETA",
+        "MODEL_TYPE_FINETUNED": "PUBLIC_BETA"
       }
     },
     "aisearch.RerankerConfigRerankerParameters": {
@@ -1051,7 +1051,7 @@
       "fields": {
         "columns_to_rerank": {
           "description": "Columns whose values are concatenated and sent to the reranker.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -1063,14 +1063,14 @@
       "fields": {
         "data_array": {
           "description": "Result rows; each row is a list of column values aligned with the manifest columns.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "row_count": {
           "description": "Number of rows in the result set.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -1082,28 +1082,28 @@
       "fields": {
         "column_count": {
           "description": "Number of columns in the result set.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "columns": {
           "description": "Information about each column in the result set.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "facet_column_count": {
           "description": "Number of columns in the facet result.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "facet_columns": {
           "description": "Information about each facet column.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -1118,9 +1118,9 @@
         "SCALING_CHANGE_IN_PROGRESS"
       ],
       "enum_launch_stages": {
-        "SCALING_CHANGE_APPLIED": "PRIVATE_PREVIEW",
-        "SCALING_CHANGE_IN_PROGRESS": "PRIVATE_PREVIEW",
-        "SCALING_CHANGE_UNSPECIFIED": "PRIVATE_PREVIEW"
+        "SCALING_CHANGE_APPLIED": "PUBLIC_BETA",
+        "SCALING_CHANGE_IN_PROGRESS": "PUBLIC_BETA",
+        "SCALING_CHANGE_UNSPECIFIED": "PUBLIC_BETA"
       }
     },
     "aisearch.ScanIndexRequest": {
@@ -1128,14 +1128,14 @@
       "fields": {
         "page_size": {
           "description": "Maximum number of rows to return in this page.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "Page token from a previous response; if unset, scanning starts from the beginning.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -1147,14 +1147,14 @@
       "fields": {
         "data": {
           "description": "The rows in this page, each a struct of column name to value.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "next_page_token": {
           "description": "Token for the next page; empty when the scan is exhausted.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -1178,12 +1178,12 @@
         "CHANGE_ADJUSTED"
       ],
       "enum_launch_stages": {
-        "CHANGE_ADJUSTED": "PRIVATE_PREVIEW",
-        "CHANGE_FAILED": "PRIVATE_PREVIEW",
-        "CHANGE_IN_PROGRESS": "PRIVATE_PREVIEW",
-        "CHANGE_REACHED_MAXIMUM": "PRIVATE_PREVIEW",
-        "CHANGE_REACHED_MINIMUM": "PRIVATE_PREVIEW",
-        "CHANGE_SUCCESS": "PRIVATE_PREVIEW"
+        "CHANGE_ADJUSTED": "PUBLIC_BETA",
+        "CHANGE_FAILED": "PUBLIC_BETA",
+        "CHANGE_IN_PROGRESS": "PUBLIC_BETA",
+        "CHANGE_REACHED_MAXIMUM": "PUBLIC_BETA",
+        "CHANGE_REACHED_MINIMUM": "PUBLIC_BETA",
+        "CHANGE_SUCCESS": "PUBLIC_BETA"
       }
     },
     "aisearch.UpdateEndpointRequest": {
@@ -1191,11 +1191,11 @@
         "endpoint": {
           "description": "The Endpoint resource to update. `endpoint.name` carries the full resource path.",
           "ref": "aisearch.Endpoint",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "update_mask": {
           "description": "The list of fields to update.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -1204,7 +1204,7 @@
       "fields": {
         "inputs_json": {
           "description": "JSON document describing the rows to upsert.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -1214,7 +1214,7 @@
         "result": {
           "description": "Per-row outcome of the upsert.",
           "ref": "aisearch.DataModificationResult",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -1222,7 +1222,7 @@
         "status": {
           "description": "Overall status of the upsert.",
           "ref": "aisearch.DataModificationStatus",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -2305,11 +2305,13 @@
     "apps.ComputeSize": {
       "enum": [
         "MEDIUM",
-        "LARGE"
+        "LARGE",
+        "XLARGE"
       ],
       "enum_launch_stages": {
         "LARGE": "GA",
-        "MEDIUM": "GA"
+        "MEDIUM": "GA",
+        "XLARGE": "PRIVATE_PREVIEW"
       }
     },
     "apps.ComputeState": {
@@ -4009,7 +4011,7 @@
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "version_id": {
-          "description": "The version ID the caller expects to create. The server validates\nthis equals `last_version_id + 1` on the deployment. If it doesn't\nmatch, the server returns `ABORTED`.",
+          "description": "The ID to use for the version, which becomes the final component of\nthe version's resource name. A numeric string (base-10, fits in a\nsigned 64-bit integer) chosen by the caller; must be greater than or\nequal to 1. Must be numerically greater than the deployment's\nmost recent version (see `version.previous_version_id`); it does not\nneed to start at 1 or increase by exactly 1. If the value is not\nnumerically greater, the server returns `INVALID_PARAMETER_VALUE`.",
           "launch_stage": "PRIVATE_PREVIEW"
         }
       }
@@ -4367,7 +4369,7 @@
       }
     },
     "bundledeployments.Operation": {
-      "description": "An operation on a single resource performed during a version.\nOperations are append-only and record the result of applying a resource\nchange to the workspace.",
+      "description": "An operation on a single resource performed during a version. Operations\nrecord the result of applying a resource change to the workspace. Most\nfields are immutable once recorded; `state`, `error_message`, `resource_id`,\nand `status` may be updated afterwards (via UpdateOperation), guarded by\n`sequence_id` for optimistic concurrency control.",
       "fields": {
         "action_type": {
           "description": "The type of operation performed on this resource.",
@@ -4385,10 +4387,10 @@
           ]
         },
         "error_message": {
-          "description": "Error message if the operation failed. Set when status is\nOPERATION_STATUS_FAILED. Captures the error encountered while\napplying the resource to the workspace.",
+          "description": "Error message if the operation failed. Set when status is\nOPERATION_STATUS_FAILED. Captures the error encountered while applying the\nresource to the workspace. Mutable: may be updated after creation via\nUpdateOperation; setting it to an empty string clears it. After an update\nis applied, an operation whose status is OPERATION_STATUS_SUCCEEDED cannot\ncarry an error_message.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
-            "IMMUTABLE"
+            "OPTIONAL"
           ]
         },
         "name": {
@@ -4399,10 +4401,9 @@
           ]
         },
         "resource_id": {
-          "description": "ID of the actual resource in the workspace (e.g. the job ID, pipeline ID).\nRequired for every operation except CREATE and RECREATE, which produce a\nnew resource whose ID is not yet known when the operation is recorded.",
+          "description": "ID of the actual resource in the workspace (e.g. the job ID, pipeline ID).\nOptional at creation: CREATE and RECREATE operations produce a new resource\nwhose ID is not yet known when the operation is recorded. Mutable: may be\nfilled in (or corrected) later via UpdateOperation once the ID is known.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
-            "IMMUTABLE",
             "OPTIONAL"
           ]
         },
@@ -4422,19 +4423,16 @@
           ]
         },
         "state": {
-          "description": "Serialized local config state after the operation.\nShould be unset for delete operations.",
+          "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
-            "IMMUTABLE"
+            "OPTIONAL"
           ]
         },
         "status": {
-          "description": "Whether the operation succeeded or failed.",
+          "description": "Whether the operation succeeded or failed. Mutable: may be updated after\ncreation via UpdateOperation, e.g. when an operation recorded as failed is\nretried and eventually succeeds. A succeeded operation cannot carry an\n`error_message`.",
           "ref": "bundledeployments.OperationStatus",
-          "launch_stage": "PRIVATE_PREVIEW",
-          "behaviors": [
-            "IMMUTABLE"
-          ]
+          "launch_stage": "PRIVATE_PREVIEW"
         }
       }
     },
@@ -4622,7 +4620,7 @@
           ]
         },
         "version_id": {
-          "description": "Monotonically increasing version identifier within the parent\ndeployment. Assigned by the client on creation.",
+          "description": "Version identifier within the parent deployment, assigned by the\nclient on creation. A numeric string (base-10, fits in a signed\n64-bit integer) that is greater than or equal to 1. Version IDs are\nstrictly increasing within a deployment but are not required to\nstart at 1 or to be contiguous.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
@@ -4686,6 +4684,10 @@
     "bundledeployments.WorkspaceInfo": {
       "description": "Workspace location of a bundle deployment, captured at deploy time.",
       "fields": {
+        "bundle_root_path": {
+          "description": "Path of the bundle root (the directory containing databricks.yml) relative\nto git_folder_path. Empty when the deployment is not from a Databricks Git\nfolder.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "file_path": {
           "description": "Absolute workspace path where the deployed bundle files live. Mirrors the\nworkspace.file_path field in DABs bundle config.",
           "launch_stage": "PRIVATE_PREVIEW"
@@ -5590,7 +5592,6 @@
       }
     },
     "catalog.ConnectionType": {
-      "description": "Next Id: 127",
       "enum": [
         "UNKNOWN_CONNECTION_TYPE",
         "MYSQL",
@@ -6593,7 +6594,6 @@
       }
     },
     "catalog.CredentialType": {
-      "description": "Next Id: 20",
       "enum": [
         "UNKNOWN_CREDENTIAL_TYPE",
         "USERNAME_PASSWORD",
@@ -10444,7 +10444,6 @@
     },
     "catalog.RunRefreshRequest": {},
     "catalog.SchemaInfo": {
-      "description": "Next ID: 45",
       "fields": {
         "browse_only": {
           "description": "Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.",
@@ -10681,7 +10680,6 @@
       }
     },
     "catalog.SecurableKind": {
-      "description": "Latest kind: CONNECTION_MARKETO_OAUTH_M2M = 347; Next id: 348.\nReserved numbers: 316, 317, 327, 330, 341 (former ENDPOINT_LLM_*,\nMODEL_SERVICE_STANDARD, MODEL_SERVICE_SYSTEM_DELTASHARING, MCP_SERVICE_STANDARD).",
       "enum": [
         "TABLE_STANDARD",
         "TABLE_EXTERNAL",
@@ -12241,7 +12239,6 @@
       }
     },
     "catalog.ValidateCredentialRequest": {
-      "description": "Next ID: 18",
       "fields": {
         "aws_iam_role": {
           "ref": "catalog.AwsIamRole",
@@ -13602,6 +13599,22 @@
         }
       }
     },
+    "compute.CancelPendingClusterEnforcementRequest": {
+      "description": "Request to cancel the pending enforcement for a cluster.",
+      "fields": {
+        "allow_missing": {
+          "description": "If true and no pending enforcement exists, the request will succeed but no action\nwill be taken.",
+          "launch_stage": "GA"
+        },
+        "cluster_id": {
+          "description": "The ID of the cluster to cancel the pending enforcement for.",
+          "launch_stage": "GA"
+        }
+      }
+    },
+    "compute.CancelPendingClusterEnforcementResponse": {
+      "description": "Response for canceling the pending enforcement for a cluster.\nIf the cancel request succeeds, an empty response object is returned.\nOtherwise, an error response is returned."
+    },
     "compute.CancelResponse": {},
     "compute.ChangeClusterOwner": {
       "fields": {
@@ -13842,6 +13855,11 @@
         },
         "is_compliant": {
           "description": "Whether this cluster is in compliance with the latest version of its policy.",
+          "launch_stage": "GA"
+        },
+        "pending_enforcement": {
+          "description": "Information about the pending enforcement for the cluster. Only present if a pending enforcement\nis scheduled for the cluster.",
+          "ref": "compute.PendingEnforcement",
           "launch_stage": "GA"
         },
         "violations": {
@@ -15369,6 +15387,11 @@
           "description": "The ID of the cluster you want to enforce policy compliance on.",
           "launch_stage": "GA"
         },
+        "enforce_mode": {
+          "description": "Determines how changes should be made to clusters that are not in `TERMINATED` state.\n\n- `ENFORCE_IMMEDIATELY`: If the cluster is in a `RUNNING` state, it will be restarted so\nthat the new attributes can take effect. For other states aside from `TERMINATED` state,\nthe request will be rejected.\n- `WAIT_FOR_TERMINATION`: The cluster is not immediately edited. Instead, a pending enforcement\nis scheduled to update the cluster when it terminates or restarts. When this occurs,\n`enforce_result` will contain `DEFERRED`. Only workspace admins can use this mode.\n\nRegardless of the enforce mode, clusters in `TERMINATED` state are immediately edited.",
+          "ref": "compute.EnforcePolicyComplianceForClusterEnforceMode",
+          "launch_stage": "GA"
+        },
         "validate_only": {
           "description": "If set, previews the changes that would be made to a cluster\nto enforce compliance but does not update the cluster.",
           "launch_stage": "GA"
@@ -15381,10 +15404,182 @@
           "description": "A list of changes that have been made to the cluster settings for\nthe cluster to become compliant with its policy.",
           "launch_stage": "GA"
         },
+        "enforce_result": {
+          "description": "Describes whether changes have been applied to the cluster.",
+          "ref": "compute.EnforcePolicyComplianceForClusterResponseEnforceResult",
+          "launch_stage": "GA"
+        },
         "has_changes": {
           "description": "Whether any changes have been made to the cluster settings for the cluster\nto become compliant with its policy.",
           "launch_stage": "GA"
         }
+      }
+    },
+    "compute.EnforcePolicyComplianceForClusterEnforceMode": {
+      "enum": [
+        "ENFORCE_IMMEDIATELY",
+        "WAIT_FOR_TERMINATION"
+      ],
+      "enum_launch_stages": {
+        "ENFORCE_IMMEDIATELY": "GA",
+        "WAIT_FOR_TERMINATION": "GA"
+      }
+    },
+    "compute.EnforcePolicyComplianceForClusterResponseClusterSettings": {
+      "fields": {
+        "autoscale": {
+          "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
+          "ref": "compute.AutoScale",
+          "launch_stage": "GA"
+        },
+        "autotermination_minutes": {
+          "description": "Automatically terminates the cluster after it is inactive for this time in minutes. If not set,\nthis cluster will not be automatically terminated. If specified, the threshold must be between\n10 and 10000 minutes.\nUsers can also set this value to 0 to explicitly disable automatic termination.",
+          "launch_stage": "GA"
+        },
+        "aws_attributes": {
+          "description": "Attributes related to clusters running on Amazon Web Services.\nIf not specified at cluster creation, a set of default values will be used.",
+          "ref": "compute.AwsAttributes",
+          "launch_stage": "GA"
+        },
+        "azure_attributes": {
+          "description": "Attributes related to clusters running on Microsoft Azure.\nIf not specified at cluster creation, a set of default values will be used.",
+          "ref": "compute.AzureAttributes",
+          "launch_stage": "GA"
+        },
+        "cluster_log_conf": {
+          "description": "The configuration for delivering spark logs to a long-term storage destination.\nThree kinds of destinations (DBFS, S3 and Unity Catalog volumes) are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.",
+          "ref": "compute.ClusterLogConf",
+          "launch_stage": "GA"
+        },
+        "cluster_name": {
+          "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.\nFor job clusters, the cluster name is automatically set based on the job and job run IDs.",
+          "launch_stage": "GA"
+        },
+        "custom_tags": {
+          "description": "Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags\n\n- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags",
+          "launch_stage": "GA"
+        },
+        "data_security_mode": {
+          "ref": "compute.DataSecurityMode",
+          "launch_stage": "GA"
+        },
+        "docker_image": {
+          "description": "Custom docker image BYOC",
+          "ref": "compute.DockerImage",
+          "launch_stage": "GA"
+        },
+        "driver_instance_pool_id": {
+          "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned.",
+          "launch_stage": "GA"
+        },
+        "driver_node_type_flexibility": {
+          "description": "Flexible node type configuration for the driver node.",
+          "ref": "compute.NodeTypeFlexibility",
+          "launch_stage": "GA"
+        },
+        "driver_node_type_id": {
+          "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above.\n\nThis field, along with node_type_id, should not be set if virtual_cluster_size is set.\nIf both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.",
+          "launch_stage": "GA"
+        },
+        "enable_elastic_disk": {
+          "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space.",
+          "launch_stage": "GA"
+        },
+        "enable_local_disk_encryption": {
+          "description": "Whether to enable LUKS on cluster VMs' local disks",
+          "launch_stage": "GA"
+        },
+        "gcp_attributes": {
+          "description": "Attributes related to clusters running on Google Cloud Platform.\nIf not specified at cluster creation, a set of default values will be used.",
+          "ref": "compute.GcpAttributes",
+          "launch_stage": "GA"
+        },
+        "init_scripts": {
+          "description": "The configuration for storing init scripts. Any number of destinations can be specified.\nThe scripts are executed sequentially in the order provided.\nIf `cluster_log_conf` is specified, init script logs are sent to `\u003cdestination\u003e/\u003ccluster-ID\u003e/init_scripts`.",
+          "launch_stage": "GA"
+        },
+        "instance_pool_id": {
+          "description": "The optional ID of the instance pool to which the cluster belongs.",
+          "launch_stage": "GA"
+        },
+        "is_single_node": {
+          "description": "This field can only be used when `kind = CLASSIC_PREVIEW`.\n\nWhen set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`",
+          "launch_stage": "GA"
+        },
+        "kind": {
+          "ref": "compute.Kind",
+          "launch_stage": "GA"
+        },
+        "node_type_id": {
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "launch_stage": "GA"
+        },
+        "num_workers": {
+          "description": "Number of worker nodes that this cluster should have. A cluster has one Spark Driver\nand `num_workers` Executors for a total of `num_workers` + 1 Spark nodes.\n\nNote: When reading the properties of a cluster, this field reflects the desired number\nof workers rather than the actual current number of workers. For instance, if a cluster\nis resized from 5 to 10 workers, this field will immediately be updated to reflect\nthe target size of 10 workers, whereas the workers listed in `spark_info` will gradually\nincrease from 5 to 10 as the new nodes are provisioned.",
+          "launch_stage": "GA"
+        },
+        "policy_id": {
+          "description": "The ID of the cluster policy used to create the cluster if applicable.",
+          "launch_stage": "GA"
+        },
+        "remote_disk_throughput": {
+          "description": "If set, what the configurable throughput (in Mb/s) for the remote disk is. Currently only supported for GCP HYPERDISK_BALANCED disks.",
+          "launch_stage": "GA"
+        },
+        "runtime_engine": {
+          "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.",
+          "ref": "compute.RuntimeEngine",
+          "launch_stage": "GA"
+        },
+        "single_user_name": {
+          "description": "Single user name if data_security_mode is `SINGLE_USER`",
+          "launch_stage": "GA"
+        },
+        "spark_conf": {
+          "description": "An object containing a set of optional, user-specified Spark configuration key-value pairs.\nUsers can also pass in a string of extra JVM options to the driver and the executors via\n`spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.",
+          "launch_stage": "GA"
+        },
+        "spark_env_vars": {
+          "description": "An object containing a set of optional, user-specified environment variable key-value pairs.\nPlease note that key-value pair of the form (X,Y) will be exported as is (i.e.,\n`export X='Y'`) while launching the driver and workers.\n\nIn order to specify an additional set of `SPARK_DAEMON_JAVA_OPTS`, we recommend appending\nthem to `$SPARK_DAEMON_JAVA_OPTS` as shown in the example below. This ensures that all\ndefault databricks managed environmental variables are included as well.\n\nExample Spark environment variables:\n`{\"SPARK_WORKER_MEMORY\": \"28000m\", \"SPARK_LOCAL_DIRS\": \"/local_disk0\"}` or\n`{\"SPARK_DAEMON_JAVA_OPTS\": \"$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true\"}`",
+          "launch_stage": "GA"
+        },
+        "spark_version": {
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+          "launch_stage": "GA"
+        },
+        "ssh_public_keys": {
+          "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
+          "launch_stage": "GA"
+        },
+        "total_initial_remote_disk_size": {
+          "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED disks.",
+          "launch_stage": "GA"
+        },
+        "use_ml_runtime": {
+          "description": "This field can only be used when `kind = CLASSIC_PREVIEW`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.",
+          "launch_stage": "GA"
+        },
+        "worker_node_type_flexibility": {
+          "description": "Flexible node type configuration for worker nodes.",
+          "ref": "compute.NodeTypeFlexibility",
+          "launch_stage": "GA"
+        },
+        "workload_type": {
+          "ref": "compute.WorkloadType",
+          "launch_stage": "GA"
+        }
+      }
+    },
+    "compute.EnforcePolicyComplianceForClusterResponseEnforceResult": {
+      "enum": [
+        "NO_CHANGES",
+        "APPLIED",
+        "DEFERRED"
+      ],
+      "enum_launch_stages": {
+        "APPLIED": "GA",
+        "DEFERRED": "GA",
+        "NO_CHANGES": "GA"
       }
     },
     "compute.Environment": {
@@ -15567,6 +15762,8 @@
         "CLUSTER_MIGRATED",
         "DECOMMISSION_STARTED",
         "DECOMMISSION_ENDED",
+        "DEFERRED_POLICY_ENFORCEMENT_SCHEDULED",
+        "DEFERRED_POLICY_ENFORCEMENT_FAILED",
         "UC_VOLUME_MISCONFIGURED"
       ],
       "enum_launch_stages": {
@@ -15580,6 +15777,8 @@
         "DBFS_DOWN": "GA",
         "DECOMMISSION_ENDED": "GA",
         "DECOMMISSION_STARTED": "GA",
+        "DEFERRED_POLICY_ENFORCEMENT_FAILED": "GA",
+        "DEFERRED_POLICY_ENFORCEMENT_SCHEDULED": "GA",
         "DID_NOT_EXPAND_DISK": "GA",
         "DRIVER_HEALTHY": "GA",
         "DRIVER_NOT_RESPONDING": "GA",
@@ -15679,6 +15878,11 @@
       "fields": {
         "is_compliant": {
           "description": "Whether the cluster is compliant with its policy or not. Clusters could be out\nof compliance if the policy was updated after the cluster was last edited.",
+          "launch_stage": "GA"
+        },
+        "pending_enforcement": {
+          "description": "Information about the pending enforcement for the cluster. Only present if a pending enforcement\nis scheduled for the cluster.",
+          "ref": "compute.PendingEnforcement",
           "launch_stage": "GA"
         },
         "violations": {
@@ -16098,7 +16302,7 @@
       }
     },
     "compute.InitScriptInfo": {
-      "description": "Config for an individual init script\nNext ID: 11",
+      "description": "Config for an individual init script",
       "fields": {
         "abfss": {
           "description": "destination needs to be provided, e.g.\n`abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e`",
@@ -17047,6 +17251,43 @@
           "description": "A list of node type IDs to use as fallbacks when the primary node type is unavailable.",
           "launch_stage": "GA"
         }
+      }
+    },
+    "compute.PendingEnforcement": {
+      "description": "Represents a pending enforcement on a cluster, which contains the changes to make to the cluster\nconfiguration when the cluster is next terminated or restarted.",
+      "fields": {
+        "enforcement_status": {
+          "description": "Whether the pending enforcement will be applied. A pending enforcement begins in `ACTIVE`\nstate. If the enforcement fails to apply too many times, the state transitions to `INACTIVE`.\nAfterwards, the enforcement must be re-scheduled to become `ACTIVE` again.",
+          "ref": "compute.PendingEnforcementEnforcementStatus",
+          "launch_stage": "GA"
+        },
+        "initiate_time": {
+          "description": "The time the pending enforcement was initiated.",
+          "launch_stage": "GA"
+        },
+        "initiator_user": {
+          "description": "The user who initiated the pending enforcement.",
+          "launch_stage": "GA"
+        },
+        "target_changes": {
+          "description": "A list of changes that will be made to the cluster configuration when the pending\nenforcement is applied.",
+          "launch_stage": "GA"
+        },
+        "target_spec": {
+          "description": "The new configuration to apply upon cluster termination or restart.",
+          "ref": "compute.EnforcePolicyComplianceForClusterResponseClusterSettings",
+          "launch_stage": "GA"
+        }
+      }
+    },
+    "compute.PendingEnforcementEnforcementStatus": {
+      "enum": [
+        "ACTIVE",
+        "INACTIVE"
+      ],
+      "enum_launch_stages": {
+        "ACTIVE": "GA",
+        "INACTIVE": "GA"
       }
     },
     "compute.PendingInstanceError": {
@@ -18189,6 +18430,14 @@
         }
       }
     },
+    "dashboards.DownloadMessageAttachmentVisualizationRequest": {},
+    "dashboards.DownloadMessageAttachmentVisualizationResponse": {
+      "fields": {
+        "contents": {
+          "launch_stage": "PUBLIC_BETA"
+        }
+      }
+    },
     "dashboards.EvaluationStatusType": {
       "enum": [
         "RUNNING",
@@ -18237,6 +18486,14 @@
           "description": "Text Attachment if Genie responds with text\nThis also contains the final summary when available.",
           "ref": "dashboards.TextAttachment",
           "launch_stage": "GA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "viz": {
+          "description": "Visualization generated by Genie, if requested via `enable_visualization`",
+          "ref": "dashboards.GenieVizAttachment",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -18312,6 +18569,13 @@
         "content": {
           "description": "User message content.",
           "launch_stage": "GA"
+        },
+        "enable_visualization": {
+          "description": "Enable visualization generation.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
         }
       }
     },
@@ -19154,6 +19418,13 @@
         "content": {
           "description": "The text of the message that starts the conversation.",
           "launch_stage": "GA"
+        },
+        "enable_visualization": {
+          "description": "Enable visualization generation.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
         }
       }
     },
@@ -19236,6 +19507,25 @@
         }
       }
     },
+    "dashboards.GenieVizAttachment": {
+      "description": "Visualization generated by Genie for a query result. Use the attachment ID\nwith the download visualization API to retrieve the rendered image.",
+      "fields": {
+        "query_attachment_id": {
+          "description": "The ID of the query attachment the visualization was generated from",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "title": {
+          "description": "Name of the visualization",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        }
+      }
+    },
     "dashboards.GetDashboardRequest": {},
     "dashboards.GetPublishedDashboardRequest": {},
     "dashboards.GetPublishedDashboardTokenInfoRequest": {
@@ -19293,7 +19583,7 @@
           "launch_stage": "GA"
         },
         "view": {
-          "description": "`DASHBOARD_VIEW_BASIC`only includes summary metadata from the dashboard.",
+          "description": "`DASHBOARD_VIEW_BASIC` only includes summary metadata from the dashboard.",
           "ref": "dashboards.DashboardView",
           "launch_stage": "GA"
         }
@@ -21220,7 +21510,7 @@
           ]
         },
         "included_schemas": {
-          "description": "Schemas to include in the scan. Empty list is not supported as it results in a no-op\nscan. If `included_schemas` is not set, all schemas are scanned.",
+          "description": "Schemas to include in the scan, each named relative to the parent catalog.\nIf specified, only listed schemas will be scanned.\nMutually exclusive with `excluded_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
           "ref": "dataclassification.CatalogConfigSchemaNames",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -21237,6 +21527,7 @@
       "description": "Wrapper message for a list of schema names.",
       "fields": {
         "names": {
+          "description": "Schema names, each relative to the parent catalog. Must not be empty.",
           "launch_stage": "PUBLIC_BETA"
         }
       }
@@ -21752,7 +22043,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "object_type": {
-          "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "refresh_id": {
@@ -21963,8 +22254,11 @@
           ]
         },
         "etag": {
-          "description": "Opaque version string for optimistic locking. Server-generated, returned in responses.\nMust be provided on Update requests to prevent concurrent modifications.",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "description": "Opaque version string for optimistic locking. Server-generated and returned in responses.",
+          "launch_stage": "PUBLIC_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
         },
         "initial_primary_region": {
           "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
@@ -22163,7 +22457,7 @@
           ]
         },
         "url": {
-          "description": "The stable URL endpoint. Generated on creation and\nimmutable thereafter. For non-Private-Link workspaces this is\n`https://\u003cspog_host\u003e/?c=\u003cconnection_id\u003e`. For Private-Link workspaces\nthis is the per-connection hostname.",
+          "description": "The stable URL endpoint. Generated on creation and\nimmutable thereafter. For non-Private-Link workspaces this is\n`https://\u003cspog_host\u003e/?w=\u003cconnection_id\u003e`. For Private-Link workspaces\nthis is the per-connection hostname.",
           "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "IMMUTABLE",
@@ -22203,6 +22497,13 @@
     },
     "disasterrecovery.UpdateFailoverGroupRequest": {
       "fields": {
+        "etag": {
+          "description": "Optional opaque version string for optimistic locking, obtained from a prior read of\nthe failover group. If provided, the update is rejected unless it matches the failover\ngroup's current etag. If omitted, the update proceeds without an optimistic-lock check.",
+          "launch_stage": "PUBLIC_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "failover_group": {
           "description": "The failover group with updated fields. The name field identifies the resource\nand is populated from the URL path.",
           "ref": "disasterrecovery.FailoverGroup",
@@ -22222,7 +22523,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "replicate_workspace_assets": {
-          "description": "Whether to enable control plane DR (notebooks, jobs, clusters, etc.) for this set.",
+          "description": "Whether to enable control plane DR (notebooks, jobs, clusters, etc.) for this set.\nDefaults to false.",
           "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -22320,6 +22621,25 @@
       }
     },
     "environments.DeleteWorkspaceBaseEnvironmentRequest": {},
+    "environments.EnvironmentSpec": {
+      "description": "Environment specification for a WorkspaceBaseEnvironment.\nContains the environment version and dependencies configuration.",
+      "fields": {
+        "dependencies": {
+          "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a valid pip requirements file line per https://pip.pypa.io/en/stable/reference/requirements-file-format/.\nAllowed dependencies include a requirement specifier, an archive URL, a local project path (such as WSFS or UC Volumes in Databricks), or a VCS project URL.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "environment_version": {
+          "description": "Environment version used by the environment.\nEach version comes with a specific Python version and a set of Python packages.\nThe version is a string, consisting of an integer.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
     "environments.ErrorCode": {
       "description": "Error codes returned by Databricks APIs to indicate specific failure conditions.",
       "enum": [
@@ -22634,6 +22954,14 @@
         "name": {
           "description": "The resource name of the workspace base environment.\nFormat: workspace-base-environments/{workspace-base-environment}",
           "launch_stage": "GA"
+        },
+        "spec": {
+          "description": "The environment specification containing version and dependencies.",
+          "ref": "environments.EnvironmentSpec",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
         },
         "status": {
           "description": "The status of the materialized workspace base environment.",
@@ -25254,6 +25582,59 @@
         "USER_PERMISSION": "PUBLIC_BETA"
       }
     },
+    "jobs.AiRuntimeTask": {
+      "description": "AiRuntimeTask: multi-node GPU compute task definition for Databricks AI\nRuntime workloads.\n\nJobs-framework-level concepts (retries, per-task timeout, idempotency\ntoken, usage/budget policy, permissions) live on the surrounding\nTaskSettings / run-submit request and are intentionally NOT duplicated\nhere. Users compose `ai_runtime_task` with the standard Jobs/DABs task\nwrapper to get those.",
+      "fields": {
+        "code_source_path": {
+          "description": "Optional workspace or UC volume path of the uploaded code-source\narchive. The CLI packages the user's local code directory into an\narchive and populates this. Customers calling the Jobs API directly\nshould upload their archive to the workspace or a UC volume first and\nsupply the resulting path here.\n\nWhen set, the training node exposes the value via the `$CODE_SOURCE`\nenvironment variable.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "deployments": {
+          "description": "Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "experiment": {
+          "description": "MLflow experiment name for this run. If an experiment with this name\nalready exists under the calling user, the run is appended to it;\notherwise a new experiment is created. To target a specific MLflow\nstorage location (for example, when running as a service principal), set\n`mlflow_experiment_directory`.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "mlflow_experiment_directory": {
+          "description": "Optional workspace directory under which the MLflow experiment named in\n`experiment` is created. Must start with `/Workspace`. Set this when\nrunning as a service principal that has no default user directory; for\nregular users the experiment defaults to the user's home directory.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "mlflow_run": {
+          "description": "Optional display name for the MLflow run created under `experiment`. If\nomitted, MLflow generates a default name.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
+    "jobs.AiRuntimeTaskOutput": {
+      "description": "AiRuntimeTaskOutput: output identifiers for an AiRuntimeTask run — the\nMLflow experiment and run IDs the task wrote to.\n\nRun lifecycle and termination status are not on this message; they live\non the surrounding `RunTask.status` field (see `runs.proto:RunTask.status`).",
+      "fields": {
+        "mlflow_experiment_id": {
+          "description": "MLflow experiment ID the run was logged to. Use it to look up the\nexperiment in MLflow APIs or the workspace MLflow UI.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "mlflow_run_id": {
+          "description": "MLflow run ID for this task execution. Use it to look up the run in\nMLflow APIs or the workspace MLflow UI.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        }
+      }
+    },
     "jobs.AlertEvaluationState": {
       "description": "Same alert evaluation state as in redash-v2/api/proto/alertsv2/alerts.proto",
       "enum": [
@@ -25711,6 +26092,33 @@
         }
       }
     },
+    "jobs.ComputeSpec": {
+      "description": "ComputeSpec: compute configuration — accelerator type and total\naccelerator count across all nodes.",
+      "fields": {
+        "accelerator_count": {
+          "description": "Total number of accelerators across all nodes. Must be a positive\nmultiple of the per-node accelerator count encoded in `accelerator_type`.\nFor example, `GPU_8xH100` with `accelerator_count: 16` allocates 2 nodes\n(8 GPUs per node).",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "accelerator_type": {
+          "description": "Hardware accelerator type (for example, `GPU_1xA10` or `GPU_8xH100`).\nThe number of accelerators per node is encoded in the enum value —\n`GPU_8xH100` means 8 H100 GPUs per node.",
+          "ref": "jobs.ComputeSpecAcceleratorType",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "jobs.ComputeSpecAcceleratorType": {
+      "description": "Customer-facing AcceleratorType: hardware accelerator type for the\nAiRuntime workload. Per-node accelerator count is encoded in the value\nname (e.g. `GPU_8xH100` means 8 H100s per node).",
+      "enum": [
+        "GPU_1xA10",
+        "GPU_1xH100",
+        "GPU_8xH100"
+      ],
+      "enum_launch_stages": {
+        "GPU_1xA10": "PRIVATE_PREVIEW",
+        "GPU_1xH100": "PRIVATE_PREVIEW",
+        "GPU_8xH100": "PRIVATE_PREVIEW"
+      }
+    },
     "jobs.Condition": {
       "enum": [
         "ANY_UPDATED",
@@ -26150,6 +26558,27 @@
         "run_id": {
           "description": "ID of the run to delete.",
           "launch_stage": "GA"
+        }
+      }
+    },
+    "jobs.DeploymentSpec": {
+      "description": "DeploymentSpec: configuration for one deployment within an AiRuntimeTask.\nEach entry in `AiRuntimeTask.deployments` describes a group of nodes that\nshare the same command and compute. Many single-program training\nalgorithms use a single entry where every node runs the same command;\nrole-split workloads (driver + worker, parameter server, separate eval\nnode, etc.) use multiple entries.",
+      "fields": {
+        "command_path": {
+          "description": "Workspace path of the bash script to execute on each node in this\ndeployment. The CLI uploads the user's script and populates this.\nCustomers calling the Jobs API directly should upload their script to\nthe workspace first and supply the resulting path here.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "compute": {
+          "description": "Compute resources allocated to each node in this deployment.",
+          "ref": "jobs.ComputeSpec",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "name": {
+          "description": "Optional human-readable name for this deployment (for example, `driver`,\n`worker`, `param_server`). Used for log and UI display. Distinct names\nare recommended so deployments can be told apart, but uniqueness is not\nenforced.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
         }
       }
     },
@@ -27757,6 +28186,11 @@
     },
     "jobs.ResolvedValues": {
       "fields": {
+        "ai_runtime_task": {
+          "description": "Resolved values for an AI Runtime task — env_vars with\n`{{tasks.\u003ckey\u003e.values.\u003cname\u003e}}` references substituted to concrete\nvalues before submission to the training service.",
+          "ref": "jobs.ResolvedValuesAiRuntimeTaskResolvedValues",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "condition_task": {
           "ref": "jobs.ResolvedConditionTaskValues",
           "launch_stage": "GA"
@@ -27802,6 +28236,9 @@
           "launch_stage": "GA"
         }
       }
+    },
+    "jobs.ResolvedValuesAiRuntimeTaskResolvedValues": {
+      "description": "Resolved env_vars for an AiRuntimeTask after dynamic-value substitution.\nMirrors the task's `resolved_parameters_field` (env_vars) so Jobs can\nexpand `{{tasks.\u003ckey\u003e.values.\u003cname\u003e}}` references before submission."
     },
     "jobs.Run": {
       "description": "Run was retrieved successfully",
@@ -28236,6 +28673,11 @@
     "jobs.RunOutput": {
       "description": "Run output was retrieved successfully.",
       "fields": {
+        "ai_runtime_task_output": {
+          "description": "The output of an AiRuntimeTask, if available — MLflow identifiers,\nartifact paths, and per-replica allocated compute. Run lifecycle /\ntermination status lives on the surrounding framework `RunTask.status`\n(`runs.proto:RunTask.status` of type `RunStatus`), not on this output.\nSee `tasks/genai/ai_runtime_task.proto:AiRuntimeTaskOutput`.",
+          "ref": "jobs.AiRuntimeTaskOutput",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "alert_output": {
           "description": "The output of an alert task, if available",
           "ref": "jobs.AlertTaskOutput",
@@ -28438,6 +28880,11 @@
     "jobs.RunTask": {
       "description": "Used when outputting a child run, in GetRun or ListRuns.",
       "fields": {
+        "ai_runtime_task": {
+          "description": "The task runs a multi-node GPU compute workload on Databricks AI Runtime.\nExternal-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.",
+          "ref": "jobs.AiRuntimeTask",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "alert_task": {
           "description": "The task evaluates a Databricks alert and sends notifications to subscribers\nwhen the `alert_task` field is present.",
           "ref": "jobs.AlertTask",
@@ -29139,6 +29586,11 @@
     },
     "jobs.SubmitTask": {
       "fields": {
+        "ai_runtime_task": {
+          "description": "The task runs a multi-node GPU compute workload on Databricks AI Runtime.\nExternal-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.",
+          "ref": "jobs.AiRuntimeTask",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "alert_task": {
           "description": "The task evaluates a Databricks alert and sends notifications to subscribers\nwhen the `alert_task` field is present.",
           "ref": "jobs.AlertTask",
@@ -29398,6 +29850,11 @@
     },
     "jobs.Task": {
       "fields": {
+        "ai_runtime_task": {
+          "description": "The task runs a multi-node GPU compute workload on Databricks AI Runtime.\nExternal-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.",
+          "ref": "jobs.AiRuntimeTask",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "alert_task": {
           "description": "The task evaluates a Databricks alert and sends notifications to subscribers\nwhen the `alert_task` field is present.",
           "ref": "jobs.AlertTask",
@@ -39958,7 +40415,7 @@
         },
         "environment_version": {
           "description": "The environment version of the serverless Python environment used to execute\ncustomer Python code. Each environment version includes a specific Python\nversion and a curated set of pre-installed libraries with defined versions,\nproviding a stable and reproducible execution environment.\n\nDatabricks supports a three-year lifecycle for each environment version.\nFor available versions and their included packages, see\nhttps://docs.databricks.com/aws/en/release-notes/serverless/environment-version/\n\nThe value should be a string representing the environment version number, for example: `\"4\"`.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -41091,6 +41548,14 @@
           "behaviors": [
             "OPTIONAL"
           ]
+        },
+        "replace_existing": {
+          "description": "If true, update the database if it already exists instead of returning an\nerror.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "INPUT_ONLY",
+            "OPTIONAL"
+          ]
         }
       }
     },
@@ -41130,6 +41595,14 @@
     },
     "postgres.CreateRoleRequest": {
       "fields": {
+        "replace_existing": {
+          "description": "If true, update the role if it already exists instead of returning an\nerror.\n\nWhen the role already exists, the provided `role` spec fully replaces the\nexisting one: `membership_roles` is overwritten, not merged. Leaving\n`membership_roles` empty clears all of the role's existing memberships,\nincluding `DATABRICKS_SUPERUSER`. Always send the complete desired list of\nmemberships when using this field.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "INPUT_ONLY",
+            "OPTIONAL"
+          ]
+        },
         "role": {
           "description": "The desired specification of a Role.",
           "ref": "postgres.Role",
@@ -42032,13 +42505,53 @@
     "postgres.GetProjectRequest": {},
     "postgres.GetRoleRequest": {},
     "postgres.GetSyncedTableRequest": {},
+    "postgres.InitialBranchSpec": {
+      "description": "Configuration for the initial default branch created during project creation.",
+      "fields": {
+        "is_protected": {
+          "description": "Whether the initial default branch should be protected from deletion.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
     "postgres.InitialEndpointSpec": {
       "description": "Configuration for the initial Read/Write endpoint created during project creation.",
       "fields": {
+        "autoscaling_limit_max_cu": {
+          "description": "The maximum number of Compute Units for the initial endpoint.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "autoscaling_limit_min_cu": {
+          "description": "The minimum number of Compute Units for the initial endpoint.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "group": {
           "description": "Settings for HA configuration of the endpoint.",
           "ref": "postgres.EndpointGroupSpec",
           "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "no_suspension": {
+          "description": "When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.\nMutually exclusive with `suspend_timeout_duration`.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "suspend_timeout_duration": {
+          "description": "Duration of inactivity after which the initial endpoint is automatically suspended.\nIf specified, should be between 60s and 604800s (1 minute to 1 week).\nMutually exclusive with `no_suspension`.",
+          "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -42293,6 +42806,15 @@
             "OUTPUT_ONLY"
           ]
         },
+        "initial_branch_spec": {
+          "description": "Configuration for the initial default branch created as part of project creation.\nAllows overriding branch protection. These settings only apply at creation time\nand do not affect resources created after project creation.",
+          "ref": "postgres.InitialBranchSpec",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "INPUT_ONLY",
+            "OPTIONAL"
+          ]
+        },
         "initial_endpoint_spec": {
           "description": "Configuration settings for the initial Read/Write endpoint created inside the initial branch for a newly\ncreated project. If omitted, the initial endpoint created will have default settings, without high availability\nconfigured. This field does not apply to any endpoints created after project creation. Use\nspec.default_endpoint_settings to configure default settings for endpoints created after project creation.",
           "ref": "postgres.InitialEndpointSpec",
@@ -42479,6 +43001,13 @@
         "budget_policy_id": {
           "description": "The budget policy that is applied to the project.",
           "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "compute_last_active_time": {
+          "description": "The most recent time when any endpoint of this project was active.",
+          "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -44971,6 +45500,11 @@
         "tags": {
           "description": "Tags to be attached to the serving endpoint and automatically propagated to billing logs.",
           "launch_stage": "GA"
+        },
+        "telemetry_config": {
+          "description": "Configuration for persisting endpoint telemetry (logs, traces, and metrics) to Unity Catalog tables.",
+          "ref": "serving.TelemetryConfig",
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -46249,6 +46783,11 @@
           "description": "The task type of the serving endpoint.",
           "launch_stage": "GA"
         },
+        "telemetry_config": {
+          "description": "Telemetry configuration for the endpoint, including inference-table payload logging.",
+          "ref": "serving.TelemetryConfig",
+          "launch_stage": "PUBLIC_PREVIEW"
+        },
         "usage_policy_id": {
           "description": "The usage policy associated with serving endpoint.",
           "launch_stage": "GA"
@@ -46379,6 +46918,11 @@
         "task": {
           "description": "The task type of the serving endpoint.",
           "launch_stage": "GA"
+        },
+        "telemetry_config": {
+          "description": "Telemetry configuration for the endpoint, including inference-table payload logging.",
+          "ref": "serving.TelemetryConfig",
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -46464,6 +47008,31 @@
         "GPU_SMALL": "GA",
         "GPU_XLARGE": "PUBLIC_BETA",
         "MULTIGPU_MEDIUM": "GA"
+      }
+    },
+    "serving.TelemetryConfig": {
+      "fields": {
+        "inference_table_config": {
+          "description": "Configuration for inference table payload logging, including sampling.",
+          "ref": "serving.TelemetryInferenceTableConfig",
+          "launch_stage": "PUBLIC_PREVIEW"
+        }
+      }
+    },
+    "serving.TelemetryInferenceTableConfig": {
+      "description": "Inference table payload logging configuration",
+      "fields": {
+        "name": {
+          "description": "The full name of the inference table created for this endpoint.",
+          "launch_stage": "PUBLIC_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "sampling_fraction": {
+          "description": "Fraction of requests sampled for payload logging, in the range [0.0, 1.0], where 1.0 logs all requests.",
+          "launch_stage": "PUBLIC_PREVIEW"
+        }
       }
     },
     "serving.TrafficConfig": {
@@ -48986,6 +49555,7 @@
       "fields": {
         "cidr_blocks": {
           "description": "The list of stable IP CIDR blocks from which Databricks network traffic originates when accessing your resources.",
+          "deprecated": true,
           "launch_stage": "GA"
         }
       }
@@ -49070,14 +49640,17 @@
       "fields": {
         "subnets": {
           "description": "The list of subnets from which Databricks network traffic originates when accessing your Azure resources.",
+          "deprecated": true,
           "launch_stage": "GA"
         },
         "target_region": {
           "description": "The Azure region in which this service endpoint rule applies..",
+          "deprecated": true,
           "launch_stage": "GA"
         },
         "target_services": {
           "description": "The Azure services to which this service endpoint rule applies to.",
+          "deprecated": true,
           "launch_stage": "GA"
         }
       }
@@ -49101,10 +49674,12 @@
       "fields": {
         "aws_stable_ip_rule": {
           "ref": "settings.NccAwsStableIpRule",
+          "deprecated": true,
           "launch_stage": "GA"
         },
         "azure_service_endpoint_rule": {
           "ref": "settings.NccAzureServiceEndpointRule",
+          "deprecated": true,
           "launch_stage": "GA"
         }
       }
@@ -61730,10 +62305,11 @@
         "package": {
           "name": "aisearch"
         },
-        "is_hidden_cli": true,
         "docs_group": "aisearch",
-        "launch_stage": "PRIVATE_PREVIEW",
-        "cli_launch_stage_display": "Private Preview",
+        "launch_stage": "PUBLIC_BETA",
+        "cli_launch_stage_label": "*Beta*",
+        "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+        "cli_launch_stage_display": "Beta",
         "list": {
           "request": {
             "pascal_name": "ListEndpointsRequest"
@@ -61747,10 +62323,11 @@
             "path": "/api/2.0/ai-search/{parent=workspaces/*}/endpoints",
             "can_use_json": true,
             "is_crud_create": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "CreateEndpointRequest",
               "is_object": true,
@@ -62163,10 +62740,11 @@
             "path": "/api/2.0/ai-search/{parent=workspaces/*/endpoints/*}/indexes",
             "can_use_json": true,
             "is_crud_create": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "CreateIndexRequest",
               "is_object": true,
@@ -62575,10 +63153,11 @@
             "description": "Delete an AI Search endpoint.",
             "summary": "Delete an AI Search endpoint.",
             "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*}",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "DeleteEndpointRequest",
               "is_object": true,
@@ -62636,10 +63215,11 @@
             "description": "Delete an AI Search index.",
             "summary": "Delete an AI Search index.",
             "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "DeleteIndexRequest",
               "is_object": true,
@@ -62698,10 +63278,11 @@
             "summary": "Get an AI Search endpoint.",
             "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*}",
             "is_crud_read": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "GetEndpointRequest",
               "is_object": true,
@@ -62800,10 +63381,11 @@
             "summary": "Get an AI Search index.",
             "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}",
             "is_crud_read": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "GetIndexRequest",
               "is_object": true,
@@ -62919,10 +63501,11 @@
             "description": "List AI Search endpoints in a workspace.",
             "summary": "List AI Search endpoints.",
             "path": "/api/2.0/ai-search/{parent=workspaces/*}/endpoints",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "ListEndpointsRequest",
               "is_object": true,
@@ -63009,10 +63592,11 @@
             "description": "List AI Search indexes on an endpoint.",
             "summary": "List AI Search indexes.",
             "path": "/api/2.0/ai-search/{parent=workspaces/*/endpoints/*}/indexes",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "ListIndexesRequest",
               "is_object": true,
@@ -63101,10 +63685,11 @@
             "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}:query",
             "can_use_json": true,
             "must_use_json": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "QueryIndexRequest",
               "is_object": true,
@@ -63309,10 +63894,11 @@
             "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}:removeData",
             "can_use_json": true,
             "must_use_json": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "RemoveDataRequest",
               "is_object": true,
@@ -63411,10 +63997,11 @@
             "summary": "Scan an AI Search index.",
             "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}:scan",
             "can_use_json": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "ScanIndexRequest",
               "is_object": true,
@@ -63489,10 +64076,11 @@
             "description": "Synchronize a Delta Sync AI Search index with its source Delta table. Applies only to\nDelta Sync indexes; Direct Access indexes are written via the data-plane upsert path.",
             "summary": "Synchronize an AI Search index.",
             "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}:sync",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "SyncIndexRequest",
               "is_object": true,
@@ -63552,10 +64140,11 @@
             "summary": "Update an AI Search endpoint.",
             "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*}",
             "can_use_json": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "UpdateEndpointRequest",
               "is_object": true,
@@ -63996,10 +64585,11 @@
             "summary": "Upsert data into an AI Search index.",
             "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}:upsertData",
             "can_use_json": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "UpsertDataRequest",
               "is_object": true,
@@ -67046,6 +67636,9 @@
                     },
                     {
                       "content": "MEDIUM"
+                    },
+                    {
+                      "content": "XLARGE"
                     }
                   ]
                 }
@@ -69477,6 +70070,9 @@
                     },
                     {
                       "content": "MEDIUM"
+                    },
+                    {
+                      "content": "XLARGE"
                     }
                   ]
                 }
@@ -73582,7 +74178,7 @@
                   },
                   {
                     "name": "status",
-                    "description": "Whether the operation succeeded or failed.",
+                    "description": "Whether the operation succeeded or failed. Mutable: may be updated after\ncreation via UpdateOperation, e.g. when an operation recorded as failed is\nretried and eventually succeeds. A succeeded operation cannot carry an\n`error_message`.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -73639,7 +74235,7 @@
                   },
                   {
                     "name": "status",
-                    "description": "Whether the operation succeeded or failed.",
+                    "description": "Whether the operation succeeded or failed. Mutable: may be updated after\ncreation via UpdateOperation, e.g. when an operation recorded as failed is\nretried and eventually succeeds. A succeeded operation cannot carry an\n`error_message`.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -73702,7 +74298,7 @@
                 },
                 {
                   "name": "status",
-                  "description": "Whether the operation succeeded or failed.",
+                  "description": "Whether the operation succeeded or failed. Mutable: may be updated after\ncreation via UpdateOperation, e.g. when an operation recorded as failed is\nretried and eventually succeeds. A succeeded operation cannot carry an\n`error_message`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -73759,7 +74355,7 @@
                 },
                 {
                   "name": "status",
-                  "description": "Whether the operation succeeded or failed.",
+                  "description": "Whether the operation succeeded or failed. Mutable: may be updated after\ncreation via UpdateOperation, e.g. when an operation recorded as failed is\nretried and eventually succeeds. A succeeded operation cannot carry an\n`error_message`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -73827,7 +74423,7 @@
                     },
                     {
                       "name": "status",
-                      "description": "Whether the operation succeeded or failed.",
+                      "description": "Whether the operation succeeded or failed. Mutable: may be updated after\ncreation via UpdateOperation, e.g. when an operation recorded as failed is\nretried and eventually succeeds. A succeeded operation cannot carry an\n`error_message`.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -73884,7 +74480,7 @@
                     },
                     {
                       "name": "status",
-                      "description": "Whether the operation succeeded or failed.",
+                      "description": "Whether the operation succeeded or failed. Mutable: may be updated after\ncreation via UpdateOperation, e.g. when an operation recorded as failed is\nretried and eventually succeeds. A succeeded operation cannot carry an\n`error_message`.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -73970,7 +74566,7 @@
               },
               {
                 "name": "error_message",
-                "description": "Error message if the operation failed. Set when status is\nOPERATION_STATUS_FAILED. Captures the error encountered while\napplying the resource to the workspace.",
+                "description": "Error message if the operation failed. Set when status is\nOPERATION_STATUS_FAILED. Captures the error encountered while applying the\nresource to the workspace. Mutable: may be updated after creation via\nUpdateOperation; setting it to an empty string clears it. After an update\nis applied, an operation whose status is OPERATION_STATUS_SUCCEEDED cannot\ncarry an error_message.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -73987,7 +74583,7 @@
               },
               {
                 "name": "resource_id",
-                "description": "ID of the actual resource in the workspace (e.g. the job ID, pipeline ID).\nRequired for every operation except CREATE and RECREATE, which produce a\nnew resource whose ID is not yet known when the operation is recorded.",
+                "description": "ID of the actual resource in the workspace (e.g. the job ID, pipeline ID).\nOptional at creation: CREATE and RECREATE operations produce a new resource\nwhose ID is not yet known when the operation is recorded. Mutable: may be\nfilled in (or corrected) later via UpdateOperation once the ID is known.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -74083,14 +74679,14 @@
               },
               {
                 "name": "state",
-                "description": "Serialized local config state after the operation.\nShould be unset for delete operations.",
+                "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {}
               },
               {
                 "name": "status",
-                "description": "Whether the operation succeeded or failed.",
+                "description": "Whether the operation succeeded or failed. Mutable: may be updated after\ncreation via UpdateOperation, e.g. when an operation recorded as failed is\nretried and eventually succeeds. A succeeded operation cannot carry an\n`error_message`.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -74120,7 +74716,7 @@
           },
           {
             "name": "CreateVersion",
-            "description": "Creates a new version under a deployment.\n\nCreating a version acquires an exclusive lock on the deployment,\npreventing concurrent deploys. The caller provides a `version_id`\nwhich the server validates equals `last_version_id + 1` on the\ndeployment.",
+            "description": "Creates a new version under a deployment.\n\nCreating a version acquires an exclusive lock on the deployment,\npreventing concurrent deploys. The caller provides a `version_id`,\na numeric string that must be numerically greater than the\ndeployment's most recent version, and sets the version's\n`previous_version_id` to the deployment's most recent version\n(leaving it unset for the first version), which the server validates\nto detect concurrent deploys.",
             "summary": "Create a version.",
             "path": "/api/2.0/bundle/{parent=deployments/*}/versions",
             "can_use_json": true,
@@ -74155,7 +74751,7 @@
                 },
                 {
                   "name": "version_id",
-                  "description": "The version ID the caller expects to create. The server validates\nthis equals `last_version_id + 1` on the deployment. If it doesn't\nmatch, the server returns `ABORTED`.",
+                  "description": "The ID to use for the version, which becomes the final component of\nthe version's resource name. A numeric string (base-10, fits in a\nsigned 64-bit integer) chosen by the caller; must be greater than or\nequal to 1. Must be numerically greater than the deployment's\nmost recent version (see `version.previous_version_id`); it does not\nneed to start at 1 or increase by exactly 1. If the value is not\nnumerically greater, the server returns `INVALID_PARAMETER_VALUE`.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -74175,7 +74771,7 @@
                 },
                 {
                   "name": "version_id",
-                  "description": "The version ID the caller expects to create. The server validates\nthis equals `last_version_id + 1` on the deployment. If it doesn't\nmatch, the server returns `ABORTED`.",
+                  "description": "The ID to use for the version, which becomes the final component of\nthe version's resource name. A numeric string (base-10, fits in a\nsigned 64-bit integer) chosen by the caller; must be greater than or\nequal to 1. Must be numerically greater than the deployment's\nmost recent version (see `version.previous_version_id`); it does not\nneed to start at 1 or increase by exactly 1. If the value is not\nnumerically greater, the server returns `INVALID_PARAMETER_VALUE`.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -74403,7 +74999,7 @@
               },
               {
                 "name": "version_id",
-                "description": "The version ID the caller expects to create. The server validates\nthis equals `last_version_id + 1` on the deployment. If it doesn't\nmatch, the server returns `ABORTED`.",
+                "description": "The ID to use for the version, which becomes the final component of\nthe version's resource name. A numeric string (base-10, fits in a\nsigned 64-bit integer) chosen by the caller; must be greater than or\nequal to 1. Must be numerically greater than the deployment's\nmost recent version (see `version.previous_version_id`); it does not\nneed to start at 1 or increase by exactly 1. If the value is not\nnumerically greater, the server returns `INVALID_PARAMETER_VALUE`.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -74550,7 +75146,7 @@
               },
               {
                 "name": "version_id",
-                "description": "Monotonically increasing version identifier within the parent\ndeployment. Assigned by the client on creation.",
+                "description": "Version identifier within the parent deployment, assigned by the\nclient on creation. A numeric string (base-10, fits in a signed\n64-bit integer) that is greater than or equal to 1. Version IDs are\nstrictly increasing within a deployment but are not required to\nstart at 1 or to be contiguous.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -74597,7 +75193,7 @@
               },
               {
                 "name": "version_id",
-                "description": "The version ID the caller expects to create. The server validates\nthis equals `last_version_id + 1` on the deployment. If it doesn't\nmatch, the server returns `ABORTED`.",
+                "description": "The ID to use for the version, which becomes the final component of\nthe version's resource name. A numeric string (base-10, fits in a\nsigned 64-bit integer) chosen by the caller; must be greater than or\nequal to 1. Must be numerically greater than the deployment's\nmost recent version (see `version.previous_version_id`); it does not\nneed to start at 1 or increase by exactly 1. If the value is not\nnumerically greater, the server returns `INVALID_PARAMETER_VALUE`.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -74837,7 +75433,7 @@
                 },
                 {
                   "name": "status",
-                  "description": "Whether the operation succeeded or failed.",
+                  "description": "Whether the operation succeeded or failed. Mutable: may be updated after\ncreation via UpdateOperation, e.g. when an operation recorded as failed is\nretried and eventually succeeds. A succeeded operation cannot carry an\n`error_message`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -74894,7 +75490,7 @@
                 },
                 {
                   "name": "status",
-                  "description": "Whether the operation succeeded or failed.",
+                  "description": "Whether the operation succeeded or failed. Mutable: may be updated after\ncreation via UpdateOperation, e.g. when an operation recorded as failed is\nretried and eventually succeeds. A succeeded operation cannot carry an\n`error_message`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -75574,7 +76170,7 @@
           },
           {
             "name": "ListVersions",
-            "description": "Lists versions under a deployment, ordered by version_id descending\n(most recent first).",
+            "description": "Lists versions under a deployment, ordered numerically by\nversion_id descending (most recent first).",
             "summary": "List versions.",
             "path": "/api/2.0/bundle/{parent=deployments/*}/versions",
             "is_hidden_cli": true,
@@ -81892,6 +82488,12 @@
                       },
                       {
                         "content": "DECOMMISSION_STARTED"
+                      },
+                      {
+                        "content": "DEFERRED_POLICY_ENFORCEMENT_FAILED"
+                      },
+                      {
+                        "content": "DEFERRED_POLICY_ENFORCEMENT_SCHEDULED"
                       },
                       {
                         "content": "DID_NOT_EXPAND_DISK"
@@ -89123,7 +89725,7 @@
               },
               {
                 "name": "included_schemas",
-                "description": "Schemas to include in the scan. Empty list is not supported as it results in a no-op\nscan. If `included_schemas` is not set, all schemas are scanned.",
+                "description": "Schemas to include in the scan, each named relative to the parent catalog.\nIf specified, only listed schemas will be scanned.\nMutually exclusive with `excluded_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -89414,7 +90016,7 @@
               },
               {
                 "name": "included_schemas",
-                "description": "Schemas to include in the scan. Empty list is not supported as it results in a no-op\nscan. If `included_schemas` is not set, all schemas are scanned.",
+                "description": "Schemas to include in the scan, each named relative to the parent catalog.\nIf specified, only listed schemas will be scanned.\nMutually exclusive with `excluded_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -89875,7 +90477,7 @@
               "required_fields": [
                 {
                   "name": "object_type",
-                  "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                  "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -89905,7 +90507,7 @@
               "required_in_url_fields": [
                 {
                   "name": "object_type",
-                  "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                  "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -89947,7 +90549,7 @@
                 "required_fields": [
                   {
                     "name": "object_type",
-                    "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                    "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -89967,7 +90569,7 @@
                 "required_request_body_fields": [
                   {
                     "name": "object_type",
-                    "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                    "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -89993,7 +90595,7 @@
               "required_fields": [
                 {
                   "name": "object_type",
-                  "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                  "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -90013,7 +90615,7 @@
               "required_request_body_fields": [
                 {
                   "name": "object_type",
-                  "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                  "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -90043,7 +90645,7 @@
               },
               {
                 "name": "object_type",
-                "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -90062,7 +90664,7 @@
                   "required_fields": [
                     {
                       "name": "object_type",
-                      "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                      "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -90082,7 +90684,7 @@
                   "required_request_body_fields": [
                     {
                       "name": "object_type",
-                      "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                      "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -90130,7 +90732,7 @@
               },
               {
                 "name": "object_type",
-                "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -90211,7 +90813,7 @@
             "required_positional_arguments": [
               {
                 "name": "object_type",
-                "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -90682,7 +91284,7 @@
               "required_fields": [
                 {
                   "name": "object_type",
-                  "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                  "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -90702,7 +91304,7 @@
               "required_request_body_fields": [
                 {
                   "name": "object_type",
-                  "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                  "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -91433,7 +92035,7 @@
                 "required_fields": [
                   {
                     "name": "object_type",
-                    "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                    "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -91453,7 +92055,7 @@
                 "required_request_body_fields": [
                   {
                     "name": "object_type",
-                    "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                    "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -91479,7 +92081,7 @@
               "required_fields": [
                 {
                   "name": "object_type",
-                  "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                  "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -91499,7 +92101,7 @@
               "required_request_body_fields": [
                 {
                   "name": "object_type",
-                  "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                  "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -91548,7 +92150,7 @@
                   "required_fields": [
                     {
                       "name": "object_type",
-                      "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                      "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -91568,7 +92170,7 @@
                   "required_request_body_fields": [
                     {
                       "name": "object_type",
-                      "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                      "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -91634,7 +92236,7 @@
               },
               {
                 "name": "object_type",
-                "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -91751,7 +92353,7 @@
               },
               {
                 "name": "object_type",
-                "description": "The type of the monitored object. Can be one of the following: `schema`or `table`.",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -98528,7 +99130,8 @@
               },
               {
                 "name": "etag",
-                "description": "Opaque version string for optimistic locking. Server-generated, returned in responses.\nMust be provided on Update requests to prevent concurrent modifications.",
+                "description": "Opaque version string for optimistic locking. Server-generated and returned in responses.",
+                "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -98924,7 +99527,7 @@
               },
               {
                 "name": "url",
-                "description": "The stable URL endpoint. Generated on creation and\nimmutable thereafter. For non-Private-Link workspaces this is\n`https://\u003cspog_host\u003e/?c=\u003cconnection_id\u003e`. For Private-Link workspaces\nthis is the per-connection hostname.",
+                "description": "The stable URL endpoint. Generated on creation and\nimmutable thereafter. For non-Private-Link workspaces this is\n`https://\u003cspog_host\u003e/?w=\u003cconnection_id\u003e`. For Private-Link workspaces\nthis is the per-connection hostname.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -99981,6 +100584,14 @@
             },
             "all_fields": [
               {
+                "name": "etag",
+                "description": "Optional opaque version string for optimistic locking, obtained from a prior read of\nthe failover group. If provided, the update is rejected unless it matches the failover\ngroup's current etag. If omitted, the update proceeds without an optimistic-lock check.",
+                "is_query": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
                 "name": "failover_group",
                 "description": "The failover group with updated fields. The name field identifies the resource\nand is populated from the URL path.",
                 "required": true,
@@ -100102,7 +100713,8 @@
               },
               {
                 "name": "etag",
-                "description": "Opaque version string for optimistic locking. Server-generated, returned in responses.\nMust be provided on Update requests to prevent concurrent modifications.",
+                "description": "Opaque version string for optimistic locking. Server-generated and returned in responses.",
+                "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -103523,6 +104135,17 @@
                 }
               },
               {
+                "name": "spec",
+                "description": "The environment specification containing version and dependencies.",
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "EnvironmentSpec",
+                  "is_object": true
+                }
+              },
+              {
                 "name": "status",
                 "description": "The status of the materialized workspace base environment.",
                 "is_output_only": true,
@@ -104357,6 +104980,17 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "spec",
+                "description": "The environment specification containing version and dependencies.",
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "EnvironmentSpec",
+                  "is_object": true
                 }
               },
               {
@@ -119584,6 +120218,14 @@
                 }
               },
               {
+                "name": "enable_visualization",
+                "description": "Enable visualization generation.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_bool": true
+                }
+              },
+              {
                 "name": "space_id",
                 "description": "The ID associated with the Genie space where the conversation is started.",
                 "required": true,
@@ -120296,6 +120938,74 @@
               {
                 "name": "message_id",
                 "description": "The ID associated with the message to delete.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          },
+          {
+            "name": "DownloadMessageAttachmentVisualization",
+            "description": "Download a rendered image of a message visualization attachment.\nThe response body is the raw PNG image, not a JSON payload.\nThis is only available if the attachment is a visualization and the message status is `COMPLETED`.",
+            "summary": "Download message attachment visualization.",
+            "path": "/api/2.0/genie/{name=spaces/*/conversations/*/messages/*/attachments/*}/download-visualization",
+            "is_crud_read": true,
+            "is_response_byte_stream": true,
+            "has_required_positional_arguments": true,
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
+            "request": {
+              "pascal_name": "DownloadMessageAttachmentVisualizationRequest",
+              "is_object": true,
+              "required_fields": [
+                {
+                  "name": "name",
+                  "description": "The resource name of the attachment to render, in the format\n`spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}`.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ],
+              "required_in_url_fields": [
+                {
+                  "name": "name",
+                  "description": "The resource name of the attachment to render, in the format\n`spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}`.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ]
+            },
+            "response": {
+              "pascal_name": "DownloadMessageAttachmentVisualizationResponse",
+              "is_object": true
+            },
+            "response_body_field": {
+              "pascal_name": "Contents"
+            },
+            "all_fields": [
+              {
+                "name": "name",
+                "description": "The resource name of the attachment to render, in the format\n`spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}`.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_positional_arguments": [
+              {
+                "name": "name",
+                "description": "The resource name of the attachment to render, in the format\n`spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}`.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -123257,6 +123967,14 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "enable_visualization",
+                "description": "Enable visualization generation.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_bool": true
                 }
               },
               {
@@ -136419,7 +137137,7 @@
               },
               {
                 "name": "view",
-                "description": "`DASHBOARD_VIEW_BASIC`only includes summary metadata from the dashboard.",
+                "description": "`DASHBOARD_VIEW_BASIC` only includes summary metadata from the dashboard.",
                 "is_query": true,
                 "entity": {
                   "pascal_name": "DashboardView",
@@ -154016,8 +154734,79 @@
         "cli_launch_stage_display": "GA",
         "methods": [
           {
+            "name": "CancelPendingClusterEnforcement",
+            "description": "Cancels a pending enforcement on a cluster. After canceling the pending enforcement,\nthe cluster will no longer update on the next termination or restart.\nPending enforcements cannot be canceled when a cluster is in `TERMINATING` state.\nOnly workspace admins can cancel pending enforcements.",
+            "summary": "Cancel pending policy enforcement for a cluster.",
+            "path": "/api/2.0/policies/clusters:cancelPendingClusterEnforcement",
+            "can_use_json": true,
+            "has_required_positional_arguments": true,
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
+            "request": {
+              "pascal_name": "CancelPendingClusterEnforcementRequest",
+              "is_object": true,
+              "has_required_request_body_fields": true,
+              "required_fields": [
+                {
+                  "name": "cluster_id",
+                  "description": "The ID of the cluster to cancel the pending enforcement for.",
+                  "required": true,
+                  "is_request_body_field": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ],
+              "required_request_body_fields": [
+                {
+                  "name": "cluster_id",
+                  "description": "The ID of the cluster to cancel the pending enforcement for.",
+                  "required": true,
+                  "is_request_body_field": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ]
+            },
+            "response": {
+              "pascal_name": "CancelPendingClusterEnforcementResponse",
+              "is_object": true
+            },
+            "all_fields": [
+              {
+                "name": "allow_missing",
+                "description": "If true and no pending enforcement exists, the request will succeed but no action\nwill be taken.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_bool": true
+                }
+              },
+              {
+                "name": "cluster_id",
+                "description": "The ID of the cluster to cancel the pending enforcement for.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_positional_arguments": [
+              {
+                "name": "cluster_id",
+                "description": "The ID of the cluster to cancel the pending enforcement for.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          },
+          {
             "name": "EnforceCompliance",
-            "description": "Updates a cluster to be compliant with the current version of its policy.\nA cluster can be updated if it is in a `RUNNING` or `TERMINATED` state.\n\nIf a cluster is updated while in a `RUNNING` state, it will be restarted so that the new attributes can take effect.\n\nIf a cluster is updated while in a `TERMINATED` state, it will remain `TERMINATED`.\nThe next time the cluster is started, the new attributes will take effect.\n\nClusters created by the Databricks Jobs, SDP, or Models services cannot be enforced by this API.\nInstead, use the \"Enforce job policy compliance\" API to enforce policy compliance on jobs.",
+            "description": "Updates a cluster to be compliant with the current version of its policy.\n\nIf a cluster is updated while in a `TERMINATED` state, it will remain `TERMINATED`.\nThe next time the cluster is started, the new attributes will take effect.\n\nFor clusters in other states, the behavior depends on the `enforce_mode` used.\n\nClusters created by the Databricks Jobs, SDP, or Models services cannot be enforced by this API.\nInstead, use the \"Enforce job policy compliance\" API to enforce policy compliance on jobs.",
             "summary": "Enforce cluster policy compliance.",
             "path": "/api/2.0/policies/clusters/enforce-compliance",
             "can_use_json": true,
@@ -154063,6 +154852,22 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "enforce_mode",
+                "description": "Determines how changes should be made to clusters that are not in `TERMINATED` state.\n\n- `ENFORCE_IMMEDIATELY`: If the cluster is in a `RUNNING` state, it will be restarted so\nthat the new attributes can take effect. For other states aside from `TERMINATED` state,\nthe request will be rejected.\n- `WAIT_FOR_TERMINATION`: The cluster is not immediately edited. Instead, a pending enforcement\nis scheduled to update the cluster when it terminates or restarts. When this occurs,\n`enforce_result` will contain `DEFERRED`. Only workspace admins can use this mode.\n\nRegardless of the enforce mode, clusters in `TERMINATED` state are immediately edited.",
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "EnforcePolicyComplianceForClusterEnforceMode",
+                  "enum": [
+                    {
+                      "content": "ENFORCE_IMMEDIATELY"
+                    },
+                    {
+                      "content": "WAIT_FOR_TERMINATION"
+                    }
+                  ]
                 }
               },
               {
@@ -155323,6 +156128,14 @@
                 }
               },
               {
+                "name": "replace_existing",
+                "description": "If true, update the database if it already exists instead of returning an\nerror.",
+                "is_query": true,
+                "entity": {
+                  "is_bool": true
+                }
+              },
+              {
                 "name": "create_time",
                 "description": "A timestamp indicating when the database was created.",
                 "is_output_only": true,
@@ -155766,6 +156579,16 @@
                 }
               },
               {
+                "name": "initial_branch_spec",
+                "description": "Configuration for the initial default branch created as part of project creation.\nAllows overriding branch protection. These settings only apply at creation time\nand do not affect resources created after project creation.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "InitialBranchSpec",
+                  "is_object": true
+                }
+              },
+              {
                 "name": "initial_endpoint_spec",
                 "description": "Configuration settings for the initial Read/Write endpoint created inside the initial branch for a newly\ncreated project. If omitted, the initial endpoint created will have default settings, without high availability\nconfigured. This field does not apply to any endpoints created after project creation. Use\nspec.default_endpoint_settings to configure default settings for endpoints created after project creation.",
                 "is_request_body_field": true,
@@ -155948,6 +156771,14 @@
                 "is_path": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "replace_existing",
+                "description": "If true, update the role if it already exists instead of returning an\nerror.\n\nWhen the role already exists, the provided `role` spec fully replaces the\nexisting one: `membership_roles` is overwritten, not merged. Leaving\n`membership_roles` empty clears all of the role's existing memberships,\nincluding `DATABRICKS_SUPERUSER`. Always send the complete desired list of\nmemberships when using this field.",
+                "is_query": true,
+                "entity": {
+                  "is_bool": true
                 }
               },
               {
@@ -159112,6 +159943,16 @@
                 "is_optional_object": true,
                 "entity": {
                   "is_timestamp": true
+                }
+              },
+              {
+                "name": "initial_branch_spec",
+                "description": "Configuration for the initial default branch created as part of project creation.\nAllows overriding branch protection. These settings only apply at creation time\nand do not affect resources created after project creation.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "InitialBranchSpec",
+                  "is_object": true
                 }
               },
               {
@@ -176533,6 +177374,16 @@
                     "pascal_name": "EndpointTag",
                     "is_object": true
                   }
+                }
+              },
+              {
+                "name": "telemetry_config",
+                "description": "Configuration for persisting endpoint telemetry (logs, traces, and metrics) to Unity Catalog tables.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "TelemetryConfig",
+                  "is_object": true
                 }
               }
             ],
