@@ -30,6 +30,7 @@ def repo_root():
 
 
 def vendored_to_upstream(rel_path):
+    """Map a path relative to the vendored template root to its upstream path."""
     parts = rel_path.split(os.sep)
     return os.path.join(*[UPSTREAM_PROJECT_DIR if p == VENDORED_PROJECT_DIR else p for p in parts])
 
