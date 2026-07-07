@@ -407,8 +407,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
+	skipLocalMode := os.Getenv(SkipLocalEnvVar)
 	var changedTests map[string]bool
-	switch os.Getenv(SkipLocalEnvVar) {
+	switch skipLocalMode {
 	case "", SkipLocalAll:
 	case SkipLocalWithChanged:
 		testDirsSet := make(map[string]bool, len(testDirs))
@@ -417,7 +418,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		}
 		changedTests = selectChangedLocalTests(testDirsSet)
 	default:
-		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, os.Getenv(SkipLocalEnvVar), SkipLocalAll, SkipLocalWithChanged)
+		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, skipLocalMode, SkipLocalAll, SkipLocalWithChanged)
 	}
 
 	if singleTest != "" {
@@ -474,7 +475,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath, dir, changedTests)
+			skipReason := getSkipReason(&config, configPath, dir, skipLocalMode, changedTests)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -597,9 +598,10 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
+// skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
 // changedTests is the set of test dirs re-enabled under SkipLocalWithChanged; nil otherwise.
-func getSkipReason(config *internal.TestConfig, configPath string, dir string, changedTests map[string]bool) string {
-	switch os.Getenv(SkipLocalEnvVar) {
+func getSkipReason(config *internal.TestConfig, configPath string, dir string, skipLocalMode string, changedTests map[string]bool) string {
+	switch skipLocalMode {
 	case SkipLocalAll:
 		if isTruePtr(config.Local) {
 			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalAll + " in " + configPath
