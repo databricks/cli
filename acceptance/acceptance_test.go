@@ -257,6 +257,8 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
+	validateSkipLocal(t)
+
 	if !requirePrerequisites(t) {
 		// Don't run the suite against a stale toolchain; the failed subtest
 		// has already marked the parent test as failed.
@@ -407,6 +409,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
+	if os.Getenv(SkipLocalEnvVar) == SkipLocalWithChanged {
+		testDirsSet := make(map[string]bool, len(testDirs))
+		for _, d := range testDirs {
+			testDirsSet[d] = true
+		}
+		changedLocalTests = selectChangedLocalTests(testDirsSet)
+	}
+
 	if singleTest != "" {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
 			return n != singleTest
@@ -461,7 +471,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath)
+			skipReason := getSkipReason(&config, configPath, dir)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -584,9 +594,16 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-func getSkipReason(config *internal.TestConfig, configPath string) string {
-	if os.Getenv("DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
-		return "Disabled via DATABRICKS_TEST_SKIPLOCAL environment variable in " + configPath
+func getSkipReason(config *internal.TestConfig, configPath string, dir string) string {
+	switch os.Getenv(SkipLocalEnvVar) {
+	case SkipLocalAll:
+		if isTruePtr(config.Local) {
+			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalAll + " in " + configPath
+		}
+	case SkipLocalWithChanged:
+		if isTruePtr(config.Local) && !changedLocalTests[dir] {
+			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
+		}
 	}
 
 	if Forcerun {

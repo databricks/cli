@@ -573,7 +573,7 @@ tasks:
     sources: *ACC_SOURCES_UPDATE
     generates: *ACC_GENERATES_UPDATE
     cmds:
-      - "deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=1 go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
+      - "deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=true go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
 
   test-update-all:
     desc: Update all acceptance test outputs
@@ -748,7 +748,7 @@ tasks:
     deps: [install-pythons]
     cmds:
       - |
-        DATABRICKS_TEST_SKIPLOCAL=1 VERBOSE_TEST=1 \
+        DATABRICKS_TEST_SKIPLOCAL=withchanged VERBOSE_TEST=1 \
         go run -modfile=tools/go.mod ./tools/testrunner/main.go \
           {{.GO_TOOL}} gotestsum \
           --format github-actions \
