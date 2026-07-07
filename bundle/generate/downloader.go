@@ -37,24 +37,11 @@ type Downloader struct {
 }
 
 func (n *Downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) error {
-	if task.NotebookTask != nil {
-		return n.markNotebookForDownload(ctx, &task.NotebookTask.NotebookPath)
+	if task.NotebookTask == nil {
+		return nil
 	}
 
-	if task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
-		return n.markFileForDownload(ctx, &task.SparkPythonTask.PythonFile)
-	}
-
-	return nil
-}
-
-// isWorkspaceFileTask reports whether a task file lives in the Databricks
-// workspace and should be downloaded. Files sourced from Git (source: GIT) are
-// left to the Git repository, and python_file also accepts cloud URIs
-// (dbfs:/, s3:/, adls:/, gcs:/) which are not workspace paths; per the Jobs API,
-// workspace files are absolute and begin with "/".
-func isWorkspaceFileTask(source jobs.Source, filePath string) bool {
-	return source != jobs.SourceGit && strings.HasPrefix(filePath, "/")
+	return n.markNotebookForDownload(ctx, &task.NotebookTask.NotebookPath)
 }
 
 func (n *Downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pipelines.PipelineLibrary) error {
@@ -230,9 +217,6 @@ func (n *Downloader) MarkTasksForDownload(ctx context.Context, tasks []jobs.Task
 	for _, task := range tasks {
 		if task.NotebookTask != nil {
 			paths = append(paths, task.NotebookTask.NotebookPath)
-		}
-		if task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
-			paths = append(paths, task.SparkPythonTask.PythonFile)
 		}
 	}
 	if len(paths) > 0 {

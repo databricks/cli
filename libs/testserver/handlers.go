@@ -282,6 +282,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsRunNow(req)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req Request) any {
+		return req.Workspace.JobsSubmit(req)
+	})
+
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any {
 		return req.Workspace.JobsGetRun(req)
 	})
@@ -315,7 +319,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// Dashboards:
 	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+		return req.Workspace.DashboardGet(req)
 	})
 	server.Handle("POST", "/api/2.0/lakeview/dashboards", func(req Request) any {
 		return req.Workspace.DashboardCreate(req)

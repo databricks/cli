@@ -1,2 +1,0 @@
-File successfully saved to outjob.py
-Job configuration successfully saved to out.job.yml

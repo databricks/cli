@@ -1,0 +1,29 @@
+bundle:
+  name: test-bundle
+
+# volume_path is a CLI-only computed field (not API state). When a component
+# (catalog_name, schema_name, name) is an unresolved ${...} reference, it stays
+# embedded in volume_path so it resolves later at plan/deploy.
+#
+# Chain under test: bar.name is a remote value (baz.id), so bar.volume_path is
+# computed at initialize with that reference intact; foo.comment picks up that
+# string and resolves at deploy to the fully-resolved path.
+#
+# baz.id is used instead of baz.storage_location because the resolved value
+# becomes bar's name, and the testserver can't route a name containing the
+# slashes of a storage_location URL.
+resources:
+  volumes:
+    baz:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: bazname
+    bar:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: ${resources.volumes.baz.id}
+    foo:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: fooname
+      comment: ${resources.volumes.bar.volume_path}

@@ -4,6 +4,7 @@ package secrets_uc
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -111,7 +112,7 @@ func newCreateSecret() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'catalog_name', 'schema_name', 'value' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'catalog_name', 'schema_name', 'value' in your JSON input")
 			}
 			return nil
 		}
@@ -447,7 +448,7 @@ func newUpdateSecret() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, UPDATE_MASK as positional arguments. Provide 'name', 'catalog_name', 'schema_name', 'value' in your JSON input")
+				return errors.New("when --json flag is specified, provide only FULL_NAME, UPDATE_MASK as positional arguments. Provide 'name', 'catalog_name', 'schema_name', 'value' in your JSON input")
 			}
 			return nil
 		}
