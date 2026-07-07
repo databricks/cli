@@ -358,7 +358,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/pipelines/" + resp.PipelineId,
 			EmbeddedSlice: []StatePermission{{
-				Level:    "CAN_MANAGE",
+				// Pipelines require exactly one owner, like jobs.
+				Level:    "IS_OWNER",
 				UserName: "user@example.com",
 			}},
 		}, nil

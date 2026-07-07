@@ -12,8 +12,11 @@ deploy_dashboard() {
     trace $CLI bundle deploy
     dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
 
-    trace $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, warehouse_id}'
-    trace $CLI lakeview get $dashboard_id | jq '.serialized_dashboard | fromjson' | jq -S '.pages[0]'
+    # Wait out eventual consistency: retry until the current page is visible (the read
+    # 404s on create and returns the stale page right after the serialized update).
+    DASHBOARD=$(retry --until "$PAGE_NAME" $CLI lakeview get $dashboard_id)
+    echo "$DASHBOARD" | jq '{display_name, lifecycle_state, parent_path, path, warehouse_id}'
+    echo "$DASHBOARD" | jq '.serialized_dashboard | fromjson' | jq -S '.pages[0]'
 }
 
 # Create the dashboard with initial serialized_dashboard
