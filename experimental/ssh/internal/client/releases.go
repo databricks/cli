@@ -34,8 +34,8 @@ func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClien
 
 	// Upload the CLI bundle over HTTP/1.1. It is a single ~14 MB POST, so HTTP/2
 	// buys us nothing, and some corporate proxies reset large HTTP/2 request bodies
-	// with RST_STREAM(NO_ERROR), which aborts the upload (see DECO-27497). Forcing
-	// HTTP/1.1 only for this client keeps the rest of the connect flow on HTTP/2.
+	// with RST_STREAM(NO_ERROR), which aborts the upload. Forcing HTTP/1.1 only for
+	// this client keeps the rest of the connect flow on HTTP/2.
 	uploadClient, err := newHTTP11Client(client.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create upload client: %w", err)

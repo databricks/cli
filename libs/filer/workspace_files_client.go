@@ -150,8 +150,7 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 
 // NewWorkspaceFilesClientWithClient is like [NewWorkspaceFilesClient] but uses the
 // provided SDK client instead of building one from w.Config. Callers use it to route
-// file operations over a custom HTTP transport (for example, forcing HTTP/1.1)
-// without copying or mutating the shared w.Config.
+// file operations over a custom HTTP transport (for example, forcing HTTP/1.1).
 func NewWorkspaceFilesClientWithClient(w *databricks.WorkspaceClient, root string, apiClient *client.DatabricksClient) Filer {
 	return &WorkspaceFilesClient{
 		workspaceClient: w,
