@@ -1,0 +1,5 @@
+RecordRequests = true
+
+# Terraform issues a spurious PATCH for enable_predictive_optimization on every
+# deploy, which is outside the scope of backend-default handling in resources.yml.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

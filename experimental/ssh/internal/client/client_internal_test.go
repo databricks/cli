@@ -1,18 +1,106 @@
 package client
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+func TestValidateClusterAccessSingleUser(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
+	}, nil)
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.NoError(t, err)
+}
+
+// A dedicated cluster reporting the newer DATA_SECURITY_MODE_DEDICATED enum (rather than the
+// legacy SINGLE_USER alias) must still pass validation.
+func TestValidateClusterAccessDedicatedEnum(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeDataSecurityModeDedicated,
+		SingleUserName:   "me@example.com",
+	}, nil)
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.NoError(t, err)
+}
+
+func TestValidateClusterAccessInvalidAccessMode(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeUserIsolation,
+	}, nil)
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must be a dedicated single-user cluster")
+	// The error surfaces the UI label ("Standard"), not the raw API enum (USER_ISOLATION).
+	assert.Contains(t, err.Error(), "Current access mode: Standard")
+	assert.NotContains(t, err.Error(), "USER_ISOLATION")
+}
+
+// A Dedicated cluster assigned to a group (no single_user_name) is rejected, and the error
+// reports the mode specifically as "Dedicated (group)".
+func TestValidateClusterAccessDedicatedGroup(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeDataSecurityModeDedicated,
+	}, nil)
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must be a dedicated single-user cluster")
+	assert.Contains(t, err.Error(), "Current access mode: Dedicated (group)")
+}
+
+func TestAccessModeUILabel(t *testing.T) {
+	tests := []struct {
+		mode           compute.DataSecurityMode
+		singleUserName string
+		want           string
+	}{
+		{compute.DataSecurityModeSingleUser, "me@example.com", "Dedicated (single user)"},
+		{compute.DataSecurityModeDataSecurityModeDedicated, "me@example.com", "Dedicated (single user)"},
+		{compute.DataSecurityModeDataSecurityModeDedicated, "", "Dedicated (group)"},
+		{compute.DataSecurityModeUserIsolation, "", "Standard"},
+		{compute.DataSecurityModeDataSecurityModeStandard, "", "Standard"},
+		{compute.DataSecurityModeNone, "", "No isolation"},
+		// Legacy/unknown modes fall back to the raw API value.
+		{compute.DataSecurityModeLegacyTableAcl, "", "LEGACY_TABLE_ACL"},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, accessModeUILabel(tt.mode, tt.singleUserName), "mode=%s", tt.mode)
+	}
+}
+
+func TestValidateClusterAccessClusterNotFound(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "nonexistent"}).Return(nil, errors.New("cluster not found"))
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "nonexistent")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get cluster information for cluster ID 'nonexistent'")
+}
 
 // terminatedRun builds a job run whose SSH server task has terminated, for the failure-surfacing tests.
 func terminatedRun(runID, taskRunID int64, message, pageURL string) *jobs.Run {

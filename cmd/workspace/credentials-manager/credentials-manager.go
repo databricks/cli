@@ -3,7 +3,7 @@
 package credentials_manager
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -101,7 +101,7 @@ func newExchangeToken() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.CredentialsManager.ExchangeToken(ctx, exchangeTokenReq)

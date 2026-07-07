@@ -778,8 +778,7 @@ type ResourcePipelineTriggerCron struct {
 	TimezoneId         string `json:"timezone_id,omitempty"`
 }
 
-type ResourcePipelineTriggerManual struct {
-}
+type ResourcePipelineTriggerManual struct{}
 
 type ResourcePipelineTrigger struct {
 	Cron   *ResourcePipelineTriggerCron   `json:"cron,omitempty"`
