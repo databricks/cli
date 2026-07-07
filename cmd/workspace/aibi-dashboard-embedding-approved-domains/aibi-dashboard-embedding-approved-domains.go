@@ -3,7 +3,7 @@
 package aibi_dashboard_embedding_approved_domains
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -211,7 +211,7 @@ Update the list of domains approved to host embedded AI/BI dashboards.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Settings.AibiDashboardEmbeddingApprovedDomains().Update(ctx, updateReq)

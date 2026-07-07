@@ -3,6 +3,7 @@
 package consumer_installations
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -388,7 +389,7 @@ Update an installation.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.ListingId = args[0]
 		updateReq.InstallationId = args[1]
