@@ -46,14 +46,6 @@ func git(args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
-// resolveBaseRef returns the ref to diff against: origin/main when present, else main.
-func resolveBaseRef() string {
-	if git("rev-parse", "--verify", "origin/main") != "" {
-		return "origin/main"
-	}
-	return "main"
-}
-
 // testDirForFile maps a repo-relative changed file (e.g. acceptance/bundle/foo/script)
 // to its owning test dir relative to acceptance/ (e.g. bundle/foo), or "" if the file
 // is outside acceptance/ or not under any known test dir.
@@ -78,11 +70,10 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 //
 // A test dir is "added" when its script file has status A in the diff (didn't
 // exist at the merge base). Renames (R) are treated as modified, not added.
-// --merge-base folds the merge-base computation into the diff itself, matching
-// tools/lintdiff.py — one git call total.
+// The three-dot form origin/main...HEAD diffs HEAD against the merge base of
+// the two refs in one call (see tools/testmask/git.go for the rationale).
 func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
-	base := resolveBaseRef()
-	diff := git("diff", "--name-status", "--merge-base", "-M", base)
+	diff := git("diff", "--name-status", "-M", "origin/main...HEAD")
 
 	added := map[string]bool{}
 	changed := map[string]bool{}
