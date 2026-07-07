@@ -62,6 +62,18 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 		}
 		status := fields[0]
 		path := fields[len(fields)-1]
+
+		// A changed invariant config re-enables all invariant subdirs, since
+		// every config feeds every subdir (no_drift, migrate, continue_293, ...).
+		if strings.HasPrefix(path, "acceptance/bundle/invariant/configs/") {
+			for dir := range testDirs {
+				if strings.HasPrefix(dir, "bundle/invariant/") {
+					changed[dir] = true
+				}
+			}
+			continue
+		}
+
 		dir := testDirForFile(path, testDirs)
 		if dir == "" {
 			continue
