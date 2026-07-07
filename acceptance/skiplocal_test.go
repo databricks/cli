@@ -47,10 +47,14 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 //
 // A test dir is "added" when its script file has status A in the diff (didn't
 // exist at the merge base). Renames (R) are treated as modified, not added.
-// The three-dot form origin/main...HEAD diffs HEAD against the merge base of
-// the two refs in one call (see tools/testmask/git.go for the rationale).
+//
+// --merge-base diffs the working tree against the merge base of HEAD and
+// origin/main, so uncommitted edits are included. The three-dot form
+// origin/main...HEAD would only cover committed changes and would miss a file
+// touched but not yet committed, which breaks the "touch a config, run the
+// test" local dev workflow (same reason lintdiff.py uses --merge-base).
 func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
-	out, _ := exec.Command("git", "diff", "--name-status", "-M", "origin/main...HEAD").Output()
+	out, _ := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
 	diff := strings.TrimSpace(string(out))
 
 	added := map[string]bool{}
