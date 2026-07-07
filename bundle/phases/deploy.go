@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -44,6 +45,10 @@ var deployApprovalGroups = []approvalGroup{
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
+
+	// Deletes of resources that are already gone remotely only clean up the state,
+	// so they don't count as destructive actions and need no approval.
+	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.Gone })
 
 	err := checkForPreventDestroy(b, actions)
 	if err != nil {
@@ -113,6 +118,13 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
+	}
+
+	// Once the deploy is complete, dry-run the migration to the direct engine in
+	// memory and record the outcome in telemetry. It writes nothing and never
+	// fails the deploy.
+	if !targetEngine.IsDirect() && !logdiag.HasError(ctx) {
+		statemgmt.CheckDirectMigration(ctx, b)
 	}
 }
 

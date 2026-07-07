@@ -80,22 +80,27 @@ func makeCommand(method string) *cobra.Command {
 
 			cfg := &config.Config{}
 
-			// Resolve the profile mirroring MustWorkspaceClient precedence:
-			// 1. --profile flag, 2. DATABRICKS_CONFIG_PROFILE env var (the SDK
-			// also reads it, but setting cfg.Profile here keeps any error
-			// messages we render referring to the same name), 3.
-			// [__settings__].default_profile in the config file.
-			if profileFlag := cmd.Flag("profile"); profileFlag != nil {
+			// Profile precedence, mirroring MustWorkspaceClient: --profile flag,
+			// then DATABRICKS_CONFIG_PROFILE (set here so our error messages name
+			// the same profile the SDK loads), then the default profile below.
+			profileFlag := cmd.Flag("profile")
+			hasProfileFlag := profileFlag != nil && profileFlag.Value.String() != ""
+			if hasProfileFlag {
 				cfg.Profile = profileFlag.Value.String()
 			}
 			if cfg.Profile == "" {
 				cfg.Profile = env.Get(cmd.Context(), "DATABRICKS_CONFIG_PROFILE")
 			}
-			if cfg.Profile == "" {
-				cfg.Profile = databrickscfg.ResolveDefaultProfile(cmd.Context())
-			}
 
-			auth.NormalizeDatabricksConfigFromEnv(cmd.Context(), cfg)
+			if hasProfileFlag {
+				// An explicit --profile wins over auth env vars; its host makes env
+				// host normalization moot (#5096).
+				cfg.Loaders = databrickscfg.ProfileAuthLoaders
+			} else {
+				auth.NormalizeDatabricksConfigFromEnv(cmd.Context(), cfg)
+			}
+			// Skips the default profile when DATABRICKS_HOST is set (#5616).
+			root.ResolveDefaultProfile(cmd.Context(), cfg)
 
 			api, err := client.New(cfg)
 			if err != nil {

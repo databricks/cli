@@ -11,6 +11,14 @@ const (
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
 
+	// Outcome of the dry-run migration to the direct engine attempted after a
+	// successful terraform deploy. DirectDryMigrateSuccess is false when the state
+	// could not be converted; DirectDryMigrateWarnings is true when the conversion
+	// emitted warnings (e.g. resources the direct engine can't represent).
+	// Only recorded on terraform deploys.
+	DirectDryMigrateSuccess  = "direct_drymigrate_success"
+	DirectDryMigrateWarnings = "direct_drymigrate_warnings"
+
 	// Whether workspace.state_path is under /Workspace/Shared.
 	StatePathIsShared = "state_path_is_shared"
 

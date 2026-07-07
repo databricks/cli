@@ -2,3 +2,7 @@
 >>> [CLI] bundle generate dashboard --existing-path /path/to/dashboard --dashboard-dir out/dashboard --resource-dir out/resource
 Writing dashboard to out/dashboard/this_is_a_test_dashboard.lvdash.json
 Writing configuration to out/resource/this_is_a_test_dashboard.dashboard.yml
+
+>>> [CLI] bundle generate dashboard --existing-path /path/to/dashboard --key custom_key --dashboard-dir out/dashboard --resource-dir out/resource
+Writing dashboard to out/dashboard/custom_key.lvdash.json
+Writing configuration to out/resource/custom_key.dashboard.yml

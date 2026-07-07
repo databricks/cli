@@ -41,7 +41,6 @@ if TYPE_CHECKING:
 class InitScriptInfo:
     """
     Config for an individual init script
-    Next ID: 11
     """
 
     abfss: VariableOrOptional[Adlsgen2Info] = None

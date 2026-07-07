@@ -16,7 +16,7 @@ var uninstallSkillsFn = func(ctx context.Context, opts installer.UninstallOption
 }
 
 func NewUninstallCmd() *cobra.Command {
-	var skillsFlag, scopeFlag string
+	var skillsFlag, agentsFlag, scopeFlag string
 	var projectFlag, globalFlag, keepMarketplace bool
 
 	cmd := &cobra.Command{
@@ -53,6 +53,16 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 				KeepMarketplace: keepMarketplace,
 			}
 			opts.Skills = splitAndTrim(skillsFlag)
+			if agentsFlag != "" {
+				targetAgents, err := resolveAgentNames(ctx, agentsFlag)
+				if err != nil {
+					return err
+				}
+				opts.Agents = make([]string, 0, len(targetAgents))
+				for _, agent := range targetAgents {
+					opts.Agents = append(opts.Agents, agent.Name)
+				}
+			}
 
 			// Uninstall is destructive, so confirm interactively before doing
 			// anything. Non-interactive runs (no TTY) proceed unprompted so
@@ -77,6 +87,7 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 	}
 
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to uninstall (comma-separated)")
+	cmd.Flags().StringVar(&agentsFlag, "agents", "", "Agents to uninstall from (comma-separated, e.g. claude-code,cursor)")
 	cmd.Flags().BoolVar(&keepMarketplace, "keep-marketplace", false, "Keep the marketplace registration when removing a plugin")
 	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Uninstall scope: project or global")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Uninstall project-scoped skills")
@@ -108,8 +119,12 @@ func uninstallConfirmMessage(state *installer.InstallState, opts installer.Unins
 	if state == nil {
 		return "", false
 	}
+	target := "all agents"
+	if len(opts.Agents) > 0 {
+		target = strings.Join(opts.Agents, ", ")
+	}
 	if len(opts.Skills) > 0 {
-		return fmt.Sprintf("This will remove %s %s (%s scope).", plural(len(opts.Skills), "skill"), strings.Join(opts.Skills, ", "), opts.Scope), true
+		return fmt.Sprintf("This will remove %s %s from %s (%s scope).", plural(len(opts.Skills), "skill"), strings.Join(opts.Skills, ", "), target, opts.Scope), true
 	}
 	var parts []string
 	if n := len(state.Skills); n > 0 {
@@ -121,7 +136,7 @@ func uninstallConfirmMessage(state *installer.InstallState, opts installer.Unins
 	if len(parts) == 0 {
 		return "", false
 	}
-	return fmt.Sprintf("This will remove %s (%s scope).", strings.Join(parts, " and "), opts.Scope), true
+	return fmt.Sprintf("This will remove %s from %s (%s scope).", strings.Join(parts, " and "), target, opts.Scope), true
 }
 
 // plural returns noun for n == 1 and noun+"s" otherwise.
