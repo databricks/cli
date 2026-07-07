@@ -408,7 +408,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	require.NotEmpty(t, testDirs)
 
 	skipLocalMode := os.Getenv(SkipLocalEnvVar)
-	var changedTests map[string]bool
+	// changedTests maps test dir to extra env filters to apply for that dir.
+	// nil value means all variants run; a non-nil slice restricts to matching variants.
+	var changedTests map[string][]string
 	switch skipLocalMode {
 	case "", SkipLocalAll:
 	case SkipLocalWithChanged:
@@ -526,6 +528,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if runParallel {
 							t.Parallel()
 						}
+						// For invariant dirs re-enabled by a specific config change,
+						// skip variants not matching that config.
+						if variantFilters := changedTests[dir]; variantFilters != nil {
+							checkEnvFilters(t, envset, variantFilters)
+						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
 				}
@@ -599,16 +606,18 @@ func validateTestPhase(phase int) error {
 
 // Return a reason to skip the test. Empty string means "don't skip".
 // skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
-// changedTests is the set of test dirs re-enabled under SkipLocalWithChanged; nil otherwise.
-func getSkipReason(config *internal.TestConfig, configPath string, dir string, skipLocalMode string, changedTests map[string]bool) string {
+// changedTests maps test dirs to extra env filters; nil map means feature is off.
+func getSkipReason(config *internal.TestConfig, configPath string, dir string, skipLocalMode string, changedTests map[string][]string) string {
 	switch skipLocalMode {
 	case SkipLocalAll:
 		if isTruePtr(config.Local) {
 			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalAll + " in " + configPath
 		}
 	case SkipLocalWithChanged:
-		if isTruePtr(config.Local) && !changedTests[dir] {
-			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
+		if isTruePtr(config.Local) {
+			if _, ok := changedTests[dir]; !ok {
+				return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
+			}
 		}
 	}
 

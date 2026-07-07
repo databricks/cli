@@ -21,6 +21,9 @@ const (
 	// maxChangedLocalTests caps how many changed tests SkipLocalWithChanged re-enables,
 	// keeping the cloud run bounded. Added tests are preferred over modified ones.
 	maxChangedLocalTests = 50
+
+	invariantConfigsPrefix = "acceptance/bundle/invariant/configs/"
+	invariantDirPrefix     = "bundle/invariant/"
 )
 
 // testDirForFile maps a repo-relative changed file (e.g. acceptance/bundle/foo/script)
@@ -41,24 +44,42 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 	return ""
 }
 
-// selectChangedLocalTests returns the set of test dirs to re-enable under
-// SkipLocalWithChanged: those added or changed on this branch vs the merge base,
-// added-first and capped at maxChangedLocalTests.
+// selectChangedLocalTests returns a map of test dir → extra env filters for
+// re-enabling under SkipLocalWithChanged. A nil filter slice means all variants
+// of that dir run; a non-nil slice restricts to variants matching those filters.
+// Added dirs come before modified ones; the total is capped at maxChangedLocalTests.
 //
-// A test dir is "added" when its script file has status A in the diff (didn't
-// exist at the merge base). Renames (R) are treated as modified, not added.
+// Invariant configs (acceptance/bundle/invariant/configs/*.yml.tmpl) each feed
+// every invariant subdir. A changed config re-enables all invariant subdirs but
+// only for variants where INPUT_CONFIG matches the changed file — so touching
+// job.yml.tmpl runs only the job.yml.tmpl variants, not all ~40 configs.
 //
 // --merge-base diffs the working tree against the merge base of HEAD and
 // origin/main, so uncommitted edits are included. The three-dot form
 // origin/main...HEAD would only cover committed changes and would miss a file
 // touched but not yet committed, which breaks the "touch a config, run the
 // test" local dev workflow (same reason lintdiff.py uses --merge-base).
-func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
+func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
 	out, _ := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
 	diff := strings.TrimSpace(string(out))
 
+	// result accumulates dirs with their filters; added tracks brand-new dirs.
+	// nil filter slice = all variants run; non-nil = restricted to those filters.
+	result := map[string][]string{}
 	added := map[string]bool{}
-	changed := map[string]bool{}
+
+	addDir := func(dir string, filter string) {
+		if filter == "" {
+			result[dir] = nil // non-config change → run all variants
+			return
+		}
+		// Config-specific change: restrict to this INPUT_CONFIG, unless the dir
+		// was already unlocked for all variants by a non-config change.
+		if existing, ok := result[dir]; !ok || existing != nil {
+			result[dir] = append(result[dir], "INPUT_CONFIG="+filter)
+		}
+	}
+
 	for _, line := range strings.Split(diff, "\n") {
 		fields := strings.Split(line, "\t")
 		if len(fields) < 2 {
@@ -67,12 +88,19 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 		status := fields[0]
 		path := fields[len(fields)-1]
 
-		// A changed invariant config re-enables all invariant subdirs, since
-		// every config feeds every subdir (no_drift, migrate, continue_293, ...).
-		if strings.HasPrefix(path, "acceptance/bundle/invariant/configs/") {
-			for dir := range testDirs {
-				if strings.HasPrefix(dir, "bundle/invariant/") {
-					changed[dir] = true
+		// A changed invariant config re-enables all invariant subdirs, restricted
+		// to only the INPUT_CONFIG variant matching the changed config file.
+		if strings.HasPrefix(path, invariantConfigsPrefix) {
+			configName := path[len(invariantConfigsPrefix):]
+			// Strip -init.sh / -cleanup.sh suffixes to get the base config name.
+			if i := strings.Index(configName, "-"); i > 0 && strings.HasSuffix(configName, ".sh") {
+				configName = configName[:i]
+			}
+			if strings.HasSuffix(configName, ".yml.tmpl") {
+				for dir := range testDirs {
+					if strings.HasPrefix(dir, invariantDirPrefix) {
+						addDir(dir, configName)
+					}
 				}
 			}
 			continue
@@ -82,7 +110,7 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 		if dir == "" {
 			continue
 		}
-		changed[dir] = true
+		addDir(dir, "")
 		// A script file with status A means the test dir is brand new.
 		// Renames (R) land here as the destination path but are not "added".
 		if status == "A" && strings.HasSuffix(path, "/script") {
@@ -91,7 +119,7 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 	}
 
 	var addedDirs, modifiedDirs []string
-	for dir := range changed {
+	for dir := range result {
 		if added[dir] {
 			addedDirs = append(addedDirs, dir)
 		} else {
@@ -106,9 +134,9 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 		selected = selected[:maxChangedLocalTests]
 	}
 
-	result := make(map[string]bool, len(selected))
+	out2 := make(map[string][]string, len(selected))
 	for _, dir := range selected {
-		result[dir] = true
+		out2[dir] = result[dir]
 	}
-	return result
+	return out2
 }
