@@ -847,11 +847,6 @@ resources:
                   "$type":
                     "description": |-
                       SSE algorithm to use for encrypting S3 objects
-                    "enum":
-                      - |-
-                        AWS_SSE_KMS
-                      - |-
-                        AWS_SSE_S3
         "grants":
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.

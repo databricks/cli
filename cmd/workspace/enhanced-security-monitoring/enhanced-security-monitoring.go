@@ -3,7 +3,7 @@
 package enhanced_security_monitoring
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -157,7 +157,7 @@ Update the enhanced security monitoring setting.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Settings.EnhancedSecurityMonitoring().Update(ctx, updateReq)

@@ -1,27 +1,21 @@
 # NEXT CHANGELOG
 
-## Release v1.6.0
+## Release v1.7.0
 
 ### Notable Changes
 
 ### CLI
 
- * `ssh connect` now accepts a `--base-environment` flag to run a serverless session on a custom base environment. It takes an `env.yaml` path, a `workspace-base-environments/...` resource ID, or a base environment display name, and is rejected together with `--environment-version` or `--cluster` ([#5706](https://github.com/databricks/cli/pull/5706)).
- * `databricks aitools install` is now plugin-first: it installs the Databricks plugin through each agent's own CLI (Claude Code, Codex, GitHub Copilot) instead of copying raw skill files. Agents without a plugin (OpenCode, Antigravity) still get skill files, and Cursor prints the `/add-plugin databricks` step. Use `--skills-only` to force raw skill files for every agent, or `--path <dir>` to write skills to a directory ([#5738](https://github.com/databricks/cli/pull/5738)).
- * `databricks labs list` now only shows projects that can be installed ([#5560](https://github.com/databricks/cli/pull/5560)).
+* An explicitly selected profile (`--profile` or a bundle's `workspace.profile`) now takes precedence over auth environment variables (`DATABRICKS_HOST`, `DATABRICKS_TOKEN`, etc.) instead of being silently shadowed by them; env vars still fill auth fields the profile leaves empty ([#5096](https://github.com/databricks/cli/issues/5096)).
 
 ### Bundles
 
- * direct: Fixed persistent drift on `model_serving_endpoints` caused by the `traffic_config` field ([#5708](https://github.com/databricks/cli/pull/5708)).
- * direct: Fix spurious update when `apply_policy_default_values: true` is set on job task, for-each-task, or job cluster new_cluster ([#5731](https://github.com/databricks/cli/pull/5731)). Also fix spurious updates for for-each-task clusters due to missing backend defaults for `data_security_mode`, `node_type_id`, `driver_node_type_id`, `driver_instance_pool_id`, `enable_elastic_disk`, and `enable_local_disk_encryption`.
- * direct: Cluster resize now falls back to regular update if resize fails due to `INVALID_STATE` ([#5716](https://github.com/databricks/cli/pull/5716)).
- * `bundle generate dashboard` now honors the `--key` flag when naming the generated resource, and rejects combining `--existing-path`, `--existing-id`, and `--resource` instead of silently ignoring all but one ([#5492](https://github.com/databricks/cli/pull/5492)).
- * Fixed `bundle deployment migrate` failing on `model_serving_endpoints`/`database_instances` with permissions (regression since v1.5.0) ([#5775](https://github.com/databricks/cli/pull/5775)).
- * Support `replace_existing: true` on `postgres_databases` and `postgres_roles` so bundles can take over a database or role that already exists on a Lakebase branch instead of failing with `ALREADY_EXISTS` ([#5803](https://github.com/databricks/cli/pull/5803)).
- * After a terraform deploy, the CLI now dry-runs a migration to the direct engine (writing nothing locally or remotely) and reports the outcome via telemetry, warning if the migration could not be completed ([#5797](https://github.com/databricks/cli/pull/5797)).
+* Fix permissions added to a job or pipeline by a Python (PyDABs) mutator failing to deploy with "must have exactly one owner"; the deploying identity is now set as owner, matching resources whose permissions are declared in YAML ([#5821](https://github.com/databricks/cli/pull/5821)).
+* Remove duplicate enum values for jsonschema.json ([#5839](https://github.com/databricks/cli/pull/5839)).
+* direct: volumes: support `volume_path` property ([#5550](https://github.com/databricks/cli/pull/5550)).
+* direct: Fix deploy bug when a `postgres_projects`, `postgres_branches`, or `postgres_endpoints` field is set to its zero value (e.g. `enable_pg_native_login: false`, `replace_existing: false`) ([#5782](https://github.com/databricks/cli/pull/5782)).
+* Support `replace_existing: true` on `postgres_databases` and `postgres_roles` so bundles can take over a database or role that already exists on a Lakebase branch instead of failing with `ALREADY_EXISTS` ([#5803](https://github.com/databricks/cli/pull/5803)).
 
 ### Dependency updates
- * Bump `github.com/databricks/databricks-sdk-go` from v0.147.0 to v0.152.0 ([#5773](https://github.com/databricks/cli/pull/5773)).
- * Bump Terraform provider from v1.118.0 to v1.120.0 ([#5792](https://github.com/databricks/cli/pull/5792)).
 
 ### API Changes

@@ -326,19 +326,33 @@ Response.Body = '<response body here>'
 	return s
 }
 
+// workspaceKeyForToken strips the identity prefix so a test's user, primary SP,
+// and guest tokens resolve to the same FakeWorkspace and share state. The uuid
+// suffix keeps distinct tests isolated.
+func workspaceKeyForToken(token string) string {
+	for _, prefix := range []string{UserNameTokenPrefix, ServicePrincipalTokenPrefix, GuestServicePrincipalTokenPrefix} {
+		if s, ok := strings.CutPrefix(token, prefix); ok {
+			return s
+		}
+	}
+	return token
+}
+
 func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	if token == "" {
 		return nil
 	}
 
+	key := workspaceKeyForToken(token)
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, ok := s.fakeWorkspaces[token]; !ok {
-		s.fakeWorkspaces[token] = NewFakeWorkspace(s.URL, token)
+	if _, ok := s.fakeWorkspaces[key]; !ok {
+		s.fakeWorkspaces[key] = NewFakeWorkspace(s.URL, token)
 	}
 
-	return s.fakeWorkspaces[token]
+	return s.fakeWorkspaces[key]
 }
 
 func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFunc, vars map[string]string) {

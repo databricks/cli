@@ -73,11 +73,12 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 
 	// CreatorUserName field is used by TF to check if the resource exists or not. CreatorUserName should be non-empty for the resource to be considered as "exists"
 	// https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go#L108
+	creator := userForToken(req.Token).UserName
 	s.Jobs[jobId] = jobs.Job{
 		JobId:           jobId,
 		Settings:        &jobSettings,
-		CreatorUserName: s.CurrentUser().UserName,
-		RunAsUserName:   s.CurrentUser().UserName,
+		CreatorUserName: creator,
+		RunAsUserName:   creator,
 		CreatedTime:     nowMilli(),
 	}
 	return Response{Body: jobs.CreateResponse{JobId: jobId}}
@@ -217,6 +218,12 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 
 	defer s.LockUnlock()()
 
+	// The backend checks permissions before existence, so a guest without access
+	// gets a permission error rather than a 404, even after the job is deleted.
+	if isGuestToken(req.Token) && !s.guestHasJobAccess(jobIdInt, userForToken(req.Token).UserName) {
+		return jobReadPermissionDenied(userForToken(req.Token).UserName, jobIdInt)
+	}
+
 	job, ok := s.Jobs[jobIdInt]
 	if !ok {
 		// Match the real Jobs API, which echoes the job id in the error message.
@@ -264,6 +271,45 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 	}
 
 	return Response{Body: job}
+}
+
+// JobsDelete deletes a job. A guest without admin/owner access gets a permission
+// error, even after the job is gone (permission check precedes existence check).
+func (s *FakeWorkspace) JobsDelete(req Request, jobId int64) Response {
+	defer s.LockUnlock()()
+
+	if isGuestToken(req.Token) && !s.guestHasJobAccess(jobId, userForToken(req.Token).UserName) {
+		return jobDeletePermissionDenied(userForToken(req.Token).UserName, jobId)
+	}
+
+	if _, ok := s.Jobs[jobId]; !ok {
+		return Response{StatusCode: 404}
+	}
+	delete(s.Jobs, jobId)
+	return Response{}
+}
+
+const permissionDeniedErrorCode = "PERMISSION_DENIED"
+
+func jobPermissionDenied(message string) Response {
+	return Response{
+		StatusCode: 403,
+		Body:       map[string]string{"error_code": permissionDeniedErrorCode, "message": message},
+	}
+}
+
+// jobManagePermissionDenied is returned when reading a job's permissions without
+// Manage access. ElasticJobId mirrors the backend error's identifier shape.
+func jobManagePermissionDenied(principal string, jobId int64) Response {
+	return jobPermissionDenied(fmt.Sprintf("%s does not have Manage permissions on Job with ID: ElasticJobId(%d). Please contact the owner or an administrator for access.", principal, jobId))
+}
+
+func jobReadPermissionDenied(principal string, jobId int64) Response {
+	return jobPermissionDenied(fmt.Sprintf("User %s does not have View or Admin or Manage Run or Owner permissions on job %d", principal, jobId))
+}
+
+func jobDeletePermissionDenied(principal string, jobId int64) Response {
+	return jobPermissionDenied(fmt.Sprintf("User %s does not have Admin or Owner permissions on job %d", principal, jobId))
 }
 
 func (s *FakeWorkspace) JobsList() Response {
@@ -364,6 +410,64 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	}
 
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
+}
+
+// JobsSubmit handles jobs/runs/submit, the one-time run endpoint used by
+// `databricks ssh connect` (via client.Jobs.Submit) and the generic
+// `databricks jobs submit` command. It records the submitted spec and returns a
+// run ID so acceptance tests can assert the request body (e.g. the serverless
+// environments / base_environment) and poll runs/get for the resulting run.
+//
+// Unlike JobsRunNow, the submitted tasks are not executed locally: the SSH
+// bootstrap submits a notebook task that only exists in the workspace, and the
+// value of this handler for tests is the recorded request, not task output.
+func (s *FakeWorkspace) JobsSubmit(req Request) Response {
+	var request jobs.SubmitRun
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+	if response := validateJobGitSource(request.GitSource); response != nil {
+		return *response
+	}
+
+	defer s.LockUnlock()()
+
+	runId := nextID()
+
+	// The default run name for one-time runs is "Untitled" (Jobs API behavior).
+	runName := cmp.Or(request.RunName, "Untitled")
+
+	// Report each task as RUNNING in both the V1 (state) and V2 (status) shapes.
+	// The generic `jobs submit` waiter polls the V1 run-level state, which
+	// JobsGetRun drives to TERMINATED on the next poll, while `ssh connect`'s
+	// waitForJobToStart polls the V2 per-task status.
+	var tasks []jobs.RunTask
+	for _, t := range request.Tasks {
+		tasks = append(tasks, jobs.RunTask{
+			RunId:   nextID(),
+			TaskKey: t.TaskKey,
+			State: &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateRunning,
+			},
+			Status: &jobs.RunStatus{
+				State: jobs.RunLifecycleStateV2StateRunning,
+			},
+		})
+	}
+
+	s.JobRuns[runId] = jobs.Run{
+		RunId:      runId,
+		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		RunPageUrl: fmt.Sprintf("%s/?o=900800700600#job/run/%d", s.url, runId),
+		RunType:    jobs.RunTypeSubmitRun,
+		RunName:    runName,
+		Tasks:      tasks,
+	}
+
+	return Response{Body: jobs.SubmitRunResponse{RunId: runId}}
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.

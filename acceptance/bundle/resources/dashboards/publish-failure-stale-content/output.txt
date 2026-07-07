@@ -4,8 +4,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-fai
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> [CLI] lakeview get [DASHBOARD1_ID]
 {
   "display_name": "my dashboard",
   "etag": "[ETAG_1]"

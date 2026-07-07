@@ -1,5 +1,5 @@
 const path = require("path");
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const {
   parseOwnersFile,
   findOwners,
@@ -117,8 +117,9 @@ function classifyFile(filepath, totalFiles) {
 
 function gitLog(filepath) {
   try {
-    const out = execSync(
-      `git log -50 --no-merges --since="12 months ago" --format="%H|%an|%aI" -- "${filepath}"`,
+    const out = execFileSync(
+      "git",
+      ["log", "-50", "--no-merges", "--since=12 months ago", "--format=%H|%an|%aI", "--", filepath],
       { encoding: "utf-8" }
     );
     const entries = [];

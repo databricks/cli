@@ -3,6 +3,7 @@
 package connections
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -106,7 +107,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Connections.Create(ctx, createReq)
@@ -176,7 +177,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the name of the connection to be deleted")
+			return errors.New("expected to have the name of the connection to be deleted")
 		}
 		deleteReq.Name = args[0]
 
@@ -246,7 +247,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the connection")
+			return errors.New("expected to have name of the connection")
 		}
 		getReq.Name = args[0]
 
@@ -404,7 +405,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.Name = args[0]
 

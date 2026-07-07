@@ -1,0 +1,29 @@
+sethome "./home"
+
+# One profile with full credentials, one host-only; both point at the test
+# server while the auth env vars below point elsewhere.
+cat > "./home/.databrickscfg" <<EOF
+[my-workspace]
+host  = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+
+[host-only]
+host  = $DATABRICKS_HOST
+EOF
+
+# direnv-style auth env vars for a different workspace; before #5096 these
+# shadowed the profile selected with --profile.
+real_token=$DATABRICKS_TOKEN
+export DATABRICKS_HOST=https://dev.cloud.databricks.test
+export DATABRICKS_TOKEN=dev-token
+
+title "api --profile overrides auth env vars (#5096)\n"
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/clusters/list --profile my-workspace
+trace print_requests.py --get //api/2.0/clusters/list
+
+# Host-only profile: the profile wins for the host, but env fills the token it
+# omits (#5096).
+export DATABRICKS_TOKEN=$real_token
+title "api host-only --profile fills the token from the environment (#5096)\n"
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/clusters/list --profile host-only
+trace print_requests.py --get //api/2.0/clusters/list
