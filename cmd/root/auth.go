@@ -110,6 +110,17 @@ func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	return value, value != ""
 }
 
+// applyProfileAuthPrecedence makes an explicit --profile win over auth env vars
+// via ProfileAuthLoaders (#5096), skipping env host normalization since the host
+// comes from the profile. Without a profile flag, env-first behavior is kept.
+func applyProfileAuthPrecedence(ctx context.Context, cfg *config.Config, hasProfileFlag bool) {
+	if hasProfileFlag {
+		cfg.Loaders = databrickscfg.ProfileAuthLoaders
+		return
+	}
+	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
+}
+
 // Helper function to create an account client or prompt once if the given configuration is not valid.
 func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.AccountClient, error) {
 	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
@@ -195,21 +206,21 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
+	ctx := cmd.Context()
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	pr, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = pr
 	}
+	applyProfileAuthPrecedence(ctx, cfg, hasProfileFlag)
 
-	ctx := cmd.Context()
-	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
 	profiler := profile.GetProfiler(ctx)
 
-	resolveDefaultProfile(ctx, cfg)
+	ResolveDefaultProfile(ctx, cfg)
 
 	if cfg.Profile == "" {
 		// account-level CLI was not really done before, so here are the assumptions:
@@ -325,9 +336,8 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	if hasProfileFlag {
 		cfg.Profile = profile
 	}
-
-	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
-	resolveDefaultProfile(ctx, cfg)
+	applyProfileAuthPrecedence(ctx, cfg, hasProfileFlag)
+	ResolveDefaultProfile(ctx, cfg)
 
 	_, isTargetFlagSet := targetFlagValue(cmd)
 	// If the profile flag is set but the target flag is not, we should skip loading the bundle configuration.
@@ -369,17 +379,13 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveDefaultProfile applies the [__settings__].default_profile setting
-// when no profile is specified via --profile flag or DATABRICKS_CONFIG_PROFILE.
+// ResolveDefaultProfile applies [__settings__].default_profile when no profile
+// is set via --profile or DATABRICKS_CONFIG_PROFILE.
 //
-// It does nothing when a host is configured directly via the environment
-// (DATABRICKS_HOST). Authentication is then fully determined by the environment,
-// and the SDK already ignores .databrickscfg in that case, but only while
-// cfg.Profile is empty (see configFileLoader.Configure in databricks-sdk-go).
-// Pinning a default profile would defeat that skip and merge the profile's
-// credentials with the environment config, failing with "more than one
-// authorization method configured".
-func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
+// It skips when DATABRICKS_HOST is set: the SDK ignores .databrickscfg while
+// cfg.Profile is empty, so pinning a default profile would merge it with the env
+// config and fail with "more than one authorization method configured" (#5616).
+func ResolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
 		return
 	}

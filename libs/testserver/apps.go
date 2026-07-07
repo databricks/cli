@@ -11,6 +11,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+const (
+	appStatusRunningMessage     = "App has status: App is running"
+	appStatusUnavailableMessage = "App status is unavailable."
+)
+
 func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 	var updateReq apps.AsyncUpdateAppRequest
 	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
@@ -154,6 +159,11 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 		State:   apps.ComputeStateActive,
 		Message: "App compute is active.",
 	}
+	// Starting the compute brings the application up.
+	app.AppStatus = &apps.ApplicationStatus{
+		State:   "RUNNING",
+		Message: appStatusRunningMessage,
+	}
 	s.Apps[name] = app
 
 	return Response{Body: app}
@@ -169,7 +179,12 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 
 	app.ComputeStatus = &apps.ComputeStatus{
 		State:   apps.ComputeStateStopped,
-		Message: "App compute is stopped.",
+		Message: "Start the app compute to deploy the app.",
+	}
+	// Stopping the compute takes the application down.
+	app.AppStatus = &apps.ApplicationStatus{
+		State:   "UNAVAILABLE",
+		Message: appStatusUnavailableMessage,
 	}
 	s.Apps[name] = app
 
@@ -215,18 +230,22 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		}
 	}
 
-	app.AppStatus = &apps.ApplicationStatus{
-		State:   "RUNNING",
-		Message: "Application is running.",
-	}
-
-	// Respect no_compute query param: if true, start the app in STOPPED state.
+	// A no_compute app is created without running compute, so on cloud it
+	// reports an UNAVAILABLE application status until it is started.
 	if req.URL.Query().Get("no_compute") == "true" {
+		app.AppStatus = &apps.ApplicationStatus{
+			State:   "UNAVAILABLE",
+			Message: appStatusUnavailableMessage,
+		}
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   apps.ComputeStateStopped,
 			Message: "App compute is stopped.",
 		}
 	} else {
+		app.AppStatus = &apps.ApplicationStatus{
+			State:   "RUNNING",
+			Message: "Application is running.",
+		}
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   "ACTIVE",
 			Message: "App compute is active.",

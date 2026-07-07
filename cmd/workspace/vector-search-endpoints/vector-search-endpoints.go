@@ -3,6 +3,7 @@
 package vector_search_endpoints
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -99,7 +100,7 @@ func newCreateEndpoint() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'endpoint_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'endpoint_type' in your JSON input")
 			}
 			return nil
 		}
@@ -750,7 +751,7 @@ Update the budget policy of an endpoint.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only ENDPOINT_NAME as positional arguments. Provide 'budget_policy_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only ENDPOINT_NAME as positional arguments. Provide 'budget_policy_id' in your JSON input")
 			}
 			return nil
 		}
@@ -853,7 +854,7 @@ func newUpdateEndpointCustomTags() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateEndpointCustomTagsReq.EndpointName = args[0]
 

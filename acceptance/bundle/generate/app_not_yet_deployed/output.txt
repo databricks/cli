@@ -2,8 +2,8 @@
 >>> [CLI] apps create my-app --no-compute --no-wait
 {
   "app_status": {
-    "message": "Application is running.",
-    "state": "RUNNING"
+    "message": "App status is unavailable.",
+    "state": "UNAVAILABLE"
   },
   "compute_size": "MEDIUM",
   "compute_status": {

@@ -3,6 +3,7 @@
 package disaster_recovery
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -101,7 +102,7 @@ Create a Failover Group.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT, FAILOVER_GROUP_ID as positional arguments. Provide 'regions', 'workspace_sets', 'initial_primary_region' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT, FAILOVER_GROUP_ID as positional arguments. Provide 'regions', 'workspace_sets', 'initial_primary_region' in your JSON input")
 			}
 			return nil
 		}
@@ -211,7 +212,7 @@ Create a Stable URL.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT, STABLE_URL_ID as positional arguments. Provide 'initial_workspace_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT, STABLE_URL_ID as positional arguments. Provide 'initial_workspace_id' in your JSON input")
 			}
 			return nil
 		}
@@ -430,7 +431,7 @@ Failover a Failover Group to a new primary region.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'target_primary_region', 'failover_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME as positional arguments. Provide 'target_primary_region', 'failover_type' in your JSON input")
 			}
 			return nil
 		}
@@ -815,7 +816,7 @@ Update a Failover Group.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'regions', 'workspace_sets', 'initial_primary_region' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'regions', 'workspace_sets', 'initial_primary_region' in your JSON input")
 			}
 			return nil
 		}
