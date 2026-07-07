@@ -67,6 +67,7 @@ func TestListAirRunsFiltersUserAndType(t *testing.T) {
 	srv := runsServer(t, runsListBody(t, "", runs...))
 
 	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
 		userFilter: "me@example.com",
 	}).next(10)
 	require.NoError(t, err)
@@ -83,7 +84,8 @@ func TestListAirRunsExperimentFilter(t *testing.T) {
 	srv := runsServer(t, runsListBody(t, "", runs...))
 
 	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
-		filters: listFilters{Experiment: "qwen*"},
+		activeOnly: true,
+		filters:    listFilters{Experiment: "qwen*"},
 	}).next(10)
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
@@ -98,7 +100,7 @@ func TestListAirRunsLimitTruncates(t *testing.T) {
 	}
 	srv := runsServer(t, runsListBody(t, "", runs...))
 
-	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{}).next(2)
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(2)
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
 	assert.Equal(t, "1", rows[0].RunID)
@@ -110,7 +112,7 @@ func TestListAirRunsPaginates(t *testing.T) {
 	page2 := runsListBody(t, "", airJobRun(2, "me@example.com", "GPU_1xH100", 1, "exp-b"))
 	srv := runsServer(t, page1, page2)
 
-	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{}).next(10)
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(10)
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
 	assert.Equal(t, "1", rows[0].RunID)
@@ -127,7 +129,7 @@ func TestRunFetcherResumesAcrossCalls(t *testing.T) {
 		airJobRun(3, "me@example.com", "GPU_1xH100", 1, "exp-c"),
 	}
 	srv := runsServer(t, runsListBody(t, "", runs...))
-	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{})
+	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true})
 
 	first, err := f.next(2)
 	require.NoError(t, err)
