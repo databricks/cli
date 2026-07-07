@@ -257,8 +257,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
-	validateSkipLocal(t)
-
 	if !requirePrerequisites(t) {
 		// Don't run the suite against a stale toolchain; the failed subtest
 		// has already marked the parent test as failed.
@@ -410,12 +408,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	require.NotEmpty(t, testDirs)
 
 	var changedTests map[string]bool
-	if os.Getenv(SkipLocalEnvVar) == SkipLocalWithChanged {
+	switch os.Getenv(SkipLocalEnvVar) {
+	case "", SkipLocalAll:
+	case SkipLocalWithChanged:
 		testDirsSet := make(map[string]bool, len(testDirs))
 		for _, d := range testDirs {
 			testDirsSet[d] = true
 		}
 		changedTests = selectChangedLocalTests(testDirsSet)
+	default:
+		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, os.Getenv(SkipLocalEnvVar), SkipLocalAll, SkipLocalWithChanged)
 	}
 
 	if singleTest != "" {

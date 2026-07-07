@@ -1,12 +1,10 @@
 package acceptance_test
 
 import (
-	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
-	"testing"
 )
 
 // DATABRICKS_TEST_SKIPLOCAL controls skipping of Local acceptance tests.
@@ -24,17 +22,6 @@ const (
 	// keeping the cloud run bounded. Added tests are preferred over modified ones.
 	maxChangedLocalTests = 50
 )
-
-// validateSkipLocal fails the test immediately on an unsupported
-// DATABRICKS_TEST_SKIPLOCAL value. Empty or absent means disabled.
-func validateSkipLocal(t *testing.T) {
-	t.Helper()
-	switch os.Getenv(SkipLocalEnvVar) {
-	case "", SkipLocalAll, SkipLocalWithChanged:
-	default:
-		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, os.Getenv(SkipLocalEnvVar), SkipLocalAll, SkipLocalWithChanged)
-	}
-}
 
 // testDirForFile maps a repo-relative changed file (e.g. acceptance/bundle/foo/script)
 // to its owning test dir relative to acceptance/ (e.g. bundle/foo), or "" if the file
