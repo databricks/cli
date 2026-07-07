@@ -87,7 +87,7 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 				continue
 			}
 
-			f := fieldByIndexAlloc(dst, index)
+			f := getOrNewFieldByIndex(dst, index)
 
 			err := ToTyped(f.Addr().Interface(), pv)
 			if err != nil {
@@ -100,7 +100,7 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 				// shares a prefix with the field's index path, so it is already
 				// allocated by the walk above.
 				if fsfIndex, ok := info.ForceSendFieldsIndex[jsonKey]; ok {
-					fsf := fieldByIndexAlloc(dst, fsfIndex)
+					fsf := getOrNewFieldByIndex(dst, fsfIndex)
 					fsf.Set(reflect.Append(fsf, reflect.ValueOf(info.GolangNames[jsonKey])))
 				}
 			}
@@ -132,10 +132,10 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 	}
 }
 
-// fieldByIndexAlloc resolves the value at the given index path within an addressable
+// getOrNewFieldByIndex resolves the value at the given index path within an addressable
 // struct, allocating intermediate structs embedded as pointer types along the way.
 // Code inspired by [reflect.FieldByIndex] implementation.
-func fieldByIndexAlloc(v reflect.Value, index []int) reflect.Value {
+func getOrNewFieldByIndex(v reflect.Value, index []int) reflect.Value {
 	for i, x := range index {
 		if i > 0 {
 			if v.Kind() == reflect.Pointer {
