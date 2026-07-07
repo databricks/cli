@@ -36,16 +36,6 @@ func validateSkipLocal(t *testing.T) {
 	}
 }
 
-// git runs a git command and returns trimmed stdout.
-// A non-zero exit yields an empty string.
-func git(args ...string) string {
-	out, err := exec.Command("git", args...).Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(out))
-}
-
 // testDirForFile maps a repo-relative changed file (e.g. acceptance/bundle/foo/script)
 // to its owning test dir relative to acceptance/ (e.g. bundle/foo), or "" if the file
 // is outside acceptance/ or not under any known test dir.
@@ -73,7 +63,8 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 // The three-dot form origin/main...HEAD diffs HEAD against the merge base of
 // the two refs in one call (see tools/testmask/git.go for the rationale).
 func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
-	diff := git("diff", "--name-status", "-M", "origin/main...HEAD")
+	out, _ := exec.Command("git", "diff", "--name-status", "-M", "origin/main...HEAD").Output()
+	diff := strings.TrimSpace(string(out))
 
 	added := map[string]bool{}
 	changed := map[string]bool{}
