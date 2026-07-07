@@ -607,7 +607,7 @@ func validateTestPhase(phase int) error {
 // Return a reason to skip the test. Empty string means "don't skip".
 // skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
 // changedTests maps test dirs to extra env filters; nil map means feature is off.
-func getSkipReason(config *internal.TestConfig, configPath string, dir string, skipLocalMode string, changedTests map[string][]string) string {
+func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode string, changedTests map[string][]string) string {
 	switch skipLocalMode {
 	case SkipLocalAll:
 		if isTruePtr(config.Local) {

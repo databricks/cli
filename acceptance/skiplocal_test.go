@@ -68,7 +68,7 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
 	result := map[string][]string{}
 	added := map[string]bool{}
 
-	addDir := func(dir string, filter string) {
+	addDir := func(dir, filter string) {
 		if filter == "" {
 			result[dir] = nil // non-config change → run all variants
 			return
@@ -80,7 +80,7 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
 		}
 	}
 
-	for _, line := range strings.Split(diff, "\n") {
+	for line := range strings.SplitSeq(diff, "\n") {
 		fields := strings.Split(line, "\t")
 		if len(fields) < 2 {
 			continue
