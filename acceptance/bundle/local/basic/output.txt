@@ -106,7 +106,6 @@ Deployment complete!
 === Telemetry:
 local_used true
 
-=== Destroy
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.bar

@@ -1,7 +1,6 @@
 envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    title "Destroy"
     trace $CLI bundle destroy --auto-approve
     rm -f out.requests.txt
 }

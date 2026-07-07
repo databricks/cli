@@ -43,7 +43,6 @@ update jobs.foo
 
 Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 
-=== Destroy
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.bar
