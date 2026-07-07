@@ -50,9 +50,9 @@
         "serialized_dashboard": {
           "action": "skip",
           "reason": "etag_based",
-          "old": "{ }\n",
-          "new": "{ }\n",
-          "remote": "{}\n"
+          "old": "sha256:[HASH]",
+          "new": "sha256:[HASH]",
+          "remote": "sha256:[HASH]"
         },
         "update_time": {
           "action": "skip",
