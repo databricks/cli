@@ -77,12 +77,17 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 // added-first and capped at maxChangedLocalTests.
 //
 // A renamed test dir is treated as modified, not added (git -M detects renames
-// as a single R entry rather than add+delete). --merge-base folds the merge-base
-// computation into the diff call itself, matching tools/lintdiff.py.
+// as a single R entry rather than add+delete).
 func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 	base := resolveBaseRef()
 
-	diff := git("diff", "--name-status", "--merge-base", "-M", base)
+	// Compute the merge base once; use it for both the diff and the ls-tree.
+	mergeBase := git("merge-base", "HEAD", base)
+	if mergeBase == "" {
+		mergeBase = base
+	}
+
+	diff := git("diff", "--name-status", "-M", mergeBase)
 
 	renamedInto := map[string]bool{}
 	changed := map[string]bool{}
@@ -103,9 +108,6 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 		}
 	}
 
-	// Resolve the merge-base SHA for the batched ls-tree call below.
-	mergeBase := git("merge-base", "HEAD", base)
-
 	// Batch all script-existence checks into one ls-tree call.
 	var scriptPaths []string
 	for dir := range changed {
@@ -113,7 +115,7 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 	}
 	slices.Sort(scriptPaths)
 	existsAtBase := map[string]bool{}
-	if mergeBase != "" && len(scriptPaths) > 0 {
+	if len(scriptPaths) > 0 {
 		args := append([]string{"ls-tree", "--name-only", mergeBase}, scriptPaths...)
 		for _, line := range strings.Split(git(args...), "\n") {
 			if line != "" {
