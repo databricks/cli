@@ -409,12 +409,13 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
+	var changedTests map[string]bool
 	if os.Getenv(SkipLocalEnvVar) == SkipLocalWithChanged {
 		testDirsSet := make(map[string]bool, len(testDirs))
 		for _, d := range testDirs {
 			testDirsSet[d] = true
 		}
-		changedLocalTests = selectChangedLocalTests(testDirsSet)
+		changedTests = selectChangedLocalTests(testDirsSet)
 	}
 
 	if singleTest != "" {
@@ -471,7 +472,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath, dir)
+			skipReason := getSkipReason(&config, configPath, dir, changedTests)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -594,14 +595,15 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-func getSkipReason(config *internal.TestConfig, configPath string, dir string) string {
+// changedTests is the set of test dirs re-enabled under SkipLocalWithChanged; nil otherwise.
+func getSkipReason(config *internal.TestConfig, configPath string, dir string, changedTests map[string]bool) string {
 	switch os.Getenv(SkipLocalEnvVar) {
 	case SkipLocalAll:
 		if isTruePtr(config.Local) {
 			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalAll + " in " + configPath
 		}
 	case SkipLocalWithChanged:
-		if isTruePtr(config.Local) && !changedLocalTests[dir] {
+		if isTruePtr(config.Local) && !changedTests[dir] {
 			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
 		}
 	}

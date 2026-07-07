@@ -25,21 +25,16 @@ const (
 	maxChangedLocalTests = 50
 )
 
-// validateSkipLocal fails fast on an unsupported DATABRICKS_TEST_SKIPLOCAL value.
-// Empty or absent means the feature is off; anything other than the known modes
-// is rejected rather than silently ignored.
+// validateSkipLocal fails the test immediately on an unsupported
+// DATABRICKS_TEST_SKIPLOCAL value. Empty or absent means disabled.
 func validateSkipLocal(t *testing.T) {
+	t.Helper()
 	switch os.Getenv(SkipLocalEnvVar) {
 	case "", SkipLocalAll, SkipLocalWithChanged:
 	default:
 		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, os.Getenv(SkipLocalEnvVar), SkipLocalAll, SkipLocalWithChanged)
 	}
 }
-
-// changedLocalTests is the set of test dirs (relative to acceptance/, forward slash)
-// added or changed on this branch, populated by testAccept when running in
-// SkipLocalWithChanged mode. nil in every other mode.
-var changedLocalTests map[string]bool
 
 // git runs a git command and returns trimmed stdout.
 // A non-zero exit yields an empty string.
@@ -61,8 +56,7 @@ func resolveBaseRef() string {
 
 // testDirForFile maps a repo-relative changed file (e.g. acceptance/bundle/foo/script)
 // to its owning test dir relative to acceptance/ (e.g. bundle/foo), or "" if the file
-// is outside acceptance/ or not under any known test dir. testDirs is the set of dirs
-// containing a 'script' file, relative to acceptance/ with forward slashes.
+// is outside acceptance/ or not under any known test dir.
 func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 	parts := strings.Split(filepath.ToSlash(repoRelPath), "/")
 	if len(parts) < 2 || parts[0] != "acceptance" {
@@ -80,19 +74,14 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 
 // selectChangedLocalTests returns the set of test dirs to re-enable under
 // SkipLocalWithChanged: those added or changed on this branch vs the merge base,
-// added-first and capped at maxChangedLocalTests. testDirs is the set of known test
-// dirs (relative to acceptance/, forward slash).
+// added-first and capped at maxChangedLocalTests.
 //
-// A renamed test dir is treated as modified, not added, so a pure rename does not
-// consume the "added" budget (git detects it as an R entry via -M).
-//
-// --merge-base folds the merge-base computation into the diff command itself,
-// matching the approach in tools/lintdiff.py.
+// A renamed test dir is treated as modified, not added (git -M detects renames
+// as a single R entry rather than add+delete). --merge-base folds the merge-base
+// computation into the diff call itself, matching tools/lintdiff.py.
 func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 	base := resolveBaseRef()
 
-	// --merge-base diffs HEAD against the merge base of HEAD and base in one call.
-	// -M detects renames so they appear as a single R entry rather than add+delete.
 	diff := git("diff", "--name-status", "--merge-base", "-M", base)
 
 	renamedInto := map[string]bool{}
@@ -114,15 +103,10 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 		}
 	}
 
-	// A test dir is "added" if its script wasn't present at the merge base and it
-	// didn't arrive via a rename. ls-tree returns nothing for paths absent in the
-	// tree, so a non-empty output means the path exists.
-	//
-	// We still need the merge-base SHA for ls-tree; --merge-base above folded it
-	// into the diff but doesn't expose the SHA directly.
+	// Resolve the merge-base SHA for the batched ls-tree call below.
 	mergeBase := git("merge-base", "HEAD", base)
 
-	// Batch all existence checks into one ls-tree call.
+	// Batch all script-existence checks into one ls-tree call.
 	var scriptPaths []string
 	for dir := range changed {
 		scriptPaths = append(scriptPaths, "acceptance/"+dir+"/script")
