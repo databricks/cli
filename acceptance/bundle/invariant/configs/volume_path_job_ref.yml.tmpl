@@ -1,12 +1,10 @@
 bundle:
   name: test-bundle-$UNIQUE_NAME
 
-# A job parameter references a volume's computed volume_path, and the volume's
-# schema_name/name are references to another job's id, which is only known after
-# deploy. So volume_path embeds a reference at initialize that only resolves at
-# deploy, exercising the deferred-resolution chain (foo -> data.volume_path ->
-# process) end to end with no drift afterwards. job.id is exported by Terraform
-# too, so this chain resolves on both engines (see migrate).
+# The volume name references foo.id (only known after deploy), so volume_path
+# resolves at deploy and exercises the foo -> data.volume_path -> process chain
+# on both engines. schema_name must be a real schema (create-volume validates
+# it), so it points at "default" rather than a deferred reference.
 resources:
   jobs:
     foo:
@@ -21,5 +19,5 @@ resources:
   volumes:
     data:
       catalog_name: main
-      schema_name: ${resources.jobs.foo.id}
+      schema_name: default
       name: ${resources.jobs.foo.id}
