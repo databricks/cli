@@ -66,9 +66,8 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunState, e
 		state.SparkSubmitParams = p.SparkSubmitParams
 		state.SqlParams = p.SqlParams
 	}
-	// GetRun returns job_parameters resolved to the job's full set, not the
-	// override map we sent, so it never round-trips; ignore_remote_changes
-	// absorbs the diff.
+	// Mirror the run's job_parameters as GetRun reports them: the job's full
+	// resolved set, not the override map we sent, so this never round-trips.
 	if len(run.JobParameters) > 0 {
 		state.JobParameters = make(map[string]string, len(run.JobParameters))
 		for _, p := range run.JobParameters {
