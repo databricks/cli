@@ -76,20 +76,15 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 // SkipLocalWithChanged: those added or changed on this branch vs the merge base,
 // added-first and capped at maxChangedLocalTests.
 //
-// A renamed test dir is treated as modified, not added (git -M detects renames
-// as a single R entry rather than add+delete).
+// A test dir is "added" when its script file has status A in the diff (didn't
+// exist at the merge base). Renames (R) are treated as modified, not added.
+// --merge-base folds the merge-base computation into the diff itself, matching
+// tools/lintdiff.py — one git call total.
 func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 	base := resolveBaseRef()
+	diff := git("diff", "--name-status", "--merge-base", "-M", base)
 
-	// Compute the merge base once; use it for both the diff and the ls-tree.
-	mergeBase := git("merge-base", "HEAD", base)
-	if mergeBase == "" {
-		mergeBase = base
-	}
-
-	diff := git("diff", "--name-status", "-M", mergeBase)
-
-	renamedInto := map[string]bool{}
+	added := map[string]bool{}
 	changed := map[string]bool{}
 	for _, line := range strings.Split(diff, "\n") {
 		fields := strings.Split(line, "\t")
@@ -103,40 +98,25 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string]bool {
 			continue
 		}
 		changed[dir] = true
-		if strings.HasPrefix(status, "R") || strings.HasPrefix(status, "C") {
-			renamedInto[dir] = true
+		// A script file with status A means the test dir is brand new.
+		// Renames (R) land here as the destination path but are not "added".
+		if status == "A" && strings.HasSuffix(path, "/script") {
+			added[dir] = true
 		}
 	}
 
-	// Batch all script-existence checks into one ls-tree call.
-	var scriptPaths []string
+	var addedDirs, modifiedDirs []string
 	for dir := range changed {
-		scriptPaths = append(scriptPaths, "acceptance/"+dir+"/script")
-	}
-	slices.Sort(scriptPaths)
-	existsAtBase := map[string]bool{}
-	if len(scriptPaths) > 0 {
-		args := append([]string{"ls-tree", "--name-only", mergeBase}, scriptPaths...)
-		for _, line := range strings.Split(git(args...), "\n") {
-			if line != "" {
-				existsAtBase[line] = true
-			}
-		}
-	}
-
-	var added, modified []string
-	for dir := range changed {
-		isNew := !renamedInto[dir] && !existsAtBase["acceptance/"+dir+"/script"]
-		if isNew {
-			added = append(added, dir)
+		if added[dir] {
+			addedDirs = append(addedDirs, dir)
 		} else {
-			modified = append(modified, dir)
+			modifiedDirs = append(modifiedDirs, dir)
 		}
 	}
-	slices.Sort(added)
-	slices.Sort(modified)
+	slices.Sort(addedDirs)
+	slices.Sort(modifiedDirs)
 
-	selected := append(added, modified...)
+	selected := append(addedDirs, modifiedDirs...)
 	if len(selected) > maxChangedLocalTests {
 		selected = selected[:maxChangedLocalTests]
 	}
