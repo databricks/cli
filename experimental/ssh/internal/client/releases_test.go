@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/net/http2"
 )
 
@@ -68,4 +69,29 @@ func TestNewHTTP11TransportDisablesHTTP2(t *testing.T) {
 	assert.False(t, tr.ForceAttemptHTTP2)
 	assert.NotNil(t, tr.TLSNextProto)
 	assert.Empty(t, tr.TLSNextProto)
+}
+
+func TestNewHTTP11WorkspaceClient(t *testing.T) {
+	src := &config.Config{
+		Host:               "https://test.databricks.test",
+		Token:              "dapi-test",
+		InsecureSkipVerify: true,
+	}
+
+	w, err := newHTTP11WorkspaceClient(src)
+	require.NoError(t, err)
+
+	// Auth-relevant attributes are carried over to the reconstructed config.
+	assert.Equal(t, src.Host, w.Config.Host)
+	assert.Equal(t, src.Token, w.Config.Token)
+	assert.True(t, w.Config.InsecureSkipVerify)
+
+	// The reconstructed client forces HTTP/1.1 via its transport.
+	tr, ok := w.Config.HTTPTransport.(*http.Transport)
+	require.True(t, ok)
+	assert.False(t, tr.ForceAttemptHTTP2)
+	assert.Empty(t, tr.TLSNextProto)
+
+	// The source config is not mutated: it keeps its own (nil) transport.
+	assert.Nil(t, src.HTTPTransport)
 }

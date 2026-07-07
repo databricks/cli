@@ -18,9 +18,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	sdkclient "github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/httpclient"
 	"golang.org/x/net/http2"
 )
 
@@ -36,11 +34,14 @@ func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClien
 	// buys us nothing, and some corporate proxies reset large HTTP/2 request bodies
 	// with RST_STREAM(NO_ERROR), which aborts the upload. Forcing HTTP/1.1 only for
 	// this client keeps the rest of the connect flow on HTTP/2.
-	uploadClient, err := newHTTP11Client(client.Config)
+	uploadClient, err := newHTTP11WorkspaceClient(client.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create upload client: %w", err)
 	}
-	workspaceFiler := filer.NewWorkspaceFilesClientWithClient(client, versionedDir, uploadClient)
+	workspaceFiler, err := filer.NewWorkspaceFilesClient(uploadClient, versionedDir)
+	if err != nil {
+		return fmt.Errorf("failed to create workspace files client: %w", err)
+	}
 
 	getRelease := getGithubRelease
 	if releasesDir != "" {
@@ -49,23 +50,30 @@ func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClien
 	return uploadReleases(ctx, workspaceFiler, getRelease, version, releasesDir)
 }
 
-// newHTTP11Client returns an SDK client derived from cfg that negotiates HTTP/1.1
-// only. cfg is reused, not copied (it embeds a sync.Mutex); only the transport is
-// overridden, mirroring how client.New builds its client from the same config.
-func newHTTP11Client(cfg *config.Config) (*sdkclient.DatabricksClient, error) {
-	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
-	if err != nil {
-		return nil, err
+// newHTTP11WorkspaceClient returns a workspace client that is identical to one
+// built from src but negotiates HTTP/1.1 only, by setting an HTTP/1.1 transport
+// on its config. config.Config embeds a sync.Mutex and cannot be copied by value,
+// so we reconstruct a fresh config from src's public attributes rather than clone
+// the struct; the client then re-resolves auth from those attributes.
+func newHTTP11WorkspaceClient(src *config.Config) (*databricks.WorkspaceClient, error) {
+	cfg := &config.Config{}
+	for _, attr := range config.ConfigAttributes {
+		if attr.IsZero(src) {
+			continue
+		}
+		if err := attr.SetS(cfg, attr.GetString(src)); err != nil {
+			return nil, fmt.Errorf("failed to copy config attribute %s: %w", attr.Name, err)
+		}
 	}
-	clientCfg.Transport = newHTTP11Transport(cfg)
-	return sdkclient.NewWithClient(cfg, httpclient.NewApiClient(clientCfg))
+	cfg.HTTPTransport = newHTTP11Transport(src)
+	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 }
 
-// newHTTP11Transport clones cfg's transport (or the default) and disables HTTP/2.
+// newHTTP11Transport clones src's transport (or the default) and disables HTTP/2.
 // A non-nil, empty TLSNextProto map is the documented way to turn off the transport's
 // automatic HTTP/2 support. See https://pkg.go.dev/net/http#Transport
-func newHTTP11Transport(cfg *config.Config) *http.Transport {
-	t, ok := cfg.HTTPTransport.(*http.Transport)
+func newHTTP11Transport(src *config.Config) *http.Transport {
+	t, ok := src.HTTPTransport.(*http.Transport)
 	if ok && t != nil {
 		t = t.Clone()
 	} else {
@@ -75,7 +83,7 @@ func newHTTP11Transport(cfg *config.Config) *http.Transport {
 	t.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
 	// Cloning http.DefaultTransport drops the InsecureSkipVerify the SDK would
 	// otherwise apply, so re-apply it here to honor the resolved config.
-	if cfg.InsecureSkipVerify {
+	if src.InsecureSkipVerify {
 		if t.TLSClientConfig == nil {
 			t.TLSClientConfig = &tls.Config{}
 		} else {
