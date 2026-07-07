@@ -204,15 +204,16 @@ func (r *ResourceVectorSearchIndex) WaitAfterDelete(ctx context.Context, id stri
 // lookupEndpointUuid distinguishes this (404 -> "") from transient errors
 // (propagated through DoRead/DoCreate), so reaching this branch with empty
 // remoteUuid unambiguously means the endpoint is gone.
-func (*ResourceVectorSearchIndex) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *VectorSearchIndexRemote) error {
+func (*ResourceVectorSearchIndex) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *VectorSearchIndexRemote) error {
 	if path.String() != "endpoint_uuid" {
 		return nil
 	}
 	savedUuid, _ := change.Old.(string)
-	var remoteUuid string
-	if remote != nil {
-		remoteUuid = remote.EndpointUuid
-	}
+	// change.Remote is endpoint_uuid from the remapped remote state (equal to the
+	// raw remote's EndpointUuid), or the saved value in --local mode. Reading it
+	// rather than the raw remote param keeps this correct when --local supplies no
+	// remote read.
+	remoteUuid, _ := change.Remote.(string)
 	if savedUuid != "" && savedUuid != remoteUuid {
 		change.Action = deployplan.Recreate
 		change.Reason = "endpoint replaced out-of-band"

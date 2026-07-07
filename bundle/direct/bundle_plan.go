@@ -252,8 +252,20 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		var remoteState any
-		if !localOnly {
+		var action deployplan.ActionType
+		var remoteDiff []structdiff.Change
+		var remoteStateComparable any
+
+		if localOnly {
+			// --local skips the remote read. Treat the saved state as the remote:
+			// it is our last recorded snapshot of remote, so drift is computed
+			// purely from saved-state vs config. This also lets OverrideChangeDesc
+			// hooks (etag, endpoint_uuid) reconcile state-only fields against their
+			// saved value instead of nil, avoiding spurious drift.
+			remoteStateComparable = savedState
+			entry.RemoteState = savedState
+		} else {
+			var remoteState any
 			remoteState, err = retryOnTransient(ctx, func() (any, error) {
 				return adapter.DoRead(ctx, dbentry.ID)
 			})
@@ -265,27 +277,23 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 					return false
 				}
 			}
-		}
 
-		// We have a choice whether to include remoteState or remoteStateComparable from below.
-		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
-		entry.RemoteState = remoteState
+			// We have a choice whether to include remoteState or remoteStateComparable from below.
+			// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
+			entry.RemoteState = remoteState
 
-		var action deployplan.ActionType
-		var remoteDiff []structdiff.Change
-		var remoteStateComparable any
+			if remoteState != nil {
+				remoteStateComparable, err = adapter.RemapState(remoteState)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+					return false
+				}
 
-		if remoteState != nil {
-			remoteStateComparable, err = adapter.RemapState(remoteState)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
-				return false
-			}
-
-			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
-				return false
+				remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
+					return false
+				}
 			}
 		}
 
@@ -295,13 +303,21 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
+		// In --local we pass nil as the raw remote param: it is typed as each
+		// resource's remote struct, which the saved state (a state-typed struct)
+		// is not. OverrideChangeDesc hooks read the reconciled value from
+		// ch.Remote (populated from saved state above) instead.
+		var rawRemote any
+		if !localOnly {
+			rawRemote = entry.RemoteState
+		}
+		err = addPerFieldActions(ctx, adapter, entry.Changes, rawRemote)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
 			return false
 		}
 
-		if remoteState == nil && !localOnly {
+		if entry.RemoteState == nil && !localOnly {
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
 			// because we know remote does not exist.
 			action = deployplan.Create
@@ -315,7 +331,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy.
 		// In --local mode the store is skipped so remoteStateForRef fetches on demand (it keys off cache absence).
 		if !localOnly {
-			b.RemoteStateCache.Store(resourceKey, remoteState)
+			b.RemoteStateCache.Store(resourceKey, entry.RemoteState)
 		}
 
 		// Validate that resources without DoUpdate don't have update actions

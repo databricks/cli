@@ -1,15 +1,5 @@
 RecordRequests = true
-Ignore = [".databricks", ".gitignore"]
 
 # Terraform issues a spurious PATCH for enable_predictive_optimization on every
 # deploy, which is outside the scope of backend-default handling in resources.yml.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
-# Also run with --local: plan/deploy issue the same requests with or without --local
-# so the recorded output is identical across variants.
-EnvMatrix.LOCAL = ["", "--local"]
-EnvRepl.LOCAL = false
-
-[[Repls]]
-Old = " --local"
-New = ""
