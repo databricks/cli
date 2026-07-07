@@ -680,19 +680,22 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts)
 }
 
-// resolveAndValidateBaseEnvironment maps the user-provided --base-environment display name
-// to a compute.Environment.BaseEnvironment resource ID and rejects unsupported serverless
-// environment versions. A leading "/" is an env.yaml path and a
-// "workspace-base-environments/" prefix is a resource ID; both are passed through verbatim
-// without a list call. Anything else is treated as a display name: the workspace base
-// environments listing is fetched once, the display name is resolved to its resource ID
-// (zero or multiple matches are hard errors), and the matched entry's environment_version is
-// checked against maxSupportedEnvironmentVersion. List errors are fail-open: the unresolved
-// name is returned so a transient error does not block a valid connect.
+// resolveAndValidateBaseEnvironment maps the user-provided --base-environment value to a
+// compute.Environment.BaseEnvironment string and rejects unsupported serverless environment
+// versions. A leading "/" is an env.yaml path and is passed through verbatim without a list
+// call. Anything else (display name or "workspace-base-environments/" resource ID) is looked
+// up in the workspace base environments listing fetched once:
+//   - display name: resolved to resource ID; zero or multiple matches are hard errors
+//   - resource ID: matched by Name to check the version; passed through verbatim if not found
+//
+// The version check is fail-open: a list error or an unparseable version returns the input
+// so a transient error does not block a valid connect.
 func resolveAndValidateBaseEnvironment(ctx context.Context, client *databricks.WorkspaceClient, input string) (string, error) {
-	if strings.HasPrefix(input, "/") || strings.HasPrefix(input, "workspace-base-environments/") {
+	if strings.HasPrefix(input, "/") {
 		return input, nil
 	}
+
+	isResourceID := strings.HasPrefix(input, "workspace-base-environments/")
 
 	envs, err := client.Environments.ListWorkspaceBaseEnvironmentsAll(ctx, environments.ListWorkspaceBaseEnvironmentsRequest{})
 	if err != nil {
@@ -701,14 +704,25 @@ func resolveAndValidateBaseEnvironment(ctx context.Context, client *databricks.W
 
 	var matched *environments.WorkspaceBaseEnvironment
 	for i := range envs {
-		if envs[i].DisplayName == input {
-			if matched != nil {
-				return "", fmt.Errorf("multiple workspace base environments found with display name %q", input)
-			}
-			matched = &envs[i]
+		var hits bool
+		if isResourceID {
+			hits = envs[i].Name == input
+		} else {
+			hits = envs[i].DisplayName == input
 		}
+		if !hits {
+			continue
+		}
+		if !isResourceID && matched != nil {
+			return "", fmt.Errorf("multiple workspace base environments found with display name %q", input)
+		}
+		matched = &envs[i]
 	}
 	if matched == nil {
+		if isResourceID {
+			// Not found in listing — pass through and let the API validate.
+			return input, nil
+		}
 		return "", fmt.Errorf("no workspace base environment found with display name %q", input)
 	}
 
@@ -717,6 +731,9 @@ func resolveAndValidateBaseEnvironment(ctx context.Context, client *databricks.W
 		if err == nil && version > maxSupportedEnvironmentVersion {
 			return "", fmt.Errorf("base environment %q uses serverless environment version %d, which is not supported by the SSH tunnel. Use a base environment created with serverless environment version %d or below", input, version, maxSupportedEnvironmentVersion)
 		}
+	}
+	if isResourceID {
+		return input, nil
 	}
 	return matched.Name, nil
 }

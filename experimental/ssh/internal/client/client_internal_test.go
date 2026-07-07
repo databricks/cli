@@ -50,8 +50,11 @@ func TestResolveAndValidateBaseEnvironment(t *testing.T) {
 		assert.Equal(t, "/Workspace/path/to/env.yaml", got)
 	})
 
-	t.Run("resource ID passthrough", func(t *testing.T) {
+	t.Run("resource ID v4 passthrough", func(t *testing.T) {
 		m := mocks.NewMockWorkspaceClient(t)
+		listReturns(m, []environments.WorkspaceBaseEnvironment{
+			{DisplayName: "my-env", Name: "workspace-base-environments/dbe_123", Spec: specV4},
+		}, nil)
 		got, err := resolveAndValidateBaseEnvironment(ctx, m.WorkspaceClient, "workspace-base-environments/dbe_123")
 		require.NoError(t, err)
 		assert.Equal(t, "workspace-base-environments/dbe_123", got)
@@ -76,6 +79,17 @@ func TestResolveAndValidateBaseEnvironment(t *testing.T) {
 		_, err := resolveAndValidateBaseEnvironment(ctx, m.WorkspaceClient, "my-env")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), `base environment "my-env" uses serverless environment version 5`)
+		assert.Contains(t, err.Error(), "not supported by the SSH tunnel")
+	})
+
+	t.Run("resource ID v5 rejected", func(t *testing.T) {
+		m := mocks.NewMockWorkspaceClient(t)
+		listReturns(m, []environments.WorkspaceBaseEnvironment{
+			{DisplayName: "my-env", Name: "workspace-base-environments/dbe_mine", Spec: specV5},
+		}, nil)
+		_, err := resolveAndValidateBaseEnvironment(ctx, m.WorkspaceClient, "workspace-base-environments/dbe_mine")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "serverless environment version 5")
 		assert.Contains(t, err.Error(), "not supported by the SSH tunnel")
 	})
 
