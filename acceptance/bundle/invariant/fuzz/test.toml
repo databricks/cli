@@ -5,3 +5,4 @@ EnvMatrix.INPUT_CONFIG = []
 # Run the real invariant test script for each target. migrate ignores
 # DATABRICKS_BUNDLE_ENGINE and starts from a Terraform deployment.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "redeploy", "canonical", "update", "destroy_recreate"]
+EnvMatrix.FUZZ_RESOURCE_COUNT = ["1", "2"]
