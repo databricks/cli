@@ -4,7 +4,7 @@
 # Additional checks: no internal errors / panics in validate/plan/deploy
 
 if [ -n "${FUZZ_SEED:-}" ]; then
-    gen_fuzz_config.py --schema "${FUZZ_SCHEMA}" --seed "$FUZZ_SEED" --unique "$UNIQUE_NAME-$FUZZ_SEED" --resources "${FUZZ_RESOURCES:-}" > databricks.yml 2>LOG.gen.err
+    gen_fuzz_config.py --schema "${FUZZ_SCHEMA}" --seed "$FUZZ_SEED" --unique "$UNIQUE_NAME-$FUZZ_SEED" --resources "${FUZZ_RESOURCES:-}" --resource-count "${FUZZ_RESOURCE_COUNT:-1}" > databricks.yml 2>LOG.gen.err
     cat LOG.gen.err | contains.py '!Traceback' > /dev/null
     cp databricks.yml LOG.config
 else
