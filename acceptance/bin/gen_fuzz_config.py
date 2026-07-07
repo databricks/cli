@@ -259,7 +259,7 @@ def resource_types(schema, gen):
     return obj["properties"]
 
 
-def gen_resource(schema, gen, types, candidates, seed, unique, index, resource_count):
+def gen_resource(schema, gen, types, candidates, seed, unique, index):
     rtype = gen.rng.choice(sorted(candidates))
 
     # Each resource type is a map ref; the element schema is the object branch's
@@ -268,7 +268,10 @@ def gen_resource(schema, gen, types, candidates, seed, unique, index, resource_c
     obj = next(b for b in map_schema["oneOf"] if b.get("type") == "object")
     element = obj["additionalProperties"]
 
-    if resource_count == 1:
+    # The first resource keeps the bare key/name so a seed produces the same first
+    # resource regardless of --resource-count; later resources are index-suffixed to
+    # stay unique within the config.
+    if index == 0:
         key = f"fuzz_{rtype}_{seed}"
         gen.unique = unique
     else:
@@ -343,9 +346,7 @@ def gen_config(schema, seed, unique, allowed, resource_count=1):
 
     records = []
     for index in range(resource_count):
-        rtype, key, instance, element = gen_resource(
-            schema, gen, types, candidates, seed, unique, index, resource_count
-        )
+        rtype, key, instance, element = gen_resource(schema, gen, types, candidates, seed, unique, index)
         records.append({"rtype": rtype, "key": key, "instance": instance, "ref_field": cross_ref_field(gen, element)})
 
     inject_cross_ref(gen, records)
