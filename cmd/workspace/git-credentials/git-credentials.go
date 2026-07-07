@@ -3,6 +3,7 @@
 package git_credentials
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -97,7 +98,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'git_provider' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'git_provider' in your JSON input")
 			}
 			return nil
 		}
@@ -195,7 +196,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+			return errors.New("expected to have the id for the corresponding credential to access")
 		}
 		_, err = fmt.Sscan(args[0], &deleteReq.CredentialId)
 		if err != nil {
@@ -270,7 +271,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+			return errors.New("expected to have the id for the corresponding credential to access")
 		}
 		_, err = fmt.Sscan(args[0], &getReq.CredentialId)
 		if err != nil {
@@ -412,7 +413,7 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only CREDENTIAL_ID as positional arguments. Provide 'git_provider' in your JSON input")
+				return errors.New("when --json flag is specified, provide only CREDENTIAL_ID as positional arguments. Provide 'git_provider' in your JSON input")
 			}
 			return nil
 		}

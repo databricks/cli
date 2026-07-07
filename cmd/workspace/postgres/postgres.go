@@ -3,6 +3,7 @@
 package postgres
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -1987,7 +1988,7 @@ Generate OAuth credentials for a Postgres database.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'endpoint' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'endpoint' in your JSON input")
 			}
 			return nil
 		}
