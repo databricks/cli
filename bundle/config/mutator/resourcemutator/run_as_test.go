@@ -190,6 +190,7 @@ var allowList = []string{
 	"registered_models",
 	"experiments",
 	"genie_spaces",
+	"job_runs",
 	"schemas",
 	"secret_scopes",
 	"sql_warehouses",
