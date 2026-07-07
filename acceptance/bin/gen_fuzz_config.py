@@ -24,12 +24,38 @@ INTERPOLATION_MARKER = "\\$\\{"
 SCALAR_TYPES = {"boolean", "integer", "number", "string"}
 HANDLED_TYPES = SCALAR_TYPES | {"object", "array"}
 
+# Cross-resource references must resolve to objects that exist on every
+# workspace (the fake test server and real UC alike). "main"/"default" are the
+# standard seeded catalog/schema; these mirror acceptance/bundle/invariant/configs.
+# Without pinning, the generator emits random names that the fake server accepts
+# but real UC rejects (e.g. CATALOG_DOES_NOT_EXIST), so the config is dropped at
+# deploy and never exercises the invariant.
+DEFAULT_CATALOG = "main"
+DEFAULT_SCHEMA = "default"
+
+# "account users" is a group present on every workspace, plus one privilege UC
+# accepts for each grant-bearing securable type (from the curated configs). Real
+# UC rejects an unknown principal or a privilege that doesn't apply to the
+# securable, so a random grant would deploy on the fake server yet fail on cloud.
+DEFAULT_PRINCIPAL = "account users"
+GRANT_PRIVILEGE = {
+    "catalogs": "USE_CATALOG",
+    "schemas": "USE_SCHEMA",
+    "volumes": "READ_VOLUME",
+    "registered_models": "EXECUTE",
+    "external_locations": "READ_FILES",
+    "vector_search_indexes": "SELECT",
+}
+
 
 class Generator:
     def __init__(self, schema, rng, unique):
         self.root = schema
         self.rng = rng
         self.unique = unique
+        # Set to the top-level resource type before generating its element, so
+        # grants can pick a privilege valid for that securable.
+        self.rtype = None
 
     def resolve(self, schema):
         # Follow $ref chains, e.g. "#/$defs/github.com/.../resources.Job", nested
@@ -53,6 +79,9 @@ class Generator:
         schema = self.resolve(schema)
         if not isinstance(schema, dict) or not schema:
             return self.gen_scalar({"type": "string"}, name)
+
+        if name == "grants":
+            return self.gen_grants()
 
         if "const" in schema:
             return schema["const"]
@@ -103,6 +132,14 @@ class Generator:
             return []
         return [self.gen(items, depth + 1, name) for _ in range(self.rng.randint(1, 3))]
 
+    def gen_grants(self):
+        # One known-good grant for the current securable. Skip grants for a type
+        # we have no valid privilege for, rather than emit one real UC rejects.
+        privilege = GRANT_PRIVILEGE.get(self.rtype)
+        if privilege is None:
+            return []
+        return [{"principal": DEFAULT_PRINCIPAL, "privileges": [privilege]}]
+
     def gen_scalar(self, schema, name):
         t = schema.get("type")
         if t == "boolean":
@@ -119,6 +156,11 @@ class Generator:
         if t is not None and t not in SCALAR_TYPES:
             sys.exit(f"gen_fuzz_config: unhandled schema type {t!r}")
         # string (default)
+        # Pin cross-resource references to seeded defaults (see constants above).
+        if name == "catalog_name":
+            return DEFAULT_CATALOG
+        if name == "schema_name":
+            return DEFAULT_SCHEMA
         if name in ("name", "display_name"):
             return f"fuzz-{name}-{self.unique}"
         return self.token()
@@ -151,6 +193,7 @@ def gen_config(schema, seed, unique, allowed):
     element = obj["additionalProperties"]
 
     key = f"fuzz_{rtype}_{seed}"
+    gen.rtype = rtype
     instance = gen.gen(element, 0)
     return {
         "bundle": {"name": f"fuzz-{unique}"},
