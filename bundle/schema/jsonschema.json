@@ -1562,7 +1562,6 @@
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
-                        "description": "When true, take over an existing branch with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring the implicitly-created production branch of a new Lakebase project under bundle management. Only takes effect when the branch is created.",
                         "$ref": "#/$defs/bool"
                       },
                       "source_branch": {
@@ -1696,7 +1695,6 @@
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
-                        "description": "When true, take over an existing endpoint with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring the implicitly-created primary read-write endpoint of a branch under bundle management. Only takes effect when the endpoint is created.",
                         "$ref": "#/$defs/bool"
                       },
                       "settings": {
