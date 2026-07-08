@@ -1,0 +1,12 @@
+# Computed volume_path was added after the previous release (#5550), so the
+# seed deploy with the previous CLI cannot resolve ${resources.volumes.*.volume_path}.
+# Covered by no_drift on direct.
+EnvMatrixExclude.no_volume_path_job_ref = ["INPUT_CONFIG=volume_path_job_ref.yml.tmpl"]
+
+# postgres_project.yml.tmpl sets enable_pg_native_login: false, which triggers a
+# state serialization bug on the previous CLI (fixed by #5782).
+EnvMatrixExclude.no_postgres_project = ["INPUT_CONFIG=postgres_project.yml.tmpl"]
+
+# The 1000-task scale case is covered by no_drift. Running it here adds ~1.5 min
+# per variant (two full deploys at 1000 tasks) without incremental coverage.
+EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]

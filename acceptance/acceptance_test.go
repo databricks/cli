@@ -353,6 +353,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
 		t.Setenv("CLI_293", cli293Path)
 		repls.SetPath(cli293Path, "[CLI_293]")
+
+		prevVersion := resolveLatestVersion(t, buildDir)
+		cliPrevPath := DownloadCLI(t, buildDir, prevVersion)
+		t.Setenv("CLI_PREV", cliPrevPath)
+		repls.SetPath(cliPrevPath, "[CLI_PREV]")
+		repls.Set(prevVersion, "[CLI_PREV_VERSION]")
 	}
 
 	paths := []string{
