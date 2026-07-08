@@ -9,6 +9,14 @@
 === Generate bundle config from the pipelineFile successfully saved to src/notebook.py
 File successfully saved to src/test.py
 Pipeline configuration successfully saved to resources/out.pipeline.yml
+Warning: Generated configuration is not included in the bundle
+
+The file resources/out.pipeline.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - resources/*.yml
+
 
 === Verify generated yaml has expected fields
 === Deploy the generated bundle
