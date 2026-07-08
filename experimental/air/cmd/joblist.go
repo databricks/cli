@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -66,6 +68,8 @@ type jobAiRuntimeTask struct {
 
 type aiRuntimeDeploy struct {
 	Compute airCompute `json:"compute"`
+	// CommandPath is command.sh; training_config.yaml sits beside it.
+	CommandPath string `json:"command_path"`
 }
 
 type airCompute struct {
@@ -192,7 +196,8 @@ func fetchJobRunsPage(ctx context.Context, w *databricks.WorkspaceClient, query 
 }
 
 // fetchJobRun fetches a single run via runs/get. The response mirrors one
-// runs/list element, so it deserializes into jobRun directly.
+// runs/list element, so it deserializes into jobRun directly; expand_tasks
+// pulls the ai_runtime_task the typed SDK omits.
 func fetchJobRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (*jobRun, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -203,9 +208,36 @@ func fetchJobRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64
 	query := map[string]any{"run_id": runID, "expand_tasks": true}
 	err = apiClient.Do(ctx, http.MethodGet, jobsRunsGetPath, nil, nil, query, &run)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get run %d: %w", runID, err)
 	}
 	return &run, nil
+}
+
+// fetchRun fetches a run once and returns it in both shapes: the typed SDK
+// jobs.Run the display path consumes, and the raw jobRun that preserves the
+// ai_runtime_task the typed model drops. The single runs/get body is unmarshalled
+// into both, avoiding a second identical roundtrip.
+func fetchRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (*jobs.Run, *jobRun, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	var body json.RawMessage
+	query := map[string]any{"run_id": runID, "expand_tasks": true}
+	if err := apiClient.Do(ctx, http.MethodGet, jobsRunsGetPath, nil, nil, query, &body); err != nil {
+		return nil, nil, err
+	}
+
+	var typed jobs.Run
+	if err := json.Unmarshal(body, &typed); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse run %d: %w", runID, err)
+	}
+	var raw jobRun
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse run %d: %w", runID, err)
+	}
+	return &typed, &raw, nil
 }
 
 // hydrateJobRuns fetches the given run ids concurrently via runs/get, preserving
@@ -241,4 +273,13 @@ func hydrateJobRuns(ctx context.Context, w *databricks.WorkspaceClient, ids []in
 		}
 	}
 	return hydrated, nil
+}
+
+// commandPath returns the run's command.sh path, or "" when it has no deployment.
+func (r *jobRun) commandPath() string {
+	ai, _ := r.airTask()
+	if ai == nil || len(ai.Deployments) == 0 {
+		return ""
+	}
+	return ai.Deployments[0].CommandPath
 }

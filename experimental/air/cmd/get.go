@@ -1,14 +1,18 @@
 package aircmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"path"
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -38,6 +42,8 @@ type getData struct {
 	AcceleratorsDisplay string `json:"-"`
 	EnvironmentDisplay  string `json:"-"`
 	MaxRetriesDisplay   string `json:"-"`
+	// TrainingConfigPath is the run's config file, downloaded for the config box.
+	TrainingConfigPath string `json:"-"`
 	// Sweep replaces the single-run view for foreach runs.
 	Sweep *sweepInfo `json:"-"`
 }
@@ -63,6 +69,26 @@ Sweep Tasks:
 {{- end}}
 `
 
+// errNoProfile is the actionable message shown when no credentials are
+// configured: no default profile, no --profile (-p), and no auth environment.
+var errNoProfile = errors.New("no default profile is set: pass --profile (-p) or configure a default profile in your .databrickscfg")
+
+// authError classifies a workspace-client or Me() probe failure. Only genuinely
+// auth-shaped errors surface as UNAUTHENTICATED/PERMANENT: missing profile,
+// SDK auth wrappers, or an API 401/403. Anything else (network blip, 429, 5xx)
+// is transient and reported as INTERNAL_ERROR/TRANSIENT so the caller can retry.
+func authError(ctx context.Context, cmd *cobra.Command, err error) error {
+	if errors.Is(err, config.ErrCannotConfigureDefault) {
+		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false, errNoProfile)
+	}
+	if errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied) {
+		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false,
+			fmt.Errorf("authentication was not successful: %w", err))
+	}
+	return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
+		fmt.Errorf("failed to verify authentication: %w", err))
+}
+
 // newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
 // configuration, and timing details for a specific run.
 func newGetCommand() *cobra.Command {
@@ -75,14 +101,16 @@ func newGetCommand() *cobra.Command {
 		},
 	}
 
-	// Match Python: a client/auth failure is a JSON error envelope in -o json mode,
-	// not a bare error. ErrAlreadyPrinted passes through (it was handled upstream).
+	// Resolve and authenticate the workspace client up front so an auth failure
+	// fails fast here, before any run status or config is fetched or printed.
+	// ErrAlreadyPrinted passes through (it was handled upstream); other failures
+	// become an actionable auth error (JSON envelope in -o json mode).
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		err := root.MustWorkspaceClient(cmd, args)
 		if err == nil || errors.Is(err, root.ErrAlreadyPrinted) {
 			return err
 		}
-		return renderError(cmd.Context(), cmd, "INTERNAL_ERROR", "TRANSIENT", true, err)
+		return authError(cmd.Context(), cmd, err)
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -95,7 +123,19 @@ func newGetCommand() *cobra.Command {
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
 		}
 
-		run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+		// Validate authentication against the workspace before fetching or
+		// rendering anything. MustWorkspaceClient's Config.Authenticate only
+		// attaches credentials (e.g. it does not check a PAT server-side), so
+		// without this a bad credential would surface as a confusing failure
+		// mid-render instead of a clear "not authenticated" error here.
+		if _, err := w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+			return authError(ctx, cmd, err)
+		}
+
+		// Fetch the run once, in both the typed and raw shapes: the typed jobs.Run
+		// drives the display path, and the raw jobRun preserves the ai_runtime_task
+		// the typed model drops (used below without a second roundtrip).
+		run, rawRun, err := fetchRun(ctx, w, runID)
 		if err != nil {
 			// The backend returns this when the run ID is unknown to the user.
 			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
@@ -121,6 +161,10 @@ func newGetCommand() *cobra.Command {
 		}
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
+		} else if genAIComputeTask(run) == nil {
+			// The typed SDK drops ai_runtime_task, so read it from the raw run we
+			// already fetched above.
+			enrichFromRawRun(rawRun, &data)
 		}
 
 		if root.OutputType(cmd) != flags.OutputText {
@@ -140,6 +184,22 @@ func newGetCommand() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// enrichFromRawRun fills the config path, experiment, and accelerators from the
+// raw run (the ai_runtime_task the typed model drops). Best-effort: empty fields
+// leave the existing "N/A" fallbacks in place.
+func enrichFromRawRun(raw *jobRun, data *getData) {
+	if cmdPath := raw.commandPath(); cmdPath != "" {
+		data.TrainingConfigPath = path.Join(path.Dir(cmdPath), trainingConfigName)
+	}
+	if exp := jobExperiment(raw); exp != "" {
+		data.ExperimentName = &exp
+		data.ExperimentDisplay = exp
+	}
+	if a := acceleratorLabel(jobCompute(raw)); a != "" {
+		data.AcceleratorsDisplay = a
+	}
 }
 
 // buildGetData extracts the fields we display from a run. The text-view cells
