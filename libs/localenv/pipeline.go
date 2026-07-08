@@ -191,8 +191,10 @@ func (p *Pipeline) resolve(ctx context.Context) (*TargetInfo, error) {
 }
 
 // fetch fetches constraints for the resolved target and records the fetch phase.
+// Under --check the cache is not populated, so a dry run performs no disk writes
+// (an existing cache is still read for offline fallback).
 func (p *Pipeline) fetch(ctx context.Context, target *TargetInfo) (*Constraints, error) {
-	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, target.EnvKey, p.CacheDir)
+	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, target.EnvKey, p.CacheDir, !p.Check)
 	if err != nil {
 		// FetchConstraints classifies the cause: E_ENV_UNSUPPORTED for a missing
 		// key (404) versus E_FETCH for transport failure with no cache. Both are

@@ -81,12 +81,13 @@ func newTestServer(t *testing.T) *httptest.Server {
 func TestPipelineCheckMutatesNothing(t *testing.T) {
 	dir := writeProject(t)
 	before, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	cacheDir := t.TempDir()
 	srv := newTestServer(t)
 	defer srv.Close()
 
 	p := &Pipeline{
 		Mode: ModeDefault, Check: true, ProjectDir: dir,
-		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		ConstraintBaseURL: srv.URL, CacheDir: cacheDir,
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
@@ -98,6 +99,11 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	assert.Contains(t, res.Plan.Diff, "==3.12.*")
 	after, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	assert.Equal(t, string(before), string(after)) // unchanged
+
+	// --check must not populate the constraint cache either (no disk writes).
+	entries, err := os.ReadDir(cacheDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }
 
 func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {
