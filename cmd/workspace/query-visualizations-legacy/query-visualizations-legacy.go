@@ -20,9 +20,9 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "query-visualizations-legacy",
-		Short: `This is an evolving API that facilitates the addition and removal of vizualisations from existing queries within the Databricks Workspace.`,
+		Short: `This is an evolving API that facilitates the addition and removal of visualizations from existing queries within the Databricks Workspace.`,
 		Long: `This is an evolving API that facilitates the addition and removal of
-  vizualisations from existing queries within the Databricks Workspace. Data
+  visualizations from existing queries within the Databricks Workspace. Data
   structures may change over time.
 
   **Warning**: This API is deprecated. Please see the latest version of the
