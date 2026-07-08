@@ -2,6 +2,10 @@
 EnvMatrixExclude.no_vector_search_endpoint = ["INPUT_CONFIG=vector_search_endpoint.yml.tmpl"]
 EnvMatrixExclude.no_vector_search_index = ["INPUT_CONFIG=vector_search_index.yml.tmpl"]
 
+# job_runs is a direct-only resource with no terraform converter, so the
+# terraform deploy that seeds the migration fails for it.
+EnvMatrixExclude.no_job_run = ["INPUT_CONFIG=job_run.yml.tmpl"]
+
 # Error: Catalog resources are only supported with direct deployment mode
 EnvMatrixExclude.no_catalog = ["INPUT_CONFIG=catalog.yml.tmpl"]
 EnvMatrixExclude.no_external_location = ["INPUT_CONFIG=external_location.yml.tmpl"]

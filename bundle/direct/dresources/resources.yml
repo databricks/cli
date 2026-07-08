@@ -138,6 +138,15 @@ resources:
       - field: tasks[*].for_each_task.task.new_cluster.data_security_mode
       - field: job_clusters[*].new_cluster.data_security_mode
 
+  job_runs:
+    # A run is immutable and fire-once: re-trigger only on a local config change,
+    # never on remote drift. Both rules omit `field` to match every field (root;
+    # see TestFieldRuleOmittedIsRoot). `field: ""` would instead match nothing.
+    ignore_remote_changes:
+      - reason: immutable
+    recreate_on_changes:
+      - reason: immutable
+
   pipelines:
     recreate_on_changes:
       - field: storage
