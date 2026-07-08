@@ -390,6 +390,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
+	testdiff.PrepareReplacementDbtfVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
 	t.Setenv("TESTROOT", cwd)

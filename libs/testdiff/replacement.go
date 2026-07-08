@@ -31,6 +31,8 @@ var (
 	devVersionRegex = regexp.MustCompile(`0\.0\.0-dev([-+][a-f0-9]{10,16})?`)
 	// Matches databricks-sdk-go/0.90.0
 	sdkVersionRegex = regexp.MustCompile(`databricks-sdk-go/[0-9]+\.[0-9]+\.[0-9]+`)
+	// Matches databricks-tf-provider/1.121.0
+	tfVersionRegex = regexp.MustCompile(`databricks-tf-provider/[0-9]+\.[0-9]+\.[0-9]+`)
 )
 
 type Replacement struct {
@@ -254,6 +256,11 @@ func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) 
 func PrepareReplacementSdkVersion(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(sdkVersionRegex, "databricks-sdk-go/[SDK_VERSION]", 0)
+}
+
+func PrepareReplacementDbtfVersion(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.append(tfVersionRegex, "databricks-tf-provider/[DBTF_VERSION]", 0)
 }
 
 func goVersion() string {
