@@ -12,7 +12,7 @@ trap cleanup EXIT
 trace $CLI bundle plan --select schemas.bronze
 
 # Grants sub-nodes are not addressable via --select.
-errcode trace $CLI bundle plan --select schemas.bronze.grants
+musterr trace $CLI bundle plan --select schemas.bronze.grants
 
 # Deploy only bronze and assert its grants PATCH is emitted (issue #5794).
 $CLI bundle plan --select schemas.bronze -o json > plan.json

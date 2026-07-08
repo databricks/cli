@@ -9,8 +9,6 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 Error: no such resource: jobs.foo.permissions
 
 
-Exit code: 1
-
 === bundle deploy --select jobs.foo
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-permissions-[UNIQUE_NAME]/default/files...
 Deploying resources...

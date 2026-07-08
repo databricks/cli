@@ -9,8 +9,6 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 Error: no such resource: schemas.bronze.grants
 
 
-Exit code: 1
-
 === bundle deploy --select schemas.bronze
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-grants-[UNIQUE_NAME]/default/files...
 Deploying resources...

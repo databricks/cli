@@ -12,7 +12,7 @@ trap cleanup EXIT
 trace $CLI bundle plan --select jobs.foo
 
 # Permissions sub-nodes are not addressable via --select.
-errcode trace $CLI bundle plan --select jobs.foo.permissions
+musterr trace $CLI bundle plan --select jobs.foo.permissions
 
 # Deploy only foo and assert its permissions PUT is emitted.
 $CLI bundle plan --select jobs.foo -o json > plan.json
