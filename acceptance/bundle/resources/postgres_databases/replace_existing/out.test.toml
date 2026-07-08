@@ -1,5 +1,5 @@
 Local = true
-Cloud = false
+Cloud = true
 RequiresUnityCatalog = true
 CloudEnvs.azure = false
 CloudEnvs.gcp = false

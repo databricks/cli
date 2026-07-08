@@ -1,3 +1,0 @@
-# The pre-existing database is staged locally via `bundle deployment unbind`,
-# so this is local-only.
-Cloud = false

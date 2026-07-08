@@ -1,3 +1,0 @@
-# The pre-existing role is staged locally via `bundle deployment unbind` (the
-# testserver does not model branch role inheritance), so this is local-only.
-Cloud = false
