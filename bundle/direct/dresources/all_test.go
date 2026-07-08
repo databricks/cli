@@ -1133,16 +1133,6 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 //
 // The check walks the state type and fails on any uncovered scalar leaf. This
 // keeps the recreate_on_changes lists exhaustive as the SDK adds fields.
-// markCovered records that a field rule classifies a field. A root rule covers
-// every field at once, but coverage is otherwise tracked by exact path string
-// (which a root rule never hits), so it sets rootCovered separately.
-func markCovered(r FieldRule, covered map[string]bool, rootCovered *bool) {
-	if r.Field.IsRoot() {
-		*rootCovered = true
-	}
-	covered[r.Field.String()] = true
-}
-
 func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
@@ -1159,33 +1149,31 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 
 		// A user change is only neutralized by recreate_on_changes,
 		// provided_id_fields, or ignore_local_changes; output-only fields are
-		// covered by ignore_remote_changes since the user never sets them.
+		// covered by ignore_remote_changes since the user never sets them. A
+		// root rule (omitted field) records the empty path "", which stops the
+		// walk below at the root node and thus covers every field at once.
 		covered := map[string]bool{}
-		rootCovered := false
 		for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 			if cfg == nil {
 				continue
 			}
 			for _, r := range cfg.RecreateOnChanges {
-				markCovered(r, covered, &rootCovered)
+				covered[r.Field.String()] = true
 			}
 			for _, r := range cfg.ProvidedIDFields {
-				markCovered(r, covered, &rootCovered)
+				covered[r.Field.String()] = true
 			}
 			for _, r := range cfg.IgnoreLocalChanges {
-				markCovered(r, covered, &rootCovered)
+				covered[r.Field.String()] = true
 			}
 			for _, r := range cfg.IgnoreRemoteChanges {
 				if strings.HasSuffix(r.Reason, "output_only") {
-					markCovered(r, covered, &rootCovered)
+					covered[r.Field.String()] = true
 				}
 			}
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
-			if rootCovered {
-				return
-			}
 			err := structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
 				if covered[path.String()] {
 					// This field (or its enclosing object) is classified; the
