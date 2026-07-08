@@ -337,6 +337,11 @@ resources:
       # Backend-computed; the user never sets it. Not annotated output_only in the spec.
       - field: browse_only
         reason: output_only
+      # Aliases are managed on model versions through a separate API, and DoRead
+      # passes IncludeAliases=false, so GET never echoes them back. Without this a
+      # config that sets aliases reports a perpetual update (remote stays empty).
+      - field: aliases
+        reason: input_only
     provided_id_fields:
       # The name can technically be updated without recreate. We recreate for now though
       # to match TF implementation.
