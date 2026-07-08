@@ -403,6 +403,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
 	repls.Set(cliVersion, "[CLI_VERSION]")
+	// Also replace the base version without build metadata (e.g. "0.0.0-dev" when
+	// cliVersion is "0.0.0-dev+abc123"), so fixture data that stores a bare version
+	// string is also normalized.
+	if base, _, found := strings.Cut(cliVersion, "+"); found {
+		repls.Set(base, "[CLI_VERSION]")
+	}
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
