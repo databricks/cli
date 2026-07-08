@@ -4,8 +4,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/delete-trashed-out
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> [CLI] lakeview get [DASHBOARD_ID]
 {
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default/resources"
