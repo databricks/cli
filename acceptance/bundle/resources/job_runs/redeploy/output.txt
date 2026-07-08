@@ -61,6 +61,13 @@ Resources:
     "job_id": [MY_JOB_ID],
     "job_parameters": {
       "env": "dev"
+    },
+    "run_id": [NUMID],
+    "run_name": "my-job",
+    "run_page_url": "[DATABRICKS_URL]/?o=[NUMID]#job/[MY_JOB_ID]/run/[NUMID]",
+    "run_type": "JOB_RUN",
+    "state": {
+      "life_cycle_state": "RUNNING"
     }
   },
   "changes": {

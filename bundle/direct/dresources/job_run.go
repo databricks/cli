@@ -24,6 +24,28 @@ func (s JobRunState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+// JobRunRemote embeds RunNow so every StateType path is a valid RemoteType path
+// (see TestRemoteSuperset), plus the run's output-only fields for a faithful view.
+type JobRunRemote struct {
+	jobs.RunNow
+
+	RunId      int64          `json:"run_id,omitempty"`
+	RunName    string         `json:"run_name,omitempty"`
+	State      *jobs.RunState `json:"state,omitempty"`
+	RunPageUrl string         `json:"run_page_url,omitempty"`
+	RunType    jobs.RunType   `json:"run_type,omitempty"`
+}
+
+// Custom marshaler needed because embedded RunNow's MarshalJSON would otherwise
+// take over and drop the additional fields.
+func (s *JobRunRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s JobRunRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
 type ResourceJobRun struct {
 	client *databricks.WorkspaceClient
 }
@@ -40,26 +62,14 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	}
 }
 
-// DoRead returns a faithful view of the remote run; a 404 lets the planner
-// re-trigger. Remote-only diffs never count as drift (root ignore_remote_changes);
-// only a local change recreates it. RemoteType == StateType.
-func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunState, error) {
-	runID, err := parseRunID(id)
-	if err != nil {
-		return nil, err
-	}
-	var req jobs.GetRunRequest
-	req.RunId = runID
-	run, err := r.client.Jobs.GetRun(ctx, req)
-	if err != nil {
-		return nil, err
-	}
+// makeJobRunRemote maps the GetRun response into the RunNow-shaped remote: GET
+// nests the params under overriding_parameters and returns job_parameters as a
+// list, so both are flattened back into RunNow.
+func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 	var overriding jobs.RunParameters
 	if run.OverridingParameters != nil {
 		overriding = *run.OverridingParameters
 	}
-	// Mirror the run's job_parameters as GetRun reports them: the job's full
-	// resolved set, not the override map we sent, so this never round-trips.
 	var jobParameters map[string]string
 	if len(run.JobParameters) > 0 {
 		jobParameters = make(map[string]string, len(run.JobParameters))
@@ -67,7 +77,7 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunState, e
 			jobParameters[p.Name] = p.Value
 		}
 	}
-	state := JobRunState{
+	return &JobRunRemote{
 		RunNow: jobs.RunNow{
 			JobId:             run.JobId,
 			JobParameters:     jobParameters,
@@ -79,29 +89,53 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunState, e
 			PythonParams:      overriding.PythonParams,
 			SparkSubmitParams: overriding.SparkSubmitParams,
 			SqlParams:         overriding.SqlParams,
-			// GetRun does not report these run-now request-only fields, so they
-			// stay zero; listed explicitly so exhaustruct flags any new SDK field.
+			// Request-only fields GetRun never reports; listed so exhaustruct
+			// flags any new SDK field.
 			IdempotencyToken:  "",
 			Only:              nil,
 			PerformanceTarget: "",
 			Queue:             nil,
 			ForceSendFields:   nil,
 		},
+		RunId:      run.RunId,
+		RunName:    run.RunName,
+		State:      run.State,
+		RunPageUrl: run.RunPageUrl,
+		RunType:    run.RunType,
 	}
-	return &state, nil
 }
 
-func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunState, error) {
-	// RunNow returns immediately with the new run id; waiting for completion is
-	// a later milestone.
+// DoRead returns the run as GetRun reports it; a 404 lets the planner
+// re-trigger. Root ignore_remote_changes suppresses all remote drift, so a run
+// is recreated only on a local config change.
+func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, error) {
+	runID, err := parseRunID(id)
+	if err != nil {
+		return nil, err
+	}
+	// var + field set (not a literal) avoids listing GetRunRequest's other fields.
+	var req jobs.GetRunRequest
+	req.RunId = runID
+	run, err := r.client.Jobs.GetRun(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return makeJobRunRemote(run), nil
+}
+
+// RemapState extracts the embedded RunNow as the state used for diffing.
+func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
+	return &JobRunState{RunNow: remote.RunNow}
+}
+
+func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
+	// RunNow returns only the new run id, so we return a nil remote and let the
+	// framework read it back via DoRead.
 	wait, err := r.client.Jobs.RunNow(ctx, config.RunNow)
 	if err != nil {
 		return "", nil, err
 	}
-	// RunNow returns only the run id and we track no remote-only fields, so we
-	// echo the sent config back as remote state (RemoteType == StateType).
-	remote := &JobRunState{RunNow: config.RunNow}
-	return strconv.FormatInt(wait.RunId, 10), remote, nil
+	return strconv.FormatInt(wait.RunId, 10), nil, nil
 }
 
 // DoUpdate is intentionally not implemented: a run can't be modified in place,
