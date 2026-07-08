@@ -12,12 +12,24 @@ const (
 	SelectUsed                          = "select_used"
 
 	// Outcome of the dry-run migration to the direct engine attempted after a
-	// successful terraform deploy. DirectDryMigrateSuccess is false when the state
-	// could not be converted; DirectDryMigrateWarnings is true when the conversion
-	// emitted warnings (e.g. resources the direct engine can't represent).
-	// Only recorded on terraform deploys.
+	// successful terraform deploy WHEN THE USER DID NOT OPT IN. Only recorded
+	// when the state conversion is truly a dry run (no auto-migrate).
+	// DirectDryMigrateSuccess is false when the state could not be converted;
+	// DirectDryMigrateWarnings is true when the conversion emitted warnings
+	// (e.g. resources the direct engine can't represent).
 	DirectDryMigrateSuccess  = "direct_drymigrate_success"
 	DirectDryMigrateWarnings = "direct_drymigrate_warnings"
+
+	// Outcome of an automatic post-deploy migration to the direct engine that
+	// the user opted into (via bundle.engine or DATABRICKS_BUNDLE_ENGINE).
+	// These replace the direct_drymigrate_* keys on opt-in deploys.
+	//   - migrate_error:        state conversion itself errored.
+	//   - migrate_commit_error: the state was converted, but committing it
+	//                           (renaming files / pushing to workspace) failed.
+	//   - migrate_warnings:     the conversion emitted warnings (see above).
+	DirectMigrateError       = "direct_migrate_error"
+	DirectMigrateCommitError = "direct_migrate_commit_error"
+	DirectMigrateWarnings    = "direct_migrate_warnings"
 
 	// Recorded when an automatic post-deploy migration to the direct engine
 	// actually ran (state was rewritten). Exactly one of the two keys is true;

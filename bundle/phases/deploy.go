@@ -126,7 +126,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 	// dry-run is clean, the migration is committed; otherwise nothing is
 	// written and the deploy is unaffected.
 	if !stateEngine.IsDirect() && !logdiag.HasError(ctx) {
-		statemgmt.CheckDirectMigration(ctx, b, requestedEngine)
+		statemgmt.MigrateToDirect(ctx, b, requestedEngine)
 	}
 }
 

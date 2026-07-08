@@ -39,7 +39,7 @@ Please forward these warnings to dabs-feedback@databricks.com`
 // automatic post-deploy migration is skipped.
 const autoMigrateStoppedNotice = `Direct engine was requested but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
 
-// CheckDirectMigration performs a dry-run migration of the just-deployed terraform
+// MigrateToDirect performs a dry-run migration of the just-deployed terraform
 // state to the direct engine and records the outcome in deploy telemetry.
 //
 // The converted state is written to a temporary file. If the dry-run is clean
@@ -49,7 +49,7 @@ const autoMigrateStoppedNotice = `Direct engine was requested but the dry-run mi
 // to the workspace). Otherwise the temp state is deleted and only telemetry
 // is recorded. Any failure is surfaced as a warning so it never fails a
 // deploy that already succeeded.
-func CheckDirectMigration(ctx context.Context, b *bundle.Bundle, requestedEngine engine.EngineSetting) {
+func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	tempStatePath, resourceCount, hasWarnings, err := dryRunMigrate(ctx, b)
 	if tempStatePath != "" {
 		// commitMigration renames the state file out of this dir, but the dir
@@ -57,8 +57,6 @@ func CheckDirectMigration(ctx context.Context, b *bundle.Bundle, requestedEngine
 		defer os.RemoveAll(filepath.Dir(tempStatePath))
 	}
 
-	b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, err == nil)
-	b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, hasWarnings)
 	if err != nil {
 		log.Warnf(ctx, "%s%v", warnPrefix, err)
 	}
@@ -66,10 +64,20 @@ func CheckDirectMigration(ctx context.Context, b *bundle.Bundle, requestedEngine
 		log.Warnf(ctx, "%s", feedbackNotice)
 	}
 
-	// Auto-migrate only when the user asked for the direct engine — either via
-	// bundle.engine in their config or DATABRICKS_BUNDLE_ENGINE=direct.
+	// The user did not opt in to the direct engine — the conversion was only
+	// a dry run for fleet-wide telemetry, so record dry-run outcome only.
 	if requestedEngine.Type != engine.EngineDirect {
+		b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, err == nil)
+		b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, hasWarnings)
 		return
+	}
+
+	// From here on, the user opted in: use the migrate_* telemetry keys.
+	if err != nil {
+		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+	}
+	if hasWarnings {
+		b.Metrics.SetBoolValue(metrics.DirectMigrateWarnings, true)
 	}
 
 	if err != nil || hasWarnings {
@@ -83,6 +91,7 @@ func CheckDirectMigration(ctx context.Context, b *bundle.Bundle, requestedEngine
 	}
 
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
+		b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
 		log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 		return
 	}
