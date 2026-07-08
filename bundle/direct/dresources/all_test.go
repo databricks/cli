@@ -1149,9 +1149,6 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 
 		t.Run(resourceType, func(t *testing.T) {
 			err := structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
-				if path.IsRoot() {
-					return true
-				}
 				if covered[path.String()] {
 					// This field (or its enclosing object) is classified; the
 					// whole subtree is covered, so stop descending.
