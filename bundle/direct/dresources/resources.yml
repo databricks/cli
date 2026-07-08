@@ -143,7 +143,7 @@ resources:
     # never on remote drift. Both rules omit `field` to match every field (root;
     # see TestFieldRuleOmittedIsRoot). `field: ""` would instead match nothing.
     ignore_remote_changes:
-      - reason: input_only
+      - reason: immutable
     recreate_on_changes:
       - reason: immutable
 
