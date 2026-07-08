@@ -76,6 +76,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().Int64Var(&createReq.GitCredentialId, "git-credential-id", createReq.GitCredentialId, `Git credential ID to use when cloning the repository.`)
 	cmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
 	// TODO: complex arg: sparse_checkout
 
@@ -626,6 +627,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
 	cmd.Flags().BoolVar(&updateReq.DangerouslyForceDiscardAll, "dangerously-force-discard-all", updateReq.DangerouslyForceDiscardAll, `WARNING: DESTRUCTIVE AND IRREVERSIBLE.`)
+	cmd.Flags().Int64Var(&updateReq.GitCredentialId, "git-credential-id", updateReq.GitCredentialId, `Git credential ID to use for this update operation.`)
 	// TODO: complex arg: sparse_checkout
 	cmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to.`)
 
