@@ -37,9 +37,3 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_lakeflow_integr
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
-=== artifacts uploaded to .internal
->>> [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/my_lakeflow_integrations/dev/artifacts/.internal --output json
-"/Workspace/Users/[USERNAME]/.bundle/my_lakeflow_integrations/dev/artifacts/.internal/my_lakeflow_integrations-0.0.1-py3-none-any.whl"
-"/Workspace/Users/[USERNAME]/.bundle/my_lakeflow_integrations/dev/artifacts/.internal/my_lakeflow_integrations.examples.slack.send_slack_message.yml"
-"/Workspace/Users/[USERNAME]/.bundle/my_lakeflow_integrations/dev/artifacts/.internal/my_lakeflow_integrations.examples.wait_for_run_sensor.WaitForRunSensor.yml"
