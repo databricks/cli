@@ -249,9 +249,9 @@ func PrepareReplacementSdkVersion(t testutil.TestingT, r *ReplacementsContext) {
 	r.append(sdkVersionRegex, "databricks-sdk-go/[SDK_VERSION]", 0)
 }
 
-func PrepareReplacementDbtfVersion(t testutil.TestingT, r *ReplacementsContext) {
+func PrepareReplacementTfProviderVersion(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(tfVersionRegex, "databricks-tf-provider/[DBTF_VERSION]", 0)
+	r.append(tfVersionRegex, "databricks-tf-provider/[TF_PROVIDER_VERSION]", 0)
 }
 
 func goVersion() string {
