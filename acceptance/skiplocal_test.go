@@ -56,10 +56,11 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 //
 // --merge-base diffs the working tree against the merge base of HEAD and
 // origin/main. This covers committed, staged, and unstaged changes alike —
-// the working tree reflects all three. The three-dot form origin/main...HEAD
-// only covers committed changes and misses files touched but not yet committed,
-// which breaks the "touch a config, run the test" local dev workflow
-// (same reason lintdiff.py uses --merge-base).
+// the working tree reflects all three. Untracked files (not yet git-added)
+// are not visible to git diff and will not be re-enabled until staged or
+// committed. The three-dot form origin/main...HEAD only covers committed
+// changes and misses unstaged edits, which breaks the "touch a config, run
+// the test" local dev workflow (same reason lintdiff.py uses --merge-base).
 func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
 	out, _ := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
 	diff := strings.TrimSpace(string(out))
