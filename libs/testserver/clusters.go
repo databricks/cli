@@ -83,11 +83,14 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	}
 
 	defer s.LockUnlock()()
-	_, ok := s.Clusters[request.ClusterId]
+	existing, ok := s.Clusters[request.ClusterId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
+	// Preserve runtime-only fields that the Edit API request doesn't include.
+	request.State = existing.State
+	request.ClusterId = existing.ClusterId
 	clusterFixUps(&request)
 	s.Clusters[request.ClusterId] = request
 
