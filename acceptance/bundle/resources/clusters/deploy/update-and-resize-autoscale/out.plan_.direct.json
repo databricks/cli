@@ -130,8 +130,12 @@
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
         "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": false
+        },
         "node_type_id": "[NODE_TYPE_ID]",
-        "spark_version": "13.3.x-snapshot-scala2.12"
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "TERMINATED"
       },
       "changes": {
         "autoscale.max_workers": {

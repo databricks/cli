@@ -249,6 +249,11 @@ __all__ = [
     "SparseCheckout",
     "SparseCheckoutDict",
     "SparseCheckoutParam",
+    "SqlConditionConfiguration",
+    "SqlConditionConfigurationDict",
+    "SqlConditionConfigurationParam",
+    "SqlConditionTriggerMode",
+    "SqlConditionTriggerModeParam",
     "SqlTask",
     "SqlTaskAlert",
     "SqlTaskAlertDict",
@@ -710,6 +715,15 @@ from databricks.bundles.jobs._models.sparse_checkout import (
     SparseCheckout,
     SparseCheckoutDict,
     SparseCheckoutParam,
+)
+from databricks.bundles.jobs._models.sql_condition_configuration import (
+    SqlConditionConfiguration,
+    SqlConditionConfigurationDict,
+    SqlConditionConfigurationParam,
+)
+from databricks.bundles.jobs._models.sql_condition_trigger_mode import (
+    SqlConditionTriggerMode,
+    SqlConditionTriggerModeParam,
 )
 from databricks.bundles.jobs._models.sql_task import SqlTask, SqlTaskDict, SqlTaskParam
 from databricks.bundles.jobs._models.sql_task_alert import (

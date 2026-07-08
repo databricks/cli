@@ -105,7 +105,9 @@ func newCreate() *cobra.Command {
 
   It can take a few minutes for the changes to take effect. **Note**: Your new
   IP access list has no effect until you enable the feature. See
-  :method:workspaceconf/setStatus
+  [workspaceconf/setStatus]
+
+  [workspaceconf/setStatus]: https://docs.databricks.com/api/workspace/workspaceconf/setstatus
 
   Arguments:
     LABEL: Label for the IP access list. This **cannot** be empty.
@@ -408,7 +410,9 @@ func newReplace() *cobra.Command {
   calling user's current IP, error 400 is returned with error_code value
   INVALID_STATE. It can take a few minutes for the changes to take effect.
   Note that your resulting IP access list has no effect until you enable the
-  feature. See :method:workspaceconf/setStatus.
+  feature. See [workspaceconf/setStatus].
+
+  [workspaceconf/setStatus]: https://docs.databricks.com/api/workspace/workspaceconf/setstatus
 
   Arguments:
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list
@@ -529,7 +533,9 @@ func newUpdate() *cobra.Command {
 
   It can take a few minutes for the changes to take effect. Note that your
   resulting IP access list has no effect until you enable the feature. See
-  :method:workspaceconf/setStatus.
+  [workspaceconf/setStatus].
+
+  [workspaceconf/setStatus]: https://docs.databricks.com/api/workspace/workspaceconf/setstatus
 
   Arguments:
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list`

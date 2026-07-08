@@ -112,7 +112,9 @@ func newCreate() *cobra.Command {
       each of the Spark nodes in this cluster. For example, the Spark nodes can
       be provisioned and optimized for memory or compute intensive workloads. A
       list of available node types can be retrieved by using the
-      :method:clusters/listNodeTypes API call.`
+      [clusters/listNodeTypes] API call.
+
+      [clusters/listNodeTypes]: https://docs.databricks.com/api/workspace/clusters/listnodetypes`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -310,7 +312,9 @@ func newEdit() *cobra.Command {
       each of the Spark nodes in this cluster. For example, the Spark nodes can
       be provisioned and optimized for memory or compute intensive workloads. A
       list of available node types can be retrieved by using the
-      :method:clusters/listNodeTypes API call.`
+      [clusters/listNodeTypes] API call.
+
+      [clusters/listNodeTypes]: https://docs.databricks.com/api/workspace/clusters/listnodetypes`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
