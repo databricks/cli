@@ -16,18 +16,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-// expectAuthSuccess stubs CurrentUser.Me so the command's up-front auth check
-// passes and the test can exercise the run-fetch path.
-func expectAuthSuccess(m *mocks.MockWorkspaceClient) {
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "u@example.com"}, nil)
-}
 
 // renderGet renders the get template against the JSON envelope, exactly as the
 // command does for a sweep run, so the test covers the real template branches.
@@ -64,12 +57,27 @@ func TestGetRunInvalidID(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid JOB_RUN_ID")
 }
 
+// notFoundGetServer serves the auth probe plus a runs/get that reports the run
+// as missing (400 INVALID_PARAMETER_VALUE, which the SDK maps to
+// ErrResourceDoesNotExist for this path).
+func notFoundGetServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == jobsRunsGetPath {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error_code":"INVALID_PARAMETER_VALUE","message":"Run 5 does not exist."}`))
+			return
+		}
+		// Me() probe and any other config discovery.
+		_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
 func TestGetRunNotFound(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	expectAuthSuccess(m)
-	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 5}).Return(
-		nil, apierr.ErrResourceDoesNotExist)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	srv := notFoundGetServer(t)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
 	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
@@ -80,9 +88,9 @@ func TestGetRunNotFound(t *testing.T) {
 
 func TestGetRunAuthFailed(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	// Auth is validated before the run is fetched, so GetRun is never reached
-	// (no GetRun expectation is set) and nothing is rendered.
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, errors.New("403 Forbidden"))
+	// A genuine auth failure (permission denied) is validated before the run is
+	// fetched, so GetRun is never reached and nothing is rendered.
+	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, apierr.ErrPermissionDenied)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
 	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
@@ -90,6 +98,21 @@ func TestGetRunAuthFailed(t *testing.T) {
 	err := cmd.RunE(cmd, []string{"5"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "authentication was not successful")
+}
+
+func TestGetRunAuthTransient(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	// A transient failure at the auth probe must not be misreported as an auth
+	// error; it surfaces as a retryable internal error instead.
+	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, errors.New("connection reset"))
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	cmd := withOutput(newGetCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, []string{"5"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to verify authentication")
+	assert.NotContains(t, err.Error(), "authentication was not successful")
 }
 
 func TestAuthError(t *testing.T) {
@@ -101,20 +124,25 @@ func TestAuthError(t *testing.T) {
 	require.Error(t, noProfile)
 	assert.Contains(t, noProfile.Error(), "no default profile is set")
 
-	// Any other failure maps to the generic auth message, preserving the cause.
-	other := authError(ctx, cmd, errors.New("token expired"))
-	require.Error(t, other)
-	assert.Contains(t, other.Error(), "authentication was not successful")
-	assert.Contains(t, other.Error(), "token expired")
+	// A 401 / 403 (via the SDK sentinels) is a real auth failure.
+	unauth := authError(ctx, cmd, apierr.ErrUnauthenticated)
+	require.Error(t, unauth)
+	assert.Contains(t, unauth.Error(), "authentication was not successful")
+
+	denied := authError(ctx, cmd, apierr.ErrPermissionDenied)
+	require.Error(t, denied)
+	assert.Contains(t, denied.Error(), "authentication was not successful")
+
+	transient := authError(ctx, cmd, errors.New("connection reset"))
+	require.Error(t, transient)
+	assert.Contains(t, transient.Error(), "failed to verify authentication")
+	assert.Contains(t, transient.Error(), "connection reset")
 }
 
 func TestGetRunNotFoundJSON(t *testing.T) {
 	var buf bytes.Buffer
-	m := mocks.NewMockWorkspaceClient(t)
-	expectAuthSuccess(m)
-	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 5}).Return(
-		nil, apierr.ErrResourceDoesNotExist)
-	ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
+	srv := notFoundGetServer(t)
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), newTestWorkspaceClient(t, srv.URL))
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputJSON, nil, &buf, &buf, "", ""))
 	cmd := withOutput(newGetCommand(), flags.OutputJSON)
 	cmd.SetContext(ctx)
@@ -193,14 +221,20 @@ func TestBuildGetData(t *testing.T) {
 }
 
 func TestEnrichFromRawRun(t *testing.T) {
+	rawRun := func(t *testing.T, body string) *jobRun {
+		t.Helper()
+		var r jobRun
+		require.NoError(t, json.Unmarshal([]byte(body), &r))
+		return &r
+	}
+
 	t.Run("fills config path, experiment, and accelerators", func(t *testing.T) {
-		body := `{"run_id":5,"tasks":[{"ai_runtime_task":{
+		raw := rawRun(t, `{"run_id":5,"tasks":[{"ai_runtime_task":{
 			"experiment":"/Users/me@example.com/my-exp",
 			"deployments":[{"command_path":"/Workspace/run/command.sh","compute":{"accelerator_type":"GPU_1xA10","accelerator_count":1}}]
-		}}]}`
-		srv := runGetServer(t, body)
+		}}]}`)
 		data := &getData{ExperimentDisplay: na, AcceleratorsDisplay: na}
-		enrichFromRawRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5, data)
+		enrichFromRawRun(raw, data)
 		assert.Equal(t, "/Workspace/run/training_config.yaml", data.TrainingConfigPath)
 		assert.Equal(t, "my-exp", data.ExperimentDisplay)
 		require.NotNil(t, data.ExperimentName)
@@ -209,24 +243,37 @@ func TestEnrichFromRawRun(t *testing.T) {
 	})
 
 	t.Run("leaves fallbacks when the run has no ai_runtime_task", func(t *testing.T) {
-		srv := runGetServer(t, `{"run_id":5,"tasks":[{}]}`)
+		raw := rawRun(t, `{"run_id":5,"tasks":[{}]}`)
 		data := &getData{ExperimentDisplay: na, AcceleratorsDisplay: na}
-		enrichFromRawRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5, data)
+		enrichFromRawRun(raw, data)
 		assert.Empty(t, data.TrainingConfigPath)
 		assert.Equal(t, na, data.ExperimentDisplay)
 		assert.Equal(t, na, data.AcceleratorsDisplay)
 	})
+}
 
-	t.Run("leaves fallbacks when the raw lookup fails", func(t *testing.T) {
+func TestFetchRun(t *testing.T) {
+	t.Run("parses the run into both the typed and raw shapes from one call", func(t *testing.T) {
+		body := `{"run_id":5,"creator_user_name":"me@example.com","tasks":[{"ai_runtime_task":{
+			"experiment":"/Users/me@example.com/my-exp",
+			"deployments":[{"command_path":"/Workspace/run/command.sh","compute":{"accelerator_type":"GPU_1xA10","accelerator_count":1}}]
+		}}]}`
+		srv := runGetServer(t, body)
+		typed, raw, err := fetchRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5)
+		require.NoError(t, err)
+		// Typed jobs.Run carries the common fields; raw jobRun keeps ai_runtime_task.
+		assert.Equal(t, int64(5), typed.RunId)
+		assert.Equal(t, "me@example.com", typed.CreatorUserName)
+		assert.Equal(t, "/Workspace/run/command.sh", raw.commandPath())
+	})
+
+	t.Run("propagates a fetch failure", func(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}))
 		t.Cleanup(srv.Close)
-		data := &getData{ExperimentDisplay: na, AcceleratorsDisplay: na}
-		enrichFromRawRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5, data)
-		assert.Empty(t, data.TrainingConfigPath)
-		assert.Equal(t, na, data.ExperimentDisplay)
-		assert.Equal(t, na, data.AcceleratorsDisplay)
+		_, _, err := fetchRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5)
+		require.Error(t, err)
 	})
 }
 

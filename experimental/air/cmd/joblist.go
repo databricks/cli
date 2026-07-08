@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -209,6 +211,33 @@ func fetchJobRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64
 		return nil, fmt.Errorf("failed to get run %d: %w", runID, err)
 	}
 	return &run, nil
+}
+
+// fetchRun fetches a run once and returns it in both shapes: the typed SDK
+// jobs.Run the display path consumes, and the raw jobRun that preserves the
+// ai_runtime_task the typed model drops. The single runs/get body is unmarshalled
+// into both, avoiding a second identical roundtrip.
+func fetchRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (*jobs.Run, *jobRun, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	var body json.RawMessage
+	query := map[string]any{"run_id": runID, "expand_tasks": true}
+	if err := apiClient.Do(ctx, http.MethodGet, jobsRunsGetPath, nil, nil, query, &body); err != nil {
+		return nil, nil, err
+	}
+
+	var typed jobs.Run
+	if err := json.Unmarshal(body, &typed); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse run %d: %w", runID, err)
+	}
+	var raw jobRun
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse run %d: %w", runID, err)
+	}
+	return &typed, &raw, nil
 }
 
 // hydrateJobRuns fetches the given run ids concurrently via runs/get, preserving

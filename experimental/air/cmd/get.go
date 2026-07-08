@@ -10,8 +10,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -75,16 +73,20 @@ Sweep Tasks:
 // configured: no default profile, no --profile (-p), and no auth environment.
 var errNoProfile = errors.New("no default profile is set: pass --profile (-p) or configure a default profile in your .databrickscfg")
 
-// authError converts a workspace-client or authentication failure into an air
-// error envelope with an actionable message: a missing-profile hint when no
-// credentials are configured, otherwise "authentication was not successful".
-// Both are permanent (not retryable).
+// authError classifies a workspace-client or Me() probe failure. Only genuinely
+// auth-shaped errors surface as UNAUTHENTICATED/PERMANENT: missing profile,
+// SDK auth wrappers, or an API 401/403. Anything else (network blip, 429, 5xx)
+// is transient and reported as INTERNAL_ERROR/TRANSIENT so the caller can retry.
 func authError(ctx context.Context, cmd *cobra.Command, err error) error {
 	if errors.Is(err, config.ErrCannotConfigureDefault) {
 		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false, errNoProfile)
 	}
-	return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false,
-		fmt.Errorf("authentication was not successful: %w", err))
+	if errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied) {
+		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false,
+			fmt.Errorf("authentication was not successful: %w", err))
+	}
+	return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
+		fmt.Errorf("failed to verify authentication: %w", err))
 }
 
 // newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
@@ -130,7 +132,10 @@ func newGetCommand() *cobra.Command {
 			return authError(ctx, cmd, err)
 		}
 
-		run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+		// Fetch the run once, in both the typed and raw shapes: the typed jobs.Run
+		// drives the display path, and the raw jobRun preserves the ai_runtime_task
+		// the typed model drops (used below without a second roundtrip).
+		run, rawRun, err := fetchRun(ctx, w, runID)
 		if err != nil {
 			// The backend returns this when the run ID is unknown to the user.
 			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
@@ -157,8 +162,9 @@ func newGetCommand() *cobra.Command {
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
 		} else if genAIComputeTask(run) == nil {
-			// The typed SDK drops ai_runtime_task, so read it from the raw run.
-			enrichFromRawRun(ctx, w, runID, &data)
+			// The typed SDK drops ai_runtime_task, so read it from the raw run we
+			// already fetched above.
+			enrichFromRawRun(rawRun, &data)
 		}
 
 		if root.OutputType(cmd) != flags.OutputText {
@@ -181,14 +187,9 @@ func newGetCommand() *cobra.Command {
 }
 
 // enrichFromRawRun fills the config path, experiment, and accelerators from the
-// raw run. Best-effort: on failure the existing "N/A" fallbacks stand.
-func enrichFromRawRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64, data *getData) {
-	raw, err := fetchJobRun(ctx, w, runID)
-	if err != nil {
-		log.Debugf(ctx, "air get: raw run lookup failed for run %d: %v", runID, err)
-		return
-	}
-
+// raw run (the ai_runtime_task the typed model drops). Best-effort: empty fields
+// leave the existing "N/A" fallbacks in place.
+func enrichFromRawRun(raw *jobRun, data *getData) {
 	if cmdPath := raw.commandPath(); cmdPath != "" {
 		data.TrainingConfigPath = path.Join(path.Dir(cmdPath), trainingConfigName)
 	}
