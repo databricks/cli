@@ -6,9 +6,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
 >>> [CLI] bundle summary
 Name: job-runs-redeploy
 Target: default
@@ -43,19 +40,45 @@ Resources:
 === change the run configuration and redeploy
 >>> update_file.py databricks.yml env: dev env: prod
 
->>> [CLI] bundle plan
-recreate job_runs.my_run
-
-Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+>>> [CLI] bundle plan -o json
+{
+  "depends_on": [
+    {
+      "node": "resources.jobs.my_job",
+      "label": "${resources.jobs.my_job.id}"
+    }
+  ],
+  "action": "recreate",
+  "new_state": {
+    "value": {
+      "job_id": [MY_JOB_ID],
+      "job_parameters": {
+        "env": "prod"
+      }
+    }
+  },
+  "remote_state": {
+    "job_id": [MY_JOB_ID],
+    "job_parameters": {
+      "env": "dev"
+    }
+  },
+  "changes": {
+    "job_parameters['env']": {
+      "action": "recreate",
+      "reason": "immutable",
+      "old": "dev",
+      "new": "prod",
+      "remote": "dev"
+    }
+  }
+}
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle summary
 Name: job-runs-redeploy

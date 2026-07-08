@@ -1133,6 +1133,16 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 //
 // The check walks the state type and fails on any uncovered scalar leaf. This
 // keeps the recreate_on_changes lists exhaustive as the SDK adds fields.
+// markCovered records that a field rule classifies a field. A root rule covers
+// every field at once, but coverage is otherwise tracked by exact path string
+// (which a root rule never hits), so it sets rootCovered separately.
+func markCovered(r FieldRule, covered map[string]bool, rootCovered *bool) {
+	if r.Field.IsRoot() {
+		*rootCovered = true
+	}
+	covered[r.Field.String()] = true
+}
+
 func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
@@ -1151,31 +1161,23 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 		// provided_id_fields, or ignore_local_changes; output-only fields are
 		// covered by ignore_remote_changes since the user never sets them.
 		covered := map[string]bool{}
-		// A root rule covers every field at once, but coverage below is tracked by
-		// exact path string, which a root rule never hits, so track it separately.
 		rootCovered := false
-		markCovered := func(r FieldRule) {
-			if r.Field.IsRoot() {
-				rootCovered = true
-			}
-			covered[r.Field.String()] = true
-		}
 		for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 			if cfg == nil {
 				continue
 			}
 			for _, r := range cfg.RecreateOnChanges {
-				markCovered(r)
+				markCovered(r, covered, &rootCovered)
 			}
 			for _, r := range cfg.ProvidedIDFields {
-				markCovered(r)
+				markCovered(r, covered, &rootCovered)
 			}
 			for _, r := range cfg.IgnoreLocalChanges {
-				markCovered(r)
+				markCovered(r, covered, &rootCovered)
 			}
 			for _, r := range cfg.IgnoreRemoteChanges {
 				if strings.HasSuffix(r.Reason, "output_only") {
-					markCovered(r)
+					markCovered(r, covered, &rootCovered)
 				}
 			}
 		}

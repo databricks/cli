@@ -54,25 +54,39 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunState, e
 	if err != nil {
 		return nil, err
 	}
-	var state JobRunState
-	state.JobId = run.JobId
-	if p := run.OverridingParameters; p != nil {
-		state.DbtCommands = p.DbtCommands
-		state.JarParams = p.JarParams
-		state.NotebookParams = p.NotebookParams
-		state.PipelineParams = p.PipelineParams
-		state.PythonNamedParams = p.PythonNamedParams
-		state.PythonParams = p.PythonParams
-		state.SparkSubmitParams = p.SparkSubmitParams
-		state.SqlParams = p.SqlParams
+	var overriding jobs.RunParameters
+	if run.OverridingParameters != nil {
+		overriding = *run.OverridingParameters
 	}
 	// Mirror the run's job_parameters as GetRun reports them: the job's full
 	// resolved set, not the override map we sent, so this never round-trips.
+	var jobParameters map[string]string
 	if len(run.JobParameters) > 0 {
-		state.JobParameters = make(map[string]string, len(run.JobParameters))
+		jobParameters = make(map[string]string, len(run.JobParameters))
 		for _, p := range run.JobParameters {
-			state.JobParameters[p.Name] = p.Value
+			jobParameters[p.Name] = p.Value
 		}
+	}
+	state := JobRunState{
+		RunNow: jobs.RunNow{
+			JobId:             run.JobId,
+			JobParameters:     jobParameters,
+			DbtCommands:       overriding.DbtCommands,
+			JarParams:         overriding.JarParams,
+			NotebookParams:    overriding.NotebookParams,
+			PipelineParams:    overriding.PipelineParams,
+			PythonNamedParams: overriding.PythonNamedParams,
+			PythonParams:      overriding.PythonParams,
+			SparkSubmitParams: overriding.SparkSubmitParams,
+			SqlParams:         overriding.SqlParams,
+			// GetRun does not report these run-now request-only fields, so they
+			// stay zero; listed explicitly so exhaustruct flags any new SDK field.
+			IdempotencyToken:  "",
+			Only:              nil,
+			PerformanceTarget: "",
+			Queue:             nil,
+			ForceSendFields:   nil,
+		},
 	}
 	return &state, nil
 }
