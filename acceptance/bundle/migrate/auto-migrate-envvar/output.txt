@@ -12,7 +12,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Migrated to direct deployment engine.
+Migrated 1 resource to direct deployment engine.
 
 === Direct-engine state is now in place; terraform state is backed up
 

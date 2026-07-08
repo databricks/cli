@@ -14,4 +14,17 @@ trace find .databricks/bundle -name "terraform.tfstate*" -type f
 title "Subsequent plan under direct is a no-op"
 trace $CLI bundle plan | contains.py "1 unchanged"
 
+title "Subsequent deploy under direct is a no-op"
+trace $CLI bundle deploy
+
+title "Modify the config — plan shows the pending update"
+trace update_file.py databricks.yml "Test Auto-Migrate Job" "Test Auto-Migrate Job (renamed)"
+trace $CLI bundle plan
+$CLI bundle plan -o json > out.plan_update.direct.json
+
+title "Deploy picks up the update (with and without --plan)\n"
+$CLI bundle deploy $(readplanarg out.plan_update.direct.json)
+
+trace $CLI bundle plan | contains.py "1 unchanged"
+
 rm out.requests.txt

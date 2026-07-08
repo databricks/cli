@@ -11,7 +11,7 @@ Deployment complete!
   engine: direct
 
 >>> [CLI] bundle deploy
-Warning: Deployment engine "direct" configured in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 does not match the existing state (engine "terraform"). Using "terraform" engine from the existing state.
+Warning: Deployment engine "direct" configured in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 does not match the existing state (engine "terraform"). Using "terraform" engine for deployment, then will try to migrate your state to direct engine
 
 Available state files:
 - terraform.tfstate: remote terraform state serial=1 lineage="[UUID]"
@@ -21,7 +21,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Migrated to direct deployment engine.
+Migrated 1 resource to direct deployment engine.
 
 === Direct-engine state is now in place; terraform state is backed up
 
@@ -32,5 +32,29 @@ Migrated to direct deployment engine.
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
 === Subsequent plan under direct is a no-op
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Subsequent deploy under direct is a no-op
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify the config — plan shows the pending update
+>>> update_file.py databricks.yml Test Auto-Migrate Job Test Auto-Migrate Job (renamed)
+
+>>> [CLI] bundle plan
+update jobs.test_job
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== Deploy picks up the update (with and without --plan)
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
