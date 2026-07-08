@@ -18,4 +18,7 @@
 
 ### Dependency updates
 
+* Bump databricks-sdk-go to v0.154.0 ([#5855](https://github.com/databricks/cli/pull/5855)).
+* Bump terraform-provider to 1.121.0 ([#5857](https://github.com/databricks/cli/pull/5857)).
+
 ### API Changes
