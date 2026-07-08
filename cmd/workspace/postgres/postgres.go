@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/inputonly"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/experimental/api"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -2084,7 +2085,11 @@ Get a Branch.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"spec"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2145,7 +2150,11 @@ Get a Database Catalog.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"spec"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2268,7 +2277,11 @@ Get a Database.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"spec"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2331,7 +2344,11 @@ Get an Endpoint.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"spec"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2454,7 +2471,11 @@ Get a Project.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"initial_endpoint_spec", "spec"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2517,7 +2538,11 @@ Get a Postgres Role for a Branch.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"spec"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2580,7 +2605,11 @@ Get a Synced Database Table.
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"spec"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.

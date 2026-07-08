@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/inputonly"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -165,7 +166,11 @@ func newCreateSecret() *cobra.Command {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"owner", "value"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -295,7 +300,11 @@ func newGetSecret() *cobra.Command {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"owner", "value"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.
@@ -506,7 +515,11 @@ func newUpdateSecret() *cobra.Command {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		masked, err := inputonly.Strip(response, []string{"owner", "value"})
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, masked)
 	}
 
 	// Disable completions since they are not applicable.

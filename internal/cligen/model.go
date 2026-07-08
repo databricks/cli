@@ -126,6 +126,19 @@ func (s *ServiceJSON) Comment(prefix string, maxLen int) string {
 	return commentWrap(s.Description, prefix, maxLen)
 }
 
+// HasInputOnlyPaths is true when any of the service's methods has a non-empty
+// InputOnlyPaths. service.go.tmpl uses it to gate the libs/inputonly import:
+// importing it unconditionally would leave it unused on services that don't
+// strip anything.
+func (s *ServiceJSON) HasInputOnlyPaths() bool {
+	for _, m := range s.Methods {
+		if len(m.InputOnlyPaths) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // MethodJSON is the render context for one command (a method of a service).
 type MethodJSON struct {
 	Name string `json:"name,omitempty"`
@@ -163,6 +176,12 @@ type MethodJSON struct {
 	Pagination           *PaginationJSON `json:"pagination,omitempty"`
 	Wait                 *WaitJSON       `json:"wait,omitempty"`
 	LongRunningOperation *LROJSON        `json:"long_running_operation,omitempty"`
+
+	// InputOnlyPaths is the sorted set of dotted JSON paths in the method's
+	// response type that are annotated INPUT_ONLY in cli.json's schemas
+	// block. Populated by populateInputOnlyPaths after Resolve(); empty for
+	// methods whose render site is not the standard sync path.
+	InputOnlyPaths []string `json:"-"`
 }
 
 func (m *MethodJSON) KebabName() string  { return kebabName(m.Name) }

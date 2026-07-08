@@ -71,6 +71,7 @@ func Generate(jsonPath, targetDir string) ([]string, error) {
 	if err := batch.Resolve(); err != nil {
 		return nil, fmt.Errorf("%s: %w", jsonPath, err)
 	}
+	populateInputOnlyPaths(batch, doc.Schemas)
 
 	var filenames []string
 
