@@ -14,8 +14,12 @@
 * Remove duplicate enum values for jsonschema.json ([#5839](https://github.com/databricks/cli/pull/5839)).
 * direct: volumes: support `volume_path` property ([#5550](https://github.com/databricks/cli/pull/5550)).
 * direct: Fix deploy bug when a `postgres_projects`, `postgres_branches`, or `postgres_endpoints` field is set to its zero value (e.g. `enable_pg_native_login: false`, `replace_existing: false`) ([#5782](https://github.com/databricks/cli/pull/5782)).
-* direct: Recognize more UC-managed schema properties as backend defaults, so redeploying a managed schema no longer produces a spurious empty update ([#5865](https://github.com/databricks/cli/pull/5865)).
+* `bundle run --only` help now documents the `+` modifier syntax: prefix a task key with `+` to also run its upstream tasks, or suffix it with `+` for downstream tasks ([#5760](https://github.com/databricks/cli/pull/5760)).
+* direct: Recognize more UC-managed schema property defaults to avoid unnecessary drift ([#5865](https://github.com/databricks/cli/pull/5865)).
 
 ### Dependency updates
+
+* Bump databricks-sdk-go to v0.154.0 ([#5855](https://github.com/databricks/cli/pull/5855)).
+* Bump terraform-provider to 1.121.0 ([#5857](https://github.com/databricks/cli/pull/5857)).
 
 ### API Changes
