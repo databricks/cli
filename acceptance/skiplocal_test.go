@@ -46,13 +46,13 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 
 // selectChangedLocalTests returns a map of test dir → extra env filters for
 // re-enabling under SkipLocalWithChanged. A nil filter slice means all variants
-// of that dir run; a non-nil slice restricts to variants matching those filters.
+// of that dir run; a non-nil slice restricts to variants matching those filters
+// (applied by the caller via checkEnvFilters in the variant loop).
 // Added dirs come before modified ones; the total is capped at maxChangedLocalTests.
 //
-// Invariant configs (acceptance/bundle/invariant/configs/*.yml.tmpl) each feed
-// every invariant subdir. A changed config re-enables all invariant subdirs but
-// only for variants where INPUT_CONFIG matches the changed file — so touching
-// job.yml.tmpl runs only the job.yml.tmpl variants, not all ~40 configs.
+// A changed invariant config (acceptance/bundle/invariant/configs/*.yml.tmpl)
+// maps to all invariant subdirs with an INPUT_CONFIG= filter, so touching
+// job.yml.tmpl re-enables all subdirs but only for their job.yml.tmpl variants.
 //
 // --merge-base diffs the working tree against the merge base of HEAD and
 // origin/main, so uncommitted edits are included. The three-dot form
@@ -68,18 +68,6 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
 	result := map[string][]string{}
 	added := map[string]bool{}
 
-	addDir := func(dir, filter string) {
-		if filter == "" {
-			result[dir] = nil // non-config change → run all variants
-			return
-		}
-		// Config-specific change: restrict to this INPUT_CONFIG, unless the dir
-		// was already unlocked for all variants by a non-config change.
-		if existing, ok := result[dir]; !ok || existing != nil {
-			result[dir] = append(result[dir], "INPUT_CONFIG="+filter)
-		}
-	}
-
 	for line := range strings.SplitSeq(diff, "\n") {
 		fields := strings.Split(line, "\t")
 		if len(fields) < 2 {
@@ -88,8 +76,8 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
 		status := fields[0]
 		path := fields[len(fields)-1]
 
-		// A changed invariant config re-enables all invariant subdirs, restricted
-		// to only the INPUT_CONFIG variant matching the changed config file.
+		// A changed invariant config re-enables all invariant subdirs with an
+		// INPUT_CONFIG filter, unless a subdir was already unlocked by a non-config change.
 		if strings.HasPrefix(path, invariantConfigsPrefix) {
 			configName := path[len(invariantConfigsPrefix):]
 			// Strip -init.sh / -cleanup.sh suffixes to get the base config name.
@@ -99,7 +87,9 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
 			if strings.HasSuffix(configName, ".yml.tmpl") {
 				for dir := range testDirs {
 					if strings.HasPrefix(dir, invariantDirPrefix) {
-						addDir(dir, configName)
+						if existing, ok := result[dir]; !ok || existing != nil {
+							result[dir] = append(result[dir], "INPUT_CONFIG="+configName)
+						}
 					}
 				}
 			}
@@ -110,7 +100,7 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
 		if dir == "" {
 			continue
 		}
-		addDir(dir, "")
+		result[dir] = nil // nil = all variants; overrides any prior config-scoped filter
 		// A script file with status A means the test dir is brand new.
 		// Renames (R) land here as the destination path but are not "added".
 		if status == "A" && strings.HasSuffix(path, "/script") {
