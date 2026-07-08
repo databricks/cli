@@ -250,11 +250,15 @@ func hasAppChanges(entry *PlanEntry) bool {
 // git_source) while the app has no active deployment. DoRead reads them only from the
 // active deployment, so before the first deploy (or once a stop clears it) the remote
 // side is empty and the diff is spurious; it applies on the next start (manageLifecycle).
+//
+// remote is nil in --plan-mode=local (no plan-time DoRead) and when the resource
+// does not exist remotely; treat that as "no active deployment" so the skip fires
+// on the same path without a nil deref.
 func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
 	// Prefix(1) so a nested diff (e.g. config.command) matches its top-level field.
 	switch path.Prefix(1).String() {
 	case "source_code_path", "config", "git_source":
-		if remote.ActiveDeployment == nil {
+		if remote == nil || remote.ActiveDeployment == nil {
 			change.Action = deployplan.Skip
 			change.Reason = "no active deployment"
 		}
