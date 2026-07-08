@@ -55,10 +55,11 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 // job.yml.tmpl re-enables all subdirs but only for their job.yml.tmpl variants.
 //
 // --merge-base diffs the working tree against the merge base of HEAD and
-// origin/main, so uncommitted edits are included. The three-dot form
-// origin/main...HEAD would only cover committed changes and would miss a file
-// touched but not yet committed, which breaks the "touch a config, run the
-// test" local dev workflow (same reason lintdiff.py uses --merge-base).
+// origin/main. This covers committed, staged, and unstaged changes alike —
+// the working tree reflects all three. The three-dot form origin/main...HEAD
+// only covers committed changes and misses files touched but not yet committed,
+// which breaks the "touch a config, run the test" local dev workflow
+// (same reason lintdiff.py uses --merge-base).
 func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
 	out, _ := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
 	diff := strings.TrimSpace(string(out))
