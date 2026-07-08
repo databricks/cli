@@ -152,6 +152,13 @@ class Job(Resource):
     Job-level parameter definitions
     """
 
+    parent_path: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.
+    """
+
     performance_target: VariableOrOptional[PerformanceTarget] = None
     """
     The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
@@ -306,6 +313,13 @@ class JobDict(TypedDict, total=False):
     parameters: VariableOrList[JobParameterDefinitionParam]
     """
     Job-level parameter definitions
+    """
+
+    parent_path: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.
     """
 
     performance_target: VariableOrOptional[PerformanceTargetParam]
