@@ -474,7 +474,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
                       },
                       "node_type_id": {
-                        "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                        "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                         "$ref": "#/$defs/string"
                       },
                       "num_workers": {
@@ -511,7 +511,7 @@
                         "$ref": "#/$defs/map/string"
                       },
                       "spark_version": {
-                        "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+                        "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                         "$ref": "#/$defs/string"
                       },
                       "ssh_public_keys": {
@@ -935,6 +935,12 @@
                       "parameters": {
                         "description": "Job-level parameter definitions",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition"
+                      },
+                      "parent_path": {
+                        "description": "[Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "performance_target": {
                         "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
@@ -4730,7 +4736,61 @@
                     "CREATE_CLEAN_ROOM",
                     "MODIFY_CLEAN_ROOM",
                     "EXECUTE_CLEAN_ROOM_TASK",
-                    "EXTERNAL_USE_SCHEMA"
+                    "EXTERNAL_USE_SCHEMA",
+                    "READ_METADATA"
+                  ],
+                  "enumDescriptions": [
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -5174,7 +5234,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind"
                     },
                     "node_type_id": {
-                      "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                      "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                       "$ref": "#/$defs/string"
                     },
                     "num_workers": {
@@ -5206,7 +5266,7 @@
                       "$ref": "#/$defs/map/string"
                     },
                     "spark_version": {
-                      "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+                      "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                       "$ref": "#/$defs/string"
                     },
                     "ssh_public_keys": {
@@ -6251,7 +6311,7 @@
                       "doNotSuggest": true
                     },
                     "size": {
-                      "description": "[Private Preview] Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\n(specifies the vector dimension, e.g., 1024).",
+                      "description": "[Private Preview] Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\nor PG_SPECIFIC_TYPE_HALFVEC (specifies the vector dimension, e.g., 1024).",
                       "$ref": "#/$defs/int",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
@@ -6769,6 +6829,12 @@
                     "quartz_cron_expression": {
                       "description": "A Cron expression using Quartz syntax that describes the schedule for a job. See [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details. This field is required.",
                       "$ref": "#/$defs/string"
+                    },
+                    "sql_condition": {
+                      "description": "[Private Preview] SQL condition that must be satisfied before a scheduled run is triggered. The condition is evaluated\nafter the cron expression fires and must return a truthy result for the run to proceed.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlConditionConfiguration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     },
                     "timezone_id": {
                       "description": "A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.",
@@ -8265,6 +8331,62 @@
                 }
               ]
             },
+            "jobs.SqlConditionConfiguration": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "sql_query_id": {
+                      "description": "[Private Preview] The ID of the SQL query to evaluate as the trigger condition.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "trigger_mode": {
+                      "description": "[Private Preview] Determines how the SQL query result is interpreted to decide whether the condition fires.\nMust be set to a recognized value when provided.\nWhen unset on an existing serialized configuration, the server preserves the original\nsemantics by interpreting it as `QUERY_RETURNS_ROWS`. New configurations should set this\nexplicitly — explicit `SQL_CONDITION_TRIGGER_MODE_UNSPECIFIED` is rejected at validation.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlConditionTriggerMode",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "warehouse_id": {
+                      "description": "[Private Preview] The canonical identifier of the SQL warehouse to run the condition query against.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "sql_query_id",
+                    "warehouse_id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.SqlConditionTriggerMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The strategy used to evaluate a SQL condition trigger against a query result set.\n\n* `SQL_CONDITION_TRIGGER_MODE_UNSPECIFIED`: Sentinel zero-value. Not a valid input — the\nvalidator rejects this when sent explicitly. Internally treated as `QUERY_RETURNS_ROWS`\nwhen reading legacy data that predates this field.\n* `QUERY_RETURNS_ROWS`: Fires whenever the result set has at least one row. Zero rows means\nthe condition is not met. This is the original SQL condition behavior.\n* `RESULT_VALUE_CHANGES`: Fires whenever the query's single result value differs from the\nprevious evaluation. The first evaluation always fires. Queries must return exactly one\ncell (one row, one column).",
+                  "enum": [
+                    "QUERY_RETURNS_ROWS",
+                    "RESULT_VALUE_CHANGES"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview] Fires whenever the result set has at least one row. Zero rows means",
+                    "[Private Preview] Fires whenever the query's single result value differs from the"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "jobs.SqlTask": {
               "oneOf": [
                 {
@@ -8858,6 +8980,12 @@
                     "periodic": {
                       "description": "Periodic trigger settings.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfiguration"
+                    },
+                    "sql_condition": {
+                      "description": "[Private Preview] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and\nruns *after* other trigger types conditions are evaluated.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlConditionConfiguration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     },
                     "table_update": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration"
@@ -10926,16 +11054,12 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.AutoFullRefreshPolicy"
                     },
                     "clustering_columns": {
-                      "description": "[Private Preview] List of column names to use for clustering the destination table.\nWhen specified, the destination Delta table will be clustered by these columns.\nThis can improve query performance when filtering on these columns.\nNote: clustering_columns in table specific configuration will override the pipeline definition.\nNote: we can only provide enable_auto_clustering or clustering_columns,\nadded as separate fields as we cannot have repeated field in oneof.",
-                      "$ref": "#/$defs/slice/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] List of column names to use for clustering the destination table.\nWhen specified, the destination Delta table will be clustered by these columns.\nThis can improve query performance when filtering on these columns.\nNote: clustering_columns in table specific configuration will override the pipeline definition.\nNote: we can only provide enable_auto_clustering or clustering_columns,\nadded as separate fields as we cannot have repeated field in oneof.",
+                      "$ref": "#/$defs/slice/string"
                     },
                     "enable_auto_clustering": {
-                      "description": "[Private Preview] Whether to enable auto clustering on the destination table.\nWhen enabled, Delta will automatically optimize the data layout\nbased on the clustering columns for improved query performance.\nNote: enable_auto_clustering in table specific configuration will override the pipeline definition.\nNote: we can only provide enable_auto_clustering or clustering_columns,\nadded as separate fields as we cannot have repeated field in oneof.",
-                      "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Whether to enable auto clustering on the destination table.\nWhen enabled, Delta will automatically optimize the data layout\nbased on the clustering columns for improved query performance.\nNote: enable_auto_clustering in table specific configuration will override the pipeline definition.\nNote: we can only provide enable_auto_clustering or clustering_columns,\nadded as separate fields as we cannot have repeated field in oneof.",
+                      "$ref": "#/$defs/bool"
                     },
                     "exclude_columns": {
                       "description": "[Public Preview] A list of column names to be excluded for the ingestion.\nWhen not specified, include_columns fully controls what columns to be ingested.\nWhen specified, all other columns including future ones will be automatically included for ingestion.\nThis field in mutually exclusive with `include_columns`.",
@@ -10972,10 +11096,8 @@
                       "$ref": "#/$defs/slice/string"
                     },
                     "table_properties": {
-                      "description": "[Private Preview] Table properties to set on the destination table.\nThese are key-value pairs that configure various Delta table behaviors or any user defined properties.\nExample: {\"delta.feature.variantType\": \"supported\", \"delta.enableTypeWidening\": \"true\"}\nNote: table_properties in table specific configuration will override the table_properties of the pipeline definition.",
-                      "$ref": "#/$defs/map/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Table properties to set on the destination table.\nThese are key-value pairs that configure various Delta table behaviors or any user defined properties.\nExample: {\"delta.feature.variantType\": \"supported\", \"delta.enableTypeWidening\": \"true\"}\nNote: table_properties in table specific configuration will override the table_properties of the pipeline definition.",
+                      "$ref": "#/$defs/map/string"
                     },
                     "workday_report_parameters": {
                       "description": "[Private Preview] (Optional) Additional custom parameters for Workday Report",
@@ -11450,7 +11572,7 @@
                     "PG_SPECIFIC_TYPE_VECTOR"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]"
+                    "[Beta]"
                   ]
                 },
                 {
@@ -11488,22 +11610,16 @@
                   "description": "Overrides the default Delta-to-PostgreSQL type mapping for a single column.",
                   "properties": {
                     "column_name": {
-                      "description": "[Private Preview] Name of the source column whose target PostgreSQL type should be overridden.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Name of the source column whose target PostgreSQL type should be overridden.",
+                      "$ref": "#/$defs/string"
                     },
                     "pg_type": {
-                      "description": "[Private Preview] PostgreSQL-specific target type to use for the column.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecPgSpecificType",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] PostgreSQL-specific target type to use for the column.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecPgSpecificType"
                     },
                     "size": {
-                      "description": "[Private Preview] Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\n(specifies the vector dimension, e.g., 1024).",
-                      "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\nor PG_SPECIFIC_TYPE_HALFVEC (specifies the vector dimension, e.g., 1024).",
+                      "$ref": "#/$defs/int"
                     }
                   },
                   "additionalProperties": false,
@@ -12618,7 +12734,9 @@
                     "GPU_SMALL",
                     "GPU_LARGE",
                     "MULTIGPU_MEDIUM",
-                    "GPU_XLARGE"
+                    "CPU_LARGE",
+                    "GPU_XLARGE",
+                    "CPU_MEDIUM"
                   ],
                   "enumDescriptions": [
                     "",
@@ -12626,6 +12744,8 @@
                     "",
                     "",
                     "",
+                    "[Beta]",
+                    "[Beta]",
                     "[Beta]"
                   ]
                 },
@@ -12663,7 +12783,9 @@
                     "GPU_SMALL",
                     "GPU_LARGE",
                     "MULTIGPU_MEDIUM",
-                    "GPU_XLARGE"
+                    "CPU_LARGE",
+                    "GPU_XLARGE",
+                    "CPU_MEDIUM"
                   ],
                   "enumDescriptions": [
                     "",
@@ -12671,6 +12793,8 @@
                     "",
                     "",
                     "",
+                    "[Beta]",
+                    "[Beta]",
                     "[Beta]"
                   ]
                 },

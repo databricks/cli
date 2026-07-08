@@ -25,23 +25,22 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "secrets-uc",
-		Short: `A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).`,
-		Long: `A secret is a Unity Catalog securable object that stores sensitive credential
+		Short: `*Public Preview* A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).`,
+		Long: `This command is in Public Preview and may change without notice.
+
+A secret is a Unity Catalog securable object that stores sensitive credential
   data (such as passwords, tokens, and keys) within a three-level namespace
   (**catalog_name.schema_name.secret_name**).
 
   Secrets can be managed using standard Unity Catalog permissions and are scoped
   to a schema within a catalog.`,
 		GroupID: "catalog",
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateSecret())
@@ -82,8 +81,10 @@ func newCreateSecret() *cobra.Command {
 	cmd.Flags().StringVar(&createSecretReq.Secret.Owner, "owner", createSecretReq.Secret.Owner, `The owner of the secret.`)
 
 	cmd.Use = "create-secret NAME CATALOG_NAME SCHEMA_NAME VALUE"
-	cmd.Short = `Create a secret.`
-	cmd.Long = `Create a secret.
+	cmd.Short = `*Public Preview* Create a secret.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a secret.
 
   Creates a new secret in Unity Catalog.
 
@@ -105,8 +106,8 @@ func newCreateSecret() *cobra.Command {
       keys, and other sensitive credential data.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -195,8 +196,10 @@ func newDeleteSecret() *cobra.Command {
 	var deleteSecretReq catalog.DeleteSecretRequest
 
 	cmd.Use = "delete-secret FULL_NAME"
-	cmd.Short = `Delete a secret.`
-	cmd.Long = `Delete a secret.
+	cmd.Short = `*Public Preview* Delete a secret.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a secret.
 
   Deletes a secret by its three-level (fully qualified) name.
 
@@ -207,8 +210,8 @@ func newDeleteSecret() *cobra.Command {
       **catalog_name.schema_name.secret_name**).`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -255,11 +258,11 @@ func newGetSecret() *cobra.Command {
 
 	var getSecretReq catalog.GetSecretRequest
 
-	cmd.Flags().BoolVar(&getSecretReq.IncludeBrowse, "include-browse", getSecretReq.IncludeBrowse, `Whether to include secrets in the response for which you only have the **BROWSE** privilege, which limits access to metadata.`)
-
 	cmd.Use = "get-secret FULL_NAME"
-	cmd.Short = `Get a secret.`
-	cmd.Long = `Get a secret.
+	cmd.Short = `*Public Preview* Get a secret.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a secret.
 
   Gets a secret by its three-level (fully qualified) name.
 
@@ -275,8 +278,8 @@ func newGetSecret() *cobra.Command {
       **catalog_name.schema_name.secret_name**).`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -329,7 +332,6 @@ func newListSecrets() *cobra.Command {
 	var listSecretsLimit int
 
 	cmd.Flags().StringVar(&listSecretsReq.CatalogName, "catalog-name", listSecretsReq.CatalogName, `The name of the catalog under which to list secrets.`)
-	cmd.Flags().BoolVar(&listSecretsReq.IncludeBrowse, "include-browse", listSecretsReq.IncludeBrowse, `Whether to include secrets in the response for which you only have the **BROWSE** privilege, which limits access to metadata.`)
 	cmd.Flags().IntVar(&listSecretsReq.PageSize, "page-size", listSecretsReq.PageSize, `Maximum number of secrets to return.`)
 	cmd.Flags().StringVar(&listSecretsReq.SchemaName, "schema-name", listSecretsReq.SchemaName, `The name of the schema under which to list secrets.`)
 
@@ -341,8 +343,10 @@ func newListSecrets() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-secrets"
-	cmd.Short = `List secrets.`
-	cmd.Long = `List secrets.
+	cmd.Short = `*Public Preview* List secrets.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List secrets.
 
   Lists secrets in Unity Catalog.
 
@@ -354,8 +358,8 @@ func newListSecrets() *cobra.Command {
   **page_token** field from the response to retrieve subsequent pages.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -414,8 +418,10 @@ func newUpdateSecret() *cobra.Command {
 	cmd.Flags().StringVar(&updateSecretReq.Secret.Owner, "owner", updateSecretReq.Secret.Owner, `The owner of the secret.`)
 
 	cmd.Use = "update-secret FULL_NAME UPDATE_MASK NAME CATALOG_NAME SCHEMA_NAME VALUE"
-	cmd.Short = `Update a secret.`
-	cmd.Long = `Update a secret.
+	cmd.Short = `*Public Preview* Update a secret.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a secret.
 
   Updates an existing secret in Unity Catalog.
 
@@ -429,8 +435,12 @@ func newUpdateSecret() *cobra.Command {
   Arguments:
     FULL_NAME: The three-level (fully qualified) name of the secret (for example,
       **catalog_name.schema_name.secret_name**).
-    UPDATE_MASK: The field mask specifying which fields of the secret to update. Supported
-      fields: **value**, **comment**, **owner**, **expire_time**.
+    UPDATE_MASK: The field mask specifying which fields of the secret to update. - If
+      **update_mask** is **"*"**, all fields specified in **secret** are
+      updated. - If **update_mask** specifies one or more fields, only those
+      fields are updated. Each specified field must be set in **secret**.
+      Supported fields: **value**, **comment**, **owner**, **expire_time**. To
+      change the secret name, delete and recreate the secret.
     NAME: The name of the secret, relative to its parent schema.
     CATALOG_NAME: The name of the catalog where the schema and the secret reside.
     SCHEMA_NAME: The name of the schema where the secret resides.
@@ -441,8 +451,8 @@ func newUpdateSecret() *cobra.Command {
       keys, and other sensitive credential data.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
