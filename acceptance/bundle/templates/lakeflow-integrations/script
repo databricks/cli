@@ -1,0 +1,37 @@
+WHEELS_DIR="$PWD/wheels"
+STUB_WHEELS_SRC="$PWD/stub-wheels"
+
+cleanup() {
+    # Do not affect this repository's git behaviour #2318
+    [ -f .gitignore ] && mv .gitignore out.gitignore
+    rm -rf .databricks dist __generated__ .venv uv.lock
+    rm -rf "$WHEELS_DIR"
+}
+
+# The example modules import `requests` and `databricks.sdk` at module top level,
+# but the acceptance harness runs uv offline against a fixed find-links dir that
+# only has databricks-lakeflow-integrations. Build stub wheels for these two
+# packages from `stub-wheels/` into a per-test find-links dir that also
+# symlinks the real vendored wheels, and point UV_FIND_LINKS at it.
+mkdir -p "$WHEELS_DIR"
+for whl in "$VENDORED_PY_PACKAGES"/*.whl; do
+    ln -sf "$whl" "$WHEELS_DIR/$(basename "$whl")"
+done
+uv build --wheel --quiet --out-dir "$WHEELS_DIR" "$STUB_WHEELS_SRC/requests"
+uv build --wheel --quiet --out-dir "$WHEELS_DIR" "$STUB_WHEELS_SRC/databricks-sdk"
+
+export UV_FIND_LINKS="$WHEELS_DIR"
+
+trace $CLI bundle init lakeflow-integrations --config-file ./input.json --output-dir output
+
+cd output/my_lakeflow_integrations
+trap cleanup EXIT
+
+trace $CLI bundle validate -t dev
+trace $CLI bundle validate -t prod
+
+trace $CLI bundle deploy -t dev
+
+# FIXME: debug why no artifacts are uploaded on Windows
+# title "artifacts uploaded to .internal"
+# trace $CLI workspace list /Workspace/Users/$CURRENT_USER_NAME/.bundle/my_lakeflow_integrations/dev/artifacts/.internal --output json | jq '[.[] | .path] | sort | .[]'
