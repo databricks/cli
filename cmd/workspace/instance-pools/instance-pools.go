@@ -3,6 +3,7 @@
 package instance_pools
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -121,7 +122,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'instance_pool_name', 'node_type_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'instance_pool_name', 'node_type_id' in your JSON input")
 			}
 			return nil
 		}
@@ -208,7 +209,7 @@ func newDelete() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'instance_pool_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'instance_pool_id' in your JSON input")
 			}
 			return nil
 		}
@@ -247,7 +248,7 @@ func newDelete() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the instance pool to be terminated")
+				return errors.New("expected to have the instance pool to be terminated")
 			}
 			deleteReq.InstancePoolId = args[0]
 		}
@@ -319,7 +320,7 @@ func newEdit() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'instance_pool_id', 'instance_pool_name', 'node_type_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'instance_pool_id', 'instance_pool_name', 'node_type_id' in your JSON input")
 			}
 			return nil
 		}
@@ -420,7 +421,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical unique identifier for the instance pool")
+			return errors.New("expected to have the canonical unique identifier for the instance pool")
 		}
 		getReq.InstancePoolId = args[0]
 
@@ -491,7 +492,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the instance pool for which to get or manage permissions")
+			return errors.New("expected to have the instance pool for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.InstancePoolId = args[0]
 
@@ -563,7 +564,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the instance pool for which to get or manage permissions")
+			return errors.New("expected to have the instance pool for which to get or manage permissions")
 		}
 		getPermissionsReq.InstancePoolId = args[0]
 
@@ -710,7 +711,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the instance pool for which to get or manage permissions")
+			return errors.New("expected to have the instance pool for which to get or manage permissions")
 		}
 		setPermissionsReq.InstancePoolId = args[0]
 
@@ -799,7 +800,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the instance pool for which to get or manage permissions")
+			return errors.New("expected to have the instance pool for which to get or manage permissions")
 		}
 		updatePermissionsReq.InstancePoolId = args[0]
 

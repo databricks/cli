@@ -81,6 +81,19 @@ func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSc
 	return result
 }
 
+func (s *FakeWorkspace) DashboardGet(req Request) Response {
+	defer s.LockUnlock()()
+
+	dashboardId := req.Vars["dashboard_id"]
+	// Read applies eventual consistency: the first GET after a create returns nil
+	// (404) to simulate propagation delay. Updates are immediately visible.
+	ptr, ok := s.Dashboards.Read(dashboardId)
+	if !ok || ptr == nil {
+		return Response{StatusCode: 404}
+	}
+	return Response{Body: *ptr}
+}
+
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -144,10 +157,12 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	}
 	dashboard.Etag = "80611980"
 
-	s.Dashboards[dashboard.DashboardId] = fakeDashboard{
+	// Write so that, when eventual consistency is enabled, the first GET after this
+	// create returns 404.
+	s.Dashboards.Write(dashboard.DashboardId, &fakeDashboard{
 		Dashboard:                dashboard,
 		InputSerializedDashboard: inputSerializedDashboard,
-	}
+	})
 
 	workspacePath := path.Join("/Workspace", dashboard.Path)
 	s.files[workspacePath] = FileEntry{
@@ -176,50 +191,54 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	}
 
 	dashboardId := req.Vars["dashboard_id"]
-	dashboard, ok := s.Dashboards[dashboardId]
+	dashboard, ok := s.Dashboards.ReadStrong(dashboardId)
 	if !ok {
 		return Response{
 			StatusCode: 404,
 		}
 	}
+	updated := *dashboard
 
 	// Bump etag on every write, matching cloud behavior.
-	prevEtag, err := strconv.Atoi(dashboard.Etag)
+	prevEtag, err := strconv.Atoi(updated.Etag)
 	if err != nil {
 		return Response{
 			Body: map[string]string{
-				"message": "Invalid etag: " + dashboard.Etag,
+				"message": "Invalid etag: " + updated.Etag,
 			},
 			StatusCode: 400,
 		}
 	}
-	dashboard.Etag = strconv.Itoa(prevEtag + 1)
+	updated.Etag = strconv.Itoa(prevEtag + 1)
 
-	if updateReq.SerializedDashboard != dashboard.InputSerializedDashboard {
-		dashboard.InputSerializedDashboard = updateReq.SerializedDashboard
+	if updateReq.SerializedDashboard != updated.InputSerializedDashboard {
+		updated.InputSerializedDashboard = updateReq.SerializedDashboard
 	}
 
 	// Update the dashboard.
-	dashboard.LifecycleState = dashboards.LifecycleStateActive
+	updated.LifecycleState = dashboards.LifecycleStateActive
 	if updateReq.DisplayName != "" {
-		dashboard.DisplayName = updateReq.DisplayName
-		dir := path.Dir(dashboard.Path)
+		updated.DisplayName = updateReq.DisplayName
+		dir := path.Dir(updated.Path)
 		base := updateReq.DisplayName + ".lvdash.json"
-		dashboard.Path = path.Join(dir, base)
+		updated.Path = path.Join(dir, base)
 	}
 	if updateReq.SerializedDashboard != "" {
 		// Extract dataset_catalog and dataset_schema from query parameters
 		datasetCatalog := req.URL.Query().Get("dataset_catalog")
 		datasetSchema := req.URL.Query().Get("dataset_schema")
-		dashboard.SerializedDashboard = transformSerializedDashboard(updateReq.SerializedDashboard, datasetCatalog, datasetSchema)
+		updated.SerializedDashboard = transformSerializedDashboard(updateReq.SerializedDashboard, datasetCatalog, datasetSchema)
 	}
-	dashboard.WarehouseId = updateReq.WarehouseId
-	dashboard.UpdateTime = time.Now().UTC().Format(time.RFC3339)
+	updated.WarehouseId = updateReq.WarehouseId
+	updated.UpdateTime = time.Now().UTC().Format(time.RFC3339)
 
-	s.Dashboards[dashboardId] = dashboard
+	// Write stages a stale value: like a real backend, the first read after an update
+	// returns the pre-update value. Tests that read right after an update wait for the
+	// new value with a content-aware retry (retry --until / --until-not).
+	s.Dashboards.Write(dashboardId, &updated)
 
 	return Response{
-		Body: dashboard,
+		Body: updated,
 	}
 }
 
@@ -234,7 +253,7 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 	}
 
 	dashboardId := req.Vars["dashboard_id"]
-	dashboard, ok := s.Dashboards[dashboardId]
+	dashboard, ok := s.Dashboards.ReadStrong(dashboardId)
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -273,7 +292,7 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	defer s.LockUnlock()()
 
 	dashboardId := req.Vars["dashboard_id"]
-	dashboard, ok := s.Dashboards[dashboardId]
+	dashboard, ok := s.Dashboards.ReadStrong(dashboardId)
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -281,20 +300,20 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	}
 
 	// The dashboard is marked as trashed and moved to the trash.
-	s.Dashboards[dashboardId] = fakeDashboard{
+	s.Dashboards.Put(dashboardId, &fakeDashboard{
 		Dashboard: dashboards.Dashboard{
 			Etag:           dashboard.Etag,
 			DashboardId:    dashboardId,
 			LifecycleState: dashboards.LifecycleStateTrashed,
 			ParentPath:     path.Join("/Users", s.CurrentUser().UserName, "Trash"),
 		},
-	}
+	})
 
 	// The published dashboard is deleted.
 	delete(s.PublishedDashboards, dashboardId)
 
 	return Response{
-		Body: dashboard,
+		Body: *dashboard,
 	}
 }
 
@@ -302,8 +321,7 @@ func (s *FakeWorkspace) DashboardUnpublish(req Request) Response {
 	defer s.LockUnlock()()
 
 	dashboardId := req.Vars["dashboard_id"]
-	_, ok := s.Dashboards[dashboardId]
-	if !ok {
+	if _, ok := s.Dashboards.ReadStrong(dashboardId); !ok {
 		return Response{
 			StatusCode: 404,
 		}

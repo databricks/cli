@@ -1,0 +1,31 @@
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "mycatalog",
+    "comment": "/Volumes/mycatalog/myschema/mycatalog.myschema.bazname",
+    "name": "fooname",
+    "schema_name": "myschema",
+    "volume_type": "MANAGED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "mycatalog",
+    "name": "bazname",
+    "schema_name": "myschema",
+    "volume_type": "MANAGED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "mycatalog",
+    "name": "mycatalog.myschema.bazname",
+    "schema_name": "myschema",
+    "volume_type": "MANAGED"
+  }
+}
