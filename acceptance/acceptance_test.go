@@ -427,6 +427,22 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
+	skipLocalMode := os.Getenv(SkipLocalEnvVar)
+	// changedTests maps test dir to extra env filters to apply for that dir.
+	// nil value means all variants run; a non-nil slice restricts to matching variants.
+	var changedTests map[string][]string
+	switch skipLocalMode {
+	case "", SkipLocalAll:
+	case SkipLocalWithChanged:
+		testDirsSet := make(map[string]bool, len(testDirs))
+		for _, d := range testDirs {
+			testDirsSet[d] = true
+		}
+		changedTests = selectChangedLocalTests(testDirsSet)
+	default:
+		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, skipLocalMode, SkipLocalAll, SkipLocalWithChanged)
+	}
+
 	if singleTest != "" {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
 			return n != singleTest
@@ -481,7 +497,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath)
+			skipReason := getSkipReason(&config, configPath, dir, skipLocalMode, changedTests)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -531,6 +547,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 					t.Run(envname, func(t *testing.T) {
 						if runParallel {
 							t.Parallel()
+						}
+						// For invariant dirs re-enabled by a specific config change,
+						// skip variants not matching that config.
+						if variantFilters := changedTests[dir]; variantFilters != nil {
+							checkEnvFilters(t, envset, variantFilters)
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
@@ -604,9 +625,20 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-func getSkipReason(config *internal.TestConfig, configPath string) string {
-	if os.Getenv("DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
-		return "Disabled via DATABRICKS_TEST_SKIPLOCAL environment variable in " + configPath
+// skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
+// changedTests maps test dirs to extra env filters; nil map means feature is off.
+func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode string, changedTests map[string][]string) string {
+	switch skipLocalMode {
+	case SkipLocalAll:
+		if isTruePtr(config.Local) {
+			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalAll + " in " + configPath
+		}
+	case SkipLocalWithChanged:
+		if isTruePtr(config.Local) {
+			if _, ok := changedTests[dir]; !ok {
+				return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
+			}
+		}
 	}
 
 	if Forcerun {
