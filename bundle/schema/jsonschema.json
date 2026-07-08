@@ -1078,7 +1078,7 @@
                         "deprecated": true
                       },
                       "only": {
-                        "description": "A list of task keys to run inside of the job. If this field is not provided, all tasks in the job will be run.",
+                        "description": "A list of task keys to run inside of the job. If this field is not provided, all tasks in the job will be run.\n\nPrefix a task key with `+` to also run its upstream tasks, or suffix it with `+` to also run its downstream tasks.\nFor example, `+my_task` runs `my_task` and everything upstream of it, `my_task+` runs `my_task` and everything\ndownstream of it, and `+my_task+` runs both. A task key with no `+` runs only that task.",
                         "$ref": "#/$defs/slice/string"
                       },
                       "performance_target": {
