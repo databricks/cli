@@ -61,22 +61,37 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, aiRuntimeCompute{AcceleratorType: "GPU_8xH100", AcceleratorCount: 16}, at.Deployments[0].Compute)
 }
 
-func TestBuildSubmitPayload_NoRetries(t *testing.T) {
+func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
+	// max_retries unset defaults to 3 (matching the Python native path), so both
+	// retry fields are sent.
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+	}
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4").Tasks[0]
+	assert.Equal(t, defaultMaxRetries, task.MaxRetries)
+	assert.True(t, task.RetryOnTimeout)
+}
+
+func TestBuildSubmitPayloadNoRetries(t *testing.T) {
+	// max_retries: 0 must be sent explicitly so Jobs honors "no retries" instead
+	// of applying the server default. retry_on_timeout is omitted when retries
+	// aren't allowed.
 	cfg := &runConfig{
 		ExperimentName: "exp",
 		Command:        new("x"),
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 		MaxRetries:     new(0),
 	}
-
 	task := buildSubmitPayload(cfg, "/d/command.sh", "4").Tasks[0]
 	assert.Equal(t, 0, task.MaxRetries)
 	assert.False(t, task.RetryOnTimeout)
 
-	// max_retries: 0 must be sent, not omitted, so the server honors "no retries".
 	b, err := json.Marshal(task)
 	require.NoError(t, err)
 	assert.Contains(t, string(b), `"max_retries":0`)
+	assert.NotContains(t, string(b), "retry_on_timeout")
 }
 
 func TestSubmitToken(t *testing.T) {
