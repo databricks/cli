@@ -403,6 +403,10 @@ resources:
       # and UC rejects it with "UpdateSchema Nothing to update".
       - field: properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']
       - field: properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']
+      - field: properties['unity.catalog.managed.delta.defaults.defaultClusterByAuto']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.checkpointPolicy']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.parquet.format.version']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.parquet.format.version.afe.internal']
 
   external_locations:
     recreate_on_changes:
