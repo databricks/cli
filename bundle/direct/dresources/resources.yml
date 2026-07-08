@@ -126,6 +126,10 @@ resources:
         reason: "!drop"
       - field: run_as
         reason: input_only
+      # cascade is a delete-time-only setting
+      # it is never returned by GET, so suppress remote drift for it.
+      - field: cascade
+        reason: input_only
 
     ignore_local_changes:
       # "id" is output-only, providing it in config would be a mistake

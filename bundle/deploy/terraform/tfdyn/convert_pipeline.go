@@ -21,7 +21,8 @@ func convertPipelineResource(ctx context.Context, vin dyn.Value) (dyn.Value, err
 		return dyn.InvalidValue, err
 	}
 
-	vout, err = dyn.DropKeys(vout, []string{"dry_run"})
+	// Current Terraform provider does not support the cascade attribute yet
+	vout, err = dyn.DropKeys(vout, []string{"dry_run", "cascade"})
 	if err != nil {
 		return dyn.InvalidValue, err
 	}

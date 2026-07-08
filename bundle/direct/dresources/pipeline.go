@@ -10,10 +10,31 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+// PipelineState is the state type for Pipeline resources. It extends CreatePipeline with
+// the Cascade field, a delete-time setting that is not part of the pipeline spec
+type PipelineState struct {
+	pipelines.CreatePipeline
+
+	// Cascade controls whether deleting the pipeline also deletes its datasets (MVs, STs,
+	// Views). Nil means the server default (cascade) applies. Read from persisted state at
+	// delete time; never sent on create/update.
+	Cascade *bool `json:"cascade,omitempty"`
+}
+
+func (s *PipelineState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PipelineState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
 // PipelineRemote is the return type for DoRead. It embeds CreatePipeline so that all
 // paths in StateType are valid paths in RemoteType.
 type PipelineRemote struct {
 	pipelines.CreatePipeline
+
+	Cascade *bool `json:"cascade,omitempty"`
 
 	// Remote-specific fields from pipelines.GetPipelineResponse
 	Cause                   string                              `json:"cause,omitempty"`
@@ -49,12 +70,18 @@ func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeli
 	}
 }
 
-func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *pipelines.CreatePipeline {
-	return &input.CreatePipeline
+func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *PipelineState {
+	return &PipelineState{
+		CreatePipeline: input.CreatePipeline,
+		Cascade:        input.Cascade,
+	}
 }
 
-func (*ResourcePipeline) RemapState(remote *PipelineRemote) *pipelines.CreatePipeline {
-	return &remote.CreatePipeline
+func (*ResourcePipeline) RemapState(remote *PipelineRemote) *PipelineState {
+	return &PipelineState{
+		CreatePipeline: remote.CreatePipeline,
+		Cascade:        remote.Cascade,
+	}
 }
 
 func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemote, error) {
@@ -108,7 +135,9 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 		}
 	}
 	return &PipelineRemote{
-		CreatePipeline:          createPipeline,
+		CreatePipeline: createPipeline,
+		// cascade is input-only; the GET response never carries it, so leave it nil.
+		Cascade:                 nil,
 		Cause:                   p.Cause,
 		ClusterId:               p.ClusterId,
 		CreatorUserName:         p.CreatorUserName,
@@ -123,15 +152,22 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 	}
 }
 
-func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, *PipelineRemote, error) {
-	response, err := r.client.Pipelines.Create(ctx, *config)
+func (r *ResourcePipeline) DoCreate(ctx context.Context, config *PipelineState) (string, *PipelineRemote, error) {
+	response, err := r.client.Pipelines.Create(ctx, config.CreatePipeline)
 	if err != nil {
 		return "", nil, err
 	}
 	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ *PlanEntry) (*PipelineRemote, error) {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *PipelineState, entry *PlanEntry) (*PipelineRemote, error) {
+	// cascade is a delete-time-only setting with no update API, so a change to it alone must
+	// persist to state without a pipeline Update call. This mirrors sql_warehouse's handling
+	// of its non-spec lifecycle field.
+	if !entry.Changes.HasChangeExcept("cascade") {
+		return nil, nil
+	}
+
 	request := pipelines.EditPipeline{
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,
@@ -172,8 +208,17 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 	return nil, r.client.Pipelines.Update(ctx, request)
 }
 
-func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, _ *pipelines.CreatePipeline) error {
-	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
+func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, state *PipelineState) error {
+	if state.Cascade == nil {
+		// No explicit cascade in config: preserve the backend default (cascade).
+		return r.client.Pipelines.DeleteByPipelineId(ctx, id)
+	}
+	return r.client.Pipelines.Delete(ctx, pipelines.DeletePipelineRequest{
+		PipelineId:      id,
+		Cascade:         *state.Cascade,
+		Force:           false,
+		ForceSendFields: []string{"Cascade"},
+	})
 }
 
 // Note, terraform provider either
