@@ -5,6 +5,7 @@ EnvMatrixExclude.no_volume_path_job_ref = ["INPUT_CONFIG=volume_path_job_ref.yml
 
 # postgres_project.yml.tmpl sets enable_pg_native_login: false, which triggers a
 # state serialization bug on the previous CLI (fixed by #5782).
+# Broken on CLI_PREV=1.6.0; remove after the next release.
 EnvMatrixExclude.no_postgres_project = ["INPUT_CONFIG=postgres_project.yml.tmpl"]
 
 # The 1000-task scale case is covered by no_drift. Running it here adds ~1.5 min
