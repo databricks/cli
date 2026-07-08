@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  registered_models:
+    model1:
+      name: model_browse_only
+      catalog_name: main
+      schema_name: default
+      comment: original comment

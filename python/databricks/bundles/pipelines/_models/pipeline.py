@@ -144,7 +144,7 @@ class Pipeline(Resource):
 
     lifecycle: VariableOrOptional[Lifecycle] = None
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     name: VariableOrOptional[str] = None
@@ -164,6 +164,9 @@ class Pipeline(Resource):
     """
 
     permissions: VariableOrList[PipelinePermission] = field(default_factory=list)
+    """
+    The permissions to apply to this resource.
+    """
 
     photon: VariableOrOptional[bool] = None
     """
@@ -199,6 +202,13 @@ class Pipeline(Resource):
     serverless: VariableOrOptional[bool] = None
     """
     Whether serverless compute is enabled for this pipeline.
+    """
+
+    serverless_compute_id: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Serverless compute ID specified by the user for serverless pipelines.
     """
 
     storage: VariableOrOptional[str] = None
@@ -320,7 +330,7 @@ class PipelineDict(TypedDict, total=False):
 
     lifecycle: VariableOrOptional[LifecycleParam]
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     name: VariableOrOptional[str]
@@ -340,6 +350,9 @@ class PipelineDict(TypedDict, total=False):
     """
 
     permissions: VariableOrList[PipelinePermissionParam]
+    """
+    The permissions to apply to this resource.
+    """
 
     photon: VariableOrOptional[bool]
     """
@@ -375,6 +388,13 @@ class PipelineDict(TypedDict, total=False):
     serverless: VariableOrOptional[bool]
     """
     Whether serverless compute is enabled for this pipeline.
+    """
+
+    serverless_compute_id: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Serverless compute ID specified by the user for serverless pipelines.
     """
 
     storage: VariableOrOptional[str]

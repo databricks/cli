@@ -38,4 +38,4 @@ rm -f out.requests.txt
 
 title "bundle destroy (must be a plain DELETE, no ?purge=true)"
 $CLI bundle destroy --auto-approve > out.destroy.txt 2>&1 || true
-trace print_requests.py --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.json
+trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.json

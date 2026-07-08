@@ -42,7 +42,9 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	schema.EffectivePredictiveOptimizationFlag = &catalog.EffectivePredictiveOptimizationFlag{
 		InheritedFromName: testMetastoreName,
 		InheritedFromType: catalog.EffectivePredictiveOptimizationFlagInheritedFromType("METASTORE"),
-		Value:             catalog.EnablePredictiveOptimizationEnable,
+		// Mirror the real test metastore, which inherits ENABLE, so a single
+		// golden stays valid for both local and cloud runs.
+		Value: catalog.EnablePredictiveOptimizationEnable,
 	}
 	schema.EnablePredictiveOptimization = catalog.EnablePredictiveOptimizationInherit
 	schema.MetastoreId = TestMetastore.MetastoreId
@@ -52,8 +54,12 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 		// Mirror UC behavior: managed system defaults are populated when the user
 		// doesn't specify any properties. Required to cover backend-default drift.
 		schema.Properties = map[string]string{
-			"unity.catalog.managed.delta.defaults.delta.enableRowTracking":        "true",
-			"unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged": "true",
+			"unity.catalog.managed.delta.defaults.delta.enableRowTracking":                   "true",
+			"unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged":            "true",
+			"unity.catalog.managed.delta.defaults.defaultClusterByAuto":                      "true",
+			"unity.catalog.managed.delta.defaults.delta.checkpointPolicy":                    "v2",
+			"unity.catalog.managed.delta.defaults.delta.parquet.format.version":              "2.12.0",
+			"unity.catalog.managed.delta.defaults.delta.parquet.format.version.afe.internal": "2.12.0",
 		}
 	}
 	s.Schemas[schema.FullName] = schema

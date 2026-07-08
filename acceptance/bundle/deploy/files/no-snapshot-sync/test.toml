@@ -1,4 +1,4 @@
-Local = false
+Local = true
 Cloud = true
 
 Ignore = [

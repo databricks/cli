@@ -16,7 +16,4 @@ export PIPELINE_ID
 # Deploy the bundle that has a pipeline with the same name:
 trace $CLI bundle deploy
 
-print_requests() {
-    print_requests.py //pipelines
-}
-trace print_requests
+trace print_requests.py //pipelines

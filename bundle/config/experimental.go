@@ -3,6 +3,13 @@ package config
 type Experimental struct {
 	Scripts map[ScriptHook]Command `json:"scripts,omitempty"`
 
+	// ImmutableFolder specifies that bundle files and artifacts are uploaded as a
+	// single immutable snapshot rather than being synced individually. When true,
+	// the deployment calls /api/2.0/repos/snapshots with a zip of all files and sets
+	// workspace.file_path and workspace.artifact_path to the returned content-addressed
+	// path. Only supported with the direct deployment engine.
+	ImmutableFolder bool `json:"immutable_folder,omitempty"`
+
 	// By default Python wheel tasks deployed as is to Databricks platform.
 	// If notebook wrapper required (for example, used in DBR < 13.1 or other configuration differences), users can provide a following experimental setting
 	// experimental:

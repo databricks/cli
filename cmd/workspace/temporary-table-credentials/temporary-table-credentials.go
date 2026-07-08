@@ -18,24 +18,24 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "temporary-table-credentials",
-		Short: `Temporary Table Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where table data is stored in Databricks.`,
-		Long: `Temporary Table Credentials refer to short-lived, downscoped credentials used
-  to access cloud storage locations where table data is stored in Databricks.
-  These credentials are employed to provide secure and time-limited access to
-  data in cloud environments such as AWS, Azure, and Google Cloud. Each cloud
-  provider has its own type of credentials: AWS uses temporary session tokens
-  via AWS Security Token Service (STS), Azure utilizes Shared Access Signatures
-  (SAS) for its data storage services, and Google Cloud supports temporary
-  credentials through OAuth 2.0.
+		Short: `Temporary Table Credentials are short-lived, downscoped credentials used to access cloud storage locations where table data is stored in Databricks.`,
+		Long: `Temporary Table Credentials are short-lived, downscoped credentials used to
+  access cloud storage locations where table data is stored in Databricks. These
+  credentials provide secure and time-limited access to data in cloud
+  environments such as AWS, Azure, and Google Cloud. Each cloud provider has its
+  own type of credentials: AWS uses temporary session tokens through AWS
+  Security Token Service (STS), Azure uses Shared Access Signatures (SAS) for
+  its data storage services, and Google Cloud supports temporary credentials
+  through OAuth 2.0.
 
   Temporary table credentials ensure that data access is limited in scope and
   duration, reducing the risk of unauthorized access or misuse. To use the
-  temporary table credentials API, a metastore admin needs to enable the
-  external_access_enabled flag (off by default) at the metastore level, and user
-  needs to be granted the EXTERNAL USE SCHEMA permission at the schema level by
-  catalog owner. Note that EXTERNAL USE SCHEMA is a schema level permission that
-  can only be granted by catalog owner explicitly and is not included in schema
-  ownership or ALL PRIVILEGES on the schema for security reasons.`,
+  temporary table credentials API, a metastore admin must enable the
+  external_access_enabled flag (off by default) at the metastore level, and the
+  user must be granted the EXTERNAL USE SCHEMA permission at the schema level by
+  the catalog owner. Note that EXTERNAL USE SCHEMA is a schema level permission
+  that can only be granted by the catalog owner explicitly and is not included
+  in schema ownership or ALL PRIVILEGES on the schema for security reasons.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}

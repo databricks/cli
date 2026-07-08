@@ -8,6 +8,8 @@ type Resources struct {
 	AccountNetworkPolicy                         map[string]any `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2               map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                             map[string]any `json:"databricks_account_setting_v2,omitempty"`
+	AiSearchEndpoint                             map[string]any `json:"databricks_ai_search_endpoint,omitempty"`
+	AiSearchIndex                                map[string]any `json:"databricks_ai_search_index,omitempty"`
 	AibiDashboardEmbeddingAccessPolicySetting    map[string]any `json:"databricks_aibi_dashboard_embedding_access_policy_setting,omitempty"`
 	AibiDashboardEmbeddingApprovedDomainsSetting map[string]any `json:"databricks_aibi_dashboard_embedding_approved_domains_setting,omitempty"`
 	Alert                                        map[string]any `json:"databricks_alert,omitempty"`
@@ -107,6 +109,7 @@ type Resources struct {
 	PolicyInfo                                   map[string]any `json:"databricks_policy_info,omitempty"`
 	PostgresBranch                               map[string]any `json:"databricks_postgres_branch,omitempty"`
 	PostgresCatalog                              map[string]any `json:"databricks_postgres_catalog,omitempty"`
+	PostgresDataApi                              map[string]any `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                             map[string]any `json:"databricks_postgres_database,omitempty"`
 	PostgresEndpoint                             map[string]any `json:"databricks_postgres_endpoint,omitempty"`
 	PostgresProject                              map[string]any `json:"databricks_postgres_project,omitempty"`
@@ -169,6 +172,8 @@ func NewResources() *Resources {
 		AccountNetworkPolicy:                         make(map[string]any),
 		AccountSettingUserPreferenceV2:               make(map[string]any),
 		AccountSettingV2:                             make(map[string]any),
+		AiSearchEndpoint:                             make(map[string]any),
+		AiSearchIndex:                                make(map[string]any),
 		AibiDashboardEmbeddingAccessPolicySetting:    make(map[string]any),
 		AibiDashboardEmbeddingApprovedDomainsSetting: make(map[string]any),
 		Alert:                                  make(map[string]any),
@@ -268,6 +273,7 @@ func NewResources() *Resources {
 		PolicyInfo:                                  make(map[string]any),
 		PostgresBranch:                              make(map[string]any),
 		PostgresCatalog:                             make(map[string]any),
+		PostgresDataApi:                             make(map[string]any),
 		PostgresDatabase:                            make(map[string]any),
 		PostgresEndpoint:                            make(map[string]any),
 		PostgresProject:                             make(map[string]any),

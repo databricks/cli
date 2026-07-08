@@ -11,6 +11,12 @@ import (
 )
 
 func convertVolumeResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+	// volume_path is computed by the API and cannot be configured in Terraform.
+	vin, err := dyn.DropKeys(vin, []string{"volume_path"})
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(schema.ResourceVolume{}, vin)
 	for _, diag := range diags {

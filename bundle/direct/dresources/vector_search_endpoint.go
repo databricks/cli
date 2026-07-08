@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
@@ -21,12 +22,30 @@ var (
 type VectorSearchEndpointRemote struct {
 	vectorsearch.EndpointInfo
 	EndpointUuid string `json:"endpoint_uuid"`
+	// TargetQps is mapped from EndpointInfo.ScalingInfo.RequestedTargetQps in DoRead
+	// so that drift detection can compare it directly against the config field.
+	TargetQps int64 `json:"target_qps,omitempty"`
+}
+
+// Custom marshalers needed because embedded vectorsearch.EndpointInfo has its own
+// MarshalJSON which would otherwise take over and ignore endpoint_uuid.
+func (s *VectorSearchEndpointRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s VectorSearchEndpointRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func newVectorSearchEndpointRemote(info *vectorsearch.EndpointInfo) *VectorSearchEndpointRemote {
+	var targetQps int64
+	if info.ScalingInfo != nil {
+		targetQps = info.ScalingInfo.RequestedTargetQps
+	}
 	return &VectorSearchEndpointRemote{
 		EndpointInfo: *info,
 		EndpointUuid: info.Id,
+		TargetQps:    targetQps,
 	}
 }
 
@@ -43,16 +62,12 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 }
 
 func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpoint {
-	var targetQps int64
-	if remote.ScalingInfo != nil {
-		targetQps = remote.ScalingInfo.RequestedTargetQps
-	}
 	return &vectorsearch.CreateEndpoint{
 		Name:            remote.Name,
 		EndpointType:    remote.EndpointType,
 		BudgetPolicyId:  remote.BudgetPolicyId,
 		UsagePolicyId:   "", // Missing in remote
-		TargetQps:       targetQps,
+		TargetQps:       remote.TargetQps,
 		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](remote.ForceSendFields, "UsagePolicyId"),
 	}
 }

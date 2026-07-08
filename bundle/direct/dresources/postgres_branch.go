@@ -78,13 +78,9 @@ func makePostgresBranchRemote(branch *postgres.Branch) *PostgresBranchRemote {
 	if branch.Spec != nil {
 		spec = *branch.Spec
 	}
-	var branchID string
-	if branch.Status != nil {
-		branchID = branch.Status.BranchId
-	}
 	return &PostgresBranchRemote{
 		BranchSpec: spec,
-		BranchId:   branchID,
+		BranchId:   branch.BranchId,
 		Parent:     branch.Parent,
 		Name:       branch.Name,
 		Status:     branch.Status,
@@ -110,6 +106,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 			Spec: &config.BranchSpec,
 
 			// Output-only fields.
+			BranchId:        "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",
@@ -147,6 +144,7 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 			Spec: &config.BranchSpec,
 
 			// Output-only fields.
+			BranchId:        "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",

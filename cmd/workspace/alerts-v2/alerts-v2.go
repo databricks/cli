@@ -3,6 +3,7 @@
 package alerts_v2
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -95,7 +96,7 @@ Create an alert.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
 			}
 			return nil
 		}
@@ -210,7 +211,7 @@ Get an alert.
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getAlertReq.Id = args[0]
 
@@ -356,7 +357,7 @@ Delete an alert (legacy TrashAlert).
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		trashAlertReq.Id = args[0]
 
@@ -439,7 +440,7 @@ Update an alert.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only ID, UPDATE_MASK as positional arguments. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
+				return errors.New("when --json flag is specified, provide only ID, UPDATE_MASK as positional arguments. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
 			}
 			return nil
 		}

@@ -16,6 +16,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/develop/endpoints/primary
 {
+  "endpoint_id": "primary",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/develop/endpoints/primary",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/develop",
   "status": {
@@ -39,7 +40,7 @@ Deployment complete!
   "uid": "[ENDPOINT_UID]"
 }
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 === bundle destroy
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/

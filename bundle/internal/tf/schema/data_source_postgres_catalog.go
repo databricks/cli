@@ -19,6 +19,7 @@ type DataSourcePostgresCatalogStatus struct {
 }
 
 type DataSourcePostgresCatalog struct {
+	CatalogId      string                                   `json:"catalog_id,omitempty"`
 	CreateTime     string                                   `json:"create_time,omitempty"`
 	Name           string                                   `json:"name"`
 	ProviderConfig *DataSourcePostgresCatalogProviderConfig `json:"provider_config,omitempty"`

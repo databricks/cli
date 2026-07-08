@@ -19,11 +19,13 @@ type Root struct {
 	Resource *Resources   `json:"resource,omitempty"`
 }
 
-const ProviderHost = "registry.terraform.io"
-const ProviderSource = "databricks/databricks"
-const ProviderVersion = "1.117.0"
-const ProviderChecksumLinuxAmd64 = "d6ed0d2080123d52f2a3161fcf05cf045f1e206c2e0127cad17abd99b65fed44"
-const ProviderChecksumLinuxArm64 = "130ef32b6fb74f3da0a4c3a8daf23f1fa58334780e0d066670b966cb86b01187"
+const (
+	ProviderHost               = "registry.terraform.io"
+	ProviderSource             = "databricks/databricks"
+	ProviderVersion            = "1.121.0"
+	ProviderChecksumLinuxAmd64 = "1548a581a52d3d8af6dd33245a05c7e7efd4975a2f5d80dfb625a26958067fcd"
+	ProviderChecksumLinuxArm64 = "f52645353a5625433863e9f698285c1c5ccea8d5ab0265bf6e6ee243559c728f"
+)
 
 func NewRoot() *Root {
 	return &Root{

@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 
 	"github.com/databricks/cli/experimental/genie/agentstream"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -22,9 +24,11 @@ const genieResponsesPath = "/api/2.0/data-rooms/tools/onechat/responses"
 // is much higher than the SDK's 60s default.
 const StreamingTimeoutSeconds = 600
 
-// BuildRequest creates a GenieRequest for a single-shot question. An empty
-// warehouseID is omitted from the wire format and the backend auto-resolves.
-func BuildRequest(question, warehouseID string) GenieRequest {
+// BuildRequest creates a GenieRequest for a question. warehouseID is the SQL
+// warehouse Genie runs queries on; when empty it is left out of the request and
+// Genie picks a default warehouse itself. A non-empty conversationID continues
+// that conversation instead of starting a new one.
+func BuildRequest(question, warehouseID, conversationID string) GenieRequest {
 	return GenieRequest{
 		Input: []InputItem{
 			{
@@ -35,7 +39,8 @@ func BuildRequest(question, warehouseID string) GenieRequest {
 				},
 			},
 		},
-		WarehouseID: warehouseID,
+		WarehouseID:    warehouseID,
+		ConversationID: conversationID,
 	}
 }
 
@@ -58,6 +63,7 @@ func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.R
 		"Content-Type": "application/json",
 		"Accept":       "text/event-stream",
 	}
+	maps.Copy(headers, auth.WorkspaceIDHeaders(cfg))
 	err = api.Do(ctx, "POST", genieResponsesPath, headers, nil, req, &body)
 	// The route is fixed and carries no resource IDs, so a 404 normally means
 	// the endpoint itself is gone: the backend route is undocumented and can

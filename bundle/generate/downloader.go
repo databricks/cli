@@ -176,27 +176,30 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 	}
 
 	relPath := n.relativePath(*notebookPath)
-	// If the path has any extension, strip it
-	ext := path.Ext(relPath)
-	if ext != "" {
-		relPath = strings.TrimSuffix(relPath, ext)
+
+	relPath = notebook.StripExtension(relPath)
+
+	format := stat.ExportFormat
+	if fixed, ok := notebook.FixedExportFormat(stat.ObjectType); ok {
+		// These object types carry their full extension in the workspace path
+		// (preserved above) and report no export format, so we use a fixed one.
+		format = fixed
+	} else {
+		ext := notebook.GetExtensionByLanguage(&workspace.ObjectInfo{
+			Language:   stat.Language,
+			ObjectType: stat.ObjectType,
+		})
+		if format == workspace.ExportFormatJupyter {
+			ext = notebook.ExtensionJupyter
+		}
+		relPath += ext
 	}
 
-	ext = notebook.GetExtensionByLanguage(&workspace.ObjectInfo{
-		Language:   stat.Language,
-		ObjectType: stat.ObjectType,
-	})
-
-	if stat.ExportFormat == workspace.ExportFormatJupyter {
-		ext = ".ipynb"
-	}
-
-	relPath = relPath + ext
 	targetPath := filepath.Join(n.sourceDir, relPath)
 
 	n.files[targetPath] = exportFile{
 		path:   *notebookPath,
-		format: stat.ExportFormat,
+		format: format,
 	}
 
 	// Update the notebook path to be relative to the config dir

@@ -17,7 +17,6 @@
 import os
 import platform
 import subprocess
-import sys
 import tarfile
 from pathlib import Path
 
@@ -74,8 +73,7 @@ def extract_archive(archive_path: str) -> Path:
     # The archive_path may be a FUSE path (with /Workspace prefix) or an API path.
     # The workspace API expects paths without the /Workspace prefix.
     api_path = archive_path
-    if api_path.startswith("/Workspace"):
-        api_path = api_path[len("/Workspace") :]
+    api_path = api_path.removeprefix("/Workspace")
 
     w = get_workspace_client()
 
@@ -218,7 +216,7 @@ def run_tests(
     print(f"Working directory: {cli_dir}")
     print(f"CLOUD_ENV: {cloud_env}")
     print(f"Test filter: {test_filter or '(all tests)'}")
-    print(f"Go version: ", end="", flush=True)
+    print("Go version: ", end="", flush=True)
 
     # Print Go version for debugging
     subprocess.run(["go", "version"], cwd=cli_dir, env=env)

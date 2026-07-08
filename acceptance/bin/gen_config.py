@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
-import json
 import copy
+import json
 
 JOB_TEMPLATE_BASE = {
     "description": "This job contain multiple tasks that are required to produce the weekly shark sightings report.",

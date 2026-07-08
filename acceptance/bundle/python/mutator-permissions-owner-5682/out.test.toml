@@ -1,0 +1,5 @@
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.PYDAB_VERSION = ["0.266.0", "current"]

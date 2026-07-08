@@ -5,7 +5,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
   "method": "POST",
   "path": "/api/2.0/pipelines",

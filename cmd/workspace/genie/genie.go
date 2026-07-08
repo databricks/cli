@@ -3,6 +3,7 @@
 package genie
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -41,6 +42,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newCreateSpace())
 	cmd.AddCommand(newDeleteConversation())
 	cmd.AddCommand(newDeleteConversationMessage())
+	cmd.AddCommand(newDownloadMessageAttachmentVisualization())
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
 	cmd.AddCommand(newExecuteMessageQuery())
 	cmd.AddCommand(newGenerateDownloadFullQueryResult())
@@ -96,6 +98,8 @@ func newCreateMessage() *cobra.Command {
 
 	cmd.Flags().Var(&createMessageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createMessageReq.EnableVisualization, "enable-visualization", createMessageReq.EnableVisualization, `Enable visualization generation.`)
+
 	cmd.Use = "create-message SPACE_ID CONVERSATION_ID CONTENT"
 	cmd.Short = `Create conversation message.`
 	cmd.Long = `Create conversation message.
@@ -117,7 +121,7 @@ func newCreateMessage() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID as positional arguments. Provide 'content' in your JSON input")
+				return errors.New("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID as positional arguments. Provide 'content' in your JSON input")
 			}
 			return nil
 		}
@@ -219,7 +223,7 @@ Create message comment.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(3)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'content' in your JSON input")
+				return errors.New("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'content' in your JSON input")
 			}
 			return nil
 		}
@@ -314,7 +318,7 @@ func newCreateSpace() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'warehouse_id', 'serialized_space' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'warehouse_id', 'serialized_space' in your JSON input")
 			}
 			return nil
 		}
@@ -483,6 +487,71 @@ func newDeleteConversationMessage() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range deleteConversationMessageOverrides {
 		fn(cmd, &deleteConversationMessageReq)
+	}
+
+	return cmd
+}
+
+// start download-message-attachment-visualization command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var downloadMessageAttachmentVisualizationOverrides []func(
+	*cobra.Command,
+	*dashboards.DownloadMessageAttachmentVisualizationRequest,
+)
+
+func newDownloadMessageAttachmentVisualization() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var downloadMessageAttachmentVisualizationReq dashboards.DownloadMessageAttachmentVisualizationRequest
+
+	cmd.Use = "download-message-attachment-visualization NAME"
+	cmd.Short = `*Beta* Download message attachment visualization.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Download message attachment visualization.
+
+  Download a rendered image of a message visualization attachment. The response
+  body is the raw PNG image, not a JSON payload. This is only available if the
+  attachment is a visualization and the message status is COMPLETED.
+
+  Arguments:
+    NAME: The resource name of the attachment to render, in the format
+      spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		downloadMessageAttachmentVisualizationReq.Name = args[0]
+
+		response, err := w.Genie.DownloadMessageAttachmentVisualization(ctx, downloadMessageAttachmentVisualizationReq)
+		if err != nil {
+			return err
+		}
+
+		defer response.Contents.Close()
+		return cmdio.Render(ctx, response.Contents)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range downloadMessageAttachmentVisualizationOverrides {
+		fn(cmd, &downloadMessageAttachmentVisualizationReq)
 	}
 
 	return cmd
@@ -1829,7 +1898,7 @@ func newSendMessageFeedback() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(3)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'rating' in your JSON input")
+				return errors.New("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'rating' in your JSON input")
 			}
 			return nil
 		}
@@ -1907,6 +1976,8 @@ func newStartConversation() *cobra.Command {
 
 	cmd.Flags().Var(&startConversationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&startConversationReq.EnableVisualization, "enable-visualization", startConversationReq.EnableVisualization, `Enable visualization generation.`)
+
 	cmd.Use = "start-conversation SPACE_ID CONTENT"
 	cmd.Short = `Start conversation.`
 	cmd.Long = `Start conversation.
@@ -1926,7 +1997,7 @@ func newStartConversation() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID as positional arguments. Provide 'content' in your JSON input")
+				return errors.New("when --json flag is specified, provide only SPACE_ID as positional arguments. Provide 'content' in your JSON input")
 			}
 			return nil
 		}

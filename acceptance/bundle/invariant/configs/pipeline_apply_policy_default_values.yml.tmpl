@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-$UNIQUE_NAME
+      clusters:
+        - node_type_id: $NODE_TYPE_ID
+          num_workers: 1
+          apply_policy_default_values: true
+      libraries:
+        - file:
+            path: pipeline.py

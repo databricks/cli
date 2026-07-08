@@ -34,8 +34,8 @@ func New() *cobra.Command {
   owner of the securable.
 
   The original path (/api/2.1/unity-catalog/workspace-bindings/catalogs/{name})
-  is deprecated. Please use the new path
-  (/api/2.1/unity-catalog/bindings/{securable_type}/{securable_name}) which
+  is deprecated. Use the new path
+  (/api/2.1/unity-catalog/bindings/{securable_type}/{securable_name}), which
   introduces the ability to bind a securable in READ_ONLY mode (catalogs only).
 
   Securable types that support binding: - catalog - storage_credential -

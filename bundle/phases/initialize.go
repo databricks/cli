@@ -70,6 +70,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// because it affects how workspace variables are resolved.
 		mutator.ApplySourceLinkedDeploymentPreset(),
 
+		// Reads (env): __TEST_DATABRICKS_IMMUTABLE_FOLDER (non-empty value enables immutable folder mode)
+		// Updates (typed): b.Config.Experimental.ImmutableFolder (forces to true when env var is set)
+		// Allows running the full test suite against the immutable folder code path without
+		// modifying any databricks.yml files.
+		mutator.OverrideImmutableFolder(),
+
 		// Reads (typed): b.Config.Workspace.RootPath (checks if it's already set)
 		// Reads (typed): b.Config.Bundle.Name, b.Config.Bundle.Target (used to construct default path)
 		// Updates (typed): b.Config.Workspace.RootPath (sets to ~/.bundle/{name}/{target} if not set)
@@ -141,6 +147,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		//
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
+
+		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
+		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
+		// model, so exposing it to Python would fail resource loading (like "deployment" below).
+		mutator.InitializeVolumePaths(),
+		mutator.ResolveVolumePathReferencesOnlyResources(),
 
 		// Resolve --select selectors against the materialized resources: normalize
 		// each to its "type.name" form and validate it exists. Runs after all resource

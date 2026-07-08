@@ -17,3 +17,10 @@ resources:
               task: llm/v1/chat
               openai_config:
                 openai_api_key: "{{secrets/test-scope/openai-key}}"
+        # Set explicitly so terraform and direct produce identical update requests:
+        # the backend defaults traffic_config, and terraform round-trips that default
+        # back into its config update while the direct engine sends only the user config.
+        traffic_config:
+          routes:
+            - served_model_name: prod
+              traffic_percentage: 100
