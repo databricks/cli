@@ -10,8 +10,9 @@ The fuzz/ test generates random configs from the live `databricks bundle schema`
 selected by `FUZZ_TARGET` (matrixed in fuzz/test.toml); each target is also a curated
 invariant test that runs over the `INPUT_CONFIG` matrix. `FUZZ_RESOURCE_COUNT` (also
 matrixed in fuzz/test.toml) controls how many resources each generated config contains;
-with more than one, the generator links two of them with a `${resources.*}` reference so
-the interpolation and deploy-ordering paths are exercised.
+with more than one, the generator links them with `${resources.*}` references (each
+resource referencing an earlier one, so the graph stays acyclic) so the interpolation and
+deploy-ordering paths are exercised.
 
 - `no_drift` -- deploy, then no drift
 - `migrate` -- Terraform deploy, migrate to direct, then no drift

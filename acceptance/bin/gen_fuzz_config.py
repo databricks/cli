@@ -4,8 +4,9 @@ Generate a random bundle config from the bundle JSON schema.
 
 Walks `databricks bundle schema` (resolving $ref, picking concrete oneOf/anyOf
 branches) and emits one or more random resources as databricks.yml, seeded by --seed.
-With --resource-count > 1 it also links two resources with a ${resources.*} reference so
-the interpolation and deploy-ordering machinery is exercised. Feeds the invariant tests;
+With --resource-count > 1 it also links resources with ${resources.*} references (each
+resource referencing an earlier one) so the interpolation and deploy-ordering machinery is
+exercised. Feeds the invariant tests;
 the harness filters out configs the CLI rejects, so output may be structurally-random but
 sometimes invalid.
 """
@@ -318,19 +319,21 @@ def target_ref_field(instance):
 
 
 def inject_cross_ref(gen, records):
-    # Link two resources so deploy has to order them and resolve the reference.
+    # Link resources so deploy has to order them and resolve the references. A
+    # record may only reference an earlier one, so the reference graph stays
+    # acyclic: deploy must topologically order resources, and a cycle can't be
+    # ordered (the config would be rejected instead of exercising the invariant).
     if len(records) < 2:
         return
-    sources = [r for r in records if r["ref_field"]]
-    gen.rng.shuffle(sources)
-    for source in sources:
-        targets = [t for t in records if t["key"] != source["key"] and target_ref_field(t["instance"])]
+    for i, source in enumerate(records):
+        if not source["ref_field"]:
+            continue
+        targets = [t for t in records[:i] if target_ref_field(t["instance"])]
         if not targets:
             continue
         target = gen.rng.choice(targets)
         field = target_ref_field(target["instance"])
         source["instance"][source["ref_field"]] = f"${{resources.{target['rtype']}.{target['key']}.{field}}}"
-        return
 
 
 def gen_config(schema, seed, unique, allowed, resource_count=1):
