@@ -11,6 +11,7 @@
 ### Bundles
 
 * Fix permissions added to a job or pipeline by a Python (PyDABs) mutator failing to deploy with "must have exactly one owner"; the deploying identity is now set as owner, matching resources whose permissions are declared in YAML ([#5821](https://github.com/databricks/cli/pull/5821)).
+* Fix `bundle deploy --select <resource>` skipping the resource's grants and permissions; they are now applied as part of the selected resource ([#XXXX](https://github.com/databricks/cli/pull/XXXX)).
 
 ### Dependency updates
 

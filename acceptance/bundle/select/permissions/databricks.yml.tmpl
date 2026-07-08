@@ -1,0 +1,16 @@
+bundle:
+  name: select-permissions-$UNIQUE_NAME
+
+resources:
+  jobs:
+    foo:
+      name: foo-$UNIQUE_NAME
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
+
+    bar:
+      name: bar-$UNIQUE_NAME
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com

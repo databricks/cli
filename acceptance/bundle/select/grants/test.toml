@@ -1,0 +1,6 @@
+RequiresUnityCatalog = true
+RecordRequests = true
+# --select is only supported by the direct engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.json"]

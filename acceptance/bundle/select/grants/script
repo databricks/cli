@@ -1,0 +1,21 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Destroy"
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Selecting the schema pulls in its grants sub-node even though nothing points
+# schema -> grants (the dependency edge runs the other way). silver is untouched.
+trace $CLI bundle plan --select schemas.bronze
+
+# Grants sub-nodes are not addressable via --select.
+errcode trace $CLI bundle plan --select schemas.bronze.grants
+
+# Deploy only bronze and assert its grants PATCH is emitted (issue #5794).
+$CLI bundle plan --select schemas.bronze -o json > plan.json
+title "bundle deploy --select schemas.bronze\n"
+$CLI bundle deploy --select schemas.bronze $(readplanarg plan.json)
+trace print_requests.py --sort //permissions //schemas
