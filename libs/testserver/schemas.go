@@ -60,6 +60,7 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 			"unity.catalog.managed.delta.defaults.delta.checkpointPolicy":                    "v2",
 			"unity.catalog.managed.delta.defaults.delta.parquet.format.version":              "2.12.0",
 			"unity.catalog.managed.delta.defaults.delta.parquet.format.version.afe.internal": "2.12.0",
+			"unity.catalog.managed.delta.defaults.delta.feature.catalogManaged":              "supported",
 		}
 	}
 	s.Schemas[schema.FullName] = schema
