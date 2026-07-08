@@ -1357,6 +1357,10 @@
                         "description": "[Public Preview] Budget policy of this pipeline.",
                         "$ref": "#/$defs/string"
                       },
+                      "cascade": {
+                        "description": "Whether destroying the pipeline also cascades to its datasets. Defaults to true. Set to false to keep the datasets when the pipeline is deleted. Only affects the delete operation.",
+                        "$ref": "#/$defs/bool"
+                      },
                       "catalog": {
                         "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
                         "$ref": "#/$defs/string"

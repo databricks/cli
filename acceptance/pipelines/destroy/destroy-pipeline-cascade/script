@@ -1,0 +1,15 @@
+title "Deploy a pipeline configured with cascade: false"
+trace $CLI pipelines deploy
+
+# Flush the deploy requests: cascade is delete-time-only, so the create request must not carry it.
+trace print_requests.py //api/2.0/pipelines
+
+title "Change only cascade (false -> true): expect a state-only update, no pipeline update API call"
+update_file.py databricks.yml "cascade: false" "cascade: true"
+trace $CLI pipelines deploy
+# No POST/PATCH to /pipelines is expected here; the cascade-only change is persisted to state.
+trace print_requests.py //api/2.0/pipelines
+
+title "Destroy: delete reads the updated cascade=true from persisted state"
+trace $CLI pipelines destroy --auto-approve
+trace print_requests.py //api/2.0/pipelines
