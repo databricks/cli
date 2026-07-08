@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/filer"
@@ -69,27 +71,30 @@ func newHTTP11WorkspaceClient(src *config.Config) (*databricks.WorkspaceClient, 
 	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 }
 
-// newHTTP11Transport clones src's transport (or the default) and disables HTTP/2.
-// A non-nil, empty TLSNextProto map is the documented way to turn off the transport's
-// automatic HTTP/2 support. See https://pkg.go.dev/net/http#Transport
+// newHTTP11Transport builds a fresh HTTP/1.1-only transport, mirroring the SDK's
+// default transport tuning (see httpclient.makeDefaultTransport) but with HTTP/2
+// left off. It must construct a fresh transport rather than clone one and disable
+// HTTP/2 afterwards: cloning an HTTP/2-capable transport and then clearing
+// ForceAttemptHTTP2 / TLSNextProto leaves the clone in an inconsistent state that
+// fails every request with a bare EOF. A transport built HTTP/1.1-only from the
+// start negotiates http/1.1 cleanly. See https://pkg.go.dev/net/http#Transport
 func newHTTP11Transport(src *config.Config) *http.Transport {
-	t, ok := src.HTTPTransport.(*http.Transport)
-	if ok && t != nil {
-		t = t.Clone()
-	} else {
-		t = http.DefaultTransport.(*http.Transport).Clone()
+	t := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       180 * time.Second,
+		TLSHandshakeTimeout:   30 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		// ForceAttemptHTTP2 is intentionally left false, and a non-nil, empty
+		// TLSNextProto disables the transport's automatic HTTP/2 support.
+		TLSNextProto: map[string]func(string, *tls.Conn) http.RoundTripper{},
 	}
-	t.ForceAttemptHTTP2 = false
-	t.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
-	// Cloning http.DefaultTransport drops the InsecureSkipVerify the SDK would
-	// otherwise apply, so re-apply it here to honor the resolved config.
 	if src.InsecureSkipVerify {
-		if t.TLSClientConfig == nil {
-			t.TLSClientConfig = &tls.Config{}
-		} else {
-			t.TLSClientConfig = t.TLSClientConfig.Clone()
-		}
-		t.TLSClientConfig.InsecureSkipVerify = true
+		t.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 	return t
 }
