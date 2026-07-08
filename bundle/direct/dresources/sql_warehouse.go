@@ -134,7 +134,8 @@ func hasWarehouseChanges(entry *PlanEntry) bool {
 
 // DoUpdate updates the warehouse in place.
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *SqlWarehouseState, entry *PlanEntry) (*SqlWarehouseRemote, error) {
-	if hasWarehouseChanges(entry) {
+	edited := hasWarehouseChanges(entry)
+	if edited {
 		request := sql.EditWarehouseRequest{
 			AutoStopMins:            config.AutoStopMins,
 			Channel:                 config.Channel,
@@ -169,6 +170,11 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 
 	desiredStarted := *config.Lifecycle.Started
 	alreadyRunning := remoteWarehouseIsRunning(entry)
+	if edited {
+		// Editing a warehouse restarts it (Edit returns a WaitGetWarehouseRunning
+		// waiter), so reconcile from RUNNING, not the stale pre-plan state.
+		alreadyRunning = true
+	}
 	if desiredStarted && !alreadyRunning {
 		// lifecycle.started=true: fire Start; WaitAfterUpdate polls for RUNNING.
 		_, err := r.client.Warehouses.Start(ctx, sql.StartRequest{Id: id})
