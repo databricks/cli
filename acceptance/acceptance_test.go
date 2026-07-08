@@ -325,6 +325,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			execPath = BuildCLI(t, buildDir, coverDir, runtime.GOOS, runtime.GOARCH)
 		}
 		if cliVersion == "" {
+			// Run the binary to get its version: the test binary itself is compiled
+			// by "go test" in a tmpdir where VCS stamps are unavailable, so
+			// build.GetInfo().Version returns bare "0.0.0-dev" rather than
+			// "0.0.0-dev+<commit>". The built CLI binary includes VCS stamps.
 			cliVersion = getBinaryVersion(t, execPath)
 		}
 	}
