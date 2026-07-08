@@ -12,11 +12,14 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/migrate"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 )
@@ -31,16 +34,29 @@ const feedbackNotice = `The warnings above are from a dry-run migration to the d
 Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
 Please forward these warnings to dabs-feedback@databricks.com`
 
+// autoMigrateStoppedNotice is emitted when the user opted in to the direct
+// engine but the dry-run migration surfaced errors or warnings, so the
+// automatic post-deploy migration is skipped.
+const autoMigrateStoppedNotice = `Direct engine was requested but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
+
 // CheckDirectMigration performs a dry-run migration of the just-deployed terraform
 // state to the direct engine and records the outcome in deploy telemetry.
 //
-// The converted state is written to a temporary file that is deleted before
-// returning, so nothing is persisted locally or uploaded to the workspace; its
-// only purpose is to measure, across the fleet, how many terraform deploys could
-// migrate to the direct engine cleanly. Any error is surfaced to the user as a
-// warning so it never fails a deploy that already succeeded.
-func CheckDirectMigration(ctx context.Context, b *bundle.Bundle) {
-	hasWarnings, err := dryRunMigrate(ctx, b)
+// The converted state is written to a temporary file. If the dry-run is clean
+// and requestedEngine resolves to "direct" (via bundle.engine or the
+// DATABRICKS_BUNDLE_ENGINE env var), the temp state is committed (renamed to
+// resources.json, terraform.tfstate is backed up, and the new state is pushed
+// to the workspace). Otherwise the temp state is deleted and only telemetry
+// is recorded. Any failure is surfaced as a warning so it never fails a
+// deploy that already succeeded.
+func CheckDirectMigration(ctx context.Context, b *bundle.Bundle, requestedEngine engine.EngineSetting) {
+	tempStatePath, hasWarnings, err := dryRunMigrate(ctx, b)
+	if tempStatePath != "" {
+		// commitMigration renames the state file out of this dir, but the dir
+		// itself and any leftover files (WAL, etc.) still need cleanup.
+		defer os.RemoveAll(filepath.Dir(tempStatePath))
+	}
+
 	b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, err == nil)
 	b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, hasWarnings)
 	if err != nil {
@@ -49,33 +65,52 @@ func CheckDirectMigration(ctx context.Context, b *bundle.Bundle) {
 	if hasWarnings || err != nil {
 		log.Warnf(ctx, "%s", feedbackNotice)
 	}
+
+	// Auto-migrate only when the user asked for the direct engine — either via
+	// bundle.engine in their config or DATABRICKS_BUNDLE_ENGINE=direct.
+	if requestedEngine.Type != engine.EngineDirect {
+		return
+	}
+
+	if err != nil || hasWarnings {
+		log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
+		return
+	}
+
+	if tempStatePath == "" {
+		// Nothing to migrate (no terraform state file).
+		return
+	}
+
+	if err := commitMigration(ctx, b, tempStatePath); err != nil {
+		log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
+	}
 }
 
 // dryRunMigrate converts the local terraform state to the direct engine state,
-// returning whether any warnings were emitted. It mirrors the `bundle migrate`
-// command but writes the result to a throwaway temp file that is deleted before
-// returning, and never uploads anything.
-func dryRunMigrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
+// returning the path to the converted state file (empty if there was nothing
+// to migrate) and whether any warnings were emitted. The caller is responsible
+// for deleting the temp state's parent directory when it is done with the file.
+func dryRunMigrate(ctx context.Context, b *bundle.Bundle) (string, bool, error) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
-		return false, fmt.Errorf("failed to parse terraform state: %w", err)
+		return "", false, fmt.Errorf("failed to parse terraform state: %w", err)
 	}
 
 	// ParseTFStateFull returns nil when the terraform state file doesn't exist
 	// (e.g. first deploy with no resources); nothing to migrate, trivially OK.
 	if tfState == nil {
-		return false, nil
+		return "", false, nil
 	}
 
-	// The converted state is a throwaway: write it to a temp dir that is removed
-	// (along with the WAL the state DB creates) before returning, so the dry run
-	// leaves nothing behind on disk.
+	// Write the converted state to a temp dir. If the dry-run is clean and the
+	// caller commits the migration, the state file is moved into place; otherwise
+	// the caller removes the whole temp dir (along with the WAL created below).
 	tempDir, err := os.MkdirTemp("", "databricks-direct-migration-")
 	if err != nil {
-		return false, fmt.Errorf("failed to create temp dir: %w", err)
+		return "", false, fmt.Errorf("failed to create temp dir: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
 	tempStatePath := filepath.Join(tempDir, "resources.json")
 
 	// SecretScopeFixups and the direct-engine state builder report failures via
@@ -102,7 +137,7 @@ func dryRunMigrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	// the migrated state and config agree on .permissions entries.
 	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
 	if logdiag.HasError(ctx) {
-		return false, errors.New("failed to apply secret scope fixups")
+		return tempStatePath, false, errors.New("failed to apply secret scope fixups")
 	}
 
 	// b.Config has been modified by terraform.Interpolate which converts bundle-style
@@ -110,7 +145,7 @@ func dryRunMigrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	// BuildStateFromTF expects ${resources.*} references, so reverse the interpolation first.
 	uninterpolatedRoot, err := reverseInterpolate(b.Config.Value())
 	if err != nil {
-		return false, fmt.Errorf("failed to reverse interpolation: %w", err)
+		return tempStatePath, false, fmt.Errorf("failed to reverse interpolation: %w", err)
 	}
 
 	var uninterpolatedConfig config.Root
@@ -118,32 +153,92 @@ func dryRunMigrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return uninterpolatedRoot, nil
 	})
 	if err != nil {
-		return false, fmt.Errorf("failed to create uninterpolated config: %w", err)
+		return tempStatePath, false, fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
 	adapters, err := dresources.InitAll(nil)
 	if err != nil {
-		return false, err
+		return tempStatePath, false, err
 	}
 
 	if err := stateDB.UpgradeToWrite(); err != nil {
-		return false, fmt.Errorf("upgrading state for apply: %w", err)
+		return tempStatePath, false, fmt.Errorf("upgrading state for apply: %w", err)
 	}
 
 	// warnPrefix labels the conversion's warnings as coming from the background dry run.
 	hasWarnings, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
 	if err != nil {
-		return hasWarnings, err
+		return tempStatePath, hasWarnings, err
 	}
 
 	if _, err := stateDB.Finalize(ctx); err != nil {
-		return hasWarnings, err
+		return tempStatePath, hasWarnings, err
 	}
 
 	// BuildStateFromTF reports some failures via logdiag instead of returning an error.
 	if logdiag.HasError(ctx) {
-		return hasWarnings, errors.New("state conversion failed")
+		return tempStatePath, hasWarnings, errors.New("state conversion failed")
 	}
 
-	return hasWarnings, nil
+	return tempStatePath, hasWarnings, nil
+}
+
+// commitMigration finalizes the dry-run migration by moving the converted state
+// into place, backing up the terraform state, and pushing the direct state to
+// the workspace. Any partial progress is logged as a warning but never fails
+// the deploy that already succeeded.
+func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string) error {
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	_, localDirectPath := b.StateFilenameDirect(ctx)
+
+	if _, err := os.Stat(localDirectPath); err == nil {
+		return fmt.Errorf("state file %s already exists", localDirectPath)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(localDirectPath), 0o700); err != nil {
+		return fmt.Errorf("creating state directory: %w", err)
+	}
+
+	if err := os.Rename(tempStatePath, localDirectPath); err != nil {
+		return fmt.Errorf("renaming %s to %s: %w", tempStatePath, localDirectPath, err)
+	}
+
+	if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil {
+		// Not fatal — the direct state is already in place with a bumped serial,
+		// so future deploys will use it. A leftover terraform.tfstate is
+		// harmless (PullResourcesState picks the state with the highest serial).
+		log.Warnf(ctx, "could not back up terraform state at %s: %v", localTerraformPath, err)
+	}
+
+	if err := pushDirectState(ctx, b, localDirectPath); err != nil {
+		return fmt.Errorf("pushing direct state to workspace: %w", err)
+	}
+
+	cmdio.LogString(ctx, "Migrated to direct deployment engine.")
+	return nil
+}
+
+// pushDirectState uploads the direct-engine state file to the workspace and
+// moves the remote terraform state aside so it is no longer authoritative.
+func pushDirectState(ctx context.Context, b *bundle.Bundle, localDirectPath string) error {
+	f, err := deploy.StateFiler(ctx, b)
+	if err != nil {
+		return err
+	}
+
+	remoteDirectPath, _ := b.StateFilenameDirect(ctx)
+	local, err := os.Open(localDirectPath)
+	if err != nil {
+		return err
+	}
+	defer local.Close()
+
+	if err := f.Write(ctx, remoteDirectPath, local, filer.CreateParentDirectories, filer.OverwriteIfExists); err != nil {
+		return err
+	}
+
+	// Move the remote terraform state to .backup so a future deploy from an
+	// older CLI does not race the two state files.
+	BackupRemoteTerraformState(ctx, b)
+	return nil
 }

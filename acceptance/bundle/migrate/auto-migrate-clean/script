@@ -1,0 +1,17 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy uses terraform engine (no bundle.engine set, override via env var)"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Opt in to direct engine via config and redeploy: dry-run is clean, auto-migration triggers"
+trace update_file.py databricks.yml "name: test-bundle" $'name: test-bundle\n  engine: direct'
+trace $CLI bundle deploy
+
+title "Direct-engine state is now in place; terraform state is backed up\n"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+title "Subsequent plan under direct is a no-op"
+trace $CLI bundle plan | contains.py "1 unchanged"
+
+rm out.requests.txt

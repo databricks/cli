@@ -1,0 +1,23 @@
+
+=== Initial deploy uses terraform engine
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Opt in via env var only (no bundle.engine in config): auto-migration triggers
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+Migrated to direct deployment engine.
+
+=== Direct-engine state is now in place; terraform state is backed up
+
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate.backup

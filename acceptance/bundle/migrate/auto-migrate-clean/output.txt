@@ -1,0 +1,36 @@
+
+=== Initial deploy uses terraform engine (no bundle.engine set, override via env var)
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Opt in to direct engine via config and redeploy: dry-run is clean, auto-migration triggers
+>>> update_file.py databricks.yml name: test-bundle name: test-bundle
+  engine: direct
+
+>>> [CLI] bundle deploy
+Warning: Deployment engine "direct" configured in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 does not match the existing state (engine "terraform"). Using "terraform" engine from the existing state.
+
+Available state files:
+- terraform.tfstate: remote terraform state serial=1 lineage="[UUID]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="[UUID]"
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+Migrated to direct deployment engine.
+
+=== Direct-engine state is now in place; terraform state is backed up
+
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate.backup
+
+=== Subsequent plan under direct is a no-op
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

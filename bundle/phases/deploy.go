@@ -75,7 +75,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType, requestedEngine engine.EngineSetting) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
@@ -88,7 +88,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		state statemgmt.ExportedResourcesMap
 		err   error
 	)
-	if targetEngine.IsDirect() {
+	if stateEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
 		// Capture the finalized state for deploy telemetry. It carries each
@@ -104,7 +104,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
-	statemgmt.PushResourcesState(ctx, b, targetEngine)
+	statemgmt.PushResourcesState(ctx, b, stateEngine)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -113,18 +113,20 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
-		statemgmt.UploadStateForYamlSync(targetEngine),
+		statemgmt.UploadStateForYamlSync(stateEngine),
 	)
 
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
 	}
 
-	// Once the deploy is complete, dry-run the migration to the direct engine in
-	// memory and record the outcome in telemetry. It writes nothing and never
-	// fails the deploy.
-	if !targetEngine.IsDirect() && !logdiag.HasError(ctx) {
-		statemgmt.CheckDirectMigration(ctx, b)
+	// Once the deploy is complete, dry-run the migration to the direct engine
+	// and record the outcome in telemetry. If the user has opted in to the
+	// direct engine (via bundle.engine or DATABRICKS_BUNDLE_ENGINE) and the
+	// dry-run is clean, the migration is committed; otherwise nothing is
+	// written and the deploy is unaffected.
+	if !stateEngine.IsDirect() && !logdiag.HasError(ctx) {
+		statemgmt.CheckDirectMigration(ctx, b, requestedEngine)
 	}
 }
 
@@ -140,7 +142,10 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 
 // The deploy phase deploys artifacts and resources.
 // If readPlanPath is provided, the plan is loaded from that file instead of being calculated.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan) {
+// stateEngine is the engine the resolved state file uses; requestedEngine is
+// what bundle.engine / DATABRICKS_BUNDLE_ENGINE asked for and may differ (used
+// only by the post-deploy migration check).
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, stateEngine engine.EngineType, requestedEngine engine.EngineSetting, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -161,7 +166,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}()
 
 	immutable := b.IsImmutableFolder()
-	if immutable && !engine.IsDirect() {
+	if immutable && !stateEngine.IsDirect() {
 		logdiag.LogError(ctx, errors.New("experimental.immutable_folder is only supported with the direct deployment engine"))
 		return
 	}
@@ -210,7 +215,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	planFromFile := plan != nil
 	if plan == nil {
 		// State is already open for read by process.go (for direct engine)
-		plan = RunPlan(ctx, b, engine)
+		plan = RunPlan(ctx, b, stateEngine)
 	}
 
 	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
@@ -220,7 +225,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if engine.IsDirect() {
+	if stateEngine.IsDirect() {
 		// Upgrade from read (opened by process.go) to write mode
 		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
 			logdiag.LogError(ctx, err)
@@ -250,7 +255,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 	if haveApproval {
-		deployCore(ctx, b, plan, engine)
+		deployCore(ctx, b, plan, stateEngine, requestedEngine)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 		return

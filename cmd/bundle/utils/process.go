@@ -172,8 +172,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
+	var requiredEngine engine.EngineSetting
 	if shouldReadState {
-		requiredEngine, err := ResolveEngineSetting(ctx, b)
+		var err error
+		requiredEngine, err = ResolveEngineSetting(ctx, b)
 		if err != nil {
 			return b, nil, err
 		}
@@ -329,7 +331,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, plan)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, requiredEngine, libs, plan)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),
