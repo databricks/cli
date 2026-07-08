@@ -494,28 +494,7 @@ resources:
     # handles the read side (input-only and output-only fields) so no-op deploys
     # stay idempotent. Same pattern as postgres_synced_tables.
     recreate_on_changes:
-      - field: database_instance_name
-        reason: immutable
-      - field: logical_database_name
-        reason: immutable
-      - field: spec.source_table_full_name
-        reason: immutable
-      - field: spec.primary_key_columns
-        reason: immutable
-      - field: spec.timeseries_key
-        reason: immutable
-      - field: spec.scheduling_policy
-        reason: immutable
-      - field: spec.create_database_objects_if_missing
-        reason: immutable
-      - field: spec.new_pipeline_spec
-        reason: immutable
-      - field: spec.existing_pipeline_id
-        reason: immutable
-      - field: spec.accelerated_sync
-        reason: immutable
-      - field: spec.type_overrides
-        reason: immutable
+      - reason: immutable
 
   apps:
     provided_id_fields:
