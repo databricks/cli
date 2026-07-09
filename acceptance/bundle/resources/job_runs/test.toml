@@ -1,0 +1,11 @@
+# job_runs is a direct-engine-only resource; the Terraform provider has no
+# equivalent, so restrict the matrix to direct.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+RecordRequests = true
+
+# idempotency_token is a SHA-256 of the RunNow request, and the fake assigns
+# job_id from a time-based counter, so the hash differs every run. Mask it so the
+# run-now request goldens stay stable.
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[IDEMPOTENCY_TOKEN]'

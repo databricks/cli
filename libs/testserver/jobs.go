@@ -349,6 +349,14 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
+	// The Jobs API treats run-now as idempotent: the same idempotency_token
+	// returns the run already created for it instead of starting a new one.
+	if request.IdempotencyToken != "" {
+		if existing, ok := s.JobRunsByToken[request.IdempotencyToken]; ok {
+			return Response{Body: jobs.RunNowResponse{RunId: existing}}
+		}
+	}
+
 	runId := nextID()
 	runName := "run-name"
 	if job.Settings != nil && job.Settings.Name != "" {
@@ -410,6 +418,10 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		Tasks:                tasks,
 		JobParameters:        runJobParameters(job.Settings, request.JobParameters),
 		OverridingParameters: runOverridingParameters(request),
+	}
+
+	if request.IdempotencyToken != "" {
+		s.JobRunsByToken[request.IdempotencyToken] = runId
 	}
 
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}

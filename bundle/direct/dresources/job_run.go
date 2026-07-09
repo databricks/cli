@@ -2,6 +2,9 @@ package dresources
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -129,9 +132,18 @@ func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
+	// Copy the request so the derived token is sent to the API but never
+	// persisted into state (state stays token-free, plans stay clean).
+	req := config.RunNow
+	token, err := idempotencyToken(req)
+	if err != nil {
+		return "", nil, err
+	}
+	req.IdempotencyToken = token
+
 	// RunNow returns only the new run id, so we return a nil remote and let the
 	// framework read it back via DoRead.
-	wait, err := r.client.Jobs.RunNow(ctx, config.RunNow)
+	wait, err := r.client.Jobs.RunNow(ctx, req)
 	if err != nil {
 		return "", nil, err
 	}
@@ -158,4 +170,18 @@ func parseRunID(id string) (int64, error) {
 		return 0, fmt.Errorf("internal error: run id is not integer: %q: %w", id, err)
 	}
 	return result, nil
+}
+
+// idempotencyToken derives a stable token from the RunNow request so that a
+// retried run-now returns the existing run instead of creating a duplicate.
+// The token is the hex SHA-256 of the request's JSON with idempotency_token
+// cleared; hex SHA-256 is exactly 64 chars, the Jobs API maximum.
+func idempotencyToken(req jobs.RunNow) (string, error) {
+	req.IdempotencyToken = ""
+	canonical, err := json.Marshal(req)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(canonical)
+	return hex.EncodeToString(sum[:]), nil
 }

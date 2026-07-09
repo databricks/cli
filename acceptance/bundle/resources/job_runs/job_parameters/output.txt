@@ -11,6 +11,7 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
+    "idempotency_token": "[IDEMPOTENCY_TOKEN]",
     "job_id": [NUMID],
     "job_parameters": {
       "env": "prod"

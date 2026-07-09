@@ -177,6 +177,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 
+		// Validate that idempotency_token is not set on job runs. It is computed automatically and must not be set by the user.
+		validate.ValidateJobRunIdempotencyToken(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
 		// points to a Terraform-only field with no DABs equivalent.
