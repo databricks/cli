@@ -42,7 +42,7 @@ jobs:
           ref: ${{ inputs.tag }}
 
       - name: Set up QEMU for cross-platform builds
-        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
 
       - name: Create a buildx builder with multi-platform support
         run: docker buildx create --use --driver docker-container
