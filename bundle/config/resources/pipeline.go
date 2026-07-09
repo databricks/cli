@@ -17,9 +17,11 @@ type Pipeline struct {
 
 	Permissions []PipelinePermission `json:"permissions,omitempty"`
 
-	// Optional parameter that controls whether destroying the pipeline also cascades to datasets.
-	// By default, the server will cascade the pipeline deletion to its datasets.
-	Cascade *bool `json:"cascade,omitempty"`
+	// CascadeOnDestroy controls whether destroying the pipeline also deletes its datasets
+	// (MVs, STs, Views). Nil (unset) uses the server default, which cascades. Set to false to
+	// retain the datasets when the pipeline is deleted. Mirrors purge_on_delete on Lakebase
+	// projects. Delete-time only: never sent on create/update.
+	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
 }
 
 func (p *Pipeline) UnmarshalJSON(b []byte) error {

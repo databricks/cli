@@ -34,7 +34,8 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 var destroyApprovalGroups = []approvalGroup{
 	{group: "schemas", message: deleteSchemaMessage},
-	{group: "pipelines", message: deletePipelineMessage},
+	// Pipelines are handled separately in approvalForDestroy so the message reflects each
+	// pipeline's cascade_on_destroy setting; see logPipelineDeleteApproval.
 	{group: "volumes", message: deleteVolumeMessage},
 	{group: "database_instances", message: deleteDatabaseInstanceMessage},
 	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage},
@@ -43,6 +44,38 @@ var destroyApprovalGroups = []approvalGroup{
 	{group: "postgres_databases", message: deletePostgresDatabaseMessage},
 	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
 	{group: "genie_spaces", message: deleteGenieSpaceMessage},
+}
+
+// logPipelineDeleteApproval prints the pipeline deletions, splitting them by cascade_on_destroy
+// so pipelines retaining their datasets are not described as deleting STs/MVs.
+func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action) {
+	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
+
+	var cascading, retaining []deployplan.Action
+	for _, a := range pipelineDeletes {
+		if pipelineRetainsDatasets(b, a) {
+			retaining = append(retaining, a)
+		} else {
+			cascading = append(cascading, a)
+		}
+	}
+
+	for _, grp := range []struct {
+		message string
+		actions []deployplan.Action
+	}{
+		{deletePipelineMessage, cascading},
+		{deletePipelineNoCascadeMessage, retaining},
+	} {
+		if len(grp.actions) == 0 {
+			continue
+		}
+		cmdio.LogString(ctx, grp.message)
+		for _, a := range grp.actions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
 }
 
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
@@ -69,6 +102,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	}
 
 	logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
+	logPipelineDeleteApproval(ctx, b, deleteActions)
 
 	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
 	cmdio.LogString(ctx, "")

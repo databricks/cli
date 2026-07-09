@@ -21,8 +21,10 @@ func convertPipelineResource(ctx context.Context, vin dyn.Value) (dyn.Value, err
 		return dyn.InvalidValue, err
 	}
 
-	// Current Terraform provider does not support the cascade attribute yet
-	vout, err = dyn.DropKeys(vout, []string{"dry_run", "cascade"})
+	// Current Terraform provider does not support the cascade_on_destroy attribute yet.
+	// ValidateCascadeOnDestroy rejects it for the terraform engine before we get here; this
+	// drop is defense-in-depth so we never emit an unknown attribute to the provider schema.
+	vout, err = dyn.DropKeys(vout, []string{"dry_run", "cascade_on_destroy"})
 	if err != nil {
 		return dyn.InvalidValue, err
 	}

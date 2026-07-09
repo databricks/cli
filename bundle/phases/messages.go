@@ -60,7 +60,10 @@ const (
 	deleteSchemaMessage = `This action will result in the deletion of the following UC schemas. Any underlying data may be lost:`
 
 	deletePipelineMessage = `This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:`
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain its datasets:`
+
+	deletePipelineNoCascadeMessage = `This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines.
+The Streaming Tables (STs) and Materialized Views (MVs) managed by them are retained (cascade_on_destroy: false):`
 
 	deleteVolumeMessage = `This action will result in the deletion of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your

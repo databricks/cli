@@ -11,14 +11,14 @@ import (
 )
 
 // PipelineState is the state type for Pipeline resources. It extends CreatePipeline with
-// the Cascade field, a delete-time setting that is not part of the pipeline spec
+// the CascadeOnDestroy field, a delete-time setting that is not part of the pipeline spec
 type PipelineState struct {
 	pipelines.CreatePipeline
 
-	// Cascade controls whether deleting the pipeline also deletes its datasets (MVs, STs,
-	// Views). Nil means the server default (cascade) applies. Read from persisted state at
+	// CascadeOnDestroy controls whether deleting the pipeline also deletes its datasets (MVs,
+	// STs, Views). Nil means the server default (cascade) applies. Read from persisted state at
 	// delete time; never sent on create/update.
-	Cascade *bool `json:"cascade,omitempty"`
+	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
 }
 
 func (s *PipelineState) UnmarshalJSON(b []byte) error {
@@ -34,7 +34,7 @@ func (s PipelineState) MarshalJSON() ([]byte, error) {
 type PipelineRemote struct {
 	pipelines.CreatePipeline
 
-	Cascade *bool `json:"cascade,omitempty"`
+	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
 
 	// Remote-specific fields from pipelines.GetPipelineResponse
 	Cause                   string                              `json:"cause,omitempty"`
@@ -72,15 +72,15 @@ func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeli
 
 func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *PipelineState {
 	return &PipelineState{
-		CreatePipeline: input.CreatePipeline,
-		Cascade:        input.Cascade,
+		CreatePipeline:   input.CreatePipeline,
+		CascadeOnDestroy: input.CascadeOnDestroy,
 	}
 }
 
 func (*ResourcePipeline) RemapState(remote *PipelineRemote) *PipelineState {
 	return &PipelineState{
-		CreatePipeline: remote.CreatePipeline,
-		Cascade:        remote.Cascade,
+		CreatePipeline:   remote.CreatePipeline,
+		CascadeOnDestroy: remote.CascadeOnDestroy,
 	}
 }
 
@@ -137,8 +137,8 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 	}
 	return &PipelineRemote{
 		CreatePipeline: createPipeline,
-		// cascade is input-only; the GET response never carries it, so leave it nil.
-		Cascade:                 nil,
+		// cascade_on_destroy is input-only; the GET response never carries it, so leave it nil.
+		CascadeOnDestroy:        nil,
 		Cause:                   p.Cause,
 		ClusterId:               p.ClusterId,
 		CreatorUserName:         p.CreatorUserName,
@@ -162,10 +162,10 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *PipelineState) 
 }
 
 func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *PipelineState, entry *PlanEntry) (*PipelineRemote, error) {
-	// cascade is a delete-time-only setting with no update API, so a change to it alone must
-	// persist to state without a pipeline Update call. This mirrors sql_warehouse's handling
-	// of its non-spec lifecycle field.
-	if !entry.Changes.HasChangeExcept("cascade") {
+	// cascade_on_destroy is a delete-time-only setting with no update API, so a change to it
+	// alone must persist to state without a pipeline Update call. This mirrors sql_warehouse's
+	// handling of its non-spec lifecycle field.
+	if !entry.Changes.HasChangeExcept("cascade_on_destroy") {
 		return nil, nil
 	}
 
@@ -211,13 +211,16 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *Pipe
 }
 
 func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, state *PipelineState) error {
-	if state.Cascade == nil {
-		// No explicit cascade in config: preserve the backend default (cascade).
+	if state.CascadeOnDestroy == nil {
+		// No explicit cascade_on_destroy in config: preserve the backend default (cascade).
 		return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 	}
+	// Cascade is marshaled as `url:"cascade,omitempty"`, so a false value would be dropped from
+	// the query string and the backend would apply its default of true. ForceSendFields makes
+	// the SDK send cascade=false explicitly so cascade_on_destroy: false is honored.
 	return r.client.Pipelines.Delete(ctx, pipelines.DeletePipelineRequest{
 		PipelineId:      id,
-		Cascade:         *state.Cascade,
+		Cascade:         *state.CascadeOnDestroy,
 		Force:           false,
 		ForceSendFields: []string{"Cascade"},
 	})

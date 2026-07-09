@@ -1357,8 +1357,8 @@
                         "description": "[Public Preview] Budget policy of this pipeline.",
                         "$ref": "#/$defs/string"
                       },
-                      "cascade": {
-                        "description": "Whether destroying the pipeline also cascades to its datasets. Defaults to true. Set to false to keep the datasets when the pipeline is deleted. Only affects the delete operation.",
+                      "cascade_on_destroy": {
+                        "description": "Whether destroying the pipeline also deletes its datasets (MVs, STs, Views). Defaults to true (the server default). Set to false to retain the datasets when the pipeline is deleted. Only affects the delete operation.",
                         "$ref": "#/$defs/bool"
                       },
                       "catalog": {

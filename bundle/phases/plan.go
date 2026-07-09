@@ -26,8 +26,28 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine 
 		mutator.ValidateGitDetails(),
 		mutator.ValidateDirectOnlyResources(engine),
 		mutator.ValidateLifecycleStarted(engine),
+		mutator.ValidateCascadeOnDestroy(engine),
 		statemgmt.CheckRunningResource(engine),
 	)
+}
+
+// pipelineRetainsDatasets reports whether the pipeline referenced by a delete action has
+// cascade_on_destroy explicitly set to false, meaning its datasets (MVs, STs, Views) are
+// retained. Only pipeline resources carry this field, so a lookup miss returns false.
+// Reads from config like checkForPreventDestroy; the field is unset for other resource types.
+func pipelineRetainsDatasets(b *bundle.Bundle, action deployplan.Action) bool {
+	path, err := dyn.NewPathFromString(action.ResourceKey)
+	if err != nil {
+		return false
+	}
+	path = append(path, dyn.Key("cascade_on_destroy"))
+
+	v, err := dyn.GetByPath(b.Config.Value(), path)
+	if err != nil {
+		return false
+	}
+	cascade, ok := v.AsBool()
+	return ok && !cascade
 }
 
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.

@@ -7,7 +7,7 @@
 ### CLI
 
 ### Bundles
-* Added a `cascade` field to the pipeline resource to control whether destroying a pipeline also cascades to its datasets. When unset, the server default applies; set `cascade: false` to retain the datasets on destroy.
+* Added a `cascade_on_destroy` field to the pipeline resource to control whether destroying a pipeline also deletes its datasets (MVs, STs, Views). When unset, the server default applies; set `cascade_on_destroy: false` to retain the datasets on destroy. Supported with the direct deployment engine.
 
 ### Dependency updates
 

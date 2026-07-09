@@ -1,5 +1,5 @@
-# --cascade only affects the direct engine's delete request; the terraform engine deletes
-# pipelines through the provider and ignores it. Restrict to direct so the recorded request
-# is meaningful and the single variant does not diverge.
+# cascade_on_destroy only affects the direct engine's delete request; the terraform engine
+# does not support the attribute yet and rejects it (see the terraform-engine sub-test).
+# Restrict this test to direct so the recorded request is meaningful.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 RecordRequests = true

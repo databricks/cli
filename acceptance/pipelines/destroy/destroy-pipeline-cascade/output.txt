@@ -1,5 +1,5 @@
 
-=== Deploy a pipeline configured with cascade: false
+=== Deploy a pipeline configured with cascade_on_destroy: false
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
 Deploying resources...
@@ -22,7 +22,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
   }
 }
 
-=== Change only cascade (false -> true): expect a state-only update, no pipeline update API call
+=== Change only cascade_on_destroy (false -> true): expect a state-only update, no pipeline update API call
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
 Deploying resources...
@@ -32,13 +32,23 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> print_requests.py //api/2.0/pipelines
 
-=== Destroy: delete reads the updated cascade=true from persisted state
+=== Set cascade_on_destroy back to false and deploy so state reflects it before destroy
+>>> [CLI] pipelines deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+
+>>> print_requests.py //api/2.0/pipelines
+
+=== Destroy: approval message notes datasets are retained, and delete sends cascade=false
 >>> [CLI] pipelines destroy --auto-approve
 The following resources will be deleted:
   delete resources.pipelines.my_pipeline
 
-This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines.
+The Streaming Tables (STs) and Materialized Views (MVs) managed by them are retained (cascade_on_destroy: false):
   delete resources.pipelines.my_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default
@@ -51,6 +61,6 @@ Destroy complete!
   "method": "DELETE",
   "path": "/api/2.0/pipelines/[UUID]",
   "q": {
-    "cascade": "true"
+    "cascade": "false"
   }
 }
