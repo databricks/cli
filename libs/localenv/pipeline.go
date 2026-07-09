@@ -512,13 +512,21 @@ func isAllDigits(s string) bool {
 	return true
 }
 
-// copyFile copies src to dst, creating or overwriting dst.
+// copyFile copies src to dst, creating or overwriting dst. dst is created with
+// src's permission bits: the backup preserves a locked-down pyproject.toml
+// (e.g. 0o600 because it carries a private index URL) rather than widening it to
+// a hardcoded 0o644. os.WriteFile only applies the mode when it creates the
+// file, which is always the case for the freshly-created .bak.
 func copyFile(src, dst string) error {
+	info, err := os.Stat(src)
+	if err != nil {
+		return fmt.Errorf("stat %s: %w", src, err)
+	}
 	data, err := os.ReadFile(src)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", src, err)
 	}
-	if err := os.WriteFile(dst, data, 0o644); err != nil {
+	if err := os.WriteFile(dst, data, info.Mode().Perm()); err != nil {
 		return fmt.Errorf("write %s: %w", dst, err)
 	}
 	return nil

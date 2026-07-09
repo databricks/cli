@@ -51,6 +51,15 @@ func (noProvisionPM) Validate(context.Context, string) (string, string, error) {
 	return "", "", errors.New("Validate must not be called under --check")
 }
 
+// uvMissingPM fails EnsureAvailable, simulating a machine where the package
+// manager binary is absent and cannot be installed. The remaining methods
+// inherit fakePM but must never be reached, since preflight aborts first.
+type uvMissingPM struct{ fakePM }
+
+func (uvMissingPM) EnsureAvailable(context.Context) (string, error) {
+	return "", errors.New("uv not found and install failed")
+}
+
 func writeProject(t *testing.T) string {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(`[project]
@@ -204,6 +213,75 @@ func TestPipelineExistingBacksUp(t *testing.T) {
 	assert.True(t, res.OK)
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 	assert.Equal(t, "pyproject.toml.bak", filepath.Base(res.BackupPath))
+}
+
+func TestCopyFilePreservesMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// Windows does not honor Unix permission bits.
+		t.Skip("permission-bit preservation is Unix-only")
+	}
+	// A locked-down pyproject.toml (e.g. 0o600 because it carries a private index
+	// URL) must not be widened when copied to the backup.
+	dir := t.TempDir()
+	src := filepath.Join(dir, "pyproject.toml")
+	require.NoError(t, os.WriteFile(src, []byte("[project]\n"), 0o600))
+	dst := filepath.Join(dir, "pyproject.toml.bak")
+	require.NoError(t, copyFile(src, dst))
+	info, err := os.Stat(dst)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+}
+
+// assertPreflightFailure checks the invariants shared by every preflight exit:
+// the run returns the error, preflight is attributed as the failing phase, no
+// disk mutation is claimed, and every later phase is left pending.
+func assertPreflightFailure(t *testing.T, res *Result, err error, wantCode ErrorCode) {
+	t.Helper()
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, wantCode, pe.Code)
+	assert.Equal(t, PhasePreflight, pe.FailurePhase)
+	assert.False(t, pe.DiskMutated, "preflight fails before any write")
+	assert.False(t, res.OK)
+	for _, ph := range res.Phases {
+		switch ph.Phase {
+		case PhasePreflight:
+			assert.Equal(t, StatusError, ph.Status)
+		default:
+			assert.Equal(t, StatusPending, ph.Status, "phase %s must stay pending after a preflight failure", ph.Phase)
+		}
+	}
+}
+
+func TestPipelineManagerUnsupportedFailsAtPreflight(t *testing.T) {
+	// A non-uv project (environment.yml, no pyproject.toml) is detected as conda
+	// and must exit cleanly at preflight with E_MANAGER_UNSUPPORTED.
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "environment.yml"), []byte("name: demo\n"), 0o644))
+
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	assertPreflightFailure(t, res, err, ErrManagerUnsupported)
+	// Detection is pure-fs; no pyproject.toml was created.
+	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml"))
+}
+
+func TestPipelineUvMissingFailsAtPreflight(t *testing.T) {
+	// When the package manager can't be made available, preflight exits with
+	// E_UV_MISSING before resolve/fetch/merge run.
+	dir := writeProject(t)
+
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: uvMissingPM{},
+	}
+	res, err := p.Run(t.Context())
+	assertPreflightFailure(t, res, err, ErrUvMissing)
 }
 
 func TestApplyMergeFailsOnUnstattableBackupWithoutOverwrite(t *testing.T) {
