@@ -91,6 +91,84 @@ func TestParseChangedTests(t *testing.T) {
 			},
 		},
 		{
+			name: "parent script.prepare re-enables all descendant test dirs",
+			diff: "M\tacceptance/bundle/resources/script.prepare",
+			want: map[string]ChangedTest{
+				"bundle/resources":      {Added: false, VariantFilters: nil},
+				"bundle/resources/jobs": {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "parent script.cleanup re-enables all descendant test dirs",
+			diff: "M\tacceptance/bundle/resources/script.cleanup",
+			want: map[string]ChangedTest{
+				"bundle/resources":      {Added: false, VariantFilters: nil},
+				"bundle/resources/jobs": {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "parent test.toml re-enables all descendant test dirs",
+			diff: "M\tacceptance/bundle/invariant/test.toml",
+			want: map[string]ChangedTest{
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: nil},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: nil},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "root script.prepare re-enables every test dir",
+			diff: "M\tacceptance/script.prepare",
+			want: map[string]ChangedTest{
+				"bundle/resources":              {Added: false, VariantFilters: nil},
+				"bundle/resources/jobs":         {Added: false, VariantFilters: nil},
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: nil},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: nil},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: nil},
+				"cmd/version":                   {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "test.toml directly in a test dir re-enables only that dir",
+			diff: "M\tacceptance/bundle/resources/jobs/test.toml",
+			want: map[string]ChangedTest{
+				"bundle/resources/jobs": {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "parent shared file preserves an added descendant",
+			diff: "A\tacceptance/bundle/resources/jobs/script\nM\tacceptance/bundle/resources/test.toml",
+			want: map[string]ChangedTest{
+				"bundle/resources":      {Added: false, VariantFilters: nil},
+				"bundle/resources/jobs": {Added: true, VariantFilters: nil},
+			},
+		},
+		{
+			name: "a bin helper re-enables every test dir",
+			diff: "M\tacceptance/bin/print_requests.py",
+			want: map[string]ChangedTest{
+				"bundle/resources":              {Added: false, VariantFilters: nil},
+				"bundle/resources/jobs":         {Added: false, VariantFilters: nil},
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: nil},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: nil},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: nil},
+				"cmd/version":                   {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "a shared fixture in a non-test dir re-enables its subtree",
+			diff: "M\tacceptance/bundle/invariant/_script",
+			want: map[string]ChangedTest{
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: nil},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: nil},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "a stray file at the acceptance root is ignored",
+			diff: "M\tacceptance/README.md",
+			want: map[string]ChangedTest{},
+		},
+		{
 			name: "deleted script of a removed test dir is ignored (dir no longer in testDirs)",
 			diff: "D\tacceptance/bundle/removed_test/script",
 			want: map[string]ChangedTest{},

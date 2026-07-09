@@ -10,6 +10,11 @@ import (
 const (
 	invariantConfigsPrefix = "acceptance/bundle/invariant/configs/"
 	invariantDirPrefix     = "bundle/invariant/"
+
+	acceptancePrefix = "acceptance/"
+	// binPrefix holds helper scripts placed on PATH for every test (print_requests.py,
+	// contains.py, ...), so a change to any of them can affect any test.
+	binPrefix = "acceptance/bin/"
 )
 
 // ChangedTest describes how one acceptance test dir was affected by a branch diff.
@@ -100,8 +105,33 @@ func ParseChangedTests(diffOutput string, testDirs map[string]bool) map[string]C
 			continue
 		}
 
+		// bin/ holds helper scripts placed on PATH for every test, so a change to
+		// any of them can affect any test: re-enable the whole suite.
+		if strings.HasPrefix(path, binPrefix) {
+			markSubtree("", testDirs, result)
+			continue
+		}
+
+		// A shared file (script.prepare/script.cleanup/test.toml) is concatenated
+		// or inherited into every test at or below its dir, so it re-enables that
+		// whole subtree. This runs before the single-dir mapping because such a
+		// file can live inside a test dir that also has nested test dirs, which
+		// the single-dir mapping would miss.
+		if sharedTestFile(path) {
+			markSubtree(containingDir(path), testDirs, result)
+			continue
+		}
+
 		dir := testDirForFile(path, testDirs)
 		if dir == "" {
+			// The file is not owned by any test dir. It is a shared input in a
+			// non-test dir (a sourced _script, a fixture read via $TESTDIR/..),
+			// so conservatively re-enable every test dir in its subtree. A stray
+			// file at the acceptance root (no subtree dir) affects nothing
+			// identifiable and is ignored.
+			if base := containingDir(path); base != "" {
+				markSubtree(base, testDirs, result)
+			}
 			continue
 		}
 		// A direct change re-enables all variants, so clear any config-scoped
@@ -119,6 +149,49 @@ func ParseChangedTests(diffOutput string, testDirs map[string]bool) map[string]C
 	}
 
 	return result
+}
+
+// sharedTestFilenames are files that, when they live in an ancestor dir, affect
+// every test below them: script.prepare / script.cleanup are concatenated into
+// each descendant's script (see readMergedScriptContents in acceptance_test.go)
+// and test.toml config is inherited by descendants.
+var sharedTestFilenames = map[string]bool{
+	"script.prepare": true,
+	"script.cleanup": true,
+	"test.toml":      true,
+}
+
+// sharedTestFile reports whether path is a shared file whose change propagates to
+// every test in its subtree.
+func sharedTestFile(path string) bool {
+	return strings.HasPrefix(path, acceptancePrefix) && sharedTestFilenames[filepath.Base(path)]
+}
+
+// containingDir returns the dir of an acceptance/ path relative to acceptance/
+// ("" for a file directly under acceptance/), or "" if path is outside acceptance/.
+func containingDir(path string) string {
+	if !strings.HasPrefix(path, acceptancePrefix) {
+		return ""
+	}
+	dir := filepath.ToSlash(filepath.Dir(path[len(acceptancePrefix):]))
+	if dir == "." {
+		return ""
+	}
+	return dir
+}
+
+// markSubtree re-enables (with all variants) every test dir equal to or nested
+// under base. An empty base matches every test dir. It preserves any existing
+// Added flag and only clears VariantFilters, since a subtree-wide change affects
+// all variants.
+func markSubtree(base string, testDirs map[string]bool, result map[string]ChangedTest) {
+	for dir := range testDirs {
+		if base == "" || dir == base || strings.HasPrefix(dir, base+"/") {
+			ct := result[dir]
+			ct.VariantFilters = nil
+			result[dir] = ct
+		}
+	}
 }
 
 // testDirForFile maps a repo-relative changed file (e.g. acceptance/bundle/foo/script)
