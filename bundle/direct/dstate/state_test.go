@@ -44,6 +44,51 @@ func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 
+func TestExportStateFromDataJobRunJobID(t *testing.T) {
+	data := Database{
+		State: map[string]ResourceEntry{
+			"resources.job_runs.my_run": {
+				ID:    "456",
+				State: json.RawMessage(`{"job_id": 123}`),
+			},
+			// A permissions sub-resource entry shares the ".job_runs." infix but
+			// is not a run. Its state even carries a job_id to prove we match on
+			// the exact resource type, not a substring of the key.
+			"resources.job_runs.my_run.permissions": {
+				ID:    "456",
+				State: json.RawMessage(`{"job_id": 999}`),
+			},
+		},
+	}
+
+	result := ExportStateFromData(data)
+
+	assert.Equal(t, int64(123), result["resources.job_runs.my_run"].JobID)
+	assert.Equal(t, int64(0), result["resources.job_runs.my_run.permissions"].JobID)
+}
+
+func TestExportStateFromDataDashboardEtag(t *testing.T) {
+	data := Database{
+		State: map[string]ResourceEntry{
+			"resources.dashboards.my_dash": {
+				ID:    "abc",
+				State: json.RawMessage(`{"etag": "v1"}`),
+			},
+			// A permissions sub-resource entry shares the ".dashboards." infix but
+			// is not a dashboard; its etag must not be lifted onto it.
+			"resources.dashboards.my_dash.permissions": {
+				ID:    "abc",
+				State: json.RawMessage(`{"etag": "v2"}`),
+			},
+		},
+	}
+
+	result := ExportStateFromData(data)
+
+	assert.Equal(t, "v1", result["resources.dashboards.my_dash"].ETag)
+	assert.Empty(t, result["resources.dashboards.my_dash.permissions"].ETag)
+}
+
 func TestPanicOnDoubleOpen(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 

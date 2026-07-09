@@ -92,6 +92,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				JobRuns: map[string]*resources.JobRun{
+					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
+				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
 				},

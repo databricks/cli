@@ -270,7 +270,9 @@ func newCreate() *cobra.Command {
   Arguments:
     SPARK_VERSION: The Spark version of the cluster, e.g. 3.3.x-scala2.11. A list of
       available Spark versions can be retrieved by using the
-      :method:clusters/sparkVersions API call.`
+      [clusters/sparkVersions] API call.
+
+      [clusters/sparkVersions]: https://docs.databricks.com/api/workspace/clusters/sparkversions`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -547,7 +549,9 @@ func newEdit() *cobra.Command {
     CLUSTER_ID: ID of the cluster
     SPARK_VERSION: The Spark version of the cluster, e.g. 3.3.x-scala2.11. A list of
       available Spark versions can be retrieved by using the
-      :method:clusters/sparkVersions API call.`
+      [clusters/sparkVersions] API call.
+
+      [clusters/sparkVersions]: https://docs.databricks.com/api/workspace/clusters/sparkversions`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
