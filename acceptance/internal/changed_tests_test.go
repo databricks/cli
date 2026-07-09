@@ -1,0 +1,116 @@
+package internal
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+// testDirsFixture is the set of known acceptance test dirs used across the
+// parser tests. Values mirror real acceptance/ layout: some plain bundle tests
+// and several bundle/invariant subdirs that share the configs/ directory.
+func testDirsFixture() map[string]bool {
+	return map[string]bool{
+		"bundle/resources":              true,
+		"bundle/resources/jobs":         true,
+		"bundle/invariant/no_drift":     true,
+		"bundle/invariant/migrate":      true,
+		"bundle/invariant/continue_293": true,
+		"cmd/version":                   true,
+	}
+}
+
+func TestParseChangedTests(t *testing.T) {
+	tests := []struct {
+		name string
+		diff string
+		want map[string]ChangedTest
+	}{
+		{
+			name: "empty diff",
+			diff: "",
+			want: map[string]ChangedTest{},
+		},
+		{
+			name: "modified file maps to owning test dir",
+			diff: "M\tacceptance/bundle/resources/script",
+			want: map[string]ChangedTest{
+				"bundle/resources": {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "added script marks the dir as added",
+			diff: "A\tacceptance/bundle/resources/jobs/script",
+			want: map[string]ChangedTest{
+				"bundle/resources/jobs": {Added: true, VariantFilters: nil},
+			},
+		},
+		{
+			name: "nested file maps to innermost test dir",
+			diff: "M\tacceptance/bundle/resources/jobs/output.txt",
+			want: map[string]ChangedTest{
+				"bundle/resources/jobs": {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "file outside acceptance is ignored",
+			diff: "M\tlibs/dyn/value.go",
+			want: map[string]ChangedTest{},
+		},
+		{
+			name: "file under acceptance but not in any test dir is ignored",
+			diff: "M\tacceptance/README.md",
+			want: map[string]ChangedTest{},
+		},
+		{
+			name: "rename destination is used and is not treated as added",
+			diff: "R092\tacceptance/bundle/resources/old\tacceptance/bundle/resources/script",
+			want: map[string]ChangedTest{
+				"bundle/resources": {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "changed invariant config re-enables all invariant subdirs with INPUT_CONFIG filter",
+			diff: "M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+			want: map[string]ChangedTest{
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+			},
+		},
+		{
+			name: "invariant config init.sh strips suffix to base config name",
+			diff: "M\tacceptance/bundle/invariant/configs/job.yml.tmpl-init.sh",
+			want: map[string]ChangedTest{
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+			},
+		},
+		{
+			name: "direct change to an invariant subdir overrides config-scoped filter with all-variants",
+			diff: "M\tacceptance/bundle/invariant/configs/job.yml.tmpl\nM\tacceptance/bundle/invariant/no_drift/script",
+			want: map[string]ChangedTest{
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: nil},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+			},
+		},
+		{
+			name: "two changed invariant configs accumulate filters",
+			diff: "M\tacceptance/bundle/invariant/configs/job.yml.tmpl\nM\tacceptance/bundle/invariant/configs/pipeline.yml.tmpl",
+			want: map[string]ChangedTest{
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl", "INPUT_CONFIG=pipeline.yml.tmpl"}},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl", "INPUT_CONFIG=pipeline.yml.tmpl"}},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl", "INPUT_CONFIG=pipeline.yml.tmpl"}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ParseChangedTests(tt.diff, testDirsFixture())
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
