@@ -58,28 +58,48 @@ func parseListFilters(raw []string) (listFilters, error) {
 	return f, nil
 }
 
+// filterFields are the task-filter inputs, cached alongside the row so a cache
+// hit can be re-filtered without re-fetching the run.
+type filterFields struct {
+	Experiment string `json:"experiment"`
+	GPUType    string `json:"gpu_type"`
+	GPUCount   int    `json:"gpu_count"`
+}
+
+func filterFieldsFromRun(run *jobRun) filterFields {
+	gpuType, count := jobCompute(run)
+	return filterFields{
+		Experiment: jobExperiment(run),
+		GPUType:    gpuType,
+		GPUCount:   count,
+	}
+}
+
 // matches reports whether a run satisfies the experiment, accelerator-type and
 // accelerator-count filters. The user filter is applied separately while
 // scanning, since it maps onto the run's creator rather than its task.
 func (f listFilters) matches(run *jobRun) bool {
+	return f.matchesFields(filterFieldsFromRun(run))
+}
+
+// matchesFields is the shared comparator for live runs and cached rows, so the
+// two paths can't drift.
+func (f listFilters) matchesFields(fields filterFields) bool {
 	if f.Experiment != "" {
-		matched, err := path.Match(strings.ToLower(f.Experiment), strings.ToLower(jobExperiment(run)))
+		matched, err := path.Match(strings.ToLower(f.Experiment), strings.ToLower(fields.Experiment))
 		if err != nil || !matched {
 			return false
 		}
 	}
 
-	if f.AcceleratorType != "" || f.NumAccelerators != nil {
-		gpuType, count := jobCompute(run)
-		if f.AcceleratorType != "" {
-			display := strings.ToLower(gpuDisplayName(gpuType))
-			if !strings.Contains(display, strings.ToLower(f.AcceleratorType)) {
-				return false
-			}
-		}
-		if f.NumAccelerators != nil && count != *f.NumAccelerators {
+	if f.AcceleratorType != "" {
+		display := strings.ToLower(gpuDisplayName(fields.GPUType))
+		if !strings.Contains(display, strings.ToLower(f.AcceleratorType)) {
 			return false
 		}
+	}
+	if f.NumAccelerators != nil && fields.GPUCount != *f.NumAccelerators {
+		return false
 	}
 
 	return true

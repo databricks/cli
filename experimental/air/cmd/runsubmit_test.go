@@ -137,13 +137,15 @@ func TestJobsSubmitClient(t *testing.T) {
 func TestSubmitWorkload(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
-	testserver.AddDefaultHandlers(server)
 
+	// Register before AddDefaultHandlers: the router is first-wins, so this must claim the route ahead of the default handler.
 	var got jobsSubmitRun
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return submitRunResponse{RunID: 777}
 	})
+	testserver.AddDefaultHandlers(server)
+
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 

@@ -12,18 +12,20 @@ func TestListCacheRoundTrip(t *testing.T) {
 	ctx := t.Context()
 	c := newListCache(ctx)
 
-	_, ok := cachedRow(ctx, c, "https://host.test", 42)
+	_, _, ok := cachedRow(ctx, c, "https://host.test", 42)
 	require.False(t, ok, "miss before write")
 
 	row := listRow{RunID: "42", Experiment: "exp", Status: "SUCCESS"}
-	putRow(ctx, c, "https://host.test", 42, 1700000000000, row)
+	fields := filterFields{Experiment: "exp", GPUType: "GPU_1xA10", GPUCount: 1}
+	putRow(ctx, c, "https://host.test", 42, 1700000000000, row, fields)
 
-	got, ok := cachedRow(ctx, c, "https://host.test", 42)
+	got, gotFields, ok := cachedRow(ctx, c, "https://host.test", 42)
 	require.True(t, ok, "hit after write")
 	assert.Equal(t, row, got)
+	assert.Equal(t, fields, gotFields)
 
 	// Different host is a different key.
-	_, ok = cachedRow(ctx, c, "https://other.test", 42)
+	_, _, ok = cachedRow(ctx, c, "https://other.test", 42)
 	assert.False(t, ok)
 }
 
@@ -36,7 +38,7 @@ func TestIndexStrategyServesCachedRowWithoutFetch(t *testing.T) {
 
 	// Pre-seed the cache for run 7 so hydration should skip runs/get entirely.
 	ctx := t.Context()
-	putRow(ctx, newListCache(ctx), host, 7, 1000_000, listRow{RunID: "7", Status: "SUCCESS"})
+	putRow(ctx, newListCache(ctx), host, 7, 1000_000, listRow{RunID: "7", Status: "SUCCESS"}, filterFields{})
 
 	f := newRunFetcher(ctx, newTestWorkspaceClient(t, host), listQuery{
 		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
