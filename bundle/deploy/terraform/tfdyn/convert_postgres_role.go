@@ -15,7 +15,7 @@ func (c postgresRoleConverter) Convert(ctx context.Context, key string, vin dyn.
 	// The bundle config has flattened RoleRoleSpec fields at the top level.
 	// Terraform expects them nested in a "spec" block.
 	specFields := specFieldNames(schema.ResourcePostgresRoleSpec{})
-	topLevelFields := []string{"role_id", "parent"}
+	topLevelFields := []string{"role_id", "parent", "replace_existing"}
 
 	// Build the spec block from the flattened fields
 	specMap := make(map[string]dyn.Value)

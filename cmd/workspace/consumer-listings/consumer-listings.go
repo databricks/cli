@@ -3,6 +3,7 @@
 package consumer_listings
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -152,7 +153,7 @@ Get listing.
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getReq.Id = args[0]
 
@@ -325,7 +326,7 @@ Search listings.
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have fuzzy matches query")
+			return errors.New("expected to have fuzzy matches query")
 		}
 		searchReq.Query = args[0]
 

@@ -8,6 +8,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+// modelNameBrowseOnly scopes the computed browse_only flag to the browse_only
+// drift test, keeping unrelated tests free of it.
+const modelNameBrowseOnly = "model_browse_only"
+
 func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -36,6 +40,10 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 		Owner:           s.CurrentUser().UserName,
 	}
 	registeredModel.UpdatedAt = registeredModel.CreatedAt
+	if createRequest.Name == modelNameBrowseOnly {
+		// Mirror UC, which computes browse_only and echoes it on GET.
+		registeredModel.BrowseOnly = true
+	}
 
 	s.RegisteredModels[fullName] = registeredModel
 	return Response{

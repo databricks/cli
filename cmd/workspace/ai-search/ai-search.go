@@ -3,6 +3,7 @@
 package ai_search
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -111,7 +112,7 @@ Create an AI Search endpoint.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT as positional arguments. Provide 'endpoint_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'endpoint_type' in your JSON input")
 			}
 			return nil
 		}
@@ -213,7 +214,7 @@ Create an AI Search index.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT as positional arguments. Provide 'primary_key', 'index_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'primary_key', 'index_type' in your JSON input")
 			}
 			return nil
 		}
@@ -736,7 +737,7 @@ Query an AI Search index.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		queryIndexReq.Name = args[0]
 
@@ -815,7 +816,7 @@ Remove data from an AI Search index.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		removeDataReq.Name = args[0]
 
@@ -1042,7 +1043,7 @@ Update an AI Search endpoint.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'endpoint_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'endpoint_type' in your JSON input")
 			}
 			return nil
 		}
@@ -1138,7 +1139,7 @@ Upsert data into an AI Search index.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'inputs_json' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME as positional arguments. Provide 'inputs_json' in your JSON input")
 			}
 			return nil
 		}

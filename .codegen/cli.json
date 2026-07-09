@@ -6366,7 +6366,7 @@
         "secret": {
           "description": "The secret object to create. The **name**, **catalog_name**, **schema_name**, and **value**\nfields are required.",
           "ref": "catalog.Secret",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -8332,17 +8332,7 @@
         }
       }
     },
-    "catalog.GetSecretRequest": {
-      "fields": {
-        "include_browse": {
-          "description": "Whether to include secrets in the response for which you only have the **BROWSE** privilege,\nwhich limits access to metadata.",
-          "launch_stage": "PRIVATE_PREVIEW",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        }
-      }
-    },
+    "catalog.GetSecretRequest": {},
     "catalog.GetStorageCredentialRequest": {},
     "catalog.GetTableRequest": {
       "fields": {
@@ -8498,6 +8488,43 @@
         "next_page_token": {
           "description": "Opaque token to retrieve the next page of results. Absent if there are no\nmore pages.\n__page_token__ should be set to this value for the next request (for the\nnext page of results).",
           "launch_stage": "GA"
+        }
+      }
+    },
+    "catalog.ListEffectivePrivilegeAssignmentsRequest": {
+      "fields": {
+        "page_size": {
+          "description": "Specifies the maximum number of privilege assignments to return (page length).\nEvery EffectivePrivilegeAssignment present in a single page response is guaranteed to contain all the effective\nprivileges granted on (or inherited by) the requested Securable for the respective principal.\n\nIf not set, a server-configured default is used.\nIf set to\n- lesser than 0: invalid parameter error\n- 0: page length is set to a server configured value\n- lesser than 150 but greater than 0: invalid parameter error (this is to ensure that server is able to return at\nleast one complete EffectivePrivilegeAssignment in a single page response)\n- greater than (or equal to) 150: page length is the minimum of this value and a server configured value",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "page_token": {
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "principal": {
+          "description": "If provided, only the effective permissions for the specified principal (user or group) are returned.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
+    "catalog.ListEffectivePrivilegeAssignmentsResponse": {
+      "fields": {
+        "effective_privilege_assignments": {
+          "description": "The effective privilege assignments for the securable (and optional principal).",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "next_page_token": {
+          "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\n__page_token__ should be set to this value for the next request (for the next page of results).",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
         }
       }
     },
@@ -8753,6 +8780,42 @@
         }
       }
     },
+    "catalog.ListPrivilegeAssignmentsRequest": {
+      "fields": {
+        "page_size": {
+          "description": "Specifies the maximum number of privilege assignments to return (page length).\nEvery PrivilegeAssignment present in a single page response is guaranteed to contain all the privileges granted on\nthe requested Securable for the respective principal.\n\nIf not set, page length is the server configured value.\nIf set to\n- lesser than 0: invalid parameter error\n- 0: page length is set to a server configured value\n- lesser than 150 but greater than 0: invalid parameter error (this is to ensure that server is able to return at\nleast one complete PrivilegeAssignment in a single page response)\n- greater than (or equal to) 150: page length is the minimum of this value and a server configured value",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "page_token": {
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "principal": {
+          "description": "If provided, only the permissions for the specified principal (user or group) are returned.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
+    "catalog.ListPrivilegeAssignmentsResponse": {
+      "fields": {
+        "next_page_token": {
+          "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\n__page_token__ should be set to this value for the next request (for the next page of results).",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "privilege_assignments": {
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        }
+      }
+    },
     "catalog.ListQuotasRequest": {
       "fields": {
         "max_results": {
@@ -8849,35 +8912,28 @@
       "fields": {
         "catalog_name": {
           "description": "The name of the catalog under which to list secrets. Both **catalog_name** and\n**schema_name** must be specified together.",
-          "launch_stage": "PRIVATE_PREVIEW",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "include_browse": {
-          "description": "Whether to include secrets in the response for which you only have the **BROWSE** privilege,\nwhich limits access to metadata.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_size": {
-          "description": "Maximum number of secrets to return.\n\n- If not specified, at most 10000 secrets are returned.\n- If set to a value greater than 0, the page length is the minimum of this value and 10000.\n- If set to 0, the page length is set to 10000.\n- If set to a value less than 0, an invalid parameter error is returned.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Maximum number of secrets to return.\n\n- If not specified, at most 1000 secrets are returned.\n- If set to a value greater than 0, the page length is the minimum of this value and 1000.\n- If set to 0, the page length is set to 1000.\n- If set to a value less than 0, an invalid parameter error is returned.",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "Opaque pagination token to go to the next page based on previous query. The maximum page length\nis determined by a server configured value.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "schema_name": {
           "description": "The name of the schema under which to list secrets. Both **catalog_name** and\n**schema_name** must be specified together.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -8889,14 +8945,14 @@
       "fields": {
         "next_page_token": {
           "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\n**page_token** should be set to this value for the next request.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "secrets": {
           "description": "An array of secret objects.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -10161,7 +10217,8 @@
         "CREATE_CLEAN_ROOM",
         "MODIFY_CLEAN_ROOM",
         "EXECUTE_CLEAN_ROOM_TASK",
-        "EXTERNAL_USE_SCHEMA"
+        "EXTERNAL_USE_SCHEMA",
+        "READ_METADATA"
       ],
       "enum_launch_stages": {
         "ACCESS": "GA",
@@ -10198,6 +10255,7 @@
         "MODIFY": "GA",
         "MODIFY_CLEAN_ROOM": "GA",
         "READ_FILES": "GA",
+        "READ_METADATA": "PUBLIC_PREVIEW",
         "READ_PRIVATE_FILES": "GA",
         "READ_VOLUME": "GA",
         "REFRESH": "GA",
@@ -10531,92 +10589,79 @@
     "catalog.Secret": {
       "description": "A secret stored in Unity Catalog. Secrets are three-level namespace objects\n(catalog.schema.secret) that securely store sensitive credential data such as\npasswords, tokens, and keys.",
       "fields": {
-        "browse_only": {
-          "description": "Indicates whether the principal is limited to retrieving metadata for the associated object\nthrough the **BROWSE** privilege when **include_browse** is enabled in the request.",
-          "launch_stage": "PRIVATE_PREVIEW",
-          "behaviors": [
-            "OUTPUT_ONLY"
-          ]
-        },
         "catalog_name": {
           "description": "The name of the catalog where the schema and the secret reside.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "IMMUTABLE"
           ]
         },
         "comment": {
           "description": "User-provided free-form text description of the secret.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "create_time": {
           "description": "The time at which this secret was created.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "created_by": {
           "description": "The principal that created the secret.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "effective_owner": {
           "description": "The effective owner of the secret, which may differ from the directly-set **owner** due to\ninheritance.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "effective_value": {
           "description": "The secret value. Only populated in responses when you have the **READ_SECRET**\nprivilege and **include_value** is set to true in the request. The maximum size is 60 KiB.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "expire_time": {
           "description": "User-provided expiration time of the secret. This field indicates when the secret should no\nlonger be used and may be displayed as a warning in the UI. It is purely informational and\ndoes not trigger any automatic actions or affect the secret's lifecycle.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
         },
-        "external_secret_id": {
-          "launch_stage": "PRIVATE_PREVIEW",
-          "behaviors": [
-            "OUTPUT_ONLY"
-          ]
-        },
         "full_name": {
           "description": "The three-level (fully qualified) name of the secret, in the form of **catalog_name.schema_name.secret_name**.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "metastore_id": {
           "description": "Unique identifier of the metastore hosting the secret.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "name": {
           "description": "The name of the secret, relative to its parent schema.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "IMMUTABLE"
           ]
         },
         "owner": {
           "description": "The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "INPUT_ONLY",
             "OPTIONAL"
@@ -10624,28 +10669,28 @@
         },
         "schema_name": {
           "description": "The name of the schema where the secret resides.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "IMMUTABLE"
           ]
         },
         "update_time": {
           "description": "The time at which this secret was last updated.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "updated_by": {
           "description": "The principal that last updated the secret.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "value": {
           "description": "The secret value to store. This field is input-only and is not returned in responses — use\nthe **effective_value** field (via GetSecret with **include_value** set to true) to read the\nsecret value. The maximum size is 60 KiB (pre-encryption). Accepted content includes\npasswords, tokens, keys, and other sensitive credential data.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "INPUT_ONLY"
           ]
@@ -11955,6 +12000,13 @@
         "changes": {
           "description": "Array of permissions change objects.",
           "launch_stage": "GA"
+        },
+        "omit_permissions_in_response": {
+          "description": "Optional, default false. Specifies whether all the permissions should be returned in the response.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
         }
       }
     },
@@ -12115,11 +12167,11 @@
         "secret": {
           "description": "The secret object containing the fields to update. Only fields specified in **update_mask**\nwill be updated.",
           "ref": "catalog.Secret",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW"
         },
         "update_mask": {
-          "description": "The field mask specifying which fields of the secret to update. Supported fields: **value**,\n**comment**, **owner**, **expire_time**.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "The field mask specifying which fields of the secret to update.\n- If **update_mask** is **\"*\"**, all fields specified in **secret** are updated.\n- If **update_mask** specifies one or more fields, only those fields are updated.\nEach specified field must be set in **secret**.\nSupported fields: **value**, **comment**, **owner**, **expire_time**. To change the secret\nname, delete and recreate the secret.",
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -12777,7 +12829,7 @@
           ]
         },
         "notebook_content": {
-          "description": "Base 64 representation of the notebook contents.\nThis is the same format as returned by :method:workspace/export with the format of **HTML**.",
+          "description": "Base 64 representation of the notebook contents.\nThis is the same format as returned by [workspace/export](https://docs.databricks.com/api/workspace/workspace/export) with the format of **HTML**.",
           "launch_stage": "GA"
         },
         "review_state": {
@@ -13792,7 +13844,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "policy_id": {
@@ -13821,7 +13873,7 @@
           "launch_stage": "GA"
         },
         "spark_version": {
-          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
           "launch_stage": "GA"
         },
         "ssh_public_keys": {
@@ -14006,7 +14058,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "num_workers": {
@@ -14043,7 +14095,7 @@
           "launch_stage": "GA"
         },
         "spark_version": {
-          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
           "launch_stage": "GA"
         },
         "spec": {
@@ -14441,7 +14493,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "num_workers": {
@@ -14474,7 +14526,7 @@
           "launch_stage": "GA"
         },
         "spark_version": {
-          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
           "launch_stage": "GA"
         },
         "ssh_public_keys": {
@@ -14713,7 +14765,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "num_workers": {
@@ -14746,7 +14798,7 @@
           "launch_stage": "GA"
         },
         "spark_version": {
-          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
           "launch_stage": "GA"
         },
         "ssh_public_keys": {
@@ -14843,7 +14895,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "preloaded_docker_images": {
@@ -14851,7 +14903,7 @@
           "launch_stage": "GA"
         },
         "preloaded_spark_versions": {
-          "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the :method:clusters/sparkVersions API call.",
+          "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
           "launch_stage": "GA"
         },
         "remote_disk_throughput": {
@@ -15242,7 +15294,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "num_workers": {
@@ -15275,7 +15327,7 @@
           "launch_stage": "GA"
         },
         "spark_version": {
-          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
           "launch_stage": "GA"
         },
         "ssh_public_keys": {
@@ -15329,7 +15381,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "remote_disk_throughput": {
@@ -15511,7 +15563,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "num_workers": {
@@ -15544,7 +15596,7 @@
           "launch_stage": "GA"
         },
         "spark_version": {
-          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
           "launch_stage": "GA"
         },
         "ssh_public_keys": {
@@ -16067,7 +16119,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "preloaded_docker_images": {
@@ -16075,7 +16127,7 @@
           "launch_stage": "GA"
         },
         "preloaded_spark_versions": {
-          "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the :method:clusters/sparkVersions API call.",
+          "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
           "launch_stage": "GA"
         },
         "remote_disk_throughput": {
@@ -16516,7 +16568,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "preloaded_docker_images": {
@@ -16524,7 +16576,7 @@
           "launch_stage": "GA"
         },
         "preloaded_spark_versions": {
-          "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the :method:clusters/sparkVersions API call.",
+          "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
           "launch_stage": "GA"
         },
         "remote_disk_throughput": {
@@ -18180,7 +18232,7 @@
           "launch_stage": "GA"
         },
         "node_type_id": {
-          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
           "launch_stage": "GA"
         },
         "num_workers": {
@@ -18213,7 +18265,7 @@
           "launch_stage": "GA"
         },
         "spark_version": {
-          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
           "launch_stage": "GA"
         },
         "ssh_public_keys": {
@@ -21309,7 +21361,7 @@
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "size": {
-          "description": "Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\n(specifies the vector dimension, e.g., 1024).",
+          "description": "Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\nor PG_SPECIFIC_TYPE_HALFVEC (specifies the vector dimension, e.g., 1024).",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -21504,6 +21556,14 @@
       "fields": {
         "auto_tag_configs": {
           "description": "List of auto-tagging configurations for this catalog.\nEmpty list means no auto-tagging is enabled.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "excluded_schemas": {
+          "description": "Schemas to exclude from the scan, each named relative to the parent catalog.\nIf specified, all schemas except the specified ones will be scanned.\nMutually exclusive with `included_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
+          "ref": "dataclassification.CatalogConfigSchemaNames",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -25417,18 +25477,18 @@
             "OPTIONAL"
           ]
         },
+        "full_name": {
+          "ref": "iamv2.UserFullName",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "internal_id": {
           "description": "Internal userId of the user in Databricks.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
-          ]
-        },
-        "name": {
-          "ref": "iamv2.UserName",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
           ]
         },
         "username": {
@@ -25441,7 +25501,7 @@
         }
       }
     },
-    "iamv2.UserName": {
+    "iamv2.UserFullName": {
       "fields": {
         "family_name": {
           "launch_stage": "PUBLIC_BETA",
@@ -25628,6 +25688,13 @@
         },
         "mlflow_run_id": {
           "description": "MLflow run ID for this task execution. Use it to look up the run in\nMLflow APIs or the workspace MLflow UI.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "status_message": {
+          "description": "Human-readable status message for this run, suitable for display to the\nuser (for example, that the run is still waiting for GPU compute). Set by\nthe server only when there is something to surface; empty otherwise.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
@@ -26253,6 +26320,10 @@
           "description": "Job-level parameter definitions",
           "launch_stage": "GA"
         },
+        "parent_path": {
+          "description": "Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "performance_target": {
           "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
           "ref": "jobs.PerformanceTarget",
@@ -26320,6 +26391,11 @@
         "quartz_cron_expression": {
           "description": "A Cron expression using Quartz syntax that describes the schedule for a job. See [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details. This field is required.",
           "launch_stage": "GA"
+        },
+        "sql_condition": {
+          "description": "SQL condition that must be satisfied before a scheduled run is triggered. The condition is evaluated\nafter the cron expression fires and must return a truthy result for the run to proceed.",
+          "ref": "jobs.SqlConditionConfiguration",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "timezone_id": {
           "description": "A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.",
@@ -27342,6 +27418,10 @@
         "parameters": {
           "description": "Job-level parameter definitions",
           "launch_stage": "GA"
+        },
+        "parent_path": {
+          "description": "Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "performance_target": {
           "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
@@ -28617,7 +28697,7 @@
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "only": {
-          "description": "A list of task keys to run inside of the job. If this field is not provided, all tasks in the job will be run.",
+          "description": "A list of task keys to run inside of the job. If this field is not provided, all tasks in the job will be run.\n\nPrefix a task key with `+` to also run its upstream tasks, or suffix it with `+` to also run its downstream tasks.\nFor example, `+my_task` runs `my_task` and everything upstream of it, `my_task+` runs `my_task` and everything\ndownstream of it, and `+my_task+` runs both. A task key with no `+` runs only that task.",
           "launch_stage": "GA"
         },
         "performance_target": {
@@ -29265,6 +29345,71 @@
         "OK": "GA",
         "TRIGGERED": "GA",
         "UNKNOWN": "GA"
+      }
+    },
+    "jobs.SqlConditionConfiguration": {
+      "fields": {
+        "sql_query_id": {
+          "description": "The ID of the SQL query to evaluate as the trigger condition.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "trigger_mode": {
+          "description": "Determines how the SQL query result is interpreted to decide whether the condition fires.\nMust be set to a recognized value when provided.\nWhen unset on an existing serialized configuration, the server preserves the original\nsemantics by interpreting it as `QUERY_RETURNS_ROWS`. New configurations should set this\nexplicitly — explicit `SQL_CONDITION_TRIGGER_MODE_UNSPECIFIED` is rejected at validation.",
+          "ref": "jobs.SqlConditionTriggerMode",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "warehouse_id": {
+          "description": "The canonical identifier of the SQL warehouse to run the condition query against.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "jobs.SqlConditionRunInfoDetails": {
+      "description": "SQL condition evaluation details captured at the time the run was triggered",
+      "fields": {
+        "condition_evaluation_satisfied": {
+          "description": "Whether the last condition evaluation was satisfied (query returned truthy result).",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "condition_evaluation_sql_session_id": {
+          "description": "The ID of the SQL session, used by the UI to track session context.\nSet for the QUERY_RETURNS_ROWS trigger mode.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "condition_evaluation_sql_statement_id": {
+          "description": "The SQL statement ID of the condition evaluation, set when the condition is\nevaluated by running a single SQL statement (the RESULT_VALUE_CHANGES trigger\nmode). The UI uses it to link to the query execution details.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "jobs.SqlConditionState": {
+      "fields": {
+        "latest_condition_evaluation_satisfied": {
+          "description": "Whether the last condition evaluation was satisfied (query returned truthy result).",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "latest_condition_evaluation_sql_session_id": {
+          "description": "The ID of the SQL session, used by UI to track session context.\nPopulated for QUERY_RETURNS_ROWS, which executes the query through Redash.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "latest_condition_evaluation_sql_statement_id": {
+          "description": "The SEA statement ID of the SQL statement executed for the latest condition evaluation.\nPopulated for RESULT_VALUE_CHANGES, which executes the query through the SQL execution API.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "jobs.SqlConditionTriggerMode": {
+      "description": "The strategy used to evaluate a SQL condition trigger against a query result set.\n\n* `SQL_CONDITION_TRIGGER_MODE_UNSPECIFIED`: Sentinel zero-value. Not a valid input — the\nvalidator rejects this when sent explicitly. Internally treated as `QUERY_RETURNS_ROWS`\nwhen reading legacy data that predates this field.\n* `QUERY_RETURNS_ROWS`: Fires whenever the result set has at least one row. Zero rows means\nthe condition is not met. This is the original SQL condition behavior.\n* `RESULT_VALUE_CHANGES`: Fires whenever the query's single result value differs from the\nprevious evaluation. The first evaluation always fires. Queries must return exactly one\ncell (one row, one column).",
+      "enum": [
+        "QUERY_RETURNS_ROWS",
+        "RESULT_VALUE_CHANGES"
+      ],
+      "enum_launch_stages": {
+        "QUERY_RETURNS_ROWS": "PRIVATE_PREVIEW",
+        "RESULT_VALUE_CHANGES": "PRIVATE_PREVIEW"
+      },
+      "enum_descriptions": {
+        "QUERY_RETURNS_ROWS": "Fires whenever the result set has at least one row. Zero rows means",
+        "RESULT_VALUE_CHANGES": "Fires whenever the query's single result value differs from the"
       }
     },
     "jobs.SqlDashboardOutput": {
@@ -30235,6 +30380,11 @@
         "run_id": {
           "description": "The run id of the Run Job task run",
           "launch_stage": "GA"
+        },
+        "sql_condition": {
+          "description": "SQL condition evaluation details for this run",
+          "ref": "jobs.SqlConditionRunInfoDetails",
+          "launch_stage": "PRIVATE_PREVIEW"
         }
       }
     },
@@ -30259,6 +30409,11 @@
           "ref": "jobs.PeriodicTriggerConfiguration",
           "launch_stage": "GA"
         },
+        "sql_condition": {
+          "description": "SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and\nruns *after* other trigger types conditions are evaluated.",
+          "ref": "jobs.SqlConditionConfiguration",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "table_update": {
           "ref": "jobs.TableUpdateTriggerConfiguration",
           "launch_stage": "GA"
@@ -30270,6 +30425,11 @@
         "file_arrival": {
           "ref": "jobs.FileArrivalTriggerState",
           "launch_stage": "GA"
+        },
+        "sql_condition": {
+          "description": "State for SQL condition evaluation, can coexist with other trigger states.",
+          "ref": "jobs.SqlConditionState",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "table": {
           "ref": "jobs.TableTriggerState",
@@ -32716,8 +32876,36 @@
             "OPTIONAL"
           ]
         },
+        "first_distinct": {
+          "ref": "ml.FirstDistinctFunction",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "first_n": {
+          "ref": "ml.FirstNFunction",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "last": {
           "ref": "ml.LastFunction",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "last_distinct": {
+          "ref": "ml.LastDistinctFunction",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "last_n": {
+          "ref": "ml.LastNFunction",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -34125,11 +34313,37 @@
         }
       }
     },
+    "ml.FirstDistinctFunction": {
+      "description": "Returns the first N distinct values, ordered by the feature's timeseries column.",
+      "fields": {
+        "input": {
+          "description": "The input column from which the first N distinct values are returned.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "n": {
+          "description": "The number of distinct values to return.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
     "ml.FirstFunction": {
       "description": "Returns the first value.",
       "fields": {
         "input": {
           "description": "The input column from which the first value is returned.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "ml.FirstNFunction": {
+      "description": "Returns the first N values, ordered by the feature's timeseries column.",
+      "fields": {
+        "input": {
+          "description": "The input column from which the first N values are returned.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "n": {
+          "description": "The number of values to return.",
           "launch_stage": "PRIVATE_PREVIEW"
         }
       }
@@ -34752,11 +34966,37 @@
         }
       }
     },
+    "ml.LastDistinctFunction": {
+      "description": "Returns the last N distinct values, ordered by the feature's timeseries column.",
+      "fields": {
+        "input": {
+          "description": "The input column from which the last N distinct values are returned.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "n": {
+          "description": "The number of distinct values to return.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
     "ml.LastFunction": {
       "description": "Returns the last value.",
       "fields": {
         "input": {
           "description": "The input column from which the last value is returned.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "ml.LastNFunction": {
+      "description": "Returns the last N values, ordered by the feature's timeseries column.",
+      "fields": {
+        "input": {
+          "description": "The input column from which the last N values are returned.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "n": {
+          "description": "The number of values to return.",
           "launch_stage": "PRIVATE_PREVIEW"
         }
       }
@@ -35399,6 +35639,22 @@
         }
       }
     },
+    "ml.LongRollingWindow": {
+      "description": "A long (multi-day) rolling window served via the hybrid batch + streaming path. The batch\npipeline maintains daily partial aggregates for the bulk of the window while the streaming\npipeline maintains the most recent day(s), and serving merges them on read. Distinct from\nRollingWindow so the control plane can explicitly identify long rolling window features rather\nthan inferring hybrid behavior from window_duration.",
+      "fields": {
+        "delay": {
+          "description": "The delay applied to the end of the rolling window (must be non-negative).\nFor example, delay=1d shifts the window end 1 day before the evaluation time.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "window_duration": {
+          "description": "The duration of the rolling window. Must be positive and span more than two days, so that both\nthe batch (N-1 day) and stale-path (N-2 day) partial aggregates are well defined. The duration\nneed not be a whole number of days (e.g. 3 days 15 minutes is allowed).",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
     "ml.MaterializedFeature": {
       "description": "A materialized feature represents a feature that is continuously computed and stored.",
       "fields": {
@@ -35998,6 +36254,19 @@
         "CAN_READ": "GA"
       }
     },
+    "ml.ProtoSchemaSpec": {
+      "description": "A Protocol Buffer schema paired with the name of the message within it that describes the\nKafka payload. A .proto file may declare multiple messages; message_name disambiguates.",
+      "fields": {
+        "message_name": {
+          "description": "The fully-qualified name of the message within schema_text that describes the Kafka payload\n(e.g. \"Event\" or \"com.example.Event\" if schema_text declares a package). Identifies which\nmessage is used to decode each Kafka record — a .proto file may declare multiple messages\nbut only one represents the payload. Must not be empty.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "schema_text": {
+          "description": "The raw .proto file text (proto2 and proto3 syntax supported, see\nhttps://protobuf.dev/programming-guides/proto3/ and https://protobuf.dev/programming-guides/proto2/).",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
     "ml.PublishSpec": {
       "fields": {
         "online_store": {
@@ -36536,8 +36805,23 @@
     },
     "ml.SchemaConfig": {
       "fields": {
+        "avro_schema": {
+          "description": "Avro schema in JSON format (https://avro.apache.org/docs/current/specification/).",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "json_schema": {
           "description": "Schema of the JSON object in standard IETF JSON schema format (https://json-schema.org/).",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "proto_schema": {
+          "description": "Protocol Buffer schema with its payload message name.",
+          "ref": "ml.ProtoSchemaSpec",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -37042,6 +37326,13 @@
     "ml.StreamingMode": {
       "description": "The streaming mode configuration for a streaming materialization pipeline.",
       "fields": {
+        "freshness_target": {
+          "description": "The desired data freshness for feature materialization, expressed as a\nduration string (e.g. \"1 minute\").",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "mode": {
           "description": "The type of streaming mode used by the materialization pipeline.",
           "ref": "ml.StreamingModeStreamingModeType",
@@ -37131,6 +37422,14 @@
         "continuous": {
           "ref": "ml.ContinuousWindow",
           "deprecated": true,
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "long_rolling": {
+          "description": "A long (multi-day) rolling window served via the hybrid batch + streaming path.",
+          "ref": "ml.LongRollingWindow",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -40819,11 +41118,11 @@
         },
         "clustering_columns": {
           "description": "List of column names to use for clustering the destination table.\nWhen specified, the destination Delta table will be clustered by these columns.\nThis can improve query performance when filtering on these columns.\nNote: clustering_columns in table specific configuration will override the pipeline definition.\nNote: we can only provide enable_auto_clustering or clustering_columns,\nadded as separate fields as we cannot have repeated field in oneof.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "enable_auto_clustering": {
           "description": "Whether to enable auto clustering on the destination table.\nWhen enabled, Delta will automatically optimize the data layout\nbased on the clustering columns for improved query performance.\nNote: enable_auto_clustering in table specific configuration will override the pipeline definition.\nNote: we can only provide enable_auto_clustering or clustering_columns,\nadded as separate fields as we cannot have repeated field in oneof.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "exclude_columns": {
           "description": "A list of column names to be excluded for the ingestion.\nWhen not specified, include_columns fully controls what columns to be ingested.\nWhen specified, all other columns including future ones will be automatically included for ingestion.\nThis field in mutually exclusive with `include_columns`.",
@@ -40859,7 +41158,7 @@
         },
         "table_properties": {
           "description": "Table properties to set on the destination table.\nThese are key-value pairs that configure various Delta table behaviors or any user defined properties.\nExample: {\"delta.feature.variantType\": \"supported\", \"delta.enableTypeWidening\": \"true\"}\nNote: table_properties in table specific configuration will override the table_properties of the pipeline definition.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "workday_report_parameters": {
           "description": "(Optional) Additional custom parameters for Workday Report",
@@ -41551,7 +41850,7 @@
         },
         "replace_existing": {
           "description": "If true, update the database if it already exists instead of returning an\nerror.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "INPUT_ONLY",
             "OPTIONAL"
@@ -41597,7 +41896,7 @@
       "fields": {
         "replace_existing": {
           "description": "If true, update the role if it already exists instead of returning an\nerror.\n\nWhen the role already exists, the provided `role` spec fully replaces the\nexisting one: `membership_roles` is overwritten, not merged. Leaving\n`membership_roles` empty clears all of the role's existing memberships,\nincluding `DATABRICKS_SUPERUSER`. Always send the complete desired list of\nmemberships when using this field.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "INPUT_ONLY",
             "OPTIONAL"
@@ -42123,7 +42422,21 @@
         },
         "read_only_host": {
           "description": "An optionally defined read-only host for the endpoint, without pooling. For read-only endpoints,\nthis attribute is always defined and is equivalent to host. For read-write endpoints, this attribute is defined\nif the enclosing endpoint is a group with greater than 1 computes configured, and has readable secondaries enabled.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "read_only_pooled_host": {
+          "description": "The read-only hostname of the compute endpoint, with pooling. This attribute is always defined for read-only endpoints,\nand may be defined for read-write endpoints if configured with read replicas and allow read-only connections.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "read_write_pooled_host": {
+          "description": "The read-write hostname of the compute endpoint, with pooling. This attribute is only defined for read-write endpoints.",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -42266,6 +42579,13 @@
             "OUTPUT_ONLY"
           ]
         },
+        "last_active_time": {
+          "description": "A timestamp indicating when the compute endpoint was last active.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
         "pending_state": {
           "ref": "postgres.EndpointStatusState",
           "launch_stage": "PUBLIC_BETA",
@@ -42299,7 +42619,7 @@
       ],
       "enum_launch_stages": {
         "ACTIVE": "PUBLIC_BETA",
-        "DEGRADED": "PRIVATE_PREVIEW",
+        "DEGRADED": "PUBLIC_BETA",
         "IDLE": "PUBLIC_BETA",
         "INIT": "PUBLIC_BETA"
       }
@@ -42493,6 +42813,20 @@
         "endpoint": {
           "description": "The endpoint resource name for which this credential will be generated.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}",
           "launch_stage": "PUBLIC_BETA"
+        },
+        "expire_time": {
+          "description": "Timestamp in UTC of when this credential should expire.\nMust be at least 300 seconds (5 minutes) and at most 1 hour from the current time.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "ttl": {
+          "description": "The requested time-to-live for the generated credential token.\nMust be at least 300 seconds (5 minutes) and at most 3600 seconds (1 hour).",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
         }
       }
     },
@@ -43562,7 +43896,7 @@
         },
         "type_overrides": {
           "description": "Override the default Delta-\u003ePG type mapping for specific columns.\nA TypeOverride with PG_SPECIFIC_TYPE_UNSPECIFIED is rejected; a valid pg_type must be set.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -43575,7 +43909,7 @@
         "PG_SPECIFIC_TYPE_VECTOR"
       ],
       "enum_launch_stages": {
-        "PG_SPECIFIC_TYPE_VECTOR": "PRIVATE_PREVIEW"
+        "PG_SPECIFIC_TYPE_VECTOR": "PUBLIC_BETA"
       }
     },
     "postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy": {
@@ -43596,16 +43930,16 @@
       "fields": {
         "column_name": {
           "description": "Name of the source column whose target PostgreSQL type should be overridden.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "pg_type": {
           "description": "PostgreSQL-specific target type to use for the column.",
           "ref": "postgres.SyncedTableSyncedTableSpecPgSpecificType",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "size": {
-          "description": "Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\n(specifies the vector dimension, e.g., 1024).",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\nor PG_SPECIFIC_TYPE_HALFVEC (specifies the vector dimension, e.g., 1024).",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -43667,7 +44001,7 @@
         },
         "project": {
           "description": "The full resource name of the project associated with the table.\n\nFormat: \"projects/{project_id}\".",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -46608,10 +46942,14 @@
         "GPU_SMALL",
         "GPU_LARGE",
         "MULTIGPU_MEDIUM",
-        "GPU_XLARGE"
+        "CPU_LARGE",
+        "GPU_XLARGE",
+        "CPU_MEDIUM"
       ],
       "enum_launch_stages": {
         "CPU": "GA",
+        "CPU_LARGE": "PUBLIC_BETA",
+        "CPU_MEDIUM": "PUBLIC_BETA",
         "GPU_LARGE": "GA",
         "GPU_MEDIUM": "GA",
         "GPU_SMALL": "GA",
@@ -46999,10 +47337,14 @@
         "GPU_SMALL",
         "GPU_LARGE",
         "MULTIGPU_MEDIUM",
-        "GPU_XLARGE"
+        "CPU_LARGE",
+        "GPU_XLARGE",
+        "CPU_MEDIUM"
       ],
       "enum_launch_stages": {
         "CPU": "GA",
+        "CPU_LARGE": "PUBLIC_BETA",
+        "CPU_MEDIUM": "PUBLIC_BETA",
         "GPU_LARGE": "GA",
         "GPU_MEDIUM": "GA",
         "GPU_SMALL": "GA",
@@ -47697,7 +48039,7 @@
       }
     },
     "settings.CustomerFacingIngressNetworkPolicy": {
-      "description": "This proto is under development.\nThe network policies applying for ingress traffic.\nAny changes here should also be synced to estore/namespaces/lakehousenetworkmanager/latest.proto.",
+      "description": "The network policies applying for ingress traffic.",
       "fields": {
         "cross_workspace_access": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyCrossWorkspaceAccess",
@@ -47707,9 +48049,9 @@
           ]
         },
         "private_access": {
-          "description": "The network policy restrictions for private access to the workspace.\nConfigures how registered private endpoints are allowed or denied access.",
+          "description": "The network policy restrictions for private access.\nConfigures how requests arriving over private connectivity are governed.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyPrivateAccess",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -47730,10 +48072,11 @@
         "scope_qualifier": {
           "description": "Qualifies the breadth of API access for the listed scopes. See ApiScopeQualifier.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyApiScopeQualifier",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "scopes": {
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "The API scopes to match. Use \"all-apis\" to match any account-level API.",
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -47746,10 +48089,11 @@
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyAccountUiDestination": {
+      "description": "The account console UI destination.",
       "fields": {
         "all_destinations": {
           "description": "Must be set to true.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -47881,9 +48225,11 @@
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyEndpoints": {
+      "description": "A set of registered endpoints, identified by their endpoint IDs.",
       "fields": {
         "endpoint_ids": {
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "The IDs of the registered endpoints. Must contain at least one endpoint ID.",
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -47904,69 +48250,83 @@
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyPrivateAccess": {
+      "description": "Configures how requests arriving over private connectivity, such as\nregistered endpoints, are allowed or denied access.",
       "fields": {
         "allow_rules": {
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Allow rules are evaluated after deny rules. A request matching any allow rule is\nallowed; a request matching no rule is denied by default. Only applies when\nrestriction_mode is RESTRICTED_ACCESS.",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "deny_rules": {
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Deny rules are evaluated first. A request matching any deny rule is denied,\nregardless of allow rules. Only applies when restriction_mode is RESTRICTED_ACCESS.",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "restriction_mode": {
+          "description": "The restriction mode for private access.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyPrivateAccessRestrictionMode",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyPrivateAccessRestrictionMode": {
+      "description": "The restriction mode for private access. In ALLOW_ALL_REGISTERED_ENDPOINTS mode,\nrequests arriving through any endpoint registered to the account are allowed, and\ndeny rules and allow rules cannot be set. In RESTRICTED_ACCESS mode, access is\nrestricted based on deny rules and allow rules; requests that do not match any\nallow rule are denied.",
       "enum": [
         "ALLOW_ALL_REGISTERED_ENDPOINTS",
         "RESTRICTED_ACCESS"
       ],
       "enum_launch_stages": {
-        "ALLOW_ALL_REGISTERED_ENDPOINTS": "PRIVATE_PREVIEW",
-        "RESTRICTED_ACCESS": "PRIVATE_PREVIEW"
+        "ALLOW_ALL_REGISTERED_ENDPOINTS": "PUBLIC_BETA",
+        "RESTRICTED_ACCESS": "PUBLIC_BETA"
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyPrivateIngressRule": {
+      "description": "An ingress rule is enforced when a request satisfies all\nspecified attributes — including request origin, destination, and authentication.",
       "fields": {
         "authentication": {
+          "description": "The authenticated identity the request must match. When unset, the rule matches\nall users and service principals.\nOn the account-level network policy, scoping to specific identities is not\ncurrently supported, so this field must be unset (the rule matches all users\nand service principals).",
           "ref": "settings.CustomerFacingIngressNetworkPolicyAuthentication",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "destination": {
+          "description": "The destination the request must match — the resource being accessed, for example\nthe workspace UI, workspace APIs, or account-level APIs. See RequestDestination.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyRequestDestination",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "label": {
           "description": "The label for this ingress rule.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "origin": {
+          "description": "The origin the request must match — the private connectivity the request arrives\nthrough, for example a specific set of registered endpoints or any endpoint\nregistered to the account. See PrivateRequestOrigin.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyPrivateRequestOrigin",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyPrivateRequestOrigin": {
+      "description": "The origin of a private access request, identified by the endpoint\nthrough which the request arrives.",
       "fields": {
         "all_private_access": {
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "Matches requests arriving over any private connectivity, including registered\nendpoints and the workspace's Azure Private Link (ui-api) endpoints.\nCan only be used in deny rules of workspace-level network policies.\nMust be set to true when specified.",
+          "launch_stage": "PUBLIC_BETA"
         },
         "all_registered_endpoints": {
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "Matches requests arriving through any endpoint registered to the account.\nMust be set to true when specified.",
+          "launch_stage": "PUBLIC_BETA"
         },
         "azure_workspace_private_link": {
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "Matches requests arriving through the workspace's Azure Private Link (ui-api)\nendpoints. Can only be used in deny rules of workspace-level network policies.\nMust be set to true when specified.",
+          "launch_stage": "PUBLIC_BETA"
         },
         "endpoints": {
+          "description": "Matches requests arriving through any of the specified registered endpoints.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyEndpoints",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -48042,17 +48402,19 @@
     "settings.CustomerFacingIngressNetworkPolicyRequestDestination": {
       "fields": {
         "account_api": {
+          "description": "Matches requests to account-level APIs.\nCan only be used in the account-level network policy.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyAccountApiDestination",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "account_databricks_one": {
-          "description": "Account DatabricksOne destination is not supported.\nDO NOT change the stage of this destination past PRIVATE_PREVIEW.",
+          "description": "Account DatabricksOne destination is not supported.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyAccountDatabricksOneDestination",
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "account_ui": {
+          "description": "Matches requests to the account console UI.\nCan only be used in the account-level network policy.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyAccountUiDestination",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "all_destinations": {
           "description": "When true, match all destinations, no other destination fields can be set.\nWhen not set or false, at least one specific destination must be provided.",
@@ -54178,7 +54540,7 @@
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "visualization_id": {
-          "description": "Query Vizualization ID returned by :method:queryvisualizations/create.",
+          "description": "Query Visualization ID returned by :method:queryvisualizations/create.",
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "width": {
@@ -57613,7 +57975,7 @@
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "visualization_id": {
-          "description": "Query Vizualization ID returned by :method:queryvisualizations/create.",
+          "description": "Query Visualization ID returned by :method:queryvisualizations/create.",
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "width": {
@@ -59753,6 +60115,10 @@
     },
     "workspace.CreateRepoRequest": {
       "fields": {
+        "git_credential_id": {
+          "description": "Git credential ID to use when cloning the repository. The Git credential must be\nconfigured for the current user.",
+          "launch_stage": "GA"
+        },
         "path": {
           "description": "Desired path for the repo in the workspace. Almost any path in the workspace can be chosen.\nIf repo is created in `/Repos`, path must be in the format `/Repos/{folder}/{repo-name}`.",
           "launch_stage": "GA"
@@ -60596,6 +60962,10 @@
         "dangerously_force_discard_all": {
           "description": "WARNING: DESTRUCTIVE AND IRREVERSIBLE. If true, permanently deletes ALL uncommitted\nchanges in the Git folder — staged, unstaged, and untracked files — before updating.\nLost data CANNOT be recovered.\n\nNEVER use this on Git folders where users author or edit files. This flag is intended\nONLY for automated jobs that treat the Git folder as a read-only mirror of a remote\nbranch and need to force-sync it. If any user has uncommitted work in the Git folder,\nthat work will be permanently destroyed without warning.\n\nLocal commits that have been made but not yet pushed to the remote are preserved.",
           "launch_stage": "PUBLIC_BETA"
+        },
+        "git_credential_id": {
+          "description": "Git credential ID to use for this update operation. The Git credential must be\nconfigured for the current user.",
+          "launch_stage": "GA"
         },
         "sparse_checkout": {
           "description": "If specified, update the sparse checkout settings. The update will fail if sparse checkout is\nnot enabled for the repo.",
@@ -80030,7 +80400,7 @@
         "methods": [
           {
             "name": "Create",
-            "description": "Create a new clean room with the specified collaborators.\nThis method is asynchronous; the returned name field inside the clean_room field can be used to poll the clean room status,\nusing the :method:cleanrooms/get method.\nWhen this method returns, the clean room will be in a PROVISIONING state, with only name, owner, comment, created_at and status populated.\nThe clean room will be usable once it enters an ACTIVE state.\n\nThe caller must be a metastore admin or have the **CREATE_CLEAN_ROOM** privilege on the\nmetastore.",
+            "description": "Create a new clean room with the specified collaborators.\nThis method is asynchronous; the returned name field inside the clean_room field can be used to poll the clean room status,\nusing the [cleanrooms/get](https://docs.databricks.com/api/workspace/cleanrooms/get) method.\nWhen this method returns, the clean room will be in a PROVISIONING state, with only name, owner, comment, created_at and status populated.\nThe clean room will be usable once it enters an ACTIVE state.\n\nThe caller must be a metastore admin or have the **CREATE_CLEAN_ROOM** privilege on the\nmetastore.",
             "summary": "Create a clean room.",
             "path": "/api/2.0/clean-rooms",
             "can_use_json": true,
@@ -81413,7 +81783,7 @@
               "required_fields": [
                 {
                   "name": "spark_version",
-                  "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+                  "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -81424,7 +81794,7 @@
               "required_request_body_fields": [
                 {
                   "name": "spark_version",
-                  "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+                  "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -81665,7 +82035,7 @@
               },
               {
                 "name": "node_type_id",
-                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -81744,7 +82114,7 @@
               },
               {
                 "name": "spark_version",
-                "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+                "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -81801,7 +82171,7 @@
             "required_positional_arguments": [
               {
                 "name": "spark_version",
-                "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+                "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -81951,7 +82321,7 @@
                 },
                 {
                   "name": "spark_version",
-                  "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+                  "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -81971,7 +82341,7 @@
                 },
                 {
                   "name": "spark_version",
-                  "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+                  "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -82212,7 +82582,7 @@
               },
               {
                 "name": "node_type_id",
-                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -82291,7 +82661,7 @@
               },
               {
                 "name": "spark_version",
-                "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+                "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -82357,7 +82727,7 @@
               },
               {
                 "name": "spark_version",
-                "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.",
+                "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -88278,7 +88648,7 @@
         "methods": [
           {
             "name": "Create",
-            "description": "Create Custom OAuth App Integration.\n\nYou can retrieve the custom OAuth app integration via :method:CustomAppIntegration/get.",
+            "description": "Create Custom OAuth App Integration.\n\nYou can retrieve the custom OAuth app integration via [CustomAppIntegration/get](https://docs.databricks.com/api/account/customappintegration/get).",
             "summary": "Create Custom OAuth App Integration.",
             "path": "/api/2.0/accounts/{account_id}/oauth2/custom-app-integrations",
             "can_use_json": true,
@@ -88358,7 +88728,7 @@
           },
           {
             "name": "Delete",
-            "description": "Delete an existing Custom OAuth App Integration.\nYou can retrieve the custom OAuth app integration via :method:CustomAppIntegration/get.",
+            "description": "Delete an existing Custom OAuth App Integration.\nYou can retrieve the custom OAuth app integration via [CustomAppIntegration/get](https://docs.databricks.com/api/account/customappintegration/get).",
             "summary": "Delete Custom OAuth App Integration.",
             "path": "/api/2.0/accounts/{account_id}/oauth2/custom-app-integrations/{integration_id}",
             "has_required_positional_arguments": true,
@@ -88529,7 +88899,7 @@
           },
           {
             "name": "Update",
-            "description": "Updates an existing custom OAuth App Integration.\nYou can retrieve the custom OAuth app integration via :method:CustomAppIntegration/get.",
+            "description": "Updates an existing custom OAuth App Integration.\nYou can retrieve the custom OAuth app integration via [CustomAppIntegration/get](https://docs.databricks.com/api/account/customappintegration/get).",
             "summary": "Updates Custom OAuth App Integration.",
             "path": "/api/2.0/accounts/{account_id}/oauth2/custom-app-integrations/{integration_id}",
             "can_use_json": true,
@@ -89002,7 +89372,7 @@
               },
               {
                 "name": "visualization_id",
-                "description": "Query Vizualization ID returned by :method:queryvisualizations/create.",
+                "description": "Query Visualization ID returned by :method:queryvisualizations/create.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -89218,7 +89588,7 @@
               },
               {
                 "name": "visualization_id",
-                "description": "Query Vizualization ID returned by :method:queryvisualizations/create.",
+                "description": "Query Visualization ID returned by :method:queryvisualizations/create.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -89724,6 +90094,16 @@
                 }
               },
               {
+                "name": "excluded_schemas",
+                "description": "Schemas to exclude from the scan, each named relative to the parent catalog.\nIf specified, all schemas except the specified ones will be scanned.\nMutually exclusive with `included_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "CatalogConfigSchemaNames",
+                  "is_object": true
+                }
+              },
+              {
                 "name": "included_schemas",
                 "description": "Schemas to include in the scan, each named relative to the parent catalog.\nIf specified, only listed schemas will be scanned.\nMutually exclusive with `excluded_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
                 "is_request_body_field": true,
@@ -90012,6 +90392,16 @@
                     "pascal_name": "AutoTaggingConfig",
                     "is_object": true
                   }
+                }
+              },
+              {
+                "name": "excluded_schemas",
+                "description": "Schemas to exclude from the scan, each named relative to the parent catalog.\nIf specified, all schemas except the specified ones will be scanned.\nMutually exclusive with `included_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "CatalogConfigSchemaNames",
+                  "is_object": true
                 }
               },
               {
@@ -125198,6 +125588,11 @@
         "docs_group": "catalog",
         "launch_stage": "GA",
         "cli_launch_stage_display": "GA",
+        "list": {
+          "request": {
+            "pascal_name": "ListPrivilegeAssignmentsRequest"
+          }
+        },
         "methods": [
           {
             "name": "Get",
@@ -125444,6 +125839,274 @@
             ]
           },
           {
+            "name": "List",
+            "description": "Lists the privilege assignments for a securable. Does not include inherited privileges.\nPaginated version of Get Permissions API.",
+            "summary": "List permissions.",
+            "path": "/api/2.1/unity-catalog/privilege-assignments/{securable_type}/{full_name}",
+            "is_hidden_cli": true,
+            "has_required_positional_arguments": true,
+            "launch_stage": "PRIVATE_PREVIEW",
+            "cli_launch_stage_display": "Private Preview",
+            "request": {
+              "pascal_name": "ListPrivilegeAssignmentsRequest",
+              "is_object": true,
+              "required_fields": [
+                {
+                  "name": "securable_type",
+                  "description": "Type of securable.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                },
+                {
+                  "name": "full_name",
+                  "description": "Full name of securable.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ],
+              "required_in_url_fields": [
+                {
+                  "name": "securable_type",
+                  "description": "Type of securable.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                },
+                {
+                  "name": "full_name",
+                  "description": "Full name of securable.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ]
+            },
+            "response": {
+              "pascal_name": "ListPrivilegeAssignmentsResponse",
+              "is_object": true
+            },
+            "all_fields": [
+              {
+                "name": "full_name",
+                "description": "Full name of securable.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "page_size",
+                "description": "Specifies the maximum number of privilege assignments to return (page length).\nEvery PrivilegeAssignment present in a single page response is guaranteed to contain all the privileges granted on\nthe requested Securable for the respective principal.\n\nIf not set, page length is the server configured value.\nIf set to\n- lesser than 0: invalid parameter error\n- 0: page length is set to a server configured value\n- lesser than 150 but greater than 0: invalid parameter error (this is to ensure that server is able to return at\nleast one complete PrivilegeAssignment in a single page response)\n- greater than (or equal to) 150: page length is the minimum of this value and a server configured value",
+                "is_query": true,
+                "entity": {
+                  "is_int": true
+                }
+              },
+              {
+                "name": "page_token",
+                "description": "Opaque pagination token to go to next page based on previous query.",
+                "is_query": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "principal",
+                "description": "If provided, only the permissions for the specified principal (user or group) are returned.",
+                "is_query": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "securable_type",
+                "description": "Type of securable.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_positional_arguments": [
+              {
+                "name": "securable_type",
+                "description": "Type of securable.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "full_name",
+                "description": "Full name of securable.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "pagination": {
+              "token": {
+                "poll_field": {
+                  "name": "page_token",
+                  "description": "Opaque pagination token to go to next page based on previous query.",
+                  "is_query": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "ListEffective",
+            "description": "Lists the effective privilege assignments for a securable. Includes inherited privileges.\nPaginated version of Get Effective Permissions API.",
+            "summary": "List effective permissions.",
+            "path": "/api/2.1/unity-catalog/effective-privilege-assignments/{securable_type}/{full_name}",
+            "is_hidden_cli": true,
+            "has_required_positional_arguments": true,
+            "launch_stage": "PRIVATE_PREVIEW",
+            "cli_launch_stage_display": "Private Preview",
+            "request": {
+              "pascal_name": "ListEffectivePrivilegeAssignmentsRequest",
+              "is_object": true,
+              "required_fields": [
+                {
+                  "name": "securable_type",
+                  "description": "Type of securable.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                },
+                {
+                  "name": "full_name",
+                  "description": "Full name of securable.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ],
+              "required_in_url_fields": [
+                {
+                  "name": "securable_type",
+                  "description": "Type of securable.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                },
+                {
+                  "name": "full_name",
+                  "description": "Full name of securable.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ]
+            },
+            "response": {
+              "pascal_name": "ListEffectivePrivilegeAssignmentsResponse",
+              "is_object": true
+            },
+            "all_fields": [
+              {
+                "name": "full_name",
+                "description": "Full name of securable.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "page_size",
+                "description": "Specifies the maximum number of privilege assignments to return (page length).\nEvery EffectivePrivilegeAssignment present in a single page response is guaranteed to contain all the effective\nprivileges granted on (or inherited by) the requested Securable for the respective principal.\n\nIf not set, a server-configured default is used.\nIf set to\n- lesser than 0: invalid parameter error\n- 0: page length is set to a server configured value\n- lesser than 150 but greater than 0: invalid parameter error (this is to ensure that server is able to return at\nleast one complete EffectivePrivilegeAssignment in a single page response)\n- greater than (or equal to) 150: page length is the minimum of this value and a server configured value",
+                "is_query": true,
+                "entity": {
+                  "is_int": true
+                }
+              },
+              {
+                "name": "page_token",
+                "description": "Opaque pagination token to go to next page based on previous query.",
+                "is_query": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "principal",
+                "description": "If provided, only the effective permissions for the specified principal (user or group) are returned.",
+                "is_query": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "securable_type",
+                "description": "Type of securable.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_positional_arguments": [
+              {
+                "name": "securable_type",
+                "description": "Type of securable.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "full_name",
+                "description": "Full name of securable.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "pagination": {
+              "token": {
+                "poll_field": {
+                  "name": "page_token",
+                  "description": "Opaque pagination token to go to next page based on previous query.",
+                  "is_query": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              }
+            }
+          },
+          {
             "name": "Update",
             "description": "Updates the permissions for a securable.",
             "summary": "Update permissions.",
@@ -125520,6 +126183,14 @@
                 "is_path": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "omit_permissions_in_response",
+                "description": "Optional, default false. Specifies whether all the permissions should be returned in the response.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_bool": true
                 }
               },
               {
@@ -127941,7 +128612,7 @@
                 },
                 {
                   "name": "node_type_id",
-                  "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                  "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -127961,7 +128632,7 @@
                 },
                 {
                   "name": "node_type_id",
-                  "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                  "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -128078,7 +128749,7 @@
               },
               {
                 "name": "node_type_id",
-                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -128099,7 +128770,7 @@
               },
               {
                 "name": "preloaded_spark_versions",
-                "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the :method:clusters/sparkVersions API call.",
+                "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "List",
@@ -128137,7 +128808,7 @@
               },
               {
                 "name": "node_type_id",
-                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -128244,7 +128915,7 @@
                 },
                 {
                   "name": "node_type_id",
-                  "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                  "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -128273,7 +128944,7 @@
                 },
                 {
                   "name": "node_type_id",
-                  "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                  "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -128342,7 +129013,7 @@
               },
               {
                 "name": "node_type_id",
-                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -128387,7 +129058,7 @@
               },
               {
                 "name": "node_type_id",
-                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+                "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -129061,7 +129732,7 @@
         "methods": [
           {
             "name": "Create",
-            "description": "Creates an IP access list for this workspace.\n\nA list can be an allow list or a block list.\nSee the top of this file for a description of how the server treats allow lists and block lists at runtime.\n\nWhen creating or updating an IP access list:\n\n* For all allow lists and block lists combined, the API supports a maximum of 1000 IP/CIDR values,\nwhere one CIDR counts as a single value. Attempts to exceed that number return error 400 with `error_code` value `QUOTA_EXCEEDED`.\n* If the new list would block the calling user's current IP, error 400 is returned with `error_code` value `INVALID_STATE`.\n\nIt can take a few minutes for the changes to take effect. **Note**: Your new IP access list has no effect until you enable the feature. See :method:workspaceconf/setStatus",
+            "description": "Creates an IP access list for this workspace.\n\nA list can be an allow list or a block list.\nSee the top of this file for a description of how the server treats allow lists and block lists at runtime.\n\nWhen creating or updating an IP access list:\n\n* For all allow lists and block lists combined, the API supports a maximum of 1000 IP/CIDR values,\nwhere one CIDR counts as a single value. Attempts to exceed that number return error 400 with `error_code` value `QUOTA_EXCEEDED`.\n* If the new list would block the calling user's current IP, error 400 is returned with `error_code` value `INVALID_STATE`.\n\nIt can take a few minutes for the changes to take effect. **Note**: Your new IP access list has no effect until you enable the feature. See [workspaceconf/setStatus](https://docs.databricks.com/api/workspace/workspaceconf/setstatus)",
             "summary": "Create access list.",
             "path": "/api/2.0/ip-access-lists",
             "can_use_json": true,
@@ -129339,7 +130010,7 @@
           },
           {
             "name": "Replace",
-            "description": "Replaces an IP access list, specified by its ID.\n\nA list can include allow lists and block lists. See the top\nof this file for a description of how the server treats allow lists and block lists at run time. When\nreplacing an IP access list:\n* For all allow lists and block lists combined, the API supports a maximum of 1000 IP/CIDR values,\nwhere one CIDR counts as a single value. Attempts to exceed that number return error 400 with `error_code`\nvalue `QUOTA_EXCEEDED`.\n* If the resulting list would block the calling user's current IP, error 400 is returned with `error_code`\nvalue `INVALID_STATE`.\nIt can take a few minutes for the changes to take effect. Note that your resulting IP access list has no\neffect until you enable the feature. See :method:workspaceconf/setStatus.",
+            "description": "Replaces an IP access list, specified by its ID.\n\nA list can include allow lists and block lists. See the top\nof this file for a description of how the server treats allow lists and block lists at run time. When\nreplacing an IP access list:\n* For all allow lists and block lists combined, the API supports a maximum of 1000 IP/CIDR values,\nwhere one CIDR counts as a single value. Attempts to exceed that number return error 400 with `error_code`\nvalue `QUOTA_EXCEEDED`.\n* If the resulting list would block the calling user's current IP, error 400 is returned with `error_code`\nvalue `INVALID_STATE`.\nIt can take a few minutes for the changes to take effect. Note that your resulting IP access list has no\neffect until you enable the feature. See [workspaceconf/setStatus](https://docs.databricks.com/api/workspace/workspaceconf/setstatus).",
             "summary": "Replace access list.",
             "path": "/api/2.0/ip-access-lists/{ip_access_list_id}",
             "can_use_json": true,
@@ -129549,7 +130220,7 @@
           },
           {
             "name": "Update",
-            "description": "Updates an existing IP access list, specified by its ID.\n\nA list can include allow lists and block lists.\nSee the top of this file for a description of how the server treats allow lists and block lists at run time.\n\nWhen updating an IP access list:\n\n* For all allow lists and block lists combined, the API supports a maximum of 1000 IP/CIDR values,\nwhere one CIDR counts as a single value. Attempts to exceed that number return error 400 with `error_code` value `QUOTA_EXCEEDED`.\n* If the updated list would block the calling user's current IP, error 400 is returned with `error_code` value `INVALID_STATE`.\n\nIt can take a few minutes for the changes to take effect. Note that your resulting IP access list has no effect until you enable\nthe feature. See :method:workspaceconf/setStatus.",
+            "description": "Updates an existing IP access list, specified by its ID.\n\nA list can include allow lists and block lists.\nSee the top of this file for a description of how the server treats allow lists and block lists at run time.\n\nWhen updating an IP access list:\n\n* For all allow lists and block lists combined, the API supports a maximum of 1000 IP/CIDR values,\nwhere one CIDR counts as a single value. Attempts to exceed that number return error 400 with `error_code` value `QUOTA_EXCEEDED`.\n* If the updated list would block the calling user's current IP, error 400 is returned with `error_code` value `INVALID_STATE`.\n\nIt can take a few minutes for the changes to take effect. Note that your resulting IP access list has no effect until you enable\nthe feature. See [workspaceconf/setStatus](https://docs.databricks.com/api/workspace/workspaceconf/setstatus).",
             "summary": "Update access list.",
             "path": "/api/2.0/ip-access-lists/{ip_access_list_id}",
             "can_use_json": true,
@@ -130605,6 +131276,14 @@
                     "pascal_name": "JobParameterDefinition",
                     "is_object": true
                   }
+                }
+              },
+              {
+                "name": "parent_path",
+                "description": "Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
                 }
               },
               {
@@ -131882,7 +132561,7 @@
               },
               {
                 "name": "only",
-                "description": "A list of task keys to run inside of the job. If this field is not provided, all tasks in the job will be run.",
+                "description": "A list of task keys to run inside of the job. If this field is not provided, all tasks in the job will be run.\n\nPrefix a task key with `+` to also run its upstream tasks, or suffix it with `+` to also run its downstream tasks.\nFor example, `+my_task` runs `my_task` and everything upstream of it, `my_task+` runs `my_task` and everything\ndownstream of it, and `+my_task+` runs both. A task key with no `+` runs only that task.",
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "List",
@@ -157744,6 +158423,24 @@
                 "entity": {
                   "is_string": true
                 }
+              },
+              {
+                "name": "expire_time",
+                "description": "Timestamp in UTC of when this credential should expire.\nMust be at least 300 seconds (5 minutes) and at most 1 hour from the current time.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "is_timestamp": true
+                }
+              },
+              {
+                "name": "ttl",
+                "description": "The requested time-to-live for the generated credential token.\nMust be at least 300 seconds (5 minutes) and at most 3600 seconds (1 hour).",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "is_duration": true
+                }
               }
             ],
             "required_positional_arguments": [
@@ -163915,7 +164612,7 @@
         "methods": [
           {
             "name": "Create",
-            "description": "Create Published OAuth App Integration.\n\nYou can retrieve the published OAuth app integration via :method:PublishedAppIntegration/get.",
+            "description": "Create Published OAuth App Integration.\n\nYou can retrieve the published OAuth app integration via [PublishedAppIntegration/get](https://docs.databricks.com/api/account/publishedappintegration/get).",
             "summary": "Create Published OAuth App Integration.",
             "path": "/api/2.0/accounts/{account_id}/oauth2/published-app-integrations",
             "can_use_json": true,
@@ -163954,7 +164651,7 @@
           },
           {
             "name": "Delete",
-            "description": "Delete an existing Published OAuth App Integration.\nYou can retrieve the published OAuth app integration via :method:PublishedAppIntegration/get.",
+            "description": "Delete an existing Published OAuth App Integration.\nYou can retrieve the published OAuth app integration via [PublishedAppIntegration/get](https://docs.databricks.com/api/account/publishedappintegration/get).",
             "summary": "Delete Published OAuth App Integration.",
             "path": "/api/2.0/accounts/{account_id}/oauth2/published-app-integrations/{integration_id}",
             "has_required_positional_arguments": true,
@@ -164114,7 +164811,7 @@
           },
           {
             "name": "Update",
-            "description": "Updates an existing published OAuth App Integration.\nYou can retrieve the published OAuth app integration via :method:PublishedAppIntegration/get.",
+            "description": "Updates an existing published OAuth App Integration.\nYou can retrieve the published OAuth app integration via [PublishedAppIntegration/get](https://docs.databricks.com/api/account/publishedappintegration/get).",
             "summary": "Updates Published OAuth App Integration.",
             "path": "/api/2.0/accounts/{account_id}/oauth2/published-app-integrations/{integration_id}",
             "can_use_json": true,
@@ -167846,7 +168543,7 @@
       {
         "id": "sql.QueryVisualizationsLegacy",
         "name": "QueryVisualizationsLegacy",
-        "description": "This is an evolving API that facilitates the addition and removal of vizualisations from existing\nqueries within the Databricks Workspace. Data structures may change over time.\n\n**Warning**: This API is deprecated. Please see the latest version of the Databricks SQL API. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+        "description": "This is an evolving API that facilitates the addition and removal of visualizations from existing\nqueries within the Databricks Workspace. Data structures may change over time.\n\n**Warning**: This API is deprecated. Please see the latest version of the Databricks SQL API. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
         "package": {
           "name": "sql"
         },
@@ -170349,6 +171046,14 @@
             },
             "all_fields": [
               {
+                "name": "git_credential_id",
+                "description": "Git credential ID to use when cloning the repository. The Git credential must be\nconfigured for the current user.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              },
+              {
                 "name": "path",
                 "description": "Desired path for the repo in the workspace. Almost any path in the workspace can be chosen.\nIf repo is created in `/Repos`, path must be in the format `/Repos/{folder}/{repo-name}`.",
                 "is_request_body_field": true,
@@ -170827,6 +171532,14 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_bool": true
+                }
+              },
+              {
+                "name": "git_credential_id",
+                "description": "Git credential ID to use for this update operation. The Git credential must be\nconfigured for the current user.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
                 }
               },
               {
@@ -173415,10 +174128,11 @@
         "package": {
           "name": "catalog"
         },
-        "is_hidden_cli": true,
         "docs_group": "catalog",
-        "launch_stage": "PRIVATE_PREVIEW",
-        "cli_launch_stage_display": "Private Preview",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "cli_launch_stage_label": "*Public Preview*",
+        "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+        "cli_launch_stage_display": "Public Preview",
         "list": {
           "request": {
             "pascal_name": "ListSecretsRequest"
@@ -173432,10 +174146,11 @@
             "path": "/api/2.1/unity-catalog/secrets",
             "can_use_json": true,
             "is_crud_create": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "CreateSecretRequest",
               "is_object": true,
@@ -173722,15 +174437,6 @@
                 }
               },
               {
-                "name": "browse_only",
-                "description": "Indicates whether the principal is limited to retrieving metadata for the associated object\nthrough the **BROWSE** privilege when **include_browse** is enabled in the request.",
-                "is_output_only": true,
-                "is_request_body_field": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
-              {
                 "name": "catalog_name",
                 "description": "The name of the catalog where the schema and the secret reside.",
                 "required": true,
@@ -173791,14 +174497,6 @@
                 "is_optional_object": true,
                 "entity": {
                   "is_timestamp": true
-                }
-              },
-              {
-                "name": "external_secret_id",
-                "is_output_only": true,
-                "is_request_body_field": true,
-                "entity": {
-                  "is_string": true
                 }
               },
               {
@@ -173918,10 +174616,11 @@
             "description": "Deletes a secret by its three-level (fully qualified) name.\n\nYou must be the owner of the secret or a metastore admin.",
             "summary": "Delete a secret.",
             "path": "/api/2.1/unity-catalog/secrets/{full_name}",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "DeleteSecretRequest",
               "is_object": true,
@@ -173980,10 +174679,11 @@
             "summary": "Get a secret.",
             "path": "/api/2.1/unity-catalog/secrets/{full_name}",
             "is_crud_read": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "GetSecretRequest",
               "is_object": true,
@@ -174100,14 +174800,6 @@
                 "entity": {
                   "is_string": true
                 }
-              },
-              {
-                "name": "include_browse",
-                "description": "Whether to include secrets in the response for which you only have the **BROWSE** privilege,\nwhich limits access to metadata.",
-                "is_query": true,
-                "entity": {
-                  "is_bool": true
-                }
               }
             ],
             "required_positional_arguments": [
@@ -174127,10 +174819,11 @@
             "description": "Lists secrets in Unity Catalog.\n\nYou must be a metastore admin, the owner of the secret, or have the\n**MANAGE** privilege on the secret.\n\nBoth **catalog_name** and **schema_name** must be specified together to filter secrets within\na specific schema. Results are paginated; use the **page_token** field from the response\nto retrieve subsequent pages.",
             "summary": "List secrets.",
             "path": "/api/2.1/unity-catalog/secrets",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "ListSecretsRequest",
               "is_object": true
@@ -174149,16 +174842,8 @@
                 }
               },
               {
-                "name": "include_browse",
-                "description": "Whether to include secrets in the response for which you only have the **BROWSE** privilege,\nwhich limits access to metadata.",
-                "is_query": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
-              {
                 "name": "page_size",
-                "description": "Maximum number of secrets to return.\n\n- If not specified, at most 10000 secrets are returned.\n- If set to a value greater than 0, the page length is the minimum of this value and 10000.\n- If set to 0, the page length is set to 10000.\n- If set to a value less than 0, an invalid parameter error is returned.",
+                "description": "Maximum number of secrets to return.\n\n- If not specified, at most 1000 secrets are returned.\n- If set to a value greater than 0, the page length is the minimum of this value and 1000.\n- If set to 0, the page length is set to 1000.\n- If set to a value less than 0, an invalid parameter error is returned.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -174200,10 +174885,11 @@
             "summary": "Update a secret.",
             "path": "/api/2.1/unity-catalog/secrets/{full_name}",
             "can_use_json": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "UpdateSecretRequest",
               "is_object": true,
@@ -174231,7 +174917,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "The field mask specifying which fields of the secret to update. Supported fields: **value**,\n**comment**, **owner**, **expire_time**.",
+                  "description": "The field mask specifying which fields of the secret to update.\n- If **update_mask** is **\"*\"**, all fields specified in **secret** are updated.\n- If **update_mask** specifies one or more fields, only those fields are updated.\nEach specified field must be set in **secret**.\nSupported fields: **value**, **comment**, **owner**, **expire_time**. To change the secret\nname, delete and recreate the secret.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -174251,7 +174937,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "The field mask specifying which fields of the secret to update. Supported fields: **value**,\n**comment**, **owner**, **expire_time**.",
+                  "description": "The field mask specifying which fields of the secret to update.\n- If **update_mask** is **\"*\"**, all fields specified in **secret** are updated.\n- If **update_mask** specifies one or more fields, only those fields are updated.\nEach specified field must be set in **secret**.\nSupported fields: **value**, **comment**, **owner**, **expire_time**. To change the secret\nname, delete and recreate the secret.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -174539,20 +175225,11 @@
               },
               {
                 "name": "update_mask",
-                "description": "The field mask specifying which fields of the secret to update. Supported fields: **value**,\n**comment**, **owner**, **expire_time**.",
+                "description": "The field mask specifying which fields of the secret to update.\n- If **update_mask** is **\"*\"**, all fields specified in **secret** are updated.\n- If **update_mask** specifies one or more fields, only those fields are updated.\nEach specified field must be set in **secret**.\nSupported fields: **value**, **comment**, **owner**, **expire_time**. To change the secret\nname, delete and recreate the secret.",
                 "required": true,
                 "is_query": true,
                 "entity": {
                   "is_field_mask": true
-                }
-              },
-              {
-                "name": "browse_only",
-                "description": "Indicates whether the principal is limited to retrieving metadata for the associated object\nthrough the **BROWSE** privilege when **include_browse** is enabled in the request.",
-                "is_output_only": true,
-                "is_request_body_field": true,
-                "entity": {
-                  "is_bool": true
                 }
               },
               {
@@ -174616,14 +175293,6 @@
                 "is_optional_object": true,
                 "entity": {
                   "is_timestamp": true
-                }
-              },
-              {
-                "name": "external_secret_id",
-                "is_output_only": true,
-                "is_request_body_field": true,
-                "entity": {
-                  "is_string": true
                 }
               },
               {
@@ -174711,7 +175380,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "The field mask specifying which fields of the secret to update. Supported fields: **value**,\n**comment**, **owner**, **expire_time**.",
+                "description": "The field mask specifying which fields of the secret to update.\n- If **update_mask** is **\"*\"**, all fields specified in **secret** are updated.\n- If **update_mask** specifies one or more fields, only those fields are updated.\nEach specified field must be set in **secret**.\nSupported fields: **value**, **comment**, **owner**, **expire_time**. To change the secret\nname, delete and recreate the secret.",
                 "required": true,
                 "is_query": true,
                 "entity": {

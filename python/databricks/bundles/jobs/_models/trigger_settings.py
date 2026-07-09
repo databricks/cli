@@ -17,6 +17,10 @@ from databricks.bundles.jobs._models.periodic_trigger_configuration import (
     PeriodicTriggerConfiguration,
     PeriodicTriggerConfigurationParam,
 )
+from databricks.bundles.jobs._models.sql_condition_configuration import (
+    SqlConditionConfiguration,
+    SqlConditionConfigurationParam,
+)
 from databricks.bundles.jobs._models.table_update_trigger_configuration import (
     TableUpdateTriggerConfiguration,
     TableUpdateTriggerConfigurationParam,
@@ -52,6 +56,14 @@ class TriggerSettings:
     Periodic trigger settings.
     """
 
+    sql_condition: VariableOrOptional[SqlConditionConfiguration] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
+    runs *after* other trigger types conditions are evaluated.
+    """
+
     table_update: VariableOrOptional[TableUpdateTriggerConfiguration] = None
 
     @classmethod
@@ -85,6 +97,14 @@ class TriggerSettingsDict(TypedDict, total=False):
     periodic: VariableOrOptional[PeriodicTriggerConfigurationParam]
     """
     Periodic trigger settings.
+    """
+
+    sql_condition: VariableOrOptional[SqlConditionConfigurationParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
+    runs *after* other trigger types conditions are evaluated.
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfigurationParam]

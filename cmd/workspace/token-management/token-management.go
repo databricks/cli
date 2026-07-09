@@ -3,6 +3,7 @@
 package token_management
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -90,7 +91,7 @@ func newCreateOboToken() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'application_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'application_id' in your JSON input")
 			}
 			return nil
 		}
@@ -129,7 +130,7 @@ func newCreateOboToken() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have application id of the service principal")
+				return errors.New("expected to have application id of the service principal")
 			}
 			createOboTokenReq.ApplicationId = args[0]
 
@@ -202,7 +203,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the token to revoke")
+			return errors.New("expected to have the id of the token to revoke")
 		}
 		deleteReq.TokenId = args[0]
 
@@ -272,7 +273,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the token to get")
+			return errors.New("expected to have the id of the token to get")
 		}
 		getReq.TokenId = args[0]
 
@@ -655,7 +656,7 @@ func newUpdateTokenManagement() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateTokenManagementReq.TokenId = args[0]
 

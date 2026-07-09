@@ -57,6 +57,7 @@
         "catalog_name": "catalog1",
         "name": "volume1",
         "schema_name": "schema1",
+        "volume_path": "/Volumes/catalog1/schema1/volume1",
         "volume_type": "MANAGED"
       }
     }
