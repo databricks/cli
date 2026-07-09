@@ -11,14 +11,13 @@ package terraform_dabs_map
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 16 dabs-only
 // jobs / databricks_job: 258 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
 // pipelines / databricks_pipeline: 5 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
-// postgres_branches / databricks_postgres_branch: 1 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
 // postgres_databases / databricks_postgres_database: 1 unwraps
@@ -119,6 +118,14 @@ var DABsOnlyFields = map[string]FieldSet{
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
 			},
 		},
+		"parent_path": {},
+		"schedule": {
+			"sql_condition": {
+				"sql_query_id": {}, // jobs.*.schedule.sql_condition.sql_query_id
+				"trigger_mode": {}, // jobs.*.schedule.sql_condition.trigger_mode
+				"warehouse_id": {}, // jobs.*.schedule.sql_condition.warehouse_id
+			},
+		},
 		"tasks": {
 			"for_each_task": {
 				"task": {
@@ -134,6 +141,13 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
+			},
+		},
+		"trigger": {
+			"sql_condition": {
+				"sql_query_id": {}, // jobs.*.trigger.sql_condition.sql_query_id
+				"trigger_mode": {}, // jobs.*.trigger.sql_condition.trigger_mode
+				"warehouse_id": {}, // jobs.*.trigger.sql_condition.warehouse_id
 			},
 		},
 	},
@@ -558,9 +572,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"pipelines": {
 		"expected_last_modified": {},
 		"url":                    {},
-	},
-	"postgres_branches": {
-		"purge_on_delete": {},
 	},
 	"postgres_projects": {
 		"initial_branch_spec": {

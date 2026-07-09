@@ -44,8 +44,13 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 	if catalogInfo.Properties == nil && createRequest.Name == catalogNameManagedDefaults {
 		// Mirror UC: managed system defaults are populated when the user sets none.
 		catalogInfo.Properties = map[string]string{
-			"unity.catalog.managed.delta.defaults.delta.enableRowTracking":        "true",
-			"unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged": "true",
+			"unity.catalog.managed.delta.defaults.delta.enableRowTracking":                   "true",
+			"unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged":            "true",
+			"unity.catalog.managed.delta.defaults.defaultClusterByAuto":                      "true",
+			"unity.catalog.managed.delta.defaults.delta.checkpointPolicy":                    "v2",
+			"unity.catalog.managed.delta.defaults.delta.parquet.format.version":              "2.12.0",
+			"unity.catalog.managed.delta.defaults.delta.parquet.format.version.afe.internal": "2.12.0",
+			"unity.catalog.managed.delta.defaults.delta.feature.catalogManaged":              "supported",
 		}
 	}
 

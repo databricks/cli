@@ -13,6 +13,9 @@ EnvMatrixExclude.no_vector_search_index = ["INPUT_CONFIG=vector_search_index.yml
 # genie_spaces resource is not supported on v0.293.0
 EnvMatrixExclude.no_genie_space = ["INPUT_CONFIG=genie_space.yml.tmpl"]
 
+# job_runs resource is not supported on v0.293.0
+EnvMatrixExclude.no_job_run = ["INPUT_CONFIG=job_run.yml.tmpl"]
+
 # Dotted pipeline configuration keys are not supported on v0.293.0
 EnvMatrixExclude.no_pipeline_config_dots = ["INPUT_CONFIG=pipeline_config_dots.yml.tmpl"]
 

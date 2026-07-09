@@ -37,6 +37,7 @@ var knownMissingInRemoteType = map[string][]string{
 	},
 	"postgres_branches": {
 		"replace_existing",
+		"purge_on_delete",
 	},
 	"postgres_databases": {
 		"replace_existing",

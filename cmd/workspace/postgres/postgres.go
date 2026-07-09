@@ -3,6 +3,7 @@
 package postgres
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -12,7 +13,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/experimental/api"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/spf13/cobra"
@@ -1969,6 +1972,10 @@ func newGenerateDatabaseCredential() *cobra.Command {
 	cmd.Flags().Var(&generateDatabaseCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: claims
+	var expireTimeParam string
+	cmd.Flags().StringVar(&expireTimeParam, "expire-time", expireTimeParam, `Timestamp in UTC of when this credential should expire.`)
+	var ttlParam string
+	cmd.Flags().StringVar(&ttlParam, "ttl", ttlParam, `The requested time-to-live for the generated credential token.`)
 
 	cmd.Use = "generate-database-credential ENDPOINT"
 	cmd.Short = `*Beta* Generate OAuth credentials for a Postgres database.`
@@ -2015,6 +2022,26 @@ Generate OAuth credentials for a Postgres database.
 		}
 		if !cmd.Flags().Changed("json") {
 			generateDatabaseCredentialReq.Endpoint = args[0]
+		}
+
+		if expireTimeParam != "" {
+			expireTimeBytes := []byte(fmt.Sprintf("\"%s\"", expireTimeParam))
+			var expireTimeField sdktime.Time
+			err = json.Unmarshal(expireTimeBytes, &expireTimeField)
+			if err != nil {
+				return fmt.Errorf("invalid EXPIRE_TIME: %s", expireTimeParam)
+			}
+			generateDatabaseCredentialReq.ExpireTime = &expireTimeField
+		}
+
+		if ttlParam != "" {
+			ttlBytes := []byte(fmt.Sprintf("\"%s\"", ttlParam))
+			var ttlField duration.Duration
+			err = json.Unmarshal(ttlBytes, &ttlField)
+			if err != nil {
+				return fmt.Errorf("invalid TTL: %s", ttlParam)
+			}
+			generateDatabaseCredentialReq.Ttl = &ttlField
 		}
 
 		response, err := w.Postgres.GenerateDatabaseCredential(ctx, generateDatabaseCredentialReq)
