@@ -669,6 +669,10 @@ resources:
         reason: id_field
       - field: database_id
         reason: id_field
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
 
   postgres_endpoints:
     provided_id_fields:
@@ -709,6 +713,10 @@ resources:
       - reason: immutable
 
   postgres_roles:
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
     recreate_on_changes:
       # parent and role_id are immutable (together they form the hierarchical name).
       - field: parent

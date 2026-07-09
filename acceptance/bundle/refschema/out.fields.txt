@@ -3003,6 +3003,7 @@ resources.postgres_databases.*.modified_status	string	INPUT
 resources.postgres_databases.*.name	string	REMOTE
 resources.postgres_databases.*.parent	string	ALL
 resources.postgres_databases.*.postgres_database	string	ALL
+resources.postgres_databases.*.replace_existing	bool	INPUT	STATE
 resources.postgres_databases.*.role	string	ALL
 resources.postgres_databases.*.status	*postgres.DatabaseDatabaseStatus	REMOTE
 resources.postgres_databases.*.status.database_id	string	REMOTE
@@ -3141,6 +3142,7 @@ resources.postgres_roles.*.modified_status	string	INPUT
 resources.postgres_roles.*.name	string	REMOTE
 resources.postgres_roles.*.parent	string	ALL
 resources.postgres_roles.*.postgres_role	string	ALL
+resources.postgres_roles.*.replace_existing	bool	INPUT	STATE
 resources.postgres_roles.*.role_id	string	ALL
 resources.postgres_roles.*.status	*postgres.RoleRoleStatus	REMOTE
 resources.postgres_roles.*.status.attributes	*postgres.RoleAttributes	REMOTE
