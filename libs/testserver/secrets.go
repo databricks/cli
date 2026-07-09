@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -38,6 +39,40 @@ func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	s.Secrets[request.Scope][request.Key] = request.StringValue
 
 	return Response{}
+}
+
+// SecretsList models GET /api/2.0/secrets/list (ListSecretsByScope). A missing
+// scope must return RESOURCE_DOES_NOT_EXIST so the SDK maps it to
+// apierr.ErrResourceDoesNotExist; `ssh connect`'s CreateKeysSecretScope relies on
+// that sentinel to decide whether to create the scope rather than fail.
+func (s *FakeWorkspace) SecretsList(req Request) Response {
+	defer s.LockUnlock()()
+
+	scope := req.URL.Query().Get("scope")
+
+	if _, exists := s.SecretScopes[scope]; !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": fmt.Sprintf("Scope %s does not exist", scope)},
+		}
+	}
+
+	keys := make([]string, 0, len(s.Secrets[scope]))
+	for key := range s.Secrets[scope] {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+
+	secrets := make([]workspace.SecretMetadata, 0, len(keys))
+	for _, key := range keys {
+		secrets = append(secrets, workspace.SecretMetadata{Key: key})
+	}
+
+	return Response{
+		Body: workspace.ListSecretsResponse{
+			Secrets: secrets,
+		},
+	}
 }
 
 func (s *FakeWorkspace) SecretsGet(req Request) Response {

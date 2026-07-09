@@ -105,6 +105,17 @@ func AddDefaultHandlers(server *Server) {
 		path := req.URL.Query().Get("path")
 		data := req.Workspace.WorkspaceExport(path)
 
+		// A missing object returns 404, matching the real API. Without this the
+		// handler would return a nil body (the zero FileEntry's Data), which the
+		// response normalizer rejects. `ssh connect` relies on this 404 to detect
+		// that the server's metadata.json has not been published yet.
+		if data == nil {
+			return Response{
+				StatusCode: 404,
+				Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", path)},
+			}
+		}
+
 		// The filer reads the raw object body via ?direct_download=true, while
 		// the SDK's Workspace.Export (used by `databricks workspace export`)
 		// requests JSON and expects the base64-encoded content field.
@@ -728,6 +739,21 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/secrets/get", func(req Request) any {
 		return req.Workspace.SecretsGet(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/list", func(req Request) any {
+		return req.Workspace.SecretsList(req)
+	})
+
+	// The SSH tunnel server sits behind the workspace driver proxy. `ssh connect`
+	// GETs .../metadata to read the remote login user before opening the tunnel,
+	// and best-effort GETs .../logs to surface recent server errors on failure.
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
+		return Response{Body: sshTunnelRemoteUser}
+	})
+
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/logs", func(req Request) any {
+		return Response{Body: ""}
 	})
 
 	// Secrets ACLs:

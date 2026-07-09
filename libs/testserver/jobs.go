@@ -15,6 +15,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 const missingJobGitProviderMessage = "git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit"
@@ -519,7 +520,47 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 		Tasks:      tasks,
 	}
 
+	// The SSH tunnel bootstrap run stands in for the server the CLI starts on
+	// compute. That server publishes a metadata.json (its port and cluster ID)
+	// to the workspace, which `ssh connect` polls before connecting. No server
+	// runs in a local test, so synthesize that file so the connect flow proceeds.
+	if strings.HasPrefix(runName, sshTunnelBootstrapRunPrefix) {
+		s.writeSSHTunnelMetadata(request)
+	}
+
 	return Response{Body: jobs.SubmitRunResponse{RunId: runId}}
+}
+
+const (
+	sshTunnelBootstrapRunPrefix = "ssh-server-bootstrap-"
+	sshTunnelBootstrapNotebook  = "ssh-server-bootstrap"
+	sshTunnelServerPort         = 7772
+	sshTunnelClusterID          = "1234-567890-serverless"
+	sshTunnelRemoteUser         = "spark"
+)
+
+// writeSSHTunnelMetadata publishes the metadata.json that a real SSH tunnel
+// server writes to the workspace on startup, next to the bootstrap notebook.
+// Callers must already hold the workspace lock.
+func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
+	for _, t := range request.Tasks {
+		if t.NotebookTask == nil {
+			continue
+		}
+		// The bootstrap notebook and metadata.json share the session directory.
+		metadataPath := strings.TrimSuffix(t.NotebookTask.NotebookPath, sshTunnelBootstrapNotebook) + "metadata.json"
+		metadata, err := json.Marshal(map[string]any{
+			"port":       sshTunnelServerPort,
+			"cluster_id": sshTunnelClusterID,
+		})
+		if err != nil {
+			continue
+		}
+		s.files[metadataPath] = FileEntry{
+			Info: workspace.ObjectInfo{ObjectType: "FILE", Path: metadataPath},
+			Data: metadata,
+		}
+	}
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.
