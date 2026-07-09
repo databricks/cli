@@ -5,8 +5,8 @@ Add entry to ACC_REPLS without clobbering existing ones.
 If entry already exists, it'll add suffix in _<number> format.
 """
 
-import os
 import argparse
+import os
 from pathlib import Path
 
 ACC_REPLS = Path(os.environ["TEST_TMP_DIR"]) / "ACC_REPLS"

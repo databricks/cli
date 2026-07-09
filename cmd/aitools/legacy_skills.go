@@ -45,7 +45,9 @@ func newLegacySkillsInstallCmd() *cobra.Command {
 			installCmd := NewInstallCmd()
 			installCmd.SetContext(cmd.Context())
 
-			var delegateArgs []string
+			// This legacy alias predates the plugin-first default, so it stays on
+			// raw skill files to preserve its behavior.
+			delegateArgs := []string{"--skills-only"}
 			if len(args) > 0 {
 				delegateArgs = append(delegateArgs, "--skills", args[0])
 			}

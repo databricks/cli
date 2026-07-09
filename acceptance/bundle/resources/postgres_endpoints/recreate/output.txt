@@ -45,8 +45,13 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 {
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-[UNIQUE_NAME]"
+  },
   "body": {
     "spec": {
       "default_endpoint_settings": {
@@ -58,21 +63,34 @@ Deployment complete!
       "history_retention_duration": "604800s",
       "pg_version": 16
     }
-  },
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects",
-  "q": {
-    "project_id": "test-pg-proj-[UNIQUE_NAME]"
   }
 }
-      "no_expiry": true
+{
+  "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
+  "q": {
     "branch_id": "main"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
+  "q": {
+    "endpoint_id": "test-endpoint-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
       "autoscaling_limit_max_cu": 2,
       "autoscaling_limit_min_cu": 0.5,
       "endpoint_type": "ENDPOINT_TYPE_READ_ONLY"
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
-    "endpoint_id": "test-endpoint-[UNIQUE_NAME]"
+    }
+  }
+}
 
 >>> cat databricks.yml
 bundle:
@@ -118,23 +136,25 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 {
   "method": "DELETE",
   "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
 }
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
+  "q": {
+    "endpoint_id": "test-endpoint-[UNIQUE_NAME]-v2"
+  },
   "body": {
     "spec": {
       "autoscaling_limit_max_cu": 2,
       "autoscaling_limit_min_cu": 0.5,
       "endpoint_type": "ENDPOINT_TYPE_READ_ONLY"
     }
-  },
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
-  "q": {
-    "endpoint_id": "test-endpoint-[UNIQUE_NAME]-v2"
   }
+}
 
 === Fetch endpoint and verify it exists after recreation
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]-v2
@@ -160,13 +180,19 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests
+>>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 {
   "method": "DELETE",
   "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]-v2"
 }
+{
+  "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
 
 >>> [CLI] bundle destroy --auto-approve
 No active deployment found to destroy!

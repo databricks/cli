@@ -17,13 +17,14 @@ const (
 // StreamEvent is the protocol-agnostic unit that renderers consume.
 // Protocol-specific adapters convert raw SSE data into these.
 type StreamEvent struct {
-	Kind      EventKind
-	Text      string         // for Thinking, Text, Error
-	ToolCall  *ToolCallEvent // for ToolCall
-	Viz       *VizEvent      // for Viz
-	Status    string         // for Done ("completed", "failed")
-	ErrorCode string         // for Error
-	Raw       string         // original SSE data (for debug)
+	Kind           EventKind
+	Text           string         // for Thinking, Text, Error
+	ToolCall       *ToolCallEvent // for ToolCall
+	Viz            *VizEvent      // for Viz
+	Status         string         // for Done ("completed", "failed")
+	ConversationID string         // for Done: id to continue the conversation
+	ErrorCode      string         // for Error
+	Raw            string         // original SSE data (for debug)
 }
 
 // VizEvent carries visualization data for terminal chart rendering.
@@ -68,10 +69,11 @@ type RenderOptions struct {
 
 // StreamResult is the structured output for --output json mode.
 type StreamResult struct {
-	Status    string     `json:"status"`
-	Text      string     `json:"text,omitempty"`
-	Error     string     `json:"error,omitempty"`
-	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
+	Status         string     `json:"status"`
+	ConversationID string     `json:"conversation_id,omitempty"`
+	Text           string     `json:"text,omitempty"`
+	Error          string     `json:"error,omitempty"`
+	ToolCalls      []ToolCall `json:"tool_calls,omitempty"`
 }
 
 // ToolCall is a simplified function call for JSON output.

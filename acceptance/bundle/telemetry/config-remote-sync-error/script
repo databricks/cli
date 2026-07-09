@@ -1,0 +1,7 @@
+# Running config-remote-sync without a prior deploy: the state snapshot does
+# not exist, so the command fails and telemetry reports STATE_NOT_FOUND.
+trace errcode $CLI bundle config-remote-sync
+
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null)'
+
+rm out.requests.txt

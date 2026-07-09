@@ -3,6 +3,7 @@
 package vector_search_indexes
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -100,7 +101,7 @@ func newCreateIndex() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'endpoint_name', 'primary_key', 'index_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'endpoint_name', 'primary_key', 'index_type' in your JSON input")
 			}
 			return nil
 		}
@@ -215,7 +216,7 @@ func newDeleteDataVectorIndex() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		deleteDataVectorIndexReq.IndexName = args[0]
 
@@ -445,13 +446,16 @@ func newQueryIndex() *cobra.Command {
 	cmd.Flags().Var(&queryIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns_to_rerank
+	// TODO: array: facets
 	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON string representing query filters.`)
 	cmd.Flags().IntVar(&queryIndexReq.NumResults, "num-results", queryIndexReq.NumResults, `Number of results to return.`)
+	// TODO: array: query_columns
 	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
 	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `The query type to use.`)
 	// TODO: array: query_vector
 	// TODO: complex arg: reranker
 	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Threshold for the approximate nearest neighbor search.`)
+	// TODO: array: sort_columns
 
 	cmd.Use = "query-index INDEX_NAME"
 	cmd.Short = `Query an index.`
@@ -488,7 +492,7 @@ func newQueryIndex() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		queryIndexReq.IndexName = args[0]
 
@@ -762,7 +766,7 @@ func newUpsertDataVectorIndex() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only INDEX_NAME as positional arguments. Provide 'inputs_json' in your JSON input")
+				return errors.New("when --json flag is specified, provide only INDEX_NAME as positional arguments. Provide 'inputs_json' in your JSON input")
 			}
 			return nil
 		}

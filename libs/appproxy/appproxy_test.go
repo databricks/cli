@@ -37,11 +37,11 @@ func startProxy(t *testing.T, serverAddr string) (*Proxy, string) {
 	proxy, err := New(t.Context(), "http://"+serverAddr)
 	require.NoError(t, err)
 
-	ln, err := proxy.listen(fmt.Sprintf("localhost:%d", PROXY_PORT))
+	ln, err := proxy.Listen(fmt.Sprintf("localhost:%d", PROXY_PORT))
 	require.NoError(t, err)
 
 	go func() {
-		_ = proxy.serve(ln)
+		_ = proxy.Serve(ln)
 	}()
 
 	return proxy, ln.Addr().String()

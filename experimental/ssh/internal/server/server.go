@@ -54,6 +54,8 @@ type ServerOptions struct {
 }
 
 func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) error {
+	ctx, logBuf := captureWarnLogs(ctx)
+
 	port, err := findAvailablePort(opts.DefaultPort, opts.PortRange)
 	if err != nil {
 		return fmt.Errorf("failed to find available port: %w", err)
@@ -88,9 +90,11 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	connections := proxy.NewConnectionsManager(opts.MaxClients, opts.ShutdownDelay)
 	http.Handle("/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
 	http.HandleFunc("/metadata", serveMetadata)
+	http.HandleFunc("/logs", logBuf.serveHTTP)
 
 	http.Handle("/driver-proxy-http/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
 	http.HandleFunc("/driver-proxy-http/metadata", serveMetadata)
+	http.HandleFunc("/driver-proxy-http/logs", logBuf.serveHTTP)
 
 	go handleTimeout(ctx, connections.TimedOut, opts.ShutdownDelay)
 

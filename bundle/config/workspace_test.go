@@ -155,6 +155,78 @@ func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
 	assert.Equal(t, "ws2", client.Config.Profile)
 }
 
+func TestWorkspaceClientProfileOverridesAuthEnv(t *testing.T) {
+	// An explicit profile must win over auth env vars (#5096).
+	setupWorkspaceTest(t)
+
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile: "tst",
+		Host:    "https://tst.cloud.databricks.test",
+		Token:   "tst-token",
+	})
+	require.NoError(t, err)
+
+	// direnv-style auth env vars pointing at a different (dev) workspace.
+	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	w := Workspace{Profile: "tst"}
+	client, err := w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "tst", client.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.test", client.Config.Host)
+	assert.Equal(t, "tst-token", client.Config.Token)
+}
+
+func TestWorkspaceClientProfileFillsAuthFromEnv(t *testing.T) {
+	// Host-only profile: the profile wins for the host, but env fills the token
+	// it omits (#5096).
+	setupWorkspaceTest(t)
+
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile: "host-only",
+		Host:    "https://tst.cloud.databricks.test",
+	})
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+
+	w := Workspace{Profile: "host-only"}
+	client, err := w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "host-only", client.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.test", client.Config.Host)
+	// The token is not in the profile, so it is filled from the environment.
+	assert.Equal(t, "env-token", client.Config.Token)
+}
+
+func TestWorkspaceClientHostAndProfileOverridesAuthEnv(t *testing.T) {
+	// Bundle pins both workspace.host and workspace.profile: the profile wins
+	// for auth and the host check passes because they agree (#5096).
+	setupWorkspaceTest(t)
+
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile: "tst",
+		Host:    "https://tst.cloud.databricks.test",
+		Token:   "tst-token",
+	})
+	require.NoError(t, err)
+
+	// direnv-style auth env vars pointing at a different (dev) workspace.
+	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	w := Workspace{
+		Host:    "https://tst.cloud.databricks.test",
+		Profile: "tst",
+	}
+	client, err := w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "tst", client.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.test", client.Config.Host)
+	assert.Equal(t, "tst-token", client.Config.Token)
+}
+
 func TestWorkspaceConfigHTTPTimeout(t *testing.T) {
 	for _, tc := range []struct {
 		envVal string

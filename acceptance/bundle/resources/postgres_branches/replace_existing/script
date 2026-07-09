@@ -15,7 +15,7 @@ trace $CLI bundle deploy
 # Confirm the implicit production branch is now under management.
 trace $CLI postgres get-branch "projects/test-pg-proj-${UNIQUE_NAME}/branches/production" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
 
-trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 
 # bundle destroy: the backend rejects independent deletion of the root
 # branch with a MANAGED_BY_PARENT marker; both engines disregard that
@@ -25,4 +25,4 @@ trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//work
 title "bundle destroy"
 $CLI bundle destroy --auto-approve > out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
 
-trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

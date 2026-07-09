@@ -1,5 +1,5 @@
 # Maintainers (can approve any PR)
-*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db
+*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db @janniklasrose
 
 # Bundles
 /bundle/                    team:bundle @lennartkats-db
@@ -13,7 +13,6 @@
 
 # Labs
 /cmd/labs/                  @alexott @asnare
-/acceptance/labs/           @alexott @asnare
 
 # Apps
 /cmd/apps/                  team:eng-apps-devex
@@ -72,4 +71,6 @@
 /libs/clicompat/                 team:eng-apps-devex team:platform
 
 # Experimental
+/experimental/air/             team:ai-training
+/acceptance/experimental/air/  team:ai-training
 /experimental/aitools/      team:eng-apps-devex @lennartkats-db

@@ -2,10 +2,10 @@ import codegen.packages as packages
 from codegen.generated_dataclass import (
     GeneratedDataclass,
     GeneratedField,
+    GeneratedType,
     dict_type,
     generate_dataclass,
     generate_type,
-    GeneratedType,
     str_type,
     variable_or_type,
 )

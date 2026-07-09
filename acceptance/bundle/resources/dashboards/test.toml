@@ -11,11 +11,7 @@ RequiresWarehouse = true
 # Setting this environment variable prevents that conversion on windows.
 MSYS_NO_PATHCONV = "1"
 
-# Etag can be both negative and positive.
-[[Repls]]
-Old = "\"[-0-9]{8,}\""
-New = "[ETAG]"
-
-[[Repls]]
-Old = "\"[0-9]{8,}\""
-New = "[ETAG]"
+# Direct-engine eventual consistency: the first GET of a freshly created dashboard
+# returns 404, so reads right after deploy must be retried (retry.py). Skipped on
+# terraform, whose provider reads the dashboard back after create and fails on the 404.
+INJECT_STALE_ON_DIRECT = "1"

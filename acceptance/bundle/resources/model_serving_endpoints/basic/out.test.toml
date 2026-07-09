@@ -1,4 +1,4 @@
-Local = false
+Local = true
 Cloud = true
 RequiresUnityCatalog = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

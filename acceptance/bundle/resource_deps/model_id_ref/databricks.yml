@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+# A model's numeric ID is named registered_model_id in Terraform state and model_id in
+# direct state. terraform_dabs_map bridges the two names, so a reference to
+# registered_model_id resolves on both engines.
+resources:
+  models:
+    my_model:
+      name: my-model
+      description: my model
+
+  jobs:
+    consumer:
+      name: consumer
+      description: model id is ${resources.models.my_model.registered_model_id}

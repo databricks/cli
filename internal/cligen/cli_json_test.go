@@ -17,9 +17,6 @@ const cliJSONPath = "../../.codegen/cli.json"
 // block is consumed by the Python direct-engine generators; here we only need
 // enough of it to assert structural invariants (keys + field refs).
 type fullDoc struct {
-	Metadata struct {
-		GeneratorVersion string `json:"generator_version"`
-	} `json:"metadata"`
 	Schemas  map[string]schemaDoc `json:"schemas"`
 	Commands *CommandsBlock       `json:"commands"`
 }
@@ -48,10 +45,6 @@ func TestCliJSONIsInterpretable(t *testing.T) {
 		t.Fatalf("decode cli.json: %v", err)
 	}
 
-	// --- metadata ---
-	if doc.Metadata.GeneratorVersion != "cliv1" {
-		t.Errorf("metadata.generator_version = %q, want %q", doc.Metadata.GeneratorVersion, "cliv1")
-	}
 	// The spec SHA is not carried in cli.json metadata; genkit writes it to the
 	// sibling _openapi_sha file, the same convention every other SDK target uses.
 	shaBytes, err := os.ReadFile("../../.codegen/_openapi_sha")

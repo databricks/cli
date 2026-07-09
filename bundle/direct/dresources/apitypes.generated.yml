@@ -20,6 +20,8 @@ external_locations: catalog.CreateExternalLocation
 
 genie_spaces: dashboards.GenieUpdateSpaceRequest
 
+job_runs: jobs.RunNow
+
 jobs: jobs.JobSettings
 
 model_serving_endpoints: serving.CreateServingEndpoint
@@ -32,9 +34,13 @@ postgres_branches: postgres.BranchSpec
 
 postgres_catalogs: postgres.CatalogCatalogSpec
 
+postgres_databases: postgres.DatabaseDatabaseStatus
+
 postgres_endpoints: postgres.EndpointSpec
 
 postgres_projects: postgres.ProjectStatus
+
+postgres_roles: postgres.RoleRoleStatus
 
 postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
 

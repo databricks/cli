@@ -3,6 +3,7 @@
 package supervisor_agents
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -105,7 +106,7 @@ Create an example for a Supervisor Agent.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT as positional arguments. Provide 'question', 'guidelines' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'question', 'guidelines' in your JSON input")
 			}
 			return nil
 		}
@@ -203,7 +204,7 @@ Create a Supervisor Agent.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'display_name' in your JSON input")
 			}
 			return nil
 		}
@@ -312,7 +313,7 @@ Create a Tool.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT, TOOL_ID as positional arguments. Provide 'tool_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT, TOOL_ID as positional arguments. Provide 'tool_type' in your JSON input")
 			}
 			return nil
 		}
@@ -1207,7 +1208,7 @@ Update an example in a Supervisor Agent.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'question', 'guidelines' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'question', 'guidelines' in your JSON input")
 			}
 			return nil
 		}
@@ -1392,7 +1393,7 @@ Update a Supervisor Agent.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'display_name' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'display_name' in your JSON input")
 			}
 			return nil
 		}
@@ -1502,7 +1503,7 @@ Update a Tool.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'tool_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'tool_type' in your JSON input")
 			}
 			return nil
 		}

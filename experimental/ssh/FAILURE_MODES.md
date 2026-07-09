@@ -82,7 +82,10 @@ job state.
 
 **With the error-handling improvements** the client aborts after a handshake timeout (no SSH
 banner from the server) with an actionable hint to install `openssh-server`, and exits
-promptly instead of hanging.
+promptly instead of hanging. The server also keeps its recent warning/error log lines in
+memory and serves them at `/logs` (next to `/metadata`); when `ssh` exits with a
+connection-level failure (code 255), the client fetches that endpoint and prints the server's
+actual errors in the terminal — the job keeps running throughout.
 
 **Fix.** Install `openssh-server` in the image (`apt-get install -y openssh-server`).
 
@@ -131,6 +134,12 @@ the `sshd` error from [Mode 1](#mode-1-container-missing-the-openssh-server-sshd
 live notebook cell stdout / driver logs, not the Jobs run-output API. A failed run from
 [Mode 2](#mode-2-container-cant-run-the-python-bootstrap) does populate the run's state message
 and error.
+
+When the `databricks ssh server` process itself exits non-zero (a third shape, distinct from
+the modes above: e.g. bad arguments or a startup crash), the bootstrap notebook tees the
+server's stdout/stderr and fails the run with the last ~2000 bytes of server logs embedded in
+the raised exception — `ssh connect` prints that tail via the failed-run path, so the cause is
+visible without opening the run page.
 
 ## Reproducing locally, without a workspace
 

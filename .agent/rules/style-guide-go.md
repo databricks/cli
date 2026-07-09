@@ -24,6 +24,8 @@ func SomeFunc() {
 
 **RULE: Focus on making implementations as small and elegant as possible.** Avoid unnecessary loops and allocations. If dropping or relaxing a requirement would simplify things, ask the user about the trade-off.
 
+**RULE: Do not declare inline function closures just to name a repeated operation.** Extract it as a regular named function instead. Closures that capture local variables hide their dependencies, complicate reading, and can't be tested in isolation.
+
 ### Modern Go (1.24+) idioms
 
 **RULE: Use `for i := range X` for integer iteration, not `for i := 0; i < X; i++`.**
@@ -121,6 +123,12 @@ for p := range changes {
 }
 return fieldPaths
 ```
+
+### Encoding
+
+**RULE: When mutating an API response by round-tripping JSON, decode with `json.Decoder` + `UseNumber()`.** The naive `json.Marshal` → `map[string]any` → `Marshal` path corrupts any int64 larger than 2^53 (it degrades to a float64 mantissa — e.g. a real `spark_context_id`) and alphabetizes object keys. `libs/dyn/jsonloader` preserves key order but also lacks `UseNumber`, so it shares the int64 hazard.
+
+**RULE: Be careful with `encoding/csv` `Writer.UseCRLF = true`.** It rewrites both record terminators AND embedded newlines inside quoted fields to `\r\n`, so tests for quoted multiline fields must expect `\r\n`, not just the line endings between rows.
 
 ### Environment variables
 

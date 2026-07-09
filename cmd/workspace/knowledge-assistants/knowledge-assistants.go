@@ -3,6 +3,7 @@
 package knowledge_assistants
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -106,7 +107,7 @@ Create an example for a Knowledge Assistant.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT as positional arguments. Provide 'question' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'question' in your JSON input")
 			}
 			return nil
 		}
@@ -201,7 +202,7 @@ Create a Knowledge Assistant.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'description' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'description' in your JSON input")
 			}
 			return nil
 		}
@@ -305,7 +306,7 @@ Create a Knowledge Source.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT as positional arguments. Provide 'display_name', 'description', 'source_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'display_name', 'description', 'source_type' in your JSON input")
 			}
 			return nil
 		}
@@ -1267,7 +1268,7 @@ Update an example in a Knowledge Assistant.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'question' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'question' in your JSON input")
 			}
 			return nil
 		}
@@ -1371,7 +1372,7 @@ Update a Knowledge Assistant.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'display_name', 'description' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'display_name', 'description' in your JSON input")
 			}
 			return nil
 		}
@@ -1483,7 +1484,7 @@ Update a Knowledge Source.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'display_name', 'description', 'source_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'display_name', 'description', 'source_type' in your JSON input")
 			}
 			return nil
 		}

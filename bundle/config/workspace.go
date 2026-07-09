@@ -78,6 +78,12 @@ type Workspace struct {
 	// Remote workspace path for deployment state.
 	// This defaults to "${workspace.root}/state".
 	StatePath string `json:"state_path,omitempty"`
+
+	// SnapshotPath is the workspace path of the immutable snapshot uploaded during
+	// deployment. Set by snapshot.Upload() and used by the subsequent variable-resolution
+	// pass to expand ${workspace.snapshot_path} placeholders in resource configs.
+	// Only populated at runtime for bundles with experimental.immutable_folder = true.
+	SnapshotPath string `json:"snapshot_path,omitempty" bundle:"internal"`
 }
 
 type User struct {
@@ -176,9 +182,14 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 
 	cfg := w.Config(ctx)
 
-	// If only the host is configured, we try and unambiguously match it to
-	// a profile in the user's databrickscfg file. Override the default loaders.
-	if w.Host != "" && w.Profile == "" {
+	switch {
+	case w.Profile != "":
+		// An explicit profile wins over auth env vars (#5096).
+		// ValidateConfigAndProfileHost below still checks host agreement.
+		cfg.Loaders = databrickscfg.ProfileAuthLoaders
+	case w.Host != "":
+		// If only the host is configured, we try and unambiguously match it to
+		// a profile in the user's databrickscfg file. Override the default loaders.
 		cfg.Loaders = []config.Loader{
 			// Load auth creds from env vars
 			config.ConfigAttributes,

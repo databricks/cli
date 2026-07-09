@@ -3,6 +3,7 @@
 package environments
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -87,6 +88,7 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Flags().Var(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.BaseEnvironmentType, "base-environment-type", `The type of base environment (CPU or GPU). Supported values: [CPU, GPU]`)
 	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, "filepath", createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, `The WSFS or UC Volumes path to the environment YAML file.`)
 	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, "name", createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, `The resource name of the workspace base environment.`)
+	// TODO: complex arg: spec
 
 	cmd.Use = "create-workspace-base-environment DISPLAY_NAME"
 	cmd.Short = `Create a workspace base environment.`
@@ -113,7 +115,7 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'display_name' in your JSON input")
 			}
 			return nil
 		}
@@ -743,6 +745,7 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Flags().Var(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.BaseEnvironmentType, "base-environment-type", `The type of base environment (CPU or GPU). Supported values: [CPU, GPU]`)
 	cmd.Flags().StringVar(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, "filepath", updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, `The WSFS or UC Volumes path to the environment YAML file.`)
 	cmd.Flags().StringVar(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, "name", updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, `The resource name of the workspace base environment.`)
+	// TODO: complex arg: spec
 
 	cmd.Use = "update-workspace-base-environment NAME DISPLAY_NAME"
 	cmd.Short = `Update a workspace base environment.`
@@ -771,7 +774,7 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'display_name' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME as positional arguments. Provide 'display_name' in your JSON input")
 			}
 			return nil
 		}

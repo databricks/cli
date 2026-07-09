@@ -44,6 +44,7 @@ type DataSourcePostgresRolesRoles struct {
 	Name           string                                      `json:"name"`
 	Parent         string                                      `json:"parent,omitempty"`
 	ProviderConfig *DataSourcePostgresRolesRolesProviderConfig `json:"provider_config,omitempty"`
+	RoleId         string                                      `json:"role_id,omitempty"`
 	Spec           *DataSourcePostgresRolesRolesSpec           `json:"spec,omitempty"`
 	Status         *DataSourcePostgresRolesRolesStatus         `json:"status,omitempty"`
 	UpdateTime     string                                      `json:"update_time,omitempty"`

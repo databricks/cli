@@ -125,9 +125,15 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	// Resources that intentionally have no workspace URL.
 	noURL := map[string]bool{
 		"external_locations": true,
+		// A job run does have a workspace URL, but it's addressed by two IDs
+		// (job + run) so it can't be expressed as a single-ID pattern here; it's
+		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
+		"job_runs":           true,
 		"postgres_branches":  true,
+		"postgres_databases": true,
 		"postgres_endpoints": true,
 		"postgres_projects":  true,
+		"postgres_roles":     true,
 		"secret_scopes":      true,
 	}
 
@@ -155,6 +161,11 @@ func TestResourcesBindSupport(t *testing.T) {
 		Jobs: map[string]*resources.Job{
 			"my_job": {
 				JobSettings: jobs.JobSettings{},
+			},
+		},
+		JobRuns: map[string]*resources.JobRun{
+			"my_job_run": {
+				RunNow: jobs.RunNow{},
 			},
 		},
 		Pipelines: map[string]*resources.Pipeline{
@@ -282,6 +293,25 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresDatabases: map[string]*resources.PostgresDatabase{
+			"my_postgres_database": {
+				PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+					DatabaseId: "my-postgres-database",
+					Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
+				},
+			},
+		},
+		PostgresRoles: map[string]*resources.PostgresRole{
+			"my_postgres_role": {
+				PostgresRoleConfig: resources.PostgresRoleConfig{
+					RoleId: "my-postgres-role",
+					Parent: "projects/my-postgres-project/branches/my-postgres-branch",
+					RoleRoleSpec: postgres.RoleRoleSpec{
+						PostgresRole: "my_postgres_role",
+					},
+				},
+			},
+		},
 		PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
 			"my_postgres_synced_table": {
 				PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
@@ -315,6 +345,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockJobsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
@@ -340,7 +371,10 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetDatabase(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
 

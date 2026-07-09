@@ -16,6 +16,9 @@ trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 # remote_state.__embed__ order is non-deterministic; extract and sort separately into per-engine file
 jq '.plan["resources.schemas.grants_schema.grants"].remote_state.__embed__' out.plan.$DATABRICKS_BUNDLE_ENGINE.json | gron.py --noindex | sort_lines.py --repl > out.embed.$DATABRICKS_BUNDLE_ENGINE.txt
 tmp=$(mktemp)
-jq 'del(.plan["resources.schemas.grants_schema.grants"].remote_state.__embed__)' out.plan.$DATABRICKS_BUNDLE_ENGINE.json > "$tmp" && mv "$tmp" out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# effective_predictive_optimization_flag is inherited from the metastore and backend-controlled; drop it so the test does not depend on metastore settings.
+jq 'del(.plan["resources.schemas.grants_schema.grants"].remote_state.__embed__, .plan["resources.schemas.grants_schema"].remote_state.effective_predictive_optimization_flag)' out.plan.$DATABRICKS_BUNDLE_ENGINE.json > "$tmp" && mv "$tmp" out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace $CLI bundle plan -o json > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
+tmp=$(mktemp)
+jq 'del(.plan["resources.schemas.grants_schema"].remote_state.effective_predictive_optimization_flag)' out.plan2.$DATABRICKS_BUNDLE_ENGINE.json > "$tmp" && mv "$tmp" out.plan2.$DATABRICKS_BUNDLE_ENGINE.json

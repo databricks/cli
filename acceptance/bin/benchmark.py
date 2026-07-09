@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import argparse
-import subprocess
-import time
-import statistics
-import sys
-import os
 import json
+import os
+import statistics
+import subprocess
+import sys
+import time
 
 try:
     import resource
@@ -19,7 +19,7 @@ def run_benchmark(command, warmup, runs):
 
     for i in range(runs):
         # double fork to reset max statistics like ru_maxrss
-        cp = subprocess.run([sys.executable, sys.argv[0], "--once"] + command, stdout=subprocess.PIPE)
+        cp = subprocess.run([sys.executable, sys.argv[0], "--once", *command], stdout=subprocess.PIPE)
         if cp.returncode != 0:
             sys.exit(cp.returncode)
 
@@ -54,7 +54,7 @@ def run_benchmark(command, warmup, runs):
 
 
 def run_once(command):
-    if len(command) == 1 and " " in command[0] or ">" in command[0]:
+    if (len(command) == 1 and " " in command[0]) or ">" in command[0]:
         shell = True
         command = command[0]
     else:

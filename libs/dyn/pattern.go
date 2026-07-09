@@ -1,6 +1,7 @@
 package dyn
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -116,6 +117,20 @@ func (e expectedSequenceError) Error() string {
 	return fmt.Sprintf("expected a sequence at %q, found %s", e.p, e.v.Kind())
 }
 
+// isNoMatchError reports whether err means the pattern suffix didn't match the
+// visited value. Wildcard components skip such elements (e.g. a job with an
+// empty "tasks:" block) instead of failing the visit for all valid siblings.
+func isNoMatchError(err error) bool {
+	if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) || IsCannotTraverseNilError(err) {
+		return true
+	}
+	if _, ok := errors.AsType[expectedMapError](err); ok {
+		return true
+	}
+	_, ok := errors.AsType[expectedSequenceError](err)
+	return ok
+}
+
 // This function implements the patternComponent interface.
 func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
 	m, ok := v.AsMap()
@@ -132,7 +147,7 @@ func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitO
 		nv, err := visit(pv, append(prefix, Key(pk.MustString())), suffix, opts)
 		if err != nil {
 			// Leave the value intact if the suffix pattern didn't match any value.
-			if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
+			if isNoMatchError(err) {
 				continue
 			}
 			return InvalidValue, err
@@ -164,7 +179,7 @@ func (c anyIndexComponent) visit(v Value, prefix Path, suffix Pattern, opts visi
 		nv, err := visit(value, append(prefix, Index(i)), suffix, opts)
 		if err != nil {
 			// Leave the value intact if the suffix pattern didn't match any value.
-			if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
+			if isNoMatchError(err) {
 				continue
 			}
 			return InvalidValue, err

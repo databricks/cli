@@ -66,6 +66,9 @@ var RequiredFields = map[string][]string{
 
 	"resources.genie_spaces.*.permissions[*]": {"level"},
 
+	"resources.job_runs.*":       {"job_id"},
+	"resources.job_runs.*.queue": {"enabled"},
+
 	"resources.jobs.*.deployment":                                                                                  {"kind"},
 	"resources.jobs.*.environments[*]":                                                                             {"environment_key"},
 	"resources.jobs.*.git_source":                                                                                  {"git_provider", "git_url"},
@@ -87,13 +90,20 @@ var RequiredFields = map[string][]string{
 	"resources.jobs.*.permissions[*]":                                                                              {"level"},
 	"resources.jobs.*.queue":                                                                                       {"enabled"},
 	"resources.jobs.*.schedule":                                                                                    {"quartz_cron_expression", "timezone_id"},
+	"resources.jobs.*.schedule.sql_condition":                                                                      {"sql_query_id", "warehouse_id"},
 	"resources.jobs.*.tasks[*]":                                                                                    {"task_key"},
+	"resources.jobs.*.tasks[*].ai_runtime_task":                                                                    {"deployments", "experiment"},
+	"resources.jobs.*.tasks[*].ai_runtime_task.deployments[*]":                                                     {"command_path", "compute"},
+	"resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].compute":                                             {"accelerator_count", "accelerator_type"},
 	"resources.jobs.*.tasks[*].clean_rooms_notebook_task":                                                          {"clean_room_name", "notebook_name"},
 	"resources.jobs.*.tasks[*].condition_task":                                                                     {"left", "op", "right"},
 	"resources.jobs.*.tasks[*].dbt_task":                                                                           {"commands"},
 	"resources.jobs.*.tasks[*].depends_on[*]":                                                                      {"task_key"},
 	"resources.jobs.*.tasks[*].for_each_task":                                                                      {"inputs", "task"},
 	"resources.jobs.*.tasks[*].for_each_task.task":                                                                 {"task_key"},
+	"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task":                                                 {"deployments", "experiment"},
+	"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*]":                                  {"command_path", "compute"},
+	"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].compute":                          {"accelerator_count", "accelerator_type"},
 	"resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task":                                       {"clean_room_name", "notebook_name"},
 	"resources.jobs.*.tasks[*].for_each_task.task.condition_task":                                                  {"left", "op", "right"},
 	"resources.jobs.*.tasks[*].for_each_task.task.dbt_task":                                                        {"commands"},
@@ -166,6 +176,7 @@ var RequiredFields = map[string][]string{
 	"resources.jobs.*.trigger.file_arrival":                                                                        {"url"},
 	"resources.jobs.*.trigger.model":                                                                               {"condition"},
 	"resources.jobs.*.trigger.periodic":                                                                            {"interval", "unit"},
+	"resources.jobs.*.trigger.sql_condition":                                                                       {"sql_query_id", "warehouse_id"},
 	"resources.jobs.*.trigger.table_update":                                                                        {"table_names"},
 	"resources.jobs.*.webhook_notifications.on_duration_warning_threshold_exceeded[*]":                             {"id"},
 	"resources.jobs.*.webhook_notifications.on_failure[*]":                                                         {"id"},
@@ -223,13 +234,18 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_catalogs.*": {"postgres_database", "catalog_id"},
 
+	"resources.postgres_databases.*": {"database_id", "parent"},
+
 	"resources.postgres_endpoints.*":       {"endpoint_type", "endpoint_id", "parent"},
 	"resources.postgres_endpoints.*.group": {"max", "min"},
 
 	"resources.postgres_projects.*":                {"project_id"},
 	"resources.postgres_projects.*.permissions[*]": {"level"},
 
-	"resources.postgres_synced_tables.*": {"synced_table_id"},
+	"resources.postgres_roles.*": {"role_id", "parent"},
+
+	"resources.postgres_synced_tables.*":                   {"synced_table_id"},
+	"resources.postgres_synced_tables.*.type_overrides[*]": {"column_name", "pg_type"},
 
 	"resources.quality_monitors.*":                   {"assets_dir", "output_schema_name", "table_name"},
 	"resources.quality_monitors.*.custom_metrics[*]": {"definition", "input_columns", "name", "output_data_type", "type"},
@@ -245,7 +261,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.sql_warehouses.*.permissions[*]": {"level"},
 
-	"resources.synced_database_tables.*": {"name"},
+	"resources.synced_database_tables.*":                        {"name"},
+	"resources.synced_database_tables.*.spec.type_overrides[*]": {"column_name", "pg_type"},
 
 	"resources.vector_search_endpoints.*":                {"endpoint_type", "name"},
 	"resources.vector_search_endpoints.*.permissions[*]": {"level"},
