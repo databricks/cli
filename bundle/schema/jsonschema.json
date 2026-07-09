@@ -1672,6 +1672,9 @@
                       "parent": {
                         "$ref": "#/$defs/string"
                       },
+                      "purge_on_delete": {
+                        "$ref": "#/$defs/bool"
+                      },
                       "replace_existing": {
                         "$ref": "#/$defs/bool"
                       },

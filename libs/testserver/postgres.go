@@ -452,7 +452,10 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 	}
 }
 
-// PostgresBranchDelete deletes a postgres branch.
+// PostgresBranchDelete deletes a postgres branch. The `purge` query parameter
+// is ignored: acceptance tests assert on the recorded HTTP request rather than
+// on retention semantics, so a single "remove from map" action serves both
+// hard- and soft-delete paths.
 func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 	defer s.LockUnlock()()
 
