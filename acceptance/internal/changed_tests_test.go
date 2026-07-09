@@ -46,6 +46,20 @@ func TestParseChangedTests(t *testing.T) {
 			},
 		},
 		{
+			name: "added dir stays added when another file in it is also changed",
+			diff: "A\tacceptance/bundle/resources/jobs/script\nM\tacceptance/bundle/resources/jobs/test.toml",
+			want: map[string]ChangedTest{
+				"bundle/resources/jobs": {Added: true, VariantFilters: nil},
+			},
+		},
+		{
+			name: "added dir stays added regardless of diff line order",
+			diff: "M\tacceptance/bundle/resources/jobs/test.toml\nA\tacceptance/bundle/resources/jobs/script",
+			want: map[string]ChangedTest{
+				"bundle/resources/jobs": {Added: true, VariantFilters: nil},
+			},
+		},
+		{
 			name: "nested file maps to innermost test dir",
 			diff: "M\tacceptance/bundle/resources/jobs/output.txt",
 			want: map[string]ChangedTest{
@@ -118,6 +132,15 @@ func TestParseChangedTests(t *testing.T) {
 			diff: "M\tacceptance/bundle/invariant/configs/job.yml.tmpl\nM\tacceptance/bundle/invariant/no_drift/script",
 			want: map[string]ChangedTest{
 				"bundle/invariant/no_drift":     {Added: false, VariantFilters: nil},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+			},
+		},
+		{
+			name: "added invariant subdir overrides config-scoped filter and stays added",
+			diff: "M\tacceptance/bundle/invariant/configs/job.yml.tmpl\nA\tacceptance/bundle/invariant/no_drift/script",
+			want: map[string]ChangedTest{
+				"bundle/invariant/no_drift":     {Added: true, VariantFilters: nil},
 				"bundle/invariant/migrate":      {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
 				"bundle/invariant/continue_293": {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
 			},

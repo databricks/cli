@@ -104,12 +104,18 @@ func ParseChangedTests(diffOutput string, testDirs map[string]bool) map[string]C
 		if dir == "" {
 			continue
 		}
-		// nil VariantFilters = all variants; overrides any prior config-scoped filter.
-		// A script file with status A means the test dir is brand new. Renames (R)
-		// land here as the destination path but are not "added".
-		result[dir] = ChangedTest{
-			Added: status == "A" && strings.HasSuffix(path, "/script"),
+		// A direct change re-enables all variants, so clear any config-scoped
+		// filter (nil VariantFilters = all variants). Added is sticky: once any
+		// line marks the dir new it stays new, since diff lines for the same dir
+		// arrive in arbitrary order. A script file with status A means the test
+		// dir is brand new; renames (R) land here as the destination path but are
+		// not "added".
+		ct := result[dir]
+		ct.VariantFilters = nil
+		if status == "A" && strings.HasSuffix(path, "/script") {
+			ct.Added = true
 		}
+		result[dir] = ct
 	}
 
 	return result
