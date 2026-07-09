@@ -520,10 +520,8 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 		Tasks:      tasks,
 	}
 
-	// The SSH tunnel bootstrap run stands in for the server the CLI starts on
-	// compute. That server publishes a metadata.json (its port and cluster ID)
-	// to the workspace, which `ssh connect` polls before connecting. No server
-	// runs in a local test, so synthesize that file so the connect flow proceeds.
+	// No tunnel server runs locally, so synthesize the metadata.json it would
+	// publish; `ssh connect` polls for it before connecting.
 	if strings.HasPrefix(runName, sshTunnelBootstrapRunPrefix) {
 		s.writeSSHTunnelMetadata(request)
 	}
@@ -539,15 +537,13 @@ const (
 	sshTunnelRemoteUser         = "spark"
 )
 
-// writeSSHTunnelMetadata publishes the metadata.json that a real SSH tunnel
-// server writes to the workspace on startup, next to the bootstrap notebook.
-// Callers must already hold the workspace lock.
+// writeSSHTunnelMetadata publishes the metadata.json a real tunnel server would
+// write next to the bootstrap notebook. Callers must hold the workspace lock.
 func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 	for _, t := range request.Tasks {
 		if t.NotebookTask == nil {
 			continue
 		}
-		// The bootstrap notebook and metadata.json share the session directory.
 		metadataPath := strings.TrimSuffix(t.NotebookTask.NotebookPath, sshTunnelBootstrapNotebook) + "metadata.json"
 		metadata, err := json.Marshal(map[string]any{
 			"port":       sshTunnelServerPort,

@@ -105,10 +105,8 @@ func AddDefaultHandlers(server *Server) {
 		path := req.URL.Query().Get("path")
 		data := req.Workspace.WorkspaceExport(path)
 
-		// A missing object returns 404, matching the real API. Without this the
-		// handler would return a nil body (the zero FileEntry's Data), which the
-		// response normalizer rejects. `ssh connect` relies on this 404 to detect
-		// that the server's metadata.json has not been published yet.
+		// A missing object returns 404, matching the real API; returning the nil
+		// body otherwise trips the response normalizer.
 		if data == nil {
 			return Response{
 				StatusCode: 404,
@@ -745,9 +743,8 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SecretsList(req)
 	})
 
-	// The SSH tunnel server sits behind the workspace driver proxy. `ssh connect`
-	// GETs .../metadata to read the remote login user before opening the tunnel,
-	// and best-effort GETs .../logs to surface recent server errors on failure.
+	// SSH tunnel server behind the driver proxy: /metadata returns the remote
+	// login user, /logs is a best-effort error tail fetched on failure.
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
 		return Response{Body: sshTunnelRemoteUser}
 	})

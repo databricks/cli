@@ -1,9 +1,6 @@
 if [ -z "${CLOUD_ENV:-}" ]; then
-  # Local runs have no cloud-built release artifacts and cannot download them
-  # from GitHub. The uploaded tunnel binaries are never executed by a real
-  # compute in a local run, so stand in empty release archives (named for the
-  # dev build, which omits the version from the archive name) to satisfy
-  # --releases-dir and keep the upload step on the local filesystem.
+  # Local runs have no release artifacts and never execute the uploaded
+  # binaries, so stand in empty archives (dev name omits the version).
   mkdir -p releases
   : >releases/databricks_cli_linux_amd64.zip
   : >releases/databricks_cli_linux_arm64.zip
@@ -13,16 +10,13 @@ fi
 errcode $CLI ssh connect --name serverless-gpu-test --accelerator=GPU_1xA10 --releases-dir=$CLI_RELEASES_DIR -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
 
 if [ -n "${CLOUD_ENV:-}" ]; then
-  # On cloud a real serverless GPU connection runs the remote command and prints
-  # its output; on failure, dump the bootstrap run to help diagnose.
+  # On cloud the connection runs the remote command; dump the run on failure.
   if ! grep -q "Connection successful" out.stdout.txt; then
     run_id=$(cat LOG.stderr | grep -o "Job submitted successfully with run ID: [0-9]*" | grep -o "[0-9]*$")
     trace $CLI jobs get-run "$run_id" > LOG.job
   fi
 else
-  # A local run has no real compute, so the SSH handshake cannot complete: the
-  # connect attempt fails after the bootstrap job is submitted (see LOG.stderr).
-  # The local test's job is to verify the CLI submits the right serverless GPU
-  # bootstrap job, so assert that from the recorded request.
+  # Locally the handshake can't complete (no compute); just assert the CLI
+  # submitted the right serverless GPU bootstrap job.
   trace print_requests.py //api/2.2/jobs/runs/submit
 fi

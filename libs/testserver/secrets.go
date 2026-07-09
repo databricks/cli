@@ -41,10 +41,8 @@ func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	return Response{}
 }
 
-// SecretsList models GET /api/2.0/secrets/list (ListSecretsByScope). A missing
-// scope must return RESOURCE_DOES_NOT_EXIST so the SDK maps it to
-// apierr.ErrResourceDoesNotExist; `ssh connect`'s CreateKeysSecretScope relies on
-// that sentinel to decide whether to create the scope rather than fail.
+// SecretsList models GET /api/2.0/secrets/list. A missing scope must return
+// RESOURCE_DOES_NOT_EXIST so callers can branch on apierr.ErrResourceDoesNotExist.
 func (s *FakeWorkspace) SecretsList(req Request) Response {
 	defer s.LockUnlock()()
 
