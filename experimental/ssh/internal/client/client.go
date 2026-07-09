@@ -52,6 +52,10 @@ const (
 	sshServerTaskKey         = "start_ssh_server"
 	serverlessEnvironmentKey = "ssh_tunnel_serverless"
 	minEnvironmentVersion    = 4
+	// Serverless environment_version 5+ is not supported by the SSH tunnel: the driver
+	// proxy does not route to the server's port on that runtime, so the health check
+	// never passes and connect times out. Reject known-v5 base environments up front.
+	maxSupportedEnvironmentVersion = 4
 )
 
 // acceleratorProvisioningNotice maps a GPU accelerator type to the upfront notice
@@ -271,6 +275,24 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
 	}
 
+	isReconnect := opts.ServerMetadata != ""
+
+	// Reject an unsupported serverless environment version before any workspace side
+	// effects (secret scope, key upload, notebook import) so the user gets an immediate,
+	// actionable error instead of a multi-minute health-check timeout. The env.yaml path
+	// form can't be checked here, so warn that its version is unverified.
+	if opts.BaseEnvironment != "" && !opts.ProxyMode && !isReconnect {
+		if strings.HasPrefix(opts.BaseEnvironment, "/") {
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, "WARNING: --base-environment points to an env.yaml path; the serverless environment version cannot be verified. Ensure the environment uses version 4 or below."))
+		} else {
+			resolved, err := resolveAndValidateBaseEnvironment(ctx, client, opts.BaseEnvironment)
+			if err != nil {
+				return err
+			}
+			opts.BaseEnvironment = resolved
+		}
+	}
+
 	if opts.IDE != "" && !opts.ProxyMode {
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
 			return err
@@ -303,7 +325,6 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		}
 	}
 
-	isReconnect := opts.ServerMetadata != ""
 	var serverStartTimeMs int64
 	isSuccess := false
 	defer func() {
@@ -644,11 +665,9 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		// base environment carries its own version, so we don't also set one.
 		var spec compute.Environment
 		if opts.BaseEnvironment != "" {
-			baseEnvironment, err := resolveBaseEnvironment(ctx, client, opts.BaseEnvironment)
-			if err != nil {
-				return 0, err
-			}
-			spec.BaseEnvironment = baseEnvironment
+			// opts.BaseEnvironment was already resolved to a resource ID or path by
+			// resolveAndValidateBaseEnvironment in Run (fresh-connect path).
+			spec.BaseEnvironment = opts.BaseEnvironment
 		} else {
 			spec.EnvironmentVersion = strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion))
 		}
@@ -671,35 +690,62 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts)
 }
 
-// resolveBaseEnvironment maps the user-provided --base-environment value to a
-// compute.Environment.BaseEnvironment string. A leading "/" is an env.yaml path and a
-// "workspace-base-environments/" prefix is a resource ID; both are passed through
-// verbatim. Anything else is treated as a display name and resolved to its resource ID
-// via the workspace base environments listing.
-func resolveBaseEnvironment(ctx context.Context, client *databricks.WorkspaceClient, input string) (string, error) {
-	if strings.HasPrefix(input, "/") || strings.HasPrefix(input, "workspace-base-environments/") {
+// resolveAndValidateBaseEnvironment maps the user-provided --base-environment value to a
+// compute.Environment.BaseEnvironment string and rejects unsupported serverless environment
+// versions. A leading "/" is an env.yaml path and is passed through verbatim without a list
+// call. Anything else (display name or "workspace-base-environments/" resource ID) is looked
+// up in the workspace base environments listing fetched once:
+//   - display name: resolved to resource ID; zero or multiple matches are hard errors
+//   - resource ID: matched by Name to check the version; passed through verbatim if not found
+//
+// The version check is fail-open: a list error or an unparseable version returns the input
+// so a transient error does not block a valid connect.
+func resolveAndValidateBaseEnvironment(ctx context.Context, client *databricks.WorkspaceClient, input string) (string, error) {
+	if strings.HasPrefix(input, "/") {
 		return input, nil
 	}
 
+	isResourceID := strings.HasPrefix(input, "workspace-base-environments/")
+
 	envs, err := client.Environments.ListWorkspaceBaseEnvironmentsAll(ctx, environments.ListWorkspaceBaseEnvironmentsRequest{})
 	if err != nil {
-		return "", fmt.Errorf("failed to list workspace base environments: %w", err)
+		return input, nil //nolint:nilerr // fail-open: don't block a valid connect on a transient list error
 	}
 
-	var matches []string
-	for _, e := range envs {
-		if e.DisplayName == input {
-			matches = append(matches, e.Name)
+	var matched *environments.WorkspaceBaseEnvironment
+	for i := range envs {
+		var hits bool
+		if isResourceID {
+			hits = envs[i].Name == input
+		} else {
+			hits = envs[i].DisplayName == input
+		}
+		if !hits {
+			continue
+		}
+		if !isResourceID && matched != nil {
+			return "", fmt.Errorf("multiple workspace base environments found with display name %q", input)
+		}
+		matched = &envs[i]
+	}
+	if matched == nil {
+		if isResourceID {
+			// Not found in listing — pass through and let the API validate.
+			return input, nil
+		}
+		return "", fmt.Errorf("no workspace base environment found with display name %q", input)
+	}
+
+	if matched.Spec != nil {
+		version, err := strconv.Atoi(matched.Spec.EnvironmentVersion)
+		if err == nil && version > maxSupportedEnvironmentVersion {
+			return "", fmt.Errorf("base environment %q uses serverless environment version %d, which is not supported by the SSH tunnel. Use a base environment created with serverless environment version %d or below", input, version, maxSupportedEnvironmentVersion)
 		}
 	}
-	switch len(matches) {
-	case 0:
-		return "", fmt.Errorf("no workspace base environment found with display name %q", input)
-	case 1:
-		return matches[0], nil
-	default:
-		return "", fmt.Errorf("multiple workspace base environments found with display name %q", input)
+	if isResourceID {
+		return input, nil
 	}
+	return matched.Name, nil
 }
 
 // shellSingleQuote wraps s in single quotes for safe inclusion in a shell
