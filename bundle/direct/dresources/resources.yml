@@ -392,6 +392,11 @@ resources:
       # UC auto-populates these system-managed keys after create (same as schemas).
       - field: properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']
       - field: properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']
+      - field: properties['unity.catalog.managed.delta.defaults.defaultClusterByAuto']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.checkpointPolicy']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.parquet.format.version']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.parquet.format.version.afe.internal']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.feature.catalogManaged']
 
   schemas:
     provided_id_fields:
@@ -416,6 +421,7 @@ resources:
       - field: properties['unity.catalog.managed.delta.defaults.delta.checkpointPolicy']
       - field: properties['unity.catalog.managed.delta.defaults.delta.parquet.format.version']
       - field: properties['unity.catalog.managed.delta.defaults.delta.parquet.format.version.afe.internal']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.feature.catalogManaged']
 
   external_locations:
     recreate_on_changes:
@@ -663,6 +669,10 @@ resources:
         reason: id_field
       - field: database_id
         reason: id_field
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
 
   postgres_endpoints:
     provided_id_fields:
@@ -703,6 +713,10 @@ resources:
       - reason: immutable
 
   postgres_roles:
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
     recreate_on_changes:
       # parent and role_id are immutable (together they form the hierarchical name).
       - field: parent

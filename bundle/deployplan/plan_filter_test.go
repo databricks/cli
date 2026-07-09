@@ -20,6 +20,23 @@ func planWithDeps() *deployplan.Plan {
 	return p
 }
 
+func planWithGrants() *deployplan.Plan {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.schemas.bronze"] = &deployplan.PlanEntry{}
+	// Sub-nodes depend on the parent (to resolve full_name), not the other way around.
+	p.Plan["resources.schemas.bronze.grants"] = &deployplan.PlanEntry{
+		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.schemas.bronze"}},
+	}
+	p.Plan["resources.schemas.bronze.permissions"] = &deployplan.PlanEntry{
+		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.schemas.bronze"}},
+	}
+	p.Plan["resources.schemas.silver"] = &deployplan.PlanEntry{}
+	p.Plan["resources.schemas.silver.grants"] = &deployplan.PlanEntry{
+		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.schemas.silver"}},
+	}
+	return p
+}
+
 func TestFilterToSelected_Direct(t *testing.T) {
 	p := planWithDeps()
 	p.FilterToSelected([]string{"jobs.foo"})
@@ -45,4 +62,24 @@ func TestFilterToSelected_Multiple(t *testing.T) {
 	assert.Contains(t, p.Plan, "resources.jobs.independent")
 	assert.NotContains(t, p.Plan, "resources.jobs.foo")
 	assert.NotContains(t, p.Plan, "resources.jobs.bar")
+}
+
+func TestFilterToSelected_IncludesGrantsAndPermissions(t *testing.T) {
+	p := planWithGrants()
+	p.FilterToSelected([]string{"schemas.bronze"})
+	assert.Contains(t, p.Plan, "resources.schemas.bronze")
+	assert.Contains(t, p.Plan, "resources.schemas.bronze.grants")
+	assert.Contains(t, p.Plan, "resources.schemas.bronze.permissions")
+	assert.NotContains(t, p.Plan, "resources.schemas.silver")
+	assert.NotContains(t, p.Plan, "resources.schemas.silver.grants")
+}
+
+func TestFilterToSelected_MissingSubNodesAreSkipped(t *testing.T) {
+	p := planWithGrants()
+	// silver has grants but no permissions node; selecting it must not fail.
+	p.FilterToSelected([]string{"schemas.silver"})
+	assert.Contains(t, p.Plan, "resources.schemas.silver")
+	assert.Contains(t, p.Plan, "resources.schemas.silver.grants")
+	assert.NotContains(t, p.Plan, "resources.schemas.silver.permissions")
+	assert.NotContains(t, p.Plan, "resources.schemas.bronze")
 }
