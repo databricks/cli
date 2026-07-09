@@ -138,6 +138,15 @@ resources:
       - field: tasks[*].for_each_task.task.new_cluster.data_security_mode
       - field: job_clusters[*].new_cluster.data_security_mode
 
+  job_runs:
+    # A run is immutable and fire-once: re-trigger only on a local config change,
+    # never on remote drift. Both rules omit `field` to match every field (root;
+    # see TestFieldRuleOmittedIsRoot). `field: ""` would instead match nothing.
+    ignore_remote_changes:
+      - reason: immutable
+    recreate_on_changes:
+      - reason: immutable
+
   pipelines:
     recreate_on_changes:
       - field: storage
@@ -263,6 +272,34 @@ resources:
       # reports empty. This is not a backend default, so suppress remote changes.
       - field: budget_policy_id
         reason: no_update_api
+      # Accepted on write but not returned by GET.
+      - field: config.served_entities[*].burst_scaling_enabled
+        reason: input_only
+      # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
+      - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.openai_config.openai_api_key_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext
+        reason: input_only
+      - field: config.served_entities[*].external_model.palm_config.palm_api_key_plaintext
+        reason: input_only
     ignore_local_changes:
       - field: budget_policy_id
         reason: no_update_api
@@ -306,6 +343,9 @@ resources:
         reason: output_only
       - field: updated_by
         reason: output_only
+      # Backend-computed; the user never sets it. Not annotated output_only in the spec.
+      - field: browse_only
+        reason: output_only
     provided_id_fields:
       # The name can technically be updated without recreate. We recreate for now though
       # to match TF implementation.
@@ -348,6 +388,10 @@ resources:
     updatable_id_fields:
       - field: name
         reason: id_changes
+    backend_defaults:
+      # UC auto-populates these system-managed keys after create (same as schemas).
+      - field: properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']
+      - field: properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']
 
   schemas:
     provided_id_fields:
@@ -368,6 +412,10 @@ resources:
       # and UC rejects it with "UpdateSchema Nothing to update".
       - field: properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']
       - field: properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']
+      - field: properties['unity.catalog.managed.delta.defaults.defaultClusterByAuto']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.checkpointPolicy']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.parquet.format.version']
+      - field: properties['unity.catalog.managed.delta.defaults.delta.parquet.format.version.afe.internal']
 
   external_locations:
     recreate_on_changes:
@@ -441,12 +489,7 @@ resources:
     # handles the read side (create_database_if_not_exists is input-only, uid is
     # output-only) so no-op deploys stay idempotent.
     recreate_on_changes:
-      - field: database_instance_name
-        reason: immutable
-      - field: database_name
-        reason: immutable
-      - field: create_database_if_not_exists
-        reason: immutable
+      - reason: immutable
 
   synced_database_tables:
     provided_id_fields:
@@ -459,28 +502,7 @@ resources:
     # handles the read side (input-only and output-only fields) so no-op deploys
     # stay idempotent. Same pattern as postgres_synced_tables.
     recreate_on_changes:
-      - field: database_instance_name
-        reason: immutable
-      - field: logical_database_name
-        reason: immutable
-      - field: spec.source_table_full_name
-        reason: immutable
-      - field: spec.primary_key_columns
-        reason: immutable
-      - field: spec.timeseries_key
-        reason: immutable
-      - field: spec.scheduling_policy
-        reason: immutable
-      - field: spec.create_database_objects_if_missing
-        reason: immutable
-      - field: spec.new_pipeline_spec
-        reason: immutable
-      - field: spec.existing_pipeline_id
-        reason: immutable
-      - field: spec.accelerated_sync
-        reason: immutable
-      - field: spec.type_overrides
-        reason: immutable
+      - reason: immutable
 
   apps:
     provided_id_fields:
@@ -664,10 +686,7 @@ resources:
       # requires delete+create. The OpenAPI spec only marks postgres_database
       # as IMMUTABLE (handled by autogen); branch and create_database_if_missing
       # need explicit entries here.
-      - field: branch
-        reason: immutable
-      - field: create_database_if_missing
-        reason: immutable
+      - reason: immutable
 
   postgres_synced_tables:
     # The Postgres API has no UpdateSyncedTable endpoint, so every settable
@@ -681,28 +700,7 @@ resources:
       - field: synced_table_id
         reason: id_field
     recreate_on_changes:
-      - field: branch
-        reason: immutable
-      - field: postgres_database
-        reason: immutable
-      - field: source_table_full_name
-        reason: immutable
-      - field: primary_key_columns
-        reason: immutable
-      - field: timeseries_key
-        reason: immutable
-      - field: scheduling_policy
-        reason: immutable
-      - field: create_database_objects_if_missing
-        reason: immutable
-      - field: new_pipeline_spec
-        reason: immutable
-      - field: existing_pipeline_id
-        reason: immutable
-      - field: accelerated_sync
-        reason: immutable
-      - field: type_overrides
-        reason: immutable
+      - reason: immutable
 
   postgres_roles:
     recreate_on_changes:

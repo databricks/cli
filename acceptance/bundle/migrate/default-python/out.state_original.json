@@ -374,6 +374,7 @@
                     "unit": "DAYS"
                   }
                 ],
+                "sql_condition": [],
                 "table_update": []
               }
             ],

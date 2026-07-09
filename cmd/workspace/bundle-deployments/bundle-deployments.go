@@ -3,6 +3,7 @@
 package bundle_deployments
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -103,7 +104,7 @@ func newCompleteVersion() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'completion_reason' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME as positional arguments. Provide 'completion_reason' in your JSON input")
 			}
 			return nil
 		}
@@ -284,7 +285,7 @@ func newCreateOperation() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT, RESOURCE_KEY as positional arguments. Provide 'action_type', 'status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT, RESOURCE_KEY as positional arguments. Provide 'action_type', 'status' in your JSON input")
 			}
 			return nil
 		}
@@ -309,7 +310,7 @@ func newCreateOperation() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		createOperationReq.Parent = args[0]
 
@@ -392,7 +393,7 @@ func newCreateVersion() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT, VERSION_ID as positional arguments. Provide 'cli_version', 'version_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT, VERSION_ID as positional arguments. Provide 'cli_version', 'version_type' in your JSON input")
 			}
 			return nil
 		}
