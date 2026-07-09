@@ -2,7 +2,7 @@ module github.com/databricks/cli/tools/task
 
 go 1.26.0
 
-toolchain go1.26.4
+toolchain go1.26.5
 
 require (
 	cel.dev/expr v0.25.1 // indirect
