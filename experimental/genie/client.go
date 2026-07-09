@@ -14,6 +14,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
+// added some comment
+
 // genieResponsesPath is the backend route. The server-side tool is still named
 // "onechat" even though the CLI command is "genie", so the path keeps that name.
 const genieResponsesPath = "/api/2.0/data-rooms/tools/onechat/responses"
