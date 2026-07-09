@@ -50,6 +50,52 @@ func TestIndexStrategyServesCachedRowWithoutFetch(t *testing.T) {
 	assert.Equal(t, 0, hits.get, "cached run must not hit runs/get")
 }
 
+func TestIndexStrategyFiltersCachedRow(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	refs := []workflowRef{{jobRunID: 7, submitTimeMs: 1000_000}}
+	srv, hits := indexAndGetServer(t, refs, map[int64]jobRun{7: indexRun(7, 1000_000)}, nil, nil)
+	host := srv.URL
+
+	// Cache hit under experiment "bar" must be filtered out by an experiment=foo query.
+	ctx := t.Context()
+	putRow(ctx, newListCache(ctx), host, 7, 1000_000,
+		listRow{RunID: "7", Status: "SUCCESS", Experiment: "bar"},
+		filterFields{Experiment: "bar"})
+
+	f := newRunFetcher(ctx, newTestWorkspaceClient(t, host), listQuery{
+		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		filters: listFilters{Experiment: "foo"},
+	})
+	rows, err := f.next(10)
+	require.NoError(t, err)
+	assert.Empty(t, rows, "cached row not matching the filter must be dropped")
+	assert.Equal(t, 0, hits.get, "non-matching cached row must not hit runs/get")
+}
+
+func TestIndexStrategyServesMatchingCachedRow(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	refs := []workflowRef{{jobRunID: 7, submitTimeMs: 1000_000}}
+	srv, hits := indexAndGetServer(t, refs, map[int64]jobRun{7: indexRun(7, 1000_000)}, nil, nil)
+	host := srv.URL
+
+	ctx := t.Context()
+	putRow(ctx, newListCache(ctx), host, 7, 1000_000,
+		listRow{RunID: "7", Status: "SUCCESS", Experiment: "foo"},
+		filterFields{Experiment: "foo"})
+
+	f := newRunFetcher(ctx, newTestWorkspaceClient(t, host), listQuery{
+		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		filters: listFilters{Experiment: "foo"},
+	})
+	rows, err := f.next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "7", rows[0].RunID)
+	assert.Equal(t, 0, hits.get, "matching cached row must not hit runs/get")
+}
+
 func TestIsTerminal(t *testing.T) {
 	assert.True(t, isTerminal(&jobRun{State: jobState{LifeCycleState: "TERMINATED"}}))
 	assert.True(t, isTerminal(&jobRun{State: jobState{LifeCycleState: "INTERNAL_ERROR"}}))
