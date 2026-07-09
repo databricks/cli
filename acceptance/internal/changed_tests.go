@@ -76,6 +76,11 @@ func ParseChangedTests(diffOutput string, testDirs map[string]bool) map[string]C
 		// A changed invariant config re-enables all invariant subdirs with an
 		// INPUT_CONFIG filter, unless a subdir was already unlocked by a non-config change.
 		if strings.HasPrefix(path, invariantConfigsPrefix) {
+			// A deleted config has no variant left to run, so ignore it. Without
+			// this, a deletion would add an INPUT_CONFIG= filter matching nothing.
+			if status == "D" {
+				continue
+			}
 			configName := path[len(invariantConfigsPrefix):]
 			// Strip -init.sh / -cleanup.sh suffixes to get the base config name.
 			if i := strings.Index(configName, "-"); i > 0 && strings.HasSuffix(configName, ".sh") {

@@ -70,6 +70,32 @@ func TestParseChangedTests(t *testing.T) {
 			},
 		},
 		{
+			name: "deleted file in a still-existing test dir re-enables that dir",
+			diff: "D\tacceptance/bundle/resources/output.txt",
+			want: map[string]ChangedTest{
+				"bundle/resources": {Added: false, VariantFilters: nil},
+			},
+		},
+		{
+			name: "deleted script of a removed test dir is ignored (dir no longer in testDirs)",
+			diff: "D\tacceptance/bundle/removed_test/script",
+			want: map[string]ChangedTest{},
+		},
+		{
+			name: "deleted invariant config is ignored",
+			diff: "D\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+			want: map[string]ChangedTest{},
+		},
+		{
+			name: "deleted config alongside a modified config keeps only the modified filter",
+			diff: "M\tacceptance/bundle/invariant/configs/job.yml.tmpl\nD\tacceptance/bundle/invariant/configs/job_with_permissions.yml.tmpl",
+			want: map[string]ChangedTest{
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+			},
+		},
+		{
 			name: "changed invariant config re-enables all invariant subdirs with INPUT_CONFIG filter",
 			diff: "M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
 			want: map[string]ChangedTest{
