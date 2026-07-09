@@ -10,11 +10,13 @@
 
 ### Bundles
 
+* direct: add basic version of job_runs resource (experimental) ([#5603](https://github.com/databricks/cli/pull/5603)).
 * Fix permissions added to a job or pipeline by a Python (PyDABs) mutator failing to deploy with "must have exactly one owner"; the deploying identity is now set as owner, matching resources whose permissions are declared in YAML ([#5821](https://github.com/databricks/cli/pull/5821)).
 * Remove duplicate enum values for jsonschema.json ([#5839](https://github.com/databricks/cli/pull/5839)).
 * direct: volumes: support `volume_path` property ([#5550](https://github.com/databricks/cli/pull/5550)).
 * direct: Fix deploy bug when a `postgres_projects`, `postgres_branches`, or `postgres_endpoints` field is set to its zero value (e.g. `enable_pg_native_login: false`, `replace_existing: false`) ([#5782](https://github.com/databricks/cli/pull/5782)).
 * `bundle run --only` help now documents the `+` modifier syntax: prefix a task key with `+` to also run its upstream tasks, or suffix it with `+` for downstream tasks ([#5760](https://github.com/databricks/cli/pull/5760)).
+* direct: Recognize UC-managed catalog and schema property defaults to avoid unnecessary drift ([#5865](https://github.com/databricks/cli/pull/5865) & [#5870](https://github.com/databricks/cli/pull/5870)).
 * Fix `bundle deploy --select <resource>` skipping the resource's grants and permissions; they are now applied as part of the selected resource ([#5852](https://github.com/databricks/cli/pull/5852)).
 
 ### Dependency updates

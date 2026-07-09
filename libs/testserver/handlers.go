@@ -290,6 +290,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsGetRun(req)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/runs/delete", func(req Request) any {
+		return req.Workspace.JobsDeleteRun(req)
+	})
+
 	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req Request) any {
 		return req.Workspace.JobsGetRunOutput(req)
 	})

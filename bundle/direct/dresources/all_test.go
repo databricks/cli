@@ -322,6 +322,30 @@ var testDeps = map[string]prepareWorkspace{
 		return testConfig["vector_search_indexes"], nil
 	},
 
+	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// A run can only be triggered against an existing job, so create one first.
+		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
+			Name: "job-for-run",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "t",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.JobRun{
+			RunNow: jobs.RunNow{
+				JobId: resp.JobId,
+			},
+		}, nil
+	},
+
 	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-permissions",
@@ -1125,7 +1149,9 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 
 		// A user change is only neutralized by recreate_on_changes,
 		// provided_id_fields, or ignore_local_changes; output-only fields are
-		// covered by ignore_remote_changes since the user never sets them.
+		// covered by ignore_remote_changes since the user never sets them. A
+		// root rule (omitted field) records the empty path "", which stops the
+		// walk below at the root node and thus covers every field at once.
 		covered := map[string]bool{}
 		for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 			if cfg == nil {
