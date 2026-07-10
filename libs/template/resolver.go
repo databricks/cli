@@ -8,20 +8,22 @@ import (
 	"github.com/databricks/cli/libs/git"
 )
 
+// See https://git-scm.com/docs/git-clone#_git_urls for the set of supported
+// Git URL forms. We deliberately exclude deprecated/insecure protocols (git, http, ftp[s]).
 var gitUrlPrefixes = []string{
 	"https://",
+	"ssh://",
+	// recognize git@ without ssh:// protocol because this is very common
 	"git@",
 }
 
-func IsRepoUrl(url string) bool {
-	result := false
+func IsGitRepoUrl(url string) bool {
 	for _, prefix := range gitUrlPrefixes {
 		if strings.HasPrefix(url, prefix) {
-			result = true
-			break
+			return true
 		}
 	}
-	return result
+	return false
 }
 
 // ResolveReader resolves a template path/URL to a Reader (built-in, git or local)
@@ -30,7 +32,7 @@ func ResolveReader(templatePathOrUrl, templateDir, ref string) (Reader, bool) {
 		return tmpl.Reader, false
 	}
 
-	if IsRepoUrl(templatePathOrUrl) {
+	if IsGitRepoUrl(templatePathOrUrl) {
 		return NewGitReader(templatePathOrUrl, ref, templateDir, git.Clone), true
 	}
 
