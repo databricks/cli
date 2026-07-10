@@ -6,3 +6,12 @@ EnvMatrix.INPUT_CONFIG = []
 # DATABRICKS_BUNDLE_ENGINE and starts from a Terraform deployment.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "redeploy", "canonical", "update", "destroy_recreate"]
 EnvMatrix.FUZZ_RESOURCE_COUNT = ["1", "2", "3"]
+
+# generate = build a config from the schema (gen_fuzz_config.py); mutate = perturb a
+# curated invariant config (mutate_fuzz_config.py). Dispatched by fuzz_gen_config.py.
+EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
+
+# mutate starts from a single-resource base and ignores FUZZ_RESOURCE_COUNT, so only run
+# it once rather than duplicating the same output across the count matrix.
+EnvMatrixExclude.mutate_count2 = ["FUZZ_MODE=mutate", "FUZZ_RESOURCE_COUNT=2"]
+EnvMatrixExclude.mutate_count3 = ["FUZZ_MODE=mutate", "FUZZ_RESOURCE_COUNT=3"]
