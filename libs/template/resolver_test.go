@@ -104,7 +104,7 @@ func TestBundleInitIsGitRepoUrl(t *testing.T) {
 	// Supported
 	assert.True(t, IsGitRepoUrl("git@github.com:databricks/cli.git"))
 	assert.True(t, IsGitRepoUrl("https://github.com/databricks/cli.git"))
-	assert.True(t, IsGitRepoUrl("ssh://git@github.com/databricks/cli.git"))
+	assert.True(t, IsGitRepoUrl("ssh://user@company.ghe.com/databricks/cli.git"))
 
 	// Unsupported
 	assert.False(t, IsGitRepoUrl("git://github.com/databricks/cli.git"))
