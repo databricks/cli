@@ -1,6 +1,6 @@
 {
   "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "cli_version": "[CLI_VERSION]",
   "plan": {
     "resources.pipelines.mypipeline": {
       "depends_on": [

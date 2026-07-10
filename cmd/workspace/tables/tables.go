@@ -3,6 +3,7 @@
 package tables
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -165,7 +166,7 @@ Create a table.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'catalog_name', 'schema_name', 'table_type', 'data_source_format', 'storage_location' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'catalog_name', 'schema_name', 'table_type', 'data_source_format', 'storage_location' in your JSON input")
 			}
 			return nil
 		}
