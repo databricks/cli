@@ -25,6 +25,7 @@ var (
 // sensitiveFields returns a map of JSON field names → true for resource type
 // key (e.g. "secrets"). Built once from the convert.SensitiveFieldNames helper.
 func sensitiveFields(resourceTypeKey string) map[string]bool {
+	sensitiveFieldsCacheOnce()
 	return sensitiveFieldsCache[resourceTypeKey]
 }
 
