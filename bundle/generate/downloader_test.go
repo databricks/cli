@@ -295,6 +295,72 @@ func TestDownloader_MarkTasksForDownload_SingleNotebook(t *testing.T) {
 	assert.Len(t, downloader.files, 1)
 }
 
+func TestDownloader_MarkTasksForDownload_SparkPythonFile(t *testing.T) {
+	ctx := t.Context()
+	m := mocks.NewMockWorkspaceClient(t)
+
+	dir := "base/dir"
+	sourceDir := filepath.Join(dir, "source")
+	configDir := filepath.Join(dir, "config")
+	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir)
+
+	pythonFile := "/Users/user/project/etl/job.py"
+	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, pythonFile).Return(&workspace.ObjectInfo{
+		Path: pythonFile,
+	}, nil)
+
+	tasks := []jobs.Task{
+		{
+			TaskKey: "spark_python_task",
+			SparkPythonTask: &jobs.SparkPythonTask{
+				PythonFile: pythonFile,
+			},
+		},
+	}
+
+	err := downloader.MarkTasksForDownload(ctx, tasks)
+	require.NoError(t, err)
+
+	assert.Equal(t, "../source/job.py", tasks[0].SparkPythonTask.PythonFile)
+	require.Len(t, downloader.files, 1)
+	f := downloader.files[filepath.Join(sourceDir, "job.py")]
+	assert.Equal(t, pythonFile, f.path)
+	assert.Equal(t, workspace.ExportFormatSource, f.format)
+}
+
+func TestDownloader_MarkTasksForDownload_SparkPythonFileSkipped(t *testing.T) {
+	ctx := t.Context()
+	// Cloud URIs and Git-sourced files are not workspace paths, so no
+	// get-status/download requests should be made for them.
+	w := newTestWorkspaceClient(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	})
+
+	downloader := NewDownloader(w, "source", "config")
+
+	tasks := []jobs.Task{
+		{
+			TaskKey: "cloud_uri_task",
+			SparkPythonTask: &jobs.SparkPythonTask{
+				PythonFile: "dbfs:/FileStore/job.py",
+			},
+		},
+		{
+			TaskKey: "git_task",
+			SparkPythonTask: &jobs.SparkPythonTask{
+				PythonFile: "etl/job.py",
+				Source:     jobs.SourceGit,
+			},
+		},
+	}
+
+	err := downloader.MarkTasksForDownload(ctx, tasks)
+	require.NoError(t, err)
+	assert.Empty(t, downloader.files)
+	assert.Equal(t, "dbfs:/FileStore/job.py", tasks[0].SparkPythonTask.PythonFile)
+	assert.Equal(t, "etl/job.py", tasks[1].SparkPythonTask.PythonFile)
+}
+
 func TestDownloader_MarkTasksForDownload_NoNotebooks(t *testing.T) {
 	ctx := t.Context()
 	w := newTestWorkspaceClient(t, func(w http.ResponseWriter, r *http.Request) {
