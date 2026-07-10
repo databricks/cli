@@ -100,6 +100,36 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	assert.Equal(t, string(before), string(after)) // unchanged
 }
 
+func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {
+	// On a re-run where the .bak already exists and the live file already equals
+	// the merged output, --check must report a plan a real run would perform: no
+	// backup (the .bak is kept, not rewritten) and an empty diff (nothing changes).
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	newPipe := func(check bool) *Pipeline {
+		return &Pipeline{
+			Mode: ModeDefault, Check: check, ProjectDir: dir,
+			ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+			Flags:   TargetFlags{Serverless: "v4"},
+			Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		}
+	}
+
+	// First a real sync: writes the merged file and creates the .bak.
+	_, err := newPipe(false).Run(t.Context())
+	require.NoError(t, err)
+	require.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
+
+	// Now --check on the already-synced project.
+	res, err := newPipe(true).Run(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, res.Plan)
+	assert.Empty(t, res.Plan.WouldBackup, "a re-run keeps the existing .bak, so --check must not claim a backup")
+	assert.Empty(t, res.Plan.Diff, "the live file already equals the merged output; the diff must be empty")
+}
+
 func TestPipelineCheckDoesNotProvision(t *testing.T) {
 	// --check must not call any PackageManager method that could mutate the
 	// machine (EnsureAvailable may install uv). noProvisionPM errors on all of
@@ -370,9 +400,9 @@ func TestPipelineNoTarget(t *testing.T) {
 	assert.Equal(t, StatusPending, phaseStatus(res, PhaseProvision))
 }
 
-func TestPipelineRestoresBackupBeforeMerge(t *testing.T) {
+func TestPipelineMergesOnLiveFileNotBackup(t *testing.T) {
 	dir := t.TempDir()
-	// Write an original pyproject.toml and a pre-existing .bak.
+	// A pre-existing .bak holds the pristine pre-sync original (no user edit).
 	original := []byte(`[project]
 name = "demo"
 requires-python = ">=3.9"
@@ -381,15 +411,17 @@ requires-python = ">=3.9"
 dev = ["databricks-connect~=15.0.0"]
 `)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml.bak"), original, 0o644))
-	// Current pyproject.toml has been mutated by a previous run.
-	mutated := []byte(`[project]
+	// The live pyproject.toml is a prior sync's output plus an edit the developer
+	// made afterwards: a non-managed dependency the .bak never saw.
+	live := []byte(`[project]
 name = "demo"
 requires-python = "==3.12.*"
+dependencies = ["rich"]
 
 [dependency-groups]
 dev = ["databricks-connect~=17.2.0"]
 `)
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), mutated, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), live, 0o644))
 
 	srv := newTestServer(t)
 	defer srv.Close()
@@ -403,11 +435,16 @@ dev = ["databricks-connect~=17.2.0"]
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	// The bak content (requires-python = ">=3.9") was the base; merged result should
-	// contain the newly pinned version.
 	data, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	// The between-sync user edit survives: the merge based on the live file, not
+	// the stale .bak, which would have discarded it.
+	assert.Contains(t, string(data), `dependencies = ["rich"]`)
+	// Managed regions are still applied.
 	assert.Contains(t, string(data), `"databricks-connect~=17.2.0"`)
 	assert.Contains(t, string(data), `requires-python = "==3.12.*"`)
+	// The .bak is left as the one-time original safety copy, not overwritten.
+	bak, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml.bak"))
+	assert.Equal(t, string(original), string(bak))
 }
 
 func TestPipelineUnreadableExistingIsNotTreatedAsGreenfield(t *testing.T) {

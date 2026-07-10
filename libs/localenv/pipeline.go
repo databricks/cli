@@ -136,7 +136,11 @@ func (p *Pipeline) run(ctx context.Context) error {
 
 	dbcPin := c.DatabricksConnect
 	if p.Mode == ModeConstraintsOnly {
-		// constraints-only omits the databricks-connect dependency entirely.
+		// constraints-only stops *managing* the databricks-connect pin rather than
+		// removing it. Clearing dbcPin means the merge neither injects nor asserts a
+		// pin: greenfield renders dev = [] (no databricks-connect), while an existing
+		// project that already pins databricks-connect keeps its pin untouched (see
+		// mergeDatabricksConnect — an empty value is a no-op, not a deletion).
 		dbcPin = ""
 	}
 	p.res.Resolved = &ResolvedInfo{
@@ -218,31 +222,25 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	pyproject := p.pyprojectPath()
 	backup := p.backupPath()
 
-	// Determine base bytes for the merge. For an existing project with a backup,
-	// the backup is the canonical base so the merge starts from the original
-	// unmanaged state.
+	// The merge base is the live pyproject.toml, not the backup. MergeManaged
+	// rewrites only the three managed regions and preserves every other byte, and
+	// it is idempotent on its own output — so merging onto the current file yields
+	// managed regions identical to merging onto the pristine .bak, but without
+	// discarding edits the user made between syncs (add a dependency, then
+	// re-sync). The .bak stays a one-time safety copy of the pre-sync original, not
+	// the merge base.
 	var baseBytes []byte
-	if data, rerr := os.ReadFile(backup); rerr == nil {
+	data, rerr := os.ReadFile(pyproject)
+	switch {
+	case rerr == nil:
 		baseBytes = data
-	} else if !errors.Is(rerr, os.ErrNotExist) {
-		// A backup that exists but can't be read (permissions, I/O) must not be
-		// silently ignored: falling through would treat the project as greenfield
-		// and overwrite it. Fail loudly instead.
-		return nil, false, p.fail(PhaseMerge, false, NewError(ErrMerge, rerr, "read backup %s failed", filepath.ToSlash(backup)))
-	}
-	if baseBytes == nil {
-		data, rerr := os.ReadFile(pyproject)
-		switch {
-		case rerr == nil:
-			baseBytes = data
-		case !errors.Is(rerr, os.ErrNotExist):
-			// Only a genuine not-exist means greenfield. Any other read error on an
-			// existing pyproject.toml (permission change, transient I/O, delete race
-			// after detectManager saw it) must not be misread as greenfield — that
-			// would render a fresh file and overwrite the user's project with no
-			// backup. Fail instead of destroying unrecoverable state (invariant 2).
-			return nil, false, p.fail(PhaseMerge, false, NewError(ErrMerge, rerr, "read pyproject.toml %s failed", filepath.ToSlash(pyproject)))
-		}
+	case !errors.Is(rerr, os.ErrNotExist):
+		// Only a genuine not-exist means greenfield. Any other read error on an
+		// existing pyproject.toml (permission change, transient I/O, delete race
+		// after detectManager saw it) must not be misread as greenfield — that
+		// would render a fresh file and overwrite the user's project with no
+		// backup. Fail instead of destroying unrecoverable state (invariant 2).
+		return nil, false, p.fail(PhaseMerge, false, NewError(ErrMerge, rerr, "read pyproject.toml %s failed", filepath.ToSlash(pyproject)))
 	}
 	greenfield = baseBytes == nil
 
@@ -288,8 +286,14 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 			ChangedRegions:     changedRegions,
 			WouldInstallPython: pyMinor,
 		}
+		// Report a backup only when a real run would actually write one: for an
+		// existing project with no .bak yet. On a re-run the .bak already exists and
+		// applyMerge keeps it (does not re-write), so claiming a backup here would
+		// describe a write that won't happen.
 		if !greenfield {
-			plan.WouldBackup = filepath.ToSlash(backup)
+			if _, statErr := os.Stat(backup); errors.Is(statErr, os.ErrNotExist) {
+				plan.WouldBackup = filepath.ToSlash(backup)
+			}
 		}
 		p.res.Plan = plan
 	}
