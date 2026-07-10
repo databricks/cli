@@ -31,6 +31,10 @@ type structInfo struct {
 	// ForceSendFieldsStructKey maps the JSON-name of the field to which ForceSendFields slice it belongs to:
 	// -1 for direct fields, embedded struct index for embedded fields
 	ForceSendFieldsStructKey map[string]int
+
+	// Sensitive tracks fields tagged `bundle:"sensitive"` by their JSON name.
+	// Values for these fields should be masked in display output.
+	Sensitive map[string]bool
 }
 
 // structInfoCache caches type information.
@@ -62,6 +66,7 @@ func buildStructInfo(typ reflect.Type) structInfo {
 		ForceEmpty:               make(map[string]bool),
 		GolangNames:              make(map[string]string),
 		ForceSendFieldsStructKey: make(map[string]int),
+		Sensitive:                make(map[string]bool),
 	}
 
 	// Queue holds the indexes of the structs to visit.
@@ -118,6 +123,10 @@ func buildStructInfo(typ reflect.Type) structInfo {
 				out.ForceEmpty[name] = true
 			}
 			out.GolangNames[name] = sf.Name
+
+			if structtag.BundleTag(sf.Tag.Get("bundle")).Sensitive() {
+				out.Sensitive[name] = true
+			}
 
 			// Determine which ForceSendFields this field belongs to
 			if len(prefix) == 0 {
@@ -191,6 +200,25 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 
 // Type of [dyn.Value].
 var configValueType = reflect.TypeFor[dyn.Value]()
+
+// SensitiveFieldNames returns the JSON field names of typ that carry the
+// `bundle:"sensitive"` tag. A pointer type is dereferenced before inspection.
+// Returns nil for non-struct types. Callers use this to identify fields that
+// must be masked in display output (validate -o json, plan -o json) without
+// touching the typed values used by the actual deployment pipeline.
+func SensitiveFieldNames(typ reflect.Type) map[string]bool {
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	if typ.Kind() != reflect.Struct {
+		return nil
+	}
+	si := getStructInfo(typ)
+	if len(si.Sensitive) == 0 {
+		return nil
+	}
+	return si.Sensitive
+}
 
 // getForceSendFieldsValues collects ForceSendFields reflect.Values
 // Returns map[structKey]reflect.Value where structKey is -1 for direct fields, embedded index for embedded fields

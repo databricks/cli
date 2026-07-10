@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	bundleconfig "github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -17,7 +18,11 @@ func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle) error {
 	if b == nil {
 		return nil
 	}
-	buf, err := json.MarshalIndent(b.Config.Value().AsAny(), "", "  ")
+	v, err := bundleconfig.MaskSensitiveFields(b.Config.Value())
+	if err != nil {
+		return err
+	}
+	buf, err := json.MarshalIndent(v.AsAny(), "", "  ")
 	if err != nil {
 		return err
 	}
