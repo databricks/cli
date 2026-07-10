@@ -13,7 +13,9 @@ sometimes invalid.
 
 import argparse
 import json
+import os
 import random
+import re
 import sys
 
 # The schema is recursive (e.g. task -> for_each_task -> task); cap the walk.
@@ -81,6 +83,9 @@ SKIP_PROPERTY_NAMES = frozenset(
         "created_at",
         "created_by",
         "creator_name",
+        # An etag is a read value the backend assigns; the CLI rejects one set in
+        # bundle config (e.g. "genie space ... has an etag set. Etags must not be set").
+        "etag",
         "full_name",
         "metastore_id",
         "owner",
@@ -90,10 +95,50 @@ SKIP_PROPERTY_NAMES = frozenset(
     }
 )
 
-# Resource types whose schema omits required[] but need these fields to deploy.
+# Resource types whose schema omits required[] (or whose required[] can't be honored
+# in bundle YAML) but which need these fields to deploy. See RESOURCE_FIELD_ALLOWLIST
+# and the *_BY_RESOURCE tables below for the values these fields take.
 RESOURCE_REQUIRED_FIELDS = {
     "registered_models": frozenset({"catalog_name", "name", "schema_name"}),
+    "dashboards": frozenset({"display_name", "file_path", "warehouse_id"}),
+    "alerts": frozenset({"display_name", "file_path", "warehouse_id"}),
+    "apps": frozenset({"name", "source_code_path"}),
+    "genie_spaces": frozenset({"serialized_space", "title", "warehouse_id"}),
 }
+
+# Fields to drop for a specific resource type because they conflict with the field
+# set we do emit. Dashboards and Genie spaces take their body from file_path XOR an
+# inline serialized_* field, so emitting both is rejected ("both ... are set").
+RESOURCE_SKIP_FIELDS = {
+    "dashboards": frozenset({"serialized_dashboard"}),
+    "genie_spaces": frozenset({"file_path"}),
+    "apps": frozenset({"git_repository", "git_source"}),
+}
+
+# Resource types where only a fixed field set is allowed in bundle YAML. Alerts read
+# their spec from the .dbalert.json referenced by file_path; the CLI rejects any other
+# field (see bundle/config/mutator/load_dbalert_files.go allowedInYAML).
+RESOURCE_FIELD_ALLOWLIST = {
+    "alerts": frozenset({"display_name", "file_path", "lifecycle", "permissions", "warehouse_id"}),
+}
+
+# file_path points at a serialized-body fixture copied into every seed dir from
+# acceptance/bundle/invariant/data (see fuzz/script). The extension selects the parser.
+FILE_PATH_BY_RESOURCE = {
+    "dashboards": "./dashboard.lvdash.json",
+    "alerts": "./alert.dbalert.json",
+}
+
+# A local directory holding app source, also copied in from data/.
+APP_SOURCE_CODE_PATH = "./app"
+
+# An absolute workspace path is treated as already-remote, skipping the local-notebook
+# existence/extension check a bare token would fail.
+NOTEBOOK_PATH = "/Shared/notebook"
+
+# Fields declared as string in the schema but parsed as google.protobuf.Duration at
+# config load (e.g. suspend_timeout_duration, ttl); a bare token fails to parse.
+DURATION_VALUE = "3600s"
 
 
 class Generator:
@@ -135,6 +180,8 @@ class Generator:
     def should_skip_property(self, prop_name, prop_schema):
         if prop_name in SKIP_PROPERTY_NAMES:
             return True
+        if prop_name in RESOURCE_SKIP_FIELDS.get(self.rtype, ()):
+            return True
         resolved = self.resolve(prop_schema)
         if "OUTPUT_ONLY" in self.field_behaviors(prop_schema):
             return True
@@ -143,6 +190,11 @@ class Generator:
         return False
 
     def gen(self, schema, depth, name=""):
+        # A Genie space body is a free-form interface{}; the backend rejects unknown
+        # keys, so emit the minimal accepted body instead of a random object.
+        if name == "serialized_space":
+            return {"version": 1}
+
         schema = self.resolve(schema)
         if not isinstance(schema, dict) or not schema:
             return self.gen_scalar({"type": "string"}, name)
@@ -174,11 +226,17 @@ class Generator:
     def gen_object(self, schema, depth):
         props = schema.get("properties", {})
         required = set(schema.get("required", []))
+        allowlist = None
         if depth == 0 and self.rtype:
             required |= RESOURCE_REQUIRED_FIELDS.get(self.rtype, set())
+            allowlist = RESOURCE_FIELD_ALLOWLIST.get(self.rtype)
         result = {}
 
         for prop_name, prop_schema in props.items():
+            # A restricted resource (e.g. alerts) rejects any field outside its
+            # allow-list, even a schema-required one supplied via the file instead.
+            if allowlist is not None and prop_name not in allowlist:
+                continue
             if self.should_skip_property(prop_name, prop_schema):
                 continue
             # Always emit required fields; emit optional ones less often as we go
@@ -240,11 +298,27 @@ class Generator:
         if t is not None and t not in SCALAR_TYPES:
             sys.exit(f"gen_fuzz_config: unhandled schema type {t!r}")
         # string (default)
-        # Pin cross-resource references to seeded defaults (see constants above).
+        # Pin cross-resource references and typed-string fields to values the backend
+        # accepts; a random token fails format/existence validation and drops the config.
         if name == "catalog_name":
             return DEFAULT_CATALOG
         if name == "schema_name":
             return DEFAULT_SCHEMA
+        if name == "warehouse_id":
+            return os.environ.get("TEST_DEFAULT_WAREHOUSE_ID", "")
+        if name == "notebook_path":
+            return NOTEBOOK_PATH
+        if name == "source_code_path":
+            return APP_SOURCE_CODE_PATH
+        if name == "file_path":
+            return FILE_PATH_BY_RESOURCE.get(self.rtype, self.token())
+        if name.endswith("_duration") or name == "ttl":
+            return DURATION_VALUE
+        if name == "name" and self.rtype == "vector_search_indexes":
+            # UC requires the full three-level catalog.schema.table name, and each
+            # part accepts only alphanumerics and underscores.
+            table = re.sub(r"[^0-9a-zA-Z_]", "_", f"fuzz_index_{self.unique}")
+            return f"{DEFAULT_CATALOG}.{DEFAULT_SCHEMA}.{table}"
         if name in ("name", "display_name"):
             return f"fuzz-{name}-{self.unique}"
         return self.token()
