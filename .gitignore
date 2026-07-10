@@ -67,6 +67,9 @@ dist/
 # Per-module golangci-lint TMPDIR (configured in Taskfile.yml)
 /.tmp/
 
+# Local fuzz driver scratch (see .fuzztmp/run_fuzz.sh)
+.fuzztmp/
+
 # Go workspace file
 go.work
 go.work.sum

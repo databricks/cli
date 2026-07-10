@@ -32,6 +32,10 @@ for ((offset = 0; offset < COUNT; offset++)); do
     set +e
     (
         cd "$dir"
+        # The generator points file_path/source_code_path fields at these fixtures
+        # (see gen_fuzz_config.py *_BY_RESOURCE), so make them resolvable from the
+        # bundle root, matching how the curated invariant scripts stage data/.
+        cp -r "$TESTDIR/../data/." .
         export FUZZ_SEED="$seed"
         export FUZZ_SCHEMA="../schema.json"
         source "$TESTDIR/../${FUZZ_TARGET:-no_drift}/script"
@@ -57,7 +61,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
     fi
 
     if [ -n "$bug" ]; then
-        echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} task test-fuzz" >&2
+        echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} FUZZ_RESOURCE_COUNT=${FUZZ_RESOURCE_COUNT:-1} task test-fuzz" >&2
         exit 1
     fi
 done
