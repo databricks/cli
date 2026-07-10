@@ -29,13 +29,6 @@ func sensitiveFields(resourceTypeKey string) map[string]bool {
 	return sensitiveFieldsCache[resourceTypeKey]
 }
 
-// SensitiveFieldsForResourceType returns the set of JSON field names that are
-// tagged `bundle:"sensitive"` for the given resource type key (e.g. "secrets").
-// Returns nil when the type has no sensitive fields or is unknown.
-func SensitiveFieldsForResourceType(resourceTypeKey string) map[string]bool {
-	return sensitiveFields(resourceTypeKey)
-}
-
 // MaskSensitiveFields returns a copy of v with all fields tagged
 // `bundle:"sensitive"` replaced by [sensitiveValueMask].
 //
