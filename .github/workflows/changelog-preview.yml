@@ -11,8 +11,7 @@ on:
     types: [opened, reopened, synchronize]
     paths:
       - ".nextchanges/**"
-      - "internal/genkit/release_tagging.py"
-      - "internal/genkit/tagging.py"
+      - "internal/genkit/**"
       - "tools/validate_nextchanges.py"
       - "tools/update_github_links.py"
 
