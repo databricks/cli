@@ -348,9 +348,9 @@ func TestHostKeyChangedHint(t *testing.T) {
 }
 
 func TestBuildRemoteShellArgs(t *testing.T) {
-	const bashCmd = `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`
+	const bashCmd = `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
 
-	t.Run("interactive returns login bash command", func(t *testing.T) {
+	t.Run("interactive returns non-login bash command", func(t *testing.T) {
 		args := buildRemoteShellArgs(ClientOptions{}, "")
 		require.Len(t, args, 1)
 		assert.Equal(t, bashCmd, args[0])
@@ -388,7 +388,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 		assert.Less(t, ptyIdx, hostIdx, "-t must precede the destination host")
 		// The remote command is the final arg, after the host.
 		assert.Greater(t, len(args)-1, hostIdx)
-		assert.Contains(t, args[len(args)-1], "exec bash -l")
+		assert.Contains(t, args[len(args)-1], "exec bash -i")
 	})
 
 	t.Run("non-interactive does not force a PTY", func(t *testing.T) {
