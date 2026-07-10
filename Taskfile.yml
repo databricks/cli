@@ -292,6 +292,11 @@ tasks:
     cmds:
       - "./tools/validate_nextchanges.py"
 
+  changelog-preview:
+    desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
+    cmds:
+      - "uv run --locked internal/genkit/release_tagging.py --preview"
+
   deadcode:
     desc: Check for dead code
     sources:
