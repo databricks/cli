@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""
+Emit a fuzz databricks.yml on stdout for the current seed, picking the strategy from
+FUZZ_MODE so the invariant target scripts don't each duplicate the branch:
+
+  generate (default) - build a config from scratch by walking `bundle schema`
+                       (gen_fuzz_config.py).
+  mutate             - start from a curated invariant config and perturb it
+                       (mutate_fuzz_config.py).
+
+Reads its inputs from the environment the invariant scripts already export: FUZZ_SEED,
+FUZZ_SCHEMA, UNIQUE_NAME, FUZZ_RESOURCES, FUZZ_RESOURCE_COUNT, TESTDIR.
+"""
+
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from envsubst import substitute_variables
+from gen_fuzz_config import gen_config, to_yaml
+from mutate_fuzz_config import load_yaml, mutate
+
+# Curated single-resource configs that deploy standalone against the fake server (only
+# $UNIQUE_NAME, no init script). All are also in the invariant INPUT_CONFIG matrix, so
+# they stay deploy-verified. The seed selects one; mutate_fuzz_config perturbs it.
+MUTATE_BASES = [
+    "catalog",
+    "external_location",
+    "job",
+    "model",
+    "model_serving_endpoint",
+    "pipeline",
+    "registered_model",
+    "schema",
+    "secret_scope",
+    "sql_warehouse",
+    "volume",
+]
+
+
+def generate(seed):
+    with open(os.environ["FUZZ_SCHEMA"]) as f:
+        schema = json.load(f)
+    allowed = {r.strip() for r in os.environ.get("FUZZ_RESOURCES", "").split(",") if r.strip()}
+    unique = f"{os.environ['UNIQUE_NAME']}-{seed}"
+    count = int(os.environ.get("FUZZ_RESOURCE_COUNT", "1"))
+    return to_yaml(gen_config(schema, seed, unique, allowed, count))
+
+
+def mutate_base(seed):
+    name = MUTATE_BASES[seed % len(MUTATE_BASES)]
+    path = os.path.join(os.environ["TESTDIR"], "..", "configs", name + ".yml.tmpl")
+    with open(path) as f:
+        rendered = substitute_variables(f.read())
+    config = load_yaml(rendered)
+    return to_yaml(mutate(config, seed))
+
+
+def main():
+    seed = int(os.environ["FUZZ_SEED"])
+    mode = os.environ.get("FUZZ_MODE", "generate")
+    if mode == "generate":
+        sys.stdout.write(generate(seed))
+    elif mode == "mutate":
+        sys.stdout.write(mutate_base(seed))
+    else:
+        sys.exit(f"fuzz_gen_config: unknown FUZZ_MODE {mode!r}")
+
+
+if __name__ == "__main__":
+    main()

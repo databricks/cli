@@ -1,0 +1,36 @@
+=== volume seed=0 ===
+bundle:
+  name: "test-bundle-check"
+resources:
+  volumes:
+    foo:
+      name: "test-volume-check"
+      catalog_name: "main"
+      schema_name: []
+      grants:
+        - principal: "account users"
+=== volume seed=1 ===
+bundle:
+  name: "test-bundle-check"
+resources:
+  volumes:
+    foo:
+      name: "test-volume-check"
+      catalog_name: " "
+      schema_name: "default"
+      grants:
+        - principal: "account users"
+          privileges:
+            - "READ_VOLUME"
+=== volume seed=2 ===
+bundle:
+  name: "test-bundle-check"
+resources:
+  volumes:
+    foo:
+      name: "test-volume-check"
+      schema_name: "default"
+      grants:
+        - principal: "account users"
+          privileges:
+            - "READ_VOLUME"

@@ -2,6 +2,7 @@ Local = true
 Cloud = true
 RequiresUnityCatalog = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
 EnvMatrix.FUZZ_RESOURCE_COUNT = ["1", "2", "3"]
 EnvMatrix.FUZZ_TARGET = [
   "no_drift",
