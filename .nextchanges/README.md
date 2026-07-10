@@ -19,8 +19,8 @@ type the path (e.g. `.nextchanges/cli/quickstart.md`), write a sentence, commit.
 - `<name>` is arbitrary — a feature name (`quickstart.md`) or your PR number
   (`5464.md`), whatever you like, as long as it's unique.
 - The leading `* ` is optional.
-- A PR link is optional. If you want one, write `(#5464)` and run `task fmt`
-  (or `task links`) to expand it into a full markdown link in place; CI fails
+- A PR link is optional. If you want one, write `(#5464)` and run `task links`
+  (or `task checks`) to expand it into a full markdown link in place; CI fails
   if a raw `(#5464)` is left unexpanded. The release does not expand links, so
   the fragment must already be expanded when it lands.
 - One file is usually one entry; for several, put each on its own `* ` line.
