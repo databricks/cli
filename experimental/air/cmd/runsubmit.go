@@ -52,6 +52,13 @@ type aiRuntimeTask struct {
 	Deployments               []aiRuntimeDeployment `json:"deployments"`
 	MlflowRun                 string                `json:"mlflow_run,omitempty"`
 	MlflowExperimentDirectory string                `json:"mlflow_experiment_directory,omitempty"`
+	// CodeSourcePath points at the uploaded snapshot tarball; the remote
+	// entry_script extracts it to /databricks/code_source/<dir>. GitStatePath and
+	// GitDiffPath are the optional provenance sidecars (see snapshot.go). All are
+	// omitempty: a workspace-only run (no code_source) carries none of them.
+	CodeSourcePath string `json:"code_source_path,omitempty"`
+	GitStatePath   string `json:"git_state_path,omitempty"`
+	GitDiffPath    string `json:"git_diff_path,omitempty"`
 }
 
 // environmentSpec carries the bare runtime channel ("4", "5", ...).
@@ -106,8 +113,9 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 }
 
 // buildSubmitPayload assembles the runs/submit payload. commandPath is the
-// workspace path of the uploaded command.sh; dlImage is the runtime channel.
-func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string) jobsSubmitRun {
+// workspace path of the uploaded command.sh; dlImage is the runtime channel; snap
+// carries the code snapshot paths (zero value when the run has no code_source).
+func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapshotResult) jobsSubmitRun {
 	task := aiRuntimeTask{
 		Experiment: cfg.ExperimentName,
 		Deployments: []aiRuntimeDeployment{{
@@ -117,6 +125,9 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string) jobsSubmitR
 				AcceleratorCount: cfg.Compute.NumAccelerators,
 			},
 		}},
+		CodeSourcePath: snap.CodeSourcePath,
+		GitStatePath:   snap.GitStatePath,
+		GitDiffPath:    snap.GitDiffPath,
 	}
 	if cfg.MLflowRunName != nil {
 		task.MlflowRun = *cfg.MLflowRunName
@@ -195,13 +206,10 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
 // returns the new run_id and its dashboard URL.
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string) (int64, string, error) {
-	// Resolving usage_policy_name to a budget policy id and packaging a
-	// code_source snapshot are not ported yet; reject rather than silently drop.
+	// Resolving usage_policy_name to a budget policy id is not ported yet; reject
+	// rather than silently drop.
 	if cfg.UsagePolicyName != nil {
 		return 0, "", errors.New("usage_policy_name is not yet supported")
-	}
-	if cfg.CodeSource != nil {
-		return 0, "", errors.New("code_source is not yet supported")
 	}
 
 	// Resolve the idempotency token first so a bad key fails before any upload.
@@ -240,8 +248,18 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
+	// Package and upload the code snapshot, if any. The resulting paths ride on the
+	// ai_runtime_task; a run with no code_source leaves them empty.
+	var snap snapshotResult
+	if cfg.CodeSource != nil {
+		snap, err = snapshotCodeSource(ctx, w, cfg.CodeSource.Snapshot, configPath, base, funcDir)
+		if err != nil {
+			return 0, "", err
+		}
+	}
+
 	runtimeVersion, _ := cfg.runtimeVersion()
-	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion))
+	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), snap)
 	payload.IdempotencyToken = token
 
 	jc, err := newJobsSubmitClient(w)

@@ -1,10 +1,12 @@
 package aircmd
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -193,3 +195,102 @@ func TestGitRepo_ValidateIncludePathsExist(t *testing.T) {
 	assert.Contains(t, err.Error(), "missing")
 	assert.Contains(t, err.Error(), sha[:8])
 }
+
+func TestBuildGitStateSidecar_PlainTarClean(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	head := commitAll(t, repo, "init")
+
+	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModePlainTar, "", fixedNow)
+	require.NoError(t, err)
+	assert.Equal(t, snapshotStateSchemaVersion, sc.SchemaVersion)
+	assert.Equal(t, packagingModePlainTar, sc.PackagingMode)
+	require.NotNil(t, sc.TipCommit)
+	assert.Equal(t, head, *sc.TipCommit)
+	assert.False(t, sc.Dirty)
+	assert.Equal(t, diffStatusClean, sc.DiffStatus)
+	assert.Nil(t, sc.DiffPath)
+	// No remote in a bare test repo → base_commit and repo_url are null.
+	assert.Nil(t, sc.BaseCommit)
+	assert.Nil(t, sc.RepoURL)
+	require.NotNil(t, sc.Branch)
+	assert.Equal(t, "main", *sc.Branch)
+	assert.Equal(t, "2026-07-10T12:00:00.000000Z", sc.GeneratedAtUTC)
+}
+
+func TestBuildGitStateSidecar_GitArchivePinsTip(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	first := commitAll(t, repo, "init")
+	// Advance HEAD; the pinned tip must win over HEAD.
+	writeRepoFile(t, repo, "b.txt", "2")
+	commitAll(t, repo, "second")
+
+	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModeGitArchive, first, fixedNow)
+	require.NoError(t, err)
+	require.NotNil(t, sc.TipCommit)
+	assert.Equal(t, first, *sc.TipCommit)
+	assert.Equal(t, packagingModeGitArchive, sc.PackagingMode)
+}
+
+func TestBuildGitStateSidecar_Dirty(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	commitAll(t, repo, "init")
+	writeRepoFile(t, repo, "a.txt", "2") // uncommitted
+
+	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModePlainTar, "", fixedNow)
+	require.NoError(t, err)
+	assert.True(t, sc.Dirty)
+}
+
+func TestGitStateSidecar_MarshalNullsAbsentFields(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	commitAll(t, repo, "init")
+
+	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModePlainTar, "", fixedNow)
+	require.NoError(t, err)
+	data, err := sc.marshal()
+	require.NoError(t, err)
+
+	// Absent fields serialize as JSON null (not "" or omitted), matching Python.
+	var raw map[string]any
+	require.NoError(t, json.Unmarshal(data, &raw))
+	require.Contains(t, raw, "base_commit")
+	assert.Nil(t, raw["base_commit"])
+	require.Contains(t, raw, "repo_url")
+	assert.Nil(t, raw["repo_url"])
+	require.Contains(t, raw, "diff_path")
+	assert.Nil(t, raw["diff_path"])
+	assert.EqualValues(t, 1, raw["schema_version"])
+}
+
+func TestCaptureDirtyDiff(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "one\n")
+	commitAll(t, repo, "init")
+
+	// Clean tree → no diff.
+	status, diff := captureDirtyDiff(ctx, newGitRepo(repo), dirtyDiffSizeCapBytes, dirtyDiffTimeout)
+	assert.Equal(t, diffStatusClean, status)
+	assert.Nil(t, diff)
+
+	// Dirty tree → captured, and the diff mentions the changed file.
+	writeRepoFile(t, repo, "a.txt", "two\n")
+	status, diff = captureDirtyDiff(ctx, newGitRepo(repo), dirtyDiffSizeCapBytes, dirtyDiffTimeout)
+	assert.Equal(t, diffStatusCaptured, status)
+	assert.Contains(t, string(diff), "a.txt")
+
+	// A tiny size cap forces size_exceeded and drops the bytes.
+	status, diff = captureDirtyDiff(ctx, newGitRepo(repo), 1, dirtyDiffTimeout)
+	assert.Equal(t, diffStatusSizeExceeded, status)
+	assert.Nil(t, diff)
+}
+
+var fixedNow = time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC)

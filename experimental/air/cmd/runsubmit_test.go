@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -36,7 +37,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 		MLflowExperimentDirectory: new("/Workspace/Users/me/exp"),
 	}
 
-	p := buildSubmitPayload(cfg, "/d/command.sh", "5")
+	p := buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{})
 
 	assert.Equal(t, "exp", p.RunName)
 	assert.Equal(t, 1800, p.TimeoutSeconds)
@@ -69,7 +70,7 @@ func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
 		Command:        new("x"),
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4").Tasks[0]
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}).Tasks[0]
 	assert.Equal(t, defaultMaxRetries, task.MaxRetries)
 	assert.True(t, task.RetryOnTimeout)
 }
@@ -84,7 +85,7 @@ func TestBuildSubmitPayloadNoRetries(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 		MaxRetries:     new(0),
 	}
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4").Tasks[0]
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}).Tasks[0]
 	assert.Equal(t, 0, task.MaxRetries)
 	assert.False(t, task.RetryOnTimeout)
 
@@ -170,6 +171,50 @@ func TestSubmitWorkload(t *testing.T) {
 	assert.Equal(t, aiRuntimeCompute{AcceleratorType: "GPU_1xH100", AcceleratorCount: 1}, d.Compute)
 }
 
+// TestSubmitWorkloadWithCodeSource exercises the snapshot path end to end: a
+// git-pinned code_source is packaged, uploaded, and its paths attached to the task.
+func TestSubmitWorkloadWithCodeSource(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	testserver.AddDefaultHandlers(server)
+
+	var got jobsSubmitRun
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return submitRunResponse{RunID: 555}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	// A git repo committed at HEAD, referenced by commit so packaging is git_archive.
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "train.py", "print()")
+	sha := commitAll(t, repo, "init")
+
+	cfg := minimalConfig + `
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ` + repo + `
+    git:
+      commit: ` + sha + `
+`
+	cfgPath := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	_, _, err = submitWorkload(t.Context(), w, loaded, cfgPath, "idem")
+	require.NoError(t, err)
+
+	at := got.Tasks[0].AiRuntimeTask
+	// The tarball path is under the user's repo_snapshots dir; the clean repo also
+	// attaches a git_state sidecar (no diff).
+	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/"+filepath.Base(repo)+"/")
+	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
+	assert.True(t, strings.HasSuffix(at.GitStatePath, "/"+gitStateName), at.GitStatePath)
+	assert.Empty(t, at.GitDiffPath)
+}
+
 func TestSubmitWorkloadGuards(t *testing.T) {
 	w := newFakeWorkspaceClient(t)
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
@@ -181,12 +226,5 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 		cfg.UsagePolicyName = new("p")
 		_, _, err := submitWorkload(t.Context(), w, &cfg, cfgPath, "")
 		require.ErrorContains(t, err, "usage_policy_name is not yet supported")
-	})
-
-	t.Run("code_source rejected", func(t *testing.T) {
-		cfg := *base
-		cfg.CodeSource = &codeSourceConfig{Type: "snapshot"}
-		_, _, err := submitWorkload(t.Context(), w, &cfg, cfgPath, "")
-		require.ErrorContains(t, err, "code_source is not yet supported")
 	})
 }
