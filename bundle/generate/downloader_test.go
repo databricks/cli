@@ -302,7 +302,7 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFile(t *testing.T) {
 	dir := "base/dir"
 	sourceDir := filepath.Join(dir, "source")
 	configDir := filepath.Join(dir, "config")
-	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir)
+	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir, WithSparkPythonFiles())
 
 	pythonFile := "/Users/user/project/etl/job.py"
 	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, pythonFile).Return(&workspace.ObjectInfo{
@@ -336,7 +336,7 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFileSkipped(t *testing.T) {
 		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 	})
 
-	downloader := NewDownloader(w, "source", "config")
+	downloader := NewDownloader(w, "source", "config", WithSparkPythonFiles())
 
 	tasks := []jobs.Task{
 		{
@@ -359,6 +359,32 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFileSkipped(t *testing.T) {
 	assert.Empty(t, downloader.files)
 	assert.Equal(t, "dbfs:/FileStore/job.py", tasks[0].SparkPythonTask.PythonFile)
 	assert.Equal(t, "etl/job.py", tasks[1].SparkPythonTask.PythonFile)
+}
+
+func TestDownloader_MarkTasksForDownload_SparkPythonFileDisabledByDefault(t *testing.T) {
+	ctx := t.Context()
+	// Without WithSparkPythonFiles, workspace files referenced by a
+	// spark_python_task are left untouched, so no requests are made.
+	w := newTestWorkspaceClient(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	})
+
+	downloader := NewDownloader(w, "source", "config")
+
+	pythonFile := "/Users/user/project/etl/job.py"
+	tasks := []jobs.Task{
+		{
+			TaskKey: "spark_python_task",
+			SparkPythonTask: &jobs.SparkPythonTask{
+				PythonFile: pythonFile,
+			},
+		},
+	}
+
+	err := downloader.MarkTasksForDownload(ctx, tasks)
+	require.NoError(t, err)
+	assert.Empty(t, downloader.files)
+	assert.Equal(t, pythonFile, tasks[0].SparkPythonTask.PythonFile)
 }
 
 func TestDownloader_MarkTasksForDownload_NoNotebooks(t *testing.T) {

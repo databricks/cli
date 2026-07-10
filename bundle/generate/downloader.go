@@ -34,6 +34,23 @@ type Downloader struct {
 	sourceDir string
 	configDir string
 	basePath  string
+
+	// downloadSparkPythonFiles controls whether workspace files referenced by a
+	// spark_python_task are downloaded. It is opt-in because a Python file often
+	// imports sibling files that are not captured, so downloading only the entry
+	// point can produce a job that fails at runtime with missing imports.
+	downloadSparkPythonFiles bool
+}
+
+// DownloaderOption configures a Downloader.
+type DownloaderOption func(*Downloader)
+
+// WithSparkPythonFiles enables downloading workspace files referenced by a
+// spark_python_task.
+func WithSparkPythonFiles() DownloaderOption {
+	return func(n *Downloader) {
+		n.downloadSparkPythonFiles = true
+	}
 }
 
 func (n *Downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) error {
@@ -41,7 +58,7 @@ func (n *Downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) e
 		return n.markNotebookForDownload(ctx, &task.NotebookTask.NotebookPath)
 	}
 
-	if task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
+	if n.downloadSparkPythonFiles && task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
 		return n.markFileForDownload(ctx, &task.SparkPythonTask.PythonFile)
 	}
 
@@ -231,7 +248,7 @@ func (n *Downloader) MarkTasksForDownload(ctx context.Context, tasks []jobs.Task
 		if task.NotebookTask != nil {
 			paths = append(paths, task.NotebookTask.NotebookPath)
 		}
-		if task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
+		if n.downloadSparkPythonFiles && task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
 			paths = append(paths, task.SparkPythonTask.PythonFile)
 		}
 	}
@@ -366,11 +383,15 @@ func writeAndClose(dst io.WriteCloser, src io.Reader) error {
 	return err
 }
 
-func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string) *Downloader {
-	return &Downloader{
+func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string, opts ...DownloaderOption) *Downloader {
+	n := &Downloader{
 		files:     make(map[string]exportFile),
 		w:         w,
 		sourceDir: sourceDir,
 		configDir: configDir,
 	}
+	for _, opt := range opts {
+		opt(n)
+	}
+	return n
 }
