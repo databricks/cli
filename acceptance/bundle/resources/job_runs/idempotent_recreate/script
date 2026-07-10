@@ -1,0 +1,33 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+STATE=.databricks/bundle/default/resources.json
+run_id() {
+    jq -r '.state["resources.job_runs.my_run"].__id__' "$STATE"
+}
+
+title "initial deploy triggers the run"
+trace $CLI bundle deploy
+before=$(run_id)
+
+title "drop the job run from local state but keep the job (simulates a lost run id)"
+# The job stays deployed, so job_id -- and therefore the derived idempotency
+# token -- is unchanged, which is what lets the retried run-now dedupe.
+jq 'del(.state["resources.job_runs.my_run"])' "$STATE" > "$STATE.new"
+mv "$STATE.new" "$STATE"
+trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"]'
+
+title "redeploy re-issues run-now; the token dedupes to the existing run"
+trace $CLI bundle deploy
+after=$(run_id)
+
+title "run-now was issued twice with the same token, but no duplicate run was created"
+trace print_requests.py //jobs/run-now
+if [ "$before" = "$after" ]; then
+    echo "run id unchanged after recreate: the idempotency token deduped to the existing run"
+else
+    echo "run id changed ($before -> $after): a duplicate run was created"
+fi

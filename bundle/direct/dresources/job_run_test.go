@@ -44,35 +44,3 @@ func TestIdempotencyTokenChangesWithConfig(t *testing.T) {
 	assert.NotEqual(t, dev, prod)     // different params --> different token
 	assert.NotEqual(t, dev, otherJob) // different job_id --> different token
 }
-
-func TestJobRunIdempotentCreate(t *testing.T) {
-	_, client := setupTestServerClient(t)
-	ctx := t.Context()
-
-	// A run can only target an existing job, so create one first.
-	job, err := client.Jobs.Create(ctx, jobs.CreateJob{
-		Name: "idempotency-job",
-		Tasks: []jobs.Task{{
-			TaskKey:      "t",
-			NotebookTask: &jobs.NotebookTask{NotebookPath: "/Workspace/Users/user@example.com/notebook"},
-		}},
-	})
-	require.NoError(t, err)
-
-	r := (&ResourceJobRun{}).New(client)
-	config := &JobRunState{RunNow: jobs.RunNow{JobId: job.JobId}}
-
-	// Same config twice: the derived token is identical, so the backend returns
-	// the existing run instead of creating a duplicate.
-	id1, _, err := r.DoCreate(ctx, config)
-	require.NoError(t, err)
-	id2, _, err := r.DoCreate(ctx, config)
-	require.NoError(t, err)
-	assert.Equal(t, id1, id2, "same config must dedupe to the same run")
-
-	// Different config: different token, so a genuinely new run is created.
-	other := &JobRunState{RunNow: jobs.RunNow{JobId: job.JobId, JobParameters: map[string]string{"env": "prod"}}}
-	id3, _, err := r.DoCreate(ctx, other)
-	require.NoError(t, err)
-	assert.NotEqual(t, id1, id3, "different config must create a new run")
-}

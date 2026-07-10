@@ -1,0 +1,61 @@
+
+=== initial deploy triggers the run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-idempotent-recreate/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== drop the job run from local state but keep the job (simulates a lost run id)
+>>> [CLI] bundle plan -o json
+{
+  "depends_on": [
+    {
+      "node": "resources.jobs.my_job",
+      "label": "${resources.jobs.my_job.id}"
+    }
+  ],
+  "action": "create",
+  "new_state": {
+    "value": {
+      "job_id": [NUMID]
+    }
+  }
+}
+
+=== redeploy re-issues run-now; the token dedupes to the existing run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-idempotent-recreate/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== run-now was issued twice with the same token, but no duplicate run was created
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[IDEMPOTENCY_TOKEN]",
+    "job_id": [NUMID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[IDEMPOTENCY_TOKEN]",
+    "job_id": [NUMID]
+  }
+}
+run id unchanged after recreate: the idempotency token deduped to the existing run
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-idempotent-recreate/default
+
+Deleting files...
+Destroy complete!
