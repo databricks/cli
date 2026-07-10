@@ -163,8 +163,7 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *PipelineState) 
 
 func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *PipelineState, entry *PlanEntry) (*PipelineRemote, error) {
 	// cascade_on_destroy is a delete-time-only setting with no update API, so a change to it
-	// alone must persist to state without a pipeline Update call. This mirrors sql_warehouse's
-	// handling of its non-spec lifecycle field.
+	// alone must persist to state without a pipeline Update call.
 	if !entry.Changes.HasChangeExcept("cascade_on_destroy") {
 		return nil, nil
 	}
@@ -215,13 +214,12 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, state *Pipel
 		// No explicit cascade_on_destroy in config: preserve the backend default (cascade).
 		return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 	}
-	// Cascade is marshaled as `url:"cascade,omitempty"`, so a false value would be dropped from
-	// the query string and the backend would apply its default of true. ForceSendFields makes
-	// the SDK send cascade=false explicitly so cascade_on_destroy: false is honored.
 	return r.client.Pipelines.Delete(ctx, pipelines.DeletePipelineRequest{
-		PipelineId:      id,
-		Cascade:         *state.CascadeOnDestroy,
-		Force:           false,
+		PipelineId: id,
+		Cascade:    *state.CascadeOnDestroy,
+		Force:      false,
+		// Cascade is marshaled as `url:"cascade,omitempty"`, so a false value would be dropped from
+		// the query string. We specify `cascade` in ForceSendFields so the SDK send cascade=false explicitly
 		ForceSendFields: []string{"Cascade"},
 	})
 }

@@ -46,17 +46,17 @@ var destroyApprovalGroups = []approvalGroup{
 	{group: "genie_spaces", message: deleteGenieSpaceMessage},
 }
 
-// logPipelineDeleteApproval prints the pipeline deletions, splitting them by cascade_on_destroy
-// so pipelines retaining their datasets are not described as deleting STs/MVs.
+// logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
+// a note that datasets will be deleted as well.
 func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action) {
 	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
 
 	var cascading, retaining []deployplan.Action
 	for _, a := range pipelineDeletes {
-		if pipelineRetainsDatasets(b, a) {
-			retaining = append(retaining, a)
-		} else {
+		if pipelineDeletionCascades(b, a) {
 			cascading = append(cascading, a)
+		} else {
+			retaining = append(retaining, a)
 		}
 	}
 
@@ -64,7 +64,7 @@ func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []
 		message string
 		actions []deployplan.Action
 	}{
-		{deletePipelineMessage, cascading},
+		{deletePipelineWithCascadeMessage, cascading},
 		{deletePipelineNoCascadeMessage, retaining},
 	} {
 		if len(grp.actions) == 0 {

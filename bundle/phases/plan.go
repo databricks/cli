@@ -31,23 +31,24 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine 
 	)
 }
 
-// pipelineRetainsDatasets reports whether the pipeline referenced by a delete action has
-// cascade_on_destroy explicitly set to false, meaning its datasets (MVs, STs, Views) are
-// retained. Only pipeline resources carry this field, so a lookup miss returns false.
-// Reads from config like checkForPreventDestroy; the field is unset for other resource types.
-func pipelineRetainsDatasets(b *bundle.Bundle, action deployplan.Action) bool {
+// pipelineDeletionCascades reports whether deleting the pipeline referenced by a delete action
+// also deletes its datasets (MVs, STs, Views). This is the server default (cascade) unless
+// cascade_on_destroy is explicitly set to false. A lookup miss (unset field, or a non-pipeline
+// resource) means the default applies, so it returns true.
+// Reads from config like checkForPreventDestroy.
+func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action) bool {
 	path, err := dyn.NewPathFromString(action.ResourceKey)
 	if err != nil {
-		return false
+		return true
 	}
 	path = append(path, dyn.Key("cascade_on_destroy"))
 
 	v, err := dyn.GetByPath(b.Config.Value(), path)
 	if err != nil {
-		return false
+		return true
 	}
 	cascade, ok := v.AsBool()
-	return ok && !cascade
+	return !ok || cascade
 }
 
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.
