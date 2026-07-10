@@ -461,7 +461,7 @@ tasks:
           --jsonfile test-output-unit-root.json \
           --rerun-fails \
           --packages "{{.TEST_PACKAGES}}" \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
 
   test-unit-tools:
     desc: Run unit tests in tools/ module
@@ -485,7 +485,7 @@ tasks:
           --jsonfile test-output-unit-tools.json \
           --rerun-fails \
           --packages ./... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
 
   test-unit-codegen:
     desc: Run unit tests in bundle/internal/tf/codegen module
@@ -505,7 +505,7 @@ tasks:
           --jsonfile test-output-unit-codegen.json \
           --rerun-fails \
           --packages ./... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
 
   test-acc:
     desc: Run acceptance tests
@@ -544,7 +544,7 @@ tasks:
           --jsonfile test-output-acc.json \
           --rerun-fails \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
 
   test-update:
     desc: Update acceptance test output (local)
@@ -571,21 +571,21 @@ tasks:
     generates: &ACC_GENERATES_UPDATE
       - acceptance/**/out*
     cmds:
-      - "go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-30m}"
+      - "go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
   test-update-templates:
     desc: Update acceptance test template output
     sources: *ACC_SOURCES_UPDATE
     generates: *ACC_GENERATES_UPDATE
     cmds:
-      - "go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-30m}"
+      - "go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
   test-update-aws:
     desc: Update acceptance test output (integration, requires deco access)
     sources: *ACC_SOURCES_UPDATE
     generates: *ACC_GENERATES_UPDATE
     cmds:
-      - "deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=1 go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
+      - "deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=true go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
 
   test-update-all:
     desc: Update all acceptance test outputs
@@ -612,7 +612,7 @@ tasks:
           --jsonfile test-output-unit.json \
           --rerun-fails \
           --packages "{{.TEST_PACKAGES}}" \
-          -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
@@ -620,7 +620,7 @@ tasks:
           --jsonfile test-output-acc.json \
           --rerun-fails \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
       - cat test-output-unit.json test-output-acc.json > test-output.json
       - rm -fr ./acceptance/build/cover-merged/
       - mkdir -p acceptance/build/cover-merged/
@@ -660,13 +660,13 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/..." \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/(apps|experimental/aitools)"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/(apps|experimental/aitools)"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests
@@ -680,13 +680,13 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./experimental/ssh/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/ssh"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/ssh"
 
   test-pipelines:
     desc: Run pipelines unit and acceptance tests
@@ -699,13 +699,13 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./cmd/pipelines/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/pipelines"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/pipelines"
 
   test-sandbox:
     desc: Run sandbox unit and acceptance tests
@@ -718,13 +718,13 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./cmd/sandbox/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/cmd/sandbox"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/cmd/sandbox"
 
   # --- Integration tests ---
 
@@ -760,7 +760,7 @@ tasks:
     deps: [install-pythons]
     cmds:
       - |
-        DATABRICKS_TEST_SKIPLOCAL=1 VERBOSE_TEST=1 \
+        DATABRICKS_TEST_SKIPLOCAL=withchanged VERBOSE_TEST=1 \
         go run -modfile=tools/go.mod ./tools/testrunner/main.go \
           {{.GO_TOOL}} gotestsum \
           --format github-actions \

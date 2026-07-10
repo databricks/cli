@@ -1,0 +1,24 @@
+resources:
+  jobs:
+    send_slack_message:
+      name: "[example] send_slack_message"
+
+      tasks:
+        - task_key: slack
+          environment_key: my_lakeflow_integrations_environment
+          python_operator_task:
+            main: my_lakeflow_integrations.examples.slack.send_slack_message
+            parameters:
+              - name: "conn_id"
+                value: "CHANGEME"
+              - name: "text"
+                value: "Hello, World"
+              - name: "channel"
+                value: "CHANGEME"
+
+      environments:
+        - environment_key: my_lakeflow_integrations_environment
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl

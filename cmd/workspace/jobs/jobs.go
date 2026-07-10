@@ -3,6 +3,7 @@
 package jobs
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -192,7 +193,7 @@ func newCancelRun() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -231,7 +232,7 @@ func newCancelRun() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have this field is required")
+				return errors.New("expected to have this field is required")
 			}
 			_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
 			if err != nil {
@@ -320,7 +321,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Jobs.Create(ctx, createReq)
@@ -377,7 +378,7 @@ func newDelete() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -416,7 +417,7 @@ func newDelete() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the job to delete")
+				return errors.New("expected to have the canonical identifier of the job to delete")
 			}
 			_, err = fmt.Sscan(args[0], &deleteReq.JobId)
 			if err != nil {
@@ -478,7 +479,7 @@ func newDeleteRun() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -517,7 +518,7 @@ func newDeleteRun() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have id of the run to delete")
+				return errors.New("expected to have id of the run to delete")
 			}
 			_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
 			if err != nil {
@@ -594,7 +595,7 @@ func newExportRun() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier for the run")
+			return errors.New("expected to have the canonical identifier for the run")
 		}
 		_, err = fmt.Sscan(args[0], &exportRunReq.RunId)
 		if err != nil {
@@ -681,7 +682,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the job to retrieve information about")
+			return errors.New("expected to have the canonical identifier of the job to retrieve information about")
 		}
 		_, err = fmt.Sscan(args[0], &getReq.JobId)
 		if err != nil {
@@ -755,7 +756,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.JobId = args[0]
 
@@ -827,7 +828,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		getPermissionsReq.JobId = args[0]
 
@@ -912,7 +913,7 @@ func newGetRun() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
+			return errors.New("expected to have the canonical identifier of the run for which to retrieve the metadata")
 		}
 		_, err = fmt.Sscan(args[0], &getRunReq.RunId)
 		if err != nil {
@@ -995,7 +996,7 @@ func newGetRunOutput() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier for the run")
+			return errors.New("expected to have the canonical identifier for the run")
 		}
 		_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
 		if err != nil {
@@ -1232,7 +1233,7 @@ func newRepairRun() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1271,7 +1272,7 @@ func newRepairRun() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the job run id of the run to repair")
+				return errors.New("expected to have the job run id of the run to repair")
 			}
 			_, err = fmt.Sscan(args[0], &repairRunReq.RunId)
 			if err != nil {
@@ -1363,7 +1364,7 @@ func newReset() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		err = w.Jobs.Reset(ctx, resetReq)
@@ -1439,7 +1440,7 @@ func newRunNow() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1478,7 +1479,7 @@ func newRunNow() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the job to be executed")
+				return errors.New("expected to have the id of the job to be executed")
 			}
 			_, err = fmt.Sscan(args[0], &runNowReq.JobId)
 			if err != nil {
@@ -1591,7 +1592,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		setPermissionsReq.JobId = args[0]
 
@@ -1773,7 +1774,7 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1812,7 +1813,7 @@ func newUpdate() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the job to update")
+				return errors.New("expected to have the canonical identifier of the job to update")
 			}
 			_, err = fmt.Sscan(args[0], &updateReq.JobId)
 			if err != nil {
@@ -1905,7 +1906,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		updatePermissionsReq.JobId = args[0]
 

@@ -1,0 +1,7 @@
+Local = true
+Cloud = false
+
+RecordRequests = true
+
+# This command does not touch the bundle engine; run it once.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

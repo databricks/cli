@@ -322,6 +322,30 @@ var testDeps = map[string]prepareWorkspace{
 		return testConfig["vector_search_indexes"], nil
 	},
 
+	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// A run can only be triggered against an existing job, so create one first.
+		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
+			Name: "job-for-run",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "t",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.JobRun{
+			RunNow: jobs.RunNow{
+				JobId: resp.JobId,
+			},
+		}, nil
+	},
+
 	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-permissions",
@@ -358,7 +382,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/pipelines/" + resp.PipelineId,
 			EmbeddedSlice: []StatePermission{{
-				Level:    "CAN_MANAGE",
+				// Pipelines require exactly one owner, like jobs.
+				Level:    "IS_OWNER",
 				UserName: "user@example.com",
 			}},
 		}, nil
@@ -1124,7 +1149,9 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 
 		// A user change is only neutralized by recreate_on_changes,
 		// provided_id_fields, or ignore_local_changes; output-only fields are
-		// covered by ignore_remote_changes since the user never sets them.
+		// covered by ignore_remote_changes since the user never sets them. A
+		// root rule (omitted field) records the empty path "", which stops the
+		// walk below at the root node and thus covers every field at once.
 		covered := map[string]bool{}
 		for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 			if cfg == nil {
@@ -1148,9 +1175,6 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 
 		t.Run(resourceType, func(t *testing.T) {
 			err := structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
-				if path.IsRoot() {
-					return true
-				}
 				if covered[path.String()] {
 					// This field (or its enclosing object) is classified; the
 					// whole subtree is covered, so stop descending.

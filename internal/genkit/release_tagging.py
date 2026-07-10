@@ -43,7 +43,7 @@ NEXTCHANGES_SECTIONS = (
     ("notable-changes", "Notable Changes"),
     ("cli", "CLI"),
     ("bundles", "Bundles"),
-    ("dependency-updates", "Dependency updates"),
+    ("dependency-updates", "Dependency Updates"),
     ("api-changes", "API Changes"),
 )
 
