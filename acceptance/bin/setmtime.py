@@ -4,9 +4,9 @@ Cross-platform set mtime with nanosecond precision.
 Usage: setmtime.py <timestamp> <filenames>
 """
 
-import sys
-import os
 import datetime
+import os
+import sys
 
 timestamp = sys.argv[1]
 ts, ns = timestamp.split(".")

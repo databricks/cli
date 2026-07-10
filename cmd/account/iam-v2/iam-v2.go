@@ -3,6 +3,7 @@
 package iam_v2
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -100,7 +101,7 @@ func newCreateWorkspaceAssignmentDetail() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only WORKSPACE_ID as positional arguments. Provide 'principal_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only WORKSPACE_ID as positional arguments. Provide 'principal_id' in your JSON input")
 			}
 			return nil
 		}
@@ -406,7 +407,10 @@ func newListWorkspaceAssignmentDetails() *cobra.Command {
 	cmd.Short = `List workspace assignment details for a workspace.`
 	cmd.Long = `List workspace assignment details for a workspace.
 
-  Lists workspace assignment details for a workspace.
+  Lists workspace assignment details for a workspace. For scalability, the
+  response omits the per-principal entitlement fields (entitlements and
+  effective_entitlements); call GetWorkspaceAssignmentDetail to read
+  entitlements for a single principal.
 
   Arguments:
     WORKSPACE_ID: Required. The workspace ID for which the workspace assignment details are
@@ -493,7 +497,7 @@ Resolve an external group in the Databricks account.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'external_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'external_id' in your JSON input")
 			}
 			return nil
 		}
@@ -580,7 +584,7 @@ Resolve an external service principal in the Databricks account.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'external_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'external_id' in your JSON input")
 			}
 			return nil
 		}
@@ -667,7 +671,7 @@ Resolve an external user in the Databricks account.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'external_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'external_id' in your JSON input")
 			}
 			return nil
 		}
@@ -764,7 +768,7 @@ func newUpdateWorkspaceAssignmentDetail() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(3)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only WORKSPACE_ID, PRINCIPAL_ID, UPDATE_MASK as positional arguments. Provide 'principal_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only WORKSPACE_ID, PRINCIPAL_ID, UPDATE_MASK as positional arguments. Provide 'principal_id' in your JSON input")
 			}
 			return nil
 		}

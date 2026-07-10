@@ -124,6 +124,13 @@ func (w *WorkspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 		ext = notebook.ExtensionJupyter
 	}
 
+	// Extension-less notebook names cannot round-trip through [Stat] or [Read],
+	// which report them as not found, so return nil to have [ReadDir] omit the entry.
+	if ext == "" {
+		log.Warnf(ctx, "skipping notebook %s: no file extension is associated with notebook language %q", path.Join(w.root, name), stat.Language)
+		return nil, nil
+	}
+
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.DirEntry object in the ReadDir method.
 	stat.Path = stat.Path + ext
@@ -205,6 +212,7 @@ func (w *WorkspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 	}
 
 	seenPaths := make(map[string]workspace.ObjectInfo)
+	result := make([]fs.DirEntry, 0, len(entries))
 	for i := range entries {
 		info, err := entries[i].Info()
 		if err != nil {
@@ -217,6 +225,10 @@ func (w *WorkspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 			stat, err := w.getNotebookStatByNameWithoutExt(ctx, path.Join(name, entries[i].Name()))
 			if err != nil {
 				return nil, err
+			}
+			// A nil stat means the notebook's language has no extension mapping; omit the entry.
+			if stat == nil {
+				continue
 			}
 			// Replace the entry with the new entry that includes the extension.
 			entries[i] = wsfsDirEntry{wsfsFileInfo{ObjectInfo: stat.ObjectInfo}}
@@ -232,9 +244,10 @@ func (w *WorkspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 			}
 		}
 		seenPaths[entries[i].Name()] = sysInfo
+		result = append(result, entries[i])
 	}
 
-	return entries, nil
+	return result, nil
 }
 
 // Note: The import API returns opaque internal errors for namespace clashes

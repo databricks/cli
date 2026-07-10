@@ -37,6 +37,12 @@ type TestConfig struct {
 	// If absent, default to true.
 	GOOS map[string]bool
 
+	// Like GOOS, but only consulted when the test run is triggered by a GitHub
+	// pull_request event. Each string is compared against runtime.GOOS; if absent,
+	// default to true. This lets an OS-independent test run on Linux only for pull
+	// requests while still running on every OS on push to main.
+	GOOSOnPR map[string]bool
+
 	// Which Clouds the test is enabled on. Allowed values: "aws", "azure", "gcp".
 	// If absent, default to true.
 	// Only checked if CLOUD_ENV is not empty.

@@ -45,6 +45,33 @@ type ResourceFeatureEngineeringKafkaConfigBackfillSource struct {
 	DeltaTableSource *ResourceFeatureEngineeringKafkaConfigBackfillSourceDeltaTableSource `json:"delta_table_source,omitempty"`
 }
 
+type ResourceFeatureEngineeringKafkaConfigIngestionConfigBackfillSourceDeltaTableSource struct {
+	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
+	EntityColumns     []string `json:"entity_columns,omitempty"`
+	FilterCondition   string   `json:"filter_condition,omitempty"`
+	FullName          string   `json:"full_name"`
+	TimeseriesColumn  string   `json:"timeseries_column,omitempty"`
+	TransformationSql string   `json:"transformation_sql,omitempty"`
+}
+
+type ResourceFeatureEngineeringKafkaConfigIngestionConfigBackfillSource struct {
+	DeltaTableName   string                                                                              `json:"delta_table_name,omitempty"`
+	DeltaTableSource *ResourceFeatureEngineeringKafkaConfigIngestionConfigBackfillSourceDeltaTableSource `json:"delta_table_source,omitempty"`
+}
+
+type ResourceFeatureEngineeringKafkaConfigIngestionConfigIngestionDestination struct {
+	DeltaTableName string `json:"delta_table_name,omitempty"`
+}
+
+type ResourceFeatureEngineeringKafkaConfigIngestionConfig struct {
+	BackfillJobId        int                                                                       `json:"backfill_job_id,omitempty"`
+	BackfillSource       *ResourceFeatureEngineeringKafkaConfigIngestionConfigBackfillSource       `json:"backfill_source,omitempty"`
+	DeduplicationColumns []string                                                                  `json:"deduplication_columns,omitempty"`
+	IngestionDestination *ResourceFeatureEngineeringKafkaConfigIngestionConfigIngestionDestination `json:"ingestion_destination,omitempty"`
+	IngestionJobId       int                                                                       `json:"ingestion_job_id,omitempty"`
+	IngestionPipelineId  string                                                                    `json:"ingestion_pipeline_id,omitempty"`
+}
+
 type ResourceFeatureEngineeringKafkaConfigKeySchema struct {
 	JsonSchema string `json:"json_schema,omitempty"`
 }
@@ -68,6 +95,7 @@ type ResourceFeatureEngineeringKafkaConfig struct {
 	BackfillSource   *ResourceFeatureEngineeringKafkaConfigBackfillSource   `json:"backfill_source,omitempty"`
 	BootstrapServers string                                                 `json:"bootstrap_servers"`
 	ExtraOptions     map[string]string                                      `json:"extra_options,omitempty"`
+	IngestionConfig  *ResourceFeatureEngineeringKafkaConfigIngestionConfig  `json:"ingestion_config,omitempty"`
 	KeySchema        *ResourceFeatureEngineeringKafkaConfigKeySchema        `json:"key_schema,omitempty"`
 	Name             string                                                 `json:"name,omitempty"`
 	ProviderConfig   *ResourceFeatureEngineeringKafkaConfigProviderConfig   `json:"provider_config,omitempty"`

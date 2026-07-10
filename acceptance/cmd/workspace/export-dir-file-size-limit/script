@@ -1,3 +1,5 @@
+# The import API returns a 404 if the parent directory does not exist, so create it first.
+$CLI workspace mkdirs /test-dir
 $CLI workspace import /test-dir/file.py --file test_file.py --format AUTO --language PYTHON
 
 mkdir -p "$TEST_TMP_DIR/export"

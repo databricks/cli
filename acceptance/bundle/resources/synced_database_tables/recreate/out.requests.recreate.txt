@@ -1,0 +1,20 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/database/synced_tables/my_catalog_[UNIQUE_NAME].my_database.my_synced_table"
+}
+{
+  "body": {
+    "database_instance_name": "test-db-synced-recreate-[UNIQUE_NAME]",
+    "logical_database_name": "my_database",
+    "name": "my_catalog_[UNIQUE_NAME].my_database.my_synced_table",
+    "spec": {
+      "primary_key_columns": [
+        "id"
+      ],
+      "scheduling_policy": "TRIGGERED",
+      "source_table_full_name": "main.test_schema.trips_source"
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.0/database/synced_tables"
+}

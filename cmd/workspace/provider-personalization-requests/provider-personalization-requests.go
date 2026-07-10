@@ -3,6 +3,7 @@
 package provider_personalization_requests
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -155,7 +156,7 @@ Update personalization request status.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only LISTING_ID, REQUEST_ID as positional arguments. Provide 'status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only LISTING_ID, REQUEST_ID as positional arguments. Provide 'status' in your JSON input")
 			}
 			return nil
 		}

@@ -3,6 +3,7 @@
 package feature_engineering
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -112,7 +113,7 @@ func newCreateFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'full_name', 'source', 'function' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'full_name', 'source', 'function' in your JSON input")
 			}
 			return nil
 		}
@@ -195,6 +196,7 @@ func newCreateKafkaConfig() *cobra.Command {
 
 	// TODO: complex arg: backfill_source
 	// TODO: map via StringToStringVar: extra_options
+	// TODO: complex arg: ingestion_config
 	// TODO: complex arg: key_schema
 	// TODO: complex arg: value_schema
 
@@ -222,7 +224,7 @@ func newCreateKafkaConfig() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
 			}
 			return nil
 		}
@@ -330,7 +332,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'feature_name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'feature_name' in your JSON input")
 			}
 			return nil
 		}
@@ -424,7 +426,7 @@ func newCreateStream() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'source_config', 'connection_config', 'schema_config', 'ingestion_config' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'source_config', 'connection_config', 'schema_config', 'ingestion_config' in your JSON input")
 			}
 			return nil
 		}
@@ -1306,7 +1308,7 @@ func newUpdateFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, UPDATE_MASK as positional arguments. Provide 'full_name', 'source', 'function' in your JSON input")
+				return errors.New("when --json flag is specified, provide only FULL_NAME, UPDATE_MASK as positional arguments. Provide 'full_name', 'source', 'function' in your JSON input")
 			}
 			return nil
 		}
@@ -1388,6 +1390,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 
 	// TODO: complex arg: backfill_source
 	// TODO: map via StringToStringVar: extra_options
+	// TODO: complex arg: ingestion_config
 	// TODO: complex arg: key_schema
 	// TODO: complex arg: value_schema
 
@@ -1416,7 +1419,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
 			}
 			return nil
 		}
@@ -1531,7 +1534,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only MATERIALIZED_FEATURE_ID, UPDATE_MASK as positional arguments. Provide 'feature_name' in your JSON input")
+				return errors.New("when --json flag is specified, provide only MATERIALIZED_FEATURE_ID, UPDATE_MASK as positional arguments. Provide 'feature_name' in your JSON input")
 			}
 			return nil
 		}
@@ -1627,7 +1630,7 @@ func newUpdateStream() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'source_config', 'connection_config', 'schema_config', 'ingestion_config' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'source_config', 'connection_config', 'schema_config', 'ingestion_config' in your JSON input")
 			}
 			return nil
 		}

@@ -10,9 +10,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
@@ -147,6 +147,26 @@ func (db *DeploymentState) GetResourceID(key string) string {
 	return db.stateIDs[key]
 }
 
+// GetOrInitLineage returns the deployment lineage, generating and storing a new
+// one if the state does not have one yet. It is the single place the lineage is
+// initialized, shared so the direct deployment engine (when it writes state, via
+// Open/UpgradeToWrite) and DMS (when it records a deployment) always agree on the
+// value.
+//
+// DMS needs this before the engine writes state: it records the version at lock
+// time, which is before the engine assigns the lineage at plan-apply time.
+// Seeding db.Data.Lineage here means the subsequent write reuses the same value
+// instead of minting a different one.
+//
+// It does not take db.mu: Open and UpgradeToWrite already hold it, and the DMS
+// recorder calls it during deploy setup, before any concurrent state writes.
+func (db *DeploymentState) GetOrInitLineage() string {
+	if db.Data.Lineage == "" {
+		db.Data.Lineage = uuid.New().String()
+	}
+	return db.Data.Lineage
+}
+
 type (
 	// If true, then Open reads the WAL and merges it in the state. If false, and WAL is present, Open returns an error.
 	WithRecovery bool
@@ -213,13 +233,8 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 			return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
 		}
 		db.walFile = walFile
-		lineage := db.Data.Lineage
-		if lineage == "" {
-			// state file is new, does not have lineage yet; store lineage in the WAL only
-			lineage = uuid.New().String()
-		}
 		walHead := Header{
-			Lineage:      lineage,
+			Lineage:      db.GetOrInitLineage(),
 			Serial:       db.Data.Serial + 1,
 			StateVersion: currentStateVersion,
 			CLIVersion:   build.GetInfo().Version,
@@ -286,6 +301,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	scanner.Buffer(make([]byte, 0, initialBufferSize), maxWalEntrySize)
 	lineNumber := 0
 	var corruptedLines [][]byte
+	var newSerial int
 
 	for scanner.Scan() {
 		lineNumber++
@@ -309,7 +325,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 			if header.Serial > expectedSerial {
 				return false, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
 			}
-			db.Data.Serial = expectedSerial
+			newSerial = header.Serial
 		} else {
 			var entry WALEntry
 			if err := json.Unmarshal(line, &entry); err != nil {
@@ -344,7 +360,19 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 		}
 	}
 
-	return lineNumber > 1, nil
+	hasEntries := lineNumber > 1
+
+	// Only advance the serial when the WAL carried entries, because the caller
+	// (replayWAL) persists the new state file only in that case. A header-only
+	// WAL is a deploy that started but committed nothing; advancing the serial
+	// for it leaves the in-memory serial ahead of the persisted one, so the
+	// next deploy writes its WAL header at serial+2 and recovery rejects it as
+	// "ahead of expected". See acceptance/bundle/deploy/wal/header-only-wal.
+	if hasEntries {
+		db.Data.Serial = newSerial
+	}
+
+	return hasEntries, nil
 }
 
 // Finalize replays the WAL (if open for write), captures the resulting state, and resets.
@@ -401,12 +429,8 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	}
 	db.walFile = walFile
 
-	lineage := db.Data.Lineage
-	if lineage == "" {
-		lineage = uuid.New().String()
-	}
 	walHead := Header{
-		Lineage:      lineage,
+		Lineage:      db.GetOrInitLineage(),
 		Serial:       db.Data.Serial + 1,
 		StateVersion: currentStateVersion,
 		CLIVersion:   build.GetInfo().Version,
@@ -438,6 +462,11 @@ func (db *DeploymentState) AssertOpenedForWrite() {
 func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range data.State {
+		// Match on the exact resource type, not a substring of the key, so a
+		// sub-resource entry like resources.<group>.<name>.permissions is not
+		// mistaken for the resource itself.
+		resourceType := config.GetResourceTypeFromKey(key)
+
 		var etag string
 		// Extract etag for resources that use it for drift detection
 		// (dashboards and genie_spaces). Both follow the same pattern of
@@ -446,7 +475,7 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 		// covered by test cases:
 		//   - bundle/deploy/dashboard/detect-change
 		//   - bundle/resources/genie_spaces/simple
-		if (strings.Contains(key, ".dashboards.") || strings.Contains(key, ".genie_spaces.")) && len(entry.State) > 0 {
+		if (resourceType == "dashboards" || resourceType == "genie_spaces") && len(entry.State) > 0 {
 			var holder struct {
 				Etag string `json:"etag"`
 			}
@@ -455,9 +484,22 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 			}
 		}
 
+		// Persist a run's resolved job_id so read-only commands can build its
+		// URL; in config it is a deploy-time-only ${resources.jobs.*.id} reference.
+		var jobID int64
+		if resourceType == "job_runs" && len(entry.State) > 0 {
+			var holder struct {
+				JobID int64 `json:"job_id"`
+			}
+			if err := json.Unmarshal(entry.State, &holder); err == nil {
+				jobID = holder.JobID
+			}
+		}
+
 		result[key] = resourcestate.ResourceState{
 			ID:             entry.ID,
 			ETag:           etag,
+			JobID:          jobID,
 			StateSizeBytes: len(entry.State),
 		}
 	}

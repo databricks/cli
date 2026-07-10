@@ -53,6 +53,7 @@ class Privilege(Enum):
     MODIFY_CLEAN_ROOM = "MODIFY_CLEAN_ROOM"
     EXECUTE_CLEAN_ROOM_TASK = "EXECUTE_CLEAN_ROOM_TASK"
     EXTERNAL_USE_SCHEMA = "EXTERNAL_USE_SCHEMA"
+    READ_METADATA = "READ_METADATA"
 
 
 PrivilegeParam = (
@@ -107,6 +108,7 @@ PrivilegeParam = (
         "MODIFY_CLEAN_ROOM",
         "EXECUTE_CLEAN_ROOM_TASK",
         "EXTERNAL_USE_SCHEMA",
+        "READ_METADATA",
     ]
     | Privilege
 )

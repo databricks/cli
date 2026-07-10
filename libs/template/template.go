@@ -30,6 +30,7 @@ const (
 	ExperimentalDefaultPython TemplateName = "experimental-default-python-vnext"
 	DefaultSql                TemplateName = "default-sql"
 	LakeflowPipelines         TemplateName = "lakeflow-pipelines"
+	LakeflowIntegrations      TemplateName = "lakeflow-integrations"
 	// CLIPipelines is deprecated. Use LakeflowPipelines instead
 	CLIPipelines TemplateName = "cli-pipelines"
 	DbtSql       TemplateName = "dbt-sql"
@@ -70,6 +71,13 @@ var databricksTemplates = []Template{
 		description: "The default template for Lakeflow Spark Declarative Pipelines",
 		Reader:      &builtinReader{name: string(LakeflowPipelines)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: LakeflowPipelines}},
+	},
+	{
+		name:        LakeflowIntegrations,
+		hidden:      true,
+		description: "The template for Lakeflow integrations",
+		Reader:      &builtinReader{name: string(LakeflowIntegrations)},
+		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: LakeflowIntegrations}},
 	},
 	{
 		name:        CLIPipelines,

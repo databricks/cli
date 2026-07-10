@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/databricks/cli/libs/testserver"
 )
 
 // StartRejectingProxy starts an HTTP proxy server bound to a loopback port and
@@ -93,6 +95,12 @@ func handleBlockedConnection(t *testing.T, conn net.Conn, hint string) {
 	if isLoopback || isReserved {
 		// Expected unreachable fixture or local test server — log only, don't fail.
 		t.Logf("blocking proxy: blocked loopback/reserved host: %s", detail)
+	} else if testserver.IsLocalhostProbe(req) {
+		// Some Databricks-internal development environments run a port watcher
+		// that auto-forwards every new localhost listener and probes it with
+		// `HEAD / Host: localhost`. This is not the CLI-under-test reaching the
+		// internet, so log it instead of failing the test.
+		t.Logf("blocking proxy: ignored localhost port-classification probe: %s", detail)
 	} else {
 		t.Errorf("internet access blocked by proxy: %s%s", detail, hint)
 	}

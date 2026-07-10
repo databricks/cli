@@ -85,7 +85,7 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
 
 func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) string {
 	w := b.WorkspaceClient(ctx)
-	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath)
 	if err != nil {
 		if apierr.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("dashboard %q not found", path.Base(d.existingPath)))
@@ -263,7 +263,7 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 	}
 
 	for {
-		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -344,7 +344,11 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 		return
 	}
 
-	key := textutil.NormalizeString(dashboard.DisplayName)
+	// The "key" flag is a persistent flag on the parent "generate" command.
+	key := d.cmd.Flag("key").Value.String()
+	if key == "" {
+		key = textutil.NormalizeString(dashboard.DisplayName)
+	}
 	err = d.saveConfiguration(ctx, b, dashboard, key)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -535,6 +539,11 @@ bundle files automatically, useful during active dashboard development.`,
 
 	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(
+		"existing-path",
+		"existing-id",
+		"resource",
+	)
+	cmd.MarkFlagsMutuallyExclusive(
 		"existing-path",
 		"existing-id",
 		"resource",

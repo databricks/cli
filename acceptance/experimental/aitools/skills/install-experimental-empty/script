@@ -1,5 +1,7 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
 # Agent detection needs ~/.claude; prefer USERPROFILE on Windows.
 mkdir -p "${USERPROFILE:-$HOME}/.claude"
 
 title "--experimental against a manifest with no experimental skills logs a nudge"
-trace $CLI experimental aitools install --global --experimental
+trace $CLI experimental aitools install --skills-only --global --experimental

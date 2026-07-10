@@ -28,7 +28,7 @@ func (m *resourcePathMkdir) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	w := b.WorkspaceClient(ctx)
 
 	// Optimisitcally create the resource path. If it already exists ignore the error.
-	err := w.Workspace.MkdirsByPath(ctx, b.Config.Workspace.ResourcePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	err := w.Workspace.MkdirsByPath(ctx, b.Config.Workspace.ResourcePath)
 	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
 		return nil
 	}

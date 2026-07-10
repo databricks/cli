@@ -87,6 +87,27 @@ type BundleDeployExperimental struct {
 	// Number of resource mutators declared at 'python/mutators' in databricks.yml
 	PythonResourceMutatorsCount int64 `json:"python_resource_mutators_count,omitempty"`
 
+	// Number of files in the synced source tree considered for upload: the full
+	// set, not the incremental delta actually transferred (an incremental deploy
+	// reports the full count even when nothing changed). The set is whatever the
+	// bundle's sync settings select (sync paths/include/exclude); artifacts
+	// (wheels/jars) upload via a separate path and are not counted.
+	UploadFileCount int64 `json:"upload_file_count"`
+
+	// Histogram of the sizes (in bytes) of the files uploaded to the workspace.
+	// Fixed-length and positional: entry i counts files whose size falls in
+	// [bound[i-1], bound[i]); the last entry counts files at least as large as
+	// the last bound. A histogram is sent instead of one entry per file to keep
+	// the event small for bundles with many files.
+	//
+	// Bucket upper bounds (exclusive), a power-of-2 ladder kept in sync with
+	// uploadFileSizeBucketBounds in bundle/phases/telemetry.go. Treat as frozen:
+	// changing them changes the meaning of every entry.
+	//   256 B, 512 B, 1 KiB, 2 KiB, 4 KiB, 8 KiB, 16 KiB, 32 KiB, 64 KiB, 128 KiB,
+	//   256 KiB, 512 KiB, 1 MiB, 2 MiB, 4 MiB, 8 MiB, 16 MiB, 32 MiB, 64 MiB
+	//   (the 20th bucket is >= 64 MiB)
+	UploadFileSizes []int64 `json:"upload_file_sizes,omitempty"`
+
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
 }

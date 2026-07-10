@@ -143,9 +143,10 @@ func adaptResponseDone(b []byte, raw string) []agentstream.StreamEvent {
 		return unparsed(raw)
 	}
 	return []agentstream.StreamEvent{{
-		Kind:   agentstream.EventDone,
-		Status: done.Response.Status,
-		Raw:    raw,
+		Kind:           agentstream.EventDone,
+		Status:         done.Response.Status,
+		ConversationID: done.Response.ConversationID,
+		Raw:            raw,
 	}}
 }
 

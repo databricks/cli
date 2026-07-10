@@ -8,6 +8,7 @@ import (
 
 var SupportedResources = map[string]any{
 	"jobs":                    (*ResourceJob)(nil),
+	"job_runs":                (*ResourceJobRun)(nil),
 	"pipelines":               (*ResourcePipeline)(nil),
 	"experiments":             (*ResourceExperiment)(nil),
 	"catalogs":                (*ResourceCatalog)(nil),
@@ -24,6 +25,8 @@ var SupportedResources = map[string]any{
 	"postgres_branches":       (*ResourcePostgresBranch)(nil),
 	"postgres_endpoints":      (*ResourcePostgresEndpoint)(nil),
 	"postgres_catalogs":       (*ResourcePostgresCatalog)(nil),
+	"postgres_databases":      (*ResourcePostgresDatabase)(nil),
+	"postgres_roles":          (*ResourcePostgresRole)(nil),
 	"postgres_synced_tables":  (*ResourcePostgresSyncedTable)(nil),
 	"alerts":                  (*ResourceAlert)(nil),
 	"clusters":                (*ResourceCluster)(nil),

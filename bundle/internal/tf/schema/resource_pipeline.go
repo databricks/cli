@@ -27,10 +27,11 @@ type ResourcePipelineClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourcePipelineClusterAzureAttributes struct {
-	Availability     string                                                  `json:"availability,omitempty"`
-	FirstOnDemand    int                                                     `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                     `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourcePipelineClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                  `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                  `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                     `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                     `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourcePipelineClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourcePipelineClusterClusterLogConfDbfs struct {
@@ -203,6 +204,8 @@ type ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationWorkdayRe
 }
 
 type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
+	ClusteringColumns              []string                                                                                     `json:"clustering_columns,omitempty"`
+	EnableAutoClustering           bool                                                                                         `json:"enable_auto_clustering,omitempty"`
 	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                                     `json:"primary_keys,omitempty"`
@@ -210,6 +213,7 @@ type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
+	TableProperties                map[string]string                                                                            `json:"table_properties,omitempty"`
 	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
@@ -404,6 +408,8 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationWorkdayRe
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
+	ClusteringColumns              []string                                                                                     `json:"clustering_columns,omitempty"`
+	EnableAutoClustering           bool                                                                                         `json:"enable_auto_clustering,omitempty"`
 	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                                     `json:"primary_keys,omitempty"`
@@ -411,6 +417,7 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
+	TableProperties                map[string]string                                                                            `json:"table_properties,omitempty"`
 	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
@@ -606,6 +613,8 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationWorkdayRep
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
+	ClusteringColumns              []string                                                                                    `json:"clustering_columns,omitempty"`
+	EnableAutoClustering           bool                                                                                        `json:"enable_auto_clustering,omitempty"`
 	ExcludeColumns                 []string                                                                                    `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                    `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                                    `json:"primary_keys,omitempty"`
@@ -613,6 +622,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                                        `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                      `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                    `json:"sequence_by,omitempty"`
+	TableProperties                map[string]string                                                                           `json:"table_properties,omitempty"`
 	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
@@ -681,6 +691,8 @@ type ResourcePipelineIngestionDefinitionTableConfigurationWorkdayReportParameter
 }
 
 type ResourcePipelineIngestionDefinitionTableConfiguration struct {
+	ClusteringColumns              []string                                                                        `json:"clustering_columns,omitempty"`
+	EnableAutoClustering           bool                                                                            `json:"enable_auto_clustering,omitempty"`
 	ExcludeColumns                 []string                                                                        `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                        `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                        `json:"primary_keys,omitempty"`
@@ -688,6 +700,7 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                            `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                          `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                        `json:"sequence_by,omitempty"`
+	TableProperties                map[string]string                                                               `json:"table_properties,omitempty"`
 	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
@@ -765,8 +778,7 @@ type ResourcePipelineTriggerCron struct {
 	TimezoneId         string `json:"timezone_id,omitempty"`
 }
 
-type ResourcePipelineTriggerManual struct {
-}
+type ResourcePipelineTriggerManual struct{}
 
 type ResourcePipelineTrigger struct {
 	Cron   *ResourcePipelineTriggerCron   `json:"cron,omitempty"`
@@ -795,6 +807,7 @@ type ResourcePipeline struct {
 	RunAsUserName        string                               `json:"run_as_user_name,omitempty"`
 	Schema               string                               `json:"schema,omitempty"`
 	Serverless           bool                                 `json:"serverless,omitempty"`
+	ServerlessComputeId  string                               `json:"serverless_compute_id,omitempty"`
 	State                string                               `json:"state,omitempty"`
 	Storage              string                               `json:"storage,omitempty"`
 	Tags                 map[string]string                    `json:"tags,omitempty"`

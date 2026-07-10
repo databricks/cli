@@ -3,6 +3,7 @@
 package functions
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -100,7 +101,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Functions.Create(ctx, createReq)
@@ -178,7 +179,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
 		}
 		deleteReq.Name = args[0]
 
@@ -257,7 +258,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
 		}
 		getReq.Name = args[0]
 
@@ -446,7 +447,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
 		}
 		updateReq.Name = args[0]
 

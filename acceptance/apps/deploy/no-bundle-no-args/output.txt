@@ -5,5 +5,3 @@ Usage: databricks apps deploy APP_NAME
 APP_NAME is the name of the Databricks app to operate on.
 Alternatively, run this command from a project directory containing
 databricks.yml to auto-detect the app name.
-
-Exit code: 1

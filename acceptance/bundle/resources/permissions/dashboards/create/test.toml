@@ -1,6 +1,10 @@
-Local = false
+Local = true
 RequiresWarehouse = true
 Cloud = true
+
+# Force the local deploy identity to a service principal so the auto-added
+# CAN_MANAGE ACL serializes as service_principal_name, matching the cloud golden.
+IsServicePrincipal = true
 
 # The current user on GCP is a user and not a SP. This causes different permissions to be set.
 # Thus we skip this test on GCP.

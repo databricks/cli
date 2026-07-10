@@ -3,6 +3,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -96,7 +97,7 @@ Create a Database Catalog.
   Arguments:
     NAME: The name of the catalog in UC.
     DATABASE_INSTANCE_NAME: The name of the DatabaseInstance housing the database.
-    DATABASE_NAME: The name of the database (in a instance) associated with the catalog.`
+    DATABASE_NAME: The name of the database (in an instance) associated with the catalog.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -106,7 +107,7 @@ Create a Database Catalog.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'database_instance_name', 'database_name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'database_instance_name', 'database_name' in your JSON input")
 			}
 			return nil
 		}
@@ -214,7 +215,7 @@ Create a Database Instance.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -320,7 +321,7 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only INSTANCE_NAME as positional arguments. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, provide only INSTANCE_NAME as positional arguments. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -412,7 +413,7 @@ Create a Database Table.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -501,7 +502,7 @@ Create a Synced Database Table.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -619,7 +620,7 @@ func newDeleteDatabaseInstance() *cobra.Command {
 
 	var deleteDatabaseInstanceReq database.DeleteDatabaseInstanceRequest
 
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Force, "force", deleteDatabaseInstanceReq.Force, `By default, a instance cannot be deleted if it has descendant instances created via PITR.`)
+	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Force, "force", deleteDatabaseInstanceReq.Force, `By default, an instance cannot be deleted if it has descendant instances created via PITR.`)
 	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Deprecated.`)
 
 	cmd.Use = "delete-database-instance NAME"
@@ -1592,7 +1593,7 @@ func newUpdateDatabaseCatalog() *cobra.Command {
     NAME: The name of the catalog in UC.
     UPDATE_MASK: The list of fields to update. Setting this field is not yet supported.
     DATABASE_INSTANCE_NAME: The name of the DatabaseInstance housing the database.
-    DATABASE_NAME: The name of the database (in a instance) associated with the catalog.`
+    DATABASE_NAME: The name of the database (in an instance) associated with the catalog.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -1605,7 +1606,7 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'database_instance_name', 'database_name' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'database_instance_name', 'database_name' in your JSON input")
 			}
 			return nil
 		}

@@ -92,6 +92,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				JobRuns: map[string]*resources.JobRun{
+					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
+				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
 				},
@@ -258,6 +261,25 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"postgres_catalog1": {
 						PostgresCatalogConfig: resources.PostgresCatalogConfig{
 							CatalogId: "postgres_catalog_1",
+						},
+					},
+				},
+				PostgresDatabases: map[string]*resources.PostgresDatabase{
+					"postgres_database1": {
+						PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+							DatabaseId: "postgres-database-1",
+							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
+						},
+					},
+				},
+				PostgresRoles: map[string]*resources.PostgresRole{
+					"postgres_role1": {
+						PostgresRoleConfig: resources.PostgresRoleConfig{
+							RoleId: "postgres-role-1",
+							Parent: "projects/postgres-project-1/branches/postgres-branch-1",
+							RoleRoleSpec: postgres.RoleRoleSpec{
+								PostgresRole: "postgres_role_1",
+							},
 						},
 					},
 				},
@@ -480,6 +502,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 		"PostgresBranches",
 		"PostgresEndpoints",
 		"PostgresCatalogs",
+		"PostgresDatabases",
 		"PostgresSyncedTables",
 	}
 

@@ -4,10 +4,10 @@ Helper to sort lines in text file. Similar to 'sort' but no dependence on locale
 With --repl, applies TEST_TMP_DIR/repls.json replacements as sort key for stable output across different environments.
 """
 
-import sys
-import os
 import json
+import os
 import re
+import sys
 from pathlib import Path
 
 use_repl = "--repl" in sys.argv[1:]

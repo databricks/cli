@@ -217,3 +217,95 @@ func TestWorkspacePathPermissionsDeduplication(t *testing.T) {
 	require.Equal(t, iam.PermissionLevel(CAN_MANAGE), wp.Permissions[0].Level)
 	require.Equal(t, "foo@bar.test", wp.Permissions[0].UserName)
 }
+
+func TestWorkspacePathPermissionsUndeclaredWriters(t *testing.T) {
+	manage := func(p resources.Permission) resources.Permission {
+		p.Level = CAN_MANAGE
+		return p
+	}
+	user := resources.Permission{UserName: "foo@bar.test"}
+	group := resources.Permission{GroupName: "team"}
+	sp := resources.Permission{ServicePrincipalName: "00000000-0000-0000-0000-000000000001"}
+
+	testCases := []struct {
+		name     string
+		folder   []resources.Permission
+		declared []resources.Permission
+		expected []resources.Permission
+	}{
+		{
+			name:     "empty folder ACL",
+			expected: nil,
+		},
+		{
+			name:     "reader does not need to be declared",
+			folder:   []resources.Permission{{Level: CAN_VIEW, UserName: user.UserName}},
+			expected: nil,
+		},
+		{
+			name:     "runner does not need to be declared",
+			folder:   []resources.Permission{{Level: CAN_RUN, GroupName: group.GroupName}},
+			expected: nil,
+		},
+		{
+			name:     "manager declared",
+			folder:   []resources.Permission{manage(user)},
+			declared: []resources.Permission{manage(user)},
+			expected: nil,
+		},
+		{
+			name:     "manager not declared",
+			folder:   []resources.Permission{manage(user)},
+			expected: []resources.Permission{manage(user)},
+		},
+		{
+			name:     "manager declared with a lower level",
+			folder:   []resources.Permission{manage(user)},
+			declared: []resources.Permission{{Level: CAN_VIEW, UserName: user.UserName}},
+			expected: []resources.Permission{manage(user)},
+		},
+		{
+			name:     "editor must be declared with CAN_MANAGE",
+			folder:   []resources.Permission{{Level: resources.CAN_EDIT, GroupName: group.GroupName}},
+			declared: []resources.Permission{manage(group)},
+			expected: nil,
+		},
+		{
+			name:     "editor not declared",
+			folder:   []resources.Permission{{Level: resources.CAN_EDIT, GroupName: group.GroupName}},
+			declared: []resources.Permission{manage(user)},
+			expected: []resources.Permission{{Level: resources.CAN_EDIT, GroupName: group.GroupName}},
+		},
+		{
+			name:     "group writer requires the same group declared",
+			folder:   []resources.Permission{manage(group)},
+			declared: []resources.Permission{manage(user), manage(sp)},
+			expected: []resources.Permission{manage(group)},
+		},
+		{
+			name:     "service principal writer declared",
+			folder:   []resources.Permission{manage(sp)},
+			declared: []resources.Permission{manage(sp)},
+			expected: nil,
+		},
+		{
+			name:     "mixed: writers declared, reader not",
+			folder:   []resources.Permission{manage(user), manage(group), {Level: CAN_VIEW, ServicePrincipalName: sp.ServicePrincipalName}},
+			declared: []resources.Permission{manage(user), manage(group)},
+			expected: nil,
+		},
+		{
+			name:     "multiple undeclared writers are all returned",
+			folder:   []resources.Permission{manage(user), manage(group)},
+			declared: []resources.Permission{manage(sp)},
+			expected: []resources.Permission{manage(user), manage(group)},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := WorkspacePathPermissions{Path: "path", Permissions: tc.folder}
+			require.Equal(t, tc.expected, p.UndeclaredWriters(tc.declared))
+		})
+	}
+}

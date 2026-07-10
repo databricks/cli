@@ -17,7 +17,6 @@ class Library:
 
     def restartPython(self):
         """Mock restart - does nothing in local execution."""
-        pass
 
 
 class Notebook:

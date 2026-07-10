@@ -2,6 +2,9 @@ package installer
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,9 +13,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
@@ -74,18 +79,100 @@ func stateRepoDir(state *InstallState, name string) string {
 // It is a package-level var so tests can replace it with a mock.
 var fetchFileFn func(ctx context.Context, ref, repoDir, skillName, filePath string) ([]byte, error) = fetchSkillFile
 
+// renamePathFn is the function used to move paths into place. Tests replace it
+// to exercise cross-device fallback paths without depending on host mounts.
+var renamePathFn = os.Rename
+
+// latestSkillsReleaseRefFn resolves the skills repo's latest release tag. Tests
+// replace it so default ref resolution stays deterministic and offline.
+var latestSkillsReleaseRefFn = fetchLatestSkillsReleaseRef
+
+// skillsLatestSentinel is the value cli-compat.json uses for the skills version
+// to mean "track latest" rather than pinning a specific release.
+const skillsLatestSentinel = clicompat.AgentSkillsLatest
+
 // GetSkillsRef returns the skills repo ref to use and whether it was explicitly
-// set via DATABRICKS_SKILLS_REF (as opposed to auto-resolved from the manifest).
-// Resolution order: DATABRICKS_SKILLS_REF env var → compatibility manifest → error.
+// pinned (as opposed to tracking latest).
+//
+// By default we track the latest skills release tag, not the skills repo's main
+// branch. cli-compat.json is the remote control for this: it normally reports
+// "latest", but if a future change makes a skills release incompatible with
+// older CLIs, it can be edited remotely to pin those CLIs to the last compatible
+// version with no CLI release. DATABRICKS_SKILLS_REF overrides everything for
+// eval/reproducibility. (AppKit version resolution is unaffected; cli-compat
+// still manages it via its own field.)
 func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref, true, nil
 	}
 	v, err := clicompat.ResolveAgentSkillsVersion(ctx)
 	if err != nil {
-		return "", false, fmt.Errorf("could not resolve skills version: %w", err)
+		log.Debugf(ctx, "could not resolve skills compatibility, resolving latest release: %v", err)
+		return resolveLatestSkillsReleaseRef(ctx)
 	}
-	return "v" + v, false, nil
+	if v == "" || v == skillsLatestSentinel {
+		return resolveLatestSkillsReleaseRef(ctx)
+	}
+	return "v" + v, true, nil
+}
+
+func resolveLatestSkillsReleaseRef(ctx context.Context) (ref string, explicit bool, err error) {
+	ref, err = latestSkillsReleaseRefFn(ctx)
+	if err == nil {
+		return ref, false, nil
+	}
+
+	embedded, embeddedErr := clicompat.ResolveEmbeddedAgentSkillsVersion()
+	if embeddedErr == nil && embedded != "" && embedded != skillsLatestSentinel {
+		log.Warnf(ctx, "Could not resolve latest skills release (%v); falling back to embedded skills version %s", err, embedded)
+		return "v" + embedded, false, nil
+	}
+	if embeddedErr != nil {
+		return "", false, fmt.Errorf("resolve latest skills release: %w (embedded fallback failed: %v)", err, embeddedErr)
+	}
+	return "", false, fmt.Errorf("resolve latest skills release: %w", err)
+}
+
+func fetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", skillsRepoOwner, skillsRepoName)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := httpClient().Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("HTTP %d fetching latest skills release", resp.StatusCode)
+	}
+
+	var payload struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&payload); err != nil {
+		return "", fmt.Errorf("parse latest skills release: %w", err)
+	}
+	tag := strings.TrimSpace(payload.TagName)
+	if tag == "" {
+		return "", errors.New("latest skills release has empty tag_name")
+	}
+	if !strings.HasPrefix(tag, "v") {
+		tag = "v" + tag
+	}
+	if !semver.IsValid(tag) {
+		return "", fmt.Errorf("latest skills release has invalid tag %q", payload.TagName)
+	}
+	return tag, nil
+}
+
+// DisplaySkillsVersion renders a skills ref for humans: a pinned tag drops its
+// leading "v".
+func DisplaySkillsVersion(ref string) string {
+	return strings.TrimPrefix(ref, "v")
 }
 
 // GetSkillsBaseURL returns the manifest and skill fetch base URL.
@@ -145,15 +232,19 @@ func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath strin
 
 	resp, err := httpClient().Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch %s: %w", filePath, err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch %s: HTTP %d", filePath, resp.StatusCode)
+		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
 
-	return io.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	return data, nil
 }
 
 // FetchSkillsManifestWithFallback fetches the skills manifest at the given ref.
@@ -165,7 +256,7 @@ func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, re
 	manifest, err := src.FetchManifest(ctx, ref)
 	if err != nil && allowFallback && clicompat.IsNotFoundError(err) {
 		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAgentSkillsVersion()
-		if fbErr == nil && fallbackVersion != "" && fallbackVersion != tag {
+		if fbErr == nil && fallbackVersion != "" && fallbackVersion != skillsLatestSentinel && fallbackVersion != tag {
 			log.Warnf(ctx, "Skills version %s not found, falling back to embedded version %s", tag, fallbackVersion)
 			ref = "v" + fallbackVersion
 			manifest, err = src.FetchManifest(ctx, ref)
@@ -184,14 +275,15 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if err != nil {
 		return err
 	}
-	cmdio.LogString(ctx, "Using skills version "+strings.TrimPrefix(ref, "v"))
+	cmdio.LogString(ctx, "Using skills version "+DisplaySkillsVersion(ref))
+	cmdio.LogString(ctx, "Fetching skills manifest...")
 	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref, !explicit)
 	if err != nil {
 		return err
 	}
 
 	if opts.IncludeExperimental && !manifestHasExperimental(manifest) {
-		log.Warnf(ctx, "--experimental was set but the manifest at %s exposes no experimental skills. Set DATABRICKS_SKILLS_REF to a release that includes them (or =main for the latest).", ref)
+		log.Warnf(ctx, "--experimental was set but the manifest at %s exposes no experimental skills. Set DATABRICKS_SKILLS_REF to a release or ref that includes them.", ref)
 	}
 
 	scope := opts.Scope
@@ -250,6 +342,11 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// Install each skill in sorted order for determinism.
 	skillNames := slices.Sorted(maps.Keys(targetSkills))
 
+	// Accumulate file provenance for skills we (re)fetch this run. Skipped
+	// (already-installed) skills keep their existing records via the merge below.
+	fileRecords := map[string]FileRecord{}
+	var refetched []string
+
 	for _, name := range skillNames {
 		meta := targetSkills[name]
 
@@ -263,22 +360,31 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 			}
 		}
 
-		if err := installSkillForAgents(ctx, name, meta, targetAgents, params); err != nil {
+		records, err := installSkillForAgents(ctx, name, meta, targetAgents, params)
+		if err != nil {
 			return err
 		}
+		maps.Copy(fileRecords, records)
+		refetched = append(refetched, name)
 	}
 
 	// Save state. Merge into existing state (loaded above) so skills from
 	// previous installs (e.g., experimental skills from a prior run) are preserved.
 	if state == nil {
 		state = &InstallState{
-			SchemaVersion: 1,
+			SchemaVersion: schemaVersionV2,
 			Skills:        make(map[string]string, len(targetSkills)),
 			RepoDirs:      make(map[string]string, len(targetSkills)),
 		}
 	}
+	if state.Skills == nil {
+		state.Skills = make(map[string]string, len(targetSkills))
+	}
 	if state.RepoDirs == nil {
 		state.RepoDirs = make(map[string]string, len(state.Skills)+len(targetSkills))
+	}
+	if state.Files == nil {
+		state.Files = make(map[string]FileRecord, len(fileRecords))
 	}
 	state.Release = ref
 	state.LastUpdated = time.Now()
@@ -291,6 +397,12 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		state.Skills[name] = meta.Version
 		state.RepoDirs[name] = meta.RepoDir
 	}
+	// Drop stale provenance for refetched skills before recording the fresh set,
+	// so files removed/renamed in a new version don't leave orphaned records.
+	for _, name := range refetched {
+		clearFileRecords(state.Files, name)
+	}
+	maps.Copy(state.Files, fileRecords)
 	if err := SaveState(baseDir, state); err != nil {
 		return err
 	}
@@ -400,7 +512,7 @@ func PrintInstallingFor(ctx context.Context, targetAgents []*agents.Agent) {
 	for i, a := range targetAgents {
 		names[i] = a.DisplayName
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Installing Databricks AI skills for %s...", strings.Join(names, ", ")))
+	cmdio.LogString(ctx, fmt.Sprintf("Installing Databricks skills for %s...", strings.Join(names, ", ")))
 }
 
 func printNoAgentsDetected(ctx context.Context) {
@@ -466,14 +578,17 @@ type installParams struct {
 	ref     string
 }
 
-func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta, detectedAgents []*agents.Agent, params installParams) error {
+func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta, detectedAgents []*agents.Agent, params installParams) (map[string]FileRecord, error) {
 	canonicalDir := filepath.Join(params.baseDir, skillName)
-	if err := installSkillToDir(ctx, params.ref, meta.RepoDir, meta.SourceName, canonicalDir, meta.Files); err != nil {
-		return err
+	cmdio.LogString(ctx, fmt.Sprintf("Downloading %s...", skillName))
+	records, err := installSkillToDir(ctx, params.ref, meta.RepoDir, meta.SourceName, canonicalDir, meta.Files)
+	if err != nil {
+		return nil, err
 	}
 
 	// For project scope, always symlink. For global, symlink when multiple agents.
 	useSymlinks := params.scope == ScopeProject || len(detectedAgents) > 1
+	cmdio.LogString(ctx, fmt.Sprintf("Exposing %s to %d %s...", skillName, len(detectedAgents), agentNoun(len(detectedAgents))))
 
 	for _, agent := range detectedAgents {
 		agentSkillDir, err := agentSkillsDirForScope(ctx, agent, params.scope, params.cwd)
@@ -516,7 +631,14 @@ func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta
 		}
 	}
 
-	return nil
+	return records, nil
+}
+
+func agentNoun(n int) string {
+	if n == 1 {
+		return "agent"
+	}
+	return "agents"
 }
 
 // agentSkillsDirForScope returns the agent's skills directory for the given scope.
@@ -558,7 +680,7 @@ func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName
 	}
 
 	backupDest := filepath.Join(backupDir, skillName)
-	if err := os.Rename(destDir, backupDest); err != nil {
+	if err := movePathWithCrossDeviceFallback(destDir, backupDest); err != nil {
 		return fmt.Errorf("failed to move existing skill: %w", err)
 	}
 
@@ -566,15 +688,55 @@ func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName
 	return nil
 }
 
-func installSkillToDir(ctx context.Context, ref, repoDir, skillName, destDir string, files []string) error {
-	// remove existing skill directory for clean install
-	if err := os.RemoveAll(destDir); err != nil {
-		return fmt.Errorf("failed to remove existing skill: %w", err)
+func movePathWithCrossDeviceFallback(src, dest string) error {
+	if err := renamePathFn(src, dest); err != nil {
+		if !isCrossDeviceRenameError(err) {
+			return err
+		}
+		if err := copyPath(src, dest); err != nil {
+			return err
+		}
+		if err := os.RemoveAll(src); err != nil {
+			return fmt.Errorf("failed to remove original path after copy: %w", err)
+		}
+	}
+	return nil
+}
+
+func isCrossDeviceRenameError(err error) bool {
+	if errors.Is(err, syscall.EXDEV) {
+		return true
+	}
+	if runtime.GOOS != "windows" {
+		return false
 	}
 
-	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+	errno, ok := errors.AsType[syscall.Errno](err)
+	return ok && errno == syscall.Errno(17) // ERROR_NOT_SAME_DEVICE
+}
+
+// installSkillToDir downloads a skill's files into destDir and returns a
+// FileRecord per file (keyed by "<skillName>/<file>", forward slashes) capturing
+// the sha256 of the bytes written, so a later update can prune only the files we
+// wrote that the user hasn't modified.
+func installSkillToDir(ctx context.Context, ref, repoDir, skillName, destDir string, files []string) (map[string]FileRecord, error) {
+	parentDir := filepath.Dir(destDir)
+	if err := os.MkdirAll(parentDir, 0o755); err != nil {
+		return nil, fmt.Errorf("failed to create skills directory: %w", err)
 	}
+	tmpDir, err := os.MkdirTemp(parentDir, "."+filepath.Base(destDir)+"-*.tmp")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temporary skill directory: %w", err)
+	}
+	cleanupTmp := true
+	defer func() {
+		if cleanupTmp {
+			_ = os.RemoveAll(tmpDir)
+		}
+	}()
+
+	var mu sync.Mutex
+	records := make(map[string]FileRecord, len(files))
 
 	// Fetch files concurrently. Each file is a separate HTTPS GET, so
 	// wall-clock time is dominated by per-request TLS handshakes rather
@@ -585,9 +747,9 @@ func installSkillToDir(ctx context.Context, ref, repoDir, skillName, destDir str
 		g.Go(func() error {
 			content, err := fetchFileFn(gctx, ref, repoDir, skillName, file)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to fetch %s/%s/%s at %s: %w", repoDir, skillName, filepath.ToSlash(file), ref, err)
 			}
-			destPath := filepath.Join(destDir, file)
+			destPath := filepath.Join(tmpDir, file)
 			if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
 				return fmt.Errorf("failed to create directory: %w", err)
 			}
@@ -595,10 +757,82 @@ func installSkillToDir(ctx context.Context, ref, repoDir, skillName, destDir str
 			if err := os.WriteFile(destPath, content, 0o644); err != nil {
 				return fmt.Errorf("failed to write %s: %w", file, err)
 			}
+			sum := sha256.Sum256(content)
+			mu.Lock()
+			records[skillName+"/"+filepath.ToSlash(file)] = FileRecord{
+				SHA256: hex.EncodeToString(sum[:]),
+				Origin: ref,
+			}
+			mu.Unlock()
 			return nil
 		})
 	}
-	return g.Wait()
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	if err := replaceDir(destDir, tmpDir); err != nil {
+		return nil, err
+	}
+	cleanupTmp = false
+	return records, nil
+}
+
+func replaceDir(destDir, tmpDir string) error {
+	parentDir := filepath.Dir(destDir)
+	base := filepath.Base(destDir)
+
+	var backupParent string
+	var backupDest string
+	if _, err := os.Lstat(destDir); err == nil {
+		var mkErr error
+		backupParent, mkErr = os.MkdirTemp(parentDir, "."+base+"-backup-*.tmp")
+		if mkErr != nil {
+			return fmt.Errorf("failed to create backup directory: %w", mkErr)
+		}
+		backupDest = filepath.Join(backupParent, base)
+		if err := renamePathFn(destDir, backupDest); err != nil {
+			_ = os.RemoveAll(backupParent)
+			return fmt.Errorf("failed to move existing skill aside: %w", err)
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to inspect existing skill: %w", err)
+	}
+
+	if err := renamePathFn(tmpDir, destDir); err != nil {
+		if backupDest != "" {
+			if restoreErr := renamePathFn(backupDest, destDir); restoreErr != nil {
+				return fmt.Errorf("failed to move skill into place: %w (also failed to restore existing skill: %v)", err, restoreErr)
+			}
+		}
+		return fmt.Errorf("failed to move skill into place: %w", err)
+	}
+
+	if backupParent != "" {
+		_ = os.RemoveAll(backupParent)
+	}
+	return nil
+}
+
+func copyPath(src, dest string) error {
+	info, err := os.Lstat(src)
+	if err != nil {
+		return err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		target, err := os.Readlink(src)
+		if err != nil {
+			return fmt.Errorf("failed to read symlink: %w", err)
+		}
+		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+			return err
+		}
+		return os.Symlink(target, dest)
+	}
+	if info.IsDir() {
+		return copyDir(src, dest)
+	}
+	return copyFile(src, dest, info.Mode())
 }
 
 // copyDir copies all files from src to dest, recreating the directory structure.
@@ -631,6 +865,17 @@ func copyDir(src, dest string) error {
 		}
 		return os.WriteFile(target, data, 0o644)
 	})
+}
+
+func copyFile(src, dest string, mode fs.FileMode) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", src, err)
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(dest, data, mode.Perm())
 }
 
 func createSymlink(source, dest string) error {

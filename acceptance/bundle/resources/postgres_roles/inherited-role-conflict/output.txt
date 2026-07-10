@@ -1,0 +1,50 @@
+
+=== Deploy project, branch, and role
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-conflict-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Unbind the role: it now exists on the branch but is no longer tracked by the bundle
+>>> [CLI] bundle deployment unbind my_role
+Updating deployment state...
+
+=== Plan after unbind: the bundle wants to (re-)create the role
+>>> [CLI] bundle plan
+create postgres_roles.my_role
+
+Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Re-deploy: creating the already-existing role fails
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-conflict-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Error: cannot create resources.postgres_roles.my_role: role with that name already exists (400 BAD_REQUEST)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles?role_id=test-role
+HTTP Status: 400 Bad Request
+API error_code: BAD_REQUEST
+API message: role with that name already exists
+
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/inherited-role-conflict-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+Exit code: 1

@@ -11,14 +11,8 @@ package clijson
 
 // CliJSON is the root document.
 type CliJSON struct {
-	Metadata Metadata               `json:"metadata"`
 	Schemas  map[string]*SchemaJSON `json:"schemas,omitempty"`
 	Commands *CommandsBlock         `json:"commands,omitempty"`
-}
-
-// Metadata identifies the producer of this file.
-type Metadata struct {
-	GeneratorVersion string `json:"generator_version,omitempty"`
 }
 
 // --- schemas block: the API type graph (messages and enums) ---
