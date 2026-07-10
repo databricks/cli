@@ -12,13 +12,7 @@ const sensitiveValueMask = "********"
 // sensitiveFieldsCache caches sensitive field names per resource type key.
 var (
 	sensitiveFieldsCache     map[string]map[string]bool
-	sensitiveFieldsCacheOnce sync.Once
-)
-
-// sensitiveFields returns a map of JSON field names → true for resource type
-// key (e.g. "secrets"). Built once from the convert.SensitiveFieldNames helper.
-func sensitiveFields(resourceTypeKey string) map[string]bool {
-	sensitiveFieldsCacheOnce.Do(func() {
+	sensitiveFieldsCacheOnce = sync.OnceFunc(func() {
 		sensitiveFieldsCache = make(map[string]map[string]bool)
 		for name, typ := range ResourcesTypes {
 			if fields := convert.SensitiveFieldNames(typ); len(fields) > 0 {
@@ -26,6 +20,11 @@ func sensitiveFields(resourceTypeKey string) map[string]bool {
 			}
 		}
 	})
+)
+
+// sensitiveFields returns a map of JSON field names → true for resource type
+// key (e.g. "secrets"). Built once from the convert.SensitiveFieldNames helper.
+func sensitiveFields(resourceTypeKey string) map[string]bool {
 	return sensitiveFieldsCache[resourceTypeKey]
 }
 

@@ -67,11 +67,11 @@ func getStructInfo(typ reflect.Type) structInfo {
 // buildStructInfo populates a new [structInfo] for the given type.
 func buildStructInfo(typ reflect.Type) structInfo {
 	out := structInfo{
-		Fields:                   make(map[string][]int),
-		ForceEmpty:               make(map[string]bool),
-		GolangNames:              make(map[string]string),
-		ForceSendFieldsIndex:     make(map[string][]int),
-		Sensitive:                make(map[string]bool),
+		Fields:               make(map[string][]int),
+		ForceEmpty:           make(map[string]bool),
+		GolangNames:          make(map[string]string),
+		ForceSendFieldsIndex: make(map[string][]int),
+		Sensitive:            make(map[string]bool),
 	}
 
 	// Queue holds the indexes of the structs to visit.
@@ -183,7 +183,6 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 
 	return out
 }
-
 
 // SensitiveFieldNames returns the JSON field names of typ that carry the
 // `bundle:"sensitive"` tag. A pointer type is dereferenced before inspection.
