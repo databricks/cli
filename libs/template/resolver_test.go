@@ -115,6 +115,7 @@ func TestBundleInitIsGitRepoUrl(t *testing.T) {
 	// Not git repos
 	assert.False(t, IsGitRepoUrl("./local"))
 	assert.False(t, IsGitRepoUrl("foo"))
+	assert.False(t, IsGitRepoUrl("github.com/databricks/cli.git"))
 }
 
 func TestResolveReader(t *testing.T) {
