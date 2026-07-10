@@ -12,5 +12,3 @@ Name: script-env-bad-prefix
 Target: default
 
 Found 2 errors
-
-Exit code: 1
