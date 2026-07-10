@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +14,7 @@ import (
 func TestSeedEnvActivation(t *testing.T) {
 	t.Run("creates bashrc when absent", func(t *testing.T) {
 		home := t.TempDir()
-		t.Setenv("HOME", home)
+		t.Setenv(env.HomeEnvVar(), home)
 
 		require.NoError(t, seedEnvActivation(t.Context()))
 
@@ -25,7 +26,7 @@ func TestSeedEnvActivation(t *testing.T) {
 
 	t.Run("seeds the runtime guard so the snippet is a no-op when the var is unset", func(t *testing.T) {
 		home := t.TempDir()
-		t.Setenv("HOME", home)
+		t.Setenv(env.HomeEnvVar(), home)
 
 		require.NoError(t, seedEnvActivation(t.Context()))
 
@@ -36,7 +37,7 @@ func TestSeedEnvActivation(t *testing.T) {
 
 	t.Run("appends after existing content with separating newline", func(t *testing.T) {
 		home := t.TempDir()
-		t.Setenv("HOME", home)
+		t.Setenv(env.HomeEnvVar(), home)
 		bashrc := filepath.Join(home, ".bashrc")
 		// No trailing newline, to exercise the separator.
 		require.NoError(t, os.WriteFile(bashrc, []byte("export FOO=bar"), 0o644))
@@ -50,7 +51,7 @@ func TestSeedEnvActivation(t *testing.T) {
 
 	t.Run("does not insert a blank line when content already ends in a newline", func(t *testing.T) {
 		home := t.TempDir()
-		t.Setenv("HOME", home)
+		t.Setenv(env.HomeEnvVar(), home)
 		bashrc := filepath.Join(home, ".bashrc")
 		require.NoError(t, os.WriteFile(bashrc, []byte("export FOO=bar\n"), 0o644))
 
@@ -64,7 +65,7 @@ func TestSeedEnvActivation(t *testing.T) {
 
 	t.Run("idempotent across restarts and preserves existing content", func(t *testing.T) {
 		home := t.TempDir()
-		t.Setenv("HOME", home)
+		t.Setenv(env.HomeEnvVar(), home)
 		bashrc := filepath.Join(home, ".bashrc")
 		require.NoError(t, os.WriteFile(bashrc, []byte("export FOO=bar\n"), 0o644))
 
