@@ -21,7 +21,10 @@ from ``process_package``/``preview_tag_infos``) and then delegates to the
 untouched ``process()`` for all commit/tag/race/recovery logic.
 """
 
+import argparse
 import os
+import re
+from datetime import datetime, timezone
 from typing import Optional
 
 import tagging
@@ -162,8 +165,43 @@ def install_nextchanges() -> None:
     tagging.clean_next_changelog = clear_nextchanges
 
 
+def preview() -> None:
+    """
+    Print the ``## Release vX.Y.Z`` section(s) the next release would prepend to
+    CHANGELOG.md, rendered from the current ``.nextchanges/`` — without touching
+    git, GitHub, or any file. Mirrors write_changelog's date stamp so the output
+    matches what would land. Read-only: safe to run anytime, no credentials.
+    """
+    current_date = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
+    printed = False
+    for package in tagging.find_packages():
+        tag_info = get_next_tag_info(package)
+        if tag_info is None:
+            continue
+        dated = re.sub(
+            rf"## Release v({tagging.Version.PATTERN})",
+            rf"## Release v\1 ({current_date})",
+            tag_info.content.strip(),
+        )
+        print(dated)
+        printed = True
+    if not printed:
+        print("No .nextchanges/ entries — the next release would add no changelog section.")
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--preview",
+        action="store_true",
+        help="Print the changelog section the next release would add, then exit (no writes, no network).",
+    )
+    args = parser.parse_args()
+
     install_nextchanges()
-    tagging.validate_git_root()
-    tagging.init_github()
-    tagging.process()
+    if args.preview:
+        preview()
+    else:
+        tagging.validate_git_root()
+        tagging.init_github()
+        tagging.process()

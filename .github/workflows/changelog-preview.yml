@@ -1,0 +1,46 @@
+name: Changelog Preview
+
+# Renders the CHANGELOG.md section the next release would generate from this
+# PR's .nextchanges/ fragments, so reviewers can see the result (in this check's
+# logs / summary) without cutting a release.
+#
+# Uses `pull_request` with a read-only token: it renders the PR's own
+# .nextchanges/ content and never needs write credentials.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - ".nextchanges/**"
+      - "internal/genkit/release_tagging.py"
+      - "internal/genkit/tagging.py"
+      - "tools/validate_nextchanges.py"
+      - "tools/update_github_links.py"
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.8.9"
+
+      - name: Render changelog preview
+        run: |-
+          {
+            echo '### Changelog preview'
+            echo ''
+            echo "What the next release would add to CHANGELOG.md from this PR's .nextchanges/:"
+            echo ''
+            echo '```markdown'
+            uv run --locked internal/genkit/release_tagging.py --preview
+            echo '```'
+            echo ''
+            echo '_Preview only — the date and version are computed at release time._'
+          } | tee "$GITHUB_STEP_SUMMARY"
