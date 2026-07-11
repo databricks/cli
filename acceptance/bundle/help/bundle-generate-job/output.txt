@@ -18,7 +18,8 @@ Examples:
 
 What gets generated:
 - Job configuration YAML file in the resources directory
-- Any associated notebook or Python files in the source directory
+- Any associated notebook files in the source directory
+- Any associated python spark files in the source directory, if --download-spark-python-files is provided
 
 After generation, you can deploy this job to other targets using:
   databricks bundle deploy --target staging
