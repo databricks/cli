@@ -1,8 +1,11 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Upload files to workspace"
-trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/notebook.py" --file notebook.py --format AUTO --overwrite
-trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/test.py" --file test.py --format AUTO --overwrite
+# The terraform and direct engine variants run concurrently against the same workspace user,
+# so embed $UNIQUE_NAME in the remote paths: otherwise one variant's cleanup deletes the shared
+# files out from under the other variant's bundle generate read.
+trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/notebook-${UNIQUE_NAME}.py" --file notebook.py --format AUTO --overwrite
+trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/test-${UNIQUE_NAME}.py" --file test.py --format AUTO --overwrite
 
 title "Create a pipeline that references the files"
 PIPELINE_ID=$($CLI pipelines create --json '{
@@ -10,12 +13,12 @@ PIPELINE_ID=$($CLI pipelines create --json '{
   "libraries": [
     {
       "notebook": {
-        "path": "/Workspace/Users/'${CURRENT_USER_NAME}'/notebook"
+        "path": "/Workspace/Users/'${CURRENT_USER_NAME}'/notebook-'${UNIQUE_NAME}'"
       }
     },
     {
       "file": {
-        "path": "/Workspace/Users/'${CURRENT_USER_NAME}'/test.py"
+        "path": "/Workspace/Users/'${CURRENT_USER_NAME}'/test-'${UNIQUE_NAME}'.py"
       }
     }
   ]
@@ -26,8 +29,8 @@ env -u MSYS_NO_PATHCONV add_repl.py "$PIPELINE_ID" PIPELINE_ID
 cleanup() {
     title "Cleanup: delete the original pipeline and files"
     trace errcode $CLI pipelines delete "$PIPELINE_ID"
-    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/notebook"
-    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/test.py"
+    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/notebook-${UNIQUE_NAME}"
+    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/test-${UNIQUE_NAME}.py"
 }
 trap cleanup EXIT
 
@@ -41,7 +44,7 @@ grep -v '^File successfully saved to' out.gen.txt
 rm out.gen.txt
 
 title "Verify generated yaml has expected fields"
-cat resources/out.pipeline.yml | env -u MSYS_NO_PATHCONV contains.py "libraries:" "- notebook:" "path: ../src/notebook.py" "- file:" "path: ../src/test.py" > /dev/null
+cat resources/out.pipeline.yml | env -u MSYS_NO_PATHCONV contains.py "libraries:" "- notebook:" "path: ../src/notebook-${UNIQUE_NAME}.py" "- file:" "path: ../src/test-${UNIQUE_NAME}.py" > /dev/null
 
 title "Deploy the generated bundle"
 trace $CLI bundle deploy

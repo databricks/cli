@@ -24,6 +24,8 @@ func SomeFunc() {
 
 **RULE: Focus on making implementations as small and elegant as possible.** Avoid unnecessary loops and allocations. If dropping or relaxing a requirement would simplify things, ask the user about the trade-off.
 
+**RULE: Do not declare inline function closures just to name a repeated operation.** Extract it as a regular named function instead. Closures that capture local variables hide their dependencies, complicate reading, and can't be tested in isolation.
+
 ### Modern Go (1.24+) idioms
 
 **RULE: Use `for i := range X` for integer iteration, not `for i := 0; i < X; i++`.**

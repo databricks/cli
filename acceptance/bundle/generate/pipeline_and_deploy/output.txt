@@ -1,13 +1,13 @@
 
 === Upload files to workspace
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/notebook.py --file notebook.py --format AUTO --overwrite
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/notebook-[UNIQUE_NAME].py --file notebook.py --format AUTO --overwrite
 
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/test.py --file test.py --format AUTO --overwrite
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME].py --file test.py --format AUTO --overwrite
 
 === Create a pipeline that references the filesCreated pipeline
 
-=== Generate bundle config from the pipelineFile successfully saved to src/notebook.py
-File successfully saved to src/test.py
+=== Generate bundle config from the pipelineFile successfully saved to src/notebook-[UNIQUE_NAME].py
+File successfully saved to src/test-[UNIQUE_NAME].py
 Pipeline configuration successfully saved to resources/out.pipeline.yml
 Warning: Generated configuration is not included in the bundle
 
@@ -35,6 +35,6 @@ Destroy complete!
 === Cleanup: delete the original pipeline and files
 >>> errcode [CLI] pipelines delete [PIPELINE_ID]
 
->>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/notebook
+>>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/notebook-[UNIQUE_NAME]
 
->>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/test.py
+>>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME].py

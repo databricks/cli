@@ -216,10 +216,14 @@ func (p *Plan) FilterToSelected(selected []string) {
 	reachable := make(map[string]struct{}, len(selected))
 	for _, s := range selected {
 		key := "resources." + s
-		if _, ok := p.Plan[key]; ok {
-			reachable[key] = struct{}{}
-			queue = append(queue, key)
-		}
+		p.enqueueReachable(reachable, &queue, key)
+		// Grants and permissions are modeled as separate plan nodes for internal
+		// reasons, but the user cannot address them via --select. Pull them in as
+		// part of the parent resource so selecting a resource applies its grants
+		// and permissions too. The dependency edge runs sub-node → parent, so the
+		// BFS below would never reach them from the parent otherwise.
+		p.enqueueReachable(reachable, &queue, key+".grants")
+		p.enqueueReachable(reachable, &queue, key+".permissions")
 	}
 
 	// BFS following DependsOn edges to include transitive dependencies.
@@ -227,12 +231,7 @@ func (p *Plan) FilterToSelected(selected []string) {
 		key := queue[0]
 		queue = queue[1:]
 		for _, dep := range p.Plan[key].DependsOn {
-			if _, seen := reachable[dep.Node]; !seen {
-				if _, ok := p.Plan[dep.Node]; ok {
-					reachable[dep.Node] = struct{}{}
-					queue = append(queue, dep.Node)
-				}
-			}
+			p.enqueueReachable(reachable, &queue, dep.Node)
 		}
 	}
 
@@ -240,6 +239,18 @@ func (p *Plan) FilterToSelected(selected []string) {
 		if _, ok := reachable[key]; !ok {
 			delete(p.Plan, key)
 		}
+	}
+}
+
+// enqueueReachable marks key as reachable and appends it to queue, if key exists
+// in the plan and has not been seen before. Missing or already-seen keys are ignored.
+func (p *Plan) enqueueReachable(reachable map[string]struct{}, queue *[]string, key string) {
+	if _, seen := reachable[key]; seen {
+		return
+	}
+	if _, ok := p.Plan[key]; ok {
+		reachable[key] = struct{}{}
+		*queue = append(*queue, key)
 	}
 }
 

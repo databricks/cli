@@ -27,8 +27,7 @@ type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesStreami
 	Mode string `json:"mode,omitempty"`
 }
 
-type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesTableTrigger struct {
-}
+type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesTableTrigger struct{}
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures struct {
 	CronSchedule            string                                                                                   `json:"cron_schedule,omitempty"`

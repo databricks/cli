@@ -74,9 +74,9 @@ jobs:
           PACKAGES: ${{ inputs.packages }}
         run: |
           if [ -n "$PACKAGES" ]; then
-            uv run --locked internal/genkit/tagging.py --package "$PACKAGES"
+            uv run --locked internal/genkit/release_tagging.py --package "$PACKAGES"
           else
-            uv run --locked internal/genkit/tagging.py
+            uv run --locked internal/genkit/release_tagging.py
           fi
 
       - name: Upload created tags artifact

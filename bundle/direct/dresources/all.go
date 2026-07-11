@@ -8,6 +8,7 @@ import (
 
 var SupportedResources = map[string]any{
 	"jobs":                    (*ResourceJob)(nil),
+	"job_runs":                (*ResourceJobRun)(nil),
 	"pipelines":               (*ResourcePipeline)(nil),
 	"experiments":             (*ResourceExperiment)(nil),
 	"catalogs":                (*ResourceCatalog)(nil),
