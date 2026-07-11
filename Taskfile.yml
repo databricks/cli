@@ -279,12 +279,23 @@ tasks:
       - "./tools/validate_whitespace.py --fix"
 
   links:
-    desc: Update GitHub links in docs
+    desc: Update GitHub links in CHANGELOG.md and .nextchanges/ fragments
     sources:
-      - "**/*.md"
+      - CHANGELOG.md
+      - ".nextchanges/**/*.md"
       - tools/update_github_links.py
     cmds:
       - "./tools/update_github_links.py"
+
+  check-changelog:
+    desc: Validate .nextchanges fragment placement
+    cmds:
+      - "./tools/validate_nextchanges.py"
+
+  changelog-preview:
+    desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
+    cmds:
+      - "uv run --locked internal/genkit/release_tagging.py --preview"
 
   deadcode:
     desc: Check for dead code
@@ -303,7 +314,7 @@ tasks:
       - "! git grep -lF databricks.com -- '*uv.lock'"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode, uv.lock)
+    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, uv.lock)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with whitespace/link scanners.
     cmds:
@@ -311,6 +322,7 @@ tasks:
       - task: ws
       - task: links
       - task: deadcode
+      - task: check-changelog
       - task: check-uv-lock
 
   install-pythons:
@@ -878,12 +890,17 @@ tasks:
       - rm .github/workflows/next-changelog.yml
       - mv tagging.py internal/genkit/tagging.py
       - mv tagging.py.lock internal/genkit/tagging.py.lock
+      # The release runs internal/genkit/release_tagging.py, a repo-owned wrapper
+      # that renders CHANGELOG.md from .nextchanges/ around the synced tagging.py.
+      # Point the workflow at it (genkit emits a bare `tagging.py`) and give the
+      # wrapper a matching lock (it declares the same deps).
       - |
         if [ "$(uname)" = "Darwin" ]; then
-          sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+          sed -i '' 's|tagging.py|internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
         else
-          sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+          sed -i 's|tagging.py|internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
         fi
+      - cp internal/genkit/tagging.py.lock internal/genkit/release_tagging.py.lock
       - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
       - task: ws
 

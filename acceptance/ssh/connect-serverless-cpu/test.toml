@@ -1,0 +1,8 @@
+Local = false
+Cloud = true
+
+# Serverless requires Unity Catalog
+RequiresUnityCatalog = true
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]
