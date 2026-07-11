@@ -1,0 +1,47 @@
+
+=== submit with a git code_source
+>>> [CLI] experimental air run -f run.yaml
+Submitted run 555
+View at: [DATABRICKS_URL]/jobs/runs/555
+
+=== the ai_runtime_task carries the snapshot + provenance paths
+>>> print_requests.py //api/2.2/jobs/runs/submit
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/submit",
+  "body": {
+    "run_name": "submit-smoke",
+    "tasks": [
+      {
+        "task_key": "submit-smoke",
+        "run_if": "ALL_SUCCESS",
+        "ai_runtime_task": {
+          "experiment": "submit-smoke",
+          "deployments": [
+            {
+              "command_path": "/Workspace/Users/[USERNAME]/.air/cli_launch/submit-smoke/submit-smoke_[RUN_ID]/command.sh",
+              "compute": {
+                "accelerator_type": "GPU_1xH100",
+                "accelerator_count": 1
+              }
+            }
+          ],
+          "code_source_path": "/Workspace/Users/[USERNAME]/.air/repo_snapshots/[SNAPSHOT_TARBALL]",
+          "git_state_path": "/Workspace/Users/[USERNAME]/.air/cli_launch/submit-smoke/submit-smoke_[RUN_ID]/git_state.json"
+        },
+        "environment_key": "default",
+        "max_retries": 3,
+        "retry_on_timeout": true
+      }
+    ],
+    "environments": [
+      {
+        "environment_key": "default",
+        "spec": {
+          "environment_version": "4"
+        }
+      }
+    ],
+    "idempotency_token": "[UUID]"
+  }
+}
