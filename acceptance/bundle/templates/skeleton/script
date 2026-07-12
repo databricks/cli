@@ -1,0 +1,12 @@
+trace $CLI bundle init skeleton --config-file ./input.json --output-dir output
+
+cd output/my_skeleton
+
+# Verify that the empty resources directory is preserved
+[ -d "resources" ] || exit 1
+
+trace $CLI bundle validate -t dev
+
+rm -r .databricks
+
+cd ../../
