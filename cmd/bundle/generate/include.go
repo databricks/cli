@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -17,28 +16,13 @@ import (
 // file is written to disk but silently ignored during deploy, so without a
 // matching 'include' entry the generate command is effectively a no-op.
 func warnIfNotIncluded(ctx context.Context, b *bundle.Bundle, filename string) {
-	// b.Config.Include has been overwritten with the expanded list of already
-	// loaded files by ProcessRootIncludes, so re-read the root configuration
-	// file to recover the raw (unexpanded) include patterns.
-	rootFile, err := config.FileNames.FindInPath(b.BundleRootPath)
-	if err != nil {
-		log.Debugf(ctx, "Skipping include check: %v", err)
-		return
-	}
-
-	root, diags := config.Load(rootFile)
-	if diags.HasError() {
-		log.Debugf(ctx, "Skipping include check: failed to load %s: %v", rootFile, diags.Error())
-		return
-	}
-
 	absFilename, err := filepath.Abs(filename)
 	if err != nil {
 		log.Debugf(ctx, "Skipping include check: %v", err)
 		return
 	}
 
-	if isIncluded(b.BundleRootPath, root.Include, absFilename) {
+	if b.IsFileIncluded(absFilename) {
 		return
 	}
 
@@ -62,34 +46,4 @@ func warnIfNotIncluded(ctx context.Context, b *bundle.Bundle, filename string) {
 			"  - %s",
 			rel, suggestion),
 	})
-}
-
-// isIncluded reports whether absFilename is matched by any of the include
-// patterns, resolved the same way as ProcessRootIncludes: each pattern is
-// anchored to the bundle root and expanded with filepath.Glob against the
-// files on disk.
-func isIncluded(bundleRootPath string, include []string, absFilename string) bool {
-	for _, entry := range include {
-		// Includes must be relative paths; the loader errors on absolute ones.
-		if filepath.IsAbs(entry) {
-			continue
-		}
-
-		matches, err := filepath.Glob(filepath.Join(bundleRootPath, entry))
-		if err != nil {
-			continue
-		}
-
-		for _, match := range matches {
-			absMatch, err := filepath.Abs(match)
-			if err != nil {
-				continue
-			}
-			if absMatch == absFilename {
-				return true
-			}
-		}
-	}
-
-	return false
 }

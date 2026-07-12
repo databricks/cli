@@ -1,4 +1,4 @@
-package generate
+package bundle
 
 import (
 	"os"
@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsIncluded(t *testing.T) {
+func TestIsFileIncluded(t *testing.T) {
 	// Lay out a bundle root with a couple of resource files on disk, because
-	// isIncluded resolves the include patterns with filepath.Glob against the
-	// files that actually exist.
+	// IsFileIncluded resolves the include patterns with filepath.Glob against
+	// the files that actually exist.
 	root := t.TempDir()
 	included := filepath.Join(root, "resources", "my.job.yml")
 	nested := filepath.Join(root, "resources", "sub", "other.job.yml")
@@ -22,37 +22,37 @@ func TestIsIncluded(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		include  []string
+		patterns []string
 		filename string
 		want     bool
 	}{
 		{
 			name:     "matched by glob",
-			include:  []string{"resources/*.yml"},
+			patterns: []string{"resources/*.yml"},
 			filename: included,
 			want:     true,
 		},
 		{
 			name:     "not matched, empty include",
-			include:  nil,
+			patterns: nil,
 			filename: included,
 			want:     false,
 		},
 		{
 			name:     "glob is not recursive",
-			include:  []string{"resources/*.yml"},
+			patterns: []string{"resources/*.yml"},
 			filename: nested,
 			want:     false,
 		},
 		{
 			name:     "matched by exact path",
-			include:  []string{"resources/my.job.yml"},
+			patterns: []string{"resources/my.job.yml"},
 			filename: included,
 			want:     true,
 		},
 		{
 			name:     "absolute include pattern is ignored",
-			include:  []string{included},
+			patterns: []string{included},
 			filename: included,
 			want:     false,
 		},
@@ -60,7 +60,9 @@ func TestIsIncluded(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, isIncluded(root, tt.include, tt.filename))
+			b := &Bundle{BundleRootPath: root}
+			b.SetIncludePatterns(tt.patterns)
+			require.Equal(t, tt.want, b.IsFileIncluded(tt.filename))
 		})
 	}
 }
