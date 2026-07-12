@@ -45,11 +45,11 @@ Response.Body = '''
 }
 '''
 
-# MLflow identifiers for the deep-link (runs/get-output is not modeled by the typed SDK).
+# MLflow identifiers for the deep-link, under ai_runtime_task_output.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get-output"
 Response.Body = '''
-{"gen_ai_compute_output": {"run_info": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}}
+{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}
 '''
 
 # The MLflow Run cell shows the run's name, fetched from the MLflow REST API.
