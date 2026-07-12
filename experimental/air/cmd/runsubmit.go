@@ -4,23 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"path"
 	"strconv"
 	"strings"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
 )
-
-// jobsRunsSubmitPath is the Jobs one-time-run endpoint. air builds the full
-// payload and POSTs it here directly — the native ai_runtime_task is not modeled
-// by the typed SDK, and we want no genai-mapi forwarding.
-const jobsRunsSubmitPath = "/api/2.2/jobs/runs/submit"
 
 // dlRuntimeImageEnv overrides the default deep-learning runtime image.
 const dlRuntimeImageEnv = "DATABRICKS_DL_RUNTIME_IMAGE"
@@ -30,67 +24,6 @@ const defaultDlRuntimeImage = "CLIENT-GPU-4"
 // aiRuntimeEnvironmentKey ties the task to the serverless environment that
 // carries the runtime channel.
 const aiRuntimeEnvironmentKey = "default"
-
-// aiRuntimeCompute is a deployment's accelerator request.
-type aiRuntimeCompute struct {
-	AcceleratorType  string `json:"accelerator_type"`
-	AcceleratorCount int    `json:"accelerator_count"`
-}
-
-// aiRuntimeDeployment is one worker deployment of the run.
-type aiRuntimeDeployment struct {
-	CommandPath string           `json:"command_path"`
-	Compute     aiRuntimeCompute `json:"compute"`
-}
-
-// aiRuntimeTask is the native AI Runtime task. It routes straight to the training
-// service — no genai-mapi forwarding. The proto is lean: env vars, secrets,
-// requirements, and hyperparameters are staged as workspace files co-located with
-// command.sh (see runupload.go), not carried inline.
-type aiRuntimeTask struct {
-	Experiment                string                `json:"experiment"`
-	Deployments               []aiRuntimeDeployment `json:"deployments"`
-	MlflowRun                 string                `json:"mlflow_run,omitempty"`
-	MlflowExperimentDirectory string                `json:"mlflow_experiment_directory,omitempty"`
-}
-
-// environmentSpec carries the bare runtime channel ("4", "5", ...).
-type environmentSpec struct {
-	EnvironmentVersion string `json:"environment_version"`
-}
-
-// jobEnvironment is the serverless environment a task references for its runtime.
-type jobEnvironment struct {
-	EnvironmentKey string          `json:"environment_key"`
-	Spec           environmentSpec `json:"spec"`
-}
-
-// submitTask is the single task air submits: a native ai_runtime_task.
-//
-// max_retries is always sent (including 0) so the user's YAML value is honored:
-// setting it to 0 explicitly disables retries rather than falling back to the
-// server default. retry_on_timeout is sent only when retries are allowed, and is
-// omitempty so the wire form matches the Python CLI (which never emits a bare
-// "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
-// workload.
-type submitTask struct {
-	TaskKey        string        `json:"task_key"`
-	RunIf          string        `json:"run_if"`
-	AiRuntimeTask  aiRuntimeTask `json:"ai_runtime_task"`
-	EnvironmentKey string        `json:"environment_key"`
-	MaxRetries     int           `json:"max_retries"`
-	RetryOnTimeout bool          `json:"retry_on_timeout,omitempty"`
-}
-
-// jobsSubmitRun is the Jobs runs/submit payload.
-type jobsSubmitRun struct {
-	RunName          string           `json:"run_name"`
-	TimeoutSeconds   int              `json:"timeout_seconds,omitempty"`
-	Tasks            []submitTask     `json:"tasks"`
-	Environments     []jobEnvironment `json:"environments"`
-	BudgetPolicyID   string           `json:"budget_policy_id,omitempty"`
-	IdempotencyToken string           `json:"idempotency_token,omitempty"`
-}
 
 // dlRuntimeImage resolves the bare runtime channel (config version, else env,
 // else default), always stripping the CLIENT-GPU- prefix.
@@ -107,13 +40,20 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 
 // buildSubmitPayload assembles the runs/submit payload. commandPath is the
 // workspace path of the uploaded command.sh; dlImage is the runtime channel.
-func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string) jobsSubmitRun {
-	task := aiRuntimeTask{
+//
+// max_retries is always sent (including 0) so the user's YAML value is honored:
+// setting it to 0 explicitly disables retries rather than falling back to the
+// server default. retry_on_timeout is sent only when retries are allowed, and is
+// omitempty so the wire form matches the Python CLI (which never emits a bare
+// "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
+// workload.
+func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string) jobs.SubmitRun {
+	task := jobs.AiRuntimeTask{
 		Experiment: cfg.ExperimentName,
-		Deployments: []aiRuntimeDeployment{{
+		Deployments: []jobs.DeploymentSpec{{
 			CommandPath: commandPath,
-			Compute: aiRuntimeCompute{
-				AcceleratorType:  cfg.Compute.AcceleratorType,
+			Compute: jobs.ComputeSpec{
+				AcceleratorType:  jobs.ComputeSpecAcceleratorType(cfg.Compute.AcceleratorType),
 				AcceleratorCount: cfg.Compute.NumAccelerators,
 			},
 		}},
@@ -125,53 +65,29 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string) jobsSubmitR
 		task.MlflowExperimentDirectory = *cfg.MLflowExperimentDirectory
 	}
 
-	st := submitTask{
+	maxRetries := cfg.maxRetries()
+	st := jobs.SubmitTask{
 		TaskKey:        cfg.ExperimentName,
-		RunIf:          "ALL_SUCCESS",
-		AiRuntimeTask:  task,
+		RunIf:          jobs.RunIfAllSuccess,
+		AiRuntimeTask:  &task,
 		EnvironmentKey: aiRuntimeEnvironmentKey,
-		MaxRetries:     cfg.maxRetries(),
+		MaxRetries:     maxRetries,
+		// retry_on_timeout only makes sense when retries are allowed; otherwise
+		// omit it (matches Python's native path, which sets retry_on_timeout only
+		// under the same > 0 gate).
+		RetryOnTimeout:  maxRetries > 0,
+		ForceSendFields: []string{"MaxRetries"},
 	}
-	// retry_on_timeout only makes sense when retries are allowed; otherwise omit
-	// it (matches Python's native path, which sets retry_on_timeout only under
-	// the same > 0 gate).
-	st.RetryOnTimeout = st.MaxRetries > 0
 
-	return jobsSubmitRun{
+	return jobs.SubmitRun{
 		RunName:        cfg.ExperimentName,
 		TimeoutSeconds: cfg.timeoutSeconds(),
-		Tasks:          []submitTask{st},
-		Environments: []jobEnvironment{{
+		Tasks:          []jobs.SubmitTask{st},
+		Environments: []jobs.JobEnvironment{{
 			EnvironmentKey: aiRuntimeEnvironmentKey,
-			Spec:           environmentSpec{EnvironmentVersion: dlImage},
+			Spec:           &compute.Environment{EnvironmentVersion: dlImage},
 		}},
 	}
-}
-
-// jobsSubmitClient submits one-time runs through the Jobs API.
-type jobsSubmitClient struct {
-	c *client.DatabricksClient
-}
-
-func newJobsSubmitClient(w *databricks.WorkspaceClient) (*jobsSubmitClient, error) {
-	c, err := client.New(w.Config)
-	if err != nil {
-		return nil, err
-	}
-	return &jobsSubmitClient{c: c}, nil
-}
-
-type submitRunResponse struct {
-	RunID int64 `json:"run_id,omitempty"`
-}
-
-// submit POSTs the payload to runs/submit and returns the new run_id.
-func (j *jobsSubmitClient) submit(ctx context.Context, payload jobsSubmitRun) (int64, error) {
-	var resp submitRunResponse
-	if err := j.c.Do(ctx, http.MethodPost, jobsRunsSubmitPath, auth.WorkspaceIDHeaders(j.c.Config), nil, payload, &resp); err != nil {
-		return 0, err
-	}
-	return resp.RunID, nil
 }
 
 // submitToken resolves the idempotency token: the --idempotency-key flag wins,
@@ -244,14 +160,12 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion))
 	payload.IdempotencyToken = token
 
-	jc, err := newJobsSubmitClient(w)
+	// Submit returns as soon as the run is created; we don't wait for it to finish.
+	wait, err := w.Jobs.Submit(ctx, payload)
 	if err != nil {
 		return 0, "", err
 	}
-	runID, err := jc.submit(ctx, payload)
-	if err != nil {
-		return 0, "", err
-	}
+	runID := wait.RunId
 
 	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil
