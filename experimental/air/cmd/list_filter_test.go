@@ -49,7 +49,7 @@ func TestParseListFilters(t *testing.T) {
 }
 
 func TestListFiltersMatches(t *testing.T) {
-	run := airJobRun(1, "me@example.com", "GPU_8xH100", 8, "/Users/me@example.com/qwen-eval")
+	run := airRun(1, "me@example.com", "GPU_8xH100", 8, "/Users/me@example.com/qwen-eval")
 
 	cases := []struct {
 		name string

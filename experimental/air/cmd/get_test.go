@@ -63,7 +63,7 @@ func TestGetRunInvalidID(t *testing.T) {
 func notFoundGetServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == jobsRunsGetPath {
+		if r.URL.Path == "/api/2.2/jobs/runs/get" {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = w.Write([]byte(`{"error_code":"INVALID_PARAMETER_VALUE","message":"Run 5 does not exist."}`))
 			return

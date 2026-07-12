@@ -9,7 +9,9 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -223,28 +225,24 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 type jobsScanStrategy struct {
 	ctx        context.Context
 	w          *databricks.WorkspaceClient
-	query      map[string]any
+	iter       listing.Iterator[jobs.BaseRun]
 	userFilter string
 	filters    listFilters
 
-	pending []jobRun // runs from the last page not yet inspected
 	scanned int
-	drained bool
 }
 
 func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *jobsScanStrategy {
-	query := map[string]any{
-		"run_type":     "SUBMIT_RUN",
-		"expand_tasks": true,
-		"limit":        jobsPageLimit,
-	}
-	if q.activeOnly {
-		query["active_only"] = true
+	req := jobs.ListRunsRequest{
+		RunType:     jobs.RunTypeSubmitRun,
+		ExpandTasks: true,
+		Limit:       jobsPageLimit,
+		ActiveOnly:  q.activeOnly,
 	}
 	return &jobsScanStrategy{
 		ctx:        ctx,
 		w:          w,
-		query:      query,
+		iter:       w.Jobs.ListRuns(ctx, req),
 		userFilter: q.userFilter,
 		filters:    q.filters,
 	}
@@ -252,21 +250,14 @@ func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q l
 
 func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 	var entries []listedRun
-	for len(entries) < want {
-		if len(s.pending) == 0 {
-			if s.drained || s.scanned >= maxListScan {
-				break
-			}
-			if err := s.fetchPage(); err != nil {
-				return nil, err
-			}
-			continue
+	for len(entries) < want && s.scanned < maxListScan && s.iter.HasNext(s.ctx) {
+		base, err := s.iter.Next(s.ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list runs: %w", err)
 		}
-
-		run := &s.pending[0]
-		s.pending = s.pending[1:]
 		s.scanned++
 
+		run := baseRunToRun(base)
 		if !isAirRun(run) {
 			continue
 		}
@@ -282,27 +273,11 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 }
 
 func (s *jobsScanStrategy) done() bool {
-	return (s.drained && len(s.pending) == 0) || s.scanned >= maxListScan
+	return s.scanned >= maxListScan || !s.iter.HasNext(s.ctx)
 }
 
 func (s *jobsScanStrategy) truncated() bool {
 	return s.scanned >= maxListScan
-}
-
-// fetchPage loads the next runs/list page into the pending buffer, marking the
-// strategy drained once the server reports no further pages.
-func (s *jobsScanStrategy) fetchPage() error {
-	resp, err := fetchJobRunsPage(s.ctx, s.w, s.query)
-	if err != nil {
-		return err
-	}
-	s.pending = resp.Runs
-	if resp.NextPageToken == "" {
-		s.drained = true
-	} else {
-		s.query["page_token"] = resp.NextPageToken
-	}
-	return nil
 }
 
 // warnIfTruncated logs when a scan hit its safety cap, so one-shot output signals

@@ -5,6 +5,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // supportedFilterKeys are the keys accepted by `air list --filter KEY=VALUE`.
@@ -66,7 +68,7 @@ type filterFields struct {
 	GPUCount   int    `json:"gpu_count"`
 }
 
-func filterFieldsFromRun(run *jobRun) filterFields {
+func filterFieldsFromRun(run *jobs.Run) filterFields {
 	gpuType, count := jobCompute(run)
 	return filterFields{
 		Experiment: jobExperiment(run),
@@ -78,7 +80,7 @@ func filterFieldsFromRun(run *jobRun) filterFields {
 // matches reports whether a run satisfies the experiment, accelerator-type and
 // accelerator-count filters. The user filter is applied separately while
 // scanning, since it maps onto the run's creator rather than its task.
-func (f listFilters) matches(run *jobRun) bool {
+func (f listFilters) matches(run *jobs.Run) bool {
 	return f.matchesFields(filterFieldsFromRun(run))
 }
 

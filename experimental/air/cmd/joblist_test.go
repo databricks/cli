@@ -13,7 +13,7 @@ import (
 func runGetServer(t *testing.T, body string) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == jobsRunsGetPath {
+		if r.URL.Path == "/api/2.2/jobs/runs/get" {
 			_, _ = w.Write([]byte(body))
 			return
 		}

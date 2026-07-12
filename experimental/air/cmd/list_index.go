@@ -124,7 +124,7 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 		rows = append(rows, listedRun{row: row, taskRunID: taskRunID(run)})
 		if isTerminal(run) {
 			start, _ := jobTiming(run)
-			putRow(s.ctx, s.cache, host, run.RunID, start, row, fields)
+			putRow(s.ctx, s.cache, host, run.RunId, start, row, fields)
 		}
 	}
 
