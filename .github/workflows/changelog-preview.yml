@@ -43,11 +43,13 @@ jobs:
           # into the job summary so GitHub renders it as the changelog.
           preview=$(uv run --locked internal/genkit/release_tagging.py --preview)
           {
-            echo '### Changelog preview'
+            echo '## Changelog preview'
             echo ''
-            echo "What the next release would add to CHANGELOG.md from this PR's .nextchanges/:"
+            echo 'This is a preview of what the next release would add to CHANGELOG.md based on `.nextchanges/`.'
+            echo ''
+            echo '_NOTE: the date and version are computed at release time._'
+            echo ''
+            echo '---'
             echo ''
             echo "$preview"
-            echo ''
-            echo '_Preview only — the date and version are computed at release time._'
           } >> "$GITHUB_STEP_SUMMARY"
