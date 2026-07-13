@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/aicode"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -196,6 +197,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	bundle.ApplySeqContext(ctx, b,
+		// Package and upload local code referenced by AI Runtime tasks, rewriting
+		// each ai_runtime_task.code_source_path to its uploaded workspace/volume
+		// location before the plan is computed so the created job points at the
+		// remote archive. Runs after file/library upload (artifact_path resolved)
+		// and before RunPlan for both the direct and terraform engines.
+		aicode.PackageAndUpload(),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),

@@ -1,0 +1,8 @@
+# This command generates local files from a train.yaml; no bundle engine or
+# workspace is needed.
+Ignore = [
+    'generated',
+]
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []

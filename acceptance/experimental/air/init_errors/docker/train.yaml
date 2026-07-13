@@ -1,0 +1,12 @@
+experiment_name: docker-run
+compute:
+  num_accelerators: 1
+  accelerator_type: GPU_1xA10
+environment:
+  docker_image:
+    url: org/repo:tag
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ./src
+command: python train.py

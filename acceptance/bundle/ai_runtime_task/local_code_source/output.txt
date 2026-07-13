@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Expecting the code snapshot tarball to be uploaded to artifact_path/.internal
+>>> jq .path
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/artifacts/.internal/src_[HASH].tar.gz"
+
+=== Expecting the created job's code_source_path to point at the uploaded archive
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[0].ai_runtime_task.code_source_path out.requests.txt
+"/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/artifacts/.internal/src_[HASH].tar.gz"

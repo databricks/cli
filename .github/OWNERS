@@ -73,4 +73,8 @@
 # Experimental
 /experimental/air/             team:ai-training
 /acceptance/experimental/air/  team:ai-training
+# AI Runtime code packaging mutator (overloads ai_runtime_task.code_source_path
+# at deploy). Lives in core bundle, co-owned by ai-training who owns the feature.
+/bundle/config/mutator/aicode/       team:bundle team:ai-training @lennartkats-db
+/acceptance/bundle/ai_runtime_task/  team:bundle team:ai-training @lennartkats-db
 /experimental/aitools/      team:eng-apps-devex @lennartkats-db
