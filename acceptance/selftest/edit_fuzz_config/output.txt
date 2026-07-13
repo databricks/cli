@@ -1,0 +1,4 @@
+model_serving_endpoints.description immutable: True
+IMMUTABLE_ONLY: None
+IMMUTABLE_THEN_MUTABLE: 6
+MUTABLE_ONLY: 3
