@@ -743,10 +743,8 @@ tasks:
         # narrow it via FUZZ_SEED_START/COUNT.
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-200}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
-        # Slow variants (mutate + drift at ~30s/seed) can't finish 200 seeds inside the
-        # per-variant Timeout, so bound each variant's wall clock (with headroom under
-        # that Timeout for the last seed): it tests as many seeds as fit and passes,
-        # instead of being force-killed and read as a bug.
+        # Slow variants can't finish 200 seeds inside the per-variant Timeout, so bound
+        # each variant's wall clock: it tests as many seeds as fit and passes, not killed.
         export FUZZ_TIME_BUDGET="${FUZZ_TIME_BUDGET:-900}"
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \

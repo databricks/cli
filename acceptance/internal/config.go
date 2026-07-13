@@ -84,10 +84,9 @@ type TestConfig struct {
 	// instead of straight to the testserver, matching the cloud topology.
 	Proxy *bool
 
-	// Return 501 for requests with no registered handler instead of failing the
-	// test. Used by the schema fuzzer, which generates resource types the
-	// testserver may not model: a missing handler is a coverage gap that should
-	// reject the config, not a CLI bug that fails the run.
+	// Return 501 for a request with no handler instead of failing the test. The fuzzer
+	// emits resource types the testserver may not model; a missing handler is a gap, not
+	// a bug.
 	IgnoreUnhandledRequests *bool
 
 	// List of request headers to include when recording requests.
