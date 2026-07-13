@@ -155,6 +155,28 @@ var forEachTaskLibrariesPattern = dyn.NewPattern(
 	dyn.Key("libraries"),
 )
 
+var aiRuntimeCodeSourcePattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("jobs"),
+	dyn.AnyKey(),
+	dyn.Key("tasks"),
+	dyn.AnyIndex(),
+	dyn.Key("ai_runtime_task"),
+	dyn.Key("code_source_path"),
+)
+
+var forEachAiRuntimeCodeSourcePattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("jobs"),
+	dyn.AnyKey(),
+	dyn.Key("tasks"),
+	dyn.AnyIndex(),
+	dyn.Key("for_each_task"),
+	dyn.Key("task"),
+	dyn.Key("ai_runtime_task"),
+	dyn.Key("code_source_path"),
+)
+
 var envDepsPattern = dyn.NewPattern(
 	dyn.Key("resources"),
 	dyn.Key("jobs"),
