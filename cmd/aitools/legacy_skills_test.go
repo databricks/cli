@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,7 +14,7 @@ func TestLegacySkillsInstallDelegatesToInstall(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 
@@ -28,7 +29,7 @@ func TestLegacySkillsInstallForwardsSkillName(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 
@@ -43,7 +44,7 @@ func TestLegacySkillsInstallExecuteNoArgs(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{})
@@ -60,7 +61,7 @@ func TestLegacySkillsInstallExecuteWithSkillName(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"databricks"})
@@ -76,7 +77,7 @@ func TestLegacySkillsInstallForwardsExperimental(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--experimental"})
@@ -89,7 +90,7 @@ func TestLegacySkillsInstallForwardsExperimental(t *testing.T) {
 }
 
 func TestLegacySkillsInstallExecuteRejectsTwoArgs(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"a", "b"})
@@ -111,7 +112,7 @@ func TestLegacySkillsListDelegatesToListFn(t *testing.T) {
 		return nil
 	}
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := newLegacySkillsListCmd()
 	cmd.SetContext(ctx)
 
