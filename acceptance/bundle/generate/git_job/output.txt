@@ -1,2 +1,10 @@
 Job is using Git source, skipping downloading files
 Job configuration successfully saved to out.job.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out.job.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - *.yml
+

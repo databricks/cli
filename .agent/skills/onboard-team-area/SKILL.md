@@ -56,9 +56,9 @@ node .github/scripts/owners.js validate
 ./task checks
 ```
 
-No `NEXT_CHANGELOG.md` entry; this is ownership/config only. Write the PR using the `.github/PULL_REQUEST_TEMPLATE.md` sections (Why / Changes / Tests).
+No `.nextchanges/` entry; this is ownership/config only. Write the PR using the `.github/PULL_REQUEST_TEMPLATE.md` sections (Why / Changes / Tests).
 
 ## Experimental vs stable, and graduation
 
-- **Experimental** — code under `experimental/<area>/`, tests under `acceptance/experimental/<area>/`. Register it under the hidden parent in `cmd/experimental/experimental.go`, or top-level in `cmd/cmd.go` with `Hidden: true` (as `ssh` does). Experimental commands still ship enabled in every release; `Hidden` only removes them from `--help`, it does not gate or compile them out. No `NEXT_CHANGELOG` entries while experimental. To hand a build to testers, push a `bugbash-<topic>` branch (auto-builds a snapshot) and share the `internal/bugbash/exec.sh` one-liner.
-- **Graduating to stable** — `git mv` the feature-complete commands to `cmd/<area>/` + `libs/<area>/`, register them top-level in `cmd/cmd.go`, keep the old `experimental` paths as deprecated cobra aliases (`sub.Hidden = true`, `sub.Deprecated = '...'`), add OWNERS rules for the new stable paths, and add the `NEXT_CHANGELOG` entry. See `experimental/aitools` graduating to top-level `aitools` (PR #4917) as the worked example.
+- **Experimental** — code under `experimental/<area>/`, tests under `acceptance/experimental/<area>/`. Register it under the hidden parent in `cmd/experimental/experimental.go`, or top-level in `cmd/cmd.go` with `Hidden: true` (as `ssh` does). Experimental commands still ship enabled in every release; `Hidden` only removes them from `--help`, it does not gate or compile them out. No `.nextchanges/` entries while experimental. To hand a build to testers, push a `bugbash-<topic>` branch (auto-builds a snapshot) and share the `internal/bugbash/exec.sh` one-liner.
+- **Graduating to stable** — `git mv` the feature-complete commands to `cmd/<area>/` + `libs/<area>/`, register them top-level in `cmd/cmd.go`, keep the old `experimental` paths as deprecated cobra aliases (`sub.Hidden = true`, `sub.Deprecated = '...'`), add OWNERS rules for the new stable paths, and add a `.nextchanges/` entry. See `experimental/aitools` graduating to top-level `aitools` (PR #4917) as the worked example.

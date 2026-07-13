@@ -3,6 +3,7 @@
 package quality_monitors
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -192,7 +193,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only TABLE_NAME as positional arguments. Provide 'output_schema_name', 'assets_dir' in your JSON input")
+				return errors.New("when --json flag is specified, provide only TABLE_NAME as positional arguments. Provide 'output_schema_name', 'assets_dir' in your JSON input")
 			}
 			return nil
 		}
@@ -761,7 +762,7 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only TABLE_NAME as positional arguments. Provide 'output_schema_name' in your JSON input")
+				return errors.New("when --json flag is specified, provide only TABLE_NAME as positional arguments. Provide 'output_schema_name' in your JSON input")
 			}
 			return nil
 		}

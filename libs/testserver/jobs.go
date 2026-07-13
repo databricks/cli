@@ -15,6 +15,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 const missingJobGitProviderMessage = "git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit"
@@ -400,16 +401,162 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	}
 
 	s.JobRuns[runId] = jobs.Run{
+		RunId:                runId,
+		JobId:                request.JobId,
+		State:                &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		RunPageUrl:           fmt.Sprintf("%s/?o=900800700600#job/%d/run/%d", s.url, request.JobId, runId),
+		RunType:              jobs.RunTypeJobRun,
+		RunName:              runName,
+		Tasks:                tasks,
+		JobParameters:        runJobParameters(job.Settings, request.JobParameters),
+		OverridingParameters: runOverridingParameters(request),
+	}
+
+	return Response{Body: jobs.RunNowResponse{RunId: runId}}
+}
+
+// runJobParameters mirrors how GetRun resolves job-level parameters: every
+// parameter the job defines, with the run's overrides applied on top, sorted by
+// name for deterministic output.
+func runJobParameters(settings *jobs.JobSettings, overrides map[string]string) []jobs.JobParameter {
+	resolved := map[string]jobs.JobParameter{}
+	if settings != nil {
+		for _, p := range settings.Parameters {
+			resolved[p.Name] = jobs.JobParameter{Name: p.Name, Default: p.Default, Value: p.Default}
+		}
+	}
+	for name, value := range overrides {
+		p := resolved[name]
+		p.Name = name
+		p.Value = value
+		resolved[name] = p
+	}
+	if len(resolved) == 0 {
+		return nil
+	}
+	result := make([]jobs.JobParameter, 0, len(resolved))
+	for _, p := range resolved {
+		result = append(result, p)
+	}
+	slices.SortFunc(result, func(a, b jobs.JobParameter) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	return result
+}
+
+// runOverridingParameters mirrors how GetRun echoes the run's overriding
+// parameters. Returns nil when the request set none.
+func runOverridingParameters(request jobs.RunNow) *jobs.RunParameters {
+	p := jobs.RunParameters{
+		DbtCommands:       request.DbtCommands,
+		JarParams:         request.JarParams,
+		NotebookParams:    request.NotebookParams,
+		PipelineParams:    request.PipelineParams,
+		PythonNamedParams: request.PythonNamedParams,
+		PythonParams:      request.PythonParams,
+		SparkSubmitParams: request.SparkSubmitParams,
+		SqlParams:         request.SqlParams,
+	}
+	if len(p.DbtCommands) == 0 && len(p.JarParams) == 0 && len(p.NotebookParams) == 0 &&
+		p.PipelineParams == nil && len(p.PythonNamedParams) == 0 && len(p.PythonParams) == 0 &&
+		len(p.SparkSubmitParams) == 0 && len(p.SqlParams) == 0 {
+		return nil
+	}
+	return &p
+}
+
+// JobsSubmit handles jobs/runs/submit, the one-time run endpoint used by
+// `databricks ssh connect` (via client.Jobs.Submit) and the generic
+// `databricks jobs submit` command. It records the submitted spec and returns a
+// run ID so acceptance tests can assert the request body (e.g. the serverless
+// environments / base_environment) and poll runs/get for the resulting run.
+//
+// Unlike JobsRunNow, the submitted tasks are not executed locally: the SSH
+// bootstrap submits a notebook task that only exists in the workspace, and the
+// value of this handler for tests is the recorded request, not task output.
+func (s *FakeWorkspace) JobsSubmit(req Request) Response {
+	var request jobs.SubmitRun
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+	if response := validateJobGitSource(request.GitSource); response != nil {
+		return *response
+	}
+
+	defer s.LockUnlock()()
+
+	runId := nextID()
+
+	// The default run name for one-time runs is "Untitled" (Jobs API behavior).
+	runName := cmp.Or(request.RunName, "Untitled")
+
+	// Report each task as RUNNING in both the V1 (state) and V2 (status) shapes.
+	// The generic `jobs submit` waiter polls the V1 run-level state, which
+	// JobsGetRun drives to TERMINATED on the next poll, while `ssh connect`'s
+	// waitForJobToStart polls the V2 per-task status.
+	var tasks []jobs.RunTask
+	for _, t := range request.Tasks {
+		tasks = append(tasks, jobs.RunTask{
+			RunId:   nextID(),
+			TaskKey: t.TaskKey,
+			State: &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateRunning,
+			},
+			Status: &jobs.RunStatus{
+				State: jobs.RunLifecycleStateV2StateRunning,
+			},
+		})
+	}
+
+	s.JobRuns[runId] = jobs.Run{
 		RunId:      runId,
-		JobId:      request.JobId,
 		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
-		RunPageUrl: fmt.Sprintf("%s/?o=900800700600#job/%d/run/%d", s.url, request.JobId, runId),
-		RunType:    jobs.RunTypeJobRun,
+		RunPageUrl: fmt.Sprintf("%s/?o=900800700600#job/run/%d", s.url, runId),
+		RunType:    jobs.RunTypeSubmitRun,
 		RunName:    runName,
 		Tasks:      tasks,
 	}
 
-	return Response{Body: jobs.RunNowResponse{RunId: runId}}
+	// No tunnel server runs locally, so synthesize the metadata.json it would
+	// publish; `ssh connect` polls for it before connecting.
+	if strings.HasPrefix(runName, sshTunnelBootstrapRunPrefix) {
+		s.writeSSHTunnelMetadata(request)
+	}
+
+	return Response{Body: jobs.SubmitRunResponse{RunId: runId}}
+}
+
+const (
+	sshTunnelBootstrapRunPrefix = "ssh-server-bootstrap-"
+	sshTunnelBootstrapNotebook  = "ssh-server-bootstrap"
+	sshTunnelServerPort         = 7772
+	sshTunnelClusterID          = "1234-567890-serverless"
+	sshTunnelRemoteUser         = "spark"
+)
+
+// writeSSHTunnelMetadata publishes the metadata.json a real tunnel server would
+// write next to the bootstrap notebook. Callers must hold the workspace lock.
+func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
+	for _, t := range request.Tasks {
+		if t.NotebookTask == nil {
+			continue
+		}
+		metadataPath := strings.TrimSuffix(t.NotebookTask.NotebookPath, sshTunnelBootstrapNotebook) + "metadata.json"
+		metadata, err := json.Marshal(map[string]any{
+			"port":       sshTunnelServerPort,
+			"cluster_id": sshTunnelClusterID,
+		})
+		if err != nil {
+			continue
+		}
+		s.files[metadataPath] = FileEntry{
+			Info: workspace.ObjectInfo{ObjectType: "FILE", Path: metadataPath},
+			Data: metadata,
+		}
+	}
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.
@@ -743,6 +890,17 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	}
 
 	return Response{Body: run}
+}
+
+func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {
+	var request jobs.DeleteRun
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+	return MapDelete(s, s.JobRuns, request.RunId)
 }
 
 func (s *FakeWorkspace) JobsGetRunOutput(req Request) Response {

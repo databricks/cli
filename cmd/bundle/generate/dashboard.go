@@ -251,6 +251,8 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 		return err
 	}
 
+	warnIfNotIncluded(ctx, b, resourcePath)
+
 	return nil
 }
 

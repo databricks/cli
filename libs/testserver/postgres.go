@@ -452,7 +452,10 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 	}
 }
 
-// PostgresBranchDelete deletes a postgres branch.
+// PostgresBranchDelete deletes a postgres branch. The `purge` query parameter
+// is ignored: acceptance tests assert on the recorded HTTP request rather than
+// on retention semantics, so a single "remove from map" action serves both
+// hard- and soft-delete paths.
 func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 	defer s.LockUnlock()()
 
@@ -719,7 +722,11 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 }
 
 // PostgresDatabaseCreate creates a new postgres database.
-func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID string) Response {
+//
+// When replaceExisting is true, an existing database with the same ID is updated
+// in place instead of returning ALREADY_EXISTS. This mirrors the backend behavior
+// that lets users bring an already-existing database under management.
+func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID string, replaceExisting bool) Response {
 	defer s.LockUnlock()()
 
 	if databaseID == "" {
@@ -742,15 +749,16 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	}
 
 	// The real Lakebase API requires the owning role on create and rejects an empty
-	// one with this exact error (verified on e2-dogfood 2026-06-16). The fake does
+	// one with this exact error (verified on aws-ucws 2026-07-13). The fake does
 	// not synthesize a default, matching that behavior.
 	if database.Spec == nil || database.Spec.Role == "" {
-		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'spec.role' cannot be empty")
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'database.spec.role' is required, expected non-default value (not "")!`)
 	}
 
 	name := fmt.Sprintf("%s/databases/%s", parent, databaseID)
 
-	if _, exists := s.PostgresDatabases[name]; exists {
+	existing, exists := s.PostgresDatabases[name]
+	if exists && !replaceExisting {
 		// The real Lakebase API returns 400 BAD_REQUEST (not 409) for a duplicate
 		// create, the same as postgres_roles. Match it so the conflict a bundle hits
 		// on a pre-existing database looks the same.
@@ -758,6 +766,23 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	}
 
 	now := nowTime()
+	if exists {
+		// Preserve identifying / output-only fields; apply incoming spec to status.
+		status := &postgres.DatabaseDatabaseStatus{
+			DatabaseId:       databaseID,
+			PostgresDatabase: database.Spec.PostgresDatabase,
+			Role:             database.Spec.Role,
+		}
+		existing.UpdateTime = now
+		existing.Status = status
+		existing.Spec = nil
+		s.PostgresDatabases[name] = existing
+
+		return Response{
+			Body: s.createOperationLocked(existing.Name, existing),
+		}
+	}
+
 	database.Name = name
 	database.DatabaseId = databaseID
 	database.Parent = parent
@@ -1047,7 +1072,11 @@ func roleStatusFromSpec(spec *postgres.RoleRoleSpec) *postgres.RoleRoleStatus {
 }
 
 // PostgresRoleCreate creates a new postgres role.
-func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) Response {
+//
+// When replaceExisting is true, an existing role with the same ID is updated in
+// place instead of returning ALREADY_EXISTS. This mirrors the backend behavior
+// that lets users bring an inherited/pre-existing role under management.
+func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, replaceExisting bool) Response {
 	defer s.LockUnlock()()
 
 	// Check if parent branch exists
@@ -1077,7 +1106,8 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) R
 
 	name := fmt.Sprintf("%s/roles/%s", parent, roleID)
 
-	if _, exists := s.PostgresRoles[name]; exists {
+	existing, exists := s.PostgresRoles[name]
+	if exists && !replaceExisting {
 		// The real Lakebase API returns 400 BAD_REQUEST (not 409) for a duplicate
 		// role, with this message (verified on dogfood 2026-06-10). Match it so the
 		// conflict a bundle hits on an inherited/pre-existing role looks the same.
@@ -1085,6 +1115,19 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) R
 	}
 
 	now := nowTime()
+	if exists {
+		// Preserve identifying / output-only fields; apply incoming spec to status.
+		existing.UpdateTime = now
+		existing.Status = roleStatusFromSpec(role.Spec)
+		existing.Status.RoleId = roleID
+		existing.Spec = nil
+		s.PostgresRoles[name] = existing
+
+		return Response{
+			Body: s.createOperationLocked(existing.Name, existing),
+		}
+	}
+
 	role.Name = name
 	role.RoleId = roleID
 	role.Parent = parent
