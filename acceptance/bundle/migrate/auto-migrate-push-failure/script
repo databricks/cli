@@ -3,20 +3,19 @@ export DATABRICKS_BUNDLE_ENGINE=
 title "Initial deploy on terraform"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
-title "Opt in via config; inject 403 on the resources.json push so commit fails"
-update_file.py databricks.yml "name: test-bundle" $'name: test-bundle\n  engine: direct'
+title "Opt in via env var; inject 403 on the resources.json push so commit fails"
 # The auto-migration's commit path uploads resources.json to the workspace
 # before renaming any local files. A 403 (non-retryable) fails commitMigration →
 # the deploy prints a warning and leaves the local state as terraform.
 fault.py "POST /api/2.0/workspace-files/import-file/Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/state/resources.json" 403 0 1
-trace $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
 title "Local state was NOT rewritten (still terraform)\n"
 trace find .databricks/bundle -name "resources.json" -type f
 trace find .databricks/bundle -name "terraform.tfstate*" -type f
 
 title "Retry: auto-migration succeeds this time"
-trace $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
 title "Local state is now direct\n"
 trace find .databricks/bundle -name "resources.json" -type f
