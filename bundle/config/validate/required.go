@@ -14,13 +14,6 @@ import (
 
 type required struct{}
 
-// custom_max_retention_hours accepts 0 (disabled) or 7-30 days; other values
-// fail at deploy with a low-context error, so we reject them early.
-const (
-	minCustomRetentionHours = 168 // 7 days
-	maxCustomRetentionHours = 720 // 30 days
-)
-
 func Required() bundle.Mutator {
 	return &required{}
 }
@@ -183,41 +176,8 @@ func isMissingOrEmptyString(v dyn.Value) bool {
 	}
 }
 
-// errorForInvalidRetentionHours rejects out-of-range custom_max_retention_hours on
-// catalogs and schemas before deploy.
-func errorForInvalidRetentionHours(b *bundle.Bundle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	for _, section := range []string{"catalogs", "schemas"} {
-		_, err := dyn.MapByPattern(
-			b.Config.Value(),
-			dyn.NewPattern(dyn.Key("resources"), dyn.Key(section), dyn.AnyKey(), dyn.Key("custom_max_retention_hours")),
-			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				hours, ok := v.AsInt()
-				if !ok {
-					return v, nil
-				}
-				if hours == 0 || (hours >= minCustomRetentionHours && hours <= maxCustomRetentionHours) {
-					return v, nil
-				}
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("custom_max_retention_hours must be 0 or between %d and %d hours (7 to 30 days), got %d", minCustomRetentionHours, maxCustomRetentionHours, hours),
-					Locations: v.Locations(),
-					Paths:     []dyn.Path{slices.Clone(p)},
-				})
-				return v, nil
-			},
-		)
-		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
-		}
-	}
-	return diags
-}
-
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := errorForMissingFields(ctx, b)
-	diags = diags.Extend(errorForInvalidRetentionHours(b))
 	if diags.HasError() {
 		return diags
 	}

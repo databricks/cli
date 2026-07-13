@@ -11,7 +11,7 @@
 ### Bundles
 
 * Added an `env:` section to `scripts.<name>` for declaring environment variables that may reference `${bundle.*}`, `${workspace.*}`, and `${var.*}` ([#4179](https://github.com/databricks/cli/issues/4179)).
-* `bundle validate` now fails early with a clear error when a `sql_warehouse` is missing a `name`, a grant is missing a `principal`, or a catalog/schema `custom_max_retention_hours` is outside the allowed range (0 or 168-720 hours), instead of passing validation and failing later at deploy.
+* `bundle validate` now fails early with a clear error when a `sql_warehouse` is missing a `name` or a grant is missing a `principal`, instead of passing validation and failing later at deploy.
 
 ### Dependency updates
 
