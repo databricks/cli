@@ -59,8 +59,10 @@ func NewInstallCmd() *cobra.Command {
 	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
-		Use:   "install",
-		Short: "Install Databricks skills and plugins for coding agents",
+		Use: "install",
+		// Resolve auth best-effort so telemetry can upload; see tryConfigureAuth.
+		PreRunE: tryConfigureAuth,
+		Short:   "Install Databricks skills and plugins for coding agents",
 		Long: `Install Databricks skills and plugins for detected coding agents.
 
 By default this installs the databricks plugin through each agent's own CLI
@@ -149,6 +151,11 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 					return nil
 				}
 			}
+
+			defer logInstallEvent(ctx, plan, installOpts{
+				Scope:        opts.Scope,
+				Experimental: opts.IncludeExperimental,
+			})
 
 			return executePlan(ctx, src, plan, opts)
 		},
