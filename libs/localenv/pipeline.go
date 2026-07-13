@@ -255,8 +255,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	if greenfield {
 		// No existing pyproject.toml — render a fresh one. The project name comes
 		// from the directory name as a reasonable default.
-		projectName := filepath.Base(p.ProjectDir)
-		merged = RenderFreshPyproject(projectName, effective)
+		merged = RenderFreshPyproject(projectName(p.ProjectDir), effective)
 		changedRegions = []string{regionRequiresPython, regionToolUv}
 		if dbcPin != "" {
 			changedRegions = append(changedRegions, regionDatabricksConnect)
@@ -516,6 +515,51 @@ func isAllDigits(s string) bool {
 		}
 	}
 	return true
+}
+
+// defaultProjectName is used for a fresh pyproject.toml when the project
+// directory yields no usable PEP 508 name (e.g. filesystem root).
+const defaultProjectName = "app"
+
+// projectName derives a PEP 508-valid project name from the project directory.
+// filepath.Base(".") / ("") is "." and Base("/") is "/", none of which are valid
+// [project].name values, so uv sync would reject the rendered file. Resolve to an
+// absolute path first so "." picks up the real directory name, then sanitize to a
+// valid identifier, falling back to defaultProjectName when nothing usable remains.
+func projectName(dir string) string {
+	base := filepath.Base(dir)
+	if base == "." || base == string(filepath.Separator) || base == "" {
+		if abs, err := filepath.Abs(dir); err == nil {
+			base = filepath.Base(abs)
+		}
+	}
+	return sanitizeProjectName(base)
+}
+
+// sanitizeProjectName maps an arbitrary directory name to a valid PEP 508 name:
+// runs of non-alphanumeric characters collapse to a single "-", and leading and
+// trailing separators are trimmed (a PEP 508 name must start and end with an
+// alphanumeric). Returns defaultProjectName when nothing usable remains.
+func sanitizeProjectName(name string) string {
+	var b strings.Builder
+	prevDash := false
+	for _, r := range name {
+		switch {
+		case (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9'):
+			b.WriteRune(r)
+			prevDash = false
+		default:
+			if b.Len() > 0 && !prevDash {
+				b.WriteByte('-')
+				prevDash = true
+			}
+		}
+	}
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		return defaultProjectName
+	}
+	return out
 }
 
 // copyFile copies src to dst, creating or overwriting dst. dst is created with

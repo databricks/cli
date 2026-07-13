@@ -233,6 +233,39 @@ func TestPipelineGreenfieldCreatesNewPyproject(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 }
 
+func TestProjectName(t *testing.T) {
+	// "." / "" / root resolve to the real directory name, not an invalid literal;
+	// non-alphanumeric runs collapse to "-"; unusable input falls back to a default.
+	cwd, err := filepath.Abs(".")
+	require.NoError(t, err)
+	assert.Equal(t, sanitizeProjectName(filepath.Base(cwd)), projectName("."))
+	assert.Equal(t, sanitizeProjectName(filepath.Base(cwd)), projectName(""))
+	assert.Equal(t, "my-proj", projectName("/tmp/my proj"))
+	assert.Equal(t, "my-proj", projectName("/tmp/.my.proj."))
+	assert.Equal(t, defaultProjectName, sanitizeProjectName("."))
+	assert.Equal(t, defaultProjectName, sanitizeProjectName("///"))
+}
+
+func TestPipelineGreenfieldFromDotDirRendersValidName(t *testing.T) {
+	// Running greenfield with ProjectDir="." must not render name = ".".
+	dir := t.TempDir()
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.Greenfield)
+	data, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	assert.NotContains(t, string(data), `name = "."`)
+	assert.Contains(t, string(data), `name = "`+sanitizeProjectName(filepath.Base(dir))+`"`)
+}
+
 func TestPipelineExistingBacksUp(t *testing.T) {
 	dir := writeProject(t)
 	srv := newTestServer(t)
