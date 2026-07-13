@@ -1,0 +1,17 @@
+# These hosts do not resolve (.invalid is reserved by RFC 6761), so the clone
+# fails fast without network access. The point of the test is that these URLs
+# are recognized as Git URLs and a clone is attempted, rather than being misread
+# as local template paths (which would report a "not a bundle template" error
+# instead). The git error text varies by platform, so we route it to LOG
+# (excluded from the diff) and assert the invariant with contains.py.
+title "https:// URL is recognized as a Git URL"
+errcode $CLI bundle init https://nonexistent.databricks.invalid/databricks/cli &> LOG.https
+contains.py "git clone https://nonexistent.databricks.invalid/databricks/cli" "!not a bundle template" < LOG.https > /dev/null
+
+title "ssh:// URL is recognized as a Git URL"
+errcode $CLI bundle init ssh://git@nonexistent.databricks.invalid/databricks/cli &> LOG.ssh
+contains.py "git clone ssh://git@nonexistent.databricks.invalid/databricks/cli" "!not a bundle template" < LOG.ssh > /dev/null
+
+title "git@ URL is recognized as a Git URL"
+errcode $CLI bundle init git@nonexistent.databricks.invalid:databricks/cli.git &> LOG.git
+contains.py "git clone git@nonexistent.databricks.invalid:databricks/cli.git" "!not a bundle template" < LOG.git > /dev/null
