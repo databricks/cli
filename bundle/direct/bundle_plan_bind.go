@@ -93,6 +93,31 @@ func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *c
 		hasError = true
 	})
 
+	// Two bind blocks must not point at the same workspace ID. Otherwise both would
+	// be bound for the first time and create two state entries managing one remote
+	// resource; reject the collision instead of silently double-managing it.
+	bindKeysByID := map[string][]string{}
+	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+		bindKey := "resources." + resourceType + "." + resourceName
+		bindKeysByID[bindID] = append(bindKeysByID[bindID], bindKey)
+	})
+	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+		keys := bindKeysByID[bindID]
+		if len(keys) < 2 {
+			return
+		}
+		bindKey := "resources." + resourceType + "." + resourceName
+		others := slices.DeleteFunc(slices.Clone(keys), func(k string) bool { return k == bindKey })
+		bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+		logdiag.LogDiag(ctx, diag.Diagnostic{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("bind block for %q has the same ID %q as bind block(s) for %s; each workspace resource can only be bound once", bindKey, bindID, strings.Join(others, ", ")),
+			Locations: configRoot.GetLocations(bindPath.String()),
+			Paths:     []dyn.Path{bindPath},
+		})
+		hasError = true
+	})
+
 	// A bind ID must not collide with another resource's ID in state. Such a collision
 	// would let a bind silently redirect a delete/recreate/update_id at a resource the
 	// user is also trying to import; reject it instead of choosing one over the other.

@@ -1,0 +1,3 @@
+# Two first-time bind blocks pointing at the same workspace ID must be rejected;
+# otherwise both would create state entries managing one remote resource.
+trace musterr $CLI bundle plan
