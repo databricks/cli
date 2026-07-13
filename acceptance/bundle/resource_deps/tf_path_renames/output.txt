@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+/path/to/wheel.whl
+main
+mycluster
+src-git
+src-tasks

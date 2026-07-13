@@ -16,6 +16,7 @@ func (c postgresProjectConverter) Convert(ctx context.Context, key string, vin d
 	// The bundle config has flattened ProjectSpec fields at the top level.
 	// Terraform expects them nested in a "spec" block.
 	specFields := specFieldNames(schema.ResourcePostgresProjectSpec{})
+	topLevelFields := []string{"project_id", "purge_on_delete"}
 
 	// Build the spec block from the flattened fields
 	specMap := make(map[string]dyn.Value)
@@ -25,12 +26,14 @@ func (c postgresProjectConverter) Convert(ctx context.Context, key string, vin d
 		}
 	}
 
-	// Build the output with project_id and spec
+	// Build the output with project_id, purge_on_delete and spec
 	outMap := make(map[string]dyn.Value)
 
-	// Keep project_id at top level
-	if v := vin.Get("project_id"); v.Kind() != dyn.KindInvalid {
-		outMap["project_id"] = v
+	// Keep top-level fields outside the spec block
+	for _, field := range topLevelFields {
+		if v := vin.Get(field); v.Kind() != dyn.KindInvalid {
+			outMap[field] = v
+		}
 	}
 
 	// Add spec block if we have any spec fields

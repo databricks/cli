@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"os/exec"
 	"sync"
@@ -229,4 +230,86 @@ func TestQuickHandover(t *testing.T) {
 	wg.Wait()
 
 	assert.Equal(t, string(expectedOutput), client.Output.String())
+}
+
+// TestClientExitsWhenServerCommandFails reproduces the missing-sshd case: the server accepts the
+// websocket but can't launch its command, so it closes the connection immediately. The client
+// proxy must exit promptly instead of hanging on the handover goroutine (which would leave the
+// ssh client waiting until its ConnectTimeout).
+func TestClientExitsWhenServerCommandFails(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	connections := NewConnectionsManager(2, time.Hour)
+	server := httptest.NewServer(NewProxyServer(ctx, connections, func(ctx context.Context) *exec.Cmd {
+		// A binary that does not exist: serverCmd.Start() fails, mirroring a missing /usr/sbin/sshd.
+		return exec.CommandContext(ctx, "databricks-ssh-nonexistent-binary")
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, connID), nil) // nolint:bodyclose
+		return conn, err
+	}
+	// Source is never closed by the test; only the server-side close must drive the client to exit.
+	src, _ := io.Pipe()
+	requestHandoverTick := func() <-chan time.Time { return time.After(time.Hour) }
+
+	done := make(chan error, 1)
+	go func() {
+		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, createConn)
+	}()
+
+	select {
+	case <-done:
+		// Returned promptly after the server closed the connection — no hang.
+	case <-time.After(10 * time.Second):
+		t.Fatal("RunClientProxy hung after the server closed the connection")
+	}
+}
+
+// TestClientTimesOutWhenServerSendsNothing reproduces the harder missing-sshd case: the server
+// accepts the websocket but holds it open without ever sending the SSH banner (the real server
+// does this after failing to launch sshd). The client must abort on the handshake timeout rather
+// than block forever on its read loops.
+func TestClientTimesOutWhenServerSendsNothing(t *testing.T) {
+	original := clientHandshakeTimeout
+	clientHandshakeTimeout = 300 * time.Millisecond
+	defer func() { clientHandshakeTimeout = original }()
+
+	ctx := cmdio.MockDiscard(t.Context())
+	upgrader := websocket.Upgrader{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		// Hold the connection open, sending nothing, until the client goes away.
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, connID), nil) // nolint:bodyclose
+		return conn, err
+	}
+	src, _ := io.Pipe()
+	requestHandoverTick := func() <-chan time.Time { return time.After(time.Hour) }
+
+	done := make(chan error, 1)
+	go func() {
+		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, createConn)
+	}()
+
+	select {
+	case err := <-done:
+		require.ErrorIs(t, err, errHandshakeTimeout)
+	case <-time.After(10 * time.Second):
+		t.Fatal("RunClientProxy did not abort on the handshake timeout")
+	}
 }

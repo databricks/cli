@@ -1,0 +1,11 @@
+bundle:
+  name: cjk-numeral-var
+
+variables:
+  九世界:
+    default: 1
+
+resources:
+  jobs:
+    foo:
+      max_concurrent_runs: ${var.九世界}

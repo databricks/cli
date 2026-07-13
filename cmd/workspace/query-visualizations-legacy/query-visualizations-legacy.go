@@ -3,7 +3,7 @@
 package query_visualizations_legacy
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -20,9 +20,9 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "query-visualizations-legacy",
-		Short: `This is an evolving API that facilitates the addition and removal of vizualisations from existing queries within the Databricks Workspace.`,
+		Short: `This is an evolving API that facilitates the addition and removal of visualizations from existing queries within the Databricks Workspace.`,
 		Long: `This is an evolving API that facilitates the addition and removal of
-  vizualisations from existing queries within the Databricks Workspace. Data
+  visualizations from existing queries within the Databricks Workspace. Data
   structures may change over time.
 
   **Warning**: This API is deprecated. Please see the latest version of the
@@ -35,6 +35,10 @@ func New() *cobra.Command {
 		Hidden: true,
 		RunE:   root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -81,6 +85,8 @@ func newCreate() *cobra.Command {
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -99,7 +105,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.QueryVisualizationsLegacy.Create(ctx, createReq)
@@ -151,6 +157,8 @@ func newDelete() *cobra.Command {
     ID: Widget ID returned by :method:queryvisualizations/create`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -221,6 +229,8 @@ func newUpdate() *cobra.Command {
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)

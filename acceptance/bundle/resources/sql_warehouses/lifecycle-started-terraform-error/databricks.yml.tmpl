@@ -1,0 +1,13 @@
+bundle:
+  name: lifecycle-started-terraform-error-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  sql_warehouses:
+    mywarehouse:
+      name: my-warehouse-$UNIQUE_NAME
+      cluster_size: "Medium"
+      lifecycle:
+        started: true

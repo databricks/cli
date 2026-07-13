@@ -3,12 +3,12 @@
 package schema
 
 type ResourceVectorSearchEndpointProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceVectorSearchEndpointScalingInfo struct {
-	RequestedMinQps int    `json:"requested_min_qps,omitempty"`
-	State           string `json:"state,omitempty"`
+	RequestedTargetQps int    `json:"requested_target_qps,omitempty"`
+	State              string `json:"state,omitempty"`
 }
 
 type ResourceVectorSearchEndpoint struct {

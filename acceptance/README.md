@@ -15,8 +15,12 @@ The scripts are run with `bash -e` so any errors will be propagated. They are ca
 
 For more complex tests one can also use:
 - `errcode` helper: if the command fails with non-zero code, it appends `Exit code: N` to the output but returns success to caller (bash), allowing continuation of script.
+- `musterr` helper: runs the command and fails the test if it *succeeds*; on the expected failure the script continues. Use it to assert a command must error.
 - `trace` helper: prints the arguments before executing the command.
+- `title` helper: prints a `=== <text>` section header to label a phase of the script.
 - custom output files: redirect output to custom file (it must start with `out`), e.g. `$CLI bundle validate > out.txt 2> out.error.txt`.
+
+The complete set of shell helpers (the above plus `withdir`, `git-repo-init`, `uuid`, `sethome`, and others) is defined in `acceptance/script.prepare`.
 
 Any file starting with "LOG" will be logged to test log (visible with go test -v).
 

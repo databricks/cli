@@ -15,6 +15,9 @@ CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_clust
 echo "$CLUSTER_ID:CLUSTER_ID" >> ACC_REPLS
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
 
+title "Terminating the cluster\n"
+$CLI clusters delete "${CLUSTER_ID}" | jq '{cluster_id}'
+
 title "Adding autoscale section should call update API on stopped cluster\n"
 update_file.py databricks.yml "      num_workers: 2" "      autoscale:
         min_workers: 2

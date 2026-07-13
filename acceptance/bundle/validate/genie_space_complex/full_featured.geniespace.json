@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "config": {
+    "sample_questions": [
+      {
+        "id": "sq-001",
+        "question": ["What is the total revenue?"]
+      },
+      {
+        "id": "sq-002",
+        "question": ["Show me the top customers"]
+      }
+    ]
+  },
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "main.sales.orders",
+        "column_configs": [
+          {
+            "column_name": "order_id",
+            "get_example_values": true,
+            "build_value_dictionary": true
+          },
+          {
+            "column_name": "customer_id",
+            "get_example_values": true
+          },
+          {
+            "column_name": "amount",
+            "get_example_values": false
+          }
+        ]
+      },
+      {
+        "identifier": "main.sales.customers"
+      }
+    ]
+  },
+  "instructions": {
+    "text_instructions": [
+      {
+        "id": "ti-001",
+        "content": [
+          "This genie space analyzes sales data.\n",
+          "Always filter by date when querying orders.\n",
+          "Use customer_name instead of customer_id in results."
+        ]
+      }
+    ],
+    "example_question_sqls": [
+      {
+        "id": "eq-001",
+        "question": ["What are the top customers by revenue?"],
+        "sql": [
+          "SELECT\n",
+          "  c.customer_name,\n",
+          "  SUM(o.amount) AS total_revenue\n",
+          "FROM main.sales.orders o\n",
+          "JOIN main.sales.customers c ON o.customer_id = c.id\n",
+          "WHERE o.order_date >= :start_date\n",
+          "GROUP BY c.customer_name\n",
+          "ORDER BY total_revenue DESC\n",
+          "LIMIT :limit"
+        ],
+        "parameters": [
+          {
+            "name": "start_date",
+            "type_hint": "STRING",
+            "description": ["Start date for the analysis period"],
+            "default_value": {
+              "values": ["2024-01-01"]
+            }
+          },
+          {
+            "name": "limit",
+            "type_hint": "INTEGER",
+            "description": ["Number of customers to return"],
+            "default_value": {
+              "values": ["10"]
+            }
+          }
+        ]
+      },
+      {
+        "id": "eq-002",
+        "question": ["Calculate daily revenue"],
+        "sql": [
+          "SELECT\n",
+          "  order_date,\n",
+          "  SUM(amount) AS daily_revenue\n",
+          "FROM main.sales.orders\n",
+          "GROUP BY order_date\n",
+          "ORDER BY order_date"
+        ]
+      }
+    ],
+    "sql_snippets": {
+      "measures": [
+        {
+          "id": "m-001",
+          "alias": "total_revenue",
+          "sql": ["SUM(orders.amount)"],
+          "display_name": "Total Revenue"
+        },
+        {
+          "id": "m-002",
+          "alias": "order_count",
+          "sql": ["COUNT(orders.order_id)"],
+          "display_name": "Order Count"
+        }
+      ]
+    },
+    "sql_functions": [
+      {
+        "id": "sf-001",
+        "identifier": "main.analytics.calculate_churn"
+      }
+    ]
+  },
+  "benchmarks": {
+    "questions": [
+      {
+        "id": "bq-001",
+        "question": ["What is the monthly revenue trend?"],
+        "answer": [
+          {
+            "format": "SQL",
+            "content": [
+              "SELECT\n",
+              "  DATE_TRUNC('month', order_date) AS month,\n",
+              "  SUM(amount) AS revenue\n",
+              "FROM main.sales.orders\n",
+              "GROUP BY 1\n",
+              "ORDER BY 1"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bq-002",
+        "question": ["Which customers have the highest average order value?"],
+        "answer": [
+          {
+            "format": "SQL",
+            "content": [
+              "SELECT\n",
+              "  customer_id,\n",
+              "  AVG(amount) AS avg_order_value\n",
+              "FROM main.sales.orders\n",
+              "GROUP BY customer_id\n",
+              "ORDER BY avg_order_value DESC\n",
+              "LIMIT 10"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

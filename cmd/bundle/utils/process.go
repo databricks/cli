@@ -11,8 +11,10 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
@@ -183,11 +185,20 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 		cmd.SetContext(ctx)
 
+		// --select is only supported by the direct engine, which tracks resource
+		// dependencies in the plan graph (used to expand the selection transitively).
+		// The engine is only known for certain after the state is pulled, so reject it
+		// here rather than silently planning/deploying every resource on terraform.
+		if len(b.Select) > 0 && !stateDesc.Engine.IsDirect() {
+			logdiag.LogError(ctx, errors.New("--select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -199,8 +210,19 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if opts.ErrorOnEmptyState {
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
+			var state statemgmt.ExportedResourcesMap
+			if stateDesc.Engine.IsDirect() {
+				state = b.DeploymentBundle.ExportState(ctx)
+			} else {
+				var err error
+				state, err = terraform.ParseResourcesState(ctx, b)
+				if err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+			}
 			mutators := []bundle.Mutator{
-				statemgmt.Load(stateDesc.Engine, modes...),
+				statemgmt.Load(state, modes...),
 			}
 			// InitializeURLs makes an extra API call; only run it when URLs are needed.
 			if opts.InitIDs {

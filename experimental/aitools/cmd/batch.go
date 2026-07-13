@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"golang.org/x/sync/errgroup"
 )
@@ -53,7 +54,13 @@ type batchResultError struct {
 // On context cancellation (Ctrl+C or parent context), still-running statements
 // are cancelled server-side via CancelExecution. Statements that finished
 // before cancellation are left as-is.
-func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, warehouseID string, sqls []string, concurrency int) []batchResult {
+//
+// params, if non-nil, are bound on every statement. The same parameter set is
+// reused across the batch, so callers must ensure each SQL uses only markers
+// that are covered.
+func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, warehouseID string, sqls []string, params []sql.StatementParameterListItem, concurrency int) []batchResult {
+	client := sqlexec.New(api, warehouseID)
+
 	pollCtx, pollCancel := context.WithCancel(ctx)
 	defer pollCancel()
 
@@ -97,17 +104,17 @@ func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, ware
 	g.SetLimit(concurrency)
 	for i, sqlStr := range sqls {
 		g.Go(func() error {
-			results[i] = runOneBatchQuery(pollCtx, api, warehouseID, sqlStr, statementIDs, i)
+			results[i] = runOneBatchQuery(pollCtx, client, sqlStr, params, statementIDs, i)
 			completed.Add(1)
 			return nil
 		})
 	}
 	_ = g.Wait()
 
-	// pollStatement is a pure helper that returns ctx.Err() on cancellation
-	// without touching the server. Sweep any not-yet-terminal statements here.
+	// Poll returns ctx.Err() on cancellation without touching the server.
+	// Sweep any not-yet-terminal statements here.
 	if pollCtx.Err() != nil {
-		cancelInFlight(ctx, api, statementIDs, results)
+		cancelInFlight(ctx, client, statementIDs, results)
 	}
 
 	return results
@@ -115,32 +122,27 @@ func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, ware
 
 // runOneBatchQuery submits one SQL, polls to completion, and returns its
 // batchResult. All errors are encoded into the result; never returns an error.
-func runOneBatchQuery(ctx context.Context, api sql.StatementExecutionInterface, warehouseID, sqlStr string, statementIDs []string, idx int) batchResult {
+func runOneBatchQuery(ctx context.Context, client *sqlexec.Client, sqlStr string, params []sql.StatementParameterListItem, statementIDs []string, idx int) batchResult {
 	start := time.Now()
 	result := batchResult{SQL: sqlStr}
 
-	resp, err := api.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
-		WarehouseId:   warehouseID,
-		Statement:     sqlStr,
-		WaitTimeout:   "0s",
-		OnWaitTimeout: sql.ExecuteStatementRequestOnWaitTimeoutContinue,
-	})
+	stmt, err := client.Submit(ctx, sqlStr, sqlexec.WithParameters(params))
 	if err != nil {
 		if ctx.Err() != nil {
 			result.State = sql.StatementStateCanceled
 			result.Error = &batchResultError{Message: "submission cancelled"}
 		} else {
 			result.State = sql.StatementStateFailed
-			result.Error = &batchResultError{Message: fmt.Sprintf("execute statement: %v", err)}
+			result.Error = &batchResultError{Message: err.Error()}
 		}
 		result.ElapsedMs = time.Since(start).Milliseconds()
 		return result
 	}
 
-	statementIDs[idx] = resp.StatementId
-	result.StatementID = resp.StatementId
+	statementIDs[idx] = stmt.ID
+	result.StatementID = stmt.ID
 
-	pollResp, err := pollStatement(ctx, api, resp)
+	stmt, err = client.Poll(ctx, stmt)
 	if err != nil {
 		if ctx.Err() != nil {
 			result.State = sql.StatementStateCanceled
@@ -153,30 +155,26 @@ func runOneBatchQuery(ctx context.Context, api sql.StatementExecutionInterface, 
 		return result
 	}
 
-	if pollResp.Status != nil {
-		result.State = pollResp.Status.State
-	}
+	result.State = stmt.State
 
-	if result.State != sql.StatementStateSucceeded {
-		result.Error = &batchResultError{}
-		if pollResp.Status != nil && pollResp.Status.Error != nil {
-			result.Error.Message = pollResp.Status.Error.Message
-			result.Error.ErrorCode = string(pollResp.Status.Error.ErrorCode)
-		} else {
-			result.Error.Message = fmt.Sprintf("query reached terminal state %s", result.State)
+	if err := stmt.Err(); err != nil {
+		se, _ := errors.AsType[*sqlexec.StatementError](err)
+		result.Error = &batchResultError{
+			Message:   se.Message,
+			ErrorCode: string(se.Code),
 		}
 		result.ElapsedMs = time.Since(start).Milliseconds()
 		return result
 	}
 
-	result.Columns = extractColumns(pollResp.Manifest)
-	rows, err := fetchAllRows(ctx, api, pollResp)
+	res, err := client.Results(ctx, stmt)
 	if err != nil {
 		result.Error = &batchResultError{Message: fmt.Sprintf("fetch rows: %v", err)}
 		result.ElapsedMs = time.Since(start).Milliseconds()
 		return result
 	}
-	result.Rows = rows
+	result.Columns = res.Columns
+	result.Rows = res.Rows
 	result.ElapsedMs = time.Since(start).Milliseconds()
 	return result
 }
@@ -184,7 +182,7 @@ func runOneBatchQuery(ctx context.Context, api sql.StatementExecutionInterface, 
 // cancelInFlight sends CancelExecution for every statement that didn't reach
 // a terminal state server-side before context cancellation. Best effort: errors
 // are logged at warn but don't fail the batch.
-func cancelInFlight(ctx context.Context, api sql.StatementExecutionInterface, statementIDs []string, results []batchResult) {
+func cancelInFlight(ctx context.Context, client *sqlexec.Client, statementIDs []string, results []batchResult) {
 	var cancelled int
 	for i, sid := range statementIDs {
 		if sid == "" {
@@ -203,7 +201,7 @@ func cancelInFlight(ctx context.Context, api sql.StatementExecutionInterface, st
 		// values but drops the cancellation signal so the cancel RPC actually
 		// reaches the warehouse instead of short-circuiting on ctx.Err().
 		cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cancelTimeout)
-		if err := api.CancelExecution(cancelCtx, sql.CancelExecutionRequest{StatementId: sid}); err != nil {
+		if err := client.Cancel(cancelCtx, sid); err != nil {
 			log.Warnf(ctx, "Failed to cancel statement %s: %v", sid, err)
 		}
 		cancel()

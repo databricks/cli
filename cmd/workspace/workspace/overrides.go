@@ -58,8 +58,8 @@ func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest
 
 // Give better errors / hints for common API errors.
 func wrapImportAPIErrors(err error, importReq *workspace.Import) error {
-	apiErr := &apierr.APIError{}
-	if !errors.As(err, &apiErr) {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return err
 	}
 	isFormatSource := importReq.Format == workspace.ImportFormatSource || importReq.Format == ""

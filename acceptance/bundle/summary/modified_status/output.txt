@@ -97,7 +97,7 @@ Deployment complete!
         "quartz_cron_schedule": "44 19 */1 * * ?",
         "timezone_id": "Europe/Amsterdam"
       },
-      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]",
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?w=[NUMID]",
       "warehouse_id": "aaaaaaaaaaaaaaaa"
     }
   },
@@ -118,7 +118,7 @@ Deployment complete!
         }
       ],
       "name": "test-pipeline",
-      "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]"
     }
   },
   "schemas": {
@@ -127,7 +127,7 @@ Deployment complete!
       "comment": "COMMENT1",
       "id": "main.test-schema",
       "name": "test-schema",
-      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?w=[NUMID]"
     }
   },
   "sql_warehouses": {
@@ -140,7 +140,7 @@ Deployment complete!
       "max_num_clusters": 1,
       "name": "test-sql-warehouse",
       "spot_instance_policy": "COST_OPTIMIZED",
-      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]"
     }
   }
 }
@@ -152,28 +152,28 @@ Deployment complete!
     "my_alert": {
       "id": "[UUID]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?w=[NUMID]"
     }
   },
   "pipelines": {
     "my_pipeline": {
       "id": "[UUID]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]"
     }
   },
   "schemas": {
     "my_schema": {
       "id": "main.test-schema",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?w=[NUMID]"
     }
   },
   "sql_warehouses": {
     "my_sql_warehouse": {
       "id": "[UUID]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]"
     }
   }
 }

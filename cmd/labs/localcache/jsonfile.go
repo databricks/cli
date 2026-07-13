@@ -56,8 +56,7 @@ type cached[T any] struct {
 
 func (r *LocalCache[T]) refreshCache(ctx context.Context, refresh func() (T, error), offlineVal T) (T, error) {
 	data, err := refresh()
-	var urlError *url.Error
-	if errors.As(err, &urlError) {
+	if urlError, ok := errors.AsType[*url.Error](err); ok {
 		log.Warnf(ctx, "System offline. Cannot refresh cache: %s", urlError)
 		return offlineVal, nil
 	}

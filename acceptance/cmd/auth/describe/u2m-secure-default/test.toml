@@ -1,0 +1,11 @@
+Ignore = [
+    "home"
+]
+
+# This test runs against the real OS keyring at Lookup time (no writes).
+# macOS produces a clean miss; Linux without a usable D-Bus session bus
+# produces a backend error. Normalize both so the assertion stays on the
+# resolved storage mode, not the lookup outcome.
+[[Repls]]
+Old = 'Unable to authenticate: error getting token: .*'
+New = 'Unable to authenticate: error getting token: [KEYRING_LOOKUP_ERROR]'

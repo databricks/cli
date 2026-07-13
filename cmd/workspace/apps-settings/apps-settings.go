@@ -3,6 +3,7 @@
 package apps_settings
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -29,6 +30,10 @@ func New() *cobra.Command {
 		Hidden: true,
 		RunE:   root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateCustomTemplate())
@@ -82,12 +87,14 @@ func newCreateCustomTemplate() *cobra.Command {
     GIT_PROVIDER: The Git provider of the template.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'git_repo', 'path', 'manifest', 'git_provider' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'git_repo', 'path', 'manifest', 'git_provider' in your JSON input")
 			}
 			return nil
 		}
@@ -176,6 +183,8 @@ func newDeleteCustomTemplate() *cobra.Command {
     NAME: The name of the custom template.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -233,6 +242,8 @@ func newGetCustomTemplate() *cobra.Command {
     NAME: The name of the custom template.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -300,6 +311,8 @@ func newListCustomTemplates() *cobra.Command {
   Lists all custom templates in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -372,12 +385,14 @@ func newUpdateCustomTemplate() *cobra.Command {
     GIT_PROVIDER: The Git provider of the template.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'name', 'git_repo', 'path', 'manifest', 'git_provider' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME as positional arguments. Provide 'name', 'git_repo', 'path', 'manifest', 'git_provider' in your JSON input")
 			}
 			return nil
 		}

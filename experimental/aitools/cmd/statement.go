@@ -2,9 +2,11 @@ package aitools
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
@@ -31,25 +33,26 @@ func renderStatementInfo(w io.Writer, info statementInfo) error {
 	return nil
 }
 
-// statementErrorFromStatus builds a batchResultError for any terminal non-success
-// state (FAILED, CANCELED, CLOSED), populating it from the server's ServiceError
-// when available and synthesizing a message when it isn't. Returns nil for
-// SUCCEEDED, non-terminal states, and nil status. The synthesized fallback
-// matters because the Statements API can hand back a non-success terminal state
-// with `Error == nil`, and skill consumers should be able to branch on
+// statementError converts the engine's structured statement error into the
+// batchResultError shape emitted in JSON output. It returns nil for a nil error
+// or any error that is not a *sqlexec.StatementError (the engine produces the
+// latter only on terminal non-success states). The error's Message and Code are
+// surfaced directly rather than the formatted Error() string, and the engine
+// synthesizes a "statement reached terminal state <STATE>" message when the
+// backend reports no ServiceError, so skill consumers can branch on
 // `error == null` alone instead of inspecting `state`.
-func statementErrorFromStatus(status *sql.StatementStatus) *batchResultError {
-	if status == nil || !isTerminalState(status) || status.State == sql.StatementStateSucceeded {
+func statementError(err error) *batchResultError {
+	if err == nil {
 		return nil
 	}
-	out := &batchResultError{}
-	if status.Error != nil {
-		out.Message = status.Error.Message
-		out.ErrorCode = string(status.Error.ErrorCode)
-	} else {
-		out.Message = fmt.Sprintf("statement reached terminal state %s", status.State)
+	se, ok := errors.AsType[*sqlexec.StatementError](err)
+	if !ok {
+		return &batchResultError{Message: err.Error()}
 	}
-	return out
+	return &batchResultError{
+		Message:   se.Message,
+		ErrorCode: string(se.Code),
+	}
 }
 
 func newStatementCmd() *cobra.Command {

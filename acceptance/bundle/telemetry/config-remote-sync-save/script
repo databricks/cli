@@ -1,0 +1,12 @@
+trace $CLI bundle deploy
+
+# Edit the job name locally (not deployed) so the local config diverges from the
+# deployed state. config-remote-sync --save then overwrites that pending edit,
+# exercising save, files_written_count, and overwritten_local_edits.
+update_file.py databricks.yml "test job" "locally edited job name"
+
+trace $CLI bundle config-remote-sync --save
+
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null)'
+
+rm out.requests.txt

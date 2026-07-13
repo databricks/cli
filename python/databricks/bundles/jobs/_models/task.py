@@ -8,6 +8,10 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
+from databricks.bundles.jobs._models.ai_runtime_task import (
+    AiRuntimeTask,
+    AiRuntimeTaskParam,
+)
 from databricks.bundles.jobs._models.alert_task import AlertTask, AlertTaskParam
 from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
     CleanRoomsNotebookTask,
@@ -28,10 +32,7 @@ from databricks.bundles.jobs._models.dbt_platform_task import (
     DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
-from databricks.bundles.jobs._models.for_each_task import (
-    ForEachTask,
-    ForEachTaskParam,
-)
+from databricks.bundles.jobs._models.for_each_task import ForEachTask, ForEachTaskParam
 from databricks.bundles.jobs._models.gen_ai_compute_task import (
     GenAiComputeTask,
     GenAiComputeTaskParam,
@@ -50,6 +51,10 @@ from databricks.bundles.jobs._models.pipeline_task import (
     PipelineTaskParam,
 )
 from databricks.bundles.jobs._models.power_bi_task import PowerBiTask, PowerBiTaskParam
+from databricks.bundles.jobs._models.python_operator_task import (
+    PythonOperatorTask,
+    PythonOperatorTaskParam,
+)
 from databricks.bundles.jobs._models.python_wheel_task import (
     PythonWheelTask,
     PythonWheelTaskParam,
@@ -104,9 +109,17 @@ class Task:
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
     """
 
+    ai_runtime_task: VariableOrOptional[AiRuntimeTask] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The task runs a multi-node GPU compute workload on Databricks AI Runtime.
+    External-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.
+    """
+
     alert_task: VariableOrOptional[AlertTask] = None
     """
-    The task evaluates a Databricks alert and sends notifications to subscribers
+    [Public Preview] The task evaluates a Databricks alert and sends notifications to subscribers
     when the `alert_task` field is present.
     """
 
@@ -118,7 +131,7 @@ class Task:
 
     compute: VariableOrOptional[Compute] = None
     """
-    Task level compute configuration.
+    [Beta] Task level compute configuration.
     """
 
     condition_task: VariableOrOptional[ConditionTask] = None
@@ -135,6 +148,8 @@ class Task:
     dbt_platform_task: VariableOrOptional[DbtPlatformTask] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     dbt_task: VariableOrOptional[DbtTask] = None
@@ -160,8 +175,6 @@ class Task:
 
     disabled: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
     """
 
@@ -191,9 +204,19 @@ class Task:
     gen_ai_compute_task: VariableOrOptional[GenAiComputeTask] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] DEPRECATED — use `AiRuntimeTask` for all new BYOT multi-node GPU
+    workloads (see ai_runtime_task.proto). `AiRuntimeTask` is the only
+    supported BYOT task type for new workloads; this proto is retained only
+    for AIR CLI (fka SGCLI) pywheel backwards compatibility and will be
+    removed once the pywheel → databricks-cli migration completes (post-
+    PuPr).
     """
 
     health: VariableOrOptional[JobsHealthRules] = None
+    """
+    An optional set of health rules that can be defined for this job.
+    """
 
     job_cluster_key: VariableOrOptional[str] = None
     """
@@ -238,7 +261,14 @@ class Task:
 
     power_bi_task: VariableOrOptional[PowerBiTask] = None
     """
-    The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
+    [Public Preview] The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
+    """
+
+    python_operator_task: VariableOrOptional[PythonOperatorTask] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The task runs a Python operator task.
     """
 
     python_wheel_task: VariableOrOptional[PythonWheelTask] = None
@@ -317,9 +347,17 @@ class TaskDict(TypedDict, total=False):
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
     """
 
+    ai_runtime_task: VariableOrOptional[AiRuntimeTaskParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The task runs a multi-node GPU compute workload on Databricks AI Runtime.
+    External-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.
+    """
+
     alert_task: VariableOrOptional[AlertTaskParam]
     """
-    The task evaluates a Databricks alert and sends notifications to subscribers
+    [Public Preview] The task evaluates a Databricks alert and sends notifications to subscribers
     when the `alert_task` field is present.
     """
 
@@ -331,7 +369,7 @@ class TaskDict(TypedDict, total=False):
 
     compute: VariableOrOptional[ComputeParam]
     """
-    Task level compute configuration.
+    [Beta] Task level compute configuration.
     """
 
     condition_task: VariableOrOptional[ConditionTaskParam]
@@ -348,6 +386,8 @@ class TaskDict(TypedDict, total=False):
     dbt_platform_task: VariableOrOptional[DbtPlatformTaskParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     dbt_task: VariableOrOptional[DbtTaskParam]
@@ -373,8 +413,6 @@ class TaskDict(TypedDict, total=False):
 
     disabled: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
     An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
     """
 
@@ -404,9 +442,19 @@ class TaskDict(TypedDict, total=False):
     gen_ai_compute_task: VariableOrOptional[GenAiComputeTaskParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] DEPRECATED — use `AiRuntimeTask` for all new BYOT multi-node GPU
+    workloads (see ai_runtime_task.proto). `AiRuntimeTask` is the only
+    supported BYOT task type for new workloads; this proto is retained only
+    for AIR CLI (fka SGCLI) pywheel backwards compatibility and will be
+    removed once the pywheel → databricks-cli migration completes (post-
+    PuPr).
     """
 
     health: VariableOrOptional[JobsHealthRulesParam]
+    """
+    An optional set of health rules that can be defined for this job.
+    """
 
     job_cluster_key: VariableOrOptional[str]
     """
@@ -451,7 +499,14 @@ class TaskDict(TypedDict, total=False):
 
     power_bi_task: VariableOrOptional[PowerBiTaskParam]
     """
-    The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
+    [Public Preview] The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
+    """
+
+    python_operator_task: VariableOrOptional[PythonOperatorTaskParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The task runs a Python operator task.
     """
 
     python_wheel_task: VariableOrOptional[PythonWheelTaskParam]

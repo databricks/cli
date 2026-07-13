@@ -1,0 +1,25 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.postgres_branches.main",
+      "label": "${resources.postgres_branches.main.id}"
+    },
+    {
+      "node": "resources.postgres_roles.owner",
+      "label": "${resources.postgres_roles.owner.id}"
+    }
+  ],
+  "action": "create",
+  "new_state": {
+    "value": {
+      "database_id": "my-database",
+      "parent": "${resources.postgres_branches.main.id}",
+      "postgres_database": "initial_db_name",
+      "role": "${resources.postgres_roles.owner.id}"
+    },
+    "vars": {
+      "parent": "${resources.postgres_branches.main.id}",
+      "role": "${resources.postgres_roles.owner.id}"
+    }
+  }
+}

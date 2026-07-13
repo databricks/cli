@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -110,8 +111,8 @@ func GetDefaultWarehouse(ctx context.Context, w *databricks.WorkspaceClient) (*s
 			State: warehouse.State,
 		}, nil
 	}
-	var apiErr *apierr.APIError
-	if !errors.As(err, &apiErr) || apiErr.StatusCode >= 500 {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || apiErr.StatusCode >= 500 {
 		return nil, fmt.Errorf("get default warehouse: %w", err)
 	}
 
@@ -137,8 +138,11 @@ func listUsableWarehouses(ctx context.Context, w *databricks.WorkspaceClient) ([
 	apiClient := httpclient.NewApiClient(clientCfg)
 
 	var response sql.ListWarehousesResponse
-	err = apiClient.Do(ctx, "GET", "/api/2.0/sql/warehouses?skip_cannot_use=true",
-		httpclient.WithResponseUnmarshal(&response))
+	opts := []httpclient.DoOption{httpclient.WithResponseUnmarshal(&response)}
+	for name, value := range auth.WorkspaceIDHeaders(w.Config) {
+		opts = append(opts, httpclient.WithRequestHeader(name, value))
+	}
+	err = apiClient.Do(ctx, "GET", "/api/2.0/sql/warehouses?skip_cannot_use=true", opts...)
 	if err != nil {
 		return nil, fmt.Errorf("list warehouses: %w", err)
 	}

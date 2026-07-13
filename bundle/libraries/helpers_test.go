@@ -27,10 +27,10 @@ func TestLibraryPath(t *testing.T) {
 	assert.NoError(t, err)
 
 	p, err = libraryPath(&compute.Library{})
-	assert.Equal(t, "", p)
+	assert.Empty(t, p)
 	assert.Error(t, err)
 
 	p, err = libraryPath(&compute.Library{Pypi: &compute.PythonPyPiLibrary{Package: "pypipackage"}})
-	assert.Equal(t, "", p)
+	assert.Empty(t, p)
 	assert.Error(t, err)
 }

@@ -1,0 +1,22 @@
+# Create pre-existing jobs in the testserver so WAL recovery triggers DoUpdate (reset) instead of DoCreate
+JOB1=$($CLI jobs create --json '{"name":"valid-job"}' | jq -r '.job_id')
+JOB2=$($CLI jobs create --json '{"name":"another-valid"}' | jq -r '.job_id')
+echo "$JOB1:JOB1_ID" >> ACC_REPLS
+echo "$JOB2:JOB2_ID" >> ACC_REPLS
+
+mkdir -p .databricks/bundle/default
+cp resources.json .databricks/bundle/default/
+
+envsubst < resources.json.wal.tmpl > .databricks/bundle/default/resources.json.wal
+
+trace cat .databricks/bundle/default/resources.json.wal
+trace $CLI bundle deploy
+trace $CLI bundle summary
+trace cat .databricks/bundle/default/resources.json.wal.corrupted
+
+printf "\n=== WAL after successful deploy ===\n"
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL exists (unexpected)"
+else
+    echo "WAL deleted (expected)"
+fi

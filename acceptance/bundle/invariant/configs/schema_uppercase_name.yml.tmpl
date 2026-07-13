@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# Reproduce: UC API normalizes identifier names to lowercase, causing
+# false drift on the second deploy when the config uses mixed-case names.
+# Volumes are covered by acceptance/bundle/resources/volumes/uppercase-name
+# instead: the Terraform provider rejects an uppercase volume schema_name
+# ("inconsistent final plan"), and the migrate invariant always deploys via
+# Terraform first, so an uppercase volume cannot live in this shared config.
+resources:
+  schemas:
+    foo:
+      catalog_name: main
+      name: MySCHEMA-$UNIQUE_NAME

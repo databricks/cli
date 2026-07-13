@@ -42,9 +42,11 @@ type IResource interface {
 	// Example: func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error)
 	DoRead(ctx context.Context, id string) (remoteState any, e error)
 
-	// DoDelete deletes the resource.
-	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error
-	DoDelete(ctx context.Context, id string) error
+	// DoDelete deletes the resource. The state argument is the last-persisted
+	// state for the resource; resources that don't need it should accept it as
+	// _ to satisfy the interface.
+	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettings) error
+	DoDelete(ctx context.Context, id string, state any) error
 
 	// [Optional] OverrideChangeDesc can implement custom logic to update a given ChangeDesc; it is run last after built-in classifiers and field triggers.
 	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, remoteState any) error
@@ -63,14 +65,20 @@ type IResource interface {
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
 
 	// [Optional] DoResize resizes the resource. Only supported by clusters
-	DoResize(ctx context.Context, id string, newState any) error
+	DoResize(ctx context.Context, id string, newState any, entry *PlanEntry) error
 
 	// [Optional] WaitAfterCreate waits for the resource to become ready after creation. Returns optionally updated remote state.
 	// TODO: wait status should be persisted in the state.
-	WaitAfterCreate(ctx context.Context, newState any) (remoteState any, e error)
+	WaitAfterCreate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
-	WaitAfterUpdate(ctx context.Context, newState any) (remoteState any, e error)
+	WaitAfterUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
+
+	// [Optional] WaitAfterDelete waits for the resource to be fully removed after DoDelete returns.
+	// Useful for backends with asynchronous deletion: a follow-up create on the same name (recreate path)
+	// would otherwise race with the in-progress teardown. State is dropped before this is called, so a
+	// timeout here leaves the bundle consistent (resource was requested deleted, retry on next plan).
+	WaitAfterDelete(ctx context.Context, id string) error
 
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
@@ -92,6 +100,7 @@ type Adapter struct {
 	doUpdateWithID     *calladapt.BoundCaller
 	waitAfterCreate    *calladapt.BoundCaller
 	waitAfterUpdate    *calladapt.BoundCaller
+	waitAfterDelete    *calladapt.BoundCaller
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 
@@ -124,6 +133,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		doResize:                nil,
 		waitAfterCreate:         nil,
 		waitAfterUpdate:         nil,
+		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
@@ -206,6 +216,11 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.waitAfterDelete, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterDelete")
+	if err != nil {
+		return err
+	}
+
 	a.overrideChangeDesc, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "OverrideChangeDesc")
 	if err != nil {
 		return err
@@ -264,6 +279,7 @@ func (a *Adapter) validate() error {
 	validations := []any{
 		"PrepareState return", a.prepareState.OutTypes[0], stateType,
 		"DoCreate newState", a.doCreate.InTypes[1], stateType,
+		"DoDelete state", a.doDelete.InTypes[2], stateType,
 	}
 
 	// If RemapState is implemented, validate its signature.
@@ -306,7 +322,7 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.waitAfterCreate != nil {
-		validations = append(validations, "WaitAfterCreate newState", a.waitAfterCreate.InTypes[1], stateType)
+		validations = append(validations, "WaitAfterCreate newState", a.waitAfterCreate.InTypes[2], stateType)
 		// WaitAfterCreate must return (remoteType, error)
 		if len(a.waitAfterCreate.OutTypes) != 2 {
 			return fmt.Errorf("WaitAfterCreate must return (remoteType, error), got %d return values", len(a.waitAfterCreate.OutTypes))
@@ -315,7 +331,7 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.waitAfterUpdate != nil {
-		validations = append(validations, "WaitAfterUpdate newState", a.waitAfterUpdate.InTypes[1], stateType)
+		validations = append(validations, "WaitAfterUpdate newState", a.waitAfterUpdate.InTypes[2], stateType)
 		// WaitAfterUpdate must return (remoteType, error)
 		if len(a.waitAfterUpdate.OutTypes) != 2 {
 			return fmt.Errorf("WaitAfterUpdate must return (remoteType, error), got %d return values", len(a.waitAfterUpdate.OutTypes))
@@ -330,12 +346,12 @@ func (a *Adapter) validate() error {
 
 	// Validate resourceConfig consistency with DoUpdateWithID
 	if a.overrideChangeDesc == nil {
-		hasUpdateWithIDTrigger := a.resourceConfig != nil && len(a.resourceConfig.UpdateIDOnChanges) > 0
+		hasUpdateWithIDTrigger := a.resourceConfig != nil && len(a.resourceConfig.UpdatableIDFields) > 0
 		if hasUpdateWithIDTrigger && a.doUpdateWithID == nil {
-			return errors.New("resourceConfig has update_id_on_changes but DoUpdateWithID is not implemented")
+			return errors.New("resourceConfig has updatable_id_fields but DoUpdateWithID is not implemented")
 		}
 		if a.doUpdateWithID != nil && !hasUpdateWithIDTrigger {
-			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks update_id_on_changes")
+			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks updatable_id_fields")
 		}
 	}
 
@@ -362,8 +378,16 @@ func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 	return a.generatedResourceConfig
 }
 
-func (a *Adapter) IsFieldInRecreateOnChanges(path *structpath.PathNode) bool {
+// FieldTriggersRecreate reports whether a local change to the field forces a
+// delete + create. Both recreate_on_changes and provided_id_fields do this, so a
+// caller that knows the ID is preserved can conclude the field is unchanged.
+func (a *Adapter) FieldTriggersRecreate(path *structpath.PathNode) bool {
 	for _, p := range a.resourceConfig.RecreateOnChanges {
+		if path.HasPatternPrefix(p.Field) {
+			return true
+		}
+	}
+	for _, p := range a.resourceConfig.ProvidedIDFields {
 		if path.HasPatternPrefix(p.Field) {
 			return true
 		}
@@ -399,12 +423,9 @@ func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
 	return outs[0], nil
 }
 
-func (a *Adapter) DoDelete(ctx context.Context, id string) error {
-	_, err := a.doDelete.Call(ctx, id)
-	if err != nil {
-		return err
-	}
-	return nil
+func (a *Adapter) DoDelete(ctx context.Context, id string, state any) error {
+	_, err := a.doDelete.Call(ctx, id, state)
+	return err
 }
 
 // normalizeNilPointer converts a nil pointer wrapped in an interface to a nil interface.
@@ -414,7 +435,7 @@ func normalizeNilPointer(v any) any {
 		return nil
 	}
 	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+	if rv.Kind() == reflect.Pointer && rv.IsNil() {
 		return nil
 	}
 	return v
@@ -473,24 +494,24 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	return id, remoteState, nil
 }
 
-func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
+func (a *Adapter) DoResize(ctx context.Context, id string, newState any, entry *PlanEntry) error {
 	if a.doResize == nil {
 		return errors.New("internal error: DoResize not found")
 	}
 
-	_, err := a.doResize.Call(ctx, id, newState)
+	_, err := a.doResize.Call(ctx, id, newState, entry)
 	return err
 }
 
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if available, otherwise returns nil
-func (a *Adapter) WaitAfterCreate(ctx context.Context, newState any) (any, error) {
+func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) (any, error) {
 	if a.waitAfterCreate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterCreate.Call(ctx, newState)
+	outs, err := a.waitAfterCreate.Call(ctx, id, newState)
 	if err != nil {
 		return nil, err
 	}
@@ -502,18 +523,28 @@ func (a *Adapter) WaitAfterCreate(ctx context.Context, newState any) (any, error
 // WaitAfterUpdate waits for the resource to become ready after update.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if available, otherwise returns nil.
-func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error) {
+func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any) (any, error) {
 	if a.waitAfterUpdate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterUpdate.Call(ctx, newState)
+	outs, err := a.waitAfterUpdate.Call(ctx, id, newState)
 	if err != nil {
 		return nil, err
 	}
 
 	remoteState := normalizeNilPointer(outs[0])
 	return remoteState, nil
+}
+
+// WaitAfterDelete waits for the resource to be fully removed after DoDelete.
+// If the resource doesn't implement this method, this is a no-op.
+func (a *Adapter) WaitAfterDelete(ctx context.Context, id string) error {
+	if a.waitAfterDelete == nil {
+		return nil // no-op if not implemented
+	}
+	_, err := a.waitAfterDelete.Call(ctx, id)
+	return err
 }
 
 // HasOverrideChangeDesc returns true if OverrideChangeDesc is defined for this resource impl
@@ -550,7 +581,7 @@ func validatePointerToStruct(t reflect.Type, context string) error {
 	if t == nil {
 		return fmt.Errorf("%s not set", context)
 	}
-	if t.Kind() != reflect.Ptr {
+	if t.Kind() != reflect.Pointer {
 		return fmt.Errorf("%s must be a pointer, got %s", context, t.Kind())
 	}
 	if t.Elem().Kind() != reflect.Struct {

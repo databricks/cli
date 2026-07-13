@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -50,6 +51,5 @@ func (d *DatabaseInstance) InitializeURL(baseURL url.URL) {
 	if d.Name == "" {
 		return
 	}
-	baseURL.Path = "compute/database-instances/" + d.Name
-	d.URL = baseURL.String()
+	d.URL = workspaceurls.ResourceURL(baseURL, "database_instances", d.Name)
 }

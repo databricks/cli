@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
@@ -123,7 +122,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 		ctx := cmdio.MockDiscard(t.Context())
 		w := &databricks.WorkspaceClient{}
 
-		var lastMessage []byte
+		received := make(chan []byte, 1)
 		upgrader := websocket.Upgrader{}
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			conn, err := upgrader.Upgrade(w, r, nil)
@@ -138,7 +137,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 				t.Errorf("failed to read message: %v", err)
 				return
 			}
-			lastMessage = message
+			received <- message
 		}))
 		defer server.Close()
 
@@ -149,7 +148,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 		defer conn.Close()
 
 		vb := NewBridge(ctx, w, "test-app", 5173, false)
-		vb.tunnelConn = conn
+		vb.tunnelConn.Store(conn)
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
 
@@ -162,10 +161,8 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 		err = vb.handleDirListRequest(msg)
 		require.NoError(t, err)
 
-		time.Sleep(100 * time.Millisecond)
-
 		var response BridgeMessage
-		err = json.Unmarshal(lastMessage, &response)
+		err = json.Unmarshal(waitForMessage(t, received), &response)
 		require.NoError(t, err)
 
 		assert.Equal(t, "dir:list:response", response.Type)
@@ -188,7 +185,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 		ctx := cmdio.MockDiscard(t.Context())
 		w := &databricks.WorkspaceClient{}
 
-		var lastMessage []byte
+		received := make(chan []byte, 1)
 		upgrader := websocket.Upgrader{}
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			conn, err := upgrader.Upgrade(w, r, nil)
@@ -203,7 +200,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 				t.Errorf("failed to read message: %v", err)
 				return
 			}
-			lastMessage = message
+			received <- message
 		}))
 		defer server.Close()
 
@@ -214,7 +211,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 		defer conn.Close()
 
 		vb := NewBridge(ctx, w, "test-app", 5173, false)
-		vb.tunnelConn = conn
+		vb.tunnelConn.Store(conn)
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
 
@@ -227,10 +224,8 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 		err = vb.handleDirListRequest(msg)
 		require.NoError(t, err)
 
-		time.Sleep(100 * time.Millisecond)
-
 		var response BridgeMessage
-		err = json.Unmarshal(lastMessage, &response)
+		err = json.Unmarshal(waitForMessage(t, received), &response)
 		require.NoError(t, err)
 
 		assert.Equal(t, "dir:list:response", response.Type)

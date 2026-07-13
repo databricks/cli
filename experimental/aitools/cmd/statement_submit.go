@@ -3,10 +3,10 @@ package aitools
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
@@ -14,10 +14,12 @@ import (
 func newStatementSubmitCmd() *cobra.Command {
 	var warehouseID string
 	var filePath string
+	var paramFlags []string
 	// resolved by PreRunE so input validation runs before any auth/profile
 	// work and the documented "validates input before WorkspaceClient" claim
 	// in the PR description is actually true.
 	var sqlStatement string
+	var params []sql.StatementParameterListItem
 
 	cmd := &cobra.Command{
 		Use:   "submit [SQL | file.sql]",
@@ -27,9 +29,14 @@ statement_id immediately, without waiting for results.
 
 The statement keeps running server-side. Harvest results with
 'statement get <id>', inspect with 'statement status <id>', or stop
-with 'statement cancel <id>'.`,
+with 'statement cancel <id>'.
+
+Pass named parameters with --param. Use ":name" markers in the SQL and
+"--param name=value" (string) or "--param name:TYPE=value" (typed) to
+bind values.`,
 		Example: `  databricks experimental aitools tools statement submit "SELECT pg_sleep(60)" --warehouse <wh>
-  databricks experimental aitools tools statement submit --file query.sql`,
+  databricks experimental aitools tools statement submit --file query.sql
+  databricks experimental aitools tools statement submit --param since:DATE=2026-01-01 "SELECT * FROM events WHERE ts > :since"`,
 		Args: cobra.MaximumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -47,6 +54,11 @@ with 'statement cancel <id>'.`,
 			}
 			sqlStatement = sqls[0]
 
+			params, err = parseParams(paramFlags)
+			if err != nil {
+				return err
+			}
+
 			return root.MustWorkspaceClient(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -57,7 +69,7 @@ with 'statement cancel <id>'.`,
 				return err
 			}
 
-			info, err := submitStatement(ctx, w.StatementExecution, sqlStatement, wID)
+			info, err := submitStatement(ctx, w.StatementExecution, sqlStatement, wID, params)
 			if err != nil {
 				return err
 			}
@@ -67,28 +79,22 @@ with 'statement cancel <id>'.`,
 
 	cmd.Flags().StringVarP(&warehouseID, "warehouse", "w", "", "SQL warehouse ID to use for execution")
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to a SQL file to execute")
+	cmd.Flags().StringArrayVar(&paramFlags, "param", nil, "Named parameter, repeatable. Format: name=value (STRING) or name:TYPE=value (e.g. name:DATE=2026-01-01). Empty value is sent as NULL.")
 
 	return cmd
 }
 
 // submitStatement issues an asynchronous ExecuteStatement and returns the handle.
-func submitStatement(ctx context.Context, api sql.StatementExecutionInterface, statement, warehouseID string) (statementInfo, error) {
-	resp, err := api.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
-		WarehouseId:   warehouseID,
-		Statement:     statement,
-		WaitTimeout:   "0s",
-		OnWaitTimeout: sql.ExecuteStatementRequestOnWaitTimeoutContinue,
-	})
+func submitStatement(ctx context.Context, api sql.StatementExecutionInterface, statement, warehouseID string, params []sql.StatementParameterListItem) (statementInfo, error) {
+	client := sqlexec.New(api, warehouseID)
+	stmt, err := client.Submit(ctx, statement, sqlexec.WithParameters(params))
 	if err != nil {
-		return statementInfo{}, fmt.Errorf("execute statement: %w", err)
+		return statementInfo{}, err
 	}
 
-	info := statementInfo{
-		StatementID: resp.StatementId,
+	return statementInfo{
+		StatementID: stmt.ID,
+		State:       stmt.State,
 		WarehouseID: warehouseID,
-	}
-	if resp.Status != nil {
-		info.State = resp.Status.State
-	}
-	return info, nil
+	}, nil
 }

@@ -32,7 +32,10 @@ cleanup() {
 
 trap cleanup EXIT
 
-trace $CLI bundle deploy &> LOG.deploy
+$CLI bundle plan -o json > plan.json 2>LOG.plan_initial.err
+cat LOG.plan_initial.err | contains.py '!panic' '!internal error' > /dev/null
+
+trace $CLI bundle deploy $(readplanarg plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
 
 # Special message to fuzzer that generated config was fine.

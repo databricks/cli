@@ -28,6 +28,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
@@ -70,9 +74,13 @@ func newCreate() *cobra.Command {
   Create Published OAuth App Integration.
 
   You can retrieve the published OAuth app integration via
-  :method:PublishedAppIntegration/get.`
+  [PublishedAppIntegration/get].
+
+  [PublishedAppIntegration/get]: https://docs.databricks.com/api/account/publishedappintegration/get`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -136,9 +144,13 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete Published OAuth App Integration.
 
   Delete an existing Published OAuth App Integration. You can retrieve the
-  published OAuth app integration via :method:PublishedAppIntegration/get.`
+  published OAuth app integration via [PublishedAppIntegration/get].
+
+  [PublishedAppIntegration/get]: https://docs.databricks.com/api/account/publishedappintegration/get`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -192,6 +204,8 @@ func newGet() *cobra.Command {
   Gets the Published OAuth App Integration for the given integration id.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -260,6 +274,8 @@ func newList() *cobra.Command {
   account`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -318,9 +334,13 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Updates Published OAuth App Integration.
 
   Updates an existing published OAuth App Integration. You can retrieve the
-  published OAuth app integration via :method:PublishedAppIntegration/get.`
+  published OAuth app integration via [PublishedAppIntegration/get].
+
+  [PublishedAppIntegration/get]: https://docs.databricks.com/api/account/publishedappintegration/get`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

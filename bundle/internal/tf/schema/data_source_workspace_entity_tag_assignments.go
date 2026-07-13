@@ -3,11 +3,11 @@
 package schema
 
 type DataSourceWorkspaceEntityTagAssignmentsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceWorkspaceEntityTagAssignmentsTagAssignmentsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceWorkspaceEntityTagAssignmentsTagAssignments struct {

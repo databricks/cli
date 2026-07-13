@@ -11,13 +11,12 @@ func EnsureNoExtraMethods(receiver any, ifaceTypes ...reflect.Type) error {
 
 	allowed := make(map[string]struct{})
 	for _, ifaceType := range ifaceTypes {
-		for i := range ifaceType.NumMethod() {
-			allowed[ifaceType.Method(i).Name] = struct{}{}
+		for method := range ifaceType.Methods() {
+			allowed[method.Name] = struct{}{}
 		}
 	}
 
-	for i := range rt.NumMethod() {
-		m := rt.Method(i)
+	for m := range rt.Methods() {
 		if _, ok := allowed[m.Name]; !ok {
 			return fmt.Errorf("unexpected method %s on %v; only methods from %v are allowed", m.Name, rt, ifaceTypes)
 		}

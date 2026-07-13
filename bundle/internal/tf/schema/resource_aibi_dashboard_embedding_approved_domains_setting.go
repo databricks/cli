@@ -7,7 +7,7 @@ type ResourceAibiDashboardEmbeddingApprovedDomainsSettingAibiDashboardEmbeddingA
 }
 
 type ResourceAibiDashboardEmbeddingApprovedDomainsSettingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceAibiDashboardEmbeddingApprovedDomainsSetting struct {

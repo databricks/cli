@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Find candidate types from openapi.json that match resource shapes in out.fields.txt and save them (apitypes.generated.yml).
+Find candidate types from cli.json that match resource shapes in out.fields.txt and save them (apitypes.generated.yml).
 
 The types are found based on top level field overlap between bundle schema and API type.
 
@@ -40,20 +40,20 @@ def get_schema_fields(schemas):
     """Get top-level field names for each schema type."""
     schema_fields = {}
     for name, schema in schemas.items():
-        props = schema.get("properties", {})
+        props = schema.get("fields", {})
         if props:
             schema_fields[name] = set(props.keys())
     return schema_fields
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate apitypes.yml from OpenAPI schema")
-    parser.add_argument("apischema", type=Path, help="Path to OpenAPI schema JSON file")
+    parser = argparse.ArgumentParser(description="Generate apitypes.yml from the cli.json schema block")
+    parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
     parser.add_argument("out_fields", type=Path, help="Path to out.fields.txt file")
     args = parser.parse_args()
 
     resource_fields = parse_out_fields(args.out_fields)
-    schemas = json.loads(args.apischema.read_text()).get("components", {}).get("schemas", {})
+    schemas = json.loads(args.apischema.read_text())["schemas"]
     schema_fields = get_schema_fields(schemas)
 
     field_counts = Counter()
@@ -90,7 +90,7 @@ def main():
 
         print(f"\n{resource}: {len(res_fields)} fields, max_score={max_score:.2f}", file=sys.stderr)
         top_pct = candidates[0][0] if candidates else 0
-        for pct, score, schema_name, overlap, s_fields in candidates[:5]:
+        for pct, _score, schema_name, overlap, s_fields in candidates[:5]:
             # Only show if >= 80% or within 20% of top entry
             if pct < 80 and (top_pct - pct) >= 20:
                 continue
@@ -103,7 +103,7 @@ def main():
 
     print("# Generated, do not edit. Override via apitypes.yml")
     for resource in sorted(top_matches):
-        print("")
+        print()
         print(f"{resource}: {top_matches[resource]}")
 
 

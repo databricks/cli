@@ -34,8 +34,8 @@ func New() *cobra.Command {
   owner of the securable.
 
   The original path (/api/2.1/unity-catalog/workspace-bindings/catalogs/{name})
-  is deprecated. Please use the new path
-  (/api/2.1/unity-catalog/bindings/{securable_type}/{securable_name}) which
+  is deprecated. Use the new path
+  (/api/2.1/unity-catalog/bindings/{securable_type}/{securable_name}), which
   introduces the ability to bind a securable in READ_ONLY mode (catalogs only).
 
   Securable types that support binding: - catalog - storage_credential -
@@ -43,6 +43,10 @@ func New() *cobra.Command {
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -83,6 +87,8 @@ func newGet() *cobra.Command {
     NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -164,6 +170,8 @@ func newGetBindings() *cobra.Command {
     SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -232,6 +240,8 @@ func newUpdate() *cobra.Command {
     NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -310,6 +320,8 @@ func newUpdateBindings() *cobra.Command {
     SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

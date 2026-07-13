@@ -8,6 +8,8 @@ type Resources struct {
 	AccountNetworkPolicy                         map[string]any `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2               map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                             map[string]any `json:"databricks_account_setting_v2,omitempty"`
+	AiSearchEndpoint                             map[string]any `json:"databricks_ai_search_endpoint,omitempty"`
+	AiSearchIndex                                map[string]any `json:"databricks_ai_search_index,omitempty"`
 	AibiDashboardEmbeddingAccessPolicySetting    map[string]any `json:"databricks_aibi_dashboard_embedding_access_policy_setting,omitempty"`
 	AibiDashboardEmbeddingApprovedDomainsSetting map[string]any `json:"databricks_aibi_dashboard_embedding_approved_domains_setting,omitempty"`
 	Alert                                        map[string]any `json:"databricks_alert,omitempty"`
@@ -44,6 +46,8 @@ type Resources struct {
 	DisableLegacyAccessSetting                   map[string]any `json:"databricks_disable_legacy_access_setting,omitempty"`
 	DisableLegacyDbfsSetting                     map[string]any `json:"databricks_disable_legacy_dbfs_setting,omitempty"`
 	DisableLegacyFeaturesSetting                 map[string]any `json:"databricks_disable_legacy_features_setting,omitempty"`
+	DisasterRecoveryFailoverGroup                map[string]any `json:"databricks_disaster_recovery_failover_group,omitempty"`
+	DisasterRecoveryStableUrl                    map[string]any `json:"databricks_disaster_recovery_stable_url,omitempty"`
 	Endpoint                                     map[string]any `json:"databricks_endpoint,omitempty"`
 	EnhancedSecurityMonitoringWorkspaceSetting   map[string]any `json:"databricks_enhanced_security_monitoring_workspace_setting,omitempty"`
 	Entitlements                                 map[string]any `json:"databricks_entitlements,omitempty"`
@@ -105,6 +109,7 @@ type Resources struct {
 	PolicyInfo                                   map[string]any `json:"databricks_policy_info,omitempty"`
 	PostgresBranch                               map[string]any `json:"databricks_postgres_branch,omitempty"`
 	PostgresCatalog                              map[string]any `json:"databricks_postgres_catalog,omitempty"`
+	PostgresDataApi                              map[string]any `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                             map[string]any `json:"databricks_postgres_database,omitempty"`
 	PostgresEndpoint                             map[string]any `json:"databricks_postgres_endpoint,omitempty"`
 	PostgresProject                              map[string]any `json:"databricks_postgres_project,omitempty"`
@@ -123,6 +128,7 @@ type Resources struct {
 	Secret                                       map[string]any `json:"databricks_secret,omitempty"`
 	SecretAcl                                    map[string]any `json:"databricks_secret_acl,omitempty"`
 	SecretScope                                  map[string]any `json:"databricks_secret_scope,omitempty"`
+	SecretUc                                     map[string]any `json:"databricks_secret_uc,omitempty"`
 	ServicePrincipal                             map[string]any `json:"databricks_service_principal,omitempty"`
 	ServicePrincipalFederationPolicy             map[string]any `json:"databricks_service_principal_federation_policy,omitempty"`
 	ServicePrincipalRole                         map[string]any `json:"databricks_service_principal_role,omitempty"`
@@ -138,6 +144,8 @@ type Resources struct {
 	SqlVisualization                             map[string]any `json:"databricks_sql_visualization,omitempty"`
 	SqlWidget                                    map[string]any `json:"databricks_sql_widget,omitempty"`
 	StorageCredential                            map[string]any `json:"databricks_storage_credential,omitempty"`
+	SupervisorAgent                              map[string]any `json:"databricks_supervisor_agent,omitempty"`
+	SupervisorAgentTool                          map[string]any `json:"databricks_supervisor_agent_tool,omitempty"`
 	SystemSchema                                 map[string]any `json:"databricks_system_schema,omitempty"`
 	Table                                        map[string]any `json:"databricks_table,omitempty"`
 	TagPolicy                                    map[string]any `json:"databricks_tag_policy,omitempty"`
@@ -164,6 +172,8 @@ func NewResources() *Resources {
 		AccountNetworkPolicy:                         make(map[string]any),
 		AccountSettingUserPreferenceV2:               make(map[string]any),
 		AccountSettingV2:                             make(map[string]any),
+		AiSearchEndpoint:                             make(map[string]any),
+		AiSearchIndex:                                make(map[string]any),
 		AibiDashboardEmbeddingAccessPolicySetting:    make(map[string]any),
 		AibiDashboardEmbeddingApprovedDomainsSetting: make(map[string]any),
 		Alert:                                  make(map[string]any),
@@ -184,26 +194,28 @@ func NewResources() *Resources {
 		Cluster:                                make(map[string]any),
 		ClusterPolicy:                          make(map[string]any),
 		ComplianceSecurityProfileWorkspaceSetting: make(map[string]any),
-		Connection:                      make(map[string]any),
-		Credential:                      make(map[string]any),
-		CustomAppIntegration:            make(map[string]any),
-		Dashboard:                       make(map[string]any),
-		DataClassificationCatalogConfig: make(map[string]any),
-		DataQualityMonitor:              make(map[string]any),
-		DataQualityRefresh:              make(map[string]any),
-		DatabaseDatabaseCatalog:         make(map[string]any),
-		DatabaseInstance:                make(map[string]any),
-		DatabaseSyncedDatabaseTable:     make(map[string]any),
-		DbfsFile:                        make(map[string]any),
-		DefaultNamespaceSetting:         make(map[string]any),
-		Directory:                       make(map[string]any),
-		DisableLegacyAccessSetting:      make(map[string]any),
-		DisableLegacyDbfsSetting:        make(map[string]any),
-		DisableLegacyFeaturesSetting:    make(map[string]any),
-		Endpoint:                        make(map[string]any),
-		EnhancedSecurityMonitoringWorkspaceSetting: make(map[string]any),
-		Entitlements:        make(map[string]any),
-		EntityTagAssignment: make(map[string]any),
+		Connection:                                  make(map[string]any),
+		Credential:                                  make(map[string]any),
+		CustomAppIntegration:                        make(map[string]any),
+		Dashboard:                                   make(map[string]any),
+		DataClassificationCatalogConfig:             make(map[string]any),
+		DataQualityMonitor:                          make(map[string]any),
+		DataQualityRefresh:                          make(map[string]any),
+		DatabaseDatabaseCatalog:                     make(map[string]any),
+		DatabaseInstance:                            make(map[string]any),
+		DatabaseSyncedDatabaseTable:                 make(map[string]any),
+		DbfsFile:                                    make(map[string]any),
+		DefaultNamespaceSetting:                     make(map[string]any),
+		Directory:                                   make(map[string]any),
+		DisableLegacyAccessSetting:                  make(map[string]any),
+		DisableLegacyDbfsSetting:                    make(map[string]any),
+		DisableLegacyFeaturesSetting:                make(map[string]any),
+		DisasterRecoveryFailoverGroup:               make(map[string]any),
+		DisasterRecoveryStableUrl:                   make(map[string]any),
+		Endpoint:                                    make(map[string]any),
+		EnhancedSecurityMonitoringWorkspaceSetting:  make(map[string]any),
+		Entitlements:                                make(map[string]any),
+		EntityTagAssignment:                         make(map[string]any),
 		EnvironmentsDefaultWorkspaceBaseEnvironment: make(map[string]any),
 		EnvironmentsWorkspaceBaseEnvironment:        make(map[string]any),
 		ExternalLocation:                            make(map[string]any),
@@ -261,6 +273,7 @@ func NewResources() *Resources {
 		PolicyInfo:                                  make(map[string]any),
 		PostgresBranch:                              make(map[string]any),
 		PostgresCatalog:                             make(map[string]any),
+		PostgresDataApi:                             make(map[string]any),
 		PostgresDatabase:                            make(map[string]any),
 		PostgresEndpoint:                            make(map[string]any),
 		PostgresProject:                             make(map[string]any),
@@ -279,6 +292,7 @@ func NewResources() *Resources {
 		Secret:                                      make(map[string]any),
 		SecretAcl:                                   make(map[string]any),
 		SecretScope:                                 make(map[string]any),
+		SecretUc:                                    make(map[string]any),
 		ServicePrincipal:                            make(map[string]any),
 		ServicePrincipalFederationPolicy:            make(map[string]any),
 		ServicePrincipalRole:                        make(map[string]any),
@@ -294,6 +308,8 @@ func NewResources() *Resources {
 		SqlVisualization:                            make(map[string]any),
 		SqlWidget:                                   make(map[string]any),
 		StorageCredential:                           make(map[string]any),
+		SupervisorAgent:                             make(map[string]any),
+		SupervisorAgentTool:                         make(map[string]any),
 		SystemSchema:                                make(map[string]any),
 		Table:                                       make(map[string]any),
 		TagPolicy:                                   make(map[string]any),

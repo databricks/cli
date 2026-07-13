@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-remote-sync-save/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle config-remote-sync --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.foo
+  name: replace
+
+
+
+>>> cat out.requests.txt
+{
+  "save": true,
+  "engine": "direct",
+  "changes_total": 1,
+  "replace_count": 1,
+  "overwritten_local_edits": 1,
+  "resource_changes": [
+    {
+      "resource_type": "jobs",
+      "changes_count": 1,
+      "replace_count": 1
+    }
+  ],
+  "files_changed_count": 1,
+  "files_written_count": 1
+}

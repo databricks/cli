@@ -104,6 +104,7 @@ type runPythonMutatorOpts struct {
 	bundleRootPath string
 	pythonPath     string
 	loadLocations  bool
+	authEnv        map[string]string
 }
 
 // getOpts adapts deprecated PyDABs and upcoming Python configuration
@@ -217,6 +218,15 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return diag.Errorf("Running Python code is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
 	}
 
+	// Propagate auth env so the Databricks SDK in the Python subprocess uses the
+	// same credentials as the CLI. In particular this carries DATABRICKS_CONFIG_PROFILE,
+	// which lets the CLI disambiguate profiles sharing the same host when the SDK
+	// re-invokes `databricks auth token --host <host>`.
+	authEnv, err := b.AuthEnv(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
 	var mutateDiags diag.Diagnostics
 	var result applyPythonOutputResult
@@ -228,16 +238,18 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, fmt.Errorf("failed to get Python interpreter path: %w", err)
 		}
 
-		cacheDir, err := createCacheDir(ctx)
+		cacheDir, cleanup, err := createCacheDir(ctx)
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to create cache dir: %w", err)
 		}
+		defer cleanup()
 
 		rightRoot, diags := m.runPythonMutator(ctx, leftRoot, runPythonMutatorOpts{
 			cacheDir:       cacheDir,
 			bundleRootPath: b.BundleRootPath,
 			pythonPath:     pythonPath,
 			loadLocations:  opts.loadLocations,
+			authEnv:        authEnv,
 		})
 		mutateDiags = diags
 		if diags.HasError() {
@@ -304,7 +316,8 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	return mutateDiags
 }
 
-func createCacheDir(ctx context.Context) (string, error) {
+// createCacheDir returns the directory for input/output files of the Python subprocess, and a cleanup function.
+func createCacheDir(ctx context.Context) (string, func(), error) {
 	// b.LocalStateDir doesn't work because target isn't yet selected
 
 	// support the same env variable as in b.LocalStateDir
@@ -314,13 +327,20 @@ func createCacheDir(ctx context.Context) (string, error) {
 
 		err := os.MkdirAll(cacheDir, 0o700)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 
-		return cacheDir, nil
+		// the user picked this location explicitly, keep the files for inspection
+		return cacheDir, func() {}, nil
 	}
 
-	return os.MkdirTemp("", "-python")
+	cacheDir, err := os.MkdirTemp("", "-python")
+	if err != nil {
+		return "", nil, err
+	}
+
+	// input.json contains the full serialized bundle configuration; don't leave it behind in the system temp dir
+	return cacheDir, func() { _ = os.RemoveAll(cacheDir) }, nil
 }
 
 func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, opts runPythonMutatorOpts) (dyn.Value, diag.Diagnostics) {
@@ -364,6 +384,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 		process.WithDir(opts.bundleRootPath),
 		process.WithStderrWriter(stderrWriter),
 		process.WithStdoutWriter(stdoutWriter),
+		process.WithEnvs(opts.authEnv),
 	)
 	if processErr != nil {
 		logger.Debugf(ctx, "python mutator process failed: %s", processErr)

@@ -110,7 +110,7 @@ func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config
 	return response, nil
 }
 
-func (r *ResourceQualityMonitor) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceQualityMonitor) DoDelete(ctx context.Context, id string, _ *QualityMonitorState) error {
 	//nolint:staticcheck // Direct quality_monitor resource still uses legacy monitor endpoints; v1 data-quality migration is separate work.
 	_, err := r.client.QualityMonitors.Delete(ctx, catalog.DeleteQualityMonitorRequest{
 		TableName: id,

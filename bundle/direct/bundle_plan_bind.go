@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 // ApplyBindToPlan layers declarative bind blocks onto a plan that has already been
@@ -134,7 +135,7 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 
 	remoteState, err := adapter.DoRead(ctx, bindID)
 	if err != nil {
-		if isResourceGone(err) {
+		if apierr.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("%s: resource with ID %q does not exist in workspace", errorPrefix, bindID))
 		} else {
 			logdiag.LogError(ctx, fmt.Errorf("%s: reading remote resource id=%q: %w", errorPrefix, bindID, err))

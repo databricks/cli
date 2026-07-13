@@ -3,6 +3,7 @@
 package apps
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -31,6 +32,10 @@ func New() *cobra.Command {
 		GroupID: "apps",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -94,7 +99,9 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
-	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM]`)
+	cmd.Flags().IntVar(&createReq.App.ComputeMaxInstances, "compute-max-instances", createReq.App.ComputeMaxInstances, `Maximum number of app instances.`)
+	cmd.Flags().IntVar(&createReq.App.ComputeMinInstances, "compute-min-instances", createReq.App.ComputeMinInstances, `Minimum number of app instances.`)
+	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
@@ -117,12 +124,14 @@ func newCreate() *cobra.Command {
       characters and hyphens. It must be unique within the workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -240,12 +249,14 @@ func newCreateSpace() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -372,12 +383,14 @@ func newCreateUpdate() *cobra.Command {
       future.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'update_mask' in your JSON input")
+				return errors.New("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'update_mask' in your JSON input")
 			}
 			return nil
 		}
@@ -469,6 +482,8 @@ func newDelete() *cobra.Command {
     NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -526,6 +541,8 @@ func newDeleteAppThumbnail() *cobra.Command {
     NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -596,6 +613,8 @@ func newDeleteSpace() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -703,6 +722,8 @@ func newDeploy() *cobra.Command {
     APP_NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -790,6 +811,8 @@ func newGet() *cobra.Command {
     NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -849,6 +872,8 @@ func newGetDeployment() *cobra.Command {
     DEPLOYMENT_ID: The unique id of the deployment.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -907,6 +932,8 @@ func newGetPermissionLevels() *cobra.Command {
     APP_NAME: The app for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -965,6 +992,8 @@ func newGetPermissions() *cobra.Command {
     APP_NAME: The app for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1025,6 +1054,8 @@ func newGetSpace() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1085,6 +1116,8 @@ func newGetSpaceOperation() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1142,6 +1175,8 @@ func newGetUpdate() *cobra.Command {
     APP_NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1210,6 +1245,8 @@ func newList() *cobra.Command {
   Lists all apps in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1281,6 +1318,8 @@ func newListDeployments() *cobra.Command {
     APP_NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1354,6 +1393,8 @@ func newListSpaces() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1419,6 +1460,8 @@ func newSetPermissions() *cobra.Command {
     APP_NAME: The app for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1494,6 +1537,8 @@ func newStart() *cobra.Command {
     NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1575,6 +1620,8 @@ func newStop() *cobra.Command {
     NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1647,7 +1694,9 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
-	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM]`)
+	cmd.Flags().IntVar(&updateReq.App.ComputeMaxInstances, "compute-max-instances", updateReq.App.ComputeMaxInstances, `Maximum number of app instances.`)
+	cmd.Flags().IntVar(&updateReq.App.ComputeMinInstances, "compute-min-instances", updateReq.App.ComputeMinInstances, `Minimum number of app instances.`)
+	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
@@ -1670,6 +1719,8 @@ func newUpdate() *cobra.Command {
       characters and hyphens. It must be unique within the workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1744,6 +1795,8 @@ func newUpdateAppThumbnail() *cobra.Command {
     NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1819,6 +1872,8 @@ func newUpdatePermissions() *cobra.Command {
     APP_NAME: The app for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1927,6 +1982,8 @@ func newUpdateSpace() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

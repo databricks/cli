@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    src:
+      name: source
+    dst:
+      # "always_running" is a Terraform-only field with no DABs equivalent.
+      name: ${resources.jobs.src.always_running}

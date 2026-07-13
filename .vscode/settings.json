@@ -22,5 +22,11 @@
         "script": "shellscript",
         "script.prepare": "shellscript",
         "script.cleanup": "shellscript"
+    },
+    "yaml.schemas": {
+        "./bundle/schema/jsonschema.json": [
+            "databricks.yml",
+            "databricks.yaml",
+        ]
     }
 }

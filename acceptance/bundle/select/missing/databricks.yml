@@ -1,0 +1,7 @@
+bundle:
+  name: select-errors
+
+resources:
+  jobs:
+    my_job:
+      name: my-job

@@ -28,7 +28,7 @@ func TestRenderSummaryHeaderTemplate_nilBundle(t *testing.T) {
 	err := renderSummaryHeaderTemplate(cmdio.MockDiscard(t.Context()), writer, nil)
 	require.NoError(t, err)
 
-	assert.Equal(t, "", writer.String())
+	assert.Empty(t, writer.String())
 }
 
 func TestRenderDiagnosticsSummary(t *testing.T) {

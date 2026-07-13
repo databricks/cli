@@ -12,4 +12,4 @@ auth_type = databricks-cli
 ENDCFG
 
 # No arguments, non-interactive: should error with profile hint
-errcode $CLI auth token
+musterr $CLI auth token

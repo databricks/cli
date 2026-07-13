@@ -89,7 +89,7 @@ type ResourceModelServingProvisionedThroughputEmailNotifications struct {
 }
 
 type ResourceModelServingProvisionedThroughputProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceModelServingProvisionedThroughputTags struct {

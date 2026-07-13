@@ -70,7 +70,7 @@ func TestShell_Windows(t *testing.T) {
 		// Verify that the temporary file is cleaned up after execution.
 		files, err = os.ReadDir(dir)
 		require.NoError(t, err)
-		assert.Len(t, files, 0)
+		assert.Empty(t, files)
 
 		// Verify that CLI would exit with the correct exit code.
 		assert.Equal(t, test.exitCode, exitCode)

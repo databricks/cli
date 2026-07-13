@@ -1,0 +1,11 @@
+bundle:
+  name: genie-space-file-path-and-inline
+
+resources:
+  genie_spaces:
+    both_set:
+      title: "Both set"
+      warehouse_id: "test-warehouse-id"
+      file_path: "./contents.geniespace.json"
+      serialized_space:
+        version: 1

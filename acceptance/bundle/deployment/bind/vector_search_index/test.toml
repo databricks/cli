@@ -1,0 +1,14 @@
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+
+# Vector Search indexes are slow to create, so only run them in the nightly (non-short) cloud job.
+CloudSlow = true
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

@@ -1,11 +1,9 @@
 package ssh
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/experimental/ssh/internal/setup"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
@@ -14,13 +12,12 @@ import (
 func newSetupCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup",
-		Short: "Setup SSH configuration for Databricks compute",
-		Long: `Setup SSH configuration for Databricks compute.
+		Short: "Setup SSH configuration for dedicated (single-user) clusters",
+		Long: `Setup SSH configuration for dedicated (single-user) clusters.
 
-This command configures SSH to connect to Databricks compute by adding
-an SSH host configuration to your SSH config file.
+After running setup, you can connect with ` + "`ssh <name>`" + `.
 
-` + disclaimer,
+For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup step needed).`,
 	}
 
 	var hostName string
@@ -57,17 +54,6 @@ an SSH host configuration to your SSH config file.
 			Profile:          wsClient.Config.Profile,
 			AutoApprove:      autoApprove,
 		}
-		clientOpts := client.ClientOptions{
-			ClusterID:        setupOpts.ClusterID,
-			AutoStartCluster: setupOpts.AutoStartCluster,
-			ShutdownDelay:    setupOpts.ShutdownDelay,
-			Profile:          setupOpts.Profile,
-		}
-		proxyCommand, err := clientOpts.ToProxyCommand()
-		if err != nil {
-			return fmt.Errorf("failed to generate ProxyCommand: %w", err)
-		}
-		setupOpts.ProxyCommand = proxyCommand
 		return setup.Setup(ctx, wsClient, setupOpts)
 	}
 

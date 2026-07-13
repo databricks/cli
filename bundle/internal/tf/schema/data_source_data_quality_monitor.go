@@ -37,8 +37,7 @@ type DataSourceDataQualityMonitorDataProfilingConfigSchedule struct {
 	TimezoneId           string `json:"timezone_id"`
 }
 
-type DataSourceDataQualityMonitorDataProfilingConfigSnapshot struct {
-}
+type DataSourceDataQualityMonitorDataProfilingConfigSnapshot struct{}
 
 type DataSourceDataQualityMonitorDataProfilingConfigTimeSeries struct {
 	Granularities   []string `json:"granularities"`
@@ -69,7 +68,7 @@ type DataSourceDataQualityMonitorDataProfilingConfig struct {
 }
 
 type DataSourceDataQualityMonitorProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDataQualityMonitor struct {

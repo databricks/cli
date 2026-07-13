@@ -12,6 +12,6 @@ func TestUnknownCommand(t *testing.T) {
 	stdout, stderr, err := testcli.RequireErrorRun(t, ctx, "unknown-command")
 
 	assert.Error(t, err, "unknown command", `unknown command "unknown-command" for "databricks"`)
-	assert.Equal(t, "", stdout.String())
+	assert.Empty(t, stdout.String())
 	assert.Contains(t, stderr.String(), "unknown command")
 }

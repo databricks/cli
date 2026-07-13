@@ -3,7 +3,7 @@
 package schema
 
 type ResourcePostgresSyncedTableProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourcePostgresSyncedTableSpecNewPipelineSpec struct {
@@ -12,7 +12,14 @@ type ResourcePostgresSyncedTableSpecNewPipelineSpec struct {
 	StorageSchema  string `json:"storage_schema,omitempty"`
 }
 
+type ResourcePostgresSyncedTableSpecTypeOverrides struct {
+	ColumnName string `json:"column_name"`
+	PgType     string `json:"pg_type"`
+	Size       int    `json:"size,omitempty"`
+}
+
 type ResourcePostgresSyncedTableSpec struct {
+	AcceleratedSync                bool                                            `json:"accelerated_sync,omitempty"`
 	Branch                         string                                          `json:"branch,omitempty"`
 	CreateDatabaseObjectsIfMissing bool                                            `json:"create_database_objects_if_missing,omitempty"`
 	ExistingPipelineId             string                                          `json:"existing_pipeline_id,omitempty"`
@@ -22,6 +29,7 @@ type ResourcePostgresSyncedTableSpec struct {
 	SchedulingPolicy               string                                          `json:"scheduling_policy,omitempty"`
 	SourceTableFullName            string                                          `json:"source_table_full_name,omitempty"`
 	TimeseriesKey                  string                                          `json:"timeseries_key,omitempty"`
+	TypeOverrides                  []ResourcePostgresSyncedTableSpecTypeOverrides  `json:"type_overrides,omitempty"`
 }
 
 type ResourcePostgresSyncedTableStatusLastSyncDeltaTableSyncInfo struct {
@@ -51,6 +59,7 @@ type ResourcePostgresSyncedTableStatus struct {
 	Message                       string                                                `json:"message,omitempty"`
 	OngoingSyncProgress           *ResourcePostgresSyncedTableStatusOngoingSyncProgress `json:"ongoing_sync_progress,omitempty"`
 	PipelineId                    string                                                `json:"pipeline_id,omitempty"`
+	Project                       string                                                `json:"project,omitempty"`
 	ProvisioningPhase             string                                                `json:"provisioning_phase,omitempty"`
 	UnityCatalogProvisioningState string                                                `json:"unity_catalog_provisioning_state,omitempty"`
 }

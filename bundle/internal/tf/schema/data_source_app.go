@@ -46,8 +46,9 @@ type DataSourceAppAppActiveDeployment struct {
 }
 
 type DataSourceAppAppAppStatus struct {
-	Message string `json:"message,omitempty"`
-	State   string `json:"state,omitempty"`
+	Message          string `json:"message,omitempty"`
+	RunningInstances int    `json:"running_instances,omitempty"`
+	State            string `json:"state,omitempty"`
 }
 
 type DataSourceAppAppComputeStatus struct {
@@ -189,6 +190,8 @@ type DataSourceAppApp struct {
 	ActiveDeployment            *DataSourceAppAppActiveDeployment             `json:"active_deployment,omitempty"`
 	AppStatus                   *DataSourceAppAppAppStatus                    `json:"app_status,omitempty"`
 	BudgetPolicyId              string                                        `json:"budget_policy_id,omitempty"`
+	ComputeMaxInstances         int                                           `json:"compute_max_instances,omitempty"`
+	ComputeMinInstances         int                                           `json:"compute_min_instances,omitempty"`
 	ComputeSize                 string                                        `json:"compute_size,omitempty"`
 	ComputeStatus               *DataSourceAppAppComputeStatus                `json:"compute_status,omitempty"`
 	CreateTime                  string                                        `json:"create_time,omitempty"`
@@ -210,6 +213,7 @@ type DataSourceAppApp struct {
 	ServicePrincipalName        string                                        `json:"service_principal_name,omitempty"`
 	Space                       string                                        `json:"space,omitempty"`
 	TelemetryExportDestinations []DataSourceAppAppTelemetryExportDestinations `json:"telemetry_export_destinations,omitempty"`
+	ThumbnailUrl                string                                        `json:"thumbnail_url,omitempty"`
 	UpdateTime                  string                                        `json:"update_time,omitempty"`
 	Updater                     string                                        `json:"updater,omitempty"`
 	Url                         string                                        `json:"url,omitempty"`
@@ -218,7 +222,7 @@ type DataSourceAppApp struct {
 }
 
 type DataSourceAppProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceApp struct {

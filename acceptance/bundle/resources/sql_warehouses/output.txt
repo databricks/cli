@@ -67,7 +67,7 @@ Resources:
   SQL Warehouses:
     test_sql_warehouse:
       Name: sql_warehouse_name
-      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]
 
 === Update the warehouse name
 >>> update_file.py databricks.yml sql_warehouse_name sql_warehouse_name_2
@@ -105,7 +105,7 @@ Resources:
   SQL Warehouses:
     test_sql_warehouse:
       Name: sql_warehouse_name_2
-      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]
 
 === Destroy the warehouse
 >>> [CLI] bundle destroy --auto-approve

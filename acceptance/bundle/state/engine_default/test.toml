@@ -1,0 +1,8 @@
+RecordRequests = true
+IncludeRequestHeaders = ["User-Agent"]
+Ignore = [".databricks"]
+
+# Run once (not per-engine); the script unsets DATABRICKS_BUNDLE_ENGINE to
+# exercise the default. "direct" (rather than []) keeps the test in the
+# engine-filtered CI runs.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

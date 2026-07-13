@@ -147,10 +147,14 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
 	}
 
+	// provided_id_fields recreate on local changes, so they are not updatable either.
+	for _, field := range config.ProvidedIDFields {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
 	fields := reflect.TypeFor[apps.App]()
 	var allFields []string
-	for i := range fields.NumField() {
-		field := fields.Field(i)
+	for field := range fields.Fields() {
 		jsonTag := field.Tag.Get("json")
 		if jsonTag == "" || jsonTag == "-" {
 			continue

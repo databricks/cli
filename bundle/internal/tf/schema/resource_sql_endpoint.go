@@ -8,7 +8,7 @@ type ResourceSqlEndpointChannel struct {
 }
 
 type ResourceSqlEndpointProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceSqlEndpointTagsCustomTags struct {

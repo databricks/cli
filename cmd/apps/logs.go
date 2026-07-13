@@ -46,7 +46,6 @@ func newLogsCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "logs [NAME]",
 		Short: "Show Databricks app logs",
 		Long: `Show Databricks app logs.
 
@@ -78,15 +77,6 @@ Examples:
 
   # Mirror streamed logs to a local file while following for up to 5 minutes
   databricks apps logs my-app --follow --timeout 5m --output-file /tmp/my-app.log`,
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 1 {
-				return fmt.Errorf("accepts at most 1 arg(s), received %d", len(args))
-			}
-			if !hasBundleConfig() && len(args) != 1 {
-				return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
-			}
-			return nil
-		},
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			appName, fromBundle, err := getAppNameFromArgs(cmd, args)
@@ -207,6 +197,7 @@ Examples:
 			})
 		},
 	}
+	makeArgsOptionalWithBundle(cmd, "logs [NAME]")
 
 	streamGroup := cmdgroup.NewFlagGroup("Streaming")
 	streamGroup.FlagSet().IntVar(&tailLines, "tail-lines", defaultTailLines, "Number of recent log lines to show before streaming. Set to 0 to show everything.")

@@ -3,7 +3,7 @@
 package schema
 
 type ResourcePostgresRoleProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourcePostgresRoleSpecAttributes struct {
@@ -32,15 +32,17 @@ type ResourcePostgresRoleStatus struct {
 	IdentityType    string                                `json:"identity_type,omitempty"`
 	MembershipRoles []string                              `json:"membership_roles,omitempty"`
 	PostgresRole    string                                `json:"postgres_role,omitempty"`
+	RoleId          string                                `json:"role_id,omitempty"`
 }
 
 type ResourcePostgresRole struct {
-	CreateTime     string                              `json:"create_time,omitempty"`
-	Name           string                              `json:"name,omitempty"`
-	Parent         string                              `json:"parent"`
-	ProviderConfig *ResourcePostgresRoleProviderConfig `json:"provider_config,omitempty"`
-	RoleId         string                              `json:"role_id,omitempty"`
-	Spec           *ResourcePostgresRoleSpec           `json:"spec,omitempty"`
-	Status         *ResourcePostgresRoleStatus         `json:"status,omitempty"`
-	UpdateTime     string                              `json:"update_time,omitempty"`
+	CreateTime      string                              `json:"create_time,omitempty"`
+	Name            string                              `json:"name,omitempty"`
+	Parent          string                              `json:"parent"`
+	ProviderConfig  *ResourcePostgresRoleProviderConfig `json:"provider_config,omitempty"`
+	ReplaceExisting bool                                `json:"replace_existing,omitempty"`
+	RoleId          string                              `json:"role_id,omitempty"`
+	Spec            *ResourcePostgresRoleSpec           `json:"spec,omitempty"`
+	Status          *ResourcePostgresRoleStatus         `json:"status,omitempty"`
+	UpdateTime      string                              `json:"update_time,omitempty"`
 }

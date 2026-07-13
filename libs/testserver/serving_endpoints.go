@@ -12,11 +12,13 @@ import (
 func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.ServedEntityOutput {
 	entities := make([]serving.ServedEntityOutput, len(input))
 	for i, entity := range input {
+		// Mirror the backend: burst_scaling_enabled is not echoed on GET (not
+		// copied here) and external_model secrets are never returned in plaintext.
 		entities[i] = serving.ServedEntityOutput{
 			EntityName:                entity.EntityName,
 			EntityVersion:             entity.EntityVersion,
 			EnvironmentVars:           entity.EnvironmentVars,
-			ExternalModel:             entity.ExternalModel,
+			ExternalModel:             clearExternalModelSecrets(entity.ExternalModel),
 			InstanceProfileArn:        entity.InstanceProfileArn,
 			MaxProvisionedConcurrency: entity.MaxProvisionedConcurrency,
 			MaxProvisionedThroughput:  entity.MaxProvisionedThroughput,
@@ -31,6 +33,72 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 		}
 	}
 	return entities
+}
+
+// clearExternalModelSecrets mirrors the backend, which persists the *_plaintext
+// API keys as secrets and never returns them on GET.
+func clearExternalModelSecrets(em *serving.ExternalModel) *serving.ExternalModel {
+	if em == nil {
+		return nil
+	}
+	out := *em
+	if c := out.Ai21labsConfig; c != nil {
+		cc := *c
+		cc.Ai21labsApiKeyPlaintext = ""
+		out.Ai21labsConfig = &cc
+	}
+	if c := out.AmazonBedrockConfig; c != nil {
+		cc := *c
+		cc.AwsAccessKeyIdPlaintext = ""
+		cc.AwsSecretAccessKeyPlaintext = ""
+		out.AmazonBedrockConfig = &cc
+	}
+	if c := out.AnthropicConfig; c != nil {
+		cc := *c
+		cc.AnthropicApiKeyPlaintext = ""
+		out.AnthropicConfig = &cc
+	}
+	if c := out.CohereConfig; c != nil {
+		cc := *c
+		cc.CohereApiKeyPlaintext = ""
+		out.CohereConfig = &cc
+	}
+	if c := out.CustomProviderConfig; c != nil {
+		cc := *c
+		if a := cc.ApiKeyAuth; a != nil {
+			aa := *a
+			aa.ValuePlaintext = ""
+			cc.ApiKeyAuth = &aa
+		}
+		if b := cc.BearerTokenAuth; b != nil {
+			bb := *b
+			bb.TokenPlaintext = ""
+			cc.BearerTokenAuth = &bb
+		}
+		out.CustomProviderConfig = &cc
+	}
+	if c := out.DatabricksModelServingConfig; c != nil {
+		cc := *c
+		cc.DatabricksApiTokenPlaintext = ""
+		out.DatabricksModelServingConfig = &cc
+	}
+	if c := out.GoogleCloudVertexAiConfig; c != nil {
+		cc := *c
+		cc.PrivateKeyPlaintext = ""
+		out.GoogleCloudVertexAiConfig = &cc
+	}
+	if c := out.OpenaiConfig; c != nil {
+		cc := *c
+		cc.OpenaiApiKeyPlaintext = ""
+		cc.MicrosoftEntraClientSecretPlaintext = ""
+		out.OpenaiConfig = &cc
+	}
+	if c := out.PalmConfig; c != nil {
+		cc := *c
+		cc.PalmApiKeyPlaintext = ""
+		out.PalmConfig = &cc
+	}
+	return &out
 }
 
 func servedModelsInputToOutput(input []serving.ServedModelInput) []serving.ServedModelOutput {
@@ -53,6 +121,40 @@ func servedModelsInputToOutput(input []serving.ServedModelInput) []serving.Serve
 	return models
 }
 
+// defaultTrafficConfig mirrors the backend: when the user does not specify a
+// traffic_config, the endpoint defaults to routing 100% of traffic to its single
+// served entity, and this default is echoed back on GET. This is what makes
+// traffic_config a backend-managed field the bundle must not treat as drift; the
+// fake has to reproduce it or the persistent-drift regression is invisible locally.
+func defaultTrafficConfig(config *serving.EndpointCoreConfigOutput) {
+	if config == nil || config.TrafficConfig != nil {
+		return
+	}
+	var names []string
+	for _, e := range config.ServedEntities {
+		names = append(names, e.Name)
+	}
+	for _, m := range config.ServedModels {
+		names = append(names, m.Name)
+	}
+	// The backend requires an explicit traffic_config when there is more than one
+	// served entity, so only the single-entity default is well-defined here.
+	if len(names) != 1 {
+		return
+	}
+	config.TrafficConfig = &serving.TrafficConfig{
+		Routes: []serving.Route{{
+			ServedEntityName:  names[0],
+			ServedModelName:   names[0],
+			TrafficPercentage: 100,
+		}},
+	}
+}
+
+// AutoCaptureConfig is the legacy inference-table API; testserver mirrors
+// the production conversion until callers migrate to AI Gateway inference tables.
+//
+//nolint:staticcheck // SA1019: deprecated AutoCaptureConfig{Input,Output} kept for bundle config compatibility
 func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfigInput) *serving.AutoCaptureConfigOutput {
 	return &serving.AutoCaptureConfigOutput{
 		CatalogName:     input.CatalogName,
@@ -104,25 +206,32 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		if createReq.Config.AutoCaptureConfig != nil {
 			config.AutoCaptureConfig = autoCaptureConfigInputToOutput(createReq.Config.AutoCaptureConfig)
 		}
+
+		defaultTrafficConfig(config)
 	}
 
+	now := nowMilli()
 	endpoint := serving.ServingEndpointDetailed{
-		AiGateway:          createReq.AiGateway,
-		BudgetPolicyId:     createReq.BudgetPolicyId,
-		Config:             config,
-		Creator:            s.CurrentUser().UserName,
-		Description:        createReq.Description,
-		EmailNotifications: createReq.EmailNotifications,
-		Id:                 nextUUID(),
-		Name:               createReq.Name,
-		PermissionLevel:    serving.ServingEndpointDetailedPermissionLevelCanManage,
-		RouteOptimized:     createReq.RouteOptimized,
-		Tags:               createReq.Tags,
+		AiGateway:            createReq.AiGateway,
+		BudgetPolicyId:       createReq.BudgetPolicyId,
+		Config:               config,
+		CreationTimestamp:    now,
+		Creator:              s.CurrentUser().UserName,
+		Description:          createReq.Description,
+		EmailNotifications:   createReq.EmailNotifications,
+		Id:                   nextUUID(),
+		LastUpdatedTimestamp: now,
+		Name:                 createReq.Name,
+		PermissionLevel:      serving.ServingEndpointDetailedPermissionLevelCanManage,
+		RouteOptimized:       createReq.RouteOptimized,
+		Tags:                 createReq.Tags,
 		State: &serving.EndpointState{
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
 			Ready:        serving.EndpointStateReadyNotReady,
 		},
-		ForceSendFields: append(createReq.ForceSendFields, "PermissionLevel", "RouteOptimized"),
+		// Force-send Description so an empty value serializes as "", matching the
+		// real backend which always echoes the field back on GET.
+		ForceSendFields: append(createReq.ForceSendFields, "PermissionLevel", "RouteOptimized", "Description"),
 	}
 
 	s.ServingEndpoints[createReq.Name] = endpoint
@@ -173,9 +282,12 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 		if updateReq.AutoCaptureConfig != nil {
 			config.AutoCaptureConfig = autoCaptureConfigInputToOutput(updateReq.AutoCaptureConfig)
 		}
+
+		defaultTrafficConfig(config)
 	}
 
 	endpoint.Config = config
+	endpoint.LastUpdatedTimestamp = nowMilli()
 	endpoint.State = &serving.EndpointState{
 		ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
 		Ready:        serving.EndpointStateReadyNotReady,

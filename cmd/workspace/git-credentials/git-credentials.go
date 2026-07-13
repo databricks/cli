@@ -3,6 +3,7 @@
 package git_credentials
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -30,6 +31,10 @@ func New() *cobra.Command {
 		GroupID: "workspace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -79,17 +84,21 @@ func newCreate() *cobra.Command {
 
   Arguments:
     GIT_PROVIDER: Git provider. This field is case-insensitive. The available Git providers
-      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices,
-      gitHubEnterprise, bitbucketServer, gitLabEnterpriseEdition and
-      awsCodeCommit.`
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices (Azure
+      DevOps Services, including Microsoft Entra ID authentication),
+      gitHubEnterprise, bitbucketServer (Bitbucket Data Center),
+      gitLabEnterpriseEdition (GitLab Self-Managed), and awsCodeCommit
+      (deprecated by AWS, not accepting new customers).`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'git_provider' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'git_provider' in your JSON input")
 			}
 			return nil
 		}
@@ -164,6 +173,8 @@ func newDelete() *cobra.Command {
     CREDENTIAL_ID: The ID for the corresponding credential to access.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -185,7 +196,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+			return errors.New("expected to have the id for the corresponding credential to access")
 		}
 		_, err = fmt.Sscan(args[0], &deleteReq.CredentialId)
 		if err != nil {
@@ -237,6 +248,8 @@ func newGet() *cobra.Command {
     CREDENTIAL_ID: The ID for the corresponding credential to access.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -258,7 +271,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+			return errors.New("expected to have the id for the corresponding credential to access")
 		}
 		_, err = fmt.Sscan(args[0], &getReq.CredentialId)
 		if err != nil {
@@ -317,6 +330,8 @@ func newList() *cobra.Command {
   Lists the calling user's Git credentials.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -384,17 +399,21 @@ func newUpdate() *cobra.Command {
   Arguments:
     CREDENTIAL_ID: The ID for the corresponding credential to access.
     GIT_PROVIDER: Git provider. This field is case-insensitive. The available Git providers
-      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices,
-      gitHubEnterprise, bitbucketServer, gitLabEnterpriseEdition and
-      awsCodeCommit.`
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices (Azure
+      DevOps Services, including Microsoft Entra ID authentication),
+      gitHubEnterprise, bitbucketServer (Bitbucket Data Center),
+      gitLabEnterpriseEdition (GitLab Self-Managed), and awsCodeCommit
+      (deprecated by AWS, not accepting new customers).`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only CREDENTIAL_ID as positional arguments. Provide 'git_provider' in your JSON input")
+				return errors.New("when --json flag is specified, provide only CREDENTIAL_ID as positional arguments. Provide 'git_provider' in your JSON input")
 			}
 			return nil
 		}

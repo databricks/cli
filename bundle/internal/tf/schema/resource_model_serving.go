@@ -215,7 +215,7 @@ type ResourceModelServingEmailNotifications struct {
 }
 
 type ResourceModelServingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceModelServingRateLimits struct {
@@ -227,6 +227,15 @@ type ResourceModelServingRateLimits struct {
 type ResourceModelServingTags struct {
 	Key   string `json:"key"`
 	Value string `json:"value,omitempty"`
+}
+
+type ResourceModelServingTelemetryConfigInferenceTableConfig struct {
+	Name             string `json:"name,omitempty"`
+	SamplingFraction int    `json:"sampling_fraction,omitempty"`
+}
+
+type ResourceModelServingTelemetryConfig struct {
+	InferenceTableConfig *ResourceModelServingTelemetryConfigInferenceTableConfig `json:"inference_table_config,omitempty"`
 }
 
 type ResourceModelServing struct {
@@ -243,4 +252,5 @@ type ResourceModelServing struct {
 	ProviderConfig     *ResourceModelServingProviderConfig     `json:"provider_config,omitempty"`
 	RateLimits         []ResourceModelServingRateLimits        `json:"rate_limits,omitempty"`
 	Tags               []ResourceModelServingTags              `json:"tags,omitempty"`
+	TelemetryConfig    *ResourceModelServingTelemetryConfig    `json:"telemetry_config,omitempty"`
 }

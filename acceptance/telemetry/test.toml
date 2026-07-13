@@ -1,4 +1,4 @@
-IncludeRequestHeaders = ["Authorization", "X-Databricks-Org-Id"]
+IncludeRequestHeaders = ["Authorization", "X-Databricks-Workspace-Id"]
 RecordRequests = true
 
 Local = true

@@ -18,6 +18,8 @@
   },
   "remote_state": {
     "create_time": "[TIMESTAMP]",
+    "endpoint_id": "my-endpoint",
+    "endpoint_type": "",
     "name": "[MY_ENDPOINT_ID]",
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
     "status": {
@@ -25,6 +27,7 @@
       "autoscaling_limit_min_cu": 0.5,
       "current_state": "ACTIVE",
       "disabled": false,
+      "endpoint_id": "my-endpoint",
       "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
       "group": {
         "enable_readable_secondaries": true,

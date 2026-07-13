@@ -3,6 +3,7 @@
 package ip_access_lists
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -46,6 +47,10 @@ func New() *cobra.Command {
 		GroupID: "settings",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -107,12 +112,14 @@ func newCreate() *cobra.Command {
       Supported values: [ALLOW, BLOCK]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'label', 'list_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'label', 'list_type' in your JSON input")
 			}
 			return nil
 		}
@@ -192,6 +199,8 @@ func newDelete() *cobra.Command {
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -213,7 +222,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			return errors.New("expected to have the id for the corresponding ip access list")
 		}
 		deleteReq.IpAccessListId = args[0]
 
@@ -260,6 +269,8 @@ func newGet() *cobra.Command {
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -281,7 +292,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			return errors.New("expected to have the id for the corresponding ip access list")
 		}
 		getReq.IpAccessListId = args[0]
 
@@ -332,6 +343,8 @@ func newList() *cobra.Command {
   Gets all IP access lists for the specified account.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -402,12 +415,14 @@ func newReplace() *cobra.Command {
     ENABLED: Specifies whether this IP access list is enabled.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only IP_ACCESS_LIST_ID as positional arguments. Provide 'label', 'list_type', 'enabled' in your JSON input")
+				return errors.New("when --json flag is specified, provide only IP_ACCESS_LIST_ID as positional arguments. Provide 'label', 'list_type', 'enabled' in your JSON input")
 			}
 			return nil
 		}
@@ -515,6 +530,8 @@ func newUpdate() *cobra.Command {
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -548,7 +565,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			return errors.New("expected to have the id for the corresponding ip access list")
 		}
 		updateReq.IpAccessListId = args[0]
 

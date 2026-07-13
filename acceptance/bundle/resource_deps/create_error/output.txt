@@ -64,7 +64,7 @@ Resources:
       URL:  (not deployed)
     independent:
       Name: independent
-      URL:  [DATABRICKS_URL]/jobs/[INDEPENDENT_ID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[INDEPENDENT_ID]?w=[NUMID]
 
 === Plan should still contain foo and bar
 >>> [CLI] bundle plan

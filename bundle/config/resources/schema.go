@@ -3,11 +3,11 @@ package resources
 import (
 	"context"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -50,8 +50,7 @@ func (s *Schema) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = "explore/data/" + strings.ReplaceAll(s.ID, ".", "/")
-	s.URL = baseURL.String()
+	s.URL = workspaceurls.ResourceURL(baseURL, "schemas", s.ID)
 }
 
 func (s *Schema) GetURL() string {

@@ -225,8 +225,7 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			var netErr net.Error
-			if errors.As(err, &netErr) && netErr.Timeout() {
+			if netErr, ok := errors.AsType[net.Error](err); ok && netErr.Timeout() {
 				if state.HasPendingFlushDeadline() {
 					shouldContinue, flushErr := state.HandleFlushTimeout()
 					if flushErr != nil {
@@ -308,8 +307,7 @@ func (s *logStreamer) shouldRefreshForStatus(respStatusCode *int) bool {
 }
 
 func (s *logStreamer) shouldRefreshForError(err error) bool {
-	var closeErr *websocket.CloseError
-	if errors.As(err, &closeErr) {
+	if closeErr, ok := errors.AsType[*websocket.CloseError](err); ok {
 		switch closeErr.Code {
 		case closeCodeUnauthorized, closeCodeForbidden:
 			return true
@@ -336,8 +334,8 @@ func decorateDialError(err error, resp *http.Response) error {
 }
 
 func handleCloseError(err error) (bool, error) {
-	var closeErr *websocket.CloseError
-	if !errors.As(err, &closeErr) {
+	closeErr, ok := errors.AsType[*websocket.CloseError](err)
+	if !ok {
 		return false, err
 	}
 	if closeErr.Code == websocket.CloseNormalClosure || closeErr.Code == websocket.CloseGoingAway {

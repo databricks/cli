@@ -3,7 +3,7 @@
 package schema
 
 type ResourceMlflowExperimentProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceMlflowExperimentTags struct {

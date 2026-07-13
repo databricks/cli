@@ -2,13 +2,16 @@ package root
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
@@ -439,6 +442,139 @@ token = flag-token
 	}
 }
 
+func TestMustWorkspaceClientProfileFlagOverridesAuthEnv(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[tst-svc]
+host = https://tst.cloud.databricks.test
+token = tst-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	// Auth env vars for a different workspace; before #5096 these shadowed --profile.
+	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = cmd.Flag("profile").Value.Set("tst-svc")
+	require.NoError(t, err)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	// The selected profile must win over the auth env vars.
+	assert.Equal(t, "tst-svc", w.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.test", w.Config.Host)
+	assert.Equal(t, "tst-token", w.Config.Token)
+}
+
+func TestMustWorkspaceClientProfileFlagFillsAuthFromEnv(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	// Host-only profile + DATABRICKS_TOKEN from env, a common CI pattern: the
+	// profile wins for the host, but env fills the token it omits (#5096).
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[host-only]
+host = https://tst.cloud.databricks.test
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = cmd.Flag("profile").Value.Set("host-only")
+	require.NoError(t, err)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	assert.Equal(t, "host-only", w.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.test", w.Config.Host)
+	// The token is not in the profile, so it is filled from the environment.
+	assert.Equal(t, "env-token", w.Config.Token)
+}
+
+func TestMustWorkspaceClientConfigProfileEnvKeepsAuthEnvPrecedence(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[tst-svc]
+host = https://tst.cloud.databricks.test
+token = tst-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	// Selected via DATABRICKS_CONFIG_PROFILE, not --profile, so env-first
+	// precedence is kept and the auth env vars below still win (#5096).
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "tst-svc")
+	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	// The profile name is resolved, but the auth env vars win over its host and
+	// credentials.
+	assert.Equal(t, "tst-svc", w.Config.Profile)
+	assert.Equal(t, "https://dev.cloud.databricks.test", w.Config.Host)
+	assert.Equal(t, "dev-token", w.Config.Token)
+}
+
+func TestMustAccountClientProfileFlagOverridesAuthEnv(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[acc-tst]
+host = https://accounts.cloud.databricks.test
+account_id = 1111
+token = tst-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	// Auth env vars for a different account host; the profile must win.
+	t.Setenv("DATABRICKS_HOST", "https://accounts.dev.databricks.test")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	cmd := New(t.Context())
+	err = cmd.Flag("profile").Value.Set("acc-tst")
+	require.NoError(t, err)
+
+	err = MustAccountClient(cmd, []string{})
+	require.NoError(t, err)
+
+	a := cmdctx.AccountClient(cmd.Context())
+	require.NotNil(t, a)
+	// The selected profile must win over the auth env vars.
+	assert.Equal(t, "acc-tst", a.Config.Profile)
+	assert.Equal(t, "https://accounts.cloud.databricks.test", a.Config.Host)
+	assert.Equal(t, "tst-token", a.Config.Token)
+}
+
 func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("PATH", "")
@@ -452,6 +588,247 @@ func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 	a, err := accountClientOrPrompt(t.Context(), cfg, false)
 	assert.NotNil(t, a)
 	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
+}
+
+func TestIsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *config.Config
+		want bool
+	}{
+		{
+			name: "pat on spog without workspace_id",
+			cfg: &config.Config{
+				AuthType:     "pat",
+				DiscoveryURL: "https://spog.example.test/oidc/accounts/abc/.well-known/oauth-authorization-server",
+			},
+			want: true,
+		},
+		{
+			name: "pat on spog with workspace_id is fine",
+			cfg: &config.Config{
+				AuthType:     "pat",
+				WorkspaceID:  "12345",
+				DiscoveryURL: "https://spog.example.test/oidc/accounts/abc/.well-known/oauth-authorization-server",
+			},
+			want: false,
+		},
+		{
+			name: "pat on spog with legacy 'none' sentinel is treated as missing",
+			cfg: &config.Config{
+				AuthType:     "pat",
+				WorkspaceID:  auth.WorkspaceIDNone,
+				DiscoveryURL: "https://spog.example.test/oidc/accounts/abc/.well-known/oauth-authorization-server",
+			},
+			want: true,
+		},
+		{
+			name: "pat on classic workspace host is fine",
+			cfg: &config.Config{
+				AuthType:     "pat",
+				DiscoveryURL: "https://workspace.example.test/oidc/.well-known/oauth-authorization-server",
+			},
+			want: false,
+		},
+		{
+			name: "u2m on spog is not affected (handled by other paths)",
+			cfg: &config.Config{
+				AuthType:     "databricks-cli",
+				DiscoveryURL: "https://spog.example.test/oidc/accounts/abc/.well-known/oauth-authorization-server",
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, isPATOnSPOGWithoutWorkspaceID(tt.cfg))
+		})
+	}
+}
+
+func TestWorkspaceClientOrPromptRejectsAccountOnlyProfile(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string
+	}{
+		// New shape: --skip-workspace omits workspace_id entirely.
+		{name: "empty workspace_id", workspaceID: ""},
+		// Legacy shape: older CLIs persisted the "none" sentinel.
+		{name: "legacy none sentinel", workspaceID: "none"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
+			t.Setenv("PATH", "")
+
+			cfg := &config.Config{
+				Host:          "https://example.test/",
+				AccountID:     "abc-123",
+				WorkspaceID:   tt.workspaceID,
+				Token:         "foobar",
+				Profile:       "bb",
+				HTTPTransport: noNetworkTransport,
+			}
+
+			w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+			assert.Nil(t, w)
+			require.Error(t, err)
+			var accountOnly ErrAccountOnlyProfile
+			require.ErrorAs(t, err, &accountOnly)
+			assert.Contains(t, err.Error(), `profile "bb"`)
+			assert.Contains(t, err.Error(), "account-only")
+			assert.Contains(t, err.Error(), "no workspace_id set")
+		})
+	}
+}
+
+func TestErrAccountOnlyProfileMessage(t *testing.T) {
+	tests := []struct {
+		name string
+		err  ErrAccountOnlyProfile
+		want string
+	}{
+		{
+			name: "account console host",
+			err:  ErrAccountOnlyProfile{profileName: "acc", host: "https://accounts.test"},
+			want: "profile \"acc\" points to a Databricks account console host (https://accounts.test), which serves only account-level APIs; " +
+				"this command requires a workspace. Run `databricks auth login --host https://<workspace-url>` to create a workspace profile, " +
+				"or use `databricks account ...` commands with this profile",
+		},
+		{
+			// On non-account-console hosts (SPOG/unified) workspace APIs are
+			// served, so setting workspace_id is still the right fix.
+			name: "other host keeps workspace_id advice",
+			err:  ErrAccountOnlyProfile{profileName: "spog", host: "https://unified.test"},
+			want: "profile \"spog\" has no workspace_id set (account-only); this command requires a workspace. " +
+				"Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.err.Error())
+		})
+	}
+}
+
+func TestWorkspaceClientOrPromptAccountOnlyProfileOnAccountConsoleHost(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	cfg := &config.Config{
+		Host:          "https://accounts.test/",
+		AccountID:     "abc-123",
+		Token:         "foobar",
+		Profile:       "acc",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.Nil(t, w)
+	require.Error(t, err)
+	var accountOnly ErrAccountOnlyProfile
+	require.ErrorAs(t, err, &accountOnly)
+	assert.Contains(t, err.Error(), "account console host (https://accounts.test)")
+	assert.Contains(t, err.Error(), "databricks auth login --host")
+	assert.NotContains(t, err.Error(), "set workspace_id to a real ID")
+}
+
+func TestWorkspaceClientOrPromptRejectsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	// No AccountID is set, so the account-only profile detector (which requires
+	// AccountID) does not fire and the PAT-on-SPOG detector is exercised.
+	cfg := &config.Config{
+		Host:          "https://spog.example.test/",
+		Token:         "dapi-fake",
+		Profile:       "spog-pat",
+		DiscoveryURL:  "https://spog.example.test/oidc/accounts/abc-123/.well-known/oauth-authorization-server",
+		AuthType:      "pat",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.Nil(t, w)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `profile "spog-pat"`)
+	assert.Contains(t, err.Error(), "workspace_id")
+	assert.Contains(t, err.Error(), "PAT")
+}
+
+// TestWorkspaceClientOrPromptRejectsPATOnSPOGFromConfigFile exercises the
+// real .databrickscfg shape from the bug bash: `host` + `token` only, no
+// `auth_type`, no `workspace_id`. The SDK populates AuthType during
+// NewWorkspaceClient via its credential probe, so the PAT-on-SPOG detector
+// must keep working after going through that path.
+func TestWorkspaceClientOrPromptRejectsPATOnSPOGFromConfigFile(t *testing.T) {
+	// testutil.CleanupEnvironment calls os.Clearenv(), which wipes Windows
+	// essentials like SystemRoot and breaks Winsock initialization for
+	// subsequent net.Listen calls. We only need a clean DATABRICKS_CONFIG_FILE
+	// for this test; set it directly with t.Setenv so the rest of the
+	// environment (notably the Windows networking stack) keeps working.
+	t.Setenv("DATABRICKS_AUTH_TYPE", "")
+	t.Setenv("DATABRICKS_HOST", "")
+	t.Setenv("DATABRICKS_TOKEN", "")
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
+	t.Setenv("PATH", "")
+
+	// Mock .well-known/databricks-config to return an account-scoped OIDC
+	// endpoint so the SDK populates cfg.DiscoveryURL with the SPOG signal.
+	// Omit account_id so AccountID stays unset; otherwise the account-only
+	// profile detector would intercept this case before the PAT-on-SPOG check.
+	mux := http.NewServeMux()
+	mux.HandleFunc("/.well-known/databricks-config", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"oidc_endpoint":"https://spog.example.test/oidc/accounts/abc-123"}`))
+	})
+	server := httptest.NewServer(mux)
+	t.Cleanup(server.Close)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(configFile, fmt.Appendf(nil, `
+[spog-pat]
+host  = %s
+token = dapi-fake
+`, server.URL), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+	cfg := &config.Config{Profile: "spog-pat"}
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.Nil(t, w)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `profile "spog-pat"`)
+	assert.Contains(t, err.Error(), "workspace_id")
+	assert.Contains(t, err.Error(), "PAT")
+}
+
+func TestMustAnyClientFallsThroughOnAccountOnlyProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[skipws]
+host         = https://accounts.azuredatabricks.net/
+account_id   = abc-123
+token        = foobar
+workspace_id = none
+`), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+	require.NoError(t, cmd.PersistentFlags().Set("profile", "skipws"))
+
+	// Workspace path returns ErrAccountOnlyProfile. MustAnyClient must
+	// recognize the type and fall through to the account client so
+	// `auth describe` shows account info for account-only profiles.
+	isAccount, err := MustAnyClient(cmd, []string{})
+	require.NoError(t, err)
+	require.True(t, isAccount, "expected fall-through to account client")
+	require.NotNil(t, cmdctx.AccountClient(cmd.Context()))
 }
 
 func TestWorkspaceClientOrPromptReturnsSuccessWhenAuthSucceeds(t *testing.T) {
@@ -514,6 +891,46 @@ token = named-token
 
 	w := cmdctx.WorkspaceClient(cmd.Context())
 	require.NotNil(t, w)
-	assert.Equal(t, "", w.Config.Profile)
+	// Pinned so the OAuth cache key matches what `databricks auth login` writes.
+	assert.Equal(t, "DEFAULT", w.Config.Profile)
 	assert.Equal(t, "https://default.cloud.databricks.com", w.Config.Host)
+}
+
+func TestMustWorkspaceClientEnvHostSkipsDefaultProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	// The default profile uses basic auth on the same host as the environment.
+	// If it were pinned and merged with the PAT from the environment, the SDK
+	// would fail validation with "more than one authorization method configured"
+	// (matching hosts do not make the auth methods compatible).
+	err := os.WriteFile(configFile, []byte(`
+[__settings__]
+default_profile = basic-profile
+
+[basic-profile]
+host = https://env.test
+username = user
+password = pass
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("DATABRICKS_HOST", "https://env.test")
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	// Host and token in the environment fully determine auth, so the default
+	// profile must not be pinned (see ResolveDefaultProfile).
+	assert.Empty(t, w.Config.Profile)
+	assert.Equal(t, "https://env.test", w.Config.Host)
+	assert.Equal(t, "env-token", w.Config.Token)
 }

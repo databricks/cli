@@ -6,7 +6,9 @@
 *.dll
 *.so
 *.dylib
-cli
+# Root binary from a bare `go build`; anchored so it doesn't also ignore
+# nested paths like .nextchanges/cli/.
+/cli
 
 # Test binary, built with `go test -c`
 *.test
@@ -69,10 +71,8 @@ dist/
 go.work
 go.work.sum
 
-# Fetched based on recorded hash
-.codegen/openapi.json
-
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 .cursor/cli.json
 tools/gofumpt
 .claude/worktrees/

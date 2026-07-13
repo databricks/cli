@@ -112,6 +112,15 @@ func MockRuntime(ctx context.Context, runtime Environment) context.Context {
 	return context.WithValue(ctx, dbrKey, runtime)
 }
 
+// HasDetection reports whether the context carries a detection result, i.e.
+// whether it descends from [DetectRuntime] or [MockRuntime]. Best-effort
+// callers that can run on contexts where detection never happened (e.g. code
+// reached from tests that execute commands without going through root.Execute)
+// can use it to avoid the panic in [RunsOnRuntime].
+func HasDetection(ctx context.Context) bool {
+	return ctx.Value(dbrKey) != nil
+}
+
 // RunsOnRuntime returns the detection result from the context.
 // It expects a context returned by [DetectRuntime] or [MockRuntime].
 //

@@ -3,6 +3,7 @@
 package providers
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -27,6 +28,10 @@ func New() *cobra.Command {
 		GroupID: "sharing",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -78,12 +83,14 @@ func newCreate() *cobra.Command {
       Supported values: [DATABRICKS, OAUTH_CLIENT_CREDENTIALS, OIDC_FEDERATION, TOKEN]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'authentication_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'authentication_type' in your JSON input")
 			}
 			return nil
 		}
@@ -164,6 +171,8 @@ func newDelete() *cobra.Command {
     NAME: Name of the provider.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -185,7 +194,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the provider")
+			return errors.New("expected to have name of the provider")
 		}
 		deleteReq.Name = args[0]
 
@@ -234,6 +243,8 @@ func newGet() *cobra.Command {
     NAME: Name of the provider.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -255,7 +266,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the provider")
+			return errors.New("expected to have name of the provider")
 		}
 		getReq.Name = args[0]
 
@@ -320,6 +331,8 @@ func newList() *cobra.Command {
   the array.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -385,6 +398,8 @@ func newListProviderShareAssets() *cobra.Command {
     SHARE_NAME: The name of the share.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -458,6 +473,8 @@ func newListShares() *cobra.Command {
     NAME: Name of the provider in which to list shares.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -479,7 +496,7 @@ func newListShares() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the provider in which to list shares")
+			return errors.New("expected to have name of the provider in which to list shares")
 		}
 		listSharesReq.Name = args[0]
 
@@ -541,6 +558,8 @@ func newUpdate() *cobra.Command {
     NAME: Name of the provider.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -574,7 +593,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the provider")
+			return errors.New("expected to have name of the provider")
 		}
 		updateReq.Name = args[0]
 

@@ -59,7 +59,7 @@ func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.Ale
 }
 
 // DoDelete deletes the alert by id.
-func (r *ResourceAlert) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceAlert) DoDelete(ctx context.Context, id string, _ *sql.AlertV2) error {
 	return r.client.AlertsV2.TrashAlert(ctx, sql.TrashAlertV2Request{
 		Id:              id,
 		Purge:           true,

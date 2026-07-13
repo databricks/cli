@@ -1,6 +1,6 @@
 ## Status
 
-Status: Public Preview.
+Status: Generally Available (GA). The direct engine is the default for new deployments.
 Known issues: https://github.com/databricks/cli/issues?q=state%3Aopen%20label%3Aengine%2Fdirect
 
 ## Reporting bugs
@@ -53,10 +53,12 @@ rm .databricks/bundle/my_target/resources.json
 
 ### Using on new bundles
 
-For bundles that were never deployed, the migrate command will not work. To start using direct engine, you have two options:
+New bundles use the direct engine by default, so no configuration is needed. The migrate command does not apply here; it is only for bundles previously deployed with Terraform.
 
-- Set bundle.engine OR targets.\*.engine to "direct" in your databricks.yml
-- Set DATABRICKS_BUNDLE_ENGINE=direct env var before the deployment.
+To opt out and keep using Terraform, you have two options:
+
+- Set bundle.engine OR targets.\*.engine to "terraform" in your databricks.yml
+- Set DATABRICKS_BUNDLE_ENGINE=terraform env var before the deployment.
 
 If both are provided, the config takes precedence over the env var.
 

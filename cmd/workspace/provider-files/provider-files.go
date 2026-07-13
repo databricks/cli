@@ -3,6 +3,7 @@
 package provider_files
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,12 +21,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "provider-files",
-		Short: `Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.`,
-		Long: `Marketplace offers a set of file APIs for various purposes such as preview
+		Short: `*Public Preview* Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Marketplace offers a set of file APIs for various purposes such as preview
   notebooks and provider icons.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -61,13 +68,17 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, ``)
 
 	cmd.Use = "create"
-	cmd.Short = `Create a file.`
-	cmd.Long = `Create a file.
+	cmd.Short = `*Public Preview* Create a file.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a file.
 
   Create a file. Currently, only provider icons and attached notebooks are
   supported.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -86,7 +97,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.ProviderFiles.Create(ctx, createReq)
@@ -124,12 +135,16 @@ func newDelete() *cobra.Command {
 	var deleteReq marketplace.DeleteFileRequest
 
 	cmd.Use = "delete FILE_ID"
-	cmd.Short = `Delete a file.`
-	cmd.Long = `Delete a file.
+	cmd.Short = `*Public Preview* Delete a file.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a file.
 
   Delete a file`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -151,7 +166,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		deleteReq.FileId = args[0]
 
@@ -189,12 +204,16 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetFileRequest
 
 	cmd.Use = "get FILE_ID"
-	cmd.Short = `Get a file.`
-	cmd.Long = `Get a file.
+	cmd.Short = `*Public Preview* Get a file.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a file.
 
   Get a file`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -216,7 +235,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getReq.FileId = args[0]
 
@@ -271,12 +290,16 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List files.`
-	cmd.Long = `List files.
+	cmd.Short = `*Public Preview* List files.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List files.
 
   List files attached to a parent entity.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -295,7 +318,7 @@ func newList() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response := w.ProviderFiles.List(ctx, listReq)

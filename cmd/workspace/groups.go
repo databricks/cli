@@ -41,6 +41,10 @@ func Groups() []cobra.Group {
 			Title: "Vector Search",
 		},
 		{
+			ID:    "aisearch",
+			Title: "AI Search",
+		},
+		{
 			ID:    "iam",
 			Title: "Identity and Access Management",
 		},
@@ -107,6 +111,10 @@ func Groups() []cobra.Group {
 		{
 			ID:    "environments",
 			Title: "Environments",
+		},
+		{
+			ID:    "bundledeployments",
+			Title: "Bundle Deployments",
 		},
 	}
 }

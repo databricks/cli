@@ -70,6 +70,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// because it affects how workspace variables are resolved.
 		mutator.ApplySourceLinkedDeploymentPreset(),
 
+		// Reads (env): __TEST_DATABRICKS_IMMUTABLE_FOLDER (non-empty value enables immutable folder mode)
+		// Updates (typed): b.Config.Experimental.ImmutableFolder (forces to true when env var is set)
+		// Allows running the full test suite against the immutable folder code path without
+		// modifying any databricks.yml files.
+		mutator.OverrideImmutableFolder(),
+
 		// Reads (typed): b.Config.Workspace.RootPath (checks if it's already set)
 		// Reads (typed): b.Config.Bundle.Name, b.Config.Bundle.Target (used to construct default path)
 		// Updates (typed): b.Config.Workspace.RootPath (sets to ~/.bundle/{name}/{target} if not set)
@@ -142,6 +148,18 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
+		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
+		// model, so exposing it to Python would fail resource loading (like "deployment" below).
+		mutator.InitializeVolumePaths(),
+		mutator.ResolveVolumePathReferencesOnlyResources(),
+
+		// Resolve --select selectors against the materialized resources: normalize
+		// each to its "type.name" form and validate it exists. Runs after all resource
+		// mutations so that dynamically added resources are visible. This does not
+		// filter resources; the direct engine selects against the resolved keys later.
+		mutator.ResolveSelect(),
+
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
 		validate.Required(),
@@ -151,6 +169,18 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		// Validate that no dashboard etags are set. They are purely internal state and should not be set by the user.
 		validate.ValidateDashboardEtags(),
+
+		// Validate that no genie space etags are set. They are purely internal state and should not be set by the user.
+		validate.ValidateGenieSpaceEtags(),
+
+		// Validate that deployment_id / version_id are not set on jobs or pipelines.
+		// They are set by the CLI to track the bundle deployment and must not be set by the user.
+		validate.ValidateDeploymentFields(),
+
+		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
+		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
+		// points to a Terraform-only field with no DABs equivalent.
+		validate.TFOnlyReferences(),
 
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)

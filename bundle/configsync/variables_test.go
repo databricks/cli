@@ -19,7 +19,7 @@ func TestRestoreOriginalRefs_HardcodedFieldNotRewritten(t *testing.T) {
 	})
 	// Even though "main" matches ${var.region}, restoreOriginalRefs must NOT
 	// rewrite it — the original was hardcoded.
-	result := restoreOriginalRefs("main", preResolved, resolved)
+	result := restoreOriginalRefs("main", preResolved, resolved, &RestoreStats{})
 	assert.Equal(t, "main", result)
 }
 
@@ -44,7 +44,7 @@ func TestRestoreFromSiblings_ValueMatchesVariableButDifferentPath(t *testing.T) 
 		"task_key":           "other",
 		"min_retry_interval": int64(5),
 	}
-	result := restoreFromSiblings(value, siblings, resolved).(map[string]any)
+	result := restoreFromSiblings(value, siblings, resolved, &RestoreStats{}).(map[string]any)
 	assert.Equal(t, "other", result["task_key"])
 	assert.Equal(t, int64(5), result["min_retry_interval"])
 }
@@ -64,7 +64,7 @@ func TestRestoreFromSiblings_AmbiguousAcrossSiblings(t *testing.T) {
 		}),
 	})
 	value := map[string]any{"default": "raw_data"}
-	result := restoreFromSiblings(value, siblings, resolved).(map[string]any)
+	result := restoreFromSiblings(value, siblings, resolved, &RestoreStats{}).(map[string]any)
 	assert.Equal(t, "raw_data", result["default"])
 }
 
@@ -108,7 +108,7 @@ func TestRestoreCompoundInterpolation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := restoreOriginalRefs(tt.remote, dyn.V(tt.template), resolved)
+			result := restoreOriginalRefs(tt.remote, dyn.V(tt.template), resolved, &RestoreStats{})
 			assert.Equal(t, tt.want, result)
 		})
 	}

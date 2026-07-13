@@ -28,7 +28,7 @@ Deployment complete!
 {
   "privilege_assignments": [
     {
-      "principal":"account users",
+      "principal": "account users",
       "privileges": [
         "WRITE_VOLUME"
       ]
@@ -45,7 +45,9 @@ For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
   recreate resources.volumes.foo
-Error: the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve after reviewing the plan above.
 
 
 Exit code: 1

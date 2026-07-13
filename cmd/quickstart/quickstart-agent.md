@@ -1,0 +1,93 @@
+---
+name: databricks-quickstart
+description: First-contact orientation for the Databricks CLI when no Databricks skill is loaded. Covers OAuth auth, profile selection, command discovery, and installing the right skill for the task. Read this before attempting any Databricks work.
+---
+
+# Databricks Quickstart
+
+The `databricks` CLI wraps the public Databricks REST API — there's a command for essentially every API endpoint, so almost any Databricks task can be driven from here. If something looks unsupported, it's almost always a command you haven't found yet, not a real gap. The headline workflow: build durable resources as code with **Databricks Asset Bundles (DABs)** and ship them with `databricks bundle deploy` (see Build and deploy below).
+
+## Golden rules
+
+- **Reason, don't refuse.** Before telling the user something can't be done, run `databricks <group> --help` and install the matching skill (below). Almost everything is reachable through the CLI.
+- **Build with bundles.** For anything durable — jobs, pipelines, dashboards, apps — define it as code in a Databricks Asset Bundle (DABs) and ship with `databricks bundle deploy`, not one-off API calls.
+- **Pick the profile deliberately.** Run `databricks auth profiles`. If only one profile exists, use it. If one is already set as the default (via `databricks auth switch`), assume that one — you can confirm if unsure. Otherwise, show the user the profiles with their workspace URLs and let them choose. Don't invent profile names.
+- **Always pass `--profile <name>`.** Each Bash command runs in its own shell, so a separate `export DATABRICKS_CONFIG_PROFILE=...` line does NOT persist. Use the flag, or chain with `&&`.
+- **OAuth, never PAT.** Authenticate with `databricks auth login`, not personal access tokens.
+
+## Step 1 — Authenticate
+
+```bash
+databricks auth profiles                  # already set up? lists profiles + validity
+databricks auth login --profile <name>    # if not — opens login.databricks.com to pick a workspace
+```
+
+No host needed: without `--host`, login opens login.databricks.com and the user picks a workspace in the browser. Only pass `--host <url>` if the user already gave you a specific workspace URL. Always pass a descriptive `--profile <name>` (e.g. `dev-aws`, `prod-azure`) so you can target it reliably afterward — ask the user for the name rather than inventing one.
+
+## Step 2 — Verify
+
+```bash
+databricks current-user me --profile <name>
+```
+
+## Build and deploy with Asset Bundles (DABs)
+
+**DABs are the standard, recommended way to build on Databricks.** A bundle is a project with a `databricks.yml` that declares your resources (jobs, pipelines, dashboards, apps) and its targets (e.g. dev, prod) — one project, one deploy, every resource type:
+
+```bash
+databricks bundle init                     # scaffold a project from a template
+databricks bundle validate                 # check the config
+databricks bundle deploy -t dev            # deploy everything to a target (dev, prod, ...)
+databricks bundle run <resource> -t dev    # run a job or pipeline
+```
+
+Read the `databricks-dabs` skill for bundle structure, resource schemas, and multi-target setup.
+
+**Databricks Apps** (full-stack TypeScript + React via AppKit) build on bundles too, with a dedicated scaffolder — see `databricks-apps`:
+
+```bash
+databricks apps init          # scaffold an AppKit app (generates the bundle for you)
+databricks apps deploy        # deploy it to the workspace
+databricks apps run-local     # develop locally (or `dev-remote` against the workspace)
+```
+
+## Common commands
+
+```bash
+databricks jobs list --profile <name>
+databricks pipelines list --profile <name>
+databricks apps list --profile <name>
+databricks warehouses list --profile <name>
+
+# Unity Catalog data uses POSITIONAL args, NOT flags:
+databricks catalogs list --profile <name>
+databricks schemas list <catalog> --profile <name>
+databricks tables list <catalog> <schema> --profile <name>
+```
+
+Unsure of a command's shape? Run `databricks <command> --help`.
+
+## Install skills for the task
+
+Skills give you Databricks-specific patterns so you build resources correctly instead of guessing. They install into your coding agent (auto-detected):
+
+```bash
+databricks aitools install                 # stable skills
+databricks aitools install --experimental  # broader coverage: more areas, lower quality bar
+databricks aitools list                    # available + installed skills — check this for the latest
+```
+
+The set evolves, so run `databricks aitools list` rather than relying on a fixed list. Common ones: `databricks-core` (CLI/auth), `databricks-jobs`, `databricks-pipelines`, `databricks-dabs` (deploy as code), `databricks-apps`. Experimental skills reach further (Unity Catalog, vector search, dashboards, AI functions, and more) — worth a look depending on the prompt.
+
+## Explore data
+
+Use the built-in tools instead of guessing SQL or navigating by hand:
+
+```bash
+databricks experimental aitools tools discover-schema <catalog>.<schema>.<table> --profile <name>
+databricks experimental aitools tools query "SELECT * FROM <table> LIMIT 10" --profile <name>
+```
+
+## When you get stuck
+
+Re-read `databricks <group> --help`, install the matching skill, and check https://docs.databricks.com. If you truly can't do something yourself, tell the user how they can — don't tell them Databricks can't.

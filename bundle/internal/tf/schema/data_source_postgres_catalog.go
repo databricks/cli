@@ -3,7 +3,7 @@
 package schema
 
 type DataSourcePostgresCatalogProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePostgresCatalogSpec struct {
@@ -19,6 +19,7 @@ type DataSourcePostgresCatalogStatus struct {
 }
 
 type DataSourcePostgresCatalog struct {
+	CatalogId      string                                   `json:"catalog_id,omitempty"`
 	CreateTime     string                                   `json:"create_time,omitempty"`
 	Name           string                                   `json:"name"`
 	ProviderConfig *DataSourcePostgresCatalogProviderConfig `json:"provider_config,omitempty"`

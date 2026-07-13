@@ -36,7 +36,7 @@ class PipelineLibrary:
 
     glob: VariableOrOptional[PathPattern] = None
     """
-    The unified field to include source codes.
+    [Public Preview] The unified field to include source codes.
     Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
     This field cannot be used together with `notebook` or `file`.
     """
@@ -45,14 +45,14 @@ class PipelineLibrary:
     """
     :meta private: [EXPERIMENTAL]
     
-    URI of the jar to be installed. Currently only DBFS is supported.
+    [Private Preview] URI of the jar to be installed. Currently only DBFS is supported.
     """
 
     maven: VariableOrOptional[MavenLibrary] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Specification of a maven library to be installed.
+    [Private Preview] Specification of a maven library to be installed.
     """
 
     notebook: VariableOrOptional[NotebookLibrary] = None
@@ -78,7 +78,7 @@ class PipelineLibraryDict(TypedDict, total=False):
 
     glob: VariableOrOptional[PathPatternParam]
     """
-    The unified field to include source codes.
+    [Public Preview] The unified field to include source codes.
     Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
     This field cannot be used together with `notebook` or `file`.
     """
@@ -87,14 +87,14 @@ class PipelineLibraryDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    URI of the jar to be installed. Currently only DBFS is supported.
+    [Private Preview] URI of the jar to be installed. Currently only DBFS is supported.
     """
 
     maven: VariableOrOptional[MavenLibraryParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    Specification of a maven library to be installed.
+    [Private Preview] Specification of a maven library to be installed.
     """
 
     notebook: VariableOrOptional[NotebookLibraryParam]

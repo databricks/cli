@@ -3,6 +3,7 @@
 package quality_monitor_v2
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,13 +21,19 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "quality-monitor-v2",
-		Short: `Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).`,
-		Long: `Deprecated: Please use the Data Quality Monitoring API instead (REST:
+		Short: `*Beta* Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).`,
+		Long: `This command is in Beta and may change without notice.
+
+Deprecated: Please use the Data Quality Monitoring API instead (REST:
   /api/data-quality/v1/monitors). Manage data quality of UC objects (currently
   support schema).`,
 		GroupID: "qualitymonitor",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newCreateQualityMonitor())
@@ -65,8 +72,10 @@ func newCreateQualityMonitor() *cobra.Command {
 	// TODO: array: validity_check_configurations
 
 	cmd.Use = "create-quality-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Create a quality monitor.`
-	cmd.Long = `Create a quality monitor.
+	cmd.Short = `*Beta* Create a quality monitor.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a quality monitor.
 
   Deprecated: Use Data Quality Monitoring API instead
   (/api/data-quality/v1/monitors). Create a quality monitor on UC object.
@@ -76,12 +85,14 @@ func newCreateQualityMonitor() *cobra.Command {
     OBJECT_ID: The uuid of the request object. For example, schema id.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'object_type', 'object_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'object_type', 'object_id' in your JSON input")
 			}
 			return nil
 		}
@@ -148,8 +159,10 @@ func newDeleteQualityMonitor() *cobra.Command {
 	var deleteQualityMonitorReq qualitymonitorv2.DeleteQualityMonitorRequest
 
 	cmd.Use = "delete-quality-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Delete a quality monitor.`
-	cmd.Long = `Delete a quality monitor.
+	cmd.Short = `*Beta* Delete a quality monitor.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a quality monitor.
 
   Deprecated: Use Data Quality Monitoring API instead
   (/api/data-quality/v1/monitors). Delete a quality monitor on UC object.
@@ -159,6 +172,8 @@ func newDeleteQualityMonitor() *cobra.Command {
     OBJECT_ID: The uuid of the request object. For example, schema id.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -207,8 +222,10 @@ func newGetQualityMonitor() *cobra.Command {
 	var getQualityMonitorReq qualitymonitorv2.GetQualityMonitorRequest
 
 	cmd.Use = "get-quality-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Read a quality monitor.`
-	cmd.Long = `Read a quality monitor.
+	cmd.Short = `*Beta* Read a quality monitor.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Read a quality monitor.
 
   Deprecated: Use Data Quality Monitoring API instead
   (/api/data-quality/v1/monitors). Read a quality monitor on UC object.
@@ -218,6 +235,8 @@ func newGetQualityMonitor() *cobra.Command {
     OBJECT_ID: The uuid of the request object. For example, schema id.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -280,13 +299,17 @@ func newListQualityMonitor() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-quality-monitor"
-	cmd.Short = `List quality monitors.`
-	cmd.Long = `List quality monitors.
+	cmd.Short = `*Beta* List quality monitors.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List quality monitors.
 
   Deprecated: Use Data Quality Monitoring API instead
   (/api/data-quality/v1/monitors). (Unimplemented) List quality monitors.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -343,8 +366,10 @@ func newUpdateQualityMonitor() *cobra.Command {
 	// TODO: array: validity_check_configurations
 
 	cmd.Use = "update-quality-monitor OBJECT_TYPE OBJECT_ID OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Update a quality monitor.`
-	cmd.Long = `Update a quality monitor.
+	cmd.Short = `*Beta* Update a quality monitor.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a quality monitor.
 
   Deprecated: Use Data Quality Monitoring API instead
   (/api/data-quality/v1/monitors). (Unimplemented) Update a quality monitor on
@@ -357,12 +382,14 @@ func newUpdateQualityMonitor() *cobra.Command {
     OBJECT_ID: The uuid of the request object. For example, schema id.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only OBJECT_TYPE, OBJECT_ID as positional arguments. Provide 'object_type', 'object_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only OBJECT_TYPE, OBJECT_ID as positional arguments. Provide 'object_type', 'object_id' in your JSON input")
 			}
 			return nil
 		}

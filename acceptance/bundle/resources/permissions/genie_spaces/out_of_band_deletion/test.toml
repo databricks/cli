@@ -1,0 +1,9 @@
+# Asserts the permission API's behavior on a trashed space via `api get` output,
+# not recorded request payloads, so request recording is off.
+RecordRequests = false
+
+[Env]
+# `api get` is passed a leading-slash path. Without this, MSYS (Git Bash on
+# Windows) rewrites /api/... to C:\Program Files\Git\api\... before the CLI
+# sees it, so the request misses the testserver stub.
+MSYS_NO_PATHCONV = "1"

@@ -1,0 +1,8 @@
+mkdir -p .databricks/bundle/default
+cp resources.json .databricks/bundle/default/
+cp resources.json.wal .databricks/bundle/default/
+
+echo "Any command should fail with lineage mismatch error"
+musterr $CLI bundle $COMMAND
+
+trace musterr $CLI bundle destroy --auto-approve

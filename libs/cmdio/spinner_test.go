@@ -12,7 +12,7 @@ import (
 func TestSpinnerModelInit(t *testing.T) {
 	m := newSpinnerModel()
 	assert.False(t, m.quitting)
-	assert.Equal(t, "", m.suffix)
+	assert.Empty(t, m.suffix)
 	assert.NotNil(t, m.spinner)
 }
 

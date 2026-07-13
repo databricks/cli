@@ -1,0 +1,9 @@
+json[0].method = "POST";
+json[0].path = "/api/2.0/serving-endpoints";
+json[0].body.name = "[ENDPOINT_NAME_1]";
+json[1].method = "PUT";
+json[1].path = "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID_1]";
+json[1].body.access_control_list[0].permission_level = "CAN_MANAGE";
+json[1].body.access_control_list[0].service_principal_name = "[USERNAME]";
+json[1].body.access_control_list[1].permission_level = "CAN_VIEW";
+json[1].body.access_control_list[1].user_name = "deco-test-user@databricks.com";

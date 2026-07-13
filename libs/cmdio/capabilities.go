@@ -63,13 +63,11 @@ func (c Capabilities) SupportsPager() bool {
 	return c.SupportsPrompt() && c.stdoutIsTTY
 }
 
-// detectGitBash returns true if running in Git Bash on Windows (has broken promptui support).
-// We do not allow prompting in Git Bash on Windows.
-// Likely due to fact that Git Bash does not correctly support ANSI escape sequences,
-// we cannot use promptui package there.
-// See known issues:
-// - https://github.com/manifoldco/promptui/issues/208
-// - https://github.com/chzyer/readline/issues/191
+// detectGitBash returns true if running under a Cygwin/MSYS2 environment on
+// Windows (Git Bash is the common case).
+//
+// We disable prompting there because bubbletea is not compatible with the
+// Cygwin/MSYS2 pty emulation; making it work is a follow-up.
 func detectGitBash(ctx context.Context) bool {
 	// Check if the MSYSTEM environment variable is set to "MINGW64"
 	msystem := env.Get(ctx, "MSYSTEM")

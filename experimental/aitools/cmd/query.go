@@ -17,17 +17,12 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
 const (
-	// pollIntervalInitial is the starting interval between status polls.
-	pollIntervalInitial = 1 * time.Second
-
-	// pollIntervalMax is the maximum interval between status polls.
-	pollIntervalMax = 5 * time.Second
-
 	// cancelTimeout is how long to wait for server-side cancellation.
 	cancelTimeout = 10 * time.Second
 )
@@ -68,6 +63,8 @@ func newQueryCmd() *cobra.Command {
 	var filePaths []string
 	var outputFormat string
 	var concurrency int
+	var paramFlags []string
+	var params []sql.StatementParameterListItem
 
 	cmd := &cobra.Command{
 		Use:   "query [SQL | file.sql]...",
@@ -91,19 +88,33 @@ or the DATABRICKS_WAREHOUSE_ID environment variable is configured.
 
 For a single query, output is JSON in non-interactive contexts. In
 interactive terminals it renders tables, and large results open an
-interactive table browser. Use --output csv to export results as CSV.`,
+interactive table browser. Use --output csv to export results as CSV.
+
+Pass named parameters with --param. Use ":name" markers in the SQL and
+"--param name=value" (string) or "--param name:TYPE=value" (typed, e.g.
+DATE, INT) to bind values. Positional "?" markers are not supported. In
+multi-query mode, the same parameter set is applied to every statement.`,
 		Example: `  databricks experimental aitools tools query "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --warehouse abc123 "SELECT 1"
   databricks experimental aitools tools query --file report.sql
   databricks experimental aitools tools query report.sql
   databricks experimental aitools tools query --output csv "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --output json "SELECT 1" "SELECT 2" "SELECT 3"
+  databricks experimental aitools tools query --param name=alice "SELECT * FROM users WHERE name = :name"
+  databricks experimental aitools tools query --param since:DATE=2026-01-01 "SELECT * FROM events WHERE ts > :since"
   echo "SELECT 1" | databricks experimental aitools tools query`,
 		Args: cobra.ArbitraryArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if concurrency <= 0 {
 				return errInvalidBatchConcurrency
 			}
+
+			var err error
+			params, err = parseParams(paramFlags)
+			if err != nil {
+				return err
+			}
+
 			return root.MustWorkspaceClient(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -139,19 +150,22 @@ interactive table browser. Use --output csv to export results as CSV.`,
 			}
 
 			if len(sqls) > 1 {
-				return runBatch(ctx, cmd, w.StatementExecution, wID, sqls, concurrency)
+				return runBatch(ctx, cmd, w.StatementExecution, wID, sqls, params, concurrency)
 			}
 
-			resp, err := executeAndPoll(ctx, w.StatementExecution, wID, sqls[0])
+			client := sqlexec.New(w.StatementExecution, wID)
+
+			stmt, err := executeAndPoll(ctx, client, sqls[0], params)
 			if err != nil {
 				return err
 			}
 
-			columns := extractColumns(resp.Manifest)
-			rows, err := fetchAllRows(ctx, w.StatementExecution, resp)
+			result, err := client.Results(ctx, stmt)
 			if err != nil {
 				return err
 			}
+			columns := result.Columns
+			rows := result.Rows
 
 			// CSV bypasses the normal output mode selection.
 			if format == sqlcli.OutputCSV {
@@ -185,6 +199,7 @@ interactive table browser. Use --output csv to export results as CSV.`,
 	cmd.Flags().StringVarP(&warehouseID, "warehouse", "w", "", "SQL warehouse ID to use for execution")
 	cmd.Flags().StringSliceVarP(&filePaths, "file", "f", nil, "Path to a SQL file to execute (repeatable; pair with positional SQLs to run a batch)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", defaultBatchConcurrency, "Maximum in-flight statements when running a batch of queries")
+	cmd.Flags().StringArrayVar(&paramFlags, "param", nil, "Named parameter, repeatable. Format: name=value (STRING) or name:TYPE=value (e.g. name:DATE=2026-01-01). Empty value is sent as NULL.")
 	// Local --output flag shadows the root command's persistent --output flag,
 	// adding csv support for this command only.
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", string(sqlcli.OutputText), "Output format: text, json, or csv")
@@ -222,8 +237,10 @@ func resolveSQLs(ctx context.Context, cmd *cobra.Command, args, filePaths []stri
 // without an extra error message) when any statement failed; the failure detail
 // is already encoded in the printed JSON. The caller is responsible for
 // rejecting incompatible output formats before invoking this.
-func runBatch(ctx context.Context, cmd *cobra.Command, api sql.StatementExecutionInterface, warehouseID string, sqls []string, concurrency int) error {
-	results := executeBatch(ctx, api, warehouseID, sqls, concurrency)
+//
+// params, if non-nil, are applied to every statement in the batch.
+func runBatch(ctx context.Context, cmd *cobra.Command, api sql.StatementExecutionInterface, warehouseID string, sqls []string, params []sql.StatementParameterListItem, concurrency int) error {
+	results := executeBatch(ctx, api, warehouseID, sqls, params, concurrency)
 	if err := renderBatchJSON(cmd.OutOrStdout(), results); err != nil {
 		return err
 	}
@@ -252,19 +269,14 @@ func resolveWarehouseID(ctx context.Context, w any, flagValue string) (string, e
 
 // executeAndPoll submits a SQL statement asynchronously and polls until completion.
 // It shows a spinner in interactive mode and supports Ctrl+C cancellation.
-func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, warehouseID, statement string) (*sql.StatementResponse, error) {
+func executeAndPoll(ctx context.Context, client *sqlexec.Client, statement string, params []sql.StatementParameterListItem) (*sqlexec.Statement, error) {
 	// Submit asynchronously to get the statement ID immediately for cancellation.
-	resp, err := api.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
-		WarehouseId:   warehouseID,
-		Statement:     statement,
-		WaitTimeout:   "0s",
-		OnWaitTimeout: sql.ExecuteStatementRequestOnWaitTimeoutContinue,
-	})
+	stmt, err := client.Submit(ctx, statement, sqlexec.WithParameters(params))
 	if err != nil {
-		return nil, fmt.Errorf("execute statement: %w", err)
+		return nil, err
 	}
 
-	statementID := resp.StatementId
+	statementID := stmt.ID
 
 	// Set up Ctrl+C: signal cancels the poll context, cleanup is unified below.
 	pollCtx, pollCancel := context.WithCancel(ctx)
@@ -292,9 +304,7 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 		// reaches the warehouse.
 		cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cancelTimeout)
 		defer cancel()
-		if err := api.CancelExecution(cancelCtx, sql.CancelExecutionRequest{
-			StatementId: statementID,
-		}); err != nil {
+		if err := client.Cancel(cancelCtx, statementID); err != nil {
 			log.Warnf(ctx, "Failed to cancel statement %s: %v", statementID, err)
 		}
 	}
@@ -319,7 +329,7 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 		}
 	}()
 
-	pollResp, err := pollStatement(pollCtx, api, resp)
+	stmt, err = client.Poll(pollCtx, stmt)
 	if err != nil {
 		if pollCtx.Err() != nil {
 			cancelStatement()
@@ -330,111 +340,34 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 	}
 
 	sp.Close()
-	if err := checkFailedState(pollResp.Status); err != nil {
+	if err := presentQueryError(stmt.Err()); err != nil {
 		return nil, err
 	}
-	return pollResp, nil
+	return stmt, nil
 }
 
-// pollStatement polls until the statement reaches a terminal state.
-//
-// On context cancellation it returns the context error WITHOUT cancelling the
-// server-side statement. Callers that want server-side cancellation should
-// invoke CancelExecution explicitly.
-//
-// If the input response is already in a terminal state, it is returned without
-// further polling.
-func pollStatement(ctx context.Context, api sql.StatementExecutionInterface, resp *sql.StatementResponse) (*sql.StatementResponse, error) {
-	if isTerminalState(resp.Status) {
-		return resp, nil
-	}
-
-	statementID := resp.StatementId
-	start := time.Now()
-
-	// Poll with additive backoff: 1s, 2s, 3s, 4s, 5s (capped).
-	interval := pollIntervalInitial
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(interval):
-		}
-
-		log.Debugf(ctx, "Polling statement %s: %s elapsed", statementID, time.Since(start).Truncate(time.Second))
-
-		pollResp, err := api.GetStatementByStatementId(ctx, statementID)
-		if err != nil {
-			if ctx.Err() != nil {
-				return nil, ctx.Err()
-			}
-			return nil, fmt.Errorf("poll statement status: %w", err)
-		}
-
-		if isTerminalState(pollResp.Status) {
-			return &sql.StatementResponse{
-				StatementId: pollResp.StatementId,
-				Status:      pollResp.Status,
-				Manifest:    pollResp.Manifest,
-				Result:      pollResp.Result,
-			}, nil
-		}
-
-		interval = min(interval+time.Second, pollIntervalMax)
-	}
-}
-
-// fetchAllRows collects all result rows, fetching additional chunks if needed.
-func fetchAllRows(ctx context.Context, api sql.StatementExecutionInterface, resp *sql.StatementResponse) ([][]string, error) {
-	if resp.Result == nil {
-		return nil, nil
-	}
-
-	rows := append([][]string{}, resp.Result.DataArray...)
-
-	totalChunks := 0
-	if resp.Manifest != nil {
-		totalChunks = resp.Manifest.TotalChunkCount
-	}
-
-	for chunk := 1; chunk < totalChunks; chunk++ {
-		log.Debugf(ctx, "Fetching result chunk %d/%d for statement %s", chunk+1, totalChunks, resp.StatementId)
-		chunkResp, err := api.GetStatementResultChunkNByStatementIdAndChunkIndex(ctx, resp.StatementId, chunk)
-		if err != nil {
-			return nil, fmt.Errorf("fetch result chunk %d: %w", chunk, err)
-		}
-		rows = append(rows, chunkResp.DataArray...)
-	}
-
-	return rows, nil
-}
-
-// isTerminalState returns true if the statement has reached a final state.
-func isTerminalState(status *sql.StatementStatus) bool {
-	if status == nil {
-		return false
-	}
-	switch status.State {
-	case sql.StatementStateSucceeded, sql.StatementStateFailed,
-		sql.StatementStateCanceled, sql.StatementStateClosed:
-		return true
-	case sql.StatementStatePending, sql.StatementStateRunning:
-		return false
-	}
-	return false
-}
-
-// checkFailedState returns an error if the statement is in a non-success terminal state.
-func checkFailedState(status *sql.StatementStatus) error {
-	if status == nil {
+// presentQueryError converts the engine's structured statement error into the
+// CLI-facing message for the query and discover-schema commands. It returns nil
+// for a nil error or any error that is not a *sqlexec.StatementError (the engine
+// only produces the latter on terminal non-success states).
+func presentQueryError(err error) error {
+	if err == nil {
 		return nil
 	}
-	switch status.State {
+	se, ok := errors.AsType[*sqlexec.StatementError](err)
+	if !ok {
+		return err
+	}
+
+	switch se.State {
 	case sql.StatementStateFailed:
 		msg := "query failed"
-		if status.Error != nil {
-			msg = fmt.Sprintf("query failed: %s %s", status.Error.ErrorCode, status.Error.Message)
-			if strings.Contains(status.Error.Message, "UNRESOLVED_MAP_KEY") {
+		// The engine populates Code only when the backend returned a
+		// ServiceError; otherwise Message is a synthesized state string we
+		// don't surface here, matching the original "query failed" fallback.
+		if se.Code != "" {
+			msg = fmt.Sprintf("query failed: %s %s", se.Code, se.Message)
+			if strings.Contains(se.Message, "UNRESOLVED_MAP_KEY") {
 				msg += "\n\nHint: your shell may have stripped quotes from the SQL string. " +
 					"Use single quotes for map keys (e.g. info['key']) or pass the query via --file."
 			}
@@ -444,10 +377,9 @@ func checkFailedState(status *sql.StatementStatus) error {
 		return errors.New("query was cancelled")
 	case sql.StatementStateClosed:
 		return errors.New("query was closed before results could be fetched")
-	case sql.StatementStatePending, sql.StatementStateRunning, sql.StatementStateSucceeded:
-		return nil
+	default:
+		return err
 	}
-	return nil
 }
 
 // cleanSQL removes surrounding quotes, empty lines, and SQL comments.

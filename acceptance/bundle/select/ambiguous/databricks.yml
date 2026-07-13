@@ -1,0 +1,13 @@
+bundle:
+  name: select-ambiguous
+
+# "thing" is defined as both a job and a pipeline. This is what an ambiguous
+# --select selector would resolve to, but UniqueResourceKeys rejects it at load
+# time, so the bundle never reaches selector resolution.
+resources:
+  jobs:
+    thing:
+      name: job-thing
+  pipelines:
+    thing:
+      name: pipeline-thing

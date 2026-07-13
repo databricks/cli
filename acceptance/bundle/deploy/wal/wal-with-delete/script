@@ -1,0 +1,12 @@
+mkdir -p .databricks/bundle/default
+cp resources.json .databricks/bundle/default/
+cp resources.json.wal .databricks/bundle/default/
+
+echo "=== WAL content ==="
+cat .databricks/bundle/default/resources.json.wal
+
+echo "=== Deploy (should recover delete from WAL) ==="
+trace $CLI bundle deploy
+
+echo "=== Final state (should have no jobs) ==="
+trace $CLI bundle summary

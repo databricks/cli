@@ -8,28 +8,44 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
 var (
 	pathBudgetPolicyId = structpath.MustParsePath("budget_policy_id")
-	pathMinQps         = structpath.MustParsePath("min_qps")
+	pathTargetQps      = structpath.MustParsePath("target_qps")
 )
 
 // VectorSearchEndpointRemote is remote state for a vector search endpoint. It embeds API response
 // fields for drift comparison and adds endpoint_uuid for permissions; deployment state id remains the endpoint name.
 type VectorSearchEndpointRemote struct {
-	*vectorsearch.EndpointInfo
+	vectorsearch.EndpointInfo
 	EndpointUuid string `json:"endpoint_uuid"`
+	// TargetQps is mapped from EndpointInfo.ScalingInfo.RequestedTargetQps in DoRead
+	// so that drift detection can compare it directly against the config field.
+	TargetQps int64 `json:"target_qps,omitempty"`
+}
+
+// Custom marshalers needed because embedded vectorsearch.EndpointInfo has its own
+// MarshalJSON which would otherwise take over and ignore endpoint_uuid.
+func (s *VectorSearchEndpointRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s VectorSearchEndpointRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func newVectorSearchEndpointRemote(info *vectorsearch.EndpointInfo) *VectorSearchEndpointRemote {
-	if info == nil {
-		return nil
+	var targetQps int64
+	if info.ScalingInfo != nil {
+		targetQps = info.ScalingInfo.RequestedTargetQps
 	}
 	return &VectorSearchEndpointRemote{
-		EndpointInfo: info,
+		EndpointInfo: *info,
 		EndpointUuid: info.Id,
+		TargetQps:    targetQps,
 	}
 }
 
@@ -46,16 +62,12 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 }
 
 func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpoint {
-	var minQps int64
-	if remote.ScalingInfo != nil {
-		minQps = remote.ScalingInfo.RequestedMinQps
-	}
 	return &vectorsearch.CreateEndpoint{
 		Name:            remote.Name,
 		EndpointType:    remote.EndpointType,
 		BudgetPolicyId:  remote.BudgetPolicyId,
 		UsagePolicyId:   "", // Missing in remote
-		MinQps:          minQps,
+		TargetQps:       remote.TargetQps,
 		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](remote.ForceSendFields, "UsagePolicyId"),
 	}
 }
@@ -77,7 +89,7 @@ func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vec
 	return id, newVectorSearchEndpointRemote(waiter.Response), nil
 }
 
-func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
+func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
 	info, err := r.client.VectorSearchEndpoints.WaitGetEndpointVectorSearchEndpointOnline(ctx, config.Name, 60*time.Minute, nil)
 	if err != nil {
 		return nil, err
@@ -96,10 +108,10 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 		}
 	}
 
-	if entry.Changes.HasChange(pathMinQps) {
+	if entry.Changes.HasChange(pathTargetQps) {
 		_, err := r.client.VectorSearchEndpoints.PatchEndpoint(ctx, vectorsearch.PatchEndpointRequest{
 			EndpointName:    id,
-			MinQps:          config.MinQps,
+			TargetQps:       config.TargetQps,
 			ForceSendFields: nil,
 		})
 		if err != nil {
@@ -110,6 +122,6 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 	return nil, nil
 }
 
-func (r *ResourceVectorSearchEndpoint) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceVectorSearchEndpoint) DoDelete(ctx context.Context, id string, _ *vectorsearch.CreateEndpoint) error {
 	return r.client.VectorSearchEndpoints.DeleteEndpointByEndpointName(ctx, id)
 }

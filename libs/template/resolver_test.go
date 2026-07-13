@@ -100,12 +100,22 @@ func TestTemplateResolverForCustomPath(t *testing.T) {
 	assert.Equal(t, "/config/file", tmpl.Writer.(*defaultWriter).configPath)
 }
 
-func TestBundleInitIsRepoUrl(t *testing.T) {
-	assert.True(t, IsRepoUrl("git@github.com:databricks/cli.git"))
-	assert.True(t, IsRepoUrl("https://github.com/databricks/cli.git"))
+func TestBundleInitIsGitRepoUrl(t *testing.T) {
+	// Supported
+	assert.True(t, IsGitRepoUrl("git@github.com:databricks/cli.git"))
+	assert.True(t, IsGitRepoUrl("https://github.com/databricks/cli.git"))
+	assert.True(t, IsGitRepoUrl("ssh://user@company.ghe.com/databricks/cli.git"))
 
-	assert.False(t, IsRepoUrl("./local"))
-	assert.False(t, IsRepoUrl("foo"))
+	// Unsupported
+	assert.False(t, IsGitRepoUrl("git://github.com/databricks/cli.git"))
+	assert.False(t, IsGitRepoUrl("http://github.com/databricks/cli.git"))
+	assert.False(t, IsGitRepoUrl("ftp://github.com/databricks/cli.git"))
+	assert.False(t, IsGitRepoUrl("ftps://github.com/databricks/cli.git"))
+
+	// Not git repos
+	assert.False(t, IsGitRepoUrl("./local"))
+	assert.False(t, IsGitRepoUrl("foo"))
+	assert.False(t, IsGitRepoUrl("github.com/databricks/cli.git"))
 }
 
 func TestResolveReader(t *testing.T) {

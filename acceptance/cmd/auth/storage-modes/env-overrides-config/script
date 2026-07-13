@@ -5,7 +5,7 @@ cat > "./home/.databrickscfg" <<ENDCFG
 auth_storage = secure
 
 [dev]
-host = https://accounts.cloud.databricks.com
+host = https://accounts.cloud.databricks.test
 account_id = account-id
 auth_type  = databricks-cli
 ENDCFG

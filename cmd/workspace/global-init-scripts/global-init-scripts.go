@@ -3,6 +3,7 @@
 package global_init_scripts
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -33,6 +34,10 @@ func New() *cobra.Command {
 		GroupID: "compute",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -80,12 +85,14 @@ func newCreate() *cobra.Command {
     SCRIPT: The Base64-encoded content of the script.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'script' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'script' in your JSON input")
 			}
 			return nil
 		}
@@ -161,6 +168,8 @@ func newDelete() *cobra.Command {
     SCRIPT_ID: The ID of the global init script.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -182,7 +191,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the global init script")
+			return errors.New("expected to have the id of the global init script")
 		}
 		deleteReq.ScriptId = args[0]
 
@@ -229,6 +238,8 @@ func newGet() *cobra.Command {
     SCRIPT_ID: The ID of the global init script.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -250,7 +261,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the global init script")
+			return errors.New("expected to have the id of the global init script")
 		}
 		getReq.ScriptId = args[0]
 
@@ -304,6 +315,8 @@ func newList() *cobra.Command {
   script](:method:globalinitscripts/get) operation.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -365,12 +378,14 @@ func newUpdate() *cobra.Command {
     SCRIPT: The Base64-encoded content of the script.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SCRIPT_ID as positional arguments. Provide 'name', 'script' in your JSON input")
+				return errors.New("when --json flag is specified, provide only SCRIPT_ID as positional arguments. Provide 'name', 'script' in your JSON input")
 			}
 			return nil
 		}

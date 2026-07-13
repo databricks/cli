@@ -16,6 +16,7 @@ var ciTargets = []string{
 	"test-exp-aitools",
 	"test-exp-ssh",
 	"test-pipelines",
+	"test-sandbox",
 }
 
 // commonTriggerPatterns lists patterns that trigger all test targets.

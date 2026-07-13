@@ -9,6 +9,7 @@ resources:
     my_project:
       project_id: test-pg-proj-$UNIQUE_NAME
       display_name: "Test Postgres Project"
+      enable_pg_native_login: false
       pg_version: 16
       history_retention_duration: "604800s"
       default_endpoint_settings:

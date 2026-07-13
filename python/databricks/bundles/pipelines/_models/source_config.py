@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.pipelines._models.google_ads_config import (
+    GoogleAdsConfig,
+    GoogleAdsConfigParam,
+)
 from databricks.bundles.pipelines._models.source_catalog_config import (
     SourceCatalogConfig,
     SourceCatalogConfigParam,
@@ -19,7 +23,14 @@ class SourceConfig:
 
     catalog: VariableOrOptional[SourceCatalogConfig] = None
     """
-    Catalog-level source configuration parameters
+    [Public Preview] Catalog-level source configuration parameters
+    """
+
+    google_ads_config: VariableOrOptional[GoogleAdsConfig] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     @classmethod
@@ -35,7 +46,14 @@ class SourceConfigDict(TypedDict, total=False):
 
     catalog: VariableOrOptional[SourceCatalogConfigParam]
     """
-    Catalog-level source configuration parameters
+    [Public Preview] Catalog-level source configuration parameters
+    """
+
+    google_ads_config: VariableOrOptional[GoogleAdsConfigParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
 

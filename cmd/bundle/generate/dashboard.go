@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -77,13 +79,13 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
 		return d.resolveFromID(ctx, b)
 	}
 
-	logdiag.LogError(ctx, errors.New("expected one of --dashboard-path, --dashboard-id"))
+	logdiag.LogError(ctx, errors.New("expected one of --existing-path, --existing-id"))
 	return ""
 }
 
 func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) string {
 	w := b.WorkspaceClient(ctx)
-	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath)
 	if err != nil {
 		if apierr.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("dashboard %q not found", path.Base(d.existingPath)))
@@ -261,7 +263,7 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 	}
 
 	for {
-		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -273,7 +275,11 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 			break
 		}
 
-		time.Sleep(1 * time.Second)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(1 * time.Second):
+		}
 	}
 }
 
@@ -338,7 +344,11 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 		return
 	}
 
-	key := textutil.NormalizeString(dashboard.DisplayName)
+	// The "key" flag is a persistent flag on the parent "generate" command.
+	key := d.cmd.Flag("key").Value.String()
+	if key == "" {
+		key = textutil.NormalizeString(dashboard.DisplayName)
+	}
 	err = d.saveConfiguration(ctx, b, dashboard, key)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -389,16 +399,25 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
+	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		state = b.DeploymentBundle.ExportState(ctx)
+	} else {
+		var err error
+		state, err = terraform.ParseResourcesState(ctx, b)
+		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(stateDesc.Engine),
+		statemgmt.Load(state),
 	)
 	if logdiag.HasError(ctx) {
 		return
@@ -510,13 +529,6 @@ bundle files automatically, useful during active dashboard development.`,
 	cmd.Flags().StringVar(&d.existingID, "existing-id", "", `ID of the dashboard to generate configuration for`)
 	cmd.Flags().StringVar(&d.resource, "resource", "", `resource key of dashboard to watch for changes`)
 
-	// Alias lookup flags that include the resource type name.
-	// Included for symmetry with the other generate commands, but we prefer the shorter flags.
-	cmd.Flags().StringVar(&d.existingPath, "existing-dashboard-path", "", `workspace path of the dashboard to generate configuration for`)
-	cmd.Flags().StringVar(&d.existingID, "existing-dashboard-id", "", `ID of the dashboard to generate configuration for`)
-	cmd.Flags().MarkHidden("existing-dashboard-path")
-	cmd.Flags().MarkHidden("existing-dashboard-id")
-
 	// Output flags.
 	cmd.Flags().StringVarP(&d.resourceDir, "resource-dir", "d", "resources", `directory to write the configuration to`)
 	cmd.Flags().StringVarP(&d.dashboardDir, "dashboard-dir", "s", "src", `directory to write the dashboard representation to`)
@@ -527,6 +539,11 @@ bundle files automatically, useful during active dashboard development.`,
 
 	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(
+		"existing-path",
+		"existing-id",
+		"resource",
+	)
+	cmd.MarkFlagsMutuallyExclusive(
 		"existing-path",
 		"existing-id",
 		"resource",

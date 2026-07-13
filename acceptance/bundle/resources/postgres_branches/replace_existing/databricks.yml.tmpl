@@ -1,0 +1,24 @@
+bundle:
+  name: deploy-postgres-replace-branch-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Replace existing branch test"
+      pg_version: 16
+      history_retention_duration: "604800s"
+
+  # Take over the implicitly-created production branch with replace_existing
+  # and apply a non-default spec (no_expiry: true). The field is input-only
+  # and not surfaced in get-branch, but it is visible in the recorded
+  # request body so the diff confirms it was sent.
+  postgres_branches:
+    production:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: production
+      replace_existing: true
+      no_expiry: true

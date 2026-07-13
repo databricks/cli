@@ -1,0 +1,10 @@
+[
+  {
+    "task_key": "designer_task",
+    "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/designer_paths/default/files/src/test.designer.ipynb"
+  },
+  {
+    "task_key": "regular_task",
+    "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/designer_paths/default/files/src/regular"
+  }
+]

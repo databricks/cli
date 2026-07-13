@@ -1,0 +1,5 @@
+# Goldens record the exact bytes the VT emulator's String() emits, which is
+# always LF-separated. On Windows, the default LF→CRLF translation would
+# turn a checked-out golden into CRLF-separated and cause termtest.Golden()
+# to see a mismatch against the LF-only snapshot.
+*.golden text eol=lf

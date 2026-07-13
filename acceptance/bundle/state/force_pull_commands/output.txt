@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Use a fake browser that just prints the URL it would have opened
+=== bundle summary without --force-pull: no remote state read
+
+>>> [CLI] bundle summary
+
+=== bundle summary --force-pull: remote state read
+
+>>> [CLI] bundle summary --force-pull
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"
+}
+
+=== bundle open without --force-pull: no remote state read
+
+>>> [CLI] bundle open foo
+Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+
+=== bundle open --force-pull: remote state read
+
+>>> [CLI] bundle open foo --force-pull
+Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"
+}

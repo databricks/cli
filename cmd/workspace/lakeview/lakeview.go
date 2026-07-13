@@ -3,6 +3,7 @@
 package lakeview
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -28,6 +29,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newCreateSchedule())
@@ -43,6 +48,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newListSubscriptions())
 	cmd.AddCommand(newMigrate())
 	cmd.AddCommand(newPublish())
+	cmd.AddCommand(newRevert())
 	cmd.AddCommand(newTrash())
 	cmd.AddCommand(newUnpublish())
 	cmd.AddCommand(newUpdate())
@@ -87,6 +93,8 @@ func newCreate() *cobra.Command {
   Create a draft dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -163,12 +171,14 @@ func newCreateSchedule() *cobra.Command {
       this schedule.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only DASHBOARD_ID as positional arguments. Provide 'cron_schedule' in your JSON input")
+				return errors.New("when --json flag is specified, provide only DASHBOARD_ID as positional arguments. Provide 'cron_schedule' in your JSON input")
 			}
 			return nil
 		}
@@ -253,12 +263,14 @@ func newCreateSubscription() *cobra.Command {
       to the schedule.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only DASHBOARD_ID, SCHEDULE_ID as positional arguments. Provide 'subscriber' in your JSON input")
+				return errors.New("when --json flag is specified, provide only DASHBOARD_ID, SCHEDULE_ID as positional arguments. Provide 'subscriber' in your JSON input")
 			}
 			return nil
 		}
@@ -338,6 +350,8 @@ func newDeleteSchedule() *cobra.Command {
     SCHEDULE_ID: UUID identifying the schedule.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -397,6 +411,8 @@ func newDeleteSubscription() *cobra.Command {
     SUBSCRIPTION_ID: UUID identifying the subscription.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -455,6 +471,8 @@ func newGet() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -512,6 +530,8 @@ func newGetPublished() *cobra.Command {
     DASHBOARD_ID: UUID identifying the published dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -568,6 +588,8 @@ func newGetSchedule() *cobra.Command {
     SCHEDULE_ID: UUID identifying the schedule.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -626,6 +648,8 @@ func newGetSubscription() *cobra.Command {
     SUBSCRIPTION_ID: UUID identifying the subscription.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -681,7 +705,7 @@ func newList() *cobra.Command {
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page.`)
 	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash.`)
-	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIConly includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]`)
+	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIC only includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -695,6 +719,8 @@ func newList() *cobra.Command {
 	cmd.Long = `List dashboards.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -764,6 +790,8 @@ func newListSchedules() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard to which the schedules belongs.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -836,6 +864,8 @@ func newListSubscriptions() *cobra.Command {
     SCHEDULE_ID: UUID identifying the schedule which the subscriptions belongs.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -904,12 +934,14 @@ func newMigrate() *cobra.Command {
     SOURCE_DASHBOARD_ID: UUID of the dashboard to be migrated.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'source_dashboard_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'source_dashboard_id' in your JSON input")
 			}
 			return nil
 		}
@@ -988,6 +1020,8 @@ func newPublish() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard to be published.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1033,6 +1067,80 @@ func newPublish() *cobra.Command {
 	return cmd
 }
 
+// start revert command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var revertOverrides []func(
+	*cobra.Command,
+	*dashboards.RevertDashboardRequest,
+)
+
+func newRevert() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var revertReq dashboards.RevertDashboardRequest
+	var revertJson flags.JsonFlag
+
+	cmd.Flags().Var(&revertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "revert DASHBOARD_ID"
+	cmd.Short = `Revert dashboard.`
+	cmd.Long = `Revert dashboard.
+
+  Revert a dashboard's definition in draft mode to the last published version.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := revertJson.Unmarshal(&revertReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		revertReq.DashboardId = args[0]
+
+		response, err := w.Lakeview.Revert(ctx, revertReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range revertOverrides {
+		fn(cmd, &revertReq)
+	}
+
+	return cmd
+}
+
 // start trash command
 
 // Slice with functions to override default command behavior.
@@ -1057,6 +1165,8 @@ func newTrash() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1113,6 +1223,8 @@ func newUnpublish() *cobra.Command {
     DASHBOARD_ID: UUID identifying the published dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1179,6 +1291,8 @@ func newUpdate() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1257,12 +1371,14 @@ func newUpdateSchedule() *cobra.Command {
       this schedule.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only DASHBOARD_ID, SCHEDULE_ID as positional arguments. Provide 'cron_schedule' in your JSON input")
+				return errors.New("when --json flag is specified, provide only DASHBOARD_ID, SCHEDULE_ID as positional arguments. Provide 'cron_schedule' in your JSON input")
 			}
 			return nil
 		}

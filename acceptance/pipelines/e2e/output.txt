@@ -20,8 +20,8 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/d
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
-View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Run pipeline
 >>> [CLI] pipelines run
@@ -44,9 +44,9 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/d
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
-View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
-View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Assert the second pipeline is created
 >>> [CLI] pipelines get [UUID]

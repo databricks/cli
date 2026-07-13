@@ -14,7 +14,7 @@ type ResourceClusterPolicyLibrariesMaven struct {
 }
 
 type ResourceClusterPolicyLibrariesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceClusterPolicyLibrariesPypi struct {
@@ -34,7 +34,7 @@ type ResourceClusterPolicyLibraries struct {
 }
 
 type ResourceClusterPolicyProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceClusterPolicy struct {

@@ -12,13 +12,16 @@ import (
 func newConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connect",
-		Short: "Connect to Databricks compute via SSH",
-		Long: `Connect to Databricks compute via SSH.
+		Short: "Connect to your Databricks compute and workspace via SSH",
+		Long: `Connect to your Databricks compute and workspace via SSH.
 
-This command establishes an SSH connection to Databricks compute, setting up
-the SSH server and handling the connection proxy.
+Connect to serverless:
+  databricks ssh connect
+  databricks ssh connect --accelerator=<GPU_type>   # AI Runtime
+  databricks ssh connect --base-environment=<name>  # custom base environment
 
-` + disclaimer,
+Connect to a dedicated cluster:
+  databricks ssh connect --cluster=<cluster-id>`,
 	}
 
 	var clusterID string
@@ -36,19 +39,17 @@ the SSH server and handling the connection proxy.
 	var liteswap string
 	var skipSettingsCheck bool
 	var environmentVersion int
+	var baseEnvironment string
 	var autoApprove bool
 
-	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (for dedicated clusters)")
+	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks dedicated cluster ID")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
 
-	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name (for serverless compute)")
-	cmd.Flags().MarkHidden("name")
-	cmd.Flags().StringVar(&accelerator, "accelerator", "", "GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
-	cmd.Flags().MarkHidden("accelerator")
+	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
+	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
 	cmd.Flags().StringVar(&ide, "ide", "", "Open remote IDE window (vscode or cursor)")
-	cmd.Flags().MarkHidden("ide")
 
 	cmd.Flags().BoolVar(&proxyMode, "proxy", false, "ProxyCommand mode")
 	cmd.Flags().MarkHidden("proxy")
@@ -69,8 +70,10 @@ the SSH server and handling the connection proxy.
 	cmd.Flags().BoolVar(&skipSettingsCheck, "skip-settings-check", false, "Skip checking and updating IDE settings")
 	cmd.Flags().MarkHidden("skip-settings-check")
 
-	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for serverless compute")
+	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for AI Runtime")
 	cmd.Flags().MarkHidden("environment-version")
+
+	cmd.Flags().StringVar(&baseEnvironment, "base-environment", "", "Custom base environment for serverless compute: an env.yaml path, a workspace-base-environments resource ID, or a display name")
 
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts, installing IDE extensions and applying IDE settings without asking")
 
@@ -89,7 +92,19 @@ the SSH server and handling the connection proxy.
 		ctx := cmd.Context()
 		wsClient := cmdctx.WorkspaceClient(ctx)
 		if connectionName == "" && clusterID == "" && !proxyMode {
-			connectionName = client.GenerateDefaultConnectionName(wsClient.Config.Host, accelerator)
+			connectionName = client.GenerateDefaultConnectionName(wsClient.Config.Host, accelerator, baseEnvironment)
+		}
+		// Serverless GPU compute can take much longer to provision than CPU compute,
+		// so allow extra time for the SSH server job to start.
+		startupTimeout := taskStartupTimeout
+		if accelerator != "" {
+			startupTimeout = gpuTaskStartupTimeout
+		}
+		// Only carry an explicitly-set environment version. Leaving it at 0 otherwise
+		// lets the submit path default to minEnvironmentVersion and lets Validate
+		// detect a real --environment-version + --base-environment conflict.
+		if !cmd.Flags().Changed("environment-version") {
+			environmentVersion = 0
 		}
 		opts := client.ClientOptions{
 			Profile:              wsClient.Config.Profile,
@@ -104,7 +119,7 @@ the SSH server and handling the connection proxy.
 			HandoverTimeout:      handoverTimeout,
 			ReleasesDir:          releasesDir,
 			ServerTimeout:        max(serverTimeout, shutdownDelay),
-			TaskStartupTimeout:   taskStartupTimeout,
+			TaskStartupTimeout:   startupTimeout,
 			AutoStartCluster:     autoStartCluster,
 			ClientPublicKeyName:  clientPublicKeyName,
 			ClientPrivateKeyName: clientPrivateKeyName,
@@ -112,6 +127,7 @@ the SSH server and handling the connection proxy.
 			Liteswap:             liteswap,
 			SkipSettingsCheck:    skipSettingsCheck,
 			EnvironmentVersion:   environmentVersion,
+			BaseEnvironment:      baseEnvironment,
 			AdditionalArgs:       args,
 			AutoApprove:          autoApprove,
 		}

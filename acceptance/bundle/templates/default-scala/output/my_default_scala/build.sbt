@@ -6,7 +6,7 @@ name := "my_default_scala"
 organization := "com.examples"
 version := "0.1"
 
-libraryDependencies += "com.databricks" %% "databricks-connect" % "17.0.+"
+libraryDependencies += "com.databricks" %% "databricks-connect" % "17.3.+"
 libraryDependencies += "org.slf4j" % "slf4j-simple" % "2.0.16"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % Test

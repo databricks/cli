@@ -3,6 +3,7 @@
 package log_delivery
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -91,6 +92,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newGet())
@@ -153,6 +158,8 @@ func newCreate() *cobra.Command {
   [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -171,7 +178,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := a.LogDelivery.Create(ctx, createReq)
@@ -219,6 +226,8 @@ func newGet() *cobra.Command {
     LOG_DELIVERY_CONFIGURATION_ID: The log delivery configuration id of customer`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -240,7 +249,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the log delivery configuration id of customer")
+			return errors.New("expected to have the log delivery configuration id of customer")
 		}
 		getReq.LogDeliveryConfigurationId = args[0]
 
@@ -301,6 +310,8 @@ func newList() *cobra.Command {
   specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -372,12 +383,14 @@ func newPatchStatus() *cobra.Command {
       Supported values: [DISABLED, ENABLED]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only LOG_DELIVERY_CONFIGURATION_ID as positional arguments. Provide 'status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only LOG_DELIVERY_CONFIGURATION_ID as positional arguments. Provide 'status' in your JSON input")
 			}
 			return nil
 		}

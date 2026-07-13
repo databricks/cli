@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    变量:
+      name: hello
+    foo:
+      name: ${resources.jobs.变量.id}

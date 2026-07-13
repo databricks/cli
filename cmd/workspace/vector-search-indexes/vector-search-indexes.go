@@ -3,6 +3,7 @@
 package vector_search_indexes
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -24,15 +25,19 @@ func New() *cobra.Command {
 		Long: `**Index**: An efficient representation of your embedding vectors that supports
   real-time and efficient approximate nearest neighbor (ANN) search queries.
 
-  There are 2 types of Vector Search indexes: - **Delta Sync Index**: An index
-  that automatically syncs with a source Delta Table, automatically and
-  incrementally updating the index as the underlying data in the Delta Table
-  changes. - **Direct Vector Access Index**: An index that supports direct read
-  and write of vectors and metadata through our REST and SDK APIs. With this
-  model, the user manages index updates.`,
+  There are 2 types of AI Search indexes: - **Delta Sync Index**: An index that
+  automatically syncs with a source Delta Table, automatically and incrementally
+  updating the index as the underlying data in the Delta Table changes. -
+  **Direct Vector Access Index**: An index that supports direct read and write
+  of vectors and metadata through our REST and SDK APIs. With this model, the
+  user manages index updates.`,
 		GroupID: "vectorsearch",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateIndex())
@@ -89,12 +94,14 @@ func newCreateIndex() *cobra.Command {
       Supported values: [DELTA_SYNC, DIRECT_ACCESS]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'endpoint_name', 'primary_key', 'index_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'endpoint_name', 'primary_key', 'index_type' in your JSON input")
 			}
 			return nil
 		}
@@ -184,6 +191,8 @@ func newDeleteDataVectorIndex() *cobra.Command {
       Vector Access Index.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -207,7 +216,7 @@ func newDeleteDataVectorIndex() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		deleteDataVectorIndexReq.IndexName = args[0]
 
@@ -253,6 +262,8 @@ func newDeleteIndex() *cobra.Command {
     INDEX_NAME: Name of the index`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -309,6 +320,8 @@ func newGetIndex() *cobra.Command {
     INDEX_NAME: Name of the index`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -377,6 +390,8 @@ func newListIndexes() *cobra.Command {
     ENDPOINT_NAME: Name of the endpoint`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -431,13 +446,16 @@ func newQueryIndex() *cobra.Command {
 	cmd.Flags().Var(&queryIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns_to_rerank
+	// TODO: array: facets
 	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON string representing query filters.`)
 	cmd.Flags().IntVar(&queryIndexReq.NumResults, "num-results", queryIndexReq.NumResults, `Number of results to return.`)
+	// TODO: array: query_columns
 	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
 	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `The query type to use.`)
 	// TODO: array: query_vector
 	// TODO: complex arg: reranker
 	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Threshold for the approximate nearest neighbor search.`)
+	// TODO: array: sort_columns
 
 	cmd.Use = "query-index INDEX_NAME"
 	cmd.Short = `Query an index.`
@@ -449,6 +467,8 @@ func newQueryIndex() *cobra.Command {
     INDEX_NAME: Name of the vector index to query.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -472,7 +492,7 @@ func newQueryIndex() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		queryIndexReq.IndexName = args[0]
 
@@ -527,6 +547,8 @@ func newQueryNextPage() *cobra.Command {
     INDEX_NAME: Name of the vector index to query.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -603,6 +625,8 @@ func newScanIndex() *cobra.Command {
     INDEX_NAME: Name of the vector index to scan.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -672,6 +696,8 @@ func newSyncIndex() *cobra.Command {
     INDEX_NAME: Name of the vector index to synchronize. Must be a Delta Sync Index.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -733,12 +759,14 @@ func newUpsertDataVectorIndex() *cobra.Command {
     INPUTS_JSON: JSON string representing the data to be upserted.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only INDEX_NAME as positional arguments. Provide 'inputs_json' in your JSON input")
+				return errors.New("when --json flag is specified, provide only INDEX_NAME as positional arguments. Provide 'inputs_json' in your JSON input")
 			}
 			return nil
 		}

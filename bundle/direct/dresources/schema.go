@@ -24,12 +24,13 @@ func (*ResourceSchema) PrepareState(input *resources.Schema) *catalog.CreateSche
 
 func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchema {
 	return &catalog.CreateSchema{
-		CatalogName:     info.CatalogName,
-		Comment:         info.Comment,
-		Name:            info.Name,
-		Properties:      info.Properties,
-		StorageRoot:     info.StorageRoot,
-		ForceSendFields: utils.FilterFields[catalog.CreateSchema](info.ForceSendFields),
+		CatalogName:             info.CatalogName,
+		Comment:                 info.Comment,
+		CustomMaxRetentionHours: info.CustomMaxRetentionHours,
+		Name:                    info.Name,
+		Properties:              info.Properties,
+		StorageRoot:             info.StorageRoot,
+		ForceSendFields:         utils.FilterFields[catalog.CreateSchema](info.ForceSendFields),
 	}
 }
 
@@ -49,6 +50,7 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSch
 func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {
 	updateRequest := catalog.UpdateSchema{
 		Comment:                      config.Comment,
+		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		FullName:                     id,
 		NewName:                      "", // We recreate schemas on name change intentionally.
@@ -69,7 +71,7 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 	return response, nil
 }
 
-func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *catalog.CreateSchema) error {
 	return r.client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
 		FullName:        id,
 		Force:           true,

@@ -4,39 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestExtractColumns(t *testing.T) {
-	tests := []struct {
-		name     string
-		manifest *sql.ResultManifest
-		want     []string
-	}{
-		{
-			"with columns",
-			&sql.ResultManifest{Schema: &sql.ResultSchema{
-				Columns: []sql.ColumnInfo{{Name: "id"}, {Name: "name"}},
-			}},
-			[]string{"id", "name"},
-		},
-		{"nil manifest", nil, nil},
-		{"nil schema", &sql.ResultManifest{}, nil},
-		{
-			"empty columns",
-			&sql.ResultManifest{Schema: &sql.ResultSchema{}},
-			[]string{},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := extractColumns(tc.manifest)
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
 
 func TestRenderJSON(t *testing.T) {
 	var buf bytes.Buffer
