@@ -3,38 +3,75 @@ package template
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/libs/git"
 )
 
-var gitUrlPrefixes = []string{
-	"https://",
-	"git@",
+type gitUrlPrefix struct {
+	prefix string
+
+	// invalid marks a prefix that git recognizes as a URL but that we refuse to
+	// clone from, so we can report an actionable error instead of falling through
+	// to the local-path reader.
+	invalid bool
 }
 
-func IsRepoUrl(url string) bool {
-	result := false
-	for _, prefix := range gitUrlPrefixes {
-		if strings.HasPrefix(url, prefix) {
-			result = true
-			break
+// See https://git-scm.com/docs/git-clone#_git_urls for the set of Git URL forms.
+// We deliberately reject the deprecated/insecure transports (git, http, ftp[s]).
+var gitUrlPrefixes = []gitUrlPrefix{
+	{prefix: "https://"},
+	{prefix: "ssh://"},
+	// recognize git@ without ssh:// protocol because this is very common
+	{prefix: "git@"},
+	{prefix: "http://", invalid: true},
+	{prefix: "git://", invalid: true},
+	{prefix: "ftp://", invalid: true},
+	{prefix: "ftps://", invalid: true},
+}
+
+// matchGitUrlPrefix returns the matching prefix entry, or nil if the input does
+// not look like a Git URL.
+func matchGitUrlPrefix(url string) *gitUrlPrefix {
+	for i := range gitUrlPrefixes {
+		if strings.HasPrefix(url, gitUrlPrefixes[i].prefix) {
+			return &gitUrlPrefixes[i]
 		}
 	}
-	return result
+	return nil
+}
+
+func IsGitRepoUrl(url string) bool {
+	p := matchGitUrlPrefix(url)
+	return p != nil && !p.invalid
 }
 
 // ResolveReader resolves a template path/URL to a Reader (built-in, git or local)
-func ResolveReader(templatePathOrUrl, templateDir, ref string) (Reader, bool) {
+func ResolveReader(templatePathOrUrl, templateDir, ref string) (Reader, bool, error) {
 	if tmpl := GetDatabricksTemplate(TemplateName(templatePathOrUrl)); tmpl != nil {
-		return tmpl.Reader, false
+		return tmpl.Reader, false, nil
 	}
 
-	if IsRepoUrl(templatePathOrUrl) {
-		return NewGitReader(templatePathOrUrl, ref, templateDir, git.Clone), true
+	if p := matchGitUrlPrefix(templatePathOrUrl); p != nil {
+		if p.invalid {
+			return nil, false, fmt.Errorf("unsupported protocol in Git URL %q: only %s URLs are supported", templatePathOrUrl, strings.Join(supportedGitUrlPrefixes(), ", "))
+		}
+		return NewGitReader(templatePathOrUrl, ref, templateDir, git.Clone), true, nil
 	}
 
-	return NewLocalReader(templatePathOrUrl), false
+	return NewLocalReader(templatePathOrUrl), false, nil
+}
+
+// supportedGitUrlPrefixes returns the valid (non-rejected) Git URL prefixes.
+func supportedGitUrlPrefixes() []string {
+	var prefixes []string
+	for i := range gitUrlPrefixes {
+		if !gitUrlPrefixes[i].invalid {
+			prefixes = append(prefixes, gitUrlPrefixes[i].prefix)
+		}
+	}
+	return prefixes
 }
 
 type Resolver struct {
@@ -105,7 +142,10 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 	//
 	// We resolve the appropriate reader according to the reference provided by the user.
 	if tmpl == nil {
-		reader, _ := ResolveReader(r.TemplatePathOrUrl, r.TemplateDir, ref)
+		reader, _, err := ResolveReader(r.TemplatePathOrUrl, r.TemplateDir, ref)
+		if err != nil {
+			return nil, err
+		}
 		tmpl = &Template{
 			name:   Custom,
 			Reader: reader,
