@@ -2,6 +2,11 @@
 # generates its own configs, so drop the inherited INPUT_CONFIG matrix.
 EnvMatrix.INPUT_CONFIG = []
 
+# Raise the inherited 10m cap so the nightly FUZZ_TIME_BUDGET (script) has room to
+# stop cleanly, plus the tail of a final in-flight seed, before this fires. The
+# committed run (5 seeds, no drift) finishes in seconds regardless.
+Timeout = '20m'
+
 # The fuzzer can emit resource types the testserver does not model. A missing
 # handler is a coverage gap, not a CLI bug, so return 501 (the config is then
 # rejected) instead of failing the whole run.
