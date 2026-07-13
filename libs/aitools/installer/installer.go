@@ -316,14 +316,14 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		return fmt.Errorf("failed to load install state: %w", err)
 	}
 
-	// Detect legacy installs (skills on disk but no state file). Global only.
-	// Block targeted installs on legacy setups to avoid writing incomplete state
-	// that would hide the legacy warning on future runs.
-	if state == nil && scope == ScopeGlobal {
-		isLegacy := checkLegacyInstall(ctx, baseDir)
-		if isLegacy && len(opts.SpecificSkills) > 0 {
-			return errors.New("legacy install detected without state tracking; run 'databricks aitools install' (without a skill name) first to rebuild state")
-		}
+	// A "legacy install" is one from before the CLI tracked install state in a
+	// JSON file: skills exist on disk but there's no state file (state == nil).
+	// A targeted install (--skills foo) here would write a state file listing only
+	// foo, leaving the other on-disk skills untracked. Block it so the user runs a
+	// full install first, which rebuilds complete state. Global scope only, since
+	// legacy installs only ever wrote to the global dir.
+	if state == nil && scope == ScopeGlobal && len(opts.SpecificSkills) > 0 && hasLegacyInstall(ctx, baseDir) {
+		return errors.New("legacy install detected without state tracking; run 'databricks aitools install' (without a skill name) first to rebuild state")
 	}
 
 	// Filter skills based on options, experimental flag, and CLI version.
@@ -341,6 +341,11 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 
 	// Install each skill in sorted order for determinism.
 	skillNames := slices.Sorted(maps.Keys(targetSkills))
+
+	// Scoped to the loop, not the manifest fetch above, so earlier warnings print
+	// as plain lines instead of racing the live spinner's redraw.
+	sp := cmdio.NewSpinner(ctx)
+	defer sp.Close()
 
 	// Accumulate file provenance for skills we (re)fetch this run. Skipped
 	// (already-installed) skills keep their existing records via the merge below.
@@ -360,6 +365,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 			}
 		}
 
+		sp.Update("Installing " + name + "...")
 		records, err := installSkillForAgents(ctx, name, meta, targetAgents, params)
 		if err != nil {
 			return err
@@ -406,6 +412,10 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if err := SaveState(baseDir, state); err != nil {
 		return err
 	}
+
+	// Stop the spinner before the summary so its transient line doesn't linger
+	// above the persistent "Installed N skills." output.
+	sp.Close()
 
 	noun := "skills"
 	if len(targetSkills) == 1 {
@@ -522,25 +532,6 @@ func printNoAgentsDetected(ctx context.Context) {
 	cmdio.LogString(ctx, "Please install at least one coding agent first.")
 }
 
-// checkLegacyInstall prints a message if skills exist on disk but no state file was found.
-// Returns true if a legacy install was detected.
-func checkLegacyInstall(ctx context.Context, globalDir string) bool {
-	if hasSkillsOnDisk(globalDir) {
-		cmdio.LogString(ctx, "Found skills installed before state tracking was added. Run 'databricks aitools install' to refresh.")
-		return true
-	}
-	homeDir, err := env.UserHomeDir(ctx)
-	if err != nil {
-		return false
-	}
-	legacyDir := filepath.Join(homeDir, ".databricks", "agent-skills")
-	if hasSkillsOnDisk(legacyDir) {
-		cmdio.LogString(ctx, "Found skills installed before state tracking was added. Run 'databricks aitools install' to refresh.")
-		return true
-	}
-	return false
-}
-
 // hasSkillsOnDisk checks if a directory contains subdirectories starting with "databricks".
 func hasSkillsOnDisk(dir string) bool {
 	entries, err := os.ReadDir(dir)
@@ -580,7 +571,6 @@ type installParams struct {
 
 func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta, detectedAgents []*agents.Agent, params installParams) (map[string]FileRecord, error) {
 	canonicalDir := filepath.Join(params.baseDir, skillName)
-	cmdio.LogString(ctx, fmt.Sprintf("Downloading %s...", skillName))
 	records, err := installSkillToDir(ctx, params.ref, meta.RepoDir, meta.SourceName, canonicalDir, meta.Files)
 	if err != nil {
 		return nil, err
@@ -588,7 +578,6 @@ func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta
 
 	// For project scope, always symlink. For global, symlink when multiple agents.
 	useSymlinks := params.scope == ScopeProject || len(detectedAgents) > 1
-	cmdio.LogString(ctx, fmt.Sprintf("Exposing %s to %d %s...", skillName, len(detectedAgents), agentNoun(len(detectedAgents))))
 
 	for _, agent := range detectedAgents {
 		agentSkillDir, err := agentSkillsDirForScope(ctx, agent, params.scope, params.cwd)
@@ -632,13 +621,6 @@ func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta
 	}
 
 	return records, nil
-}
-
-func agentNoun(n int) string {
-	if n == 1 {
-		return "agent"
-	}
-	return "agents"
 }
 
 // agentSkillsDirForScope returns the agent's skills directory for the given scope.

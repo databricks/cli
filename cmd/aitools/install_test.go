@@ -321,6 +321,16 @@ func TestInstallInteractivePickerAndConfirm(t *testing.T) {
 		return nil, nil
 	}
 
+	// The confirm is a huh widget that reads the real terminal, so drive it via
+	// the override rather than piped stdin; assert it was consulted.
+	origProceed := promptProceed
+	t.Cleanup(func() { promptProceed = origProceed })
+	proceedCalled := false
+	promptProceed = func(_ context.Context) (bool, error) {
+		proceedCalled = true
+		return true, nil
+	}
+
 	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	defer test.Done()
 	go drainReader(test.Stdout)
@@ -329,15 +339,9 @@ func TestInstallInteractivePickerAndConfirm(t *testing.T) {
 	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 
-	errc := make(chan error, 1)
-	go func() { errc <- cmd.RunE(cmd, nil) }()
-
-	_, err := test.Stdin.WriteString("y\n")
-	require.NoError(t, err)
-	require.NoError(t, test.Stdin.Flush())
-
-	require.NoError(t, <-errc)
+	require.NoError(t, cmd.RunE(cmd, nil))
 	assert.True(t, pickerCalled)
+	assert.True(t, proceedCalled)
 	require.Len(t, *plugins, 1)
 	assert.Equal(t, agents.NameClaudeCode, (*plugins)[0].agent)
 }
