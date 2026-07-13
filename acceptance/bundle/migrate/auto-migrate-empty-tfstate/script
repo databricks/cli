@@ -3,6 +3,10 @@
 # state aside (locally + remotely) so the next deploy picks the direct
 # engine by default instead of getting stuck on a permanent mismatch warning.
 
+print_migration_telemetry() {
+    print_telemetry_bool_values | grep '^direct_' || true
+}
+
 mkdir -p .databricks/bundle/default/terraform
 cat > .databricks/bundle/default/terraform/terraform.tfstate <<'EOF'
 {"version": 4, "serial": 1, "lineage": "test-lineage", "resources": []}
@@ -15,10 +19,14 @@ title "Terraform state is renamed to .backup; no resources.json (empty state, no
 trace find .databricks/bundle -name "resources.json" -type f
 trace find .databricks/bundle -name "terraform.tfstate*" -type f
 
+title "Sweep is recorded in telemetry as via-config\n"
+trace print_migration_telemetry
+
 title "Sweep also affected the workspace: .backup uploaded, terraform.tfstate deleted\n"
 trace print_requests.py //workspace-files/import-file //workspace/delete --sort | jq '.method + " " + .path' | contains.py 'terraform.tfstate.backup' 'workspace/delete'
 
 title "Next deploy uses direct engine by default (no more mismatch warning)"
 trace $CLI bundle deploy 2>&1 | contains.py '!does not match the existing state'
+trace print_migration_telemetry
 
-rm out.requests.txt
+rm -f out.requests.txt

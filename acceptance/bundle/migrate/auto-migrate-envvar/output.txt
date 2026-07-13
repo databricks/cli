@@ -6,6 +6,10 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+>>> print_migration_telemetry
+direct_drymigrate_success true
+direct_drymigrate_warnings false
+
 === Opt in via env var only (no bundle.engine in config): auto-migration triggers
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
@@ -15,6 +19,9 @@ Updating deployment state...
 Deployment complete!
 Migrating state to direct deployment engine (opted in via DATABRICKS_BUNDLE_ENGINE environment variable)...
 Migrated 1 resource to direct deployment engine.
+
+>>> print_migration_telemetry
+direct_migrated_via_env true
 
 === Direct-engine state is now in place; terraform state is backed up
 

@@ -6,6 +6,10 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+>>> print_migration_telemetry
+direct_drymigrate_success true
+direct_drymigrate_warnings false
+
 === Opt in via env var; inject 403 on the resources.json push so commit fails
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
@@ -15,6 +19,9 @@ Updating deployment state...
 Deployment complete!
 Migrating state to direct deployment engine (opted in via DATABRICKS_BUNDLE_ENGINE environment variable)...
 Warn: automatic migration to direct engine failed: pushing direct state to workspace: access denied: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
+
+>>> print_migration_telemetry
+direct_migrate_commit_error true
 
 === Local state was NOT rewritten (still terraform)
 
@@ -32,6 +39,9 @@ Updating deployment state...
 Deployment complete!
 Migrating state to direct deployment engine (opted in via DATABRICKS_BUNDLE_ENGINE environment variable)...
 Migrated 1 resource to direct deployment engine.
+
+>>> print_migration_telemetry
+direct_migrated_via_env true
 
 === Local state is now direct
 

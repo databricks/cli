@@ -15,6 +15,11 @@ Removing empty terraform state; direct engine will be used on the next deploy (o
 >>> find .databricks/bundle -name terraform.tfstate* -type f
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
+=== Sweep is recorded in telemetry as via-config
+
+>>> print_migration_telemetry
+direct_migrated_via_config true
+
 === Sweep also affected the workspace: .backup uploaded, terraform.tfstate deleted
 
 >>> print_requests.py //workspace-files/import-file //workspace/delete --sort
@@ -38,3 +43,5 @@ Removing empty terraform state; direct engine will be used on the next deploy (o
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Deployment complete!
+
+>>> print_migration_telemetry

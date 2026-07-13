@@ -1,11 +1,22 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
+# Wrap the shared helper to print only migration-related telemetry keys and
+# clear the request log so each call reports only telemetry from the deploy
+# that just ran. All auto-migration keys share the `direct_` prefix
+# (direct_drymigrate_*, direct_migrate_*, direct_migrated_via_*).
+print_migration_telemetry() {
+    print_telemetry_bool_values | grep '^direct_' || true
+    rm -f out.requests.txt
+}
+
 title "Initial deploy uses terraform engine (no bundle.engine set, override via env var)"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
 
 title "Opt in to direct engine via config and redeploy: dry-run is clean, auto-migration triggers"
 trace update_file.py databricks.yml "name: test-bundle" $'name: test-bundle\n  engine: direct'
 trace $CLI bundle deploy
+trace print_migration_telemetry
 
 title "Direct-engine state is now in place; terraform state is backed up\n"
 trace find .databricks/bundle -name "resources.json" -type f
@@ -19,6 +30,7 @@ trace $CLI bundle plan | contains.py "1 unchanged"
 
 title "Subsequent deploy under direct is a no-op"
 trace $CLI bundle deploy
+trace print_migration_telemetry
 
 title "Modify the config — plan shows the pending update"
 trace update_file.py databricks.yml "Test Auto-Migrate Job" "Test Auto-Migrate Job (renamed)"
@@ -27,7 +39,8 @@ $CLI bundle plan -o json > out.plan_update.direct.json
 
 title "Deploy picks up the update (with and without --plan)\n"
 $CLI bundle deploy $(readplanarg out.plan_update.direct.json)
+trace print_migration_telemetry
 
 trace $CLI bundle plan | contains.py "1 unchanged"
 
-rm out.requests.txt
+rm -f out.requests.txt

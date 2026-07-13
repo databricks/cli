@@ -34,10 +34,10 @@ const (
 	// Recorded when an automatic post-deploy migration to the direct engine
 	// actually ran (state was rewritten). Exactly one of the two keys is true;
 	// both are absent when auto-migration did not run.
-	//   - via-config: opt-in was bundle.engine = "direct" in the bundle config.
-	//   - via-env:    opt-in was the DATABRICKS_BUNDLE_ENGINE=direct env var.
-	DirectAutoMigrateViaConfig = "migrated-via-config"
-	DirectAutoMigrateViaEnv    = "migrated-via-env"
+	//   - via_config: opt-in was bundle.engine = "direct" in the bundle config.
+	//   - via_env:    opt-in was the DATABRICKS_BUNDLE_ENGINE=direct env var.
+	DirectAutoMigrateViaConfig = "direct_migrated_via_config"
+	DirectAutoMigrateViaEnv    = "direct_migrated_via_env"
 
 	// Whether workspace.state_path is under /Workspace/Shared.
 	StatePathIsShared = "state_path_is_shared"

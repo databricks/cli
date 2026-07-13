@@ -1,10 +1,19 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
+# Print migration telemetry after each deploy; clear the request log so
+# each call reports only what the just-completed deploy emitted.
+print_migration_telemetry() {
+    print_telemetry_bool_values | grep '^direct_' || true
+    rm -f out.requests.txt
+}
+
 title "Initial deploy uses terraform engine"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
 
 title "Opt in via env var only (no bundle.engine in config): auto-migration triggers"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
 
 title "Direct-engine state is now in place; terraform state is backed up\n"
 trace find .databricks/bundle -name "resources.json" -type f
@@ -13,4 +22,4 @@ trace find .databricks/bundle -name "terraform.tfstate*" -type f
 title "Remote state also reflects the migration (force-pull surfaces workspace state)\n"
 trace $CLI bundle debug states --force-pull
 
-rm out.requests.txt
+rm -f out.requests.txt
