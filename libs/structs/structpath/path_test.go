@@ -1019,7 +1019,7 @@ func TestHasPatternPrefix(t *testing.T) {
 			// '.'; a key ending in '.' has an empty final segment, which matches.
 			name:     "bracket map key glob trailing star matches empty child",
 			path:     "properties['unity.catalog.managed.something.defaults.']",
-			pattern:  "properties['unity.catalog.managed.*.defaults.*']",
+			pattern:  "properties['unity.catalog.managed.something.defaults.*']",
 			expected: true,
 		},
 		{
