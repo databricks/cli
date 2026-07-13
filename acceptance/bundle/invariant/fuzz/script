@@ -67,6 +67,13 @@ run_seed() {
     fi
 }
 
+# Append one machine-readable line per seed to LOG.summary so a run can be tallied
+# (deployed / rejected / gap / hang / bug) without grepping every seed's logs. It is a
+# file, not stdout, so the committed run's empty-output assertion is unaffected.
+record() {
+    echo "$1 seed=$2 target=${FUZZ_TARGET:-no_drift} mode=${FUZZ_MODE:-generate} count=${FUZZ_RESOURCE_COUNT:-1}" >> LOG.summary
+}
+
 for ((offset = 0; offset < COUNT; offset++)); do
     # Stop before the per-test timeout kills us mid-seed; the variant then passes,
     # having tested as many seeds as the budget allowed. This is a clean stop, not a
@@ -87,6 +94,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
     set -e
 
     if [ "$rc" -eq 0 ]; then
+        record deployed "$seed"
         continue
     fi
 
@@ -94,6 +102,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
     # fired): the seed hung past SEED_TIMEOUT. Report it as a hang, distinct from a drift
     # bug, with any goroutine dump preserved in the seed's LOG.* for triage.
     if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
+        record hang "$seed"
         echo "fuzz: seed $seed hung (>${SEED_TIMEOUT}s), reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_SEED_TIMEOUT=0 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} FUZZ_RESOURCE_COUNT=${FUZZ_RESOURCE_COUNT:-1} task test-fuzz" >&2
         exit 1
     fi
@@ -112,7 +121,29 @@ for ((offset = 0; offset < COUNT; offset++)); do
     fi
 
     if [ -n "$bug" ]; then
+        record bug "$seed"
         echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} FUZZ_RESOURCE_COUNT=${FUZZ_RESOURCE_COUNT:-1} task test-fuzz" >&2
         exit 1
     fi
+
+    # Not a bug. A 501 "No stub found" means the config hit a route the testserver does
+    # not model (a coverage gap, see IgnoreUnhandledRequests); anything else failing
+    # before INPUT_CONFIG_OK is a genuine config rejection.
+    if grep -qs "No stub found for pattern" "$dir"/LOG.*; then
+        record gap "$seed"
+    else
+        record rejected "$seed"
+    fi
 done
+
+# Per-variant tally so the nightly can sum outcomes across variants at a glance rather
+# than re-deriving them from every seed's logs. Only reached on a clean run; a bug or
+# hang exits above, and the per-seed lines already recorded remain for triage.
+if [ -f LOG.summary ]; then
+    # Snapshot the counts before appending the header, else awk would also count it.
+    totals=$(awk '{print $1}' LOG.summary | sort | uniq -c)
+    {
+        echo "--- totals ---"
+        echo "$totals"
+    } >> LOG.summary
+fi
