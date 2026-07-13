@@ -1,0 +1,12 @@
+bundle:
+  name: "run_as"
+
+run_as:
+  service_principal_name: "my_service_principal"
+
+resources:
+  apps:
+    foo:
+      name: "my_app"
+      description: "An app with a differing run_as identity"
+      source_code_path: ./app
