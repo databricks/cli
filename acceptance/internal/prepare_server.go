@@ -169,7 +169,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 	// Default case. Start a dedicated local server for the test with the server stubs configured
 	// as overrides.
-	host := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+	host := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir, isTruePtr(config.IgnoreUnhandledRequests))
 	cfg := &sdkconfig.Config{
 		Host:  host,
 		Token: token,
@@ -222,8 +222,10 @@ func startLocalServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
+	ignoreUnhandledRequests bool,
 ) string {
 	s := testserver.New(t)
+	s.IgnoreUnhandledRequests = ignoreUnhandledRequests
 
 	// Record API requests in out.requests.txt if RecordRequests is true
 	// in test.toml
