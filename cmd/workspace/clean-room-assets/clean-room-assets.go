@@ -3,6 +3,7 @@
 package clean_room_assets
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -107,7 +108,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only CLEAN_ROOM_NAME as positional arguments. Provide 'name', 'asset_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only CLEAN_ROOM_NAME as positional arguments. Provide 'name', 'asset_type' in your JSON input")
 			}
 			return nil
 		}

@@ -176,9 +176,15 @@ resources:
       - field: etag
         reason: spec:output_only
 
+  # job_runs: no api field behaviors
+
   # jobs: no api field behaviors
 
-  # model_serving_endpoints: no api field behaviors
+  model_serving_endpoints:
+
+    ignore_remote_changes:
+      - field: telemetry_config.inference_table_config.name
+        reason: spec:output_only
 
   # models: no api field behaviors
 
@@ -301,6 +307,8 @@ resources:
   postgres_synced_tables:
 
     ignore_remote_changes:
+      - field: accelerated_sync
+        reason: spec:input_only
       - field: branch
         reason: spec:input_only
       - field: create_database_objects_if_missing
@@ -319,6 +327,8 @@ resources:
         reason: spec:input_only
       - field: timeseries_key
         reason: spec:input_only
+      - field: type_overrides
+        reason: spec:input_only
 
   # quality_monitors: no api field behaviors
 
@@ -336,6 +346,8 @@ resources:
       - field: database_instance_name
         reason: spec:input_only
       - field: logical_database_name
+        reason: spec:input_only
+      - field: spec.accelerated_sync
         reason: spec:input_only
       - field: spec.create_database_objects_if_missing
         reason: spec:input_only

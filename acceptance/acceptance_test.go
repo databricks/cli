@@ -29,6 +29,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/databricks/cli/acceptance/internal"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
@@ -45,6 +46,7 @@ var (
 	LogRequests     bool
 	LogConfig       bool
 	UseVersion      string
+	CLIPath         string
 	WorkspaceTmpDir bool
 	OnlyOutTestToml bool
 	Subset          bool
@@ -75,6 +77,7 @@ func init() {
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
+	flag.StringVar(&CLIPath, "clipath", "", "Use the CLI binary at this path instead of building from source (e.g. a CLI built from main for regression comparison)")
 
 	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
 	// to simulate an identical environment.
@@ -107,6 +110,12 @@ const (
 )
 
 var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
+
+// IsPullRequest is true when the test run was triggered by a GitHub pull_request
+// event. GitHub Actions sets GITHUB_EVENT_NAME automatically. On pull requests we
+// additionally apply each test's GOOSOnPR filter, so OS-independent tests can be
+// skipped on windows/macOS for PRs while still running on every OS on push to main.
+var IsPullRequest = os.Getenv("GITHUB_EVENT_NAME") == "pull_request"
 
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
@@ -188,6 +197,32 @@ func hasRunFilter() bool {
 	return f != nil && strings.Contains(f.Value.String(), "=")
 }
 
+// requirePrerequisites verifies external tool prerequisites before doing any
+// work, so a stale toolchain fails fast with an actionable message instead of
+// producing confusing diffs deep into the run.
+//
+// It reports whether all checks passed; a failure surfaces as
+// TestAccept/prerequisites rather than a bare TestAccept.
+//
+// On DBR the serverless image only provides what the test archive ships, so
+// every tool required here must also be bundled in internal/testarchive. When
+// adding a new RequireX prerequisite, add a matching downloader there too, or
+// DBR runs will fail this check before any test runs.
+func requirePrerequisites(t *testing.T) bool {
+	return t.Run("prerequisites", func(t *testing.T) {
+		// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
+		internal.RequireJQ(t, "1.7")
+		// uv builds the databricks-bundles wheel and provides the test interpreter
+		// via `uv python find`, which landed in the 0.3 line.
+		internal.RequireUV(t, "0.4")
+		// ruff 0.9.1 is pinned across the repo (python/pyproject.toml, Taskfile.yml);
+		// the check-formatting test's golden output assumes its formatter behavior.
+		internal.RequireRuff(t, "0.9.1")
+		// Acceptance scripts import the stdlib tomllib module, added in Python 3.11.
+		internal.RequirePython(t, "3.11")
+	})
+}
+
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
@@ -229,6 +264,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
+	if !requirePrerequisites(t) {
+		// Don't run the suite against a stale toolchain; the failed subtest
+		// has already marked the parent test as failed.
+		return 0
+	}
+	// Run after the version check passed; must use the top-level t so the PATH
+	// change survives for the rest of the run.
+	internal.ConfigurePython(t, "3.11")
+
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
@@ -261,20 +305,37 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	}
 
 	execPath := ""
+	cliVersion := ""
 
 	if inprocessMode {
 		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
+		// In-process mode runs the CLI code directly; the test binary's own build
+		// info is the correct version.
+		cliVersion = build.GetInfo().Version
 	} else {
-		if UseVersion != "" {
+		if CLIPath != "" {
+			// Use a prebuilt binary (e.g. a CLI built from main) instead of building
+			// from the current source, so the test infra and tests stay on this branch.
+			execPath = CLIPath
+		} else if UseVersion != "" {
 			version := UseVersion
 			if version == "latest" {
 				version = resolveLatestVersion(t, buildDir)
 			}
 			execPath = DownloadCLI(t, buildDir, version)
+			// For a downloaded release the version string is already known.
+			cliVersion = version
 		} else {
 			execPath = BuildCLI(t, buildDir, coverDir, runtime.GOOS, runtime.GOARCH)
+		}
+		if cliVersion == "" {
+			// Run the binary to get its version: the test binary itself is compiled
+			// by "go test" in a tmpdir where VCS stamps are unavailable, so
+			// build.GetInfo().Version returns bare "0.0.0-dev" rather than
+			// "0.0.0-dev+<commit>". The built CLI binary includes VCS stamps.
+			cliVersion = getBinaryVersion(t, execPath)
 		}
 	}
 
@@ -347,8 +408,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
-	testdiff.PrepareReplacementsDevVersion(t, &repls)
+	repls.Set(cliVersion, "[CLI_VERSION]")
+	// Also replace the base version without build metadata (e.g. "0.0.0-dev" when
+	// cliVersion is "0.0.0-dev+abc123"), so fixture data that stores a bare version
+	// string is also normalized.
+	if base, _, found := strings.Cut(cliVersion, "+"); found {
+		repls.Set(base, "[CLI_VERSION]")
+	}
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
+	testdiff.PrepareReplacementTfProviderVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
 	t.Setenv("TESTROOT", cwd)
@@ -365,6 +433,22 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
+
+	skipLocalMode := os.Getenv(SkipLocalEnvVar)
+	// changedTests maps test dir to extra env filters to apply for that dir.
+	// nil value means all variants run; a non-nil slice restricts to matching variants.
+	var changedTests map[string][]string
+	switch skipLocalMode {
+	case "", SkipLocalAll:
+	case SkipLocalWithChanged:
+		testDirsSet := make(map[string]bool, len(testDirs))
+		for _, d := range testDirs {
+			testDirsSet[d] = true
+		}
+		changedTests = selectChangedLocalTests(testDirsSet)
+	default:
+		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, skipLocalMode, SkipLocalAll, SkipLocalWithChanged)
+	}
 
 	if singleTest != "" {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
@@ -420,7 +504,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath)
+			skipReason := getSkipReason(&config, configPath, dir, skipLocalMode, changedTests)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -470,6 +554,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 					t.Run(envname, func(t *testing.T) {
 						if runParallel {
 							t.Parallel()
+						}
+						// For invariant dirs re-enabled by a specific config change,
+						// skip variants not matching that config.
+						if variantFilters := changedTests[dir]; variantFilters != nil {
+							checkEnvFilters(t, envset, variantFilters)
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
@@ -543,9 +632,20 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-func getSkipReason(config *internal.TestConfig, configPath string) string {
-	if os.Getenv("DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
-		return "Disabled via DATABRICKS_TEST_SKIPLOCAL environment variable in " + configPath
+// skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
+// changedTests maps test dirs to extra env filters; nil map means feature is off.
+func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode string, changedTests map[string][]string) string {
+	switch skipLocalMode {
+	case SkipLocalAll:
+		if isTruePtr(config.Local) {
+			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalAll + " in " + configPath
+		}
+	case SkipLocalWithChanged:
+		if isTruePtr(config.Local) {
+			if _, ok := changedTests[dir]; !ok {
+				return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
+			}
+		}
 	}
 
 	if Forcerun {
@@ -559,6 +659,13 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
+	}
+
+	if IsPullRequest {
+		isEnabled, isPresent := config.GOOSOnPR[runtime.GOOS]
+		if isPresent && !isEnabled {
+			return fmt.Sprintf("Disabled via GOOSOnPR.%s setting in %s", runtime.GOOS, configPath)
+		}
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
@@ -609,6 +716,29 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 	return ""
 }
 
+var ciRunID = regexp.MustCompile(`^[0-9]{1,16}$`)
+
+// ciUniqueName embeds a CI run id into the random unique name as "ci<runID>x<random>".
+// The result stays purely lowercase-alphanumeric like the base32 name it replaces, so it
+// remains valid everywhere $UNIQUE_NAME is used: app names (no hyphens would be fine but
+// underscores/uppercase are not), Python and Unity Catalog identifiers (no hyphens). No
+// punctuation separator works for all of them, so the run id (all digits) is delimited by
+// the letter "x", which also keeps the sweep prefix "ci<runID>x" collision-free between
+// runs whose ids share a prefix. Length is preserved ("app-$UNIQUE_NAME" is exactly the
+// 30-char app name maximum). Returns random unchanged when runID is absent, malformed, or
+// too long to leave at least 8 random characters.
+func ciUniqueName(runID, random string) string {
+	if !ciRunID.MatchString(runID) {
+		return random
+	}
+	prefix := "ci" + runID + "x"
+	randLen := len(random) - len(prefix)
+	if randLen < 8 {
+		return random
+	}
+	return prefix + random[:randLen]
+}
+
 func runTest(t *testing.T,
 	dir string,
 	variant int,
@@ -643,6 +773,8 @@ func runTest(t *testing.T,
 
 	id := uuid.New()
 	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
+	// Embed the CI run id, when present, so leaked resources can be attributed to a run and swept by prefix.
+	uniqueName = ciUniqueName(os.Getenv("GITHUB_RUN_ID"), uniqueName)
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string
@@ -701,7 +833,7 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
@@ -759,6 +891,21 @@ func runTest(t *testing.T,
 	// into compared output. Tests can override this via [Env] in test.toml.
 	cmd.Env = append(cmd.Env, "DATABRICKS_CLI_DISABLE_UPDATE_CHECK=true")
 
+	// Neutralize Databricks-internal development-environment interference so
+	// acceptance tests behave the same as on CI (which has none of this). Two
+	// sources both reach the blocking proxy on every git invocation:
+	//
+	//  1. A command-timing shim that wraps git (ahead of the real binary on
+	//     PATH) and POSTs per-command metrics over the network.
+	//     COMMAND_TIMER_DISABLE=1 makes it pass through without the beacon.
+	//  2. A managed global git config installs a core.hooksPath whose hooks
+	//     (secret scanning, etc.) also beacon metrics. Ignoring the global and
+	//     system git config disables those hooks and keeps tests hermetic; tests
+	//     configure the repos they create via git-repo-init locally.
+	cmd.Env = append(cmd.Env, "COMMAND_TIMER_DISABLE=1")
+	cmd.Env = append(cmd.Env, "GIT_CONFIG_GLOBAL="+os.DevNull)
+	cmd.Env = append(cmd.Env, "GIT_CONFIG_SYSTEM="+os.DevNull)
+
 	for _, kv := range testEnv {
 		key, value, _ := strings.Cut(kv, "=")
 		// Only add replacement by default if value is part of EnvMatrix with more than 1 option and length is 4 or more chars
@@ -773,6 +920,15 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	if !isRunningOnCloud {
+		// Expose a guest token for the as-test-sp helper: the guest prefix plus
+		// the primary identity's uuid suffix make it share the same fake
+		// workspace. On cloud TEST_SP_TOKEN comes from the real environment.
+		suffix := cfg.Token
+		for _, prefix := range []string{testserver.UserNameTokenPrefix, testserver.ServicePrincipalTokenPrefix} {
+			suffix = strings.TrimPrefix(suffix, prefix)
+		}
+		cmd.Env = append(cmd.Env, "TEST_SP_TOKEN="+testserver.GuestServicePrincipalTokenPrefix+suffix)
+
 		proxyURL := sharedProxyURL
 		if DebugSandbox {
 			// Per-test proxy: errors are attributed to this subtest's t, making
@@ -1062,6 +1218,17 @@ func getBuildDir(t *testing.T, cwd, osName, arch string) string {
 	err := os.MkdirAll(buildDir, os.ModePerm)
 	require.NoError(t, err)
 	return buildDir
+}
+
+// getBinaryVersion runs `<path> version` and parses out the version string (e.g. "0.293.0").
+func getBinaryVersion(t *testing.T, path string) string {
+	t.Helper()
+	out, err := exec.Command(path, "version").Output()
+	require.NoError(t, err)
+	// Output is "Databricks CLI v<version>\n"; strip the prefix.
+	line := strings.TrimSpace(string(out))
+	line = strings.TrimPrefix(line, "Databricks CLI v")
+	return line
 }
 
 func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {

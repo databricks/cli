@@ -13,7 +13,8 @@ import (
 
 // aiTrainingWorkflowsPath is the AiTrainingService index of the caller's own AIR
 // runs. It returns cheap (job_run_id, submit_time) pairs, letting `air list`
-// order and page without scanning the Jobs runs/list firehose.
+// order and page without scanning the Jobs runs/list firehose. This is called
+// with a raw client.Do because the SDK does not model the AiTrainingService.
 const aiTrainingWorkflowsPath = "/api/2.0/ai-training/workflows"
 
 // workflowRef is one run from the index: its Jobs run id and submission time.

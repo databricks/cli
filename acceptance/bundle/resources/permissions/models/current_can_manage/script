@@ -3,10 +3,6 @@ rm out.requests.txt
 
 $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-print_requests() {
-    print_requests.py //permissions
-}
-
 rm out.requests.txt
 trace errcode $CLI bundle deploy &> out.deploy.txt
 
@@ -15,7 +11,7 @@ trace errcode $CLI bundle deploy &> out.deploy.txt
 MODEL_ID=$($CLI model-registry get-model test-model | jq -r '.registered_model_databricks.id')
 add_repl.py "$MODEL_ID" "FOO_MODEL_ID"
 
-print_requests > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests.py //permissions > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle destroy --auto-approve
-print_requests > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests.py //permissions > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

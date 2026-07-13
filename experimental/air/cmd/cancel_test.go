@@ -201,8 +201,8 @@ func TestCancelAllNoActiveRunsJSON(t *testing.T) {
 
 func TestCancelAllConfirmYes(t *testing.T) {
 	srv := runsServer(t, runsListBody(t, "",
-		airJobRun(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
-		airJobRun(222, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-b"),
+		airBaseRun(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
+		airBaseRun(222, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-b"),
 	))
 	w := newTestWorkspaceClient(t, srv.URL)
 
@@ -216,7 +216,7 @@ func TestCancelAllConfirmYes(t *testing.T) {
 
 func TestCancelAllAbort(t *testing.T) {
 	srv := runsServer(t, runsListBody(t, "",
-		airJobRun(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
+		airBaseRun(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
 	))
 	w := newTestWorkspaceClient(t, srv.URL)
 
@@ -228,7 +228,7 @@ func TestCancelAllAbort(t *testing.T) {
 
 func TestCancelAllConfirmReadError(t *testing.T) {
 	srv := runsServer(t, runsListBody(t, "",
-		airJobRun(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
+		airBaseRun(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a"),
 	))
 	w := newTestWorkspaceClient(t, srv.URL)
 
@@ -251,7 +251,7 @@ func TestCancelAllMeError(t *testing.T) {
 func TestCancelAllListError(t *testing.T) {
 	// Me succeeds (default empty user), but listing active runs fails.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == jobsRunsListPath {
+		if r.URL.Path == "/api/2.2/jobs/runs/list" {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(`{"error_code":"INTERNAL","message":"boom"}`))
 			return

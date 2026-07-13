@@ -3,11 +3,13 @@ package aircmd
 import (
 	"strconv"
 	"time"
+
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // buildListRow extracts the columns shown for one run. Optional cells fall back
 // to "-"; MLflowURL starts as "-" and setMLflowLinks fills it in for text output.
-func buildListRow(run *jobRun) listRow {
+func buildListRow(run *jobs.Run) listRow {
 	experiment := "-"
 	if e := jobExperiment(run); e != "" {
 		experiment = e
@@ -31,10 +33,10 @@ func buildListRow(run *jobRun) listRow {
 	}
 
 	return listRow{
-		RunID:        strconv.FormatInt(run.RunID, 10),
+		RunID:        strconv.FormatInt(run.RunId, 10),
 		RunName:      run.RunName,
 		User:         run.CreatorUserName,
-		Status:       statusWord(run.State.LifeCycleState, run.State.ResultState),
+		Status:       runStatus(run.State),
 		StartedAt:    startedAt,
 		IsSweep:      isSweep(run),
 		Experiment:   experiment,

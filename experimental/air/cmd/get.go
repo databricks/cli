@@ -132,10 +132,7 @@ func newGetCommand() *cobra.Command {
 			return authError(ctx, cmd, err)
 		}
 
-		// Fetch the run once, in both the typed and raw shapes: the typed jobs.Run
-		// drives the display path, and the raw jobRun preserves the ai_runtime_task
-		// the typed model drops (used below without a second roundtrip).
-		run, rawRun, err := fetchRun(ctx, w, runID)
+		run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
 		if err != nil {
 			// The backend returns this when the run ID is unknown to the user.
 			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
@@ -162,9 +159,7 @@ func newGetCommand() *cobra.Command {
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
 		} else if genAIComputeTask(run) == nil {
-			// The typed SDK drops ai_runtime_task, so read it from the raw run we
-			// already fetched above.
-			enrichFromRawRun(rawRun, &data)
+			enrichFromAiRuntimeTask(run, &data)
 		}
 
 		if root.OutputType(cmd) != flags.OutputText {
@@ -186,20 +181,36 @@ func newGetCommand() *cobra.Command {
 	return cmd
 }
 
-// enrichFromRawRun fills the config path, experiment, and accelerators from the
-// raw run (the ai_runtime_task the typed model drops). Best-effort: empty fields
-// leave the existing "N/A" fallbacks in place.
-func enrichFromRawRun(raw *jobRun, data *getData) {
-	if cmdPath := raw.commandPath(); cmdPath != "" {
-		data.TrainingConfigPath = path.Join(path.Dir(cmdPath), trainingConfigName)
+// enrichFromAiRuntimeTask fills the config path, experiment, and accelerators
+// from the run's ai_runtime_task. Best-effort: empty fields leave the existing
+// "N/A" fallbacks in place.
+func enrichFromAiRuntimeTask(run *jobs.Run, data *getData) {
+	task := aiRuntimeTaskOf(run)
+	if task == nil {
+		return
 	}
-	if exp := jobExperiment(raw); exp != "" {
+	if len(task.Deployments) > 0 {
+		d := task.Deployments[0]
+		if d.CommandPath != "" {
+			data.TrainingConfigPath = path.Join(path.Dir(d.CommandPath), trainingConfigName)
+		}
+		if a := acceleratorLabel(string(d.Compute.AcceleratorType), d.Compute.AcceleratorCount); a != "" {
+			data.AcceleratorsDisplay = a
+		}
+	}
+	if task.Experiment != "" {
+		exp := stripExperimentUserPrefix(task.Experiment)
 		data.ExperimentName = &exp
 		data.ExperimentDisplay = exp
 	}
-	if a := acceleratorLabel(jobCompute(raw)); a != "" {
-		data.AcceleratorsDisplay = a
+}
+
+// aiRuntimeTaskOf returns the run's first ai_runtime_task, or nil.
+func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
+	if len(run.Tasks) == 0 {
+		return nil
 	}
+	return run.Tasks[0].AiRuntimeTask
 }
 
 // buildGetData extracts the fields we display from a run. The text-view cells

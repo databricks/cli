@@ -3,31 +3,13 @@ package aircmd
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 )
-
-// getRunOutputResponse is the part of the jobs runs/get-output response we use.
-// The MLflow identifiers live under ai_runtime_task_output (current) or
-// gen_ai_compute_output.run_info (legacy), neither modeled by the typed SDK, so
-// we call the endpoint directly and parse just these fields.
-type getRunOutputResponse struct {
-	AiRuntimeTaskOutput *struct {
-		MlflowExperimentID string `json:"mlflow_experiment_id"`
-		MlflowRunID        string `json:"mlflow_run_id"`
-	} `json:"ai_runtime_task_output"`
-	GenAiComputeOutput *struct {
-		RunInfo *struct {
-			MlflowExperimentID string `json:"mlflow_experiment_id"`
-			MlflowRunID        string `json:"mlflow_run_id"`
-		} `json:"run_info"`
-	} `json:"gen_ai_compute_output"`
-}
 
 // mlflowIdentifiers are the experiment and run IDs MLflow assigns to a run.
 type mlflowIdentifiers struct {
@@ -54,29 +36,14 @@ func mlflowIDsForTask(ctx context.Context, w *databricks.WorkspaceClient, taskRu
 		return nil
 	}
 
-	apiClient, err := client.New(w.Config)
-	if err != nil {
-		log.Debugf(ctx, "air: could not build API client for MLflow link: %v", err)
-		return nil
-	}
-
-	// Pass run_id through the request arg (the SDK serializes it to the query
-	// string for GET); passing it via queryParams instead leaves a nil body that
-	// this endpoint rejects with "expected a map".
-	var out getRunOutputResponse
-	err = apiClient.Do(ctx, http.MethodGet, "/api/2.2/jobs/runs/get-output",
-		nil, nil, map[string]any{"run_id": taskRunID}, &out)
+	out, err := w.Jobs.GetRunOutputByRunId(ctx, taskRunID)
 	if err != nil {
 		log.Debugf(ctx, "air: could not fetch run output for MLflow link: %v", err)
 		return nil
 	}
 
-	if o := out.AiRuntimeTaskOutput; o != nil && o.MlflowExperimentID != "" && o.MlflowRunID != "" {
-		return &mlflowIdentifiers{ExperimentID: o.MlflowExperimentID, RunID: o.MlflowRunID}
-	}
-	if o := out.GenAiComputeOutput; o != nil && o.RunInfo != nil &&
-		o.RunInfo.MlflowExperimentID != "" && o.RunInfo.MlflowRunID != "" {
-		return &mlflowIdentifiers{ExperimentID: o.RunInfo.MlflowExperimentID, RunID: o.RunInfo.MlflowRunID}
+	if o := out.AiRuntimeTaskOutput; o != nil && o.MlflowExperimentId != "" && o.MlflowRunId != "" {
+		return &mlflowIdentifiers{ExperimentID: o.MlflowExperimentId, RunID: o.MlflowRunId}
 	}
 	return nil
 }
@@ -99,25 +66,15 @@ func mlflowRunURL(host string, ids *mlflowIdentifiers) string {
 // returning "" if it can't be obtained. Best-effort, like the rest of the MLflow
 // enrichment.
 func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string) string {
-	apiClient, err := client.New(w.Config)
-	if err != nil {
-		log.Debugf(ctx, "air get: could not build API client for MLflow run name: %v", err)
-		return ""
-	}
-	var out struct {
-		Run struct {
-			Info struct {
-				RunName string `json:"run_name"`
-			} `json:"info"`
-		} `json:"run"`
-	}
-	err = apiClient.Do(ctx, http.MethodGet, "/api/2.0/mlflow/runs/get",
-		nil, nil, map[string]any{"run_id": mlflowRunID}, &out)
+	resp, err := w.Experiments.GetRun(ctx, ml.GetRunRequest{RunId: mlflowRunID})
 	if err != nil {
 		log.Debugf(ctx, "air get: could not fetch MLflow run name: %v", err)
 		return ""
 	}
-	return out.Run.Info.RunName
+	if resp.Run == nil || resp.Run.Info == nil {
+		return ""
+	}
+	return resp.Run.Info.RunName
 }
 
 // mlflowRunLabel is the text shown for the MLflow Run cell: the run's name, or

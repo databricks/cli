@@ -11,7 +11,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
@@ -29,7 +29,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
@@ -44,7 +44,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
@@ -62,7 +62,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",

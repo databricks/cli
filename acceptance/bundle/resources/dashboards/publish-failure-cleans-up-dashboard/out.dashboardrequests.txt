@@ -2,6 +2,13 @@
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/state"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/artifacts/.internal"
   }
 }

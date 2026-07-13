@@ -29,6 +29,10 @@ type PostgresRoleState struct {
 
 	// Parent is "projects/{project_id}/branches/{branch_id}".
 	Parent string `json:"parent"`
+
+	// ReplaceExisting takes over an existing role with the same ID on create
+	// instead of returning ALREADY_EXISTS. Input-only: not returned by the GET API.
+	ReplaceExisting bool `json:"replace_existing,omitempty"`
 }
 
 // PostgresRoleRemote is the return type for DoRead. It embeds RoleRoleSpec so that
@@ -46,8 +50,16 @@ type PostgresRoleRemote struct {
 	UpdateTime *sdktime.Time            `json:"update_time,omitempty"`
 }
 
-// Custom marshaler needed because embedded RoleRoleSpec has its own MarshalJSON
+// Custom marshalers needed because embedded RoleRoleSpec has its own MarshalJSON
 // which would otherwise take over and ignore the additional fields.
+func (s *PostgresRoleState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PostgresRoleState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
 func (s *PostgresRoleRemote) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
 }
@@ -62,16 +74,22 @@ func (*ResourcePostgresRole) New(client *databricks.WorkspaceClient) *ResourcePo
 
 func (*ResourcePostgresRole) PrepareState(input *resources.PostgresRole) *PostgresRoleState {
 	return &PostgresRoleState{
-		RoleId:       input.RoleId,
-		Parent:       input.Parent,
-		RoleRoleSpec: input.RoleRoleSpec,
+		RoleId:          input.RoleId,
+		Parent:          input.Parent,
+		ReplaceExisting: input.ReplaceExisting,
+		RoleRoleSpec:    input.RoleRoleSpec,
 	}
 }
 
 func (*ResourcePostgresRole) RemapState(remote *PostgresRoleRemote) *PostgresRoleState {
 	return &PostgresRoleState{
-		RoleId:       remote.RoleId,
-		Parent:       remote.Parent,
+		RoleId: remote.RoleId,
+		Parent: remote.Parent,
+
+		// replace_existing is a create-time-only flag; the GET API never returns
+		// it, so RemapState leaves it false.
+		ReplaceExisting: false,
+
 		RoleRoleSpec: remote.RoleRoleSpec,
 	}
 }
@@ -85,13 +103,9 @@ func makePostgresRoleRemote(role *postgres.Role) *PostgresRoleRemote {
 	if role.Spec != nil {
 		spec = *role.Spec
 	}
-	var roleID string
-	if role.Status != nil {
-		roleID = role.Status.RoleId
-	}
 	return &PostgresRoleRemote{
 		RoleRoleSpec: spec,
-		RoleId:       roleID,
+		RoleId:       role.RoleId,
 		Parent:       role.Parent,
 		Name:         role.Name,
 		Status:       role.Status,
@@ -116,6 +130,7 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 			Spec: &config.RoleRoleSpec,
 
 			// Output-only fields.
+			RoleId:          "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",
@@ -123,6 +138,7 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
+		ReplaceExisting: config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {
@@ -150,6 +166,7 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 			Spec: &config.RoleRoleSpec,
 
 			// Output-only fields.
+			RoleId:          "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",

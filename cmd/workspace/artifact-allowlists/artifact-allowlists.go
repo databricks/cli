@@ -3,6 +3,7 @@
 package artifact_allowlists
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,9 +21,9 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "artifact-allowlists",
-		Short: `In Databricks Runtime 13.3 and above, you can add libraries and init scripts to the allowlist in UC so that users can leverage these artifacts on compute configured with shared access mode.`,
+		Short: `In Databricks Runtime 13.3 and above, you can add libraries and init scripts to the allowlist in UC so that users can use these artifacts on compute configured with shared access mode.`,
 		Long: `In Databricks Runtime 13.3 and above, you can add libraries and init scripts
-  to the allowlist in UC so that users can leverage these artifacts on compute
+  to the allowlist in UC so that users can use these artifacts on compute
   configured with shared access mode.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
@@ -163,7 +164,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.ArtifactType)
 		if err != nil {

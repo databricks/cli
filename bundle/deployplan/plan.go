@@ -73,9 +73,13 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 }
 
 type PlanEntry struct {
-	ID          string                   `json:"id,omitempty"`
-	DependsOn   []DependsOnEntry         `json:"depends_on,omitempty"`
-	Action      ActionType               `json:"action,omitempty"`
+	ID        string           `json:"id,omitempty"`
+	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
+	Action    ActionType       `json:"action,omitempty"`
+	// Gone is set on Delete entries when planning confirmed the resource no longer
+	// exists remotely. Applying such an entry only removes it from the state, without
+	// calling the delete API, and approval prompts do not list it as a deletion.
+	Gone        bool                     `json:"gone,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
@@ -103,12 +107,16 @@ const (
 	ReasonRemoteAlreadySet = "remote_already_set"
 	ReasonEmpty            = "empty"
 	ReasonCustom           = "custom"
+	// ReasonMissingInRemote: field is not present in RemoteType (write-only / input-only).
+	// Remote always appears nil, so treat the absence as a no-op when there is no local change.
+	ReasonMissingInRemote = "missing_in_remote"
 
 	// Special reason that results in removing this change from the plan
 	ReasonDrop = "!drop"
 )
 
-// HasChange checks if there are any changes for fields with the given prefix.
+// HasChange checks if there are any actionable changes for fields with the given prefix.
+// Suppressed changes (Action == Skip) are ignored, matching HasChangeExcept.
 // This function is path-aware and correctly handles path component boundaries.
 // For example:
 //   - HasChange for path "a" matches "a" and "a.b" but not "aa"
@@ -118,7 +126,10 @@ func (c *Changes) HasChange(fieldPath *structpath.PathNode) bool {
 		return false
 	}
 
-	for field := range *c {
+	for field, change := range *c {
+		if change.Action == Skip {
+			continue
+		}
 		fieldNode, err := structpath.ParsePath(field)
 		if err != nil {
 			continue
@@ -152,6 +163,7 @@ func (p *Plan) GetActions() []Action {
 		actions = append(actions, Action{
 			ResourceKey: key,
 			ActionType:  entry.Action,
+			Gone:        entry.Gone,
 		})
 	}
 
@@ -195,12 +207,6 @@ func (p *Plan) ReadUnlockEntry(resourceKey string) {
 	p.lockmap.RUnlock(resourceKey)
 }
 
-func (p *Plan) RemoveEntry(resourceKey string) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	delete(p.Plan, resourceKey)
-}
-
 // FilterToSelected reduces the plan to the nodes in selected (format "type.name",
 // e.g. "jobs.my_job") plus their transitive dependencies as recorded in each
 // entry's DependsOn field. Nodes not reachable from the selected set are removed.
@@ -210,10 +216,14 @@ func (p *Plan) FilterToSelected(selected []string) {
 	reachable := make(map[string]struct{}, len(selected))
 	for _, s := range selected {
 		key := "resources." + s
-		if _, ok := p.Plan[key]; ok {
-			reachable[key] = struct{}{}
-			queue = append(queue, key)
-		}
+		p.enqueueReachable(reachable, &queue, key)
+		// Grants and permissions are modeled as separate plan nodes for internal
+		// reasons, but the user cannot address them via --select. Pull them in as
+		// part of the parent resource so selecting a resource applies its grants
+		// and permissions too. The dependency edge runs sub-node → parent, so the
+		// BFS below would never reach them from the parent otherwise.
+		p.enqueueReachable(reachable, &queue, key+".grants")
+		p.enqueueReachable(reachable, &queue, key+".permissions")
 	}
 
 	// BFS following DependsOn edges to include transitive dependencies.
@@ -221,12 +231,7 @@ func (p *Plan) FilterToSelected(selected []string) {
 		key := queue[0]
 		queue = queue[1:]
 		for _, dep := range p.Plan[key].DependsOn {
-			if _, seen := reachable[dep.Node]; !seen {
-				if _, ok := p.Plan[dep.Node]; ok {
-					reachable[dep.Node] = struct{}{}
-					queue = append(queue, dep.Node)
-				}
-			}
+			p.enqueueReachable(reachable, &queue, dep.Node)
 		}
 	}
 
@@ -234,6 +239,18 @@ func (p *Plan) FilterToSelected(selected []string) {
 		if _, ok := reachable[key]; !ok {
 			delete(p.Plan, key)
 		}
+	}
+}
+
+// enqueueReachable marks key as reachable and appends it to queue, if key exists
+// in the plan and has not been seen before. Missing or already-seen keys are ignored.
+func (p *Plan) enqueueReachable(reachable map[string]struct{}, queue *[]string, key string) {
+	if _, seen := reachable[key]; seen {
+		return
+	}
+	if _, ok := p.Plan[key]; ok {
+		reachable[key] = struct{}{}
+		*queue = append(*queue, key)
 	}
 }
 

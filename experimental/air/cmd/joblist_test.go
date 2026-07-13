@@ -13,7 +13,7 @@ import (
 func runGetServer(t *testing.T, body string) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == jobsRunsGetPath {
+		if r.URL.Path == "/api/2.2/jobs/runs/get" {
 			_, _ = w.Write([]byte(body))
 			return
 		}
@@ -40,11 +40,8 @@ func TestFetchJobRunParsesAiRuntimeTask(t *testing.T) {
 
 	run, err := fetchJobRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5)
 	require.NoError(t, err)
-	assert.Equal(t, "/Workspace/Users/me/.air/cli_launch/my-exp/my-exp_abc/command.sh", run.commandPath())
-}
-
-func TestCommandPathEmpty(t *testing.T) {
-	// No ai_runtime_task deployment: no command path.
-	assert.Empty(t, (&jobRun{Tasks: []jobTask{{}}}).commandPath())
-	assert.Empty(t, (&jobRun{}).commandPath())
+	assert.Equal(t, "my-exp", jobExperiment(run))
+	gpuType, count := jobCompute(run)
+	assert.Equal(t, "GPU_1xA10", gpuType)
+	assert.Equal(t, 1, count)
 }

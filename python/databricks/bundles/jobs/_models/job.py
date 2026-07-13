@@ -17,7 +17,10 @@ from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
-from databricks.bundles.jobs._models.git_source import GitSource, GitSourceParam
+from databricks.bundles.jobs._models.git_source import (
+    GitSource,
+    GitSourceParam,
+)
 from databricks.bundles.jobs._models.job_cluster import JobCluster, JobClusterParam
 from databricks.bundles.jobs._models.job_email_notifications import (
     JobEmailNotifications,
@@ -121,7 +124,7 @@ class Job(Resource):
 
     lifecycle: VariableOrOptional[Lifecycle] = None
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     max_concurrent_runs: VariableOrOptional[int] = None
@@ -149,6 +152,13 @@ class Job(Resource):
     Job-level parameter definitions
     """
 
+    parent_path: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.
+    """
+
     performance_target: VariableOrOptional[PerformanceTarget] = None
     """
     The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
@@ -159,6 +169,9 @@ class Job(Resource):
     """
 
     permissions: VariableOrList[JobPermission] = field(default_factory=list)
+    """
+    The permissions to apply to this resource.
+    """
 
     queue: VariableOrOptional[QueueSettings] = None
     """
@@ -274,7 +287,7 @@ class JobDict(TypedDict, total=False):
 
     lifecycle: VariableOrOptional[LifecycleParam]
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     max_concurrent_runs: VariableOrOptional[int]
@@ -302,6 +315,13 @@ class JobDict(TypedDict, total=False):
     Job-level parameter definitions
     """
 
+    parent_path: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.
+    """
+
     performance_target: VariableOrOptional[PerformanceTargetParam]
     """
     The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
@@ -312,6 +332,9 @@ class JobDict(TypedDict, total=False):
     """
 
     permissions: VariableOrList[JobPermissionParam]
+    """
+    The permissions to apply to this resource.
+    """
 
     queue: VariableOrOptional[QueueSettingsParam]
     """

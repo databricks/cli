@@ -63,7 +63,7 @@ func TestGetRunInvalidID(t *testing.T) {
 func notFoundGetServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == jobsRunsGetPath {
+		if r.URL.Path == "/api/2.2/jobs/runs/get" {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = w.Write([]byte(`{"error_code":"INVALID_PARAMETER_VALUE","message":"Run 5 does not exist."}`))
 			return
@@ -220,21 +220,19 @@ func TestBuildGetData(t *testing.T) {
 	assert.Equal(t, int64(12), *d.DurationSeconds)
 }
 
-func TestEnrichFromRawRun(t *testing.T) {
-	rawRun := func(t *testing.T, body string) *jobRun {
-		t.Helper()
-		var r jobRun
-		require.NoError(t, json.Unmarshal([]byte(body), &r))
-		return &r
-	}
-
+func TestEnrichFromAiRuntimeTask(t *testing.T) {
 	t.Run("fills config path, experiment, and accelerators", func(t *testing.T) {
-		raw := rawRun(t, `{"run_id":5,"tasks":[{"ai_runtime_task":{
-			"experiment":"/Users/me@example.com/my-exp",
-			"deployments":[{"command_path":"/Workspace/run/command.sh","compute":{"accelerator_type":"GPU_1xA10","accelerator_count":1}}]
-		}}]}`)
+		run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{{
+			AiRuntimeTask: &jobs.AiRuntimeTask{
+				Experiment: "/Users/me@example.com/my-exp",
+				Deployments: []jobs.DeploymentSpec{{
+					CommandPath: "/Workspace/run/command.sh",
+					Compute:     jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu1xA10, AcceleratorCount: 1},
+				}},
+			},
+		}}}
 		data := &getData{ExperimentDisplay: na, AcceleratorsDisplay: na}
-		enrichFromRawRun(raw, data)
+		enrichFromAiRuntimeTask(run, data)
 		assert.Equal(t, "/Workspace/run/training_config.yaml", data.TrainingConfigPath)
 		assert.Equal(t, "my-exp", data.ExperimentDisplay)
 		require.NotNil(t, data.ExperimentName)
@@ -243,37 +241,12 @@ func TestEnrichFromRawRun(t *testing.T) {
 	})
 
 	t.Run("leaves fallbacks when the run has no ai_runtime_task", func(t *testing.T) {
-		raw := rawRun(t, `{"run_id":5,"tasks":[{}]}`)
+		run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{{}}}
 		data := &getData{ExperimentDisplay: na, AcceleratorsDisplay: na}
-		enrichFromRawRun(raw, data)
+		enrichFromAiRuntimeTask(run, data)
 		assert.Empty(t, data.TrainingConfigPath)
 		assert.Equal(t, na, data.ExperimentDisplay)
 		assert.Equal(t, na, data.AcceleratorsDisplay)
-	})
-}
-
-func TestFetchRun(t *testing.T) {
-	t.Run("parses the run into both the typed and raw shapes from one call", func(t *testing.T) {
-		body := `{"run_id":5,"creator_user_name":"me@example.com","tasks":[{"ai_runtime_task":{
-			"experiment":"/Users/me@example.com/my-exp",
-			"deployments":[{"command_path":"/Workspace/run/command.sh","compute":{"accelerator_type":"GPU_1xA10","accelerator_count":1}}]
-		}}]}`
-		srv := runGetServer(t, body)
-		typed, raw, err := fetchRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5)
-		require.NoError(t, err)
-		// Typed jobs.Run carries the common fields; raw jobRun keeps ai_runtime_task.
-		assert.Equal(t, int64(5), typed.RunId)
-		assert.Equal(t, "me@example.com", typed.CreatorUserName)
-		assert.Equal(t, "/Workspace/run/command.sh", raw.commandPath())
-	})
-
-	t.Run("propagates a fetch failure", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-		}))
-		t.Cleanup(srv.Close)
-		_, _, err := fetchRun(t.Context(), newTestWorkspaceClient(t, srv.URL), 5)
-		require.Error(t, err)
 	})
 }
 

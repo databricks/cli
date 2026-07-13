@@ -7,9 +7,6 @@ import (
 )
 
 // New returns the root command for the experimental AI runtime CLI.
-//
-// Milestone 0: scaffolds the command group with every subcommand registered as a
-// stub (not yet implemented), pending the port from the Python `air` CLI.
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "air",

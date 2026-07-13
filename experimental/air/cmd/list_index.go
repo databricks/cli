@@ -99,9 +99,13 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 
 	rows := make([]listedRun, 0, len(ids))
 	var toFetch []int64
+	// The cache key excludes the filter, so a cached row is still run through the
+	// active filter; a non-matching hit is dropped, not re-fetched.
 	for _, id := range ids {
-		if row, ok := cachedRow(s.ctx, s.cache, host, id); ok {
-			rows = append(rows, listedRun{row: row, taskRunID: id})
+		if row, fields, ok := cachedRow(s.ctx, s.cache, host, id); ok {
+			if s.filters.matchesFields(fields) {
+				rows = append(rows, listedRun{row: row, taskRunID: id})
+			}
 			continue
 		}
 		toFetch = append(toFetch, id)
@@ -112,14 +116,15 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 		return nil, err
 	}
 	for _, run := range runs {
-		if !s.filters.matches(run) {
+		fields := filterFieldsFromRun(run)
+		if !s.filters.matchesFields(fields) {
 			continue
 		}
 		row := buildListRow(run)
 		rows = append(rows, listedRun{row: row, taskRunID: taskRunID(run)})
 		if isTerminal(run) {
 			start, _ := jobTiming(run)
-			putRow(s.ctx, s.cache, host, run.RunID, start, row)
+			putRow(s.ctx, s.cache, host, run.RunId, start, row, fields)
 		}
 	}
 

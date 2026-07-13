@@ -17,6 +17,7 @@ Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "foo" RUNNING
 [TIMESTAMP] "foo" TERMINATED SUCCESS
+1
 
 === no resource key with --
 >>> [CLI] bundle run --
@@ -30,6 +31,7 @@ Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "foo" RUNNING
 [TIMESTAMP] "foo" TERMINATED SUCCESS
+1
 
 === inline script
 >>> [CLI] bundle run -- echo hello

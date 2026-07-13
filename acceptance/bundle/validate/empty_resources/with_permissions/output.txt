@@ -125,6 +125,7 @@ Warning: required field "schema_name" is not set
 {
   "volumes": {
     "rname": {
+      "volume_path": "/Volumes///",
       "volume_type": "MANAGED"
     }
   }

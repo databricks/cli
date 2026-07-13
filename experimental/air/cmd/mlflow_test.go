@@ -11,9 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newTestWorkspaceClient builds a WorkspaceClient pointed at a mock HTTP server.
-// mlflowIDs calls the runs/get-output REST endpoint directly (the field it needs
-// is not modeled by the typed SDK), so it must be exercised over HTTP.
+// newTestWorkspaceClient builds a WorkspaceClient pointed at a mock HTTP server,
+// so the SDK calls these tests exercise are served locally.
 func newTestWorkspaceClient(t *testing.T, host string) *databricks.WorkspaceClient {
 	t.Helper()
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: host, Token: "token"})
@@ -43,7 +42,7 @@ func TestMLflowIDs(t *testing.T) {
 
 	t.Run("returns the identifiers on success", func(t *testing.T) {
 		var hit bool
-		srv := runOutputServer(t, `{"gen_ai_compute_output":{"run_info":{"mlflow_experiment_id":"E1","mlflow_run_id":"R1"}}}`, &hit)
+		srv := runOutputServer(t, `{"ai_runtime_task_output":{"mlflow_experiment_id":"E1","mlflow_run_id":"R1"}}`, &hit)
 
 		got := mlflowIDs(ctx, newTestWorkspaceClient(t, srv.URL), run)
 		require.NotNil(t, got)
@@ -89,14 +88,6 @@ func TestMLflowIDsForTask(t *testing.T) {
 		require.NotNil(t, got)
 		assert.True(t, hit)
 		assert.Equal(t, &mlflowIdentifiers{ExperimentID: "E1", RunID: "R1"}, got)
-	})
-
-	t.Run("parses legacy gen_ai_compute_output", func(t *testing.T) {
-		var hit bool
-		srv := runOutputServer(t, `{"gen_ai_compute_output":{"run_info":{"mlflow_experiment_id":"E2","mlflow_run_id":"R2"}}}`, &hit)
-		got := mlflowIDsForTask(ctx, newTestWorkspaceClient(t, srv.URL), 99)
-		require.NotNil(t, got)
-		assert.Equal(t, &mlflowIdentifiers{ExperimentID: "E2", RunID: "R2"}, got)
 	})
 
 	t.Run("nil when no task run id", func(t *testing.T) {

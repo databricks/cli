@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,23 +43,25 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, 1800, p.TimeoutSeconds)
 	require.Len(t, p.Environments, 1)
 	assert.Equal(t, aiRuntimeEnvironmentKey, p.Environments[0].EnvironmentKey)
+	require.NotNil(t, p.Environments[0].Spec)
 	assert.Equal(t, "5", p.Environments[0].Spec.EnvironmentVersion)
 
 	require.Len(t, p.Tasks, 1)
 	task := p.Tasks[0]
 	assert.Equal(t, "exp", task.TaskKey)
-	assert.Equal(t, "ALL_SUCCESS", task.RunIf)
+	assert.Equal(t, jobs.RunIfAllSuccess, task.RunIf)
 	assert.Equal(t, aiRuntimeEnvironmentKey, task.EnvironmentKey)
 	assert.Equal(t, 2, task.MaxRetries)
 	assert.True(t, task.RetryOnTimeout)
 
 	at := task.AiRuntimeTask
+	require.NotNil(t, at)
 	assert.Equal(t, "exp", at.Experiment)
 	assert.Equal(t, "run-v2", at.MlflowRun)
 	assert.Equal(t, "/Workspace/Users/me/exp", at.MlflowExperimentDirectory)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, "/d/command.sh", at.Deployments[0].CommandPath)
-	assert.Equal(t, aiRuntimeCompute{AcceleratorType: "GPU_8xH100", AcceleratorCount: 16}, at.Deployments[0].Compute)
+	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
 }
 
 func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
@@ -115,36 +117,18 @@ func TestSubmitToken(t *testing.T) {
 	require.ErrorContains(t, err, "64 characters or less")
 }
 
-func TestJobsSubmitClient(t *testing.T) {
-	server := testserver.New(t)
-	t.Cleanup(server.Close)
-
-	var got jobsSubmitRun
-	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
-		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return submitRunResponse{RunID: 999}
-	})
-
-	w := &databricks.WorkspaceClient{Config: &config.Config{Host: server.URL, Token: "token"}}
-	jc, err := newJobsSubmitClient(w)
-	require.NoError(t, err)
-
-	runID, err := jc.submit(t.Context(), jobsSubmitRun{RunName: "exp", Tasks: []submitTask{{TaskKey: "exp"}}})
-	require.NoError(t, err)
-	assert.Equal(t, int64(999), runID)
-	assert.Equal(t, "exp", got.RunName)
-}
-
 func TestSubmitWorkload(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
-	testserver.AddDefaultHandlers(server)
 
-	var got jobsSubmitRun
+	// Register before AddDefaultHandlers: the router is first-wins, so this must claim the route ahead of the default handler.
+	var got jobs.SubmitRun
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return submitRunResponse{RunID: 777}
+		return jobs.SubmitRunResponse{RunId: 777}
 	})
+	testserver.AddDefaultHandlers(server)
+
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
@@ -164,11 +148,12 @@ func TestSubmitWorkload(t *testing.T) {
 	require.Len(t, got.Environments, 1)
 	require.Len(t, got.Tasks, 1)
 	at := got.Tasks[0].AiRuntimeTask
+	require.NotNil(t, at)
 	require.Len(t, at.Deployments, 1)
 	d := at.Deployments[0]
 	assert.True(t, strings.HasSuffix(d.CommandPath, "/"+commandScriptName), d.CommandPath)
 	assert.Contains(t, d.CommandPath, "/.air/cli_launch/")
-	assert.Equal(t, aiRuntimeCompute{AcceleratorType: "GPU_1xH100", AcceleratorCount: 1}, d.Compute)
+	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu1xH100, AcceleratorCount: 1}, d.Compute)
 }
 
 // TestSubmitWorkloadWithCodeSource exercises the snapshot path end to end: a

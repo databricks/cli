@@ -91,6 +91,14 @@ acceptance/cmd/fs/cp/file-to-dir/
 
 If the only reason for divergence is a server-side default that one engine sets and the other doesn't, set the field explicitly in `databricks.yml` so both engines produce identical output. Don't paper over it with per-engine files.
 
+**RULE: On Windows, Git Bash auto-converts a leading-`/` path argument (e.g. `/api/2.0/...`) into a Windows path, so `$CLI` sees the wrong path and the testserver 404s.** Set `MSYS_NO_PATHCONV = "1"` in the test directory's `test.toml` under `[Env]`. Quoting the argument in bash does NOT help — the conversion is done by the Windows binary's argument processing. Precedent: `acceptance/cmd/workspace/export-dir-*/test.toml`.
+
+**RULE: `EnvMatrix.<VAR> = []` removes that variable from the inherited matrix** (see `ExpandEnvMatrix` in `acceptance/internal/config.go`). The root `test.toml` matrixes `DATABRICKS_BUNDLE_ENGINE = [terraform, direct]`, so a non-bundle test opts out of both engine runs with `EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []`. The `out.test.toml` snapshot of inherited values is generated and committed by design.
+
+**RULE: If a test's `out.test.toml` is still in the older `[EnvMatrix]` block format, a regen rewrites it to the inline form and the post-test `git diff --exit-code` check fails** ("out.test.toml files that are out of date"). Regenerate just those files with `go test ./acceptance -run "^TestAccept$" -only-out-test-toml`, then commit.
+
+**RULE: Be aware of `GOOSOnPR` when adding or editing an acceptance test — an inherited opt-out may be skipping it on windows/macOS PR runs.** By default every test runs everywhere. For speed, some directories set `GOOSOnPR.windows = false` / `GOOSOnPR.darwin = false` in `test.toml`, which recursively opts their tests out of windows/macOS PR runs (they still run on Linux for PRs and on every OS on push to main). Check the resolved value in `out.test.toml`. This is right for the platform-independent majority, but if your test genuinely depends on the OS — path separators, `.exe`, CRLF, symlinks, file locking, process/signal semantics, venv layout (`Scripts` vs `bin`), wheel build — and it sits under such a directory, override the inherited skip with `GOOSOnPR.windows = true` / `GOOSOnPR.darwin = true`, or a Windows/macOS-only regression can merge unseen. `MSYS_NO_PATHCONV`, a leading `//`, or a CRLF-normalizing `sed` are portability scaffolding (they make output OS-identical), not evidence of OS-specific behavior. See `GOOSOnPR` in `acceptance/internal/config.go`.
+
 ### Reference
 
 - Tests live in `acceptance/` with a nested directory structure.

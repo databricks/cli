@@ -1,4 +1,5 @@
-Local = false
+Local = true
 Cloud = true
-CloudEnvs.aws = false
+GOOSOnPR.darwin = false
+GOOSOnPR.windows = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

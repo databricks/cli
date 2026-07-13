@@ -18,7 +18,7 @@ import (
 func TestBuildRequest_WireFormat(t *testing.T) {
 	// The backend expects camelCase warehouseId; this pins the wire format,
 	// not just the Go field values.
-	b, err := json.Marshal(BuildRequest("What tables exist?", "abc123"))
+	b, err := json.Marshal(BuildRequest("What tables exist?", "abc123", ""))
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
 		"input": [{
@@ -31,9 +31,22 @@ func TestBuildRequest_WireFormat(t *testing.T) {
 }
 
 func TestBuildRequest_OmitsEmptyWarehouse(t *testing.T) {
-	b, err := json.Marshal(BuildRequest("q", ""))
+	b, err := json.Marshal(BuildRequest("q", "", ""))
 	require.NoError(t, err)
 	assert.NotContains(t, string(b), "warehouseId")
+}
+
+func TestBuildRequest_Conversation(t *testing.T) {
+	// A conversation id continues an existing conversation; the wire field is
+	// camelCase conversationId (verified live — the snake_case form is ignored).
+	b, err := json.Marshal(BuildRequest("q", "", "conv-123"))
+	require.NoError(t, err)
+	assert.Contains(t, string(b), `"conversationId":"conv-123"`)
+
+	// Omitted when empty (a fresh conversation).
+	b, err = json.Marshal(BuildRequest("q", "", ""))
+	require.NoError(t, err)
+	assert.NotContains(t, string(b), "conversationId")
 }
 
 func TestPostStream(t *testing.T) {
@@ -52,7 +65,7 @@ func TestPostStream(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	body, err := PostStream(t.Context(), cfg, BuildRequest("What tables exist?", "wh1"))
+	body, err := PostStream(t.Context(), cfg, BuildRequest("What tables exist?", "wh1", ""))
 	require.NoError(t, err)
 	defer body.Close()
 
@@ -68,6 +81,44 @@ func TestPostStream(t *testing.T) {
 	assert.JSONEq(t, `{"type":"response.completed"}`, ev.Data)
 }
 
+func TestPostStream_SendsWorkspaceIDHeader(t *testing.T) {
+	// The endpoint is workspace-scoped: on SPOG hosts the gateway rejects the
+	// request ("Credential was not sent…") without the workspace-id header even
+	// with valid auth, so a resolved workspace id must be sent. The wire header is
+	// the canonical X-Databricks-Workspace-Id.
+	var gotWorkspaceID string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotWorkspaceID = r.Header.Get("X-Databricks-Workspace-Id")
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {\"type\":\"response.completed\"}\n\n")
+	}))
+	defer srv.Close()
+
+	cfg := &config.Config{Host: srv.URL, Token: "dummy", WorkspaceID: "987654321"}
+	body, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
+	require.NoError(t, err)
+	defer body.Close()
+	assert.Equal(t, "987654321", gotWorkspaceID)
+}
+
+func TestPostStream_OmitsWorkspaceIDHeaderWhenUnset(t *testing.T) {
+	// No workspace id (e.g. account-level config) means no header rather than an
+	// empty or "none" one.
+	var hadWorkspaceID bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, hadWorkspaceID = r.Header["X-Databricks-Workspace-Id"]
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {\"type\":\"response.completed\"}\n\n")
+	}))
+	defer srv.Close()
+
+	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
+	body, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
+	require.NoError(t, err)
+	defer body.Close()
+	assert.False(t, hadWorkspaceID, "no workspace-id header when workspace id is unset")
+}
+
 func TestPostStream_EndpointGone(t *testing.T) {
 	// Wire shape a live workspace gateway returns for a route that does not
 	// exist. The genie route is undocumented and can disappear between
@@ -81,7 +132,7 @@ func TestPostStream_EndpointGone(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	_, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
 	require.Error(t, err)
 	assert.ErrorIs(t, err, apierr.ErrNotFound)
 	assert.Contains(t, err.Error(), "No API found")
@@ -100,7 +151,7 @@ func TestPostStream_ResourceNotFound(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "wh-missing"))
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "wh-missing", ""))
 	require.Error(t, err)
 	assert.ErrorIs(t, err, apierr.ErrResourceDoesNotExist)
 	assert.Contains(t, err.Error(), "Warehouse wh-missing does not exist")
@@ -116,7 +167,7 @@ func TestPostStream_HTTPError(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	_, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "backend exploded")
 	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
@@ -134,7 +185,7 @@ func TestPostStream_InternalErrorEmptyMessage(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	_, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
 	require.Error(t, err)
 	assert.ErrorIs(t, err, apierr.ErrInternalError)
 	assert.Contains(t, err.Error(), "could not process the request (500 with no details)")

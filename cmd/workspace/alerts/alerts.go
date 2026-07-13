@@ -3,6 +3,7 @@
 package alerts
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -168,7 +169,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		deleteReq.Id = args[0]
 
@@ -235,7 +236,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getReq.Id = args[0]
 
@@ -379,7 +380,7 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only ID as positional arguments. Provide 'update_mask' in your JSON input")
+				return errors.New("when --json flag is specified, provide only ID as positional arguments. Provide 'update_mask' in your JSON input")
 			}
 			return nil
 		}

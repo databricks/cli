@@ -95,12 +95,13 @@ func (r *ResourceDashboard) RemapState(state *DashboardState) *DashboardState {
 
 			ForceSendFields: forceSendFields,
 
-			// Clear output only fields. They should not show up on remote diff computation.
-			CreateTime:     "",
-			DashboardId:    "",
-			LifecycleState: dashboards.LifecycleState(""),
-			Path:           "",
-			UpdateTime:     "",
+			// Output only fields. Remote changes to these are ignored via
+			// ignore_remote_changes in resources.yml rather than zeroed here.
+			CreateTime:     state.CreateTime,
+			DashboardId:    state.DashboardId,
+			LifecycleState: state.LifecycleState,
+			Path:           state.Path,
+			UpdateTime:     state.UpdateTime,
 		},
 		Published: state.Published,
 	}

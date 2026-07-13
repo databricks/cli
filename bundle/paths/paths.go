@@ -32,6 +32,10 @@ func CollectUniqueWorkspacePathPrefixes(workspace config.Workspace) WorkspacePat
 		workspace.StatePath,
 		workspace.ResourcePath,
 	} {
+		if p == "" {
+			continue
+		}
+
 		if libraries.IsVolumesPath(p) {
 			continue
 		}

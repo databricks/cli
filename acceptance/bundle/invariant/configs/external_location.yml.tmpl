@@ -8,3 +8,7 @@ resources:
       url: s3://test-bucket/path
       credential_name: test_storage_credential
       comment: "Test external location from DABs"
+      grants:
+        - principal: account users
+          privileges:
+            - READ_FILES

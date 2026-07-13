@@ -1,15 +1,7 @@
-print_requests() {
-    print_requests.py //jobs/
-}
-
-print_sorted_requests() {
-    print_requests.py //jobs/ --sort
-}
-
 trace $CLI bundle plan
 $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-print_requests > out.requests_create.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests.py //jobs/ > out.requests_create.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle destroy --auto-approve
-print_requests > out.requests_delete.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests.py //jobs/ > out.requests_delete.$DATABRICKS_BUNDLE_ENGINE.json

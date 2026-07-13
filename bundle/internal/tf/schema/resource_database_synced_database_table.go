@@ -82,7 +82,14 @@ type ResourceDatabaseSyncedDatabaseTableSpecNewPipelineSpec struct {
 	StorageSchema  string `json:"storage_schema,omitempty"`
 }
 
+type ResourceDatabaseSyncedDatabaseTableSpecTypeOverrides struct {
+	ColumnName string `json:"column_name"`
+	PgType     string `json:"pg_type"`
+	Size       int    `json:"size,omitempty"`
+}
+
 type ResourceDatabaseSyncedDatabaseTableSpec struct {
+	AcceleratedSync                bool                                                    `json:"accelerated_sync,omitempty"`
 	CreateDatabaseObjectsIfMissing bool                                                    `json:"create_database_objects_if_missing,omitempty"`
 	ExistingPipelineId             string                                                  `json:"existing_pipeline_id,omitempty"`
 	NewPipelineSpec                *ResourceDatabaseSyncedDatabaseTableSpecNewPipelineSpec `json:"new_pipeline_spec,omitempty"`
@@ -90,6 +97,7 @@ type ResourceDatabaseSyncedDatabaseTableSpec struct {
 	SchedulingPolicy               string                                                  `json:"scheduling_policy,omitempty"`
 	SourceTableFullName            string                                                  `json:"source_table_full_name,omitempty"`
 	TimeseriesKey                  string                                                  `json:"timeseries_key,omitempty"`
+	TypeOverrides                  []ResourceDatabaseSyncedDatabaseTableSpecTypeOverrides  `json:"type_overrides,omitempty"`
 }
 
 type ResourceDatabaseSyncedDatabaseTable struct {

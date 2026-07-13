@@ -3,6 +3,7 @@
 package apps
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -100,7 +101,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
 	cmd.Flags().IntVar(&createReq.App.ComputeMaxInstances, "compute-max-instances", createReq.App.ComputeMaxInstances, `Maximum number of app instances.`)
 	cmd.Flags().IntVar(&createReq.App.ComputeMinInstances, "compute-min-instances", createReq.App.ComputeMinInstances, `Minimum number of app instances.`)
-	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM]`)
+	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
@@ -130,7 +131,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -255,7 +256,7 @@ func newCreateSpace() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -389,7 +390,7 @@ func newCreateUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'update_mask' in your JSON input")
+				return errors.New("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'update_mask' in your JSON input")
 			}
 			return nil
 		}
@@ -1695,7 +1696,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
 	cmd.Flags().IntVar(&updateReq.App.ComputeMaxInstances, "compute-max-instances", updateReq.App.ComputeMaxInstances, `Maximum number of app instances.`)
 	cmd.Flags().IntVar(&updateReq.App.ComputeMinInstances, "compute-min-instances", updateReq.App.ComputeMinInstances, `Minimum number of app instances.`)
-	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM]`)
+	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes

@@ -208,10 +208,6 @@ __all__ = [
     "TikTokAdsOptions",
     "TikTokAdsOptionsDict",
     "TikTokAdsOptionsParam",
-    "TikTokAdsOptionsTikTokDataLevel",
-    "TikTokAdsOptionsTikTokDataLevelParam",
-    "TikTokAdsOptionsTikTokReportType",
-    "TikTokAdsOptionsTikTokReportTypeParam",
     "Transformer",
     "TransformerDict",
     "TransformerFormat",
@@ -580,14 +576,6 @@ from databricks.bundles.pipelines._models.tik_tok_ads_options import (
     TikTokAdsOptions,
     TikTokAdsOptionsDict,
     TikTokAdsOptionsParam,
-)
-from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_data_level import (
-    TikTokAdsOptionsTikTokDataLevel,
-    TikTokAdsOptionsTikTokDataLevelParam,
-)
-from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_report_type import (
-    TikTokAdsOptionsTikTokReportType,
-    TikTokAdsOptionsTikTokReportTypeParam,
 )
 from databricks.bundles.pipelines._models.transformer import (
     Transformer,

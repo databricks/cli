@@ -6,7 +6,15 @@ Deployment complete!
 
 >>> print_telemetry_bool_values
 dms_compat_auto true
+dms_undeclared_deploying_user false
+dms_undeclared_group false
+dms_undeclared_other_user false
+dms_undeclared_service_principal false
+permissions_section_set false
+state_path_in_deployer_home true
+state_path_in_other_user_home false
 state_path_is_shared false
+state_path_other false
 
 >>> [CLI] bundle deploy -t user_declared
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_declared/files...
@@ -15,7 +23,15 @@ Deployment complete!
 
 >>> print_telemetry_bool_values
 dms_compat_auto true
+dms_undeclared_deploying_user false
+dms_undeclared_group false
+dms_undeclared_other_user false
+dms_undeclared_service_principal false
+permissions_section_set true
+state_path_in_deployer_home true
+state_path_in_other_user_home false
 state_path_is_shared false
+state_path_other false
 
 >>> [CLI] bundle deploy -t user_not_declared
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
@@ -36,7 +52,49 @@ Deployment complete!
 
 >>> print_telemetry_bool_values
 dms_compat_only_self_undeclared true
+dms_undeclared_deploying_user true
+dms_undeclared_group false
+dms_undeclared_other_user false
+dms_undeclared_service_principal false
+permissions_section_set true
+state_path_in_deployer_home true
+state_path_in_other_user_home false
 state_path_is_shared false
+state_path_other false
+
+>>> [CLI] bundle deploy -t other_user_not_declared
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/other_user_not_declared/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+dms_compat_not true
+dms_undeclared_deploying_user false
+dms_undeclared_group false
+dms_undeclared_other_user true
+dms_undeclared_service_principal false
+permissions_section_set true
+state_path_in_deployer_home false
+state_path_in_other_user_home true
+state_path_is_shared false
+state_path_other false
+
+>>> [CLI] bundle deploy -t workspace_other
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/workspace_other/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+dms_compat_auto true
+dms_undeclared_deploying_user false
+dms_undeclared_group false
+dms_undeclared_other_user false
+dms_undeclared_service_principal false
+permissions_section_set true
+state_path_in_deployer_home false
+state_path_in_other_user_home false
+state_path_is_shared false
+state_path_other true
 
 >>> [CLI] bundle deploy -t shared_users_can_manage
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
@@ -49,7 +107,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:30:7
+  in databricks.yml:47:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_users_can_manage/files...
 Deploying resources...
@@ -57,7 +115,15 @@ Deployment complete!
 
 >>> print_telemetry_bool_values
 dms_compat_auto true
+dms_undeclared_deploying_user false
+dms_undeclared_group false
+dms_undeclared_other_user false
+dms_undeclared_service_principal false
+permissions_section_set true
+state_path_in_deployer_home false
+state_path_in_other_user_home false
 state_path_is_shared true
+state_path_other false
 
 >>> [CLI] bundle deploy -t shared_not_declared
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_not_declared/files...
@@ -66,4 +132,12 @@ Deployment complete!
 
 >>> print_telemetry_bool_values
 dms_compat_not true
+dms_undeclared_deploying_user false
+dms_undeclared_group true
+dms_undeclared_other_user false
+dms_undeclared_service_principal false
+permissions_section_set true
+state_path_in_deployer_home false
+state_path_in_other_user_home false
 state_path_is_shared true
+state_path_other false

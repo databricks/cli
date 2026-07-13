@@ -3,6 +3,7 @@
 package workspace
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -98,7 +99,7 @@ func newDelete() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'path' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'path' in your JSON input")
 			}
 			return nil
 		}
@@ -137,7 +138,7 @@ func newDelete() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the absolute path of the notebook or directory")
+				return errors.New("expected to have the absolute path of the notebook or directory")
 			}
 			deleteReq.Path = args[0]
 
@@ -227,7 +228,7 @@ func newExport() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the absolute path of the object or directory")
+			return errors.New("expected to have the absolute path of the object or directory")
 		}
 		exportReq.Path = args[0]
 
@@ -491,7 +492,7 @@ func newImport() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'path' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'path' in your JSON input")
 			}
 			return nil
 		}
@@ -655,7 +656,7 @@ func newMkdirs() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'path' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'path' in your JSON input")
 			}
 			return nil
 		}
@@ -694,7 +695,7 @@ func newMkdirs() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the absolute path of the directory")
+				return errors.New("expected to have the absolute path of the directory")
 			}
 			mkdirsReq.Path = args[0]
 		}

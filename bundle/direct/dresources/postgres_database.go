@@ -51,14 +51,20 @@ func (*ResourcePostgresDatabase) PrepareState(input *resources.PostgresDatabase)
 	return &PostgresDatabaseState{
 		DatabaseId:           input.DatabaseId,
 		Parent:               input.Parent,
+		ReplaceExisting:      input.ReplaceExisting,
 		DatabaseDatabaseSpec: input.DatabaseDatabaseSpec,
 	}
 }
 
 func (*ResourcePostgresDatabase) RemapState(remote *PostgresDatabaseRemote) *PostgresDatabaseState {
 	return &PostgresDatabaseState{
-		DatabaseId:           remote.DatabaseId,
-		Parent:               remote.Parent,
+		DatabaseId: remote.DatabaseId,
+		Parent:     remote.Parent,
+
+		// replace_existing is a create-time-only flag; the GET API never returns
+		// it, so RemapState leaves it false.
+		ReplaceExisting: false,
+
 		DatabaseDatabaseSpec: remote.DatabaseDatabaseSpec,
 	}
 }
@@ -72,13 +78,9 @@ func makePostgresDatabaseRemote(database *postgres.Database) *PostgresDatabaseRe
 	if database.Spec != nil {
 		spec = *database.Spec
 	}
-	var databaseID string
-	if database.Status != nil {
-		databaseID = database.Status.DatabaseId
-	}
 	return &PostgresDatabaseRemote{
 		DatabaseDatabaseSpec: spec,
-		DatabaseId:           databaseID,
+		DatabaseId:           database.DatabaseId,
 		Parent:               database.Parent,
 		Name:                 database.Name,
 		Status:               database.Status,
@@ -103,6 +105,7 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 			Spec: &config.DatabaseDatabaseSpec,
 
 			// Output-only fields.
+			DatabaseId:      "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",
@@ -110,6 +113,7 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
+		ReplaceExisting: config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {
@@ -138,6 +142,7 @@ func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, id string, conf
 			Spec: &config.DatabaseDatabaseSpec,
 
 			// Output-only fields.
+			DatabaseId:      "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",
