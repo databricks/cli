@@ -3,10 +3,6 @@
 # state aside (locally + remotely) so the next deploy picks the direct
 # engine by default instead of getting stuck on a permanent mismatch warning.
 
-print_migration_telemetry() {
-    print_telemetry_bool_values | grep '^direct_' || true
-}
-
 mkdir -p .databricks/bundle/default/terraform
 cat > .databricks/bundle/default/terraform/terraform.tfstate <<'EOF'
 {"version": 4, "serial": 1, "lineage": "test-lineage", "resources": []}

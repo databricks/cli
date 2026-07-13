@@ -317,18 +317,20 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 		return fmt.Errorf("pushing direct state to workspace: %w", err)
 	}
 
-	// Remote is now authoritative for direct engine; make local match. A
-	// failure here doesn't corrupt anything — the next deploy will pull the
-	// remote state and see it's direct — but leaves this machine's local
-	// cache stale, so warn (don't error) and return success.
+	// Remote is now authoritative for direct engine; make local match. Local
+	// updates must succeed so the next deploy from this machine picks direct
+	// state directly — a stale local terraform.tfstate would win over the
+	// remote direct state whenever AlwaysPull is off. Report a commit error
+	// on failure so telemetry reflects what actually happened here (the
+	// migration is complete on the workspace but not on this checkout).
 	if err := os.MkdirAll(filepath.Dir(localDirectPath), 0o700); err != nil {
-		log.Warnf(ctx, "migration committed to workspace, but updating local state directory failed: %v", err)
-	} else if err := os.Rename(tempStatePath, localDirectPath); err != nil {
-		log.Warnf(ctx, "migration committed to workspace, but writing local state failed: %v", err)
-	} else if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil {
-		// The direct state is already in place with a bumped serial, so
-		// PullResourcesState will still pick it on the next deploy.
-		log.Warnf(ctx, "could not back up local terraform state at %s: %v", localTerraformPath, err)
+		return fmt.Errorf("workspace migrated but creating local state directory failed: %w", err)
+	}
+	if err := os.Rename(tempStatePath, localDirectPath); err != nil {
+		return fmt.Errorf("workspace migrated but writing local direct state failed: %w", err)
+	}
+	if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("workspace migrated but backing up local terraform state failed: %w", err)
 	}
 
 	suffix := "s"

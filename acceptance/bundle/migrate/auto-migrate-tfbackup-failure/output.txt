@@ -36,7 +36,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Warn: backing up terraform state: could not write terraform.tfstate.backup: file already exists: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup
 
 >>> print_migration_telemetry
 
