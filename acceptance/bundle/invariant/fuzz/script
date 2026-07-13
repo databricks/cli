@@ -9,6 +9,20 @@
 START="${FUZZ_SEED_START:-0}"
 COUNT="${FUZZ_SEED_COUNT:-5}"
 
+# Per-seed wall-clock cap. Normal seeds finish in seconds, so one that blows past this
+# generous budget is stuck, not slow: SIGQUIT it first (Go dumps goroutines, so a real
+# deadlock is diagnosable from the seed's LOG.*) then SIGKILL, and report it as a hang
+# instead of letting it silently consume the whole per-test timeout. Enforced with GNU
+# `timeout`; where that is absent (e.g. macOS/Windows) seeds run uncapped as before.
+SEED_TIMEOUT="${FUZZ_SEED_TIMEOUT:-180}"
+
+# Optional overall wall-clock budget in seconds. A slow-but-progressing variant (mutate
+# with drift-checking runs ~30s/seed) can exceed the per-test timeout across a large
+# FUZZ_SEED_COUNT; when set, stop launching new seeds past this many seconds and exit
+# cleanly having tested as many as fit, rather than being force-killed and read as a
+# failure. Unset (the committed run) means no cap.
+BUDGET="${FUZZ_TIME_BUDGET:-}"
+
 if [ -z "${FUZZ_CHECK_DRIFT:-}" ]; then
     export SKIP_DRIFT_CHECK=1
 fi
@@ -23,28 +37,65 @@ cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
 # Fail loud on a schema type the generator can't produce (the loop below would hide it).
 check_schema_types.py --schema schema.json
 
+# One seed's worth of work, factored out so it can run either directly or under `timeout`.
+seed_body() {
+    cd "$1"
+    # The generator points file_path/source_code_path fields at these fixtures
+    # (see gen_fuzz_config.py *_BY_RESOURCE), so make them resolvable from the
+    # bundle root, matching how the curated invariant scripts stage data/.
+    cp -r "$TESTDIR/../data/." .
+    export FUZZ_SEED="$2"
+    export FUZZ_SCHEMA="../schema.json"
+    source "$TESTDIR/../${FUZZ_TARGET:-no_drift}/script"
+}
+
+# `timeout` spawns a fresh bash that does not inherit shell functions, so export the
+# acceptance helpers (trace, title, envsubst, readplanarg, ...) and seed_body for it.
+export -f $(compgen -A function)
+
+# Run one seed, capped at SEED_TIMEOUT when `timeout` is available. A subshell (or the
+# fresh bash under timeout) keeps a generator crash or invariant failure contained.
+run_seed() {
+    local dir="$1" seed="$2"
+    # SEED_TIMEOUT=0 (or no `timeout` binary) runs the seed uncapped, matching the
+    # reproduce hint that disables the watchdog so a hang can be inspected live.
+    if [ "$SEED_TIMEOUT" != "0" ] && command -v timeout > /dev/null 2>&1; then
+        timeout --signal=QUIT --kill-after=10s "$SEED_TIMEOUT" \
+            bash -euo pipefail -c 'seed_body "$@"' _ "$dir" "$seed" > "$dir/LOG.check" 2>&1
+    else
+        ( seed_body "$dir" "$seed" ) > "$dir/LOG.check" 2>&1
+    fi
+}
+
 for ((offset = 0; offset < COUNT; offset++)); do
+    # Stop before the per-test timeout kills us mid-seed; the variant then passes,
+    # having tested as many seeds as the budget allowed. This is a clean stop, not a
+    # failure, so keep it out of the compared stdout/stderr (the committed run asserts
+    # empty output); the nightly can read it from the preserved work dir.
+    if [ -n "$BUDGET" ] && [ "$SECONDS" -ge "$BUDGET" ]; then
+        echo "fuzz: stopping after $offset/$COUNT seeds; hit FUZZ_TIME_BUDGET=${BUDGET}s" > LOG.budget
+        break
+    fi
+
     seed=$((START + offset))
     dir="seed-$seed"
     mkdir -p "$dir"
 
-    # Subshell so a generator crash or invariant failure is contained per seed.
     set +e
-    (
-        cd "$dir"
-        # The generator points file_path/source_code_path fields at these fixtures
-        # (see gen_fuzz_config.py *_BY_RESOURCE), so make them resolvable from the
-        # bundle root, matching how the curated invariant scripts stage data/.
-        cp -r "$TESTDIR/../data/." .
-        export FUZZ_SEED="$seed"
-        export FUZZ_SCHEMA="../schema.json"
-        source "$TESTDIR/../${FUZZ_TARGET:-no_drift}/script"
-    ) > "$dir/LOG.check" 2>&1
+    run_seed "$dir" "$seed"
     rc=$?
     set -e
 
     if [ "$rc" -eq 0 ]; then
         continue
+    fi
+
+    # GNU timeout exits 124 when it had to signal the seed (137 if the SIGKILL backstop
+    # fired): the seed hung past SEED_TIMEOUT. Report it as a hang, distinct from a drift
+    # bug, with any goroutine dump preserved in the seed's LOG.* for triage.
+    if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
+        echo "fuzz: seed $seed hung (>${SEED_TIMEOUT}s), reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_SEED_TIMEOUT=0 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} FUZZ_RESOURCE_COUNT=${FUZZ_RESOURCE_COUNT:-1} task test-fuzz" >&2
+        exit 1
     fi
 
     bug=""
