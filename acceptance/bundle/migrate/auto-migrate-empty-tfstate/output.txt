@@ -1,5 +1,5 @@
 
-=== Deploy with bundle.engine: direct and an empty terraform state — should NOT print 'Migrating...'
+=== Deploy with bundle.engine: direct and an empty terraform state — sweep, don't migrate
 >>> [CLI] bundle deploy
 Warning: Deployment engine "direct" configured in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 does not match the existing state (engine "terraform"). Using "terraform" engine from the existing state.
 
@@ -10,10 +10,17 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+Removing empty terraform state; direct engine will be used on the next deploy (opted in via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11)...
 
-=== State on disk is unchanged (still terraform)
+=== Terraform state is renamed to .backup; no resources.json (empty state, nothing to persist)
 
 >>> find .databricks/bundle -name resources.json -type f
 
 >>> find .databricks/bundle -name terraform.tfstate* -type f
-.databricks/bundle/default/terraform/terraform.tfstate
+.databricks/bundle/default/terraform/terraform.tfstate.backup
+
+=== Next deploy uses direct engine by default (no more mismatch warning)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Deployment complete!

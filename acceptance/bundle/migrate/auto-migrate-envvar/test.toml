@@ -1,4 +1,0 @@
-# The script sets DATABRICKS_BUNDLE_ENGINE inline for each command, but CI
-# filters runs by DATABRICKS_BUNDLE_ENGINE=direct|terraform, so keep this test
-# in the direct-engine bucket.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

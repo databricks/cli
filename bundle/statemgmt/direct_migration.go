@@ -51,7 +51,50 @@ const autoMigrateStoppedNotice = `Direct engine was requested but the dry-run mi
 // is recorded. Any failure is surfaced as a warning so it never fails a
 // deploy that already succeeded.
 func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engine.EngineSetting) {
-	tempStatePath, resourceCount, hasWarnings, err := dryRunMigrate(ctx, b)
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
+	if err != nil {
+		log.Warnf(ctx, "%sfailed to parse terraform state: %v", warnPrefix, err)
+		if requestedEngine.Type == engine.EngineDirect {
+			b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+			log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
+		} else {
+			b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, false)
+		}
+		return
+	}
+
+	if tfState == nil {
+		// No terraform state file to migrate; nothing to do either way.
+		if requestedEngine.Type != engine.EngineDirect {
+			b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, true)
+			b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, false)
+		}
+		return
+	}
+
+	// A terraform.tfstate file with no databricks_* resources has no state to
+	// migrate. If the user opted in, sweep the empty terraform state aside
+	// (locally and remotely) so the next deploy picks the direct engine by
+	// default instead of getting stuck on a permanent mismatch warning; no
+	// resources.json is written because there's nothing to record.
+	if len(tfState.IDs) == 0 {
+		if requestedEngine.Type != engine.EngineDirect {
+			b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, true)
+			b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, false)
+			return
+		}
+		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (opted in via "+requestedEngine.Source+")...")
+		if err := sweepEmptyTerraformState(ctx, b); err != nil {
+			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
+			log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
+			return
+		}
+		recordAutoMigrateSource(b, requestedEngine)
+		return
+	}
+
+	tempStatePath, resourceCount, hasWarnings, err := dryRunMigrate(ctx, b, tfState)
 	if tempStatePath != "" {
 		// commitMigration renames the state file out of this dir, but the dir
 		// itself and any leftover files (WAL, etc.) still need cleanup.
@@ -86,12 +129,6 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		return
 	}
 
-	if tempStatePath == "" {
-		// Nothing to migrate (no terraform state file, or the terraform state
-		// has no databricks_* resources).
-		return
-	}
-
 	cmdio.LogString(ctx, "Migrating state to direct deployment engine (opted in via "+requestedEngine.Source+")...")
 
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
@@ -100,8 +137,12 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		return
 	}
 
-	// Record the opt-in source so we can tell how many auto-migrations came
-	// from a committed config change vs. a transient env-var override.
+	recordAutoMigrateSource(b, requestedEngine)
+}
+
+// recordAutoMigrateSource sets exactly one of the migrated-via-* telemetry
+// keys to distinguish committed config change vs. transient env-var override.
+func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	if requestedEngine.ConfigType == engine.EngineDirect {
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaConfig, true)
 	} else {
@@ -109,32 +150,48 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	}
 }
 
-// dryRunMigrate converts the local terraform state to the direct engine state,
-// returning the path to the converted state file (empty if there was nothing
-// to migrate), the number of resources migrated, and whether any warnings were
-// emitted. The caller is responsible for deleting the temp state's parent
-// directory when it is done with the file.
-func dryRunMigrate(ctx context.Context, b *bundle.Bundle) (string, int, bool, error) {
+// sweepEmptyTerraformState removes a terraform.tfstate file that has no
+// databricks_* resources — locally by renaming to .backup, remotely by
+// backing up and deleting. With no state anywhere, the next deploy falls
+// back to engine.Default (direct), which respects the user's opt-in.
+func sweepEmptyTerraformState(ctx context.Context, b *bundle.Bundle) error {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
-	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
+
+	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
-		return "", 0, false, fmt.Errorf("failed to parse terraform state: %w", err)
+		return err
+	}
+	remoteTerraformPath, _ := b.StateFilenameTerraform(ctx)
+	reader, err := f.Read(ctx, remoteTerraformPath)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("reading remote terraform state %s: %w", remoteTerraformPath, err)
+	}
+	if err == nil {
+		defer reader.Close()
+		if err := f.Write(ctx, remoteTerraformPath+".backup", reader, filer.OverwriteIfExists); err != nil {
+			return fmt.Errorf("writing remote terraform backup: %w", err)
+		}
+		if err := f.Delete(ctx, remoteTerraformPath); err != nil {
+			return fmt.Errorf("deleting remote terraform state: %w", err)
+		}
 	}
 
-	// ParseTFStateFull returns nil when the terraform state file doesn't exist
-	// (e.g. first deploy with no resources); nothing to migrate, trivially OK.
-	if tfState == nil {
-		return "", 0, false, nil
+	// Local rename is best-effort — remote is authoritative and next deploy
+	// will pull.
+	if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Warnf(ctx, "could not back up local terraform state at %s: %v", localTerraformPath, err)
 	}
+	return nil
+}
 
-	// A terraform.tfstate file that has no databricks_* resources leaves the
-	// direct engine with nothing to persist: BuildStateFromTF makes no
-	// SaveState calls, so Finalize writes no resources.json. Treat that the
-	// same as "no state file" — nothing to migrate.
-	if len(tfState.IDs) == 0 {
-		return "", 0, false, nil
-	}
-
+// dryRunMigrate converts the given terraform state to the direct engine state,
+// returning the path to the converted state file, the number of resources
+// migrated, and whether any warnings were emitted. Callers must ensure
+// tfState is non-nil and has at least one resource ID (the empty and nil
+// cases are handled by MigrateToDirect directly, since they take different
+// commit paths). The caller is responsible for deleting the temp state's
+// parent directory when it is done with the file.
+func dryRunMigrate(ctx context.Context, b *bundle.Bundle, tfState *migrate.TFState) (string, int, bool, error) {
 	// Write the converted state to a temp dir. If the dry-run is clean and the
 	// caller commits the migration, the state file is moved into place; otherwise
 	// the caller removes the whole temp dir (along with the WAL created below).

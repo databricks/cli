@@ -1,3 +1,0 @@
-# The script sets DATABRICKS_BUNDLE_ENGINE inline; keep the test in the
-# direct-engine bucket for CI's engine filter.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
