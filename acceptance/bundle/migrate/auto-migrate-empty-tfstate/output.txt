@@ -1,0 +1,19 @@
+
+=== Deploy with bundle.engine: direct and an empty terraform state — should NOT print 'Migrating...'
+>>> [CLI] bundle deploy
+Warning: Deployment engine "direct" configured in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 does not match the existing state (engine "terraform"). Using "terraform" engine from the existing state.
+
+Available state files:
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== State on disk is unchanged (still terraform)
+
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate

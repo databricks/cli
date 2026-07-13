@@ -1,0 +1,18 @@
+# A terraform.tfstate with no databricks_* resources should NOT trigger
+# auto-migration: BuildStateFromTF has nothing to persist, so Finalize
+# writes no resources.json — the commit path would then fail on os.Open.
+# The dry-run must short-circuit before that.
+
+mkdir -p .databricks/bundle/default/terraform
+cat > .databricks/bundle/default/terraform/terraform.tfstate <<'EOF'
+{"version": 4, "serial": 1, "lineage": "test-lineage", "resources": []}
+EOF
+
+title "Deploy with bundle.engine: direct and an empty terraform state — should NOT print 'Migrating...'"
+trace $CLI bundle deploy 2>&1 | contains.py '!Migrating state to direct deployment engine'
+
+title "State on disk is unchanged (still terraform)\n"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+rm out.requests.txt
