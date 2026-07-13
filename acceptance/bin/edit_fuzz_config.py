@@ -3,11 +3,9 @@
 Edit a `comment`/`description` scalar in a generated databricks.yml so a redeploy is an
 in-place update, not a recreate. Used by the `update` invariant.
 
-Most resources take a `comment`/`description` edit as an in-place update, but some
-classify it as immutable (recreate on change) in the direct engine's resource spec
-(e.g. model_serving_endpoints.description). Editing such a field replans as a recreate,
-which the update invariant would wrongly flag as a bug, so we skip it and pick a mutable
-field elsewhere (or report none).
+Some resources classify `description` as immutable (recreate on change) in the direct
+engine spec (e.g. model_serving_endpoints); editing that replans as a recreate the update
+invariant would wrongly flag, so skip it and pick a mutable field (or report none).
 
 gen_fuzz_config.py emits one scalar per line as `key: <json>`, so a regex match suffices
 (no YAML dependency for the edit itself); the immutable set is read from resources.yml.
@@ -31,18 +29,16 @@ TYPE_RE = re.compile(r"^  ([\w-]+):\s*$")
 
 NEW_VALUE = '"fuzz_edited_value"'
 
-# resources.yml is the source of truth for field mutability; acceptance/bin sits two
-# levels below the repo root, and the real dir (not a copy) is on PATH, so __file__
-# resolves here.
+# resources.yml is the source of truth for field mutability. acceptance/bin is on PATH as
+# the real dir (not a copy), so __file__ resolves two levels below the repo root.
 RESOURCES_YML = Path(__file__).resolve().parents[2] / "bundle" / "direct" / "dresources" / "resources.yml"
 
 
 def immutable_fields():
     """Map resource type -> set of fields that recreate on change (immutable).
 
-    resources.yml has a fixed two-space layout (`resources:` -> `  <type>:` ->
-    `    recreate_on_changes:` -> `      - field: <path>`), so a small line parser
-    avoids a YAML dependency the harness's Python does not have.
+    Hand-rolled line parser over resources.yml's fixed two-space layout, avoiding a YAML
+    dependency the harness's Python lacks.
     """
     result = {}
     current_type = None

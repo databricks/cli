@@ -74,11 +74,9 @@ type Server struct {
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
 
-	// IgnoreUnhandledRequests turns a request with no registered handler into a
-	// plain 501 instead of a test failure. The schema fuzzer generates resource
-	// types the testserver may not model; a missing handler there is a coverage
-	// gap, so the caller sees the 501 and rejects the config rather than failing
-	// the whole run. Curated tests leave this false so real gaps stay loud.
+	// IgnoreUnhandledRequests returns 501 for a request with no handler instead of failing
+	// the test: the fuzzer emits resource types the testserver may not model, so the caller
+	// rejects the config. Curated tests leave it false so real gaps stay loud.
 	IgnoreUnhandledRequests bool
 }
 
@@ -286,8 +284,7 @@ func New(t testutil.TestingT) *Server {
 		}
 
 		if s.IgnoreUnhandledRequests {
-			// Coverage gap, not a CLI bug: log for visibility but let the 501
-			// below flow back so the caller can reject the config.
+			// Coverage gap, not a CLI bug: log it but return the 501 so the caller can reject.
 			t.Logf("No handler for URL (ignored): %s", r.URL)
 		} else {
 			t.Errorf(`No handler for URL: %s
