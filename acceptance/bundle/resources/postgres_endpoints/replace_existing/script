@@ -15,7 +15,11 @@ trace $CLI bundle deploy
 # The implicit primary endpoint inherits suspend_timeout_duration from the
 # project default (300s). After deploy with replace_existing=true, the
 # bundle's spec must be applied: 600s.
-trace $CLI postgres get-endpoint "projects/test-pg-proj-${UNIQUE_NAME}/branches/develop/endpoints/primary" | jq 'del(.create_time, .update_time)'
+#
+# The pooled host names and last-active timestamp are only populated by the live
+# backend (the testserver fake omits them), so filter them out to keep the local
+# and cloud output identical.
+trace $CLI postgres get-endpoint "projects/test-pg-proj-${UNIQUE_NAME}/branches/develop/endpoints/primary" | jq 'del(.create_time, .update_time, .status.hosts.read_only_pooled_host, .status.hosts.read_write_pooled_host, .status.last_active_time)'
 
 trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 

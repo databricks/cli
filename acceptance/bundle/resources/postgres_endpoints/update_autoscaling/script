@@ -15,7 +15,7 @@ print_requests() {
 title "Initial deployment"
 trace $CLI bundle validate
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | jq '(.plan."resources.postgres_endpoints.my_endpoint" // .) | del(.remote_state.status.hosts.read_only_pooled_host, .remote_state.status.hosts.read_write_pooled_host, .remote_state.status.last_active_time)' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -25,11 +25,11 @@ project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 branch_name="${project_name}/branches/main"
 endpoint_name="${branch_name}/endpoints/my-endpoint"
 endpoint_id_1=`read_id.py my_endpoint`
-trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling)'
+trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling, .status.hosts.read_only_pooled_host, .status.hosts.read_write_pooled_host, .status.last_active_time)'
 
 title "Verify no changes"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | jq '(.plan."resources.postgres_endpoints.my_endpoint" // .) | del(.remote_state.status.hosts.read_only_pooled_host, .remote_state.status.hosts.read_write_pooled_host, .remote_state.status.last_active_time)' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -40,22 +40,22 @@ trace update_file.py databricks.yml "autoscaling_limit_max_cu: 8" "autoscaling_l
 trace cat databricks.yml
 
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | jq '(.plan."resources.postgres_endpoints.my_endpoint" // .) | del(.remote_state.status.hosts.read_only_pooled_host, .remote_state.status.hosts.read_write_pooled_host, .remote_state.status.last_active_time)' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
 print_requests update
 
 endpoint_id_2=`read_id.py my_endpoint`
-trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling)'
+trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling, .status.hosts.read_only_pooled_host, .status.hosts.read_write_pooled_host, .status.last_active_time)'
 
 title "Restore endpoint autoscaling to original value"
 trace update_file.py databricks.yml "autoscaling_limit_max_cu: 4" "autoscaling_limit_max_cu: 8"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | jq '(.plan."resources.postgres_endpoints.my_endpoint" // .) | del(.remote_state.status.hosts.read_only_pooled_host, .remote_state.status.hosts.read_write_pooled_host, .remote_state.status.last_active_time)' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
 print_requests restore
 
-trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling)'
+trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling, .status.hosts.read_only_pooled_host, .status.hosts.read_write_pooled_host, .status.last_active_time)'
