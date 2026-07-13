@@ -322,6 +322,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// foo, leaving the other on-disk skills untracked. Block it so the user runs a
 	// full install first, which rebuilds complete state. Global scope only, since
 	// legacy installs only ever wrote to the global dir.
+	// hasLegacyInstall lives in update.go (shared with the update/uninstall paths).
 	if state == nil && scope == ScopeGlobal && len(opts.SpecificSkills) > 0 && hasLegacyInstall(ctx, baseDir) {
 		return errors.New("legacy install detected without state tracking; run 'databricks aitools install' (without a skill name) first to rebuild state")
 	}

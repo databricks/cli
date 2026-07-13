@@ -248,10 +248,6 @@ func agentStateLabel(s agents.DisplayState) string {
 	}
 }
 
-// defaultPromptProceed asks the user to confirm the install plan, defaulting to
-// yes (Enter proceeds). It mirrors the huh multiselect used for agent selection
-// so the two prompts share a look; the picker's stdin can't be driven by the
-// test harness, so this is overridable via the promptProceed var.
 func defaultPromptProceed(_ context.Context) (bool, error) {
 	proceed := true
 	err := huh.NewConfirm().
