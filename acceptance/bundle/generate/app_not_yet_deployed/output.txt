@@ -21,3 +21,11 @@
 >>> [CLI] bundle generate app --existing-app-name my-app --config-dir . --key out
 Loading app 'my-app' configuration
 App configuration successfully saved to out.app.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out.app.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - *.yml
+
