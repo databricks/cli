@@ -1035,7 +1035,7 @@ func TestHasPatternPrefix(t *testing.T) {
 			// that segment does not match.
 			name:     "bracket map key glob middle star requires one segment",
 			path:     "properties['unity.catalog.managed.defaults.enableRowTracking']",
-			pattern:  "properties['unity.catalog.managed.*.defaults.*']",
+			pattern:  "properties['unity.catalog.managed.*.defaults.enableRowTracking']",
 			expected: false,
 		},
 	}
