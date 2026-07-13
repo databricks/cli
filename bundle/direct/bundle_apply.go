@@ -110,10 +110,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			switch {
-			case action == deployplan.Bind:
+			switch action {
+			case deployplan.Bind:
 				err = d.Bind(ctx, &b.StateDB, entry.BindID, sv.Value)
-			case action == deployplan.BindAndUpdate:
+			case deployplan.BindAndUpdate:
 				err = d.BindAndUpdate(ctx, &b.StateDB, entry.BindID, sv.Value, entry)
 			default:
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
