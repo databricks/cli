@@ -23,26 +23,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gen_fuzz_config import to_yaml
+from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, to_yaml
 
-# Values chosen to probe near-range-end and dangerous-character handling: empty and
-# whitespace-only strings, an over-long string, embedded newlines/tabs, non-ASCII, quotes,
-# a dangling ${...} reference, a path-traversal string, and integer boundaries.
-DANGEROUS = [
-    "",
-    " ",
-    "a" * 300,
-    "line1\nline2",
-    "tab\there",
-    "\U0001f680-unicode-\u00e9",
-    'quote"and\'apostrophe',
-    "${resources.jobs.does_not_exist.id}",
-    "../../etc/passwd",
-    2**31,
-    -(2**31),
-    2**63 - 1,
-    -1,
-]
+# Same near-range-end and dangerous-character probes the schema-walk generator injects into
+# free-form scalars; here we drop them onto any field (see mutate_once).
+DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
 
 def tokenize(text):

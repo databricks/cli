@@ -12,7 +12,9 @@ invariant test that runs over the `INPUT_CONFIG` matrix. `FUZZ_RESOURCE_COUNT` (
 matrixed in fuzz/test.toml) controls how many resources each generated config contains;
 with more than one, the generator links them with `${resources.*}` references (each
 resource referencing an earlier one, so the graph stays acyclic) so the interpolation and
-deploy-ordering paths are exercised.
+deploy-ordering paths are exercised. Free-form scalars are occasionally replaced with
+dangerous / near-range-end values (empty, whitespace, over-long, control characters,
+int32/int64 boundaries) to probe the CLI's input handling.
 
 - `no_drift` -- deploy, then no drift
 - `migrate` -- Terraform deploy, migrate to direct, then no drift
