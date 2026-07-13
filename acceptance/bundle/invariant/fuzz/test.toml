@@ -2,6 +2,11 @@
 # generates its own configs, so drop the inherited INPUT_CONFIG matrix.
 EnvMatrix.INPUT_CONFIG = []
 
+# The fuzzer can emit resource types the testserver does not model. A missing
+# handler is a coverage gap, not a CLI bug, so return 501 (the config is then
+# rejected) instead of failing the whole run.
+IgnoreUnhandledRequests = true
+
 # Run the real invariant test script for each target. migrate ignores
 # DATABRICKS_BUNDLE_ENGINE and starts from a Terraform deployment.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "redeploy", "canonical", "update", "destroy_recreate"]
