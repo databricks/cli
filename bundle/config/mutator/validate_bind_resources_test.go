@@ -26,7 +26,7 @@ func TestValidateBindResourcesAcceptsTopLevel(t *testing.T) {
 	assert.NoError(t, diags.Error())
 }
 
-func TestValidateBindResourcesRejectsChildResources(t *testing.T) {
+func TestValidateBindResourcesRejectsUnsupportedType(t *testing.T) {
 	b := &bundle.Bundle{
 		Target: &config.Target{
 			Bind: config.Bind{
@@ -36,5 +36,5 @@ func TestValidateBindResourcesRejectsChildResources(t *testing.T) {
 	}
 	diags := bundle.Apply(t.Context(), b, ValidateBindResources())
 	assert.Error(t, diags.Error())
-	assert.Contains(t, diags[0].Summary, "binding jobs.permissions is not allowed")
+	assert.Contains(t, diags[0].Summary, `binding "jobs.permissions" is not supported`)
 }

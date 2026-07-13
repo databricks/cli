@@ -50,11 +50,11 @@ func TestBindValidate(t *testing.T) {
 		bind      config.Bind
 		wantError bool
 	}{
-		{"top-level resource", config.Bind{"jobs": {"foo": {ID: "1"}}}, false},
+		{"supported resource", config.Bind{"jobs": {"foo": {ID: "1"}}}, false},
+		{"another supported resource", config.Bind{"pipelines": {"foo": {ID: "1"}}}, false},
 		{"permissions child", config.Bind{"jobs.permissions": {"foo": {ID: "1"}}}, true},
 		{"grants child", config.Bind{"schemas.grants": {"foo": {ID: "1"}}}, true},
-		// Substring match must NOT trigger; only the .permissions / .grants suffix does.
-		{"name containing permissions", config.Bind{"my_permissions_jobs": {"foo": {ID: "1"}}}, false},
+		{"unknown resource type", config.Bind{"my_permissions_jobs": {"foo": {ID: "1"}}}, true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

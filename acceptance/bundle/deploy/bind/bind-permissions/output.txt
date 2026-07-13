@@ -1,20 +1,8 @@
 
 >>> musterr [CLI] bundle validate
-Error: binding jobs.permissions is not allowed
+Error: binding "jobs.permissions" is not supported
 
-bind can only be used for resources directly under the resources block, not for child resources like permissions or grants.
-
-To manage permissions or grants:
-1. First bind the parent resource (without .permissions or .grants)
-2. Then define permissions or grants in your bundle configuration
-
-Invalid bind configuration:
-  bind:
-    jobs.permissions:
-      foo:
-        id: ...
-
-Instead, remove this bind entry and ensure the parent resource is bound.
+"jobs.permissions" is not a supported resource type; bind is only supported for resources that can be defined under the resources block.
 
 Name: test-bind-permissions
 Target: default

@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/libs/diag"
 )
@@ -51,36 +50,24 @@ func (b Bind) IsEmpty() bool {
 	return true
 }
 
-// Validate rejects bind blocks that target child resources (e.g. "jobs.permissions").
-// The direct engine exposes child resources as full keys like "jobs.permissions" in its
-// resource registry, but they are not bindable on their own — bind the parent resource
-// and let the bundle manage the child entries declaratively.
+// Validate rejects bind blocks whose resource type is not a supported bundle
+// resource. Only the resource types that can appear under the resources block are
+// bindable; anything else (a typo, a child key like "jobs.permissions", etc.) is
+// reported here rather than surfacing later as a confusing planning error.
 func (b Bind) Validate() diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	for resourceType, resources := range b {
-		if !strings.HasSuffix(resourceType, ".permissions") && !strings.HasSuffix(resourceType, ".grants") {
-			continue
+	supported := SupportedResources()
+	b.ForEach(func(resourceType, resourceName, bindID string) {
+		if _, ok := supported[resourceType]; ok {
+			return
 		}
-		for resourceName := range resources {
-			diags = diags.Append(diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("binding %s is not allowed", resourceType),
-				Detail: fmt.Sprintf(
-					"bind can only be used for resources directly under the resources block, not for child resources like permissions or grants.\n\n"+
-						"To manage permissions or grants:\n"+
-						"1. First bind the parent resource (without .permissions or .grants)\n"+
-						"2. Then define permissions or grants in your bundle configuration\n\n"+
-						"Invalid bind configuration:\n"+
-						"  bind:\n"+
-						"    %s:\n"+
-						"      %s:\n"+
-						"        id: ...\n\n"+
-						"Instead, remove this bind entry and ensure the parent resource is bound.",
-					resourceType, resourceName),
-			})
-		}
-	}
+		diags = diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("binding %q is not supported", resourceType),
+			Detail:   fmt.Sprintf("%q is not a supported resource type; bind is only supported for resources that can be defined under the resources block.", resourceType),
+		})
+	})
 
 	return diags
 }

@@ -1,7 +1,6 @@
 
 >>> musterr [CLI] bundle plan
-Error: bind block references undefined resource "resources.foobar.foo"; define it in the resources section or remove the bind block
-  at targets.default.bind.foobar.foo
+Error: binding "foobar" is not supported
 
-Error: bind validation failed
+"foobar" is not a supported resource type; bind is only supported for resources that can be defined under the resources block.
 
