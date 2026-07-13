@@ -15,6 +15,9 @@ title "Terraform state is renamed to .backup; no resources.json (empty state, no
 trace find .databricks/bundle -name "resources.json" -type f
 trace find .databricks/bundle -name "terraform.tfstate*" -type f
 
+title "Sweep also affected the workspace: .backup uploaded, terraform.tfstate deleted\n"
+trace print_requests.py //workspace-files/import-file //workspace/delete --sort | jq '.method + " " + .path' | contains.py 'terraform.tfstate.backup' 'workspace/delete'
+
 title "Next deploy uses direct engine by default (no more mismatch warning)"
 trace $CLI bundle deploy 2>&1 | contains.py '!does not match the existing state'
 

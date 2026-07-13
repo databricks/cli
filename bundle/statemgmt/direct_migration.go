@@ -66,22 +66,20 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 
 	if tfState == nil {
 		// No terraform state file to migrate; nothing to do either way.
-		if requestedEngine.Type != engine.EngineDirect {
-			b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, true)
-			b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, false)
-		}
+		recordDryRunNoop(b, requestedEngine)
 		return
 	}
 
-	// A terraform.tfstate file with no databricks_* resources has no state to
-	// migrate. If the user opted in, sweep the empty terraform state aside
-	// (locally and remotely) so the next deploy picks the direct engine by
-	// default instead of getting stuck on a permanent mismatch warning; no
-	// resources.json is written because there's nothing to record.
-	if len(tfState.IDs) == 0 {
+	// A terraform.tfstate that has no databricks_* resources AND no managed
+	// resources of any kind has no state to migrate. Gate the sweep on both:
+	// Attrs is empty when the file has zero managed resources; IDs is empty
+	// when nothing maps to a known DABs group. Sweeping when Attrs is
+	// non-empty (unknown TF resource types in the state) would destroy state
+	// the CLI doesn't recognize, so restrict the sweep to the truly-empty
+	// case and let the populated path handle everything else.
+	if len(tfState.IDs) == 0 && len(tfState.Attrs) == 0 {
 		if requestedEngine.Type != engine.EngineDirect {
-			b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, true)
-			b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, false)
+			recordDryRunNoop(b, requestedEngine)
 			return
 		}
 		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (opted in via "+requestedEngine.Source+")...")
@@ -140,6 +138,17 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	recordAutoMigrateSource(b, requestedEngine)
 }
 
+// recordDryRunNoop records dry-run telemetry for a no-op case (no state, or
+// state with no managed resources) when the user did NOT opt in. On opt-in
+// paths the caller uses direct_migrate_* keys instead.
+func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
+	if requestedEngine.Type == engine.EngineDirect {
+		return
+	}
+	b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, true)
+	b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, false)
+}
+
 // recordAutoMigrateSource sets exactly one of the migrated-via-* telemetry
 // keys to distinguish committed config change vs. transient env-var override.
 func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
@@ -176,10 +185,13 @@ func sweepEmptyTerraformState(ctx context.Context, b *bundle.Bundle) error {
 		}
 	}
 
-	// Local rename is best-effort — remote is authoritative and next deploy
-	// will pull.
+	// Local rename must succeed: leaving a stale local terraform.tfstate
+	// behind causes the next deploy's PullResourcesState to pick it as the
+	// state file (there's no remote counterpart anymore) and re-enter the
+	// mismatch loop. ErrNotExist is fine — the file may have never been
+	// synced locally.
 	if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		log.Warnf(ctx, "could not back up local terraform state at %s: %v", localTerraformPath, err)
+		return fmt.Errorf("renaming local terraform state to %s.backup: %w", localTerraformPath, err)
 	}
 	return nil
 }
