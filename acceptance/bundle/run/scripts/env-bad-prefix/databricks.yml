@@ -1,0 +1,14 @@
+bundle:
+  name: script-env-bad-prefix
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+
+scripts:
+  bad:
+    env:
+      JOB_ID: ${resources.jobs.my_job.id}
+      UNKNOWN: ${something.else}
+    content: echo "$JOB_ID $UNKNOWN"

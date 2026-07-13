@@ -1,10 +1,13 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -16,6 +19,7 @@ import (
 
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -82,6 +86,14 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	err = saveJupyterInitScript(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to save Jupyter init script: %w", err)
+	}
+
+	// Best-effort: this only fixes bare python/pip resolution in interactive
+	// sessions. The tunnel works without it (the non-interactive `-- <cmd>` path
+	// is unaffected), so a write failure on a locked-down home must not abort the
+	// server. Mirrors the /run/sshd handling in prepareSSHDConfig.
+	if err := seedEnvActivation(ctx); err != nil {
+		log.Warnf(ctx, "Failed to seed environment activation, bare python/pip may resolve to the wrong interpreter in interactive sessions: %v", err)
 	}
 
 	createServerCommand := func(ctx context.Context) *exec.Cmd {
@@ -152,5 +164,59 @@ func saveJupyterInitScript(ctx context.Context) error {
 	}
 
 	log.Info(ctx, "Saved Jupyter init script to: "+initScriptPath)
+	return nil
+}
+
+// envActivationMarker identifies the block seedEnvActivation appends to ~/.bashrc,
+// so a server restart within the same home directory doesn't append it twice.
+const envActivationMarker = "# added by databricks ssh tunnel (DECO-27499)"
+
+// envActivationSnippet re-prepends the environment interpreter's bin directory to
+// PATH for interactive SSH sessions. The client runs an interactive, non-login
+// shell (bash -i), which sources /etc/bash.bashrc; on serverless that file runs
+// activate_root_python_environment.sh, which prepends the cluster-libraries python
+// ahead of the environment interpreter that sshd forwards via SetEnv. bash sources
+// ~/.bashrc after /etc/bash.bashrc, so re-prepending here wins and bare python/pip
+// resolve to $DATABRICKS_VIRTUAL_ENV. The guard makes it a no-op when the variable
+// is unset. /etc/bash.bashrc and /etc/profile.d are root-owned and not writable by
+// the non-root serverless user, so ~/.bashrc is the only usable hook.
+//
+// The bootstrap sets DATABRICKS_VIRTUAL_ENV to sys.executable, always an absolute
+// path, so dirname yields the interpreter's bin directory (not "." for a bare name).
+const envActivationSnippet = envActivationMarker + `
+if [ -n "$DATABRICKS_VIRTUAL_ENV" ]; then
+	export PATH="$(dirname "$DATABRICKS_VIRTUAL_ENV"):$PATH"
+fi
+`
+
+func seedEnvActivation(ctx context.Context) error {
+	homeDir, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+	bashrcPath := filepath.Join(homeDir, ".bashrc")
+
+	existing, err := os.ReadFile(bashrcPath)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to read %s: %w", bashrcPath, err)
+	}
+	if bytes.Contains(existing, []byte(envActivationMarker)) {
+		log.Info(ctx, "Environment activation already present in "+bashrcPath)
+		return nil
+	}
+
+	// Append so the snippet runs after /etc/bash.bashrc and any existing ~/.bashrc
+	// content; the newline guards against a file that doesn't end in one.
+	separator := ""
+	if len(existing) > 0 && !bytes.HasSuffix(existing, []byte("\n")) {
+		separator = "\n"
+	}
+	content := string(existing) + separator + envActivationSnippet
+	err = os.WriteFile(bashrcPath, []byte(content), 0o644)
+	if err != nil {
+		return fmt.Errorf("failed to write %s: %w", bashrcPath, err)
+	}
+
+	log.Info(ctx, "Seeded environment activation in "+bashrcPath)
 	return nil
 }

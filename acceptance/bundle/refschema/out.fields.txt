@@ -756,6 +756,55 @@ resources.genie_spaces.*.permissions[*].group_name	string	ALL
 resources.genie_spaces.*.permissions[*].level	iam.PermissionLevel	ALL
 resources.genie_spaces.*.permissions[*].service_principal_name	string	ALL
 resources.genie_spaces.*.permissions[*].user_name	string	ALL
+resources.job_runs.*.dbt_commands	[]string	ALL
+resources.job_runs.*.dbt_commands[*]	string	ALL
+resources.job_runs.*.id	string	INPUT
+resources.job_runs.*.idempotency_token	string	ALL
+resources.job_runs.*.jar_params	[]string	ALL
+resources.job_runs.*.jar_params[*]	string	ALL
+resources.job_runs.*.job_id	int64	ALL
+resources.job_runs.*.job_parameters	map[string]string	ALL
+resources.job_runs.*.job_parameters.*	string	ALL
+resources.job_runs.*.lifecycle	resources.Lifecycle	INPUT
+resources.job_runs.*.lifecycle.prevent_destroy	bool	INPUT
+resources.job_runs.*.modified_status	string	INPUT
+resources.job_runs.*.notebook_params	map[string]string	ALL
+resources.job_runs.*.notebook_params.*	string	ALL
+resources.job_runs.*.only	[]string	ALL
+resources.job_runs.*.only[*]	string	ALL
+resources.job_runs.*.performance_target	jobs.PerformanceTarget	ALL
+resources.job_runs.*.pipeline_params	*jobs.PipelineParams	ALL
+resources.job_runs.*.pipeline_params.full_refresh	bool	ALL
+resources.job_runs.*.pipeline_params.full_refresh_selection	[]string	ALL
+resources.job_runs.*.pipeline_params.full_refresh_selection[*]	string	ALL
+resources.job_runs.*.pipeline_params.refresh_flow_selection	[]string	ALL
+resources.job_runs.*.pipeline_params.refresh_flow_selection[*]	string	ALL
+resources.job_runs.*.pipeline_params.refresh_selection	[]string	ALL
+resources.job_runs.*.pipeline_params.refresh_selection[*]	string	ALL
+resources.job_runs.*.pipeline_params.reset_checkpoint_selection	[]string	ALL
+resources.job_runs.*.pipeline_params.reset_checkpoint_selection[*]	string	ALL
+resources.job_runs.*.python_named_params	map[string]string	ALL
+resources.job_runs.*.python_named_params.*	string	ALL
+resources.job_runs.*.python_params	[]string	ALL
+resources.job_runs.*.python_params[*]	string	ALL
+resources.job_runs.*.queue	*jobs.QueueSettings	ALL
+resources.job_runs.*.queue.enabled	bool	ALL
+resources.job_runs.*.resolved_job_id	int64	INPUT
+resources.job_runs.*.run_id	int64	REMOTE
+resources.job_runs.*.run_name	string	REMOTE
+resources.job_runs.*.run_page_url	string	REMOTE
+resources.job_runs.*.run_type	jobs.RunType	REMOTE
+resources.job_runs.*.spark_submit_params	[]string	ALL
+resources.job_runs.*.spark_submit_params[*]	string	ALL
+resources.job_runs.*.sql_params	map[string]string	ALL
+resources.job_runs.*.sql_params.*	string	ALL
+resources.job_runs.*.state	*jobs.RunState	REMOTE
+resources.job_runs.*.state.life_cycle_state	jobs.RunLifeCycleState	REMOTE
+resources.job_runs.*.state.queue_reason	string	REMOTE
+resources.job_runs.*.state.result_state	jobs.RunResultState	REMOTE
+resources.job_runs.*.state.state_message	string	REMOTE
+resources.job_runs.*.state.user_cancelled_or_timedout	bool	REMOTE
+resources.job_runs.*.url	string	INPUT
 resources.jobs.*.budget_policy_id	string	ALL
 resources.jobs.*.continuous	*jobs.Continuous	ALL
 resources.jobs.*.continuous.pause_status	jobs.PauseStatus	ALL
@@ -2905,6 +2954,7 @@ resources.postgres_branches.*.modified_status	string	INPUT
 resources.postgres_branches.*.name	string	REMOTE
 resources.postgres_branches.*.no_expiry	bool	ALL
 resources.postgres_branches.*.parent	string	ALL
+resources.postgres_branches.*.purge_on_delete	bool	INPUT	STATE
 resources.postgres_branches.*.replace_existing	bool	INPUT	STATE
 resources.postgres_branches.*.source_branch	string	ALL
 resources.postgres_branches.*.source_branch_lsn	string	ALL
@@ -2953,6 +3003,7 @@ resources.postgres_databases.*.modified_status	string	INPUT
 resources.postgres_databases.*.name	string	REMOTE
 resources.postgres_databases.*.parent	string	ALL
 resources.postgres_databases.*.postgres_database	string	ALL
+resources.postgres_databases.*.replace_existing	bool	INPUT	STATE
 resources.postgres_databases.*.role	string	ALL
 resources.postgres_databases.*.status	*postgres.DatabaseDatabaseStatus	REMOTE
 resources.postgres_databases.*.status.database_id	string	REMOTE
@@ -3091,6 +3142,7 @@ resources.postgres_roles.*.modified_status	string	INPUT
 resources.postgres_roles.*.name	string	REMOTE
 resources.postgres_roles.*.parent	string	ALL
 resources.postgres_roles.*.postgres_role	string	ALL
+resources.postgres_roles.*.replace_existing	bool	INPUT	STATE
 resources.postgres_roles.*.role_id	string	ALL
 resources.postgres_roles.*.status	*postgres.RoleRoleStatus	REMOTE
 resources.postgres_roles.*.status.attributes	*postgres.RoleAttributes	REMOTE

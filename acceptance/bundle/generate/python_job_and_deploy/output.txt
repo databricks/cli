@@ -1,12 +1,12 @@
 
 === Upload notebook to a workspace path
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/test_notebook.py --file test_notebook.py --format AUTO --overwrite
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/test_notebook-[UNIQUE_NAME].py --file test_notebook.py --format AUTO --overwrite
 
 === Create a job that references the notebookCreated job
 
 === Generate bundle config from the job
 >>> [CLI] bundle generate job --existing-job-id [JOB_ID] --key out --config-dir resources --source-dir src --force
-File successfully saved to src/test_notebook.py
+File successfully saved to src/test_notebook-[UNIQUE_NAME].py
 Job configuration successfully saved to resources/out.job.yml
 
 === Verify generated yaml has expected fields
@@ -26,4 +26,4 @@ Destroy complete!
 === Cleanup: delete the original job and notebook
 >>> errcode [CLI] jobs delete [JOB_ID]
 
->>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/test_notebook
+>>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/test_notebook-[UNIQUE_NAME]

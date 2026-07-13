@@ -18,15 +18,12 @@ package terraform_dabs_map
 // pipelines / databricks_pipeline: 3 renames
 // pipelines / databricks_pipeline: 5 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
-// postgres_branches / databricks_postgres_branch: 1 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
-// postgres_databases / databricks_postgres_database: 1 tf-only
 // postgres_databases / databricks_postgres_database: 1 unwraps
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
 // postgres_projects / databricks_postgres_project: 2 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
-// postgres_roles / databricks_postgres_role: 1 tf-only
 // postgres_roles / databricks_postgres_role: 1 unwraps
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 dabs-only
@@ -576,19 +573,10 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"expected_last_modified": {},
 		"url":                    {},
 	},
-	"postgres_branches": {
-		"purge_on_delete": {},
-	},
-	"postgres_databases": {
-		"replace_existing": {},
-	},
 	"postgres_projects": {
 		"initial_branch_spec": {
 			"is_protected": {}, // databricks_postgres_project.*.initial_branch_spec.is_protected
 		},
-	},
-	"postgres_roles": {
-		"replace_existing": {},
 	},
 	"schemas": {
 		"force_destroy": {},

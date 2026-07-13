@@ -1,0 +1,55 @@
+name: Changelog Preview
+
+# Renders the CHANGELOG.md section the next release would generate from this
+# PR's .nextchanges/ fragments into this check's job summary, so reviewers see
+# the rendered changelog without cutting a release. Fails the check if a
+# fragment is misplaced (so it can't be silently skipped by the renderer).
+#
+# Uses `pull_request` with a read-only token: it renders the PR's own
+# .nextchanges/ content and never needs write credentials.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - ".nextchanges/**"
+      - "internal/genkit/**"
+      - "tools/validate_nextchanges.py"
+      - "tools/update_github_links.py"
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.8.9"
+
+      # Fail the check on a misplaced/unexpected file under .nextchanges/ so it
+      # can't slip through as a silently-skipped (unrendered) fragment.
+      - name: Validate .nextchanges placement
+        run: uv run tools/validate_nextchanges.py
+
+      - name: Render changelog preview
+        run: |-
+          # Render into a variable first so a renderer error fails this step
+          # (rather than being swallowed by a pipe), then emit the .md directly
+          # into the job summary so GitHub renders it as the changelog.
+          preview=$(uv run --locked internal/genkit/release_tagging.py --preview)
+          {
+            echo '## Changelog preview'
+            echo ''
+            echo 'This is a preview of what the next release would add to CHANGELOG.md based on `.nextchanges/`.'
+            echo ''
+            echo '_NOTE: the date and version are computed at release time._'
+            echo ''
+            echo '---'
+            echo ''
+            echo "$preview"
+          } >> "$GITHUB_STEP_SUMMARY"
