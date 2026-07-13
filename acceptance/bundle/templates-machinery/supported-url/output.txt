@@ -1,0 +1,3 @@
+
+=== ssh:// URL is recognized as a Git URL
+=== git@ URL is recognized as a Git URL
