@@ -55,12 +55,23 @@ func ResolveReader(templatePathOrUrl, templateDir, ref string) (Reader, bool, er
 
 	if p := matchGitUrlPrefix(templatePathOrUrl); p != nil {
 		if p.invalid {
-			return nil, false, fmt.Errorf("unsupported protocol in Git URL %q: only https://, ssh://, and git@ URLs are supported", templatePathOrUrl)
+			return nil, false, fmt.Errorf("unsupported protocol in Git URL %q: only %s URLs are supported", templatePathOrUrl, strings.Join(supportedGitUrlPrefixes(), ", "))
 		}
 		return NewGitReader(templatePathOrUrl, ref, templateDir, git.Clone), true, nil
 	}
 
 	return NewLocalReader(templatePathOrUrl), false, nil
+}
+
+// supportedGitUrlPrefixes returns the valid (non-rejected) Git URL prefixes.
+func supportedGitUrlPrefixes() []string {
+	var prefixes []string
+	for i := range gitUrlPrefixes {
+		if !gitUrlPrefixes[i].invalid {
+			prefixes = append(prefixes, gitUrlPrefixes[i].prefix)
+		}
+	}
+	return prefixes
 }
 
 type Resolver struct {
