@@ -1,3 +1,10 @@
 # --plan-mode=local is only supported by the direct engine; both plan and deploy reject it.
 errcode trace $CLI bundle plan --plan-mode=local
 errcode trace $CLI bundle deploy --plan-mode=local
+
+# --plan-mode=offline is reserved but not yet implemented; both plan and deploy reject it.
+errcode trace $CLI bundle plan --plan-mode=offline
+errcode trace $CLI bundle deploy --plan-mode=offline
+
+# Unknown --plan-mode values are rejected with an actionable error.
+errcode trace $CLI bundle plan --plan-mode=bogus

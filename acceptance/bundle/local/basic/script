@@ -32,9 +32,9 @@ trace $CLI bundle plan --plan-mode=local
 title "Job reads during --plan-mode=local plan after drift:\n"
 trace print_requests.py --get //jobs/get
 
-# The JSON plan is self-describing: local_only is true, so deploy --plan can warn
-# before applying it. remote_state is the saved local state (used as the stand-in
-# for remote in --plan-mode=local), not a fresh read.
+# The JSON plan is self-describing: plan_mode is "local", so deploy --plan can
+# warn before applying it. remote_state is absent (nothing was fetched); drift
+# classification runs against the saved local state internally.
 title "Plan --plan-mode=local as JSON:\n"
 trace $CLI bundle plan --plan-mode=local -o json | tee plan.local.json
 title "Job reads during 'bundle plan --plan-mode=local -o json':\n"

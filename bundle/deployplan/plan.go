@@ -3,6 +3,7 @@ package deployplan
 import (
 	"cmp"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -36,14 +37,15 @@ const (
 )
 
 // SkipsRemoteReads reports whether the mode avoids the proactive per-resource
-// remote read (Local and Offline).
+// remote read. Local skips it (references still fetch on-demand). Offline is
+// reserved and rejected at flag-parse time until its semantics are wired up.
 func (m PlanMode) SkipsRemoteReads() bool {
-	return m == PlanModeLocal || m == PlanModeOffline
+	return m == PlanModeLocal
 }
 
 // ParsePlanMode parses the value of the --plan-mode flag. An empty value is
-// PlanModeFull; "full", "local", and "offline" are accepted. Unknown values
-// produce an actionable error.
+// PlanModeFull; "full" and "local" are accepted. "offline" is reserved but not
+// yet implemented and is rejected. Unknown values produce an actionable error.
 func ParsePlanMode(s string) (PlanMode, error) {
 	switch s {
 	case "", "full":
@@ -51,9 +53,9 @@ func ParsePlanMode(s string) (PlanMode, error) {
 	case "local":
 		return PlanModeLocal, nil
 	case "offline":
-		return PlanModeOffline, nil
+		return "", errors.New("--plan-mode=offline is not yet implemented")
 	default:
-		return "", fmt.Errorf("invalid --plan-mode %q (want full, local, or offline)", s)
+		return "", fmt.Errorf("invalid --plan-mode %q (want full or local)", s)
 	}
 }
 

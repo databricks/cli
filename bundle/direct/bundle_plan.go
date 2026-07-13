@@ -257,13 +257,20 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		var remoteStateComparable any
 
 		if skipsRemoteReads {
-			// --local skips the remote read. Treat the saved state as the remote:
-			// it is our last recorded snapshot of remote, so drift is computed
-			// purely from saved-state vs config. This also lets OverrideChangeDesc
-			// hooks (etag, endpoint_uuid) reconcile state-only fields against their
+			// --plan-mode=local skips the remote read. Feed the saved state into
+			// drift classification as the "comparable remote": it is our last
+			// recorded snapshot of remote, so drift is computed purely from
+			// saved-state vs config. This also lets OverrideChangeDesc hooks
+			// (etag, endpoint_uuid) reconcile state-only fields against their
 			// saved value instead of nil, avoiding spurious drift.
+			//
+			// Do NOT write savedState to entry.RemoteState: that field is typed
+			// as the remote type at apply time (e.g. *AppRemote, *ClusterRemote)
+			// and apply-time consumers type-assert on it. savedState is the state
+			// type (e.g. *AppState), so writing it here would cause silent type
+			// assertion failures at apply time — for example, remoteIsStarted
+			// would return false regardless of the real remote lifecycle.
 			remoteStateComparable = savedState
-			entry.RemoteState = savedState
 		} else {
 			var remoteState any
 			remoteState, err = retryOnTransient(ctx, func() (any, error) {
