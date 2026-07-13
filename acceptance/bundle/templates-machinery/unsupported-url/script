@@ -1,0 +1,2 @@
+export NO_COLOR=1
+errcode $CLI bundle init http://github.com/databricks/cli

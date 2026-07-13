@@ -1,0 +1,3 @@
+Error: unsupported protocol in Git URL "http://github.com/databricks/cli": only https://, ssh://, and git@ URLs are supported
+
+Exit code: 1

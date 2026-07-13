@@ -120,13 +120,15 @@ func TestBundleInitIsGitRepoUrl(t *testing.T) {
 
 func TestResolveReader(t *testing.T) {
 	t.Run("builtin template", func(t *testing.T) {
-		reader, isGit := ResolveReader("default-python", "", "")
+		reader, isGit, err := ResolveReader("default-python", "", "")
+		require.NoError(t, err)
 		assert.False(t, isGit)
 		assert.Equal(t, &builtinReader{name: "default-python"}, reader)
 	})
 
 	t.Run("git URL", func(t *testing.T) {
-		reader, isGit := ResolveReader("https://github.com/example/repo", "/template", "v1.0")
+		reader, isGit, err := ResolveReader("https://github.com/example/repo", "/template", "v1.0")
+		require.NoError(t, err)
 		assert.True(t, isGit)
 		gitReader := reader.(*gitReader)
 		assert.Equal(t, "https://github.com/example/repo", gitReader.gitUrl)
@@ -134,8 +136,14 @@ func TestResolveReader(t *testing.T) {
 		assert.Equal(t, "v1.0", gitReader.ref)
 	})
 
+	t.Run("unsupported protocol", func(t *testing.T) {
+		_, _, err := ResolveReader("http://github.com/example/repo", "", "")
+		assert.ErrorContains(t, err, "unsupported protocol")
+	})
+
 	t.Run("local path", func(t *testing.T) {
-		reader, isGit := ResolveReader("/local/path", "", "")
+		reader, isGit, err := ResolveReader("/local/path", "", "")
+		require.NoError(t, err)
 		assert.False(t, isGit)
 		assert.Equal(t, "/local/path", reader.(*localReader).path)
 	})
