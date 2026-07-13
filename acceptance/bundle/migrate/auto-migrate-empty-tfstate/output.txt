@@ -1,11 +1,7 @@
 
 === Deploy with bundle.engine: direct and an empty terraform state — sweep, don't migrate
 >>> [CLI] bundle deploy
-Warning: Deployment engine "direct" configured in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 does not match the existing state (engine "terraform"). Using "terraform" engine from the existing state.
-
-Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
-
+Warn: Direct engine requested in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
