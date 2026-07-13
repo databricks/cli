@@ -29,16 +29,20 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	var force bool
 	var clusterId string
 	var selectResources []string
-	var local bool
+	var planMode string
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Plan only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
-	cmd.Flags().BoolVar(&local, "local", false, "Plan using only the local state, without fetching the remote state of resources.")
-	cmd.Flags().MarkHidden("local")
+	cmd.Flags().StringVar(&planMode, "plan-mode", "", "How much of the remote state to consult during plan: full (default), local, offline.")
+	cmd.Flags().MarkHidden("plan-mode")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		mode, err := deployplan.ParsePlanMode(planMode)
+		if err != nil {
+			return err
+		}
 		opts := utils.ProcessOptions{
 			AlwaysPull:      true,
 			FastValidate:    true,
@@ -47,7 +51,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Force = force
 				b.Select = selectResources
-				b.Local = local
+				b.PlanMode = mode
 
 				if cmd.Flag("compute-id").Changed {
 					b.Config.Bundle.ClusterId = clusterId

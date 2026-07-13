@@ -13,39 +13,39 @@ rm -f out.requests.txt
 
 BAR_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.bar.id')
 
-# A --local plan reports no drift without reading the remote state of the jobs:
+# A --plan-mode=local plan reports no drift without reading the remote state of the jobs:
 # no GET is issued. The ${resources.jobs.bar.id} reference still resolves because
 # it comes from the local state, not a remote read.
-trace $CLI bundle plan --local
-title "Job reads during 'bundle plan --local':\n"
+trace $CLI bundle plan --plan-mode=local
+title "Job reads during 'bundle plan --plan-mode=local':\n"
 trace print_requests.py --get //jobs/get
 
-# Rename bar out-of-band (simulates remote drift). --local plan still shows
+# Rename bar out-of-band (simulates remote drift). --plan-mode=local plan still shows
 # no changes: it never reads remote state, so the rename is invisible to it.
 edit_resource.py jobs $BAR_ID <<'EOF'
 r["name"] = r["name"] + "-drifted"
 EOF
 rm -f out.requests.txt
 
-title "After out-of-band rename of bar: --local plan still shows no drift:\n"
-trace $CLI bundle plan --local
-title "Job reads during --local plan after drift:\n"
+title "After out-of-band rename of bar: --plan-mode=local plan still shows no drift:\n"
+trace $CLI bundle plan --plan-mode=local
+title "Job reads during --plan-mode=local plan after drift:\n"
 trace print_requests.py --get //jobs/get
 
 # The JSON plan is self-describing: local_only is true, so deploy --plan can warn
 # before applying it. remote_state is the saved local state (used as the stand-in
-# for remote in --local), not a fresh read.
-title "Plan --local as JSON:\n"
-trace $CLI bundle plan --local -o json | tee plan.local.json
-title "Job reads during 'bundle plan --local -o json':\n"
+# for remote in --plan-mode=local), not a fresh read.
+title "Plan --plan-mode=local as JSON:\n"
+trace $CLI bundle plan --plan-mode=local -o json | tee plan.local.json
+title "Job reads during 'bundle plan --plan-mode=local -o json':\n"
 trace print_requests.py --get //jobs/get
 
-# deploy --plan with a --local plan warns that the plan may miss out-of-band drift.
+# deploy --plan with a --plan-mode=local plan warns that the plan may miss out-of-band drift.
 # READPLAN matrix runs this twice: once applying the saved plan (warns), once without.
-title "Deploy --plan with --local plan (warns):\n"
+title "Deploy --plan with --plan-mode=local plan (warns):\n"
 $CLI bundle deploy $(readplanarg plan.local.json) > LOG.deploy_plan 2>&1
 # contains.py echoes stdin, so route its passthrough to a LOG file: the deploy
-# output (and the --local warning, present only when READPLAN=1) must not leak
+# output (and the --plan-mode=local warning, present only when READPLAN=1) must not leak
 # into output.txt or the two matrix variants would diverge.
 cat LOG.deploy_plan | contains.py '!panic' '!internal error' > LOG.contains
 if [[ -n "$READPLAN" ]]; then
@@ -53,9 +53,9 @@ if [[ -n "$READPLAN" ]]; then
 fi
 rm -f out.requests.txt
 
-# A --local deploy likewise does not read remote state up front and reports its use via telemetry.
-trace $CLI bundle deploy --local
-title "Job reads during 'bundle deploy --local':\n"
+# A --plan-mode=local deploy likewise does not read remote state up front and reports its use via telemetry.
+trace $CLI bundle deploy --plan-mode=local
+title "Job reads during 'bundle deploy --plan-mode=local':\n"
 trace print_requests.py --get //jobs/get --keep
 title "Telemetry:\n"
-print_telemetry_bool_values | grep '^local_used '
+print_telemetry_bool_values | grep '^plan_mode_used_local '

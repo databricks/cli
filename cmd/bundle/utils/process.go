@@ -208,13 +208,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
-		// --local skips the per-resource remote read, which only the direct engine performs.
-		if b.Local {
+		// --plan-mode local/offline skip the per-resource remote read; only the direct engine performs it.
+		if b.PlanMode.SkipsRemoteReads() {
 			if !stateDesc.Engine.IsDirect() {
-				logdiag.LogError(ctx, errors.New("--local is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
+				logdiag.LogError(ctx, fmt.Errorf("--plan-mode=%s is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct", b.PlanMode))
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
-			b.Metrics.SetBoolValue(metrics.LocalUsed, true)
+			b.Metrics.SetBoolValue(metrics.PlanModeUsed+"_"+string(b.PlanMode), true)
 		}
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
@@ -278,8 +278,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if plan.CLIVersion != currentVersion {
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
 		}
-		if plan.LocalOnly {
-			log.Warnf(ctx, "Plan was created with --local and does not reflect the remote state of resources; applying it may miss out-of-band drift")
+		if plan.Mode.SkipsRemoteReads() {
+			log.Warnf(ctx, "Plan was created with --plan-mode=%s and does not reflect the remote state of resources; applying it may miss out-of-band drift", plan.Mode)
 		}
 
 		// Validate that the plan's lineage and serial match the current state

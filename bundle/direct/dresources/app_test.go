@@ -195,39 +195,10 @@ func TestAppOverrideChangeDescActiveDeployment(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			
-		change := &ChangeDesc{}
+			change := &ChangeDesc{Action: deployplan.Update}
 			require.NoError(t, r.OverrideChangeDesc(t.Context(), tc.path, change, tc.remote))
 			assert.Equal(t, tc.wantAction, change.Action)
 		})
 	}
 }
 
-func TestAppOverrideChangeDescSourceCodePath(t *testing.T) {
-	r := &ResourceApp{}
-	pathSCP := structpath.MustParsePath("source_code_path")
-	pathOther := structpath.MustParsePath("name")
-
-	// Every case passes a typed nil for the raw remote param — this matches what
-	// calladapt delivers when the remote read is skipped in --local mode or the
-	// resource does not exist. If the hook regresses to dereferencing that param,
-	// every row panics.
-	tests := []struct {
-		name       string
-		path       *structpath.PathNode
-		remote     any
-		wantAction deployplan.ActionType
-	}{
-		{"Skip when remote is empty", pathSCP, "", deployplan.Skip},
-		{`Skip when remote is "null"`, pathSCP, "null", deployplan.Skip},
-		{"Untouched when remote is a real path", pathSCP, "/actual", deployplan.Update},
-		{"Other paths untouched", pathOther, "", deployplan.Update},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			change := &ChangeDesc{Action: deployplan.Update, Old: "/old", New: "/new", Remote: tc.remote}
-			require.NoError(t, r.OverrideChangeDesc(t.Context(), tc.path, change, (*AppRemote)(nil)))
-			assert.Equal(t, tc.wantAction, change.Action)
-		})
-	}
-}

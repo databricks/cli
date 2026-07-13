@@ -12,11 +12,11 @@ rm -f out.requests.txt
 
 BAR_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.bar.id')
 
-# A --local plan skips proactive remote reads but still resolves references.
+# A --plan-mode=local plan skips proactive remote reads but still resolves references.
 # foo references bar.creator_user_name, which is remote-only (absent from config),
 # so remoteStateForRef fetches bar on demand. Only that one GET is issued.
-trace $CLI bundle plan --local
-title "Job reads during 'bundle plan --local':\n"
+trace $CLI bundle plan --plan-mode=local
+title "Job reads during 'bundle plan --plan-mode=local':\n"
 trace print_requests.py --get //jobs/get
 
 # Rename bar out-of-band (simulates remote drift).
@@ -25,11 +25,11 @@ r["name"] = r["name"] + "-drifted"
 EOF
 rm -f out.requests.txt
 
-# --local plan still reports no drift: it compares config against saved local
+# --plan-mode=local plan still reports no drift: it compares config against saved local
 # state and never reads the remote, so the out-of-band rename is invisible.
-title "After out-of-band rename of bar: --local plan still shows no drift:\n"
-trace $CLI bundle plan --local
-title "Job reads during --local plan after drift:\n"
+title "After out-of-band rename of bar: --plan-mode=local plan still shows no drift:\n"
+trace $CLI bundle plan --plan-mode=local
+title "Job reads during --plan-mode=local plan after drift:\n"
 trace print_requests.py --get //jobs/get
 
 # Normal plan reads remote and detects the drift.

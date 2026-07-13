@@ -5,10 +5,10 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] bundle plan --local
+>>> [CLI] bundle plan --plan-mode=local
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-=== Job reads during 'bundle plan --local':
+=== Job reads during 'bundle plan --plan-mode=local':
 
 >>> print_requests.py --get //jobs/get
 {
@@ -19,12 +19,12 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   }
 }
 
-=== After out-of-band rename of bar: --local plan still shows no drift:
+=== After out-of-band rename of bar: --plan-mode=local plan still shows no drift:
 
->>> [CLI] bundle plan --local
+>>> [CLI] bundle plan --plan-mode=local
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-=== Job reads during --local plan after drift:
+=== Job reads during --plan-mode=local plan after drift:
 
 >>> print_requests.py --get //jobs/get
 {

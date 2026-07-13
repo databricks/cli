@@ -15,16 +15,57 @@ import (
 
 const currentPlanVersion = 2
 
+// PlanMode determines how much the planner talks to the workspace when
+// computing a plan.
+//
+//   - Full (default): the per-resource remote read runs; drift detection is
+//     complete.
+//   - Local: the per-resource remote read is skipped. Cross-resource references
+//     resolve from local state; a reference to a remote-only field on an
+//     otherwise-unchanged target fetches that one target on demand.
+//   - Offline: no remote reads at all during plan. References to changing
+//     targets stay unresolved; references to unchanged targets read from the
+//     saved local state. Deploy of an Offline plan is allowed — Offline is a
+//     plan-time property, not a deploy-time restriction.
+type PlanMode string
+
+const (
+	PlanModeFull    PlanMode = ""
+	PlanModeLocal   PlanMode = "local"
+	PlanModeOffline PlanMode = "offline"
+)
+
+// SkipsRemoteReads reports whether the mode avoids the proactive per-resource
+// remote read (Local and Offline).
+func (m PlanMode) SkipsRemoteReads() bool {
+	return m == PlanModeLocal || m == PlanModeOffline
+}
+
+// ParsePlanMode parses the value of the --plan-mode flag. An empty value is
+// PlanModeFull; "full", "local", and "offline" are accepted. Unknown values
+// produce an actionable error.
+func ParsePlanMode(s string) (PlanMode, error) {
+	switch s {
+	case "", "full":
+		return PlanModeFull, nil
+	case "local":
+		return PlanModeLocal, nil
+	case "offline":
+		return PlanModeOffline, nil
+	default:
+		return "", fmt.Errorf("invalid --plan-mode %q (want full, local, or offline)", s)
+	}
+}
+
 type Plan struct {
 	PlanVersion int    `json:"plan_version,omitempty"`
 	CLIVersion  string `json:"cli_version,omitempty"`
 	Lineage     string `json:"lineage,omitempty"`
 	Serial      int    `json:"serial,omitempty"`
 
-	// LocalOnly is set when the plan was computed with --local, i.e. without
-	// fetching the remote state of resources. Such a plan can miss out-of-band
-	// drift, so consumers like "deploy --plan" warn before applying it.
-	LocalOnly bool `json:"local_only,omitempty"`
+	// Mode records how the plan was computed. Consumers like "deploy --plan"
+	// warn before applying a non-Full plan since it may miss out-of-band drift.
+	Mode PlanMode `json:"plan_mode,omitempty"`
 
 	Plan map[string]*PlanEntry `json:"plan,omitzero"`
 

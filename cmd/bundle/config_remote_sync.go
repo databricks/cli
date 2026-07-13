@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -87,7 +88,7 @@ Examples:
 					return err
 				}
 
-				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config, false)
+				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config, deployplan.PlanModeFull)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to detect changes: %w", err)

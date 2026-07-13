@@ -3,4 +3,4 @@ EnvMatrix.READPLAN = ["", "1"]
 # Run every config twice: once planning normally and once with --local, which plans
 # using only the local state. The no-drift invariant must hold either way: after a
 # deploy the local state saved by the engine must already match the config.
-EnvMatrix.LOCAL_DIFF = ["", "--local"]
+EnvMatrix.LOCAL_DIFF = ["", "--plan-mode=local"]

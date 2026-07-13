@@ -10,7 +10,10 @@ const (
 	ClusterLifecycleStarted             = "cluster_lifecycle_started"
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
-	LocalUsed                           = "local_used"
+
+	// PlanModeUsed is a metric-key prefix; the mode value ("local"/"offline") is
+	// appended per deploy, producing metric keys like plan_mode_used_local.
+	PlanModeUsed = "plan_mode_used"
 
 	// Outcome of the dry-run migration to the direct engine attempted after a
 	// successful terraform deploy WHEN THE USER DID NOT OPT IN. Only recorded

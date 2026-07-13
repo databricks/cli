@@ -1,12 +1,12 @@
-# Also run plan/deploy with --local (direct engine only; rejected on terraform).
-# Deploy issues the same mutating requests with or without --local — only the
+# Also run plan/deploy with --plan-mode=local (direct engine only; rejected on terraform).
+# Deploy issues the same mutating requests with or without --plan-mode=local — only the
 # remote reads (GETs, excluded from print_requests.py) differ — so the recorded
-# output is identical across variants. The " --local" token is stripped from the
-# command echo so the >>> lines match the non-local variant.
-EnvMatrix.LOCAL = ["", "--local"]
-EnvMatrixExclude.no_local_on_terraform = ["LOCAL=--local", "DATABRICKS_BUNDLE_ENGINE=terraform"]
-EnvRepl.LOCAL = false
+# output is identical across variants. The " --plan-mode=local" token is stripped from the
+# command echo so the >>> lines match the non-plan-mode variant.
+EnvMatrix.PLANMODE = ["", "--plan-mode=local"]
+EnvMatrixExclude.no_local_on_terraform = ["PLANMODE=--plan-mode=local", "DATABRICKS_BUNDLE_ENGINE=terraform"]
+EnvRepl.PLANMODE = false
 
 [[Repls]]
-Old = " --local"
+Old = " --plan-mode=local"
 New = ""

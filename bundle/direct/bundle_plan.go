@@ -117,9 +117,8 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
 //
-// When localOnly is true, the remote state of resources is neither fetched nor considered:
-// the plan is computed solely from the difference between the saved local state and the config.
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, localOnly bool) (*deployplan.Plan, error) {
+// mode controls how much of the remote state is consulted. See deployplan.PlanMode.
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, mode deployplan.PlanMode) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
 
 	err := b.init(client)
@@ -132,7 +131,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	plan.LocalOnly = localOnly
+	plan.Mode = mode
+	skipsRemoteReads := mode.SkipsRemoteReads()
 	b.Plan = plan
 
 	g, err := makeGraph(plan)
@@ -182,7 +182,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			if localOnly {
+			if skipsRemoteReads {
 				// The resource is being deleted because it is absent from config;
 				// its remote status is irrelevant, so skip the remote read.
 				return true
@@ -256,7 +256,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		var remoteDiff []structdiff.Change
 		var remoteStateComparable any
 
-		if localOnly {
+		if skipsRemoteReads {
 			// --local skips the remote read. Treat the saved state as the remote:
 			// it is our last recorded snapshot of remote, so drift is computed
 			// purely from saved-state vs config. This also lets OverrideChangeDesc
@@ -308,7 +308,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// is not. OverrideChangeDesc hooks read the reconciled value from
 		// ch.Remote (populated from saved state above) instead.
 		var rawRemote any
-		if !localOnly {
+		if !skipsRemoteReads {
 			rawRemote = entry.RemoteState
 		}
 		err = addPerFieldActions(ctx, adapter, entry.Changes, rawRemote)
@@ -317,7 +317,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		if entry.RemoteState == nil && !localOnly {
+		if entry.RemoteState == nil && !skipsRemoteReads {
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
 			// because we know remote does not exist.
 			action = deployplan.Create
@@ -330,7 +330,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// Note, remoteState may be updated post-deploy, so whether it can be used for
 		// variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy.
 		// In --local mode the store is skipped so remoteStateForRef fetches on demand (it keys off cache absence).
-		if !localOnly {
+		if !skipsRemoteReads {
 			b.RemoteStateCache.Store(resourceKey, entry.RemoteState)
 		}
 
@@ -354,7 +354,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	// after the parallel walk so the write to entry.RemoteState is single-threaded:
 	// during the walk a target is fetched from a dependent's goroutine under the
 	// target's read lock, where writing its entry would race with sibling dependents.
-	if localOnly {
+	if skipsRemoteReads {
 		for key, entry := range plan.Plan {
 			if remoteState, ok := b.RemoteStateCache.Load(key); ok {
 				entry.RemoteState = remoteState
@@ -861,9 +861,9 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 // remoteStateForRef returns the remote state of a referenced target resource for
 // reference resolution. Normally the state was cached when the target was processed
-// (targets precede their dependents in DAG order). In --local mode that proactive
+// (targets precede their dependents in DAG order). In --plan-mode=local the proactive
 // read is skipped, so fetch it on demand here: a reference to a remote-only field
-// genuinely needs the remote state, so we ignore --local for that target.
+// genuinely needs the remote state, so we ignore --plan-mode=local for that target.
 //
 // The bool reports whether a value is available. In non-local mode a cache miss
 // returns (nil, false, nil) and the caller surfaces its own internal error.
@@ -872,7 +872,7 @@ func (b *DeploymentBundle) remoteStateForRef(ctx context.Context, targetResource
 		return remoteState, true, nil
 	}
 
-	if !b.Plan.LocalOnly {
+	if b.Plan.Mode != deployplan.PlanModeLocal {
 		return nil, false, nil
 	}
 
