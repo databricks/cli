@@ -752,7 +752,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	// one with this exact error (verified on aws-ucws 2026-07-13). The fake does
 	// not synthesize a default, matching that behavior.
 	if database.Spec == nil || database.Spec.Role == "" {
-		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'database.spec.role' is required, expected non-default value")
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'database.spec.role' is required, expected non-default value (not "")!`)
 	}
 
 	name := fmt.Sprintf("%s/databases/%s", parent, databaseID)
