@@ -25,7 +25,7 @@ project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 branch_name="${project_name}/branches/main"
 endpoint_name="${branch_name}/endpoints/my-endpoint"
 endpoint_id_1=`read_id.py my_endpoint`
-trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling)'
+trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 
 title "Verify no changes"
 trace $CLI bundle plan
@@ -47,7 +47,7 @@ trace $CLI bundle deploy
 print_requests update
 
 endpoint_id_2=`read_id.py my_endpoint`
-trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling)'
+trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 
 title "Restore endpoint autoscaling to original value"
 trace update_file.py databricks.yml "autoscaling_limit_max_cu: 4" "autoscaling_limit_max_cu: 8"
@@ -58,4 +58,4 @@ trace $CLI bundle deploy
 
 print_requests restore
 
-trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling)'
+trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
