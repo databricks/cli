@@ -28,5 +28,5 @@ To resolve this issue, you have two options:
        #       id: <resource_id>
 
 
-Error: bind planning failed
+Error: planning failed
 

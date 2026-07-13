@@ -272,16 +272,14 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 	}
 
 	if engine.IsDirect() {
-		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
+		var bindConfig config.Bind
+		if b.Target != nil {
+			bindConfig = b.Target.Bind
+		}
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config, bindConfig)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil
-		}
-		if b.Target != nil && !b.Target.Bind.IsEmpty() {
-			if err := b.DeploymentBundle.ApplyBindToPlan(ctx, &b.Config, b.Target.Bind); err != nil {
-				logdiag.LogError(ctx, err)
-				return nil
-			}
 		}
 		if len(b.Select) > 0 {
 			plan.FilterToSelected(b.Select)

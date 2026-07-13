@@ -189,7 +189,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			}
 		}
 
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil, nil)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

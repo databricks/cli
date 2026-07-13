@@ -17,60 +17,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
-// ApplyBindToPlan layers declarative bind blocks onto a plan that has already been
-// produced by CalculatePlan. It validates the bind config and overrides plan
-// entries for resources that are being bound for the first time.
-//
-// For each bind entry:
-//   - If the resource has no state, override the planned Create with Bind or
-//     BindAndUpdate by reading the remote resource and diffing against config.
-//   - If the resource is already in state under the same ID, the bind is a no-op
-//     (a previously-bound resource deploys normally).
-//   - If the resource is in state under a different ID, surface an error.
-func (b *DeploymentBundle) ApplyBindToPlan(ctx context.Context, configRoot *config.Root, bindConfig config.Bind) error {
-	if bindConfig.IsEmpty() {
-		return nil
-	}
-
-	if b.Plan == nil {
-		return errors.New("internal error: ApplyBindToPlan called before CalculatePlan")
-	}
-
-	if !b.validateBindConfig(ctx, configRoot, bindConfig) {
-		return errors.New("bind validation failed")
-	}
-
-	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
-		resourceKey := "resources." + resourceType + "." + resourceName
-		entry := b.Plan.Plan[resourceKey]
-
-		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
-		if hasEntry {
-			if dbentry.ID != bindID {
-				logdiag.LogError(ctx, fmt.Errorf("%s: resource already bound to ID %q, cannot bind as %q; remove the bind block or unbind the existing resource", resourceKey, dbentry.ID, bindID))
-				return
-			}
-			// IDs match: leave the plan entry as-is so the resource deploys normally.
-			return
-		}
-
-		entry.BindID = bindID
-		adapter, err := b.getAdapterForKey(resourceKey)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("cannot plan %s: getting adapter: %w", resourceKey, err))
-			return
-		}
-
-		b.handleBindPlan(ctx, resourceKey, entry, adapter)
-	})
-
-	if logdiag.HasError(ctx) {
-		return errors.New("bind planning failed")
-	}
-
-	return nil
-}
-
 // validateBindConfig logs diagnostics for invalid bind entries. Returns false if any
 // errors were logged.
 func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *config.Root, bindConfig config.Bind) bool {
@@ -87,6 +33,25 @@ func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *c
 		logdiag.LogDiag(ctx, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("bind block references undefined resource %q; define it in the resources section or remove the bind block", key),
+			Locations: configRoot.GetLocations(bindPath.String()),
+			Paths:     []dyn.Path{bindPath},
+		})
+		hasError = true
+	})
+
+	// A resource that is already in state cannot be re-bound to a different ID: the
+	// bind block is meant to import a resource for the first time. When the IDs match
+	// the bind is a no-op and the resource just deploys normally.
+	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+		key := "resources." + resourceType + "." + resourceName
+		dbentry, hasEntry := b.StateDB.GetResourceEntry(key)
+		if !hasEntry || dbentry.ID == "" || dbentry.ID == bindID {
+			return
+		}
+		bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+		logdiag.LogDiag(ctx, diag.Diagnostic{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("%s: resource already bound to ID %q, cannot bind as %q; remove the bind block or unbind the existing resource", key, dbentry.ID, bindID),
 			Locations: configRoot.GetLocations(bindPath.String()),
 			Paths:     []dyn.Path{bindPath},
 		})
@@ -158,7 +123,9 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 	bindID := entry.BindID
 	errorPrefix := "cannot bind " + resourceKey
 
-	remoteState, err := adapter.DoRead(ctx, bindID)
+	remoteState, err := retryOnTransient(ctx, func() (any, error) {
+		return adapter.DoRead(ctx, bindID)
+	})
 	if err != nil {
 		if apierr.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("%s: resource with ID %q does not exist in workspace", errorPrefix, bindID))
