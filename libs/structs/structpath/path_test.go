@@ -1027,7 +1027,7 @@ func TestHasPatternPrefix(t *testing.T) {
 			// preceding literal (no trailing '.') has nothing for '*' to match.
 			name:     "bracket map key glob trailing star requires a child segment",
 			path:     "properties['unity.catalog.managed.delta.defaults']",
-			pattern:  "properties['unity.catalog.managed.*.defaults.*']",
+			pattern:  "properties['unity.catalog.managed.delta.defaults.*']",
 			expected: false,
 		},
 		{
