@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -50,6 +51,13 @@ const autoMigrateStoppedNotice = `Direct engine was requested but the dry-run mi
 // is recorded. Any failure is surfaced as a warning so it never fails a
 // deploy that already succeeded.
 func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engine.EngineSetting) {
+	// Announce the migration attempt before running it so the "will try" hint
+	// only appears when a migration is actually about to happen (not on
+	// non-deploy commands that also resolve the engine setting).
+	if requestedEngine.Type == engine.EngineDirect {
+		cmdio.LogString(ctx, "Attempting to migrate state to direct deployment engine (opted in via "+requestedEngine.Source+")...")
+	}
+
 	tempStatePath, resourceCount, hasWarnings, err := dryRunMigrate(ctx, b)
 	if tempStatePath != "" {
 		// commitMigration renames the state file out of this dir, but the dir
@@ -134,9 +142,20 @@ func dryRunMigrate(ctx context.Context, b *bundle.Bundle) (string, int, bool, er
 	resourceCount := len(tfState.IDs)
 
 	// SecretScopeFixups and the direct-engine state builder report failures via
-	// logdiag. Run them in an isolated context so a dry-run failure never affects
-	// the deploy's own diagnostics or exit code.
+	// logdiag. Run them in an isolated + collecting context so their diagnostics
+	// neither affect the deploy's exit code (isolated) nor render as user-facing
+	// `Error:` lines (collected + re-logged as warnings below).
 	ctx = logdiag.IsolatedContext(ctx)
+	logdiag.SetCollect(ctx, true)
+	defer func() {
+		for _, d := range logdiag.FlushCollected(ctx) {
+			msg := d.Summary
+			if d.Detail != "" {
+				msg += ": " + d.Detail
+			}
+			log.Warnf(ctx, "%s%s", warnPrefix, msg)
+		}
+	}()
 
 	state := make(map[string]dstate.ResourceEntry)
 	for key, id := range tfState.IDs {
@@ -203,18 +222,29 @@ func dryRunMigrate(ctx context.Context, b *bundle.Bundle) (string, int, bool, er
 	return tempStatePath, resourceCount, hasWarnings, nil
 }
 
-// commitMigration finalizes the dry-run migration by moving the converted state
-// into place, backing up the terraform state, and pushing the direct state to
-// the workspace. Any partial progress is logged as a warning but never fails
-// the deploy that already succeeded.
+// commitMigration finalizes the dry-run migration by pushing the direct state
+// to the workspace, moving the local state files into place, and backing up
+// the remote terraform state. Remote push happens FIRST: if we swapped local
+// state and then failed to push, this machine would prefer direct state while
+// the workspace still has terraform state, so other machines would diverge.
 func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string, resourceCount int) error {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	_, localDirectPath := b.StateFilenameDirect(ctx)
 
+	// A stat error other than "not exist" (e.g. permission denied) is not
+	// "file is missing"; treat it as a hard failure to avoid renaming over
+	// something we couldn't read.
 	if _, err := os.Stat(localDirectPath); err == nil {
 		return fmt.Errorf("state file %s already exists", localDirectPath)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("stat %s: %w", localDirectPath, err)
 	}
 
+	if err := pushDirectState(ctx, b, tempStatePath); err != nil {
+		return fmt.Errorf("pushing direct state to workspace: %w", err)
+	}
+
+	// Remote is now authoritative for direct engine; make local match.
 	if err := os.MkdirAll(filepath.Dir(localDirectPath), 0o700); err != nil {
 		return fmt.Errorf("creating state directory: %w", err)
 	}
@@ -230,10 +260,6 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 		log.Warnf(ctx, "could not back up terraform state at %s: %v", localTerraformPath, err)
 	}
 
-	if err := pushDirectState(ctx, b, localDirectPath); err != nil {
-		return fmt.Errorf("pushing direct state to workspace: %w", err)
-	}
-
 	suffix := "s"
 	if resourceCount == 1 {
 		suffix = ""
@@ -244,14 +270,17 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 
 // pushDirectState uploads the direct-engine state file to the workspace and
 // moves the remote terraform state aside so it is no longer authoritative.
-func pushDirectState(ctx context.Context, b *bundle.Bundle, localDirectPath string) error {
+// The caller passes the file whose contents to upload — this is the temp
+// state produced by the dry-run, uploaded before it is renamed into place
+// locally so the workspace becomes authoritative first.
+func pushDirectState(ctx context.Context, b *bundle.Bundle, localPath string) error {
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		return err
 	}
 
 	remoteDirectPath, _ := b.StateFilenameDirect(ctx)
-	local, err := os.Open(localDirectPath)
+	local, err := os.Open(localPath)
 	if err != nil {
 		return err
 	}

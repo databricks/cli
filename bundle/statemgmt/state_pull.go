@@ -156,14 +156,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	}
 
 	if requiredEngine.Type != engine.EngineNotSet && requiredEngine.Type != winner.Engine {
-		var msg string
-		// A direct opt-in against a terraform state triggers a post-deploy
-		// auto-migration; call that out here so the user isn't surprised.
-		if requiredEngine.Type == engine.EngineDirect && !winner.Engine.IsDirect() {
-			msg = fmt.Sprintf("Deployment engine %q configured in %s does not match the existing state (engine %q). Using %q engine for deployment, then will try to migrate your state to direct engine", requiredEngine.Type, requiredEngine.Source, winner.Engine, winner.Engine)
-		} else {
-			msg = fmt.Sprintf("Deployment engine %q configured in %s does not match the existing state (engine %q). Using %q engine from the existing state.", requiredEngine.Type, requiredEngine.Source, winner.Engine, winner.Engine)
-		}
+		msg := fmt.Sprintf("Deployment engine %q configured in %s does not match the existing state (engine %q). Using %q engine from the existing state.", requiredEngine.Type, requiredEngine.Source, winner.Engine, winner.Engine)
 		// Warn only when the config also disagrees with the state. If the env var overrides
 		// a config that matches the state, log at info level to avoid noise.
 		if requiredEngine.ConfigType != engine.EngineNotSet && requiredEngine.ConfigType != winner.Engine {
