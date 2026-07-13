@@ -405,6 +405,13 @@ resources:
     normalize_slash:
       - field: storage_root
         reason: uc_strips_trailing_slash
+    ignore_remote_changes:
+      # Accepted on write but never returned by GET: UC stores custom_max_retention_hours
+      # but the schema GET response always reports it as nil, so a config that sets it
+      # re-planned as a perpetual no-op update (old==new) that never converged, most
+      # visibly after a terraform->direct migrate.
+      - field: custom_max_retention_hours
+        reason: input_only
     backend_defaults:
       # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
       # Without this, every subsequent plan produces an Update whose payload is empty,

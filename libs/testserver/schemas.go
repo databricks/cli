@@ -30,6 +30,10 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 		}
 	}
 
+	// UC accepts custom_max_retention_hours on write but never echoes it back on GET,
+	// so drop it from stored state to keep reads faithful to the real backend.
+	schema.CustomMaxRetentionHours = 0
+
 	// UC normalizes schema names to lowercase.
 	schema.Name = strings.ToLower(schema.Name)
 	schema.FullName = schema.CatalogName + "." + schema.Name

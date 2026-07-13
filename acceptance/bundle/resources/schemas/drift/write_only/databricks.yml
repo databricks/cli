@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    schema1:
+      name: test_schema
+      catalog_name: main
+      # custom_max_retention_hours is accepted on write but never returned on GET.
+      custom_max_retention_hours: 643
