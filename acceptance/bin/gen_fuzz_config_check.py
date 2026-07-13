@@ -13,7 +13,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from edit_fuzz_config import FIELD_RE
-from gen_fuzz_config import SKIP_PROPERTY_NAMES, gen_config, to_yaml
+from gen_fuzz_config import DANGEROUS_STRINGS, SKIP_PROPERTY_NAMES, gen_config, to_yaml
 
 # Tricky shapes: strings with ':' and '"', nested maps, lists of dicts, empty containers.
 CASES = [
@@ -57,6 +57,14 @@ def main():
     if not any(FIELD_RE.match(line) for line in to_yaml(CASES[0]).splitlines()):
         sys.stderr.write("FIELD_RE did not match a comment/description line\n")
         failed = True
+
+    # Generate mode now emits DANGEROUS_STRINGS into free-form fields; each must still
+    # serialize to a single `key: <json>` line so edit_fuzz_config can rewrite it in place.
+    for i, val in enumerate(DANGEROUS_STRINGS):
+        line = to_yaml({"description": val}).rstrip("\n")
+        if "\n" in line or not FIELD_RE.match(line):
+            sys.stderr.write(f"DANGEROUS_STRINGS[{i}] broke the one-line comment/description contract: {line!r}\n")
+            failed = True
 
     # Multi-resource configs merge types under resources.<type>, and one resource
     # references another's name so the interpolation/ordering path is exercised.

@@ -6,9 +6,10 @@ Walks `databricks bundle schema` (resolving $ref, picking concrete oneOf/anyOf
 branches) and emits one or more random resources as databricks.yml, seeded by --seed.
 With --resource-count > 1 it also links resources with ${resources.*} references (each
 resource referencing an earlier one) so the interpolation and deploy-ordering machinery is
-exercised. Feeds the invariant tests;
-the harness filters out configs the CLI rejects, so output may be structurally-random but
-sometimes invalid.
+exercised. Free-form scalars are occasionally replaced with dangerous / near-range-end
+values (DANGEROUS_STRINGS, DANGEROUS_INTS) to probe the CLI's input handling. Feeds the
+invariant tests; the harness filters out configs the CLI rejects, so output may be
+structurally-random but sometimes invalid.
 """
 
 import argparse
@@ -139,6 +140,32 @@ NOTEBOOK_PATH = "/Shared/notebook"
 # Fields declared as string in the schema but parsed as google.protobuf.Duration at
 # config load (e.g. suspend_timeout_duration, ttl); a bare token fails to parse.
 DURATION_VALUE = "3600s"
+
+# Dangerous / near-range-end probes injected into free-form scalars: empty and
+# whitespace-only strings, an over-long string, embedded newlines/tabs, non-ASCII, quotes,
+# a dangling ${...} reference, a path-traversal string, and int32/int64 boundaries. The CLI
+# must reject or round-trip these without panicking; mutate_fuzz_config.py reuses both lists.
+DANGEROUS_STRINGS = [
+    "",
+    " ",
+    "a" * 300,
+    "line1\nline2",
+    "tab\there",
+    "\U0001f680-unicode-\u00e9",
+    "quote\"and'apostrophe",
+    "${resources.jobs.does_not_exist.id}",
+    "../../etc/passwd",
+]
+DANGEROUS_INTS = [
+    2**31,
+    -(2**31),
+    2**63 - 1,
+    -1,
+]
+
+# Only inject a dangerous value some of the time: a fuzzed field mostly keeps a plausible
+# value so the config still deploys and exercises the invariant, not just the reject path.
+DANGEROUS_PROB = 0.15
 
 
 class Generator:
@@ -291,6 +318,8 @@ class Generator:
             # days; only 0 or 168-720 (hours) are accepted.
             if name == "custom_max_retention_hours":
                 return self.rng.choice([0, self.rng.randint(168, 720)])
+            if self.rng.random() < DANGEROUS_PROB:
+                return self.rng.choice(DANGEROUS_INTS)
             return self.rng.choice([0, 1, self.rng.randint(2, 1000)])
         if t == "number":
             return round(self.rng.uniform(0, 1000), 2)
@@ -321,6 +350,11 @@ class Generator:
             return f"{DEFAULT_CATALOG}.{DEFAULT_SCHEMA}.{table}"
         if name in ("name", "display_name"):
             return f"fuzz-{name}-{self.unique}"
+        # A free-form string with no pinned meaning (e.g. description, comment, tag value):
+        # probe dangerous / near-range-end input here, where a rejected or normalized value
+        # doesn't just fail the field-format check a pinned field above guards against.
+        if self.rng.random() < DANGEROUS_PROB:
+            return self.rng.choice(DANGEROUS_STRINGS)
         return self.token()
 
     def token(self):
