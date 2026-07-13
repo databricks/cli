@@ -27,6 +27,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/build"
@@ -322,9 +323,13 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		} else if UseVersion != "" {
 			version := UseVersion
 			if version == "latest" {
-				version = resolveLatestVersion(t, buildDir)
+				v, err := resolveLatestVersion(buildDir)
+				require.NoError(t, err)
+				version = v
 			}
-			execPath = DownloadCLI(t, buildDir, version)
+			p, err := DownloadCLI(buildDir, version)
+			require.NoError(t, err)
+			execPath = p
 			// For a downloaded release the version string is already known.
 			cliVersion = version
 		} else {
@@ -350,12 +355,33 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	repls.SetPath(execPath, "[CLI]")
 
 	if !inprocessMode {
-		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
+		// Download 0.293.0 and the latest released CLI concurrently: on a cold
+		// CI cache both downloads run in parallel; the file-based caches in
+		// DownloadCLI / resolveLatestVersion make warm runs a no-op either way.
+		var (
+			cli293Path, cliPrevPath, prevVersion string
+			g                                    errgroup.Group
+		)
+		g.Go(func() error {
+			p, err := DownloadCLI(buildDir, "0.293.0")
+			cli293Path = p
+			return err
+		})
+		g.Go(func() error {
+			v, err := resolveLatestVersion(buildDir)
+			if err != nil {
+				return err
+			}
+			prevVersion = v
+			p, err := DownloadCLI(buildDir, v)
+			cliPrevPath = p
+			return err
+		})
+		require.NoError(t, g.Wait())
+
 		t.Setenv("CLI_293", cli293Path)
 		repls.SetPath(cli293Path, "[CLI_293]")
 
-		prevVersion := resolveLatestVersion(t, buildDir)
-		cliPrevPath := DownloadCLI(t, buildDir, prevVersion)
 		t.Setenv("CLI_PREV", cliPrevPath)
 		repls.SetPath(cliPrevPath, "[CLI_PREV]")
 		repls.Set(prevVersion, "[CLI_PREV_VERSION]")
@@ -1309,39 +1335,53 @@ func CreateReleaseArtifact(t *testing.T, cwd, releasesDir, coverDir, osName, arc
 
 // resolveLatestVersion returns the latest released CLI version (e.g. "0.293.0"),
 // using a file-based cache in buildDir valid for 1 hour.
-func resolveLatestVersion(t *testing.T, buildDir string) string {
+func resolveLatestVersion(buildDir string) (string, error) {
 	cachePath := filepath.Join(buildDir, "latest_version.txt")
 	if info, err := os.Stat(cachePath); err == nil && time.Since(info.ModTime()) < time.Hour {
 		data, err := os.ReadFile(cachePath)
-		require.NoError(t, err)
+		if err != nil {
+			return "", err
+		}
 		if version := strings.TrimSpace(string(data)); version != "" {
-			return version
+			return version, nil
 		}
 	}
 
 	const url = "https://api.github.com/repos/databricks/cli/releases/latest"
 	resp, err := http.Get(url)
-	require.NoError(t, err)
+	if err != nil {
+		return "", err
+	}
 	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to fetch %s: %s", url, resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to fetch %s: %s", url, resp.Status)
+	}
 
 	var release struct {
 		TagName string `json:"tag_name"`
 	}
-	require.NoError(t, json.NewDecoder(resp.Body).Decode(&release))
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return "", err
+	}
 	version := strings.TrimPrefix(release.TagName, "v")
-	require.NotEmpty(t, version, "empty tag_name in GitHub latest release response")
+	if version == "" {
+		return "", errors.New("empty tag_name in GitHub latest release response")
+	}
 
-	require.NoError(t, os.WriteFile(cachePath, []byte(version), 0o644))
-	return version
+	if err := os.WriteFile(cachePath, []byte(version), 0o644); err != nil {
+		return "", err
+	}
+	return version, nil
 }
 
 // DownloadCLI downloads a released CLI binary archive for the given version,
 // extracts the executable, and returns its path.
-func DownloadCLI(t *testing.T, buildDir, version string) string {
+func DownloadCLI(buildDir, version string) (string, error) {
 	// Prepare target directory for this version
 	versionDir := filepath.Join(buildDir, version)
-	require.NoError(t, os.MkdirAll(versionDir, 0o755))
+	if err := os.MkdirAll(versionDir, 0o755); err != nil {
+		return "", err
+	}
 
 	execName := "databricks"
 	if runtime.GOOS == "windows" {
@@ -1351,7 +1391,7 @@ func DownloadCLI(t *testing.T, buildDir, version string) string {
 
 	// If already downloaded, reuse
 	if _, err := os.Stat(execPath); err == nil {
-		return execPath
+		return execPath, nil
 	}
 
 	osName := runtime.GOOS
@@ -1362,55 +1402,85 @@ func DownloadCLI(t *testing.T, buildDir, version string) string {
 	url := fmt.Sprintf("https://github.com/databricks/cli/releases/download/v%s/%s", version, archiveName)
 	zipPath := filepath.Join(versionDir, archiveName)
 
-	downloadToFile(t, url, zipPath)
-	extractFileFromZip(t, zipPath, execName, versionDir)
+	if err := downloadToFile(url, zipPath); err != nil {
+		return "", err
+	}
+	if err := extractFileFromZip(zipPath, execName, versionDir); err != nil {
+		return "", err
+	}
 
-	return execPath
+	return execPath, nil
 }
 
 // downloadToFile downloads contents from url into the given destination path
-func downloadToFile(t *testing.T, url, destPath string) {
-	require.NoError(t, os.MkdirAll(filepath.Dir(destPath), 0o755))
+func downloadToFile(url, destPath string) error {
+	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+		return err
+	}
 	out, err := os.Create(destPath)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer out.Close()
 
 	resp, err := http.Get(url)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to download %s: %s", url, resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download %s: %s", url, resp.Status)
+	}
 
 	_, err = io.Copy(out, resp.Body)
-	require.NoError(t, err)
+	return err
 }
 
 // extractFileFromZip finds a file by name inside a zip archive and writes it
-// into destDir using the file's base name. Fails the test if not found.
-func extractFileFromZip(t *testing.T, zipPath, fileName, destDir string) {
+// into destDir using the file's base name. The destination is written atomically
+// (temp file + rename) so a failed extract can't leave a truncated binary that
+// DownloadCLI would later accept via os.Stat.
+func extractFileFromZip(zipPath, fileName, destDir string) error {
 	r, err := zip.OpenReader(zipPath)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer r.Close()
 
 	targetBase := filepath.Base(fileName)
 	destPath := filepath.Join(destDir, targetBase)
-	var found bool
 	for _, f := range r.File {
 		if filepath.Base(f.Name) != targetBase {
 			continue
 		}
 		rc, err := f.Open()
-		require.NoError(t, err)
-		defer rc.Close()
-
-		out, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
-		require.NoError(t, err)
-		_, err = io.Copy(out, rc)
-		_ = out.Close()
-		require.NoError(t, err)
-		found = true
-		break
+		if err != nil {
+			return err
+		}
+		tmp, err := os.CreateTemp(destDir, targetBase+".*.tmp")
+		if err != nil {
+			rc.Close()
+			return err
+		}
+		tmpPath := tmp.Name()
+		_, copyErr := io.Copy(tmp, rc)
+		closeErr := tmp.Close()
+		rc.Close()
+		if copyErr != nil || closeErr != nil {
+			os.Remove(tmpPath)
+			return errors.Join(copyErr, closeErr)
+		}
+		if err := os.Chmod(tmpPath, 0o755); err != nil {
+			os.Remove(tmpPath)
+			return err
+		}
+		if err := os.Rename(tmpPath, destPath); err != nil {
+			os.Remove(tmpPath)
+			return err
+		}
+		return nil
 	}
-	require.True(t, found, "file %s not found in archive %s", targetBase, zipPath)
+	return fmt.Errorf("file %s not found in archive %s", targetBase, zipPath)
 }
 
 func copyFile(src, dst string) error {
