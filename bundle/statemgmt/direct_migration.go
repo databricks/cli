@@ -51,13 +51,6 @@ const autoMigrateStoppedNotice = `Direct engine was requested but the dry-run mi
 // is recorded. Any failure is surfaced as a warning so it never fails a
 // deploy that already succeeded.
 func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engine.EngineSetting) {
-	// Announce the migration attempt before running it so the "will try" hint
-	// only appears when a migration is actually about to happen (not on
-	// non-deploy commands that also resolve the engine setting).
-	if requestedEngine.Type == engine.EngineDirect {
-		cmdio.LogString(ctx, "Attempting to migrate state to direct deployment engine (opted in via "+requestedEngine.Source+")...")
-	}
-
 	tempStatePath, resourceCount, hasWarnings, err := dryRunMigrate(ctx, b)
 	if tempStatePath != "" {
 		// commitMigration renames the state file out of this dir, but the dir
@@ -94,9 +87,12 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	}
 
 	if tempStatePath == "" {
-		// Nothing to migrate (no terraform state file).
+		// Nothing to migrate (no terraform state file, or the terraform state
+		// has no databricks_* resources).
 		return
 	}
+
+	cmdio.LogString(ctx, "Migrating state to direct deployment engine (opted in via "+requestedEngine.Source+")...")
 
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
@@ -128,6 +124,14 @@ func dryRunMigrate(ctx context.Context, b *bundle.Bundle) (string, int, bool, er
 	// ParseTFStateFull returns nil when the terraform state file doesn't exist
 	// (e.g. first deploy with no resources); nothing to migrate, trivially OK.
 	if tfState == nil {
+		return "", 0, false, nil
+	}
+
+	// A terraform.tfstate file that has no databricks_* resources leaves the
+	// direct engine with nothing to persist: BuildStateFromTF makes no
+	// SaveState calls, so Finalize writes no resources.json. Treat that the
+	// same as "no state file" — nothing to migrate.
+	if len(tfState.IDs) == 0 {
 		return "", 0, false, nil
 	}
 
@@ -244,20 +248,18 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 		return fmt.Errorf("pushing direct state to workspace: %w", err)
 	}
 
-	// Remote is now authoritative for direct engine; make local match.
+	// Remote is now authoritative for direct engine; make local match. A
+	// failure here doesn't corrupt anything — the next deploy will pull the
+	// remote state and see it's direct — but leaves this machine's local
+	// cache stale, so warn (don't error) and return success.
 	if err := os.MkdirAll(filepath.Dir(localDirectPath), 0o700); err != nil {
-		return fmt.Errorf("creating state directory: %w", err)
-	}
-
-	if err := os.Rename(tempStatePath, localDirectPath); err != nil {
-		return fmt.Errorf("renaming %s to %s: %w", tempStatePath, localDirectPath, err)
-	}
-
-	if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil {
-		// Not fatal — the direct state is already in place with a bumped serial,
-		// so future deploys will use it. A leftover terraform.tfstate is
-		// harmless (PullResourcesState picks the state with the highest serial).
-		log.Warnf(ctx, "could not back up terraform state at %s: %v", localTerraformPath, err)
+		log.Warnf(ctx, "migration committed to workspace, but updating local state directory failed: %v", err)
+	} else if err := os.Rename(tempStatePath, localDirectPath); err != nil {
+		log.Warnf(ctx, "migration committed to workspace, but writing local state failed: %v", err)
+	} else if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil {
+		// The direct state is already in place with a bumped serial, so
+		// PullResourcesState will still pick it on the next deploy.
+		log.Warnf(ctx, "could not back up local terraform state at %s: %v", localTerraformPath, err)
 	}
 
 	suffix := "s"
@@ -273,6 +275,11 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 // The caller passes the file whose contents to upload — this is the temp
 // state produced by the dry-run, uploaded before it is renamed into place
 // locally so the workspace becomes authoritative first.
+//
+// Backup/delete errors on the remote terraform state are fatal here: if the
+// direct state landed but the terraform state stayed, the workspace has two
+// authoritative files, and an older CLI (or `validateStates`) will refuse to
+// use them. Fail loudly so the caller can record telemetry and warn the user.
 func pushDirectState(ctx context.Context, b *bundle.Bundle, localPath string) error {
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
@@ -292,6 +299,23 @@ func pushDirectState(ctx context.Context, b *bundle.Bundle, localPath string) er
 
 	// Move the remote terraform state to .backup so a future deploy from an
 	// older CLI does not race the two state files.
-	BackupRemoteTerraformState(ctx, b)
+	remoteTerraformPath, _ := b.StateFilenameTerraform(ctx)
+	reader, err := f.Read(ctx, remoteTerraformPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("reading remote terraform state %s: %w", remoteTerraformPath, err)
+	}
+	defer reader.Close()
+
+	if err := f.Write(ctx, remoteTerraformPath+".backup", reader, filer.OverwriteIfExists); err != nil {
+		return fmt.Errorf("writing remote terraform backup: %w", err)
+	}
+
+	if err := f.Delete(ctx, remoteTerraformPath); err != nil {
+		return fmt.Errorf("deleting remote terraform state: %w", err)
+	}
+
 	return nil
 }
