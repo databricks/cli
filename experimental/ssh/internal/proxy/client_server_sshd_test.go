@@ -1,4 +1,4 @@
-//go:build !windows
+//go:build linux
 
 package proxy
 
@@ -97,6 +97,10 @@ func writeSSHDConfig(t *testing.T, dir, hostKeyPath, authKeysPath string) string
 // coverage that otherwise requires a cluster: the tunnel must carry the SSH protocol faithfully in
 // both directions. Sibling tests in client_server_test.go cover the transport with a `cat` echo
 // server; this one adds a genuine sshd so the handshake, auth, and channel exec are validated too.
+//
+// The test is Linux-only: running sshd -i as a non-root user with a throwaway config is reliable
+// there (CI installs openssh-server), but not on macOS. It still skips gracefully when sshd is
+// absent so the general `test` job, which doesn't install it, doesn't fail.
 func TestClientServerRealSSHD(t *testing.T) {
 	sshdPath := findSSHD()
 	if sshdPath == "" {
