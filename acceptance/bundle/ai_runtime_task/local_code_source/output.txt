@@ -12,3 +12,12 @@ Deployment complete!
 
 === the created job's code_source_path points at the uploaded archive
 /Workspace/Users/[USERNAME]/.air/repo_snapshots/src/src_[SNAPSHOT].tar.gz
+
+=== re-deploying unchanged code is a cache hit: the tarball is not re-uploaded
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+tarball uploads on redeploy: 0

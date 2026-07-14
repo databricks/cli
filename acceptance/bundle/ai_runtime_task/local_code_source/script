@@ -1,5 +1,5 @@
-# A local code_source_path is packaged into a tarball and uploaded to the user's
-# repo_snapshots directory; the archive is timestamp-named.
+# A local code_source_path is packaged into a content-addressed tarball
+# (<dir>_<hash>.tar.gz) and uploaded to the user's repo_snapshots directory.
 
 title "deploy packages the local code source and rewrites code_source_path\n"
 trace $CLI bundle deploy
@@ -11,5 +11,12 @@ jq -r 'select(.path | test("/import-file/.*/.air/repo_snapshots/src/src_")) | .p
 
 title "the created job's code_source_path points at the uploaded archive\n"
 jq -r 'select(.path == "/api/2.2/jobs/create") | .body.tasks[0].ai_runtime_task.code_source_path' out.requests.txt
+
+rm out.requests.txt
+
+title "re-deploying unchanged code is a cache hit: the tarball is not re-uploaded\n"
+trace $CLI bundle deploy
+echo -n "tarball uploads on redeploy: "
+jq -r 'select(.path | test("/import-file/.*/.air/repo_snapshots/src/src_")) | .path' out.requests.txt | sort -u | wc -l | tr -d ' '
 
 rm out.requests.txt

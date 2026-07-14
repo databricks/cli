@@ -1,103 +1,119 @@
 package aicode
 
 import (
-	"bytes"
+	"archive/tar"
+	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
+	"io"
+	"path"
+	"slices"
 	"strings"
+	"time"
+
+	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/git"
+	"github.com/databricks/cli/libs/vfs"
 )
 
-// Tarball builder ported from PR #5897 (in turn from cli/utils/snapshot.py). It
-// shells out to `tar` to reuse tar's symlink, gitignore, and AppleDouble handling.
-// The tarball's top-level dir name is load-bearing — the remote entry_script
-// extracts to /databricks/code_source/<dir> — so the `-C parent dir` form preserves it.
+// tarEpoch is a fixed modification time stamped on every tar entry so the archive
+// is content-addressed: identical file contents always produce identical bytes
+// (and therefore an identical SHA-256), regardless of file mtimes or when the
+// archive was built. This is what lets an unchanged code directory resolve to the
+// same uploaded filename across deploys and skip re-upload. The technique mirrors
+// bundle/deploy/snapshot/path.go (which does the same for the immutable-folder zip).
+var tarEpoch = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 
-// createPlainTarball writes a gzipped tar of repoPath's working tree to
-// outputTarball via `tar`. The archive preserves repoPath's directory name as the
-// top-level entry. .git and macOS AppleDouble files are always excluded; a
-// .gitignore at repoPath is honored.
-func createPlainTarball(ctx context.Context, repoPath, outputTarball string) error {
-	dirName := filepath.Base(repoPath)
-	parent := filepath.Dir(repoPath)
+// appleDoublePrefix is the basename prefix of macOS AppleDouble metadata files.
+// The AIR CLI excludes these; we match it so archives are identical on macOS and Linux.
+const appleDoublePrefix = "._"
 
-	args := []string{"-czf", outputTarball}
+// buildCodeSnapshot writes a reproducible gzipped tarball of the directory at
+// codeDir to out and returns its SHA-256 hex digest. Every entry is prefixed with
+// prefix (the code directory's basename) so the archive expands to <prefix>/... —
+// matching the runtime's /databricks/code_source/<dir> extraction contract.
+//
+// The file list is gitignore-aware via [git.NewFileSetAtRoot]: it honors the code
+// directory's .gitignore (including nested .gitignore files) and always excludes
+// .git and .databricks — the same walker that backs bundle file sync. This is why
+// packaging a large tree only archives the tracked payload rather than venvs,
+// caches, and build outputs.
+func buildCodeSnapshot(ctx context.Context, codeDir vfs.Path, prefix string, out io.Writer) (string, error) {
+	fsys, err := git.NewFileSetAtRoot(ctx, codeDir)
+	if err != nil {
+		return "", err
+	}
 
-	// Exclude macOS AppleDouble files: they sort before the real top-level dir and
-	// hijack a remote `head -1` parse. No-op on Linux.
-	args = append(args, "--exclude=._*")
+	files, err := fsys.Files()
+	if err != nil {
+		return "", err
+	}
 
-	// Never ship .git — it is large and unused on the remote.
-	args = append(args, "--exclude=.git")
+	// Sort by relative path so the archive byte stream (and thus its hash) does not
+	// depend on filesystem walk order.
+	slices.SortFunc(files, func(a, b fileset.File) int {
+		return strings.Compare(a.Relative, b.Relative)
+	})
 
-	// Honor .gitignore if present.
-	gitignorePath := filepath.Join(repoPath, ".gitignore")
-	if patterns, err := parseGitignore(gitignorePath); err == nil {
-		for _, p := range patterns {
-			if strings.Contains(p, "/") {
-				// Anchor path-relative patterns to the archive root so they don't
-				// match identically-named paths in subdirectories.
-				args = append(args, "--exclude="+dirName+"/"+strings.TrimPrefix(p, "/"))
-			} else {
-				args = append(args, "--exclude="+p)
-			}
+	hash := sha256.New()
+	gzw := gzip.NewWriter(io.MultiWriter(out, hash))
+	tw := tar.NewWriter(gzw)
+
+	for _, f := range files {
+		if err := addFileToArchive(tw, codeDir, f, prefix); err != nil {
+			return "", err
 		}
 	}
 
-	// Archive from the parent so the directory name is preserved as the top-level entry.
-	args = append(args, "-C", parent, dirName)
-
-	cmd := exec.CommandContext(ctx, "tar", args...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		if msg := strings.TrimSpace(stderr.String()); msg != "" {
-			return fmt.Errorf("failed to create plain tarball: %w: %s", err, msg)
-		}
-		return fmt.Errorf("failed to create plain tarball: %w", err)
+	if err := tw.Close(); err != nil {
+		return "", err
 	}
-	return nil
+	if err := gzw.Close(); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// parseGitignore reads a .gitignore and returns tar --exclude patterns. It mirrors
-// the Python CLI's lossy normalization so plain-tar snapshots exclude the same set:
-//
-//   - comments (#…) and blank lines are skipped;
-//   - negation patterns (!…) are unsupported by tar --exclude and skipped;
-//   - a trailing "/" (directory marker) is stripped;
-//   - "**" is not a path-separator-agnostic wildcard in tar, so "**/foo" → "foo"
-//     and "foo/**" → "foo"; a mid-path "**" has no tar equivalent and is skipped.
-//
-// A missing file returns (nil, error); callers treat any error as "no patterns".
-func parseGitignore(path string) ([]string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
+func addFileToArchive(tw *tar.Writer, codeDir vfs.Path, f fileset.File, prefix string) error {
+	// fileset.File.Relative is slash-separated, so path.Base is correct here.
+	if strings.HasPrefix(path.Base(f.Relative), appleDoublePrefix) {
+		return nil
 	}
 
-	var patterns []string
-	for raw := range strings.SplitSeq(string(data), "\n") {
-		line := strings.TrimRight(raw, " \t\r")
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		if strings.HasPrefix(line, "!") {
-			continue
-		}
-		line = strings.TrimRight(line, "/")
-		if strings.Contains(line, "**") {
-			switch {
-			case strings.HasPrefix(line, "**/"):
-				line = line[len("**/"):]
-			case strings.HasSuffix(line, "/**"):
-				line = line[:len(line)-len("/**")]
-			default:
-				continue
-			}
-		}
-		patterns = append(patterns, line)
+	rc, err := codeDir.Open(f.Relative)
+	if err != nil {
+		return fmt.Errorf("open %s: %w", f.Relative, err)
 	}
-	return patterns, nil
+	defer rc.Close()
+
+	info, err := rc.Stat()
+	if err != nil {
+		return fmt.Errorf("stat %s: %w", f.Relative, err)
+	}
+
+	// Only regular files are archived. The gitignore-aware walker never yields
+	// directories, and symlinks inside a code snapshot are out of scope.
+	if !info.Mode().IsRegular() {
+		return nil
+	}
+
+	hdr := &tar.Header{
+		Typeflag: tar.TypeReg,
+		Name:     path.Join(prefix, f.Relative),
+		Size:     info.Size(),
+		// Normalize permissions and zero the mtime so the archive is reproducible
+		// across machines. The runtime invokes code via an interpreter, not by
+		// executing files from the snapshot, so execute bits are not preserved.
+		Mode:    0o644,
+		ModTime: tarEpoch,
+	}
+	if err := tw.WriteHeader(hdr); err != nil {
+		return fmt.Errorf("tar header for %s: %w", f.Relative, err)
+	}
+	if _, err := io.Copy(tw, rc); err != nil {
+		return fmt.Errorf("write %s: %w", f.Relative, err)
+	}
+	return nil
 }
