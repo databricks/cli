@@ -159,6 +159,10 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 		fn(cmd, &createNetworkConnectivityConfigurationReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig)
+
 	return cmd
 }
 
@@ -250,6 +254,10 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	for _, fn := range createPrivateEndpointRuleOverrides {
 		fn(cmd, &createPrivateEndpointRuleReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createPrivateEndpointRuleReq.PrivateEndpointRule)
 
 	return cmd
 }
@@ -727,6 +735,10 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 	for _, fn := range updatePrivateEndpointRuleOverrides {
 		fn(cmd, &updatePrivateEndpointRuleReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updatePrivateEndpointRuleReq.PrivateEndpointRule)
 
 	return cmd
 }

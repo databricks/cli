@@ -227,6 +227,10 @@ Create a Branch.
 		fn(cmd, &createBranchReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createBranchReq.Branch)
+
 	return cmd
 }
 
@@ -350,6 +354,10 @@ Register a Database in UC.
 		fn(cmd, &createCatalogReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createCatalogReq.Catalog)
+
 	return cmd
 }
 
@@ -471,6 +479,10 @@ func newCreateDataApi() *cobra.Command {
 	for _, fn := range createDataApiOverrides {
 		fn(cmd, &createDataApiReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createDataApiReq.DataApi)
 
 	return cmd
 }
@@ -599,6 +611,10 @@ Create a Database.
 	for _, fn := range createDatabaseOverrides {
 		fn(cmd, &createDatabaseReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createDatabaseReq.Database)
 
 	return cmd
 }
@@ -730,6 +746,10 @@ Create an Endpoint.
 		fn(cmd, &createEndpointReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createEndpointReq.Endpoint)
+
 	return cmd
 }
 
@@ -858,6 +878,10 @@ Create a Project.
 		fn(cmd, &createProjectReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createProjectReq.Project)
+
 	return cmd
 }
 
@@ -982,6 +1006,10 @@ Create a Postgres Role for a Branch.
 	for _, fn := range createRoleOverrides {
 		fn(cmd, &createRoleReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createRoleReq.Role)
 
 	return cmd
 }
@@ -1115,6 +1143,10 @@ Create a Synced Database Table.
 	for _, fn := range createSyncedTableOverrides {
 		fn(cmd, &createSyncedTableReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createSyncedTableReq.SyncedTable)
 
 	return cmd
 }
@@ -2060,6 +2092,10 @@ Generate OAuth credentials for a Postgres database.
 	for _, fn := range generateDatabaseCredentialOverrides {
 		fn(cmd, &generateDatabaseCredentialReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &generateDatabaseCredentialReq)
 
 	return cmd
 }
@@ -3345,6 +3381,10 @@ Update a Branch.
 		fn(cmd, &updateBranchReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateBranchReq.Branch)
+
 	return cmd
 }
 
@@ -3475,6 +3515,10 @@ func newUpdateDataApi() *cobra.Command {
 		fn(cmd, &updateDataApiReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateDataApiReq.DataApi)
+
 	return cmd
 }
 
@@ -3601,6 +3645,10 @@ Update a Database.
 	for _, fn := range updateDatabaseOverrides {
 		fn(cmd, &updateDatabaseReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateDatabaseReq.Database)
 
 	return cmd
 }
@@ -3731,6 +3779,10 @@ Update an Endpoint.
 	for _, fn := range updateEndpointOverrides {
 		fn(cmd, &updateEndpointReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateEndpointReq.Endpoint)
 
 	return cmd
 }
@@ -3863,6 +3915,10 @@ Update a Project.
 		fn(cmd, &updateProjectReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateProjectReq.Project)
+
 	return cmd
 }
 
@@ -3991,6 +4047,10 @@ Update a Postgres Role for a Branch.
 	for _, fn := range updateRoleOverrides {
 		fn(cmd, &updateRoleReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateRoleReq.Role)
 
 	return cmd
 }

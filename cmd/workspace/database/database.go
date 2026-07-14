@@ -159,6 +159,10 @@ Create a Database Catalog.
 		fn(cmd, &createDatabaseCatalogReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createDatabaseCatalogReq.Catalog)
+
 	return cmd
 }
 
@@ -273,6 +277,10 @@ Create a Database Instance.
 		fn(cmd, &createDatabaseInstanceReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createDatabaseInstanceReq.DatabaseInstance)
+
 	return cmd
 }
 
@@ -368,6 +376,10 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 		fn(cmd, &createDatabaseInstanceRoleReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createDatabaseInstanceRoleReq.DatabaseInstanceRole)
+
 	return cmd
 }
 
@@ -459,6 +471,10 @@ Create a Database Table.
 		fn(cmd, &createDatabaseTableReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createDatabaseTableReq.Table)
+
 	return cmd
 }
 
@@ -547,6 +563,10 @@ Create a Synced Database Table.
 	for _, fn := range createSyncedDatabaseTableOverrides {
 		fn(cmd, &createSyncedDatabaseTableReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createSyncedDatabaseTableReq.SyncedTable)
 
 	return cmd
 }
@@ -967,6 +987,10 @@ Generates a credential that can be used to access database instances.`
 	for _, fn := range generateDatabaseCredentialOverrides {
 		fn(cmd, &generateDatabaseCredentialReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &generateDatabaseCredentialReq)
 
 	return cmd
 }
@@ -1657,6 +1681,10 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 		fn(cmd, &updateDatabaseCatalogReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateDatabaseCatalogReq.DatabaseCatalog)
+
 	return cmd
 }
 
@@ -1748,6 +1776,10 @@ Update a Database Instance.
 		fn(cmd, &updateDatabaseInstanceReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateDatabaseInstanceReq.DatabaseInstance)
+
 	return cmd
 }
 
@@ -1832,6 +1864,10 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 	for _, fn := range updateSyncedDatabaseTableOverrides {
 		fn(cmd, &updateSyncedDatabaseTableReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateSyncedDatabaseTableReq.SyncedTable)
 
 	return cmd
 }

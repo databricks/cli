@@ -163,6 +163,10 @@ Create an AI Search endpoint.
 		fn(cmd, &createEndpointReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createEndpointReq.Endpoint)
+
 	return cmd
 }
 
@@ -267,6 +271,10 @@ Create an AI Search index.
 	for _, fn := range createIndexOverrides {
 		fn(cmd, &createIndexReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createIndexReq.Index)
 
 	return cmd
 }
@@ -758,6 +766,10 @@ Query an AI Search index.
 		fn(cmd, &queryIndexReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &queryIndexReq)
+
 	return cmd
 }
 
@@ -836,6 +848,10 @@ Remove data from an AI Search index.
 	for _, fn := range removeDataOverrides {
 		fn(cmd, &removeDataReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &removeDataReq)
 
 	return cmd
 }
@@ -916,6 +932,10 @@ Scan an AI Search index.
 	for _, fn := range scanIndexOverrides {
 		fn(cmd, &scanIndexReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &scanIndexReq)
 
 	return cmd
 }
@@ -1098,6 +1118,10 @@ Update an AI Search endpoint.
 		fn(cmd, &updateEndpointReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateEndpointReq.Endpoint)
+
 	return cmd
 }
 
@@ -1185,6 +1209,10 @@ Upsert data into an AI Search index.
 	for _, fn := range upsertDataOverrides {
 		fn(cmd, &upsertDataReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &upsertDataReq)
 
 	return cmd
 }

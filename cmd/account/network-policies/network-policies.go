@@ -125,6 +125,10 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 		fn(cmd, &createNetworkPolicyRpcReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createNetworkPolicyRpcReq.NetworkPolicy)
+
 	return cmd
 }
 
@@ -390,6 +394,10 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
 	for _, fn := range updateNetworkPolicyRpcOverrides {
 		fn(cmd, &updateNetworkPolicyRpcReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateNetworkPolicyRpcReq.NetworkPolicy)
 
 	return cmd
 }

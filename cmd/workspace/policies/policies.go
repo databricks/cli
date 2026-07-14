@@ -205,6 +205,10 @@ func newCreatePolicy() *cobra.Command {
 		fn(cmd, &createPolicyReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createPolicyReq.PolicyInfo)
+
 	return cmd
 }
 
@@ -577,6 +581,10 @@ func newUpdatePolicy() *cobra.Command {
 	for _, fn := range updatePolicyOverrides {
 		fn(cmd, &updatePolicyReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updatePolicyReq.PolicyInfo)
 
 	return cmd
 }

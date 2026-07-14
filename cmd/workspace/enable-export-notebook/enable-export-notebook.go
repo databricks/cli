@@ -159,6 +159,10 @@ Update the Notebook and File exporting setting.
 		fn(cmd, &patchEnableExportNotebookReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &patchEnableExportNotebookReq)
+
 	return cmd
 }
 

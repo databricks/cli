@@ -159,6 +159,10 @@ Update the Results Table Clipboard features setting.
 		fn(cmd, &patchEnableNotebookTableClipboardReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &patchEnableNotebookTableClipboardReq)
+
 	return cmd
 }
 

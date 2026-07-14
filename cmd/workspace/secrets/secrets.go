@@ -181,6 +181,10 @@ func newCreateScope() *cobra.Command {
 		fn(cmd, &createScopeReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createScopeReq)
+
 	return cmd
 }
 
@@ -280,6 +284,10 @@ func newDeleteAcl() *cobra.Command {
 		fn(cmd, &deleteAclReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &deleteAclReq)
+
 	return cmd
 }
 
@@ -372,6 +380,10 @@ func newDeleteScope() *cobra.Command {
 	for _, fn := range deleteScopeOverrides {
 		fn(cmd, &deleteScopeReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &deleteScopeReq)
 
 	return cmd
 }
@@ -470,6 +482,10 @@ func newDeleteSecret() *cobra.Command {
 	for _, fn := range deleteSecretOverrides {
 		fn(cmd, &deleteSecretReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &deleteSecretReq)
 
 	return cmd
 }
@@ -996,6 +1012,10 @@ func newPutAcl() *cobra.Command {
 	for _, fn := range putAclOverrides {
 		fn(cmd, &putAclReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &putAclReq)
 
 	return cmd
 }

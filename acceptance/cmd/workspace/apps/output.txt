@@ -94,6 +94,7 @@ Flags:
       --compute-min-instances int   Minimum number of app instances.
       --compute-size ComputeSize    Supported values: [LARGE, MEDIUM, XLARGE]
       --description string          The description of the app.
+      --generate-skeleton           Print a fillable JSON skeleton of the --json request body and exit.
   -h, --help                        help for update
       --json JSON                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
       --space string                Name of the space this app belongs to.

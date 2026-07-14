@@ -208,6 +208,10 @@ Update personalization request status.
 		fn(cmd, &updateReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateReq)
+
 	return cmd
 }
 

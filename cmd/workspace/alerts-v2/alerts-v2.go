@@ -162,6 +162,10 @@ Create an alert.
 		fn(cmd, &createAlertReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createAlertReq.Alert)
+
 	return cmd
 }
 
@@ -507,6 +511,10 @@ Update an alert.
 	for _, fn := range updateAlertOverrides {
 		fn(cmd, &updateAlertReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateAlertReq.Alert)
 
 	return cmd
 }

@@ -145,6 +145,10 @@ func newCreateOnlineStore() *cobra.Command {
 		fn(cmd, &createOnlineStoreReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createOnlineStoreReq.OnlineStore)
+
 	return cmd
 }
 
@@ -458,6 +462,10 @@ func newPublishTable() *cobra.Command {
 		fn(cmd, &publishTableReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &publishTableReq)
+
 	return cmd
 }
 
@@ -548,6 +556,10 @@ func newUpdateOnlineStore() *cobra.Command {
 	for _, fn := range updateOnlineStoreOverrides {
 		fn(cmd, &updateOnlineStoreReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateOnlineStoreReq.OnlineStore)
 
 	return cmd
 }

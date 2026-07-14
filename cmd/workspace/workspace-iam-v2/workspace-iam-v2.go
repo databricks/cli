@@ -150,6 +150,10 @@ func newCreateWorkspaceAssignmentDetailProxy() *cobra.Command {
 		fn(cmd, &createWorkspaceAssignmentDetailProxyReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createWorkspaceAssignmentDetailProxyReq.WorkspaceAssignmentDetail)
+
 	return cmd
 }
 
@@ -509,6 +513,10 @@ Resolve an external group in the Databricks account.
 		fn(cmd, &resolveGroupProxyReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &resolveGroupProxyReq)
+
 	return cmd
 }
 
@@ -596,6 +604,10 @@ Resolve an external service principal in the Databricks account.
 		fn(cmd, &resolveServicePrincipalProxyReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &resolveServicePrincipalProxyReq)
+
 	return cmd
 }
 
@@ -682,6 +694,10 @@ Resolve an external user in the Databricks account.
 	for _, fn := range resolveUserProxyOverrides {
 		fn(cmd, &resolveUserProxyReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &resolveUserProxyReq)
 
 	return cmd
 }
@@ -790,6 +806,10 @@ func newUpdateWorkspaceAssignmentDetailProxy() *cobra.Command {
 	for _, fn := range updateWorkspaceAssignmentDetailProxyOverrides {
 		fn(cmd, &updateWorkspaceAssignmentDetailProxyReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateWorkspaceAssignmentDetailProxyReq.WorkspaceAssignmentDetail)
 
 	return cmd
 }

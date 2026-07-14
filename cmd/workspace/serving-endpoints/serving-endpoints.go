@@ -246,6 +246,10 @@ func newCreate() *cobra.Command {
 		fn(cmd, &createReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createReq)
+
 	return cmd
 }
 
@@ -335,6 +339,10 @@ Create a new PT serving endpoint.`
 	for _, fn := range createProvisionedThroughputEndpointOverrides {
 		fn(cmd, &createProvisionedThroughputEndpointReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createProvisionedThroughputEndpointReq)
 
 	return cmd
 }
@@ -967,6 +975,10 @@ func newPatch() *cobra.Command {
 		fn(cmd, &patchReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &patchReq)
+
 	return cmd
 }
 
@@ -1045,6 +1057,10 @@ Update rate limits of a serving endpoint.
 	for _, fn := range putOverrides {
 		fn(cmd, &putReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &putReq)
 
 	return cmd
 }
@@ -1128,6 +1144,10 @@ func newPutAiGateway() *cobra.Command {
 	for _, fn := range putAiGatewayOverrides {
 		fn(cmd, &putAiGatewayReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &putAiGatewayReq)
 
 	return cmd
 }
@@ -1220,6 +1240,10 @@ func newQuery() *cobra.Command {
 		fn(cmd, &queryReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &queryReq)
+
 	return cmd
 }
 
@@ -1297,6 +1321,10 @@ func newSetPermissions() *cobra.Command {
 	for _, fn := range setPermissionsOverrides {
 		fn(cmd, &setPermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setPermissionsReq)
 
 	return cmd
 }
@@ -1398,6 +1426,10 @@ func newUpdateConfig() *cobra.Command {
 		fn(cmd, &updateConfigReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateConfigReq)
+
 	return cmd
 }
 
@@ -1475,6 +1507,10 @@ func newUpdateNotifications() *cobra.Command {
 		fn(cmd, &updateNotificationsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateNotificationsReq)
+
 	return cmd
 }
 
@@ -1551,6 +1587,10 @@ func newUpdatePermissions() *cobra.Command {
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updatePermissionsReq)
 
 	return cmd
 }
@@ -1649,6 +1689,10 @@ Update config of a PT serving endpoint.
 	for _, fn := range updateProvisionedThroughputEndpointConfigOverrides {
 		fn(cmd, &updateProvisionedThroughputEndpointConfigReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateProvisionedThroughputEndpointConfigReq)
 
 	return cmd
 }

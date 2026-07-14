@@ -259,6 +259,10 @@ func newInstall() *cobra.Command {
 		fn(cmd, &installReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &installReq)
+
 	return cmd
 }
 
@@ -326,6 +330,10 @@ func newUninstall() *cobra.Command {
 	for _, fn := range uninstallOverrides {
 		fn(cmd, &uninstallReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &uninstallReq)
 
 	return cmd
 }

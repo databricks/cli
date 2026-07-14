@@ -191,6 +191,10 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 		fn(cmd, &createWorkspaceBaseEnvironmentReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment)
+
 	return cmd
 }
 
@@ -715,6 +719,10 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
 		fn(cmd, &updateDefaultWorkspaceBaseEnvironmentReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment)
+
 	return cmd
 }
 
@@ -850,6 +858,10 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 	for _, fn := range updateWorkspaceBaseEnvironmentOverrides {
 		fn(cmd, &updateWorkspaceBaseEnvironmentReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment)
 
 	return cmd
 }

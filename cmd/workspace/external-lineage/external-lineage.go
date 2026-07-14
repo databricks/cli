@@ -152,6 +152,10 @@ Create an external lineage relationship.
 		fn(cmd, &createExternalLineageRelationshipReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createExternalLineageRelationshipReq.ExternalLineageRelationship)
+
 	return cmd
 }
 
@@ -220,6 +224,10 @@ Delete an external lineage relationship.
 	for _, fn := range deleteExternalLineageRelationshipOverrides {
 		fn(cmd, &deleteExternalLineageRelationshipReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &deleteExternalLineageRelationshipReq)
 
 	return cmd
 }
@@ -306,6 +314,10 @@ List external lineage relationships.
 	for _, fn := range listExternalLineageRelationshipsOverrides {
 		fn(cmd, &listExternalLineageRelationshipsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &listExternalLineageRelationshipsReq)
 
 	return cmd
 }
@@ -420,6 +432,10 @@ Update an external lineage relationship.
 	for _, fn := range updateExternalLineageRelationshipOverrides {
 		fn(cmd, &updateExternalLineageRelationshipReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateExternalLineageRelationshipReq.ExternalLineageRelationship)
 
 	return cmd
 }

@@ -134,6 +134,10 @@ Create a new group.
 		fn(cmd, &createReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createReq)
+
 	return cmd
 }
 
@@ -411,6 +415,10 @@ Update group details.
 		fn(cmd, &patchReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &patchReq)
+
 	return cmd
 }
 
@@ -494,6 +502,10 @@ Replace a group.
 	for _, fn := range updateOverrides {
 		fn(cmd, &updateReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateReq)
 
 	return cmd
 }

@@ -178,6 +178,10 @@ Create a secret.
 		fn(cmd, &createSecretReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createSecretReq.Secret)
+
 	return cmd
 }
 
@@ -527,6 +531,10 @@ Update a secret.
 	for _, fn := range updateSecretOverrides {
 		fn(cmd, &updateSecretReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateSecretReq.Secret)
 
 	return cmd
 }

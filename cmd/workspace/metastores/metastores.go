@@ -156,6 +156,10 @@ func newAssign() *cobra.Command {
 		fn(cmd, &assignReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &assignReq)
+
 	return cmd
 }
 
@@ -246,6 +250,10 @@ func newCreate() *cobra.Command {
 	for _, fn := range createOverrides {
 		fn(cmd, &createReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createReq)
 
 	return cmd
 }
@@ -687,6 +695,10 @@ func newUpdate() *cobra.Command {
 		fn(cmd, &updateReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateReq)
+
 	return cmd
 }
 
@@ -768,6 +780,10 @@ func newUpdateAssignment() *cobra.Command {
 	for _, fn := range updateAssignmentOverrides {
 		fn(cmd, &updateAssignmentReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateAssignmentReq)
 
 	return cmd
 }

@@ -136,6 +136,10 @@ func newCreate() *cobra.Command {
 		fn(cmd, &createReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createReq.Dashboard)
+
 	return cmd
 }
 
@@ -229,6 +233,10 @@ func newCreateSchedule() *cobra.Command {
 		fn(cmd, &createScheduleReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createScheduleReq.Schedule)
+
 	return cmd
 }
 
@@ -321,6 +329,10 @@ func newCreateSubscription() *cobra.Command {
 	for _, fn := range createSubscriptionOverrides {
 		fn(cmd, &createSubscriptionReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createSubscriptionReq.Subscription)
 
 	return cmd
 }
@@ -987,6 +999,10 @@ func newMigrate() *cobra.Command {
 		fn(cmd, &migrateReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &migrateReq)
+
 	return cmd
 }
 
@@ -1064,6 +1080,10 @@ func newPublish() *cobra.Command {
 		fn(cmd, &publishReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &publishReq)
+
 	return cmd
 }
 
@@ -1137,6 +1157,10 @@ func newRevert() *cobra.Command {
 	for _, fn := range revertOverrides {
 		fn(cmd, &revertReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &revertReq)
 
 	return cmd
 }
@@ -1335,6 +1359,10 @@ func newUpdate() *cobra.Command {
 		fn(cmd, &updateReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateReq.Dashboard)
+
 	return cmd
 }
 
@@ -1429,6 +1457,10 @@ func newUpdateSchedule() *cobra.Command {
 	for _, fn := range updateScheduleOverrides {
 		fn(cmd, &updateScheduleReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateScheduleReq.Schedule)
 
 	return cmd
 }

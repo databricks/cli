@@ -154,6 +154,10 @@ Create an example for a Knowledge Assistant.
 		fn(cmd, &createExampleReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createExampleReq.Example)
+
 	return cmd
 }
 
@@ -250,6 +254,10 @@ Create a Knowledge Assistant.
 	for _, fn := range createKnowledgeAssistantOverrides {
 		fn(cmd, &createKnowledgeAssistantReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createKnowledgeAssistantReq.KnowledgeAssistant)
 
 	return cmd
 }
@@ -358,6 +366,10 @@ Create a Knowledge Source.
 	for _, fn := range createKnowledgeSourceOverrides {
 		fn(cmd, &createKnowledgeSourceReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createKnowledgeSourceReq.KnowledgeSource)
 
 	return cmd
 }
@@ -1159,6 +1171,10 @@ Set knowledge assistant permissions.
 		fn(cmd, &setPermissionsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setPermissionsReq)
+
 	return cmd
 }
 
@@ -1319,6 +1335,10 @@ Update an example in a Knowledge Assistant.
 		fn(cmd, &updateExampleReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateExampleReq.Example)
+
 	return cmd
 }
 
@@ -1425,6 +1445,10 @@ Update a Knowledge Assistant.
 	for _, fn := range updateKnowledgeAssistantOverrides {
 		fn(cmd, &updateKnowledgeAssistantReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateKnowledgeAssistantReq.KnowledgeAssistant)
 
 	return cmd
 }
@@ -1541,6 +1565,10 @@ Update a Knowledge Source.
 		fn(cmd, &updateKnowledgeSourceReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateKnowledgeSourceReq.KnowledgeSource)
+
 	return cmd
 }
 
@@ -1619,6 +1647,10 @@ Update knowledge assistant permissions.
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updatePermissionsReq)
 
 	return cmd
 }

@@ -191,6 +191,10 @@ func newApproveTransitionRequest() *cobra.Command {
 		fn(cmd, &approveTransitionRequestReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &approveTransitionRequestReq)
+
 	return cmd
 }
 
@@ -284,6 +288,10 @@ func newCreateComment() *cobra.Command {
 		fn(cmd, &createCommentReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createCommentReq)
+
 	return cmd
 }
 
@@ -371,6 +379,10 @@ func newCreateModel() *cobra.Command {
 	for _, fn := range createModelOverrides {
 		fn(cmd, &createModelReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createModelReq)
 
 	return cmd
 }
@@ -463,6 +475,10 @@ func newCreateModelVersion() *cobra.Command {
 	for _, fn := range createModelVersionOverrides {
 		fn(cmd, &createModelVersionReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createModelVersionReq)
 
 	return cmd
 }
@@ -565,6 +581,10 @@ func newCreateTransitionRequest() *cobra.Command {
 		fn(cmd, &createTransitionRequestReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createTransitionRequestReq)
+
 	return cmd
 }
 
@@ -637,6 +657,10 @@ func newCreateWebhook() *cobra.Command {
 	for _, fn := range createWebhookOverrides {
 		fn(cmd, &createWebhookReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createWebhookReq)
 
 	return cmd
 }
@@ -1169,6 +1193,10 @@ func newGetLatestVersions() *cobra.Command {
 	for _, fn := range getLatestVersionsOverrides {
 		fn(cmd, &getLatestVersionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &getLatestVersionsReq)
 
 	return cmd
 }
@@ -1789,6 +1817,10 @@ func newRejectTransitionRequest() *cobra.Command {
 		fn(cmd, &rejectTransitionRequestReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &rejectTransitionRequestReq)
+
 	return cmd
 }
 
@@ -1873,6 +1905,10 @@ func newRenameModel() *cobra.Command {
 	for _, fn := range renameModelOverrides {
 		fn(cmd, &renameModelReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &renameModelReq)
 
 	return cmd
 }
@@ -2113,6 +2149,10 @@ func newSetModelTag() *cobra.Command {
 		fn(cmd, &setModelTagReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setModelTagReq)
+
 	return cmd
 }
 
@@ -2212,6 +2252,10 @@ func newSetModelVersionTag() *cobra.Command {
 		fn(cmd, &setModelVersionTagReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setModelVersionTagReq)
+
 	return cmd
 }
 
@@ -2289,6 +2333,10 @@ func newSetPermissions() *cobra.Command {
 	for _, fn := range setPermissionsOverrides {
 		fn(cmd, &setPermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setPermissionsReq)
 
 	return cmd
 }
@@ -2387,6 +2435,10 @@ func newTestRegistryWebhook() *cobra.Command {
 	for _, fn := range testRegistryWebhookOverrides {
 		fn(cmd, &testRegistryWebhookReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &testRegistryWebhookReq)
 
 	return cmd
 }
@@ -2502,6 +2554,10 @@ func newTransitionStage() *cobra.Command {
 		fn(cmd, &transitionStageReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &transitionStageReq)
+
 	return cmd
 }
 
@@ -2589,6 +2645,10 @@ func newUpdateComment() *cobra.Command {
 		fn(cmd, &updateCommentReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateCommentReq)
+
 	return cmd
 }
 
@@ -2673,6 +2733,10 @@ func newUpdateModel() *cobra.Command {
 	for _, fn := range updateModelOverrides {
 		fn(cmd, &updateModelReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateModelReq)
 
 	return cmd
 }
@@ -2763,6 +2827,10 @@ func newUpdateModelVersion() *cobra.Command {
 		fn(cmd, &updateModelVersionReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateModelVersionReq)
+
 	return cmd
 }
 
@@ -2839,6 +2907,10 @@ func newUpdatePermissions() *cobra.Command {
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updatePermissionsReq)
 
 	return cmd
 }
@@ -2928,6 +3000,10 @@ func newUpdateWebhook() *cobra.Command {
 	for _, fn := range updateWebhookOverrides {
 		fn(cmd, &updateWebhookReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateWebhookReq)
 
 	return cmd
 }

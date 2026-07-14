@@ -132,6 +132,10 @@ Create config for a catalog.
 		fn(cmd, &createCatalogConfigReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createCatalogConfigReq.CatalogConfig)
+
 	return cmd
 }
 
@@ -341,6 +345,10 @@ Update config for a catalog.
 	for _, fn := range updateCatalogConfigOverrides {
 		fn(cmd, &updateCatalogConfigReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateCatalogConfigReq.CatalogConfig)
 
 	return cmd
 }

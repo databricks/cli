@@ -268,6 +268,10 @@ Create a monitor.
 		fn(cmd, &createMonitorReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createMonitorReq.Monitor)
+
 	return cmd
 }
 
@@ -368,6 +372,10 @@ Create a refresh.
 	for _, fn := range createRefreshOverrides {
 		fn(cmd, &createRefreshReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createRefreshReq.Refresh)
 
 	return cmd
 }
@@ -1049,6 +1057,10 @@ Update a monitor.
 		fn(cmd, &updateMonitorReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateMonitorReq.Monitor)
+
 	return cmd
 }
 
@@ -1178,6 +1190,10 @@ Update a refresh.
 	for _, fn := range updateRefreshOverrides {
 		fn(cmd, &updateRefreshReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateRefreshReq.Refresh)
 
 	return cmd
 }

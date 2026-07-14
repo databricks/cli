@@ -173,6 +173,10 @@ func newChangeOwner() *cobra.Command {
 		fn(cmd, &changeOwnerReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &changeOwnerReq)
+
 	return cmd
 }
 
@@ -339,6 +343,10 @@ func newCreate() *cobra.Command {
 		fn(cmd, &createReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createReq)
+
 	return cmd
 }
 
@@ -456,6 +464,10 @@ func newDelete() *cobra.Command {
 	for _, fn := range deleteOverrides {
 		fn(cmd, &deleteReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &deleteReq)
 
 	return cmd
 }
@@ -621,6 +633,10 @@ func newEdit() *cobra.Command {
 		fn(cmd, &editReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &editReq)
+
 	return cmd
 }
 
@@ -742,6 +758,10 @@ func newEvents() *cobra.Command {
 	for _, fn := range eventsOverrides {
 		fn(cmd, &eventsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &eventsReq)
 
 	return cmd
 }
@@ -1226,6 +1246,10 @@ func newPermanentDelete() *cobra.Command {
 		fn(cmd, &permanentDeleteReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &permanentDeleteReq)
+
 	return cmd
 }
 
@@ -1321,6 +1345,10 @@ func newPin() *cobra.Command {
 	for _, fn := range pinOverrides {
 		fn(cmd, &pinReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &pinReq)
 
 	return cmd
 }
@@ -1442,6 +1470,10 @@ func newResize() *cobra.Command {
 		fn(cmd, &resizeReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &resizeReq)
+
 	return cmd
 }
 
@@ -1561,6 +1593,10 @@ func newRestart() *cobra.Command {
 		fn(cmd, &restartReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &restartReq)
+
 	return cmd
 }
 
@@ -1650,6 +1686,10 @@ func newSetPermissions() *cobra.Command {
 	for _, fn := range setPermissionsOverrides {
 		fn(cmd, &setPermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setPermissionsReq)
 
 	return cmd
 }
@@ -1818,6 +1858,10 @@ func newStart() *cobra.Command {
 		fn(cmd, &startReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &startReq)
+
 	return cmd
 }
 
@@ -1913,6 +1957,10 @@ func newUnpin() *cobra.Command {
 	for _, fn := range unpinOverrides {
 		fn(cmd, &unpinReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &unpinReq)
 
 	return cmd
 }
@@ -2042,6 +2090,10 @@ func newUpdate() *cobra.Command {
 		fn(cmd, &updateReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateReq)
+
 	return cmd
 }
 
@@ -2130,6 +2182,10 @@ func newUpdatePermissions() *cobra.Command {
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updatePermissionsReq)
 
 	return cmd
 }

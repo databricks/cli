@@ -139,6 +139,10 @@ func newCancelPendingClusterEnforcement() *cobra.Command {
 		fn(cmd, &cancelPendingClusterEnforcementReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &cancelPendingClusterEnforcementReq)
+
 	return cmd
 }
 
@@ -234,6 +238,10 @@ func newEnforceCompliance() *cobra.Command {
 	for _, fn := range enforceComplianceOverrides {
 		fn(cmd, &enforceComplianceReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &enforceComplianceReq)
 
 	return cmd
 }

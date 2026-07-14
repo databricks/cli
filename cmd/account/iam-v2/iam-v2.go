@@ -156,6 +156,10 @@ func newCreateWorkspaceAssignmentDetail() *cobra.Command {
 		fn(cmd, &createWorkspaceAssignmentDetailReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createWorkspaceAssignmentDetailReq.WorkspaceAssignmentDetail)
+
 	return cmd
 }
 
@@ -543,6 +547,10 @@ Resolve an external group in the Databricks account.
 		fn(cmd, &resolveGroupReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &resolveGroupReq)
+
 	return cmd
 }
 
@@ -630,6 +638,10 @@ Resolve an external service principal in the Databricks account.
 		fn(cmd, &resolveServicePrincipalReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &resolveServicePrincipalReq)
+
 	return cmd
 }
 
@@ -716,6 +728,10 @@ Resolve an external user in the Databricks account.
 	for _, fn := range resolveUserOverrides {
 		fn(cmd, &resolveUserReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &resolveUserReq)
 
 	return cmd
 }
@@ -831,6 +847,10 @@ func newUpdateWorkspaceAssignmentDetail() *cobra.Command {
 	for _, fn := range updateWorkspaceAssignmentDetailOverrides {
 		fn(cmd, &updateWorkspaceAssignmentDetailReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateWorkspaceAssignmentDetailReq.WorkspaceAssignmentDetail)
 
 	return cmd
 }

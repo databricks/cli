@@ -144,6 +144,10 @@ Create a tag assignment for an entity.
 		fn(cmd, &createTagAssignmentReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createTagAssignmentReq.TagAssignment)
+
 	return cmd
 }
 
@@ -457,6 +461,10 @@ Update a tag assignment for an entity.
 	for _, fn := range updateTagAssignmentOverrides {
 		fn(cmd, &updateTagAssignmentReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateTagAssignmentReq.TagAssignment)
 
 	return cmd
 }
