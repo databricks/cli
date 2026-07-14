@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -217,9 +218,15 @@ func pipConfPaths(ctx context.Context) []string {
 		return []string{
 			filepath.Join(home, "Library", "Application Support", "pip", "pip.conf"),
 			filepath.Join(home, ".config", "pip", "pip.conf"),
+			// Legacy per-user location pip still reads.
+			filepath.Join(home, ".pip", "pip.conf"),
 		}
 	default:
-		return []string{filepath.Join(home, ".config", "pip", "pip.conf")}
+		return []string{
+			filepath.Join(home, ".config", "pip", "pip.conf"),
+			// Legacy per-user location pip still reads.
+			filepath.Join(home, ".pip", "pip.conf"),
+		}
 	}
 }
 
@@ -252,11 +259,25 @@ func (m *uvManager) resolveIndexURL(ctx context.Context) string {
 	}
 	url := pipConfIndexURL(ctx)
 	if url != "" {
-		log.Debugf(ctx, "uv: using package index %s from pip.conf", url)
+		// Redact any embedded credentials: private PyPI proxies often carry
+		// userinfo (https://user:pass@host/simple) that must not reach debug logs.
+		log.Debugf(ctx, "uv: using package index %s from pip.conf", redactURLCredentials(url))
 	} else {
 		log.Debugf(ctx, "uv: no UV_INDEX_URL and no index-url in pip.conf; uv will use its default index (pypi.org)")
 	}
 	return url
+}
+
+// redactURLCredentials strips userinfo from a URL so it is safe to log. A value
+// that does not parse as a URL is returned unchanged (it carries no parseable
+// userinfo to leak).
+func redactURLCredentials(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil || u.User == nil {
+		return raw
+	}
+	u.User = nil
+	return u.String()
 }
 
 // uvFailure builds a PipelineError from a failed uv invocation, appending uv's

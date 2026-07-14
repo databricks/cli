@@ -86,6 +86,36 @@ func TestPipConfIndexURLReadsOSSpecificPath(t *testing.T) {
 	assert.Equal(t, "https://proxy.example/simple", pipConfIndexURL(ctx))
 }
 
+func TestRedactURLCredentials(t *testing.T) {
+	cases := []struct {
+		in   string
+		want string
+	}{
+		{"https://user:pass@proxy.example/simple", "https://proxy.example/simple"},
+		{"https://token@proxy.example/simple", "https://proxy.example/simple"},
+		{"https://proxy.example/simple", "https://proxy.example/simple"},
+		{"not a url", "not a url"},
+	}
+	for _, tc := range cases {
+		assert.Equal(t, tc.want, redactURLCredentials(tc.in))
+	}
+}
+
+func TestPipConfIndexURLReadsLegacyPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("legacy ~/.pip path is Unix/macOS only")
+	}
+	// The legacy ~/.pip/pip.conf location pip still reads must be honored when the
+	// newer per-user locations are absent.
+	tmp := t.TempDir()
+	legacy := filepath.Join(tmp, ".pip")
+	require.NoError(t, os.MkdirAll(legacy, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(legacy, "pip.conf"), []byte("[global]\nindex-url = https://legacy.example/simple\n"), 0o644))
+
+	ctx := env.WithUserHomeDir(t.Context(), tmp)
+	assert.Equal(t, "https://legacy.example/simple", pipConfIndexURL(ctx))
+}
+
 func TestPipConfIndexURL(t *testing.T) {
 	t.Run("returns_url_from_pip_conf", func(t *testing.T) {
 		tmp := t.TempDir()

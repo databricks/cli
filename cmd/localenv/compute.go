@@ -65,6 +65,14 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 		if sv == "" {
 			return "", false, "", fmt.Errorf("could not determine compute for job %d: first job cluster has no spark_version", id)
 		}
+		// Tasks can reference any job_cluster_key, so if the job's clusters do not
+		// all share one Spark version there is no single correct local environment.
+		// Refuse rather than silently provisioning for the first cluster.
+		for _, jc := range job.Settings.JobClusters[1:] {
+			if jc.NewCluster.SparkVersion != sv {
+				return "", false, "", fmt.Errorf("job %d has job clusters with differing spark_version; pass --cluster or --serverless explicitly to disambiguate", id)
+			}
+		}
 		return sv, false, sv, nil
 	}
 
