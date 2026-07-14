@@ -170,16 +170,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
+	// Resolve engine setting up front so a garbage DATABRICKS_BUNDLE_ENGINE
+	// value fails every bundle command instead of only the ones that read
+	// state. The resolver is cheap (config lookup + env var read); no reason
+	// to gate it on state-touching options.
+	requiredEngine, err := ResolveEngineSetting(ctx, b)
+	if err != nil {
+		return b, nil, err
+	}
+
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
-	var requiredEngine engine.EngineSetting
 	if shouldReadState {
-		var err error
-		requiredEngine, err = ResolveEngineSetting(ctx, b)
-		if err != nil {
-			return b, nil, err
-		}
-
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
 		if logdiag.HasError(ctx) {
