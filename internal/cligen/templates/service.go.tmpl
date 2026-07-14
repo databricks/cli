@@ -628,3 +628,12 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $field := .Field -}}
 	{{$method.CamelName}}Req{{ if (and $method.RequestBodyField (and (not $field.IsPath) (not $field.IsQuery))) }}.{{$method.RequestBodyField.PascalName}}{{end}}.{{$field.PascalName}}
 {{- end -}}
+
+{{- /* generate-skeleton registers the --generate-skeleton flag on a command that
+       accepts a --json request body. The skeleton target mirrors the --json
+       unmarshal target above (&{{.CamelName}}Req or its RequestBodyField), so the
+       printed template always matches what --json accepts. Only rendered for
+       methods where $canUseJson holds, which implies a non-legacy-empty request. */ -}}
+{{- define "generate-skeleton" -}}
+	root.RegisterGenerateSkeleton(cmd, &{{.CamelName}}Req{{ if .RequestBodyField }}.{{.RequestBodyField.PascalName}}{{ end }})
+{{- end -}}
