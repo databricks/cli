@@ -1,0 +1,11 @@
+RecordRequests = true
+
+Ignore = [
+    '.databricks',
+]
+
+# A non-git code_source uses plain_tar, whose archive is timestamp-named
+# (<dir>_YYYYMMDD_HHMMSS.tar.gz). Collapse it to a stable token.
+[[Repls]]
+Old = 'src_\d{8}_\d{6}\.tar\.gz'
+New = 'src_[SNAPSHOT].tar.gz'

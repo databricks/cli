@@ -1,5 +1,0 @@
-title "legacy accelerator type is rejected"
-musterr trace $CLI experimental air init --from legacy/train.yaml --output-dir legacy-out
-
-title "docker image is rejected"
-musterr trace $CLI experimental air init --from docker/train.yaml --output-dir docker-out

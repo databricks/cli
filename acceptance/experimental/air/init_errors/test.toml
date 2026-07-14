@@ -1,3 +1,0 @@
-# These invocations must fail; no bundle engine or workspace is needed.
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []

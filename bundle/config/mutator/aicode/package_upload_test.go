@@ -1,7 +1,6 @@
 package aicode
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"io/fs"
@@ -15,14 +14,18 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/cli/libs/vfs"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// recordingFiler records every Write and reports files as absent, so an upload
-// always happens and its target name is captured.
+// codeSnapshotDir is the workspace location code snapshots are uploaded to in
+// tests, derived from the fixture user below.
+const codeSnapshotDir = "/Workspace/Users/me@databricks.com/.air/repo_snapshots/src"
+
+// recordingFiler records every Write and reports files as present per exists, so a
+// test can both capture uploads and simulate a cache hit.
 type recordingFiler struct {
 	filer.Filer
 	written map[string][]byte
@@ -51,19 +54,18 @@ func (f *recordingFiler) Stat(ctx context.Context, p string) (fs.FileInfo, error
 
 type fakeFileInfo struct{ fs.FileInfo }
 
-func bundleWithCodeSource(t *testing.T, codeSourcePath string) (*bundle.Bundle, string) {
+// bundleWithCodeSource builds a bundle rooted at dir whose single AI Runtime task
+// points at codeSourcePath. The caller populates dir (and optionally inits a git
+// repo) before applying the mutator.
+func bundleWithCodeSource(t *testing.T, dir, codeSourcePath string) *bundle.Bundle {
 	t.Helper()
-	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "train.py"), []byte("print('x')"), 0o644))
-
 	b := &bundle.Bundle{
 		BundleRootPath: dir,
 		SyncRootPath:   dir,
 		Config: config.Root{
 			Bundle: config.Bundle{Target: "default"},
 			Workspace: config.Workspace{
-				ArtifactPath: "/Workspace/Users/me/.bundle/artifacts",
+				CurrentUser: &config.User{User: &iam.User{UserName: "me@databricks.com"}},
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -71,11 +73,8 @@ func bundleWithCodeSource(t *testing.T, codeSourcePath string) (*bundle.Bundle, 
 						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
-									TaskKey: "train",
-									AiRuntimeTask: &jobs.AiRuntimeTask{
-										Experiment:     "exp",
-										CodeSourcePath: codeSourcePath,
-									},
+									TaskKey:       "train",
+									AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp", CodeSourcePath: codeSourcePath},
 								},
 							},
 						},
@@ -85,45 +84,62 @@ func bundleWithCodeSource(t *testing.T, codeSourcePath string) (*bundle.Bundle, 
 		},
 	}
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
-	return b, dir
+	return b
 }
 
-func TestPackageAndUploadRewritesLocalCodeSource(t *testing.T) {
-	b, _ := bundleWithCodeSource(t, "src")
+// bundleWithPlainSrc creates a non-git src/ directory with one file and returns
+// the bundle (so packaging falls back to plain_tar).
+func bundleWithPlainSrc(t *testing.T, codeSourcePath string) *bundle.Bundle {
+	t.Helper()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "train.py"), []byte("print('x')"), 0o644))
+	return bundleWithCodeSource(t, dir, codeSourcePath)
+}
+
+func codeSourcePath(b *bundle.Bundle) string {
+	return b.Config.Resources.Jobs["train"].Tasks[0].AiRuntimeTask.CodeSourcePath
+}
+
+func TestPackageAndUploadPlainTarRewritesLocalCodeSource(t *testing.T) {
+	// Non-git src/ dir → plain_tar → timestamp-named archive.
+	b := bundleWithPlainSrc(t, "src")
 	f := newRecordingFiler()
 
 	diags := bundle.Apply(t.Context(), b, &packageAndUpload{client: f})
 	require.Empty(t, diags)
 
-	rewritten := b.Config.Resources.Jobs["train"].Tasks[0].AiRuntimeTask.CodeSourcePath
-	assert.Regexp(t, `^/Workspace/Users/me/\.bundle/artifacts/\.internal/src_[0-9a-f]{16}\.tar\.gz$`, rewritten)
+	assert.Regexp(t, `^`+codeSnapshotDir+`/src_\d{8}_\d{6}\.tar\.gz$`, codeSourcePath(b))
 
 	require.Len(t, f.written, 1)
 	for name := range f.written {
-		assert.Regexp(t, `^src_[0-9a-f]{16}\.tar\.gz$`, name)
+		assert.Regexp(t, `^src_\d{8}_\d{6}\.tar\.gz$`, name)
 	}
 }
 
 func TestPackageAndUploadSkipsRemoteCodeSource(t *testing.T) {
-	b, _ := bundleWithCodeSource(t, "/Volumes/main/default/code/existing.tar.gz")
+	b := bundleWithPlainSrc(t, "/Volumes/main/default/code/existing.tar.gz")
 	f := newRecordingFiler()
 
 	diags := bundle.Apply(t.Context(), b, &packageAndUpload{client: f})
 	require.Empty(t, diags)
 
-	assert.Equal(t, "/Volumes/main/default/code/existing.tar.gz",
-		b.Config.Resources.Jobs["train"].Tasks[0].AiRuntimeTask.CodeSourcePath)
+	assert.Equal(t, "/Volumes/main/default/code/existing.tar.gz", codeSourcePath(b))
 	assert.Empty(t, f.written, "remote code_source_path must not trigger an upload")
 }
 
-func TestPackageAndUploadSkipsUploadWhenArchiveExists(t *testing.T) {
-	b, _ := bundleWithCodeSource(t, "src")
+func TestPackageAndUploadGitArchiveCacheHitSkipsUpload(t *testing.T) {
+	// A clean git repo → git_archive → cache-key-named archive; when it already
+	// exists in the store, upload is skipped and the path is still rewritten.
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "train.py"), []byte("print('x')"), 0o644))
+	commit := initGitRepo(t, dir)
 
-	// Determine the archive name the mutator will compute, then mark it present.
-	var buf bytes.Buffer
-	sha, err := buildTarball(t.Context(), vfs.MustNew(filepath.Join(b.SyncRootPath, "src")), "src", &buf)
-	require.NoError(t, err)
-	archiveName := "src_" + sha[:16] + ".tar.gz"
+	b := bundleWithCodeSource(t, dir, "src")
+
+	cacheKey := computeSnapshotCacheKey(commit, nil)
+	archiveName := "src_" + cacheKey[:16] + ".tar.gz"
 
 	f := newRecordingFiler()
 	f.exists[archiveName] = true
@@ -131,7 +147,24 @@ func TestPackageAndUploadSkipsUploadWhenArchiveExists(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, &packageAndUpload{client: f})
 	require.Empty(t, diags)
 
-	assert.Empty(t, f.written, "existing archive must not be re-uploaded")
-	assert.Equal(t, "/Workspace/Users/me/.bundle/artifacts/.internal/"+archiveName,
-		b.Config.Resources.Jobs["train"].Tasks[0].AiRuntimeTask.CodeSourcePath)
+	assert.Empty(t, f.written, "existing git-archive snapshot must not be re-uploaded")
+	assert.Equal(t, codeSnapshotDir+"/"+archiveName, codeSourcePath(b))
+}
+
+func TestPackageAndUploadGitArchiveUploadsWhenAbsent(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "train.py"), []byte("print('x')"), 0o644))
+	commit := initGitRepo(t, dir)
+
+	b := bundleWithCodeSource(t, dir, "src")
+	cacheKey := computeSnapshotCacheKey(commit, nil)
+	archiveName := "src_" + cacheKey[:16] + ".tar.gz"
+
+	f := newRecordingFiler()
+	diags := bundle.Apply(t.Context(), b, &packageAndUpload{client: f})
+	require.Empty(t, diags)
+
+	require.Contains(t, f.written, archiveName, "git-archive snapshot must be uploaded when not cached")
+	assert.Equal(t, codeSnapshotDir+"/"+archiveName, codeSourcePath(b))
 }

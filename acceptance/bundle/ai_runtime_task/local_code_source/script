@@ -1,9 +1,0 @@
-trace $CLI bundle deploy
-
-title "Expecting the code snapshot tarball to be uploaded to artifact_path/.internal"
-trace jq .path < out.requests.txt | grep import-file | grep 'tar.gz' | sort
-
-title "Expecting the created job's code_source_path to point at the uploaded archive"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[0].ai_runtime_task.code_source_path' out.requests.txt
-
-rm out.requests.txt

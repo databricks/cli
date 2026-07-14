@@ -1,0 +1,28 @@
+# A committed, clean git repo makes the snapshot use git_archive (cacheable by the
+# commit SHA). Pinned commit dates keep the resolved HEAD SHA — and thus the cache
+# key baked into the tarball name — stable across runs.
+export GIT_AUTHOR_DATE="2020-01-01T00:00:00Z"
+export GIT_COMMITTER_DATE="2020-01-01T00:00:00Z"
+git-repo-init
+git add src
+git commit -qm 'Add code source'
+
+title "deploy packages the code source and rewrites code_source_path\n"
+trace $CLI bundle deploy
+
+title "the snapshot tarball is uploaded to the user's repo_snapshots cache\n"
+# The upload appears twice: WSFS import-file 404s until the parent dir exists, then
+# the filer mkdirs and retries. Collapse to the distinct path.
+jq -r 'select(.path | test("/import-file/.*/.air/repo_snapshots/src/src_")) | .path' out.requests.txt | sort -u
+
+title "the created job's code_source_path points at the uploaded archive\n"
+jq -r 'select(.path == "/api/2.2/jobs/create") | .body.tasks[0].ai_runtime_task.code_source_path' out.requests.txt
+
+rm out.requests.txt
+
+title "re-deploying the same commit is a cache hit: the tarball is not re-uploaded\n"
+trace $CLI bundle deploy
+echo -n "tarball uploads on redeploy: "
+jq -r 'select(.path | test("/import-file/.*/.air/repo_snapshots/src/src_")) | .path' out.requests.txt | wc -l | tr -d ' '
+
+rm out.requests.txt

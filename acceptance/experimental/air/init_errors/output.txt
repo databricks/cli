@@ -1,8 +1,0 @@
-
-=== legacy accelerator type is rejected
->>> [CLI] experimental air init --from legacy/train.yaml --output-dir legacy-out
-Error: compute.accelerator_type "a10" is not supported by ai_runtime_task (expected GPU_1xA10, GPU_1xH100, or GPU_8xH100)
-
-=== docker image is rejected
->>> [CLI] experimental air init --from docker/train.yaml --output-dir docker-out
-Error: environment.docker_image is not supported by ai_runtime_task; use environment.version and environment.dependencies instead

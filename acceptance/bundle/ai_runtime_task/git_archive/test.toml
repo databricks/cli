@@ -1,0 +1,13 @@
+RecordRequests = true
+
+Ignore = [
+    '.databricks',
+    '.git',
+]
+
+# git_archive names the tarball <dir>_<cachekey[:16]>.tar.gz, where the cache key
+# derives from the committed HEAD SHA. Collapse it to a stable token so output does
+# not depend on the commit SHA.
+[[Repls]]
+Old = 'src_[0-9a-f]{16}\.tar\.gz'
+New = 'src_[SNAPSHOT].tar.gz'
