@@ -1,0 +1,1 @@
+direct: the experimental `job_runs` resource now dedupes runs across deploy retries with an automatically computed `idempotency_token`, waits for the run to reach a terminal state, and exposes its output fields (e.g. `${resources.job_runs.<name>.state.result_state}`) for use by downstream resources.

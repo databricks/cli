@@ -985,7 +985,13 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitCreate != nil {
-		require.Equal(t, remote, remoteStateFromWaitCreate)
+		// WaitAfterCreate returns the settled remote, which may differ from the
+		// read taken right after DoCreate (a job run transitions from RUNNING to
+		// TERMINATED while we wait). Compare against a fresh read taken after the
+		// wait, which reflects that same settled state.
+		remotePostWaitCreate, err := adapter.DoRead(ctx, createdID)
+		require.NoError(t, err)
+		require.Equal(t, remotePostWaitCreate, remoteStateFromWaitCreate)
 	}
 
 	if adapter.HasDoUpdate() {
