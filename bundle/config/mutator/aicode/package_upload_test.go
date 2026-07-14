@@ -1,10 +1,6 @@
 package aicode
 
 import (
-	"context"
-	"io"
-	"io/fs"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -13,49 +9,20 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// codeSnapshotDir is the workspace location code snapshots are uploaded to in
-// tests, derived from the fixture user below.
-const codeSnapshotDir = "/Workspace/Users/me@databricks.com/.air/repo_snapshots/src"
-
-// recordingFiler records every Write and reports the names in exists as already
-// present, so a test can capture uploads and simulate a content cache hit.
-type recordingFiler struct {
-	filer.Filer
-	written map[string][]byte
-	exists  map[string]bool
-}
-
-func newRecordingFiler() *recordingFiler {
-	return &recordingFiler{written: map[string][]byte{}, exists: map[string]bool{}}
-}
-
-func (f *recordingFiler) Write(ctx context.Context, p string, r io.Reader, _ ...filer.WriteMode) error {
-	b, err := io.ReadAll(r)
-	if err != nil {
-		return err
-	}
-	f.written[p] = b
-	return nil
-}
-
-func (f *recordingFiler) Stat(ctx context.Context, p string) (fs.FileInfo, error) {
-	if f.exists[p] {
-		return fakeFileInfo{}, nil
-	}
-	return nil, fs.ErrNotExist
-}
-
-type fakeFileInfo struct{ fs.FileInfo }
-
 // bundleWithCodeSource builds a bundle rooted at dir whose single AI Runtime task
-// points at codeSourcePath. The caller populates dir before applying the mutator.
+// points at codeSourcePath.
+//
+// The end-to-end package/upload/rewrite behavior (local dir -> tarball -> upload ->
+// rewritten code_source_path) runs the full mutator pipeline (sync file list,
+// workspace filer) and is covered by acceptance tests under
+// acceptance/bundle/ai_runtime_task. This unit test covers only the pure
+// config-collection seam that does not touch the pipeline.
 func bundleWithCodeSource(t *testing.T, dir, codeSourcePath string) *bundle.Bundle {
 	t.Helper()
 	b := &bundle.Bundle{
@@ -86,65 +53,22 @@ func bundleWithCodeSource(t *testing.T, dir, codeSourcePath string) *bundle.Bund
 	return b
 }
 
-// bundleWithSrc creates a src/ directory with one file and returns the bundle.
-func bundleWithSrc(t *testing.T, codeSourcePath string) *bundle.Bundle {
-	t.Helper()
-	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "train.py"), []byte("print('x')"), 0o644))
-	return bundleWithCodeSource(t, dir, codeSourcePath)
-}
-
-func codeSourcePath(b *bundle.Bundle) string {
-	return b.Config.Resources.Jobs["train"].Tasks[0].AiRuntimeTask.CodeSourcePath
-}
-
-func TestPackageAndUploadRewritesLocalCodeSource(t *testing.T) {
-	b := bundleWithSrc(t, "src")
-	f := newRecordingFiler()
-
-	diags := bundle.Apply(t.Context(), b, &packageAndUpload{client: f})
+func TestCollectLocalCodeSourcesFindsLocalPath(t *testing.T) {
+	b := bundleWithCodeSource(t, t.TempDir(), "./src")
+	sources, diags := collectLocalCodeSources(b)
 	require.Empty(t, diags)
-
-	// The archive is named by the content hash of the reproducible tarball.
-	assert.Regexp(t, `^`+codeSnapshotDir+`/src_[0-9a-f]{16}\.tar\.gz$`, codeSourcePath(b))
-
-	require.Len(t, f.written, 1)
-	for name := range f.written {
-		assert.Regexp(t, `^src_[0-9a-f]{16}\.tar\.gz$`, name)
-	}
+	require.Len(t, sources, 1)
+	assert.Equal(t, "./src", sources[0].value)
 }
 
-func TestPackageAndUploadSkipsRemoteCodeSource(t *testing.T) {
-	b := bundleWithSrc(t, "/Volumes/main/default/code/existing.tar.gz")
-	f := newRecordingFiler()
-
-	diags := bundle.Apply(t.Context(), b, &packageAndUpload{client: f})
-	require.Empty(t, diags)
-
-	assert.Equal(t, "/Volumes/main/default/code/existing.tar.gz", codeSourcePath(b))
-	assert.Empty(t, f.written, "remote code_source_path must not trigger an upload")
-}
-
-func TestPackageAndUploadSkipsUploadWhenArchiveExists(t *testing.T) {
-	b := bundleWithSrc(t, "src")
-
-	// First deploy uploads and records the archive name.
-	f1 := newRecordingFiler()
-	require.Empty(t, bundle.Apply(t.Context(), b, &packageAndUpload{client: f1}))
-	require.Len(t, f1.written, 1)
-	var archiveName string
-	for name := range f1.written {
-		archiveName = name
+func TestCollectLocalCodeSourcesSkipsRemotePaths(t *testing.T) {
+	for _, remote := range []string{
+		"/Workspace/Users/me/code.tar.gz",
+		"/Volumes/main/default/code/existing.tar.gz",
+	} {
+		b := bundleWithCodeSource(t, t.TempDir(), remote)
+		sources, diags := collectLocalCodeSources(b)
+		require.Empty(t, diags)
+		assert.Empty(t, sources, "remote code_source_path %q must not be collected", remote)
 	}
-
-	// Second deploy against a store that already has that archive: no re-upload,
-	// same rewritten path (the content hash is stable).
-	b2 := bundleWithCodeSource(t, b.BundleRootPath, "src")
-	f2 := newRecordingFiler()
-	f2.exists[archiveName] = true
-	require.Empty(t, bundle.Apply(t.Context(), b2, &packageAndUpload{client: f2}))
-
-	assert.Empty(t, f2.written, "content-identical archive must not be re-uploaded")
-	assert.Equal(t, codeSnapshotDir+"/"+archiveName, codeSourcePath(b2))
 }

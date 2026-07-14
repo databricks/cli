@@ -203,6 +203,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		// remote archive. Runs after file/library upload (artifact_path resolved)
 		// and before RunPlan for both the direct and terraform engines.
 		aicode.PackageAndUpload(),
+		// Write a requirements.yaml next to each AI Runtime task's (already
+		// translated) command_path, derived from the job's serverless environment.
+		// The AI Runtime entry script reads it from command_path's directory to set
+		// up the workload environment.
+		aicode.SynthesizeRequirements(),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),

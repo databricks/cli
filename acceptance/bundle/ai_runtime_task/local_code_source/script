@@ -1,7 +1,9 @@
 # A local code_source_path is packaged into a content-addressed tarball
-# (<dir>_<hash>.tar.gz) and uploaded to the user's repo_snapshots directory.
+# (<dir>_<hash>.tar.gz) and uploaded to the user's repo_snapshots directory. The
+# command_path is translated to its synced workspace path, and a requirements.yaml
+# derived from the job's serverless environment is written beside it.
 
-title "deploy packages the local code source and rewrites code_source_path\n"
+title "deploy packages the local code source\n"
 trace $CLI bundle deploy
 
 title "the snapshot tarball is uploaded to the user's repo_snapshots directory\n"
@@ -9,8 +11,14 @@ title "the snapshot tarball is uploaded to the user's repo_snapshots directory\n
 # the filer mkdirs and retries. Collapse to the distinct path.
 jq -r 'select(.path | test("/import-file/.*/.air/repo_snapshots/src/src_")) | .path' out.requests.txt | sort -u
 
-title "the created job's code_source_path points at the uploaded archive\n"
+title "code_source_path points at the uploaded archive (no /Workspace prefix)\n"
 jq -r 'select(.path == "/api/2.2/jobs/create") | .body.tasks[0].ai_runtime_task.code_source_path' out.requests.txt
+
+title "command_path is translated to its absolute synced workspace path\n"
+jq -r 'select(.path == "/api/2.2/jobs/create") | .body.tasks[0].ai_runtime_task.deployments[0].command_path' out.requests.txt
+
+title "a requirements.yaml is written next to command_path\n"
+jq -r 'select(.path | test("/import-file/.*/files/src/requirements.yaml$")) | .path' out.requests.txt | sort -u
 
 rm out.requests.txt
 

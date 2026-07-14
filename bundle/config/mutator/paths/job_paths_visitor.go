@@ -46,6 +46,11 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 			TranslateModeFile,
 			noSkipRewrite,
 		},
+		{
+			base.Append(dyn.Key("ai_runtime_task"), dyn.Key("deployments"), dyn.AnyIndex(), dyn.Key("command_path")),
+			TranslateModeFile,
+			noSkipRewrite,
+		},
 	}
 }
 

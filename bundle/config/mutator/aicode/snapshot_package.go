@@ -3,7 +3,6 @@ package aicode
 import (
 	"archive/tar"
 	"compress/gzip"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/fileset"
-	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/vfs"
 )
 
@@ -30,29 +28,20 @@ var tarEpoch = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 // The AIR CLI excludes these; we match it so archives are identical on macOS and Linux.
 const appleDoublePrefix = "._"
 
-// buildCodeSnapshot writes a reproducible gzipped tarball of the directory at
-// codeDir to out and returns its SHA-256 hex digest. Every entry is prefixed with
-// prefix (the code directory's basename) so the archive expands to <prefix>/... —
-// matching the runtime's /databricks/code_source/<dir> extraction contract.
+// buildCodeSnapshot writes a reproducible gzipped tarball of the given files to out
+// and returns its SHA-256 hex digest. syncRoot is the root the files' Relative paths
+// are against (the bundle sync root); relBase is the code directory relative to that
+// root; prefix is the archive's top-level directory name. Each file at
+// "<relBase>/<rest>" is written to the archive as "<prefix>/<rest>", so the archive
+// expands to <prefix>/... — matching the runtime's /databricks/code_source/<dir>
+// extraction contract.
 //
-// The file list is gitignore-aware via [git.NewFileSetAtRoot]: it honors the code
-// directory's .gitignore (including nested .gitignore files) and always excludes
-// .git and .databricks — the same walker that backs bundle file sync. This is why
-// packaging a large tree only archives the tracked payload rather than venvs,
-// caches, and build outputs.
-func buildCodeSnapshot(ctx context.Context, codeDir vfs.Path, prefix string, out io.Writer) (string, error) {
-	fsys, err := git.NewFileSetAtRoot(ctx, codeDir)
-	if err != nil {
-		return "", err
-	}
-
-	files, err := fsys.Files()
-	if err != nil {
-		return "", err
-	}
-
+// The file list is produced by the bundle's sync walker, so it honors .gitignore
+// (including nested files) and the top-level sync.include/exclude globs — the same
+// filtering as bundle file sync.
+func buildCodeSnapshot(syncRoot vfs.Path, relBase string, files []fileset.File, prefix string, out io.Writer) (string, error) {
 	// Sort by relative path so the archive byte stream (and thus its hash) does not
-	// depend on filesystem walk order.
+	// depend on iteration order.
 	slices.SortFunc(files, func(a, b fileset.File) int {
 		return strings.Compare(a.Relative, b.Relative)
 	})
@@ -62,7 +51,7 @@ func buildCodeSnapshot(ctx context.Context, codeDir vfs.Path, prefix string, out
 	tw := tar.NewWriter(gzw)
 
 	for _, f := range files {
-		if err := addFileToArchive(tw, codeDir, f, prefix); err != nil {
+		if err := addFileToArchive(tw, syncRoot, relBase, f, prefix); err != nil {
 			return "", err
 		}
 	}
@@ -76,13 +65,25 @@ func buildCodeSnapshot(ctx context.Context, codeDir vfs.Path, prefix string, out
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func addFileToArchive(tw *tar.Writer, codeDir vfs.Path, f fileset.File, prefix string) error {
-	// fileset.File.Relative is slash-separated, so path.Base is correct here.
-	if strings.HasPrefix(path.Base(f.Relative), appleDoublePrefix) {
+func addFileToArchive(tw *tar.Writer, syncRoot vfs.Path, relBase string, f fileset.File, prefix string) error {
+	// f.Relative is relative to syncRoot and slash-separated. Re-base it under the
+	// code directory so the entry nests under the archive prefix.
+	rel := f.Relative
+	if relBase != "." {
+		trimmed, ok := strings.CutPrefix(rel, relBase+"/")
+		if !ok {
+			// Not under the code dir; the sync file list is scoped to it, so this
+			// should not happen, but skip defensively rather than mis-place a file.
+			return nil
+		}
+		rel = trimmed
+	}
+
+	if strings.HasPrefix(path.Base(rel), appleDoublePrefix) {
 		return nil
 	}
 
-	rc, err := codeDir.Open(f.Relative)
+	rc, err := syncRoot.Open(f.Relative)
 	if err != nil {
 		return fmt.Errorf("open %s: %w", f.Relative, err)
 	}
@@ -93,15 +94,15 @@ func addFileToArchive(tw *tar.Writer, codeDir vfs.Path, f fileset.File, prefix s
 		return fmt.Errorf("stat %s: %w", f.Relative, err)
 	}
 
-	// Only regular files are archived. The gitignore-aware walker never yields
-	// directories, and symlinks inside a code snapshot are out of scope.
+	// Only regular files are archived. The walker never yields directories, and
+	// symlinks inside a code snapshot are out of scope.
 	if !info.Mode().IsRegular() {
 		return nil
 	}
 
 	hdr := &tar.Header{
 		Typeflag: tar.TypeReg,
-		Name:     path.Join(prefix, f.Relative),
+		Name:     path.Join(prefix, rel),
 		Size:     info.Size(),
 		// Normalize permissions and zero the mtime so the archive is reproducible
 		// across machines. The runtime invokes code via an interpreter, not by
@@ -110,10 +111,10 @@ func addFileToArchive(tw *tar.Writer, codeDir vfs.Path, f fileset.File, prefix s
 		ModTime: tarEpoch,
 	}
 	if err := tw.WriteHeader(hdr); err != nil {
-		return fmt.Errorf("tar header for %s: %w", f.Relative, err)
+		return fmt.Errorf("tar header for %s: %w", rel, err)
 	}
 	if _, err := io.Copy(tw, rc); err != nil {
-		return fmt.Errorf("write %s: %w", f.Relative, err)
+		return fmt.Errorf("write %s: %w", rel, err)
 	}
 	return nil
 }

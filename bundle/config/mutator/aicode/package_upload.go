@@ -24,14 +24,17 @@ import (
 	"io/fs"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/vfs"
+	libsync "github.com/databricks/cli/libs/sync"
 )
 
 // codeSourcePatterns are the config locations of an AI Runtime task's
@@ -131,10 +134,22 @@ func (m *packageAndUpload) packageOne(ctx context.Context, b *bundle.Bundle, cs 
 	localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(cs.value))
 	dirName := filepath.Base(localDir)
 
+	// relBase is the code directory relative to the sync root, used both to scope the
+	// sync file list to this directory and to re-base archive entry names under it.
+	relBase, err := filepath.Rel(b.SyncRootPath, localDir)
+	if err != nil {
+		return "", fmt.Errorf("code_source_path %q: %w", cs.value, err)
+	}
+	relBase = filepath.ToSlash(relBase)
+
+	files, err := codeSourceFiles(ctx, b, relBase)
+	if err != nil {
+		return "", fmt.Errorf("failed to list files for code_source_path %q: %w", cs.value, err)
+	}
+
 	uploadPath := path.Join(userDir, repoSnapshotsSubdir, dirName)
 	client := m.client
 	if client == nil {
-		var err error
 		client, err = filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), uploadPath)
 		if err != nil {
 			return "", err
@@ -144,13 +159,17 @@ func (m *packageAndUpload) packageOne(ctx context.Context, b *bundle.Bundle, cs 
 	// Build the archive in memory so its content hash can name the upload; the hash
 	// is computed while gzipping, so this adds no extra pass over the files.
 	var buf bytes.Buffer
-	sha, err := buildCodeSnapshot(ctx, vfs.MustNew(localDir), dirName, &buf)
+	sha, err := buildCodeSnapshot(b.SyncRoot, relBase, files, dirName, &buf)
 	if err != nil {
 		return "", fmt.Errorf("failed to package code_source_path %q: %w", cs.value, err)
 	}
 
 	archiveName := fmt.Sprintf("%s_%s.tar.gz", dirName, sha[:16])
-	remotePath := path.Join(uploadPath, archiveName)
+	// The AI Runtime snapshot fetcher expects code_source_path in the legacy
+	// "/Users/..." form (no "/Workspace" prefix), matching the Python air CLI. The
+	// filer needs the "/Workspace/Users/..." form to upload, so upload to uploadPath
+	// but record the de-prefixed path on the task.
+	remotePath := strings.TrimPrefix(path.Join(uploadPath, archiveName), "/Workspace")
 
 	// The archive is reproducible, so a matching name means identical content is
 	// already uploaded: skip the upload and just point the config at it.
@@ -165,6 +184,20 @@ func (m *packageAndUpload) packageOne(ctx context.Context, b *bundle.Bundle, cs 
 		return "", fmt.Errorf("failed to upload code snapshot %q: %w", remotePath, err)
 	}
 	return remotePath, nil
+}
+
+// codeSourceFiles returns the files under the code directory (relBase, relative to
+// the sync root) that should go into the snapshot. It reuses the bundle's sync
+// options so the file list is filtered exactly like bundle file sync: .gitignore
+// aware, plus the top-level sync.include/exclude globs. Scoping Paths to relBase
+// restricts the walk (and the returned relative paths) to the code directory.
+func codeSourceFiles(ctx context.Context, b *bundle.Bundle, relBase string) ([]fileset.File, error) {
+	opts, err := files.GetSyncOptions(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+	opts.Paths = []string{relBase}
+	return libsync.GetFileList(ctx, *opts)
 }
 
 // userWorkspaceHome returns the current user's workspace home directory
