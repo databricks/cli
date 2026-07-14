@@ -1,0 +1,17 @@
+bundle:
+  name: select-$UNIQUE_NAME
+
+resources:
+  jobs:
+    bar:
+      name: bar-$UNIQUE_NAME
+
+    foo:
+      name: foo-$UNIQUE_NAME
+      tasks:
+        - task_key: run_bar
+          run_job_task:
+            job_id: ${resources.jobs.bar.id}
+
+    baz:
+      name: baz-$UNIQUE_NAME

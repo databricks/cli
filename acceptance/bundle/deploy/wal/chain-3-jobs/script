@@ -1,0 +1,24 @@
+# Linear chain: job_01 -> job_02 -> job_03
+# Let first 2 jobs/create succeed, then kill on the 3rd
+kill_after.py "POST /api/2.2/jobs/create" 2 1
+
+echo "=== First deploy (crashes on job_03) ==="
+trace errcode $CLI bundle deploy
+
+echo ""
+echo "=== WAL content after crash ==="
+jq -S . .databricks/bundle/default/resources.json.wal 2>/dev/null || echo "No WAL file"
+
+echo ""
+echo "=== Number of jobs saved in WAL ==="
+grep -c '"k":"resources.jobs' .databricks/bundle/default/resources.json.wal 2>/dev/null || echo "0"
+
+echo ""
+echo "=== Bundle summary (reads from WAL) ==="
+$CLI bundle summary
+
+echo ""
+echo "=== WAL after successful deploy ==="
+cat .databricks/bundle/default/resources.json.wal 2>/dev/null || echo "WAL deleted (expected)"
+
+replace_ids.py

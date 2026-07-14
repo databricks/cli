@@ -3,119 +3,62 @@ package phases
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
+	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 )
 
+var deployApprovalGroups = []approvalGroup{
+	{group: "schemas", message: deleteOrRecreateSchemaMessage, skipChildren: true},
+	{group: "pipelines", message: deleteOrRecreatePipelineMessage},
+	{group: "volumes", message: deleteOrRecreateVolumeMessage},
+	{group: "dashboards", message: deleteOrRecreateDashboardMessage},
+	{group: "database_instances", message: deleteOrRecreateDatabaseInstanceMessage},
+	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
+	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
+	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
+	{group: "postgres_databases", message: deleteOrRecreatePostgresDatabaseMessage},
+	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
+	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
+}
+
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
+
+	// Deletes of resources that are already gone remotely only clean up the state,
+	// so they don't count as destructive actions and need no approval.
+	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.Gone })
 
 	err := checkForPreventDestroy(b, actions)
 	if err != nil {
 		return false, err
 	}
 
-	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
-	schemaActions := filterGroup(actions, "schemas", types...)
-	pipelineActions := filterGroup(actions, "pipelines", types...)
-	volumeActions := filterGroup(actions, "volumes", types...)
-	dashboardActions := filterGroup(actions, "dashboards", types...)
-	databaseInstanceActions := filterGroup(actions, "database_instances", types...)
-	syncedDatabaseTableActions := filterGroup(actions, "synced_database_tables", types...)
-	postgresProjectActions := filterGroup(actions, "postgres_projects", types...)
-	postgresBranchActions := filterGroup(actions, "postgres_branches", types...)
-
-	// We don't need to display any prompts in this case.
-	if len(schemaActions) == 0 && len(pipelineActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 &&
-		len(databaseInstanceActions) == 0 && len(syncedDatabaseTableActions) == 0 &&
-		len(postgresProjectActions) == 0 && len(postgresBranchActions) == 0 {
+	total := logApprovalGroups(ctx, actions, deployApprovalGroups, false, deployplan.Recreate, deployplan.Delete)
+	if total == 0 {
+		// No destructive actions in any tracked group: skip the prompt.
 		return true, nil
-	}
-
-	// One or more UC schema resources will be deleted or recreated.
-	if len(schemaActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateSchemaMessage)
-		for _, action := range schemaActions {
-			if action.IsChildResource() {
-				continue
-			}
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more pipelines is being recreated.
-	if len(pipelineActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreatePipelineMessage)
-		for _, action := range pipelineActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more volumes is being recreated.
-	if len(volumeActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateVolumeMessage)
-		for _, action := range volumeActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more dashboards is being recreated.
-	if len(dashboardActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDashboardMessage)
-		for _, action := range dashboardActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more database instances is being deleted or recreated.
-	if len(databaseInstanceActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDatabaseInstanceMessage)
-		for _, action := range databaseInstanceActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more synced database tables is being deleted or recreated.
-	if len(syncedDatabaseTableActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateSyncedDatabaseTableMessage)
-		for _, action := range syncedDatabaseTableActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more Lakebase projects is being deleted or recreated.
-	if len(postgresProjectActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreatePostgresProjectMessage)
-		for _, action := range postgresProjectActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more Lakebase branches is being deleted or recreated.
-	if len(postgresBranchActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreatePostgresBranchMessage)
-		for _, action := range postgresBranchActions {
-			cmdio.Log(ctx, action)
-		}
 	}
 
 	if b.AutoApprove {
@@ -123,16 +66,13 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+		return false, errors.New("the deployment requires destructive actions, but the current console does not support prompting.\n" +
+			DataLossWarning + "\n" +
+			"To proceed, use --auto-approve after reviewing the plan above." + agent.AgentNotice())
 	}
 
 	cmdio.LogString(ctx, "")
-	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
-	if err != nil {
-		return false, err
-	}
-
-	return approved, nil
+	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
 func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) {
@@ -140,17 +80,27 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
+	// Apply resources and capture post-apply state.
+	// For direct: Finalize flushes the WAL to disk and returns the state;
+	// called even if Apply failed so partial progress is saved.
+	// For terraform: ParseResourcesState reads the file written by terraform.Apply.
+	var (
+		state statemgmt.ExportedResourcesMap
+		err   error
+	)
 	if targetEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
-		// Finalize state: write to disk even if deploy failed, so partial progress is saved.
-		// Skip for empty plans to avoid creating a state file when nothing was deployed.
-		if len(plan.Plan) > 0 {
-			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
-				logdiag.LogError(ctx, err)
-			}
-		}
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
+		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
+		// Capture the finalized state for deploy telemetry. It carries each
+		// resource's state-size in bytes (from the WAL replay Finalize just
+		// did), so telemetry needs no extra read or parse of the state file.
+		b.Metrics.ResourceState = state
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
+		state, err = terraform.ParseResourcesState(ctx, b)
+	}
+	if err != nil {
+		logdiag.LogError(ctx, err)
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
@@ -160,7 +110,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(targetEngine),
+		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
 		statemgmt.UploadStateForYamlSync(targetEngine),
@@ -168,6 +118,13 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
+	}
+
+	// Once the deploy is complete, dry-run the migration to the direct engine in
+	// memory and record the outcome in telemetry. It writes nothing and never
+	// fails the deploy.
+	if !targetEngine.IsDirect() && !logdiag.HasError(ctx) {
+		statemgmt.CheckDirectMigration(ctx, b)
 	}
 }
 
@@ -203,13 +160,42 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	uploadLibraries(ctx, b, libs)
+	immutable := b.IsImmutableFolder()
+	if immutable && !engine.IsDirect() {
+		logdiag.LogError(ctx, errors.New("experimental.immutable_folder is only supported with the direct deployment engine"))
+		return
+	}
+
+	if immutable {
+		// Upload all source files and built artifacts as a single immutable snapshot.
+		// snapshot.Upload() sets workspace.snapshot_path; the variable-resolution
+		// pass expands ${workspace.snapshot_path} placeholders written by translate_paths.
+		bundle.ApplySeqContext(ctx, b,
+			snapshot.Upload(),
+			mutator.ResolveVariableReferencesOnlyResources("workspace"),
+		)
+		if !logdiag.HasError(ctx) {
+			_, libDiags := libraries.ReplaceWithRemotePath(ctx, b)
+			for _, d := range libDiags {
+				logdiag.LogDiag(ctx, d)
+			}
+		}
+	} else {
+		uploadLibraries(ctx, b, libs)
+	}
+
 	if logdiag.HasError(ctx) {
 		return
 	}
 
+	if !immutable {
+		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
@@ -221,17 +207,39 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if plan != nil {
+	planFromFile := plan != nil
+	if plan == nil {
+		// State is already open for read by process.go (for direct engine)
+		plan = RunPlan(ctx, b, engine)
+	}
+
+	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
+	// writes a WAL header that only deployCore's Finalize commits or discards;
+	// returning past it without finalizing leaves a header-only WAL behind.
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	if engine.IsDirect() {
+		// Upgrade from read (opened by process.go) to write mode
+		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
+	if planFromFile {
 		// Initialize DeploymentBundle for applying the loaded plan
 		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
-	} else {
-		plan = RunPlan(ctx, b, engine)
 	}
 
+	// InitForApply receives ctx and could log a diagnostic without returning an
+	// error, so re-check before deploying. (UpgradeToWrite above takes no ctx and
+	// thus cannot log, so the earlier check is enough to guard the WAL open.)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -262,8 +270,14 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 			logdiag.LogError(ctx, err)
 			return nil
 		}
+		if len(b.Select) > 0 {
+			plan.FilterToSelected(b.Select)
+		}
 		return plan
 	}
+
+	// b.Select is rejected for the terraform engine in ProcessBundleRet, so it is
+	// never set here.
 
 	bundle.ApplySeqContext(ctx, b,
 		terraform.Interpolate(),

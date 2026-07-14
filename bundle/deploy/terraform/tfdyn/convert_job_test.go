@@ -8,8 +8,10 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -290,15 +292,59 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 	}, out.Job["my_job"])
 }
 
+func TestConvertJobFieldUnknownToTerraformSchema(t *testing.T) {
+	// autotermination_minutes is in the SDK job schema but not in the pinned
+	// Terraform provider schema; if a provider bump adds it, pick another such field.
+	src := resources.Job{
+		JobSettings: jobs.JobSettings{
+			Name: "my job",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "key",
+					NewCluster: &compute.ClusterSpec{
+						SparkVersion:           "10.4.x-scala2.12",
+						AutoterminationMinutes: 60,
+					},
+				},
+			},
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	out := schema.NewResources()
+	err = jobConverter{}.Convert(ctx, "my_job", vin, out)
+	require.NoError(t, err)
+
+	diags := logdiag.FlushCollected(ctx)
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Warning, diags[0].Severity)
+	assert.Equal(t, "unknown field: autotermination_minutes", diags[0].Summary)
+
+	assert.Equal(t, map[string]any{
+		"name": "my job",
+		"task": []any{
+			map[string]any{
+				"task_key": "key",
+				"new_cluster": map[string]any{
+					"spark_version": "10.4.x-scala2.12",
+				},
+			},
+		},
+	}, out.Job["my_job"])
+}
+
 // TestSupportedTypeTasksComplete verifies that supportedTypeTasks includes all task types with a Source field.
 func TestSupportedTypeTasksComplete(t *testing.T) {
 	// Use reflection to find all task types that have a Source field
 	taskType := reflect.TypeFor[jobs.Task]()
 	var tasksWithSource []string
 
-	for i := range taskType.NumField() {
-		field := taskType.Field(i)
-
+	for field := range taskType.Fields() {
 		// Skip non-task fields (like DependsOn, Libraries, etc.)
 		if !strings.HasSuffix(field.Name, "Task") {
 			continue
@@ -306,7 +352,7 @@ func TestSupportedTypeTasksComplete(t *testing.T) {
 
 		// Get the type of the task field (e.g., *NotebookTask)
 		taskFieldType := field.Type
-		if taskFieldType.Kind() == reflect.Ptr {
+		if taskFieldType.Kind() == reflect.Pointer {
 			taskFieldType = taskFieldType.Elem()
 		}
 
@@ -341,7 +387,7 @@ func TestSupportedTypeTasksComplete(t *testing.T) {
 // findSourceFieldsShallow searches for Source fields in a struct type, going only one level deep.
 // Returns a list of paths to Source fields (e.g., "" for direct Source, "file" for sql_task.file).
 func findSourceFieldsShallow(t reflect.Type) []string {
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 
@@ -351,9 +397,7 @@ func findSourceFieldsShallow(t reflect.Type) []string {
 
 	var paths []string
 
-	for i := range t.NumField() {
-		field := t.Field(i)
-
+	for field := range t.Fields() {
 		// Check if this field is named "Source"
 		if field.Name == "Source" {
 			paths = append(paths, "")
@@ -362,7 +406,7 @@ func findSourceFieldsShallow(t reflect.Type) []string {
 
 		// Only search one level deep in nested structs
 		fieldType := field.Type
-		if fieldType.Kind() == reflect.Ptr {
+		if fieldType.Kind() == reflect.Pointer {
 			fieldType = fieldType.Elem()
 		}
 

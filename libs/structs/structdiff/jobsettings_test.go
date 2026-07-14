@@ -476,7 +476,7 @@ func TestJobDiff(t *testing.T) {
 	require.GreaterOrEqual(t, len(changes), 75)
 	assert.Equal(t, "budget_policy_id", changes[0].Path.String())
 	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", changes[0].Old)
-	assert.Equal(t, "", changes[0].New)
+	assert.Empty(t, changes[0].New)
 	// Note: pause_status shows up as nil here because Continuous does not have ForceSendFields field
 	assert.Equal(t, "continuous.pause_status", changes[1].Path.String())
 	assert.Equal(t, jobs.PauseStatus("UNPAUSED"), changes[1].Old)
@@ -486,7 +486,7 @@ func TestJobDiff(t *testing.T) {
 	assert.Equal(t, jobs.JobDeploymentKind(""), changes[2].New)
 	assert.Equal(t, "deployment.metadata_file_path", changes[3].Path.String())
 	assert.Equal(t, "string", changes[3].Old)
-	assert.Equal(t, "", changes[3].New)
+	assert.Empty(t, changes[3].New)
 
 	changes, err = GetStructDiff(job, nils, nil)
 	require.NoError(t, err)
@@ -513,7 +513,7 @@ func TestJobDiff(t *testing.T) {
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(changes), 58)
 	assert.Equal(t, "budget_policy_id", changes[0].Path.String())
-	assert.Equal(t, "", changes[0].Old)
+	assert.Empty(t, changes[0].Old)
 	assert.Nil(t, changes[0].New)
 	assert.Equal(t, "continuous", changes[1].Path.String())
 	assert.Equal(t, jobs.Continuous{}, changes[1].Old)
@@ -522,6 +522,6 @@ func TestJobDiff(t *testing.T) {
 	// deployment.kind is "" in both
 
 	assert.Equal(t, "deployment.metadata_file_path", changes[2].Path.String())
-	assert.Equal(t, "", changes[2].Old)
+	assert.Empty(t, changes[2].Old)
 	assert.Nil(t, changes[2].New)
 }

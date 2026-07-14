@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/fileset"
@@ -55,6 +56,12 @@ type Metrics struct {
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
 	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+
+	// ResourceState is the direct engine's per-resource deployment state
+	// captured right after the deploy. It carries each resource's state-size in
+	// bytes so deploy telemetry can be derived without re-reading or re-parsing
+	// the state file. Nil for terraform deploys.
+	ResourceState resourcestate.ExportedResourcesMap
 }
 
 // SetBoolValue sets the value of a boolean metric.
@@ -109,6 +116,12 @@ type Bundle struct {
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
 
+	// includePatterns holds the raw (unexpanded) 'include' patterns from the root
+	// databricks.yml. ProcessRootIncludes overwrites Config.Include with the
+	// expanded list of loaded files, so this preserves the original patterns for
+	// IsFileIncluded. Set via SetIncludePatterns.
+	includePatterns []string
+
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
 
@@ -144,6 +157,10 @@ type Bundle struct {
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
 	AutoApprove bool
+
+	// Select contains resource selectors passed via --select flag.
+	// When non-empty, only the specified resources are included in deployment.
+	Select []string
 
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.
@@ -367,4 +384,9 @@ func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
 // StateFilenameConfigSnapshot returns (relative remote path, relative local path) for config snapshot state
 func (b *Bundle) StateFilenameConfigSnapshot(ctx context.Context) (string, string) {
 	return configSnapshotFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), configSnapshotFilename))
+}
+
+// IsImmutableFolder reports whether experimental.immutable_folder is enabled.
+func (b *Bundle) IsImmutableFolder() bool {
+	return b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder
 }

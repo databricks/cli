@@ -3,7 +3,7 @@
 package schema
 
 type ResourceSchemaProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceSchema struct {

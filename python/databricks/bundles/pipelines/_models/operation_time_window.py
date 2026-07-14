@@ -22,18 +22,18 @@ class OperationTimeWindow:
 
     start_hour: VariableOr[int]
     """
-    An integer between 0 and 23 denoting the start hour for the window in the 24-hour day.
+    [Public Preview] An integer between 0 and 23 denoting the start hour for the window in the 24-hour day.
     """
 
     days_of_week: VariableOrList[DayOfWeek] = field(default_factory=list)
     """
-    Days of week in which the window is allowed to happen
+    [Public Preview] Days of week in which the window is allowed to happen
     If not specified all days of the week will be used.
     """
 
     time_zone_id: VariableOrOptional[str] = None
     """
-    Time zone id of window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
+    [Public Preview] Time zone id of window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
     If not specified, UTC will be used.
     """
 
@@ -50,18 +50,18 @@ class OperationTimeWindowDict(TypedDict, total=False):
 
     start_hour: VariableOr[int]
     """
-    An integer between 0 and 23 denoting the start hour for the window in the 24-hour day.
+    [Public Preview] An integer between 0 and 23 denoting the start hour for the window in the 24-hour day.
     """
 
     days_of_week: VariableOrList[DayOfWeekParam]
     """
-    Days of week in which the window is allowed to happen
+    [Public Preview] Days of week in which the window is allowed to happen
     If not specified all days of the week will be used.
     """
 
     time_zone_id: VariableOrOptional[str]
     """
-    Time zone id of window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
+    [Public Preview] Time zone id of window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
     If not specified, UTC will be used.
     """
 

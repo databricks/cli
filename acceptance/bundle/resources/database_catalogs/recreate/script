@@ -1,0 +1,22 @@
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl | sed "s/DBNAME_PLACEHOLDER/my_database/" > databricks.yml
+
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Change an immutable catalog field: no update API, so the plan recreates it"
+sed "s/my_database/my_database_v2/" databricks.yml > databricks.yml.new
+mv databricks.yml.new databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+
+# The change must be a DELETE of the old catalog plus a POST creating the new
+# one. A PATCH would return 501 (the bug this guards against).
+jq --sort-keys 'select(.method != "GET" and (.path | contains("/database/catalogs")))' < out.requests.txt > out.requests.recreate.txt
+rm -f out.requests.txt

@@ -3,7 +3,7 @@
 package schema
 
 type ResourceDbfsFileProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceDbfsFile struct {

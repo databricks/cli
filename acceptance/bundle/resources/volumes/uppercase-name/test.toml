@@ -1,0 +1,12 @@
+Cloud = true
+RequiresUnityCatalog = true
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
+
+# TF provider fails with "inconsistent final plan" when schema_name contains
+# uppercase letters that UC normalizes to lowercase; exclude from cloud runs.
+[EnvMatrixExclude]
+no_terraform_on_cloud = ["CONFIG_Cloud=true", "DATABRICKS_BUNDLE_ENGINE=terraform"]

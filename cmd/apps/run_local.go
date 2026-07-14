@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,7 @@ const SHUTDOWN_TIMEOUT = 15 * time.Second
 func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int) (*runlocal.Config, *runlocal.AppSpec, error) {
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
-	workspaceID, err := w.CurrentWorkspaceID(ctx)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -116,7 +117,7 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 		return err
 	}
 
-	me, err := w.CurrentUser.Me(ctx)
+	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return err
 	}
@@ -126,9 +127,15 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 	}
 
 	proxyAddr := fmt.Sprintf("localhost:%d", port)
+	// Bind synchronously so a taken port fails the command instead of only printing an error from the goroutine.
+	ln, err := proxy.Listen(proxyAddr)
+	if err != nil {
+		return fmt.Errorf("failed to start app proxy: %w", err)
+	}
+
+	cmdio.LogString(ctx, "To access your app go to http://"+proxyAddr)
 	go func() {
-		cmdio.LogString(ctx, "To access your app go to http://"+proxyAddr)
-		err := proxy.ListenAndServe(proxyAddr)
+		err := proxy.Serve(ln)
 		if err != nil {
 			cmd.PrintErrln(err)
 		}
@@ -139,6 +146,12 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 	}
 
 	return nil
+}
+
+func killAppProcess(appCmd *exec.Cmd) {
+	_ = appCmd.Process.Kill()
+	// Reap the process so it doesn't linger as a zombie until the CLI exits.
+	_ = appCmd.Wait()
 }
 
 // SIGTERM (not supported on Windows) and SIGINT (Ctrl+C, supported cross-platform)
@@ -225,6 +238,7 @@ func newRunLocal() *cobra.Command {
 
 		err = setupProxy(ctx, cmd, config, w, port, debug)
 		if err != nil {
+			killAppProcess(appCmd)
 			return err
 		}
 

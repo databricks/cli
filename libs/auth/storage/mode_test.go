@@ -41,7 +41,7 @@ func TestResolveStorageMode(t *testing.T) {
 	}{
 		{
 			name: "default when nothing is set",
-			want: StorageModePlaintext,
+			want: StorageModeSecure,
 		},
 		{
 			name:       "override wins over env and config",
@@ -63,8 +63,8 @@ func TestResolveStorageMode(t *testing.T) {
 		},
 		{
 			name:       "config sets mode when env and override unset",
-			configBody: "[__settings__]\nauth_storage = secure\n",
-			want:       StorageModeSecure,
+			configBody: "[__settings__]\nauth_storage = plaintext\n",
+			want:       StorageModePlaintext,
 		},
 		{
 			name:     "env value is case-insensitive and trimmed",
@@ -127,4 +127,85 @@ func TestResolveStorageMode_SkipsConfigReadWhenOverrideOrEnvSet(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, StorageModeSecure, got)
 	})
+}
+
+func TestResolveStorageModeWithSource(t *testing.T) {
+	cases := []struct {
+		name       string
+		override   StorageMode
+		envValue   string
+		configBody string
+		wantMode   StorageMode
+		wantSource StorageSource
+		wantErrSub string
+	}{
+		{
+			name:       "default",
+			wantMode:   StorageModeSecure,
+			wantSource: StorageSourceDefault,
+		},
+		{
+			name:       "override",
+			override:   StorageModePlaintext,
+			wantMode:   StorageModePlaintext,
+			wantSource: StorageSourceOverride,
+		},
+		{
+			name:       "env",
+			envValue:   "plaintext",
+			wantMode:   StorageModePlaintext,
+			wantSource: StorageSourceEnvVar,
+		},
+		{
+			name:       "config",
+			configBody: "[__settings__]\nauth_storage = secure\n",
+			wantMode:   StorageModeSecure,
+			wantSource: StorageSourceConfig,
+		},
+		{
+			name:       "invalid env is rejected",
+			envValue:   "bogus",
+			wantErrSub: "DATABRICKS_AUTH_STORAGE",
+		},
+		{
+			name:       "invalid config value is rejected",
+			configBody: "[__settings__]\nauth_storage = bogus\n",
+			wantErrSub: "auth_storage",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
+			if tc.configBody != "" {
+				require.NoError(t, os.WriteFile(cfgPath, []byte(tc.configBody), 0o600))
+			}
+			t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+			t.Setenv(EnvVar, tc.envValue)
+
+			mode, source, err := ResolveStorageModeWithSource(t.Context(), tc.override)
+			if tc.wantErrSub != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErrSub)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantMode, mode)
+			assert.Equal(t, tc.wantSource, source)
+		})
+	}
+}
+
+func TestStorageSource_Explicit(t *testing.T) {
+	assert.False(t, StorageSourceDefault.Explicit())
+	assert.True(t, StorageSourceOverride.Explicit())
+	assert.True(t, StorageSourceEnvVar.Explicit())
+	assert.True(t, StorageSourceConfig.Explicit())
+}
+
+func TestStorageSource_String(t *testing.T) {
+	assert.Equal(t, "default", StorageSourceDefault.String())
+	assert.Equal(t, "command-line override", StorageSourceOverride.String())
+	assert.Equal(t, "DATABRICKS_AUTH_STORAGE environment variable", StorageSourceEnvVar.String())
+	assert.Equal(t, "auth_storage in [__settings__] section of config file", StorageSourceConfig.String())
 }

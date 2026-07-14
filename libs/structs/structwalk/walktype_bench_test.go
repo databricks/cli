@@ -21,8 +21,7 @@ func countFields(typ reflect.Type) (int, error) {
 func benchmarkWalkType(b *testing.B, tt reflect.Type) {
 	total := 0
 
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		count, err := countFields(tt)
 		if err != nil {
 			b.Fatalf("WalkType failed: %v", err)
@@ -30,7 +29,6 @@ func benchmarkWalkType(b *testing.B, tt reflect.Type) {
 		total += count
 	}
 
-	b.StopTimer()
 	// Root now correctly includes embedded struct fields, so it has many more fields than JobSettings
 	// (3,487 vs 533) because it contains JobSettings plus other resource types and config fields
 	b.Logf("Counted fields in %s: %d (%d/%d)", tt, total/b.N, total, b.N)

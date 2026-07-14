@@ -8,7 +8,7 @@ type ResourceGrantsGrant struct {
 }
 
 type ResourceGrantsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceGrants struct {

@@ -15,6 +15,6 @@ To get started, go to the `transformations` folder -- most of the relevant sourc
 * Take a look at the sample called "sample_trips_my_python_project.py" to get familiar with the syntax.
   Read more about the syntax at https://docs.databricks.com/dlt/python-ref.html.
 * If you're using the workspace UI, use `Run file` to run and preview a single transformation.
-* If you're using the CLI, use `databricks bundle run my_python_project_etl --select sample_trips_my_python_project` to run a single transformation.
+* If you're using the CLI, use `databricks bundle run my_python_project_etl --refresh sample_trips_my_python_project` to run a single transformation.
 
 For more tutorials and reference material, see https://docs.databricks.com/dlt.

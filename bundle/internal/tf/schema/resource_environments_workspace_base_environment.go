@@ -3,7 +3,12 @@
 package schema
 
 type ResourceEnvironmentsWorkspaceBaseEnvironmentProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
+type ResourceEnvironmentsWorkspaceBaseEnvironmentSpec struct {
+	Dependencies       []string `json:"dependencies,omitempty"`
+	EnvironmentVersion string   `json:"environment_version,omitempty"`
 }
 
 type ResourceEnvironmentsWorkspaceBaseEnvironment struct {
@@ -18,6 +23,7 @@ type ResourceEnvironmentsWorkspaceBaseEnvironment struct {
 	Message                      string                                                      `json:"message,omitempty"`
 	Name                         string                                                      `json:"name,omitempty"`
 	ProviderConfig               *ResourceEnvironmentsWorkspaceBaseEnvironmentProviderConfig `json:"provider_config,omitempty"`
+	Spec                         *ResourceEnvironmentsWorkspaceBaseEnvironmentSpec           `json:"spec,omitempty"`
 	Status                       string                                                      `json:"status,omitempty"`
 	UpdateTime                   string                                                      `json:"update_time,omitempty"`
 	WorkspaceBaseEnvironmentId   string                                                      `json:"workspace_base_environment_id,omitempty"`

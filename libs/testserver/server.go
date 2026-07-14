@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,11 +18,30 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/testserver/testsql"
 )
 
 const testPidKey = "test-pid"
 
 var testPidRegex = regexp.MustCompile(testPidKey + `/(\d+)`)
+
+// IsLocalhostProbe reports whether r is an external port-classification probe
+// rather than traffic from the CLI-under-test or its helper scripts.
+//
+// Some Databricks-internal development environments run a port watcher that
+// auto-forwards every new localhost listener and probes it to decide whether it
+// speaks HTTP or HTTPS, connecting back and sending `HEAD / HTTP/1.0` with
+// `Host: localhost`. All legitimate test traffic is configured against
+// 127.0.0.1:PORT, so the Host is the reliable discriminator: a request whose
+// host is bare "localhost" never originates from the test. The method and path
+// checks keep the match tight so a genuinely misdirected request still surfaces.
+func IsLocalhostProbe(r *http.Request) bool {
+	host := r.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	return host == "localhost" && r.Method == http.MethodHead && r.URL.Path == "/"
+}
 
 func ExtractPidFromHeaders(headers http.Header) int {
 	ua := headers.Get("User-Agent")
@@ -46,6 +66,11 @@ type Server struct {
 	fakeOidc       *FakeOidc
 	mu             sync.Mutex
 
+	kills  *killRules
+	faults *FaultRules
+
+	sqlHandler *testsql.Handler
+
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
 }
@@ -58,6 +83,7 @@ type Request struct {
 	Vars      map[string]string
 	Workspace *FakeWorkspace
 	Context   context.Context
+	Token     string
 }
 
 type Response struct {
@@ -200,7 +226,20 @@ func getHeaders(value []byte) http.Header {
 
 func New(t testutil.TestingT) *Server {
 	router := NewRouter()
-	server := httptest.NewServer(router)
+	kills := newKillRules()
+	faults := NewFaultRules()
+
+	// Wrap the router so kill rules fire for ALL requests, including those with
+	// no registered handler that would otherwise bypass serve() entirely.
+	killMiddleware := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := getToken(r)
+		if kills.check(t, r.Method, r.URL.Path, token, r.Header) {
+			return
+		}
+		router.ServeHTTP(w, r)
+	})
+
+	server := httptest.NewServer(killMiddleware)
 	t.Cleanup(server.Close)
 
 	s := &Server{
@@ -209,6 +248,9 @@ func New(t testutil.TestingT) *Server {
 		t:              t,
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 		fakeOidc:       &FakeOidc{url: server.URL},
+		kills:          kills,
+		faults:         faults,
+		sqlHandler:     testsql.New(),
 	}
 	router.Dispatch = s.serve
 
@@ -220,6 +262,13 @@ func New(t testutil.TestingT) *Server {
 
 	// Set up the not found handler as fallback
 	notFoundFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Answer external port-classification probes benignly instead of failing
+		// the test with a spurious "No handler" error. See IsLocalhostProbe.
+		if IsLocalhostProbe(r) {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		pattern := r.Method + " " + r.URL.Path
 		bodyBytes, err := io.ReadAll(r.Body)
 		var body string
@@ -258,6 +307,10 @@ Response.Body = '<response body here>'
 	})
 	router.NotFound = notFoundFunc
 
+	// Register test-only endpoints for setting up kill and fault rules from scripts.
+	s.Handle("POST", "/__testserver/kill", killEndpointHandler(s.kills))
+	s.Handle("POST", "/__testserver/fault", faultEndpointHandler(s.faults))
+
 	// Register a default handler for the SDK's host metadata discovery endpoint.
 	// The SDK resolves this during config initialization (as of v0.126.0) to
 	// determine workspace/account IDs, cloud, and OIDC endpoints. Without this
@@ -273,28 +326,45 @@ Response.Body = '<response body here>'
 	return s
 }
 
+// workspaceKeyForToken strips the identity prefix so a test's user, primary SP,
+// and guest tokens resolve to the same FakeWorkspace and share state. The uuid
+// suffix keeps distinct tests isolated.
+func workspaceKeyForToken(token string) string {
+	for _, prefix := range []string{UserNameTokenPrefix, ServicePrincipalTokenPrefix, GuestServicePrincipalTokenPrefix} {
+		if s, ok := strings.CutPrefix(token, prefix); ok {
+			return s
+		}
+	}
+	return token
+}
+
 func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	if token == "" {
 		return nil
 	}
 
+	key := workspaceKeyForToken(token)
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, ok := s.fakeWorkspaces[token]; !ok {
-		s.fakeWorkspaces[token] = NewFakeWorkspace(s.URL, token)
+	if _, ok := s.fakeWorkspaces[key]; !ok {
+		s.fakeWorkspaces[key] = NewFakeWorkspace(s.URL, token)
 	}
 
-	return s.fakeWorkspaces[token]
+	return s.fakeWorkspaces[key]
 }
 
 func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFunc, vars map[string]string) {
+	token := getToken(r)
+
 	// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
 	// it's own fake fakeWorkspace to avoid interference between tests.
-	fakeWorkspace := s.getWorkspaceForToken(getToken(r))
+	fakeWorkspace := s.getWorkspaceForToken(token)
 
 	request := NewRequest(s.t, r, fakeWorkspace)
 	request.Vars = vars
+	request.Token = token
 
 	if s.RequestCallback != nil {
 		s.RequestCallback(&request)
@@ -302,7 +372,13 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 
 	var resp EncodedResponse
 
-	if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+	if rule := s.faults.Check(r.Method, r.URL.Path, token); rule != nil {
+		resp = EncodedResponse{
+			StatusCode: rule.StatusCode,
+			Body:       []byte(rule.Body),
+			Headers:    getJsonHeaders(),
+		}
+	} else if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
 		resp = EncodedResponse{
 			StatusCode: 500,
 			Body:       []byte("INJECTED"),
@@ -346,7 +422,7 @@ func isNil(i any) bool {
 	}
 	v := reflect.ValueOf(i)
 	switch v.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Slice:
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.Interface, reflect.Slice:
 		return v.IsNil()
 	default:
 		return false

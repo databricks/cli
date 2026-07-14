@@ -3,6 +3,7 @@
 package jobs
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -43,6 +44,10 @@ func New() *cobra.Command {
 		GroupID: "lakeflow",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCancelAllRuns())
@@ -102,6 +107,8 @@ func newCancelAllRuns() *cobra.Command {
   doesn't prevent new runs from being started.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -179,12 +186,14 @@ func newCancelRun() *cobra.Command {
     RUN_ID: This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -223,7 +232,7 @@ func newCancelRun() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have this field is required")
+				return errors.New("expected to have this field is required")
 			}
 			_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
 			if err != nil {
@@ -292,6 +301,8 @@ func newCreate() *cobra.Command {
 	cmd.Long = `Create a new job.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -310,7 +321,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Jobs.Create(ctx, createReq)
@@ -360,12 +371,14 @@ func newDelete() *cobra.Command {
     JOB_ID: The canonical identifier of the job to delete. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -404,7 +417,7 @@ func newDelete() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the job to delete")
+				return errors.New("expected to have the canonical identifier of the job to delete")
 			}
 			_, err = fmt.Sscan(args[0], &deleteReq.JobId)
 			if err != nil {
@@ -459,12 +472,14 @@ func newDeleteRun() *cobra.Command {
     RUN_ID: ID of the run to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -503,7 +518,7 @@ func newDeleteRun() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have id of the run to delete")
+				return errors.New("expected to have id of the run to delete")
 			}
 			_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
 			if err != nil {
@@ -557,6 +572,8 @@ func newExportRun() *cobra.Command {
     RUN_ID: The canonical identifier for the run. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -578,7 +595,7 @@ func newExportRun() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier for the run")
+			return errors.New("expected to have the canonical identifier for the run")
 		}
 		_, err = fmt.Sscan(args[0], &exportRunReq.RunId)
 		if err != nil {
@@ -619,6 +636,7 @@ func newGet() *cobra.Command {
 
 	var getReq jobs.GetJobRequest
 
+	cmd.Flags().BoolVar(&getReq.IncludeTriggerState, "include-trigger-state", getReq.IncludeTriggerState, `Flag that indicates that trigger state should be included in the response.`)
 	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Use next_page_token returned from the previous GetJob response to request the next page of the job's array properties.`)
 
 	cmd.Use = "get JOB_ID"
@@ -641,6 +659,8 @@ func newGet() *cobra.Command {
       field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -662,7 +682,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the job to retrieve information about")
+			return errors.New("expected to have the canonical identifier of the job to retrieve information about")
 		}
 		_, err = fmt.Sscan(args[0], &getReq.JobId)
 		if err != nil {
@@ -713,6 +733,8 @@ func newGetPermissionLevels() *cobra.Command {
     JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -734,7 +756,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.JobId = args[0]
 
@@ -783,6 +805,8 @@ func newGetPermissions() *cobra.Command {
     JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -804,7 +828,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		getPermissionsReq.JobId = args[0]
 
@@ -866,6 +890,8 @@ func newGetRun() *cobra.Command {
       This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -887,7 +913,7 @@ func newGetRun() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
+			return errors.New("expected to have the canonical identifier of the run for which to retrieve the metadata")
 		}
 		_, err = fmt.Sscan(args[0], &getRunReq.RunId)
 		if err != nil {
@@ -947,6 +973,8 @@ func newGetRunOutput() *cobra.Command {
     RUN_ID: The canonical identifier for the run.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -968,7 +996,7 @@ func newGetRunOutput() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier for the run")
+			return errors.New("expected to have the canonical identifier for the run")
 		}
 		_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
 		if err != nil {
@@ -1033,6 +1061,8 @@ func newList() *cobra.Command {
   Retrieves a list of jobs.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1110,6 +1140,8 @@ func newListRuns() *cobra.Command {
   List runs in descending order by start time.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1194,12 +1226,14 @@ func newRepairRun() *cobra.Command {
     RUN_ID: The job run ID of the run to repair. The run must not be in progress.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1238,7 +1272,7 @@ func newRepairRun() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the job run id of the run to repair")
+				return errors.New("expected to have the job run id of the run to repair")
 			}
 			_, err = fmt.Sscan(args[0], &repairRunReq.RunId)
 			if err != nil {
@@ -1310,6 +1344,8 @@ func newReset() *cobra.Command {
   endpoint](:method:jobs/update) to update job settings partially.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1328,7 +1364,7 @@ func newReset() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		err = w.Jobs.Reset(ctx, resetReq)
@@ -1397,12 +1433,14 @@ func newRunNow() *cobra.Command {
     JOB_ID: The ID of the job to be executed`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1441,7 +1479,7 @@ func newRunNow() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the job to be executed")
+				return errors.New("expected to have the id of the job to be executed")
 			}
 			_, err = fmt.Sscan(args[0], &runNowReq.JobId)
 			if err != nil {
@@ -1519,6 +1557,8 @@ func newSetPermissions() *cobra.Command {
     JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1552,7 +1592,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		setPermissionsReq.JobId = args[0]
 
@@ -1632,6 +1672,8 @@ func newSubmit() *cobra.Command {
   POST /jobs/run-now endpoints to create and run a saved job.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1725,12 +1767,14 @@ func newUpdate() *cobra.Command {
     JOB_ID: The canonical identifier of the job to update. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1769,7 +1813,7 @@ func newUpdate() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the job to update")
+				return errors.New("expected to have the canonical identifier of the job to update")
 			}
 			_, err = fmt.Sscan(args[0], &updateReq.JobId)
 			if err != nil {
@@ -1827,6 +1871,8 @@ func newUpdatePermissions() *cobra.Command {
     JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1860,7 +1906,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		updatePermissionsReq.JobId = args[0]
 

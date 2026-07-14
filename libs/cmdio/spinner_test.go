@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"context"
+	"io"
 	"sync"
 	"testing"
 	"time"
@@ -10,14 +11,14 @@ import (
 )
 
 func TestSpinnerModelInit(t *testing.T) {
-	m := newSpinnerModel()
+	m := newSpinnerModel(MockDiscard(t.Context()), io.Discard)
 	assert.False(t, m.quitting)
-	assert.Equal(t, "", m.suffix)
+	assert.Empty(t, m.suffix)
 	assert.NotNil(t, m.spinner)
 }
 
 func TestSpinnerModelUpdateSuffixMsg(t *testing.T) {
-	m := newSpinnerModel()
+	m := newSpinnerModel(MockDiscard(t.Context()), io.Discard)
 	msg := suffixMsg("processing files")
 
 	updatedModel, _ := m.Update(msg)
@@ -28,7 +29,7 @@ func TestSpinnerModelUpdateSuffixMsg(t *testing.T) {
 }
 
 func TestSpinnerModelUpdateQuitMsg(t *testing.T) {
-	m := newSpinnerModel()
+	m := newSpinnerModel(MockDiscard(t.Context()), io.Discard)
 	msg := quitMsg{}
 
 	updatedModel, cmd := m.Update(msg)
@@ -39,7 +40,7 @@ func TestSpinnerModelUpdateQuitMsg(t *testing.T) {
 }
 
 func TestSpinnerModelViewActive(t *testing.T) {
-	m := newSpinnerModel()
+	m := newSpinnerModel(MockDiscard(t.Context()), io.Discard)
 	m.suffix = "loading"
 
 	view := m.View()
@@ -49,7 +50,7 @@ func TestSpinnerModelViewActive(t *testing.T) {
 }
 
 func TestSpinnerModelViewQuitting(t *testing.T) {
-	m := newSpinnerModel()
+	m := newSpinnerModel(MockDiscard(t.Context()), io.Discard)
 	m.quitting = true
 
 	view := m.View()

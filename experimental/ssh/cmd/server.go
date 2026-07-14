@@ -16,9 +16,7 @@ func newServerCommand() *cobra.Command {
 		Long: `Run SSH tunnel server.
 
 This command starts an SSH tunnel server that accepts WebSocket connections
-and proxies them to local SSH daemon processes.
-
-` + disclaimer,
+and proxies them to local SSH daemon processes.`,
 		// This is an internal command spawned by the SSH client running the "ssh-server-bootstrap.py" job
 		Hidden: true,
 	}

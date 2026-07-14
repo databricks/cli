@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -175,6 +177,7 @@ func ListDatabases(ctx context.Context, instanceName string) ([]ListItem, error)
 	var resp listDatabasesResponse
 	path := fmt.Sprintf("/api/2.0/database/instances/%s/databases", url.PathEscape(instanceName))
 	headers := map[string]string{"Accept": "application/json"}
+	maps.Copy(headers, auth.WorkspaceIDHeaders(w.Config))
 	err = api.Do(ctx, http.MethodGet, path, headers, nil, nil, &resp)
 	if err != nil {
 		return nil, err

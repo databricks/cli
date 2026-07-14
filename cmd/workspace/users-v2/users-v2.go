@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "users-v2",
-		Short: `User identities recognized by Databricks and represented by email addresses.`,
-		Long: `User identities recognized by Databricks and represented by email addresses.
+		Short: `*Public Preview* User identities recognized by Databricks and represented by email addresses.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+User identities recognized by Databricks and represented by email addresses.
 
   Databricks recommends using SCIM provisioning to sync users and groups
   automatically from your identity provider to your Databricks workspace. SCIM
@@ -35,6 +37,10 @@ func New() *cobra.Command {
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -86,13 +92,17 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.UserName, "user-name", createReq.UserName, `Email address of the Databricks user.`)
 
 	cmd.Use = "create"
-	cmd.Short = `Create a new user.`
-	cmd.Long = `Create a new user.
+	cmd.Short = `*Public Preview* Create a new user.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a new user.
 
   Creates a new user in the Databricks workspace. This new user will also be
   added to the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -152,8 +162,10 @@ func newDelete() *cobra.Command {
 	var deleteReq iam.DeleteUserRequest
 
 	cmd.Use = "delete ID"
-	cmd.Short = `Delete a user.`
-	cmd.Long = `Delete a user.
+	cmd.Short = `*Public Preview* Delete a user.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a user.
 
   Deletes a user. Deleting a user from a Databricks workspace also removes
   objects associated with the user.
@@ -162,6 +174,8 @@ func newDelete() *cobra.Command {
     ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -217,8 +231,10 @@ func newGet() *cobra.Command {
 	cmd.Flags().IntVar(&getReq.StartIndex, "start-index", getReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "get ID"
-	cmd.Short = `Get user details.`
-	cmd.Long = `Get user details.
+	cmd.Short = `*Public Preview* Get user details.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get user details.
 
   Gets information for a specific user in Databricks workspace.
 
@@ -226,6 +242,8 @@ func newGet() *cobra.Command {
     ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -274,12 +292,16 @@ func newGetPermissionLevels() *cobra.Command {
 	var getPermissionLevelsReq iam.GetPasswordPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels"
-	cmd.Short = `Get password permission levels.`
-	cmd.Long = `Get password permission levels.
+	cmd.Short = `*Public Preview* Get password permission levels.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get password permission levels.
 
   Gets the permission levels that a user can have on an object.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -321,13 +343,17 @@ func newGetPermissions() *cobra.Command {
 	var getPermissionsReq iam.GetPasswordPermissionsRequest
 
 	cmd.Use = "get-permissions"
-	cmd.Short = `Get password permissions.`
-	cmd.Long = `Get password permissions.
+	cmd.Short = `*Public Preview* Get password permissions.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get password permissions.
 
   Gets the permissions of all passwords. Passwords can inherit permissions from
   their root object.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -388,12 +414,16 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("count").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List users.`
-	cmd.Long = `List users.
+	cmd.Short = `*Public Preview* List users.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List users.
 
   Gets details for all the users associated with a Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -449,8 +479,10 @@ func newPatch() *cobra.Command {
 	// TODO: array: schemas
 
 	cmd.Use = "patch ID"
-	cmd.Short = `Update user details.`
-	cmd.Long = `Update user details.
+	cmd.Short = `*Public Preview* Update user details.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update user details.
 
   Partially updates a user resource by applying the supplied operations on
   specific user attributes.
@@ -459,6 +491,8 @@ func newPatch() *cobra.Command {
     ID: Unique ID in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -523,14 +557,18 @@ func newSetPermissions() *cobra.Command {
 	// TODO: array: access_control_list
 
 	cmd.Use = "set-permissions"
-	cmd.Short = `Set password permissions.`
-	cmd.Long = `Set password permissions.
+	cmd.Short = `*Public Preview* Set password permissions.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Set password permissions.
 
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -604,8 +642,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.UserName, "user-name", updateReq.UserName, `Email address of the Databricks user.`)
 
 	cmd.Use = "update ID"
-	cmd.Short = `Replace a user.`
-	cmd.Long = `Replace a user.
+	cmd.Short = `*Public Preview* Replace a user.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Replace a user.
 
   Replaces a user's information with the data supplied in request.
 
@@ -613,6 +653,8 @@ func newUpdate() *cobra.Command {
     ID: Databricks user ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -677,13 +719,17 @@ func newUpdatePermissions() *cobra.Command {
 	// TODO: array: access_control_list
 
 	cmd.Use = "update-permissions"
-	cmd.Short = `Update password permissions.`
-	cmd.Long = `Update password permissions.
+	cmd.Short = `*Public Preview* Update password permissions.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update password permissions.
 
   Updates the permissions on all passwords. Passwords can inherit permissions
   from their root object.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)

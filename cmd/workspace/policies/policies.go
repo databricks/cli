@@ -3,6 +3,7 @@
 package policies
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -32,6 +33,10 @@ func New() *cobra.Command {
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreatePolicy())
@@ -129,12 +134,14 @@ func newCreatePolicy() *cobra.Command {
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'to_principals', 'for_securable_type', 'policy_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'to_principals', 'for_securable_type', 'policy_type' in your JSON input")
 			}
 			return nil
 		}
@@ -228,6 +235,8 @@ func newDeletePolicy() *cobra.Command {
     NAME: Required. The name of the policy to delete`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -289,6 +298,8 @@ func newGetPolicy() *cobra.Command {
     NAME: Required. The name of the policy to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -369,6 +380,8 @@ func newListPolicies() *cobra.Command {
     ON_SECURABLE_FULLNAME: Required. The fully qualified name of securable to list policies for.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -491,12 +504,14 @@ func newUpdatePolicy() *cobra.Command {
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(3)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only ON_SECURABLE_TYPE, ON_SECURABLE_FULLNAME, NAME as positional arguments. Provide 'to_principals', 'for_securable_type', 'policy_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only ON_SECURABLE_TYPE, ON_SECURABLE_FULLNAME, NAME as positional arguments. Provide 'to_principals', 'for_securable_type', 'policy_type' in your JSON input")
 			}
 			return nil
 		}

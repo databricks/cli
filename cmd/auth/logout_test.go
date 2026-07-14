@@ -164,7 +164,7 @@ func TestLogout(t *testing.T) {
 			configPath := writeTempConfig(t, logoutTestConfig)
 			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-			tokenCache := &inMemoryTokenCache{
+			tokenStore := &inMemoryStore{
 				Tokens: copyTokens(logoutTestTokensCacheConfig),
 			}
 
@@ -173,7 +173,7 @@ func TestLogout(t *testing.T) {
 				autoApprove:    tc.autoApprove,
 				deleteProfile:  tc.deleteProfile,
 				profiler:       profile.DefaultProfiler,
-				tokenCache:     tokenCache,
+				tokenStore:     tokenStore,
 				configFilePath: configPath,
 			})
 
@@ -194,14 +194,14 @@ func TestLogout(t *testing.T) {
 			// Verify token cache state.
 			if tc.isNonU2M {
 				// Non-U2M profiles should not touch the token cache at all.
-				assert.NotNil(t, tokenCache.Tokens[tc.profileName], "expected token %q to be preserved for non-U2M profile", tc.profileName)
-				assert.NotNil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be preserved for non-U2M profile", tc.hostBasedKey)
+				assert.NotNil(t, tokenStore.Tokens[tc.profileName], "expected token %q to be preserved for non-U2M profile", tc.profileName)
+				assert.NotNil(t, tokenStore.Tokens[tc.hostBasedKey], "expected token %q to be preserved for non-U2M profile", tc.hostBasedKey)
 			} else {
-				assert.Nil(t, tokenCache.Tokens[tc.profileName], "expected token %q to be removed", tc.profileName)
+				assert.Nil(t, tokenStore.Tokens[tc.profileName], "expected token %q to be removed", tc.profileName)
 				if tc.isSharedKey {
-					assert.NotNil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be preserved", tc.hostBasedKey)
+					assert.NotNil(t, tokenStore.Tokens[tc.hostBasedKey], "expected token %q to be preserved", tc.hostBasedKey)
 				} else {
-					assert.Nil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be removed", tc.hostBasedKey)
+					assert.Nil(t, tokenStore.Tokens[tc.hostBasedKey], "expected token %q to be removed", tc.hostBasedKey)
 				}
 			}
 		})
@@ -213,7 +213,7 @@ func TestLogoutNoTokens(t *testing.T) {
 	configPath := writeTempConfig(t, logoutTestConfig)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	tokenCache := &inMemoryTokenCache{
+	tokenStore := &inMemoryStore{
 		Tokens: map[string]*oauth2.Token{},
 	}
 
@@ -221,7 +221,7 @@ func TestLogoutNoTokens(t *testing.T) {
 		profileName:    "my-workspace",
 		autoApprove:    true,
 		profiler:       profile.DefaultProfiler,
-		tokenCache:     tokenCache,
+		tokenStore:     tokenStore,
 		configFilePath: configPath,
 	})
 	require.NoError(t, err)
@@ -237,7 +237,7 @@ func TestLogoutNoTokensWithDelete(t *testing.T) {
 	configPath := writeTempConfig(t, logoutTestConfig)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	tokenCache := &inMemoryTokenCache{
+	tokenStore := &inMemoryStore{
 		Tokens: map[string]*oauth2.Token{},
 	}
 
@@ -246,7 +246,7 @@ func TestLogoutNoTokensWithDelete(t *testing.T) {
 		autoApprove:    true,
 		deleteProfile:  true,
 		profiler:       profile.DefaultProfiler,
-		tokenCache:     tokenCache,
+		tokenStore:     tokenStore,
 		configFilePath: configPath,
 	})
 	require.NoError(t, err)
@@ -302,7 +302,7 @@ default_profile = my-workspace
 			configPath := writeTempConfig(t, configWithDefault)
 			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-			tokenCache := &inMemoryTokenCache{
+			tokenStore := &inMemoryStore{
 				Tokens: copyTokens(logoutTestTokensCacheConfig),
 			}
 
@@ -311,7 +311,7 @@ default_profile = my-workspace
 				autoApprove:    true,
 				deleteProfile:  true,
 				profiler:       profile.DefaultProfiler,
-				tokenCache:     tokenCache,
+				tokenStore:     tokenStore,
 				configFilePath: configPath,
 			})
 			require.NoError(t, err)
@@ -360,7 +360,7 @@ auth_type = databricks-cli
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
 	hostKey := spogServer.URL + "/oidc/accounts/spog-acct"
-	tokenCache := &inMemoryTokenCache{
+	tokenStore := &inMemoryStore{
 		Tokens: map[string]*oauth2.Token{
 			"spog-profile": {AccessToken: "spog-profile-token"},
 			hostKey:        {AccessToken: "spog-host-token"},
@@ -371,13 +371,13 @@ auth_type = databricks-cli
 		profileName:    "spog-profile",
 		autoApprove:    true,
 		profiler:       profile.DefaultProfiler,
-		tokenCache:     tokenCache,
+		tokenStore:     tokenStore,
 		configFilePath: configPath,
 	})
 	require.NoError(t, err)
 
-	assert.Nil(t, tokenCache.Tokens["spog-profile"])
-	assert.Nil(t, tokenCache.Tokens[hostKey])
+	assert.Nil(t, tokenStore.Tokens["spog-profile"])
+	assert.Nil(t, tokenStore.Tokens[hostKey])
 }
 
 func TestHostCacheKeyAndMatchFn(t *testing.T) {

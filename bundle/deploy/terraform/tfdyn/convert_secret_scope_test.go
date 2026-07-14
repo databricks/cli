@@ -94,7 +94,7 @@ func TestConvertSecretScopeNoPermissions(t *testing.T) {
 	require.NoError(t, err)
 
 	// No ACLs should be created
-	assert.Len(t, out.SecretAcl, 0)
+	assert.Empty(t, out.SecretAcl)
 
 	// But the scope should still be created
 	assert.Contains(t, out.SecretScope, "no_permissions_scope")

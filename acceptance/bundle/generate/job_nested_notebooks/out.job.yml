@@ -1,0 +1,11 @@
+resources:
+  jobs:
+    out:
+      name: dev.my_repo.my_job
+      tasks:
+        - task_key: my_notebook_task
+          notebook_task:
+            notebook_path: src/my_folder/my_notebook.py
+        - task_key: other_notebook_task
+          notebook_task:
+            notebook_path: src/other_folder/other_notebook.py

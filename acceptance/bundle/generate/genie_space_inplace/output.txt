@@ -1,0 +1,30 @@
+
+>>> cat space.geniespace.json
+{}
+
+=== deploy initial genie space
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/genie space update inplace/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== update the genie space
+>>> [CLI] genie update-space [GENIE_SPACE_ID] --serialized-space {"a":"b"}
+{
+  "etag": "2",
+  "parent_path": "/Users/[USERNAME]/.bundle/genie space update inplace/default/resources",
+  "serialized_space": "{\"a\":\"b\"}",
+  "space_id": "[GENIE_SPACE_ID]",
+  "title": "test genie space",
+  "warehouse_id": "my-warehouse-1234"
+}
+
+=== update the genie space file using bundle generate
+>>> [CLI] bundle generate genie-space --resource test_genie_space --force
+Writing genie space to space.geniespace.json
+
+>>> cat space.geniespace.json
+{
+  "a": "b"
+}

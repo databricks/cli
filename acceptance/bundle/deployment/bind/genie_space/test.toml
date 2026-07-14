@@ -1,0 +1,13 @@
+Local = true
+
+# Genie spaces are only deployed via the direct deployment engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Uses a literal warehouse id and a version-sensitive serialized_space, so this
+# lifecycle test runs against the local mock server only (overrides the Cloud=true
+# inherited from acceptance/bundle/deployment/test.toml).
+Cloud = false
+
+[[Repls]]
+Old = "[0-9a-f]{32}"
+New = "[GENIE_SPACE_ID]"

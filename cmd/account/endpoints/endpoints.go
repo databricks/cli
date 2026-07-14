@@ -3,6 +3,7 @@
 package endpoints
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -25,6 +26,10 @@ func New() *cobra.Command {
 		GroupID: "provisioning",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateEndpoint())
@@ -83,12 +88,14 @@ func newCreateEndpoint() *cobra.Command {
     REGION: The cloud provider region where this endpoint is located.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT as positional arguments. Provide 'display_name', 'region' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'display_name', 'region' in your JSON input")
 			}
 			return nil
 		}
@@ -164,6 +171,8 @@ func newDeleteEndpoint() *cobra.Command {
   delete corresponding network resources in your cloud provider account.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -217,6 +226,8 @@ func newGetEndpoint() *cobra.Command {
   Gets details of a specific network endpoint.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -288,6 +299,8 @@ func newListEndpoints() *cobra.Command {
       accounts/{account_id}.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

@@ -87,6 +87,22 @@ func TestNextSteps(t *testing.T) {
 	assert.Contains(t, pythonPip.NextSteps(), ".venv")
 }
 
+func TestInstallCommand(t *testing.T) {
+	nodejs := &InitializerNodeJs{}
+	assert.Equal(t, "npm ci", nodejs.InstallCommand())
+
+	pythonUv := &InitializerPythonUv{}
+	assert.Equal(t, "uv sync", pythonUv.InstallCommand())
+
+	// pip's install command creates the venv and installs via the full pip
+	// path so it composes with NextSteps (which activates the venv).
+	pythonPip := &InitializerPythonPip{}
+	got := pythonPip.InstallCommand()
+	assert.Contains(t, got, "venv .venv")
+	assert.Contains(t, got, "pip install -r requirements.txt")
+	assert.NotContains(t, got, "activate", "should not activate; NextSteps handles activation")
+}
+
 func TestSupportsDevRemote(t *testing.T) {
 	// Node.js without appkit
 	nodejs := &InitializerNodeJs{workDir: ""}

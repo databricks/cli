@@ -36,27 +36,17 @@ Deployment complete!
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom
 {
+  "endpoint_id": "custom",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "uid": "[ENDPOINT_UID]",
   "status": {
-    "autoscaling_limit_max_cu": 2,
-    "autoscaling_limit_min_cu": 0.5,
-    "current_state": "ACTIVE",
-    "disabled": false,
+    "endpoint_id": "custom",
     "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
-    "group": {
-      "enable_readable_secondaries": true,
-      "max": 1,
-      "min": 1
-    },
-    "hosts": {
-      "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com",
-      "read_only_host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
-    },
-    "settings": {},
+    "autoscaling_limit_min_cu": 0.5,
+    "autoscaling_limit_max_cu": 2,
     "suspend_timeout_duration": "300s"
-  },
-  "uid": "[ENDPOINT_UID]"
+  }
 }
 
 >>> [CLI] bundle summary
@@ -79,7 +69,7 @@ Resources:
       Name: Test Project for Endpoint
       URL:  (not deployed)
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

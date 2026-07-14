@@ -1,0 +1,13 @@
+// Generated from Databricks Terraform provider schema. DO NOT EDIT.
+
+package schema
+
+// AllResources provides typed access to resource struct types via reflection.
+// Each field corresponds to a Terraform resource type; the field type is the
+// generated Go struct (e.g., ResourceJob) rather than map[string]any.
+// Use this for field enumeration without a manual type registry.
+type AllResources struct {
+{{- range .Blocks }}
+	{{ .FieldName }} {{ .TypeName }} `json:"{{ .TerraformName }},omitempty"`
+{{- end }}
+}

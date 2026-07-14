@@ -64,11 +64,22 @@ func TestBuildLogsURLRejectsUnknownScheme(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestLogsMissingNameError(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	cmd := newLogsCommand()
+	err := cmd.Args(cmd, nil)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "missing required argument: NAME")
+	assert.Contains(t, err.Error(), "Usage: logs NAME")
+}
+
 func TestNormalizeOrigin(t *testing.T) {
 	assert.Equal(t, "https://example.com", normalizeOrigin("https://example.com/foo"))
 	assert.Equal(t, "http://example.com", normalizeOrigin("ws://example.com/foo"))
 	assert.Equal(t, "https://example.com", normalizeOrigin("wss://example.com/foo"))
-	assert.Equal(t, "", normalizeOrigin("://invalid"))
+	assert.Empty(t, normalizeOrigin("://invalid"))
 }
 
 func TestBuildSourceFilter(t *testing.T) {

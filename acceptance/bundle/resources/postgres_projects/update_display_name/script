@@ -8,7 +8,7 @@ trap cleanup EXIT
 
 print_requests() {
     local name=$1
-    trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
+    trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
     rm -f out.requests.txt
 }
 
@@ -23,7 +23,7 @@ print_requests create
 
 project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 project_id_1=`read_id.py my_project`
-trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-project "${project_name}" | project_fields
 
 title "Verify no changes"
 trace $CLI bundle plan
@@ -45,7 +45,7 @@ trace $CLI bundle deploy
 print_requests update
 
 project_id_2=`read_id.py my_project`
-trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-project "${project_name}" | project_fields
 
 title "Restore display_name to original value"
 trace update_file.py databricks.yml "Updated Name" "Original Name"
@@ -56,4 +56,4 @@ trace $CLI bundle deploy
 
 print_requests restore
 
-trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-project "${project_name}" | project_fields

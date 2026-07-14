@@ -2,6 +2,9 @@ __all__ = [
     "Adlsgen2Info",
     "Adlsgen2InfoDict",
     "Adlsgen2InfoParam",
+    "AiRuntimeTask",
+    "AiRuntimeTaskDict",
+    "AiRuntimeTaskParam",
     "AlertTask",
     "AlertTaskDict",
     "AlertTaskParam",
@@ -41,6 +44,11 @@ __all__ = [
     "ComputeConfigParam",
     "ComputeDict",
     "ComputeParam",
+    "ComputeSpec",
+    "ComputeSpecAcceleratorType",
+    "ComputeSpecAcceleratorTypeParam",
+    "ComputeSpecDict",
+    "ComputeSpecParam",
     "Condition",
     "ConditionParam",
     "ConditionTask",
@@ -48,6 +56,8 @@ __all__ = [
     "ConditionTaskOp",
     "ConditionTaskOpParam",
     "ConditionTaskParam",
+    "ConfidentialComputeType",
+    "ConfidentialComputeTypeParam",
     "Continuous",
     "ContinuousDict",
     "ContinuousParam",
@@ -68,6 +78,9 @@ __all__ = [
     "DbtTask",
     "DbtTaskDict",
     "DbtTaskParam",
+    "DeploymentSpec",
+    "DeploymentSpecDict",
+    "DeploymentSpecParam",
     "DockerBasicAuth",
     "DockerBasicAuthDict",
     "DockerBasicAuthParam",
@@ -194,6 +207,12 @@ __all__ = [
     "PowerBiTask",
     "PowerBiTaskDict",
     "PowerBiTaskParam",
+    "PythonOperatorTask",
+    "PythonOperatorTaskDict",
+    "PythonOperatorTaskParam",
+    "PythonOperatorTaskParameter",
+    "PythonOperatorTaskParameterDict",
+    "PythonOperatorTaskParameterParam",
     "PythonPyPiLibrary",
     "PythonPyPiLibraryDict",
     "PythonPyPiLibraryParam",
@@ -230,6 +249,11 @@ __all__ = [
     "SparseCheckout",
     "SparseCheckoutDict",
     "SparseCheckoutParam",
+    "SqlConditionConfiguration",
+    "SqlConditionConfigurationDict",
+    "SqlConditionConfigurationParam",
+    "SqlConditionTriggerMode",
+    "SqlConditionTriggerModeParam",
     "SqlTask",
     "SqlTaskAlert",
     "SqlTaskAlertDict",
@@ -299,6 +323,11 @@ from databricks.bundles.jobs._models.adlsgen2_info import (
     Adlsgen2InfoDict,
     Adlsgen2InfoParam,
 )
+from databricks.bundles.jobs._models.ai_runtime_task import (
+    AiRuntimeTask,
+    AiRuntimeTaskDict,
+    AiRuntimeTaskParam,
+)
 from databricks.bundles.jobs._models.alert_task import (
     AlertTask,
     AlertTaskDict,
@@ -362,6 +391,15 @@ from databricks.bundles.jobs._models.compute_config import (
     ComputeConfigDict,
     ComputeConfigParam,
 )
+from databricks.bundles.jobs._models.compute_spec import (
+    ComputeSpec,
+    ComputeSpecDict,
+    ComputeSpecParam,
+)
+from databricks.bundles.jobs._models.compute_spec_accelerator_type import (
+    ComputeSpecAcceleratorType,
+    ComputeSpecAcceleratorTypeParam,
+)
 from databricks.bundles.jobs._models.condition import Condition, ConditionParam
 from databricks.bundles.jobs._models.condition_task import (
     ConditionTask,
@@ -371,6 +409,10 @@ from databricks.bundles.jobs._models.condition_task import (
 from databricks.bundles.jobs._models.condition_task_op import (
     ConditionTaskOp,
     ConditionTaskOpParam,
+)
+from databricks.bundles.jobs._models.confidential_compute_type import (
+    ConfidentialComputeType,
+    ConfidentialComputeTypeParam,
 )
 from databricks.bundles.jobs._models.continuous import (
     Continuous,
@@ -402,6 +444,11 @@ from databricks.bundles.jobs._models.dbt_platform_task import (
     DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskDict, DbtTaskParam
+from databricks.bundles.jobs._models.deployment_spec import (
+    DeploymentSpec,
+    DeploymentSpecDict,
+    DeploymentSpecParam,
+)
 from databricks.bundles.jobs._models.docker_basic_auth import (
     DockerBasicAuth,
     DockerBasicAuthDict,
@@ -603,6 +650,16 @@ from databricks.bundles.jobs._models.power_bi_task import (
     PowerBiTaskDict,
     PowerBiTaskParam,
 )
+from databricks.bundles.jobs._models.python_operator_task import (
+    PythonOperatorTask,
+    PythonOperatorTaskDict,
+    PythonOperatorTaskParam,
+)
+from databricks.bundles.jobs._models.python_operator_task_parameter import (
+    PythonOperatorTaskParameter,
+    PythonOperatorTaskParameterDict,
+    PythonOperatorTaskParameterParam,
+)
 from databricks.bundles.jobs._models.python_py_pi_library import (
     PythonPyPiLibrary,
     PythonPyPiLibraryDict,
@@ -658,6 +715,15 @@ from databricks.bundles.jobs._models.sparse_checkout import (
     SparseCheckout,
     SparseCheckoutDict,
     SparseCheckoutParam,
+)
+from databricks.bundles.jobs._models.sql_condition_configuration import (
+    SqlConditionConfiguration,
+    SqlConditionConfigurationDict,
+    SqlConditionConfigurationParam,
+)
+from databricks.bundles.jobs._models.sql_condition_trigger_mode import (
+    SqlConditionTriggerMode,
+    SqlConditionTriggerModeParam,
 )
 from databricks.bundles.jobs._models.sql_task import SqlTask, SqlTaskDict, SqlTaskParam
 from databricks.bundles.jobs._models.sql_task_alert import (

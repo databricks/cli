@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -81,6 +82,10 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withInteractiveModeInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
+
+		// Recommend installing Databricks AI tooling to Claude Code when it is
+		// driving the CLI without the tooling installed (best-effort, stderr only).
+		agents.MaybeHint(ctx, cmd)
 		return nil
 	}
 
@@ -148,6 +153,12 @@ Stack Trace:
 		if cmdctx.HasConfigUsed(cmd.Context()) {
 			cfg := cmdctx.ConfigUsed(cmd.Context())
 			err = auth.EnrichAuthError(cmd.Context(), cfg, err)
+		}
+		// A workspace client on the context means the command operates against
+		// a workspace; see AppendAccountHostHint for why every error from such
+		// commands gets the account-console-host note.
+		if cmdctx.HasWorkspaceClient(cmd.Context()) {
+			err = auth.AppendAccountHostHint(cmdctx.WorkspaceClient(cmd.Context()).Config, err)
 		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}

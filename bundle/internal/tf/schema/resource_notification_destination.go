@@ -51,7 +51,7 @@ type ResourceNotificationDestinationConfig struct {
 }
 
 type ResourceNotificationDestinationProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceNotificationDestination struct {

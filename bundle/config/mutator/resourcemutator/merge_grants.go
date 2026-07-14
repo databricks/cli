@@ -16,6 +16,7 @@ var grantResourceTypes = []string{
 	"external_locations",
 	"volumes",
 	"registered_models",
+	"vector_search_indexes",
 }
 
 type mergeGrants struct{}

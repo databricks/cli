@@ -1,0 +1,19 @@
+bundle:
+  name: deploy-postgres-catalog-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project for Catalog"
+      pg_version: 16
+
+  postgres_catalogs:
+    my_catalog:
+      catalog_id: lakebase_test_$UNIQUE_NAME
+      branch: ${resources.postgres_projects.my_project.id}/branches/production
+      postgres_database: appdb
+      create_database_if_missing: true

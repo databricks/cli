@@ -21,7 +21,7 @@ type ResourceCatalogManagedEncryptionSettings struct {
 }
 
 type ResourceCatalogProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceCatalogProvisioningInfo struct {
@@ -35,6 +35,7 @@ type ResourceCatalog struct {
 	ConnectionName                      string                                              `json:"connection_name,omitempty"`
 	CreatedAt                           int                                                 `json:"created_at,omitempty"`
 	CreatedBy                           string                                              `json:"created_by,omitempty"`
+	CustomMaxRetentionHours             int                                                 `json:"custom_max_retention_hours,omitempty"`
 	EnablePredictiveOptimization        string                                              `json:"enable_predictive_optimization,omitempty"`
 	ForceDestroy                        bool                                                `json:"force_destroy,omitempty"`
 	FullName                            string                                              `json:"full_name,omitempty"`

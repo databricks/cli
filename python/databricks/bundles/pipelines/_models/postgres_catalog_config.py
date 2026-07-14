@@ -21,7 +21,7 @@ class PostgresCatalogConfig:
 
     slot_config: VariableOrOptional[PostgresSlotConfig] = None
     """
-    Optional. The Postgres slot configuration to use for logical replication
+    [Public Preview] Optional. The Postgres slot configuration to use for logical replication
     """
 
     @classmethod
@@ -37,7 +37,7 @@ class PostgresCatalogConfigDict(TypedDict, total=False):
 
     slot_config: VariableOrOptional[PostgresSlotConfigParam]
     """
-    Optional. The Postgres slot configuration to use for logical replication
+    [Public Preview] Optional. The Postgres slot configuration to use for logical replication
     """
 
 

@@ -1,0 +1,10 @@
+Local = true
+Cloud = false
+Ignore = [".databricks", "tmp.plan.json"]
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
+
+[[Repls]]
+Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"
+New = "[CLUSTER-ID]"

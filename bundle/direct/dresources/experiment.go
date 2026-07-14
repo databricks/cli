@@ -68,7 +68,7 @@ func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml
 	return nil, r.client.Experiments.UpdateExperiment(ctx, updateReq)
 }
 
-func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceExperiment) DoDelete(ctx context.Context, id string, _ *ml.CreateExperiment) error {
 	return r.client.Experiments.DeleteExperiment(ctx, ml.DeleteExperiment{
 		ExperimentId: id,
 	})

@@ -19,7 +19,7 @@ import (
 )
 
 // hermeticAuthStorage isolates the test from the caller's real env vars and
-// .databrickscfg so storage.ResolveCache sees a clean default.
+// .databrickscfg so storage.ResolveStore sees a clean default.
 func hermeticAuthStorage(t *testing.T) {
 	t.Helper()
 	t.Setenv(storage.EnvVar, "")
@@ -235,7 +235,7 @@ func TestCLICredentialsConfigure_ThreadsResolvedTokenCache(t *testing.T) {
 // TestCLICredentialsConfigure_PropagatesStorageResolutionError confirms
 // Configure surfaces invalid DATABRICKS_AUTH_STORAGE values instead of
 // silently falling back to the file cache. If Configure ever stops calling
-// storage.ResolveCache, this test will catch it.
+// storage.ResolveStore, this test will catch it.
 func TestCLICredentialsConfigure_PropagatesStorageResolutionError(t *testing.T) {
 	hermeticAuthStorage(t)
 	t.Setenv(storage.EnvVar, "bogus")

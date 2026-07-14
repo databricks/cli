@@ -38,7 +38,7 @@ type ResourceLakehouseMonitorNotifications struct {
 }
 
 type ResourceLakehouseMonitorProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceLakehouseMonitorSchedule struct {
@@ -47,8 +47,7 @@ type ResourceLakehouseMonitorSchedule struct {
 	TimezoneId           string `json:"timezone_id"`
 }
 
-type ResourceLakehouseMonitorSnapshot struct {
-}
+type ResourceLakehouseMonitorSnapshot struct{}
 
 type ResourceLakehouseMonitorTimeSeries struct {
 	Granularities []string `json:"granularities"`

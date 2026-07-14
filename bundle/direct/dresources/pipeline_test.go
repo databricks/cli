@@ -14,6 +14,7 @@ func TestPipelineRemote(t *testing.T) {
 		"Spec":            true, // Embedded as pipelines.CreatePipeline (via makePipelineRemote)
 		"ForceSendFields": true, // Internal marshaling field
 		"Name":            true, // Available through embedded CreatePipeline
+		"Parameters":      true, // Available through embedded CreatePipeline
 		"RunAs":           true, // Available through embedded CreatePipeline
 	})
 }

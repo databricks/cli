@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
@@ -50,17 +51,17 @@ func TestQuoteTableName(t *testing.T) {
 }
 
 func TestParseDescribeResultSkipsMetadataRows(t *testing.T) {
-	resp := &dbsql.StatementResponse{
-		Result: &dbsql.ResultData{DataArray: [][]string{
+	result := &sqlexec.Result{
+		Rows: [][]string{
 			{"id", "BIGINT", ""},
 			{"name", "STRING", ""},
 			{"# Partition Information", "", ""},
 			{"region", "STRING", ""},
 			{"", "STRING", ""},
-		}},
+		},
 	}
 
-	cols, types := parseDescribeResult(resp)
+	cols, types := parseDescribeResult(result)
 	assert.Equal(t, []string{"id", "name", "region"}, cols)
 	assert.Equal(t, []string{"BIGINT", "STRING", "STRING"}, types)
 }
@@ -82,9 +83,9 @@ func TestSQLGateRunPinsOnWaitTimeoutAndRecordsID(t *testing.T) {
 	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
 	gate := newSQLGate(2)
 
-	resp, err := gate.run(ctx, w, "wh-1", "SELECT 1")
+	result, err := gate.run(ctx, w, "wh-1", "SELECT 1")
 	require.NoError(t, err)
-	assert.Equal(t, "stmt-1", resp.StatementId)
+	assert.Equal(t, [][]string{{"1"}}, result.Rows)
 	assert.Equal(t, []string{"stmt-1"}, gate.trackedIDs())
 }
 
@@ -323,4 +324,63 @@ func TestDiscoverSchemaInvalidTableNameRejectedBeforeWorkspaceClient(t *testing.
 	err := cmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "expected CATALOG.SCHEMA.TABLE")
+}
+
+func TestRunDiscoverSchemasFlagsTableFailureForExitCode(t *testing.T) {
+	// runDiscoverSchemas must report any per-table failure via the bool
+	// return so the caller can produce a non-zero exit. Without this signal
+	// scripts and CI parse stdout to detect failure, which is brittle.
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&dbsql.StatementResponse{
+		StatementId: "stmt-bad",
+		Status: &dbsql.StatementStatus{
+			State: dbsql.StatementStateFailed,
+			Error: &dbsql.ServiceError{ErrorCode: "TABLE_OR_VIEW_NOT_FOUND", Message: "no such table"},
+		},
+	}, nil).Once()
+
+	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	output, anyFailed := runDiscoverSchemas(ctx, newSQLGate(8), w, "wh-1", []string{"main.public.missing"})
+
+	assert.True(t, anyFailed)
+	assert.Contains(t, output, "Error discovering main.public.missing")
+	assert.Contains(t, output, "TABLE_OR_VIEW_NOT_FOUND")
+}
+
+func TestRunDiscoverSchemasAllSucceedReturnsFalse(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
+		return strings.HasPrefix(req.Statement, "DESCRIBE TABLE")
+	})).Return(&dbsql.StatementResponse{
+		StatementId: "stmt-desc",
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
+		Result:      &dbsql.ResultData{DataArray: [][]string{{"id", "BIGINT", ""}}},
+	}, nil).Once()
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
+		return strings.HasPrefix(req.Statement, "SELECT *")
+	})).Return(&dbsql.StatementResponse{
+		StatementId: "stmt-sample",
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
+	}, nil).Once()
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
+		return strings.Contains(req.Statement, "SUM(CASE WHEN")
+	})).Return(&dbsql.StatementResponse{
+		StatementId: "stmt-null",
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
+		Manifest:    &dbsql.ResultManifest{Schema: &dbsql.ResultSchema{Columns: []dbsql.ColumnInfo{{Name: "total_rows"}, {Name: "id_nulls"}}}},
+		Result:      &dbsql.ResultData{DataArray: [][]string{{"7", "0"}}},
+	}, nil).Once()
+
+	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	output, anyFailed := runDiscoverSchemas(ctx, newSQLGate(8), w, "wh-1", []string{"main.public.orders"})
+
+	assert.False(t, anyFailed)
+	assert.Contains(t, output, "COLUMNS:")
+	assert.NotContains(t, output, "Error discovering")
 }

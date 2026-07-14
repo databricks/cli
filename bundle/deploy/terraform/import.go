@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -43,6 +44,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	if err != nil {
 		return diag.Errorf("terraform init: %v", err)
 	}
+	defer os.RemoveAll(tmpDir)
 	relPath, _ := b.StateFilenameTerraform(ctx)
 	tmpState := filepath.Join(tmpDir, filepath.Base(relPath))
 
@@ -61,8 +63,6 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return diag.Errorf("terraform plan: %v", err)
 	}
 
-	defer os.RemoveAll(tmpDir)
-
 	if changed && !m.opts.AutoApprove {
 		output := buf.String()
 		// Remove output starting from Warning until end of output, if present.
@@ -72,7 +72,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		cmdio.LogString(ctx, output)
 
 		if !cmdio.IsPromptSupported(ctx) {
-			return diag.Errorf("This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.")
+			return diag.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice())
 		}
 
 		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
@@ -98,6 +98,12 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	defer tmpF.Close()
 
 	_, err = io.Copy(f, tmpF)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// A failed Close can mean a truncated state file; the deferred Close above covers error paths.
+	err = f.Close()
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -20,27 +20,27 @@ class PowerBiModel:
 
     authentication_method: VariableOrOptional[AuthenticationMethod] = None
     """
-    How the published Power BI model authenticates to Databricks
+    [Public Preview] How the published Power BI model authenticates to Databricks
     """
 
     model_name: VariableOrOptional[str] = None
     """
-    The name of the Power BI model
+    [Public Preview] The name of the Power BI model
     """
 
     overwrite_existing: VariableOrOptional[bool] = None
     """
-    Whether to overwrite existing Power BI models
+    [Public Preview] Whether to overwrite existing Power BI models
     """
 
     storage_mode: VariableOrOptional[StorageMode] = None
     """
-    The default storage mode of the Power BI model
+    [Public Preview] The default storage mode of the Power BI model
     """
 
     workspace_name: VariableOrOptional[str] = None
     """
-    The name of the Power BI workspace of the model
+    [Public Preview] The name of the Power BI workspace of the model
     """
 
     @classmethod
@@ -56,27 +56,27 @@ class PowerBiModelDict(TypedDict, total=False):
 
     authentication_method: VariableOrOptional[AuthenticationMethodParam]
     """
-    How the published Power BI model authenticates to Databricks
+    [Public Preview] How the published Power BI model authenticates to Databricks
     """
 
     model_name: VariableOrOptional[str]
     """
-    The name of the Power BI model
+    [Public Preview] The name of the Power BI model
     """
 
     overwrite_existing: VariableOrOptional[bool]
     """
-    Whether to overwrite existing Power BI models
+    [Public Preview] Whether to overwrite existing Power BI models
     """
 
     storage_mode: VariableOrOptional[StorageModeParam]
     """
-    The default storage mode of the Power BI model
+    [Public Preview] The default storage mode of the Power BI model
     """
 
     workspace_name: VariableOrOptional[str]
     """
-    The name of the Power BI workspace of the model
+    [Public Preview] The name of the Power BI workspace of the model
     """
 
 

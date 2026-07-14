@@ -1,5 +1,3 @@
 
->>> errcode [CLI] bundle generate alert --existing-id f00dcafe
+>>> musterr [CLI] bundle generate alert --existing-id f00dcafe
 Error: alert with ID f00dcafe not found
-
-Exit code: 1

@@ -1,11 +1,6 @@
 trace $CLI bundle deploy
 
-print_requests() {
-    jq 'select(.method != "GET" and (.path | contains("/unity")))' < out.requests.txt
-    rm out.requests.txt
-}
-
-trace print_requests
+trace print_requests.py //unity
 
 title "Summary should now show id and url\n"
 $CLI bundle summary -o json | jq .resources
@@ -17,7 +12,7 @@ trace $CLI bundle plan
 # terraform marks this as "update", direct marks this as "update_with_id"
 $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests
+trace print_requests.py //unity
 
 trace $CLI volumes read main.myschema.mynewvolume
 trace musterr $CLI volumes read main.myschema.myvolume

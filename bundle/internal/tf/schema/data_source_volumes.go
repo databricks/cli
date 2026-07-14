@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceVolumesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceVolumes struct {

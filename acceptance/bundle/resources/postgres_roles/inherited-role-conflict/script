@@ -1,0 +1,21 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy project, branch, and role"
+trace $CLI bundle deploy
+
+title "Unbind the role: it now exists on the branch but is no longer tracked by the bundle"
+# Mirrors an inherited role on a child branch: present on the branch, but not
+# created or owned by this bundle.
+trace $CLI bundle deployment unbind my_role
+
+title "Plan after unbind: the bundle wants to (re-)create the role"
+trace $CLI bundle plan
+
+title "Re-deploy: creating the already-existing role fails"
+trace $CLI bundle deploy

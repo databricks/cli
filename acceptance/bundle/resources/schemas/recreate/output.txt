@@ -5,7 +5,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //unity
 {
   "method": "POST",
   "path": "/api/2.1/unity-catalog/schemas",
@@ -23,7 +23,7 @@ Deployment complete!
     "comment": "COMMENT1",
     "id": "main.myschema",
     "name": "myschema",
-    "url": "[DATABRICKS_URL]/explore/data/main/myschema?o=[NUMID]"
+    "url": "[DATABRICKS_URL]/explore/data/main/myschema?w=[NUMID]"
   }
 }
 
@@ -44,7 +44,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //unity
 {
   "method": "DELETE",
   "path": "/api/2.1/unity-catalog/schemas/main.myschema",

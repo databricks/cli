@@ -3,6 +3,7 @@
 package clean_room_assets
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -26,6 +27,10 @@ func New() *cobra.Command {
 		GroupID: "cleanrooms",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -96,12 +101,14 @@ func newCreate() *cobra.Command {
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only CLEAN_ROOM_NAME as positional arguments. Provide 'name', 'asset_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only CLEAN_ROOM_NAME as positional arguments. Provide 'name', 'asset_type' in your JSON input")
 			}
 			return nil
 		}
@@ -178,8 +185,10 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 	// TODO: complex arg: notebook_review
 
 	cmd.Use = "create-clean-room-asset-review CLEAN_ROOM_NAME ASSET_TYPE NAME"
-	cmd.Short = `Create a review (e.g. approval) for an asset.`
-	cmd.Long = `Create a review (e.g. approval) for an asset.
+	cmd.Short = `*Beta* Create a review (e.g. approval) for an asset.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a review (e.g. approval) for an asset.
 
   Submit an asset review
 
@@ -190,6 +199,8 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
     NAME: Name of the asset`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -269,6 +280,8 @@ func newDelete() *cobra.Command {
       CleanRoomAsset.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -335,6 +348,8 @@ func newGet() *cobra.Command {
       CleanRoomAsset.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -407,6 +422,8 @@ func newList() *cobra.Command {
     CLEAN_ROOM_NAME: Name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -492,6 +509,8 @@ func newUpdate() *cobra.Command {
       name is the jar analysis name.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)

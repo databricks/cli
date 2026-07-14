@@ -25,18 +25,24 @@ class SharepointOptions:
 
     entity_type: VariableOrOptional[SharepointOptionsSharepointEntityType] = None
     """
-    (Optional) The type of SharePoint entity to ingest.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) The type of SharePoint entity to ingest.
     If not specified, defaults to FILE.
     """
 
     file_ingestion_options: VariableOrOptional[FileIngestionOptions] = None
     """
-    (Optional) File ingestion options for processing files.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) File ingestion options for processing files.
     """
 
     url: VariableOrOptional[str] = None
     """
-    Required. The SharePoint URL.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Required. The SharePoint URL.
     """
 
     @classmethod
@@ -52,18 +58,24 @@ class SharepointOptionsDict(TypedDict, total=False):
 
     entity_type: VariableOrOptional[SharepointOptionsSharepointEntityTypeParam]
     """
-    (Optional) The type of SharePoint entity to ingest.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) The type of SharePoint entity to ingest.
     If not specified, defaults to FILE.
     """
 
     file_ingestion_options: VariableOrOptional[FileIngestionOptionsParam]
     """
-    (Optional) File ingestion options for processing files.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) File ingestion options for processing files.
     """
 
     url: VariableOrOptional[str]
     """
-    Required. The SharePoint URL.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Required. The SharePoint URL.
     """
 
 

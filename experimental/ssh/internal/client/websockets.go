@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/gorilla/websocket"
 )
@@ -38,11 +39,14 @@ func createWebsocketConnection(ctx context.Context, client *databricks.Workspace
 }
 
 func getProxyURL(ctx context.Context, client *databricks.WorkspaceClient, connID, clusterID string, serverPort int) (string, error) {
-	workspaceID, err := client.CurrentWorkspaceID(ctx)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get current workspace ID: %w", err)
 	}
 	host := client.Config.Host
-	url := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/ssh?id=%s", host, workspaceID, clusterID, serverPort, connID)
+	// The /driver-proxy-api/o/<workspace-id>/... path is a legacy URL form on
+	// the driver-proxy endpoint and uses an "o" path segment regardless of
+	// whether the workspace ID itself is the legacy or new shape.
+	url := fmt.Sprintf("%s/driver-proxy-api/o/%s/%s/%d/ssh?id=%s", host, workspaceID, clusterID, serverPort, connID)
 	return url, nil
 }

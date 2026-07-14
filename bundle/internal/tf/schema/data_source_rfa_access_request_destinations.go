@@ -15,7 +15,7 @@ type DataSourceRfaAccessRequestDestinationsDestinations struct {
 }
 
 type DataSourceRfaAccessRequestDestinationsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceRfaAccessRequestDestinationsSecurable struct {

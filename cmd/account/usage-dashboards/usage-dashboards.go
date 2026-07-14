@@ -18,13 +18,19 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "usage-dashboards",
-		Short: `These APIs manage usage dashboards for this account.`,
-		Long: `These APIs manage usage dashboards for this account. Usage dashboards enable
+		Short: `*Public Preview* These APIs manage usage dashboards for this account.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+These APIs manage usage dashboards for this account. Usage dashboards enable
   you to gain insights into your usage with pre-built dashboards: visualize
   breakdowns, analyze tag attributions, and identify cost drivers.`,
 		GroupID: "billing",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -60,13 +66,17 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", createReq.WorkspaceId, `The workspace ID of the workspace in which the usage dashboard is created.`)
 
 	cmd.Use = "create"
-	cmd.Short = `Create new usage dashboard.`
-	cmd.Long = `Create new usage dashboard.
+	cmd.Short = `*Public Preview* Create new usage dashboard.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create new usage dashboard.
 
   Create a usage dashboard specified by workspaceId, accountId, and dashboard
   type.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -129,12 +139,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", getReq.WorkspaceId, `The workspace ID of the workspace in which the usage dashboard is created.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get usage dashboard.`
-	cmd.Long = `Get usage dashboard.
+	cmd.Short = `*Public Preview* Get usage dashboard.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get usage dashboard.
 
   Get a usage dashboard specified by workspaceId, accountId, and dashboard type.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)

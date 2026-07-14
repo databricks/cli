@@ -1,0 +1,7 @@
+{
+  "sandboxId": "happy-panda-1234",
+  "status": "Running",
+  "gatewayHost": "uw2.dbrx.dev",
+  "name": "my-project",
+  "idleTimeout": "1800s"
+}

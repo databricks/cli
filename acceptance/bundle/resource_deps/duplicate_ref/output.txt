@@ -1,0 +1,53 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "pipelines": {
+    "bar": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "name": "pbar ${resources.pipelines.foo.name} ${resources.pipelines.foo.name}"
+    },
+    "baz": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "name": "pbaz ${resources.pipelines.foo.id} ${resources.pipelines.foo.id}"
+    },
+    "foo": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "name": "pfoo"
+    }
+  }
+}
+
+>>> [CLI] bundle plan
+create pipelines.bar
+create pipelines.baz
+create pipelines.foo
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq -s [.[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body.name] | sort out.requests.txt
+[
+  "pbar pfoo pfoo",
+  "pbaz [UUID] [UUID]",
+  "pfoo"
+]

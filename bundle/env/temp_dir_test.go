@@ -22,6 +22,6 @@ func TestTempDir(t *testing.T) {
 	t.Run("not set", func(t *testing.T) {
 		tempDir, ok := TempDir(ctx)
 		assert.False(t, ok)
-		assert.Equal(t, "", tempDir)
+		assert.Empty(t, tempDir)
 	})
 }

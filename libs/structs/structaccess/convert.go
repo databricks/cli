@@ -10,7 +10,7 @@ func ConvertToString(value any) (string, error) {
 
 	// Handle pointers by dereferencing them first
 	rv := reflect.ValueOf(value)
-	if rv.Kind() == reflect.Ptr {
+	if rv.Kind() == reflect.Pointer {
 		if rv.IsNil() {
 			return "", nil
 		}

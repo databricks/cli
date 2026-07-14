@@ -2,6 +2,7 @@ package scripts
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -43,19 +44,26 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
-	cmd, out, err := executeHook(ctx, executor, command)
+	cmd, err := executeHook(ctx, executor, command)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to execute script: %w", err))
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Executing '%s' script", m.scriptHook))
 
-	reader := bufio.NewReader(out)
-	line, err := reader.ReadString('\n')
-	for err == nil {
-		cmdio.LogString(ctx, strings.TrimSpace(line))
-		line, err = reader.ReadString('\n')
-	}
+	// Reading the pipes sequentially deadlocks once the script fills the ~64KiB
+	// stderr pipe buffer while stdout is still open, so drain stderr concurrently.
+	// Spooling it to memory preserves the stdout-then-stderr output order.
+	var stderr bytes.Buffer
+	stderrDone := make(chan struct{})
+	go func() {
+		defer close(stderrDone)
+		_, _ = io.Copy(&stderr, cmd.Stderr())
+	}()
+
+	logOutput(ctx, cmd.Stdout())
+	<-stderrDone
+	logOutput(ctx, &stderr)
 
 	err = cmd.Wait()
 	if err != nil {
@@ -65,18 +73,27 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-func executeHook(ctx context.Context, executor *exec.Executor, command config.Command) (exec.Command, io.Reader, error) {
+// logOutput logs output line by line, including a final line without a trailing newline.
+func logOutput(ctx context.Context, out io.Reader) {
+	reader := bufio.NewReader(out)
+	for {
+		line, err := reader.ReadString('\n')
+		if line != "" {
+			cmdio.LogString(ctx, strings.TrimSpace(line))
+		}
+		if err != nil {
+			break
+		}
+	}
+}
+
+func executeHook(ctx context.Context, executor *exec.Executor, command config.Command) (exec.Command, error) {
 	// Don't run any arbitrary code when restricted execution is enabled.
 	if _, ok := env.RestrictedExecution(ctx); ok {
-		return nil, nil, errors.New("running scripts is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
+		return nil, errors.New("running scripts is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
 	}
 
-	cmd, err := executor.StartCommand(ctx, string(command))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return cmd, io.MultiReader(cmd.Stdout(), cmd.Stderr()), nil
+	return executor.StartCommand(ctx, string(command))
 }
 
 func getCommand(b *bundle.Bundle, hook config.ScriptHook) config.Command {

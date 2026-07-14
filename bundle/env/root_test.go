@@ -37,6 +37,6 @@ func TestRoot(t *testing.T) {
 	t.Run("not set", func(t *testing.T) {
 		root, ok := Root(ctx)
 		assert.False(t, ok)
-		assert.Equal(t, "", root)
+		assert.Empty(t, root)
 	})
 }

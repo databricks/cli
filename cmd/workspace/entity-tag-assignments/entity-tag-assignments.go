@@ -3,6 +3,7 @@
 package entity_tag_assignments
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -22,13 +23,17 @@ func New() *cobra.Command {
 		Use:   "entity-tag-assignments",
 		Short: `Tags are attributes that include keys and optional values that you can use to organize and categorize entities in Unity Catalog.`,
 		Long: `Tags are attributes that include keys and optional values that you can use to
-  organize and categorize entities in Unity Catalog. Entity tagging is currently
-  supported on catalogs, schemas, tables (including views), columns, volumes.
-  With these APIs, users can create, update, delete, and list tag assignments
-  across Unity Catalog entities`,
+  organize and categorize entities in Unity Catalog. Entity tagging is supported
+  on catalogs, schemas, tables (including views), columns, and volumes. With
+  these APIs, you can create, update, delete, and list tag assignments across
+  Unity Catalog entities.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -87,12 +92,14 @@ func newCreate() *cobra.Command {
     ENTITY_TYPE: The type of the entity to which the tag is assigned.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'entity_name', 'tag_key', 'entity_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'entity_name', 'tag_key', 'entity_type' in your JSON input")
 			}
 			return nil
 		}
@@ -183,6 +190,8 @@ func newDelete() *cobra.Command {
     TAG_KEY: Required. The key of the tag to delete`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -243,6 +252,8 @@ func newGet() *cobra.Command {
     TAG_KEY: Required. The key of the tag`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -321,6 +332,8 @@ func newList() *cobra.Command {
     ENTITY_NAME: The fully qualified name of the entity to which the tag is assigned`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -411,6 +424,8 @@ func newUpdate() *cobra.Command {
       future.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(4)

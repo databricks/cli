@@ -3,6 +3,7 @@
 package budgets
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,14 +21,20 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "budgets",
-		Short: `These APIs manage budget configurations for this account.`,
-		Long: `These APIs manage budget configurations for this account. Budgets enable you
+		Short: `*Public Preview* These APIs manage budget configurations for this account.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+These APIs manage budget configurations for this account. Budgets enable you
   to monitor usage across your account. You can set up budgets to either track
   account-wide spending, or apply filters to track the spending of specific
   teams, projects, or workspaces.`,
 		GroupID: "billing",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -62,13 +69,17 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
-	cmd.Short = `Create new budget.`
-	cmd.Long = `Create new budget.
+	cmd.Short = `*Public Preview* Create new budget.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create new budget.
 
   Create a new budget configuration for an account. For full details, see
   https://docs.databricks.com/en/admin/account-settings/budgets.html.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -87,7 +98,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := a.Budgets.Create(ctx, createReq)
@@ -125,8 +136,10 @@ func newDelete() *cobra.Command {
 	var deleteReq billing.DeleteBudgetConfigurationRequest
 
 	cmd.Use = "delete BUDGET_ID"
-	cmd.Short = `Delete budget.`
-	cmd.Long = `Delete budget.
+	cmd.Short = `*Public Preview* Delete budget.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete budget.
 
   Deletes a budget configuration for an account. Both account and budget
   configuration are specified by ID. This cannot be undone.
@@ -135,6 +148,8 @@ func newDelete() *cobra.Command {
     BUDGET_ID: The Databricks budget configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -182,8 +197,10 @@ func newGet() *cobra.Command {
 	var getReq billing.GetBudgetConfigurationRequest
 
 	cmd.Use = "get BUDGET_ID"
-	cmd.Short = `Get budget.`
-	cmd.Long = `Get budget.
+	cmd.Short = `*Public Preview* Get budget.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get budget.
 
   Gets a budget configuration for an account. Both account and budget
   configuration are specified by ID.
@@ -192,6 +209,8 @@ func newGet() *cobra.Command {
     BUDGET_ID: The budget configuration ID`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -251,12 +270,16 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `Get all budgets.`
-	cmd.Long = `Get all budgets.
+	cmd.Short = `*Public Preview* Get all budgets.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get all budgets.
 
   Gets all budgets associated with this account.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -309,8 +332,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update BUDGET_ID"
-	cmd.Short = `Modify budget.`
-	cmd.Long = `Modify budget.
+	cmd.Short = `*Public Preview* Modify budget.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Modify budget.
 
   Updates a budget configuration for an account. Both account and budget
   configuration are specified by ID.
@@ -319,6 +344,8 @@ func newUpdate() *cobra.Command {
     BUDGET_ID: The Databricks budget configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -342,7 +369,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.BudgetId = args[0]
 

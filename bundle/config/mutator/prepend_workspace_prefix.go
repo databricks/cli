@@ -41,7 +41,7 @@ func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 			v, err = dyn.MapByPattern(v, pattern, func(p dyn.Path, pv dyn.Value) (dyn.Value, error) {
 				path, ok := pv.AsString()
 				if !ok {
-					return dyn.InvalidValue, fmt.Errorf("expected string, got %s", v.Kind())
+					return dyn.InvalidValue, fmt.Errorf("expected string, got %s", pv.Kind())
 				}
 
 				// Skip prefixing if the path does not start with /, it might be variable reference or smth else.
@@ -55,7 +55,8 @@ func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 					}
 				}
 
-				return dyn.NewValue("/Workspace"+path, v.Locations()), nil
+				// Use pv's locations, not the root v's, so diagnostics point at the original config line.
+				return dyn.NewValue("/Workspace"+path, pv.Locations()), nil
 			})
 			if err != nil {
 				return dyn.InvalidValue, err

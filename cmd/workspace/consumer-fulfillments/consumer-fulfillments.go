@@ -18,12 +18,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "consumer-fulfillments",
-		Short:   `Fulfillments are entities that allow consumers to preview installations.`,
-		Long:    `Fulfillments are entities that allow consumers to preview installations.`,
+		Use:   "consumer-fulfillments",
+		Short: `*Public Preview* Fulfillments are entities that allow consumers to preview installations.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Fulfillments are entities that allow consumers to preview installations.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -65,12 +71,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "get LISTING_ID"
-	cmd.Short = `Get listing content metadata.`
-	cmd.Long = `Get listing content metadata.
+	cmd.Short = `*Public Preview* Get listing content metadata.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get listing content metadata.
 
   Get a high level preview of the metadata of listing installable content.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -135,8 +145,10 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list LISTING_ID"
-	cmd.Short = `List all listing fulfillments.`
-	cmd.Long = `List all listing fulfillments.
+	cmd.Short = `*Public Preview* List all listing fulfillments.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List all listing fulfillments.
 
   Get all listings fulfillments associated with a listing. A _fulfillment_ is a
   potential installation. Standard installations contain metadata about the
@@ -145,6 +157,8 @@ func newList() *cobra.Command {
   repo, as well as the Delta Sharing recipient type.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

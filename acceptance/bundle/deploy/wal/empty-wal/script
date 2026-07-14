@@ -1,0 +1,4 @@
+mkdir -p .databricks/bundle/default
+touch .databricks/bundle/default/resources.json.wal
+trace $CLI bundle deploy
+assert_not_exists.py .databricks/bundle/default/resources.json.wal*

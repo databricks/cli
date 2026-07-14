@@ -3,6 +3,7 @@
 package warehouses
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -30,6 +31,10 @@ func New() *cobra.Command {
 		GroupID: "sql",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -103,6 +108,8 @@ func newCreate() *cobra.Command {
   Creates a new SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -187,8 +194,10 @@ func newCreateDefaultWarehouseOverride() *cobra.Command {
 	cmd.Flags().StringVar(&createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, "warehouse-id", createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, `The specific warehouse ID when type is CUSTOM.`)
 
 	cmd.Use = "create-default-warehouse-override DEFAULT_WAREHOUSE_OVERRIDE_ID TYPE"
-	cmd.Short = `Create default warehouse override.`
-	cmd.Long = `Create default warehouse override.
+	cmd.Short = `*Beta* Create default warehouse override.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create default warehouse override.
 
   Creates a new default warehouse override for a user. Users can create their
   own override. Admins can create overrides for any user.
@@ -201,12 +210,14 @@ func newCreateDefaultWarehouseOverride() *cobra.Command {
       Supported values: [CUSTOM, LAST_SELECTED]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only DEFAULT_WAREHOUSE_OVERRIDE_ID as positional arguments. Provide 'type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only DEFAULT_WAREHOUSE_OVERRIDE_ID as positional arguments. Provide 'type' in your JSON input")
 			}
 			return nil
 		}
@@ -284,6 +295,8 @@ func newDelete() *cobra.Command {
     ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -305,7 +318,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		deleteReq.Id = args[0]
 
@@ -343,8 +356,10 @@ func newDeleteDefaultWarehouseOverride() *cobra.Command {
 	var deleteDefaultWarehouseOverrideReq sql.DeleteDefaultWarehouseOverrideRequest
 
 	cmd.Use = "delete-default-warehouse-override NAME"
-	cmd.Short = `Delete default warehouse override.`
-	cmd.Long = `Delete default warehouse override.
+	cmd.Short = `*Beta* Delete default warehouse override.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete default warehouse override.
 
   Deletes the default warehouse override for a user. Users can delete their own
   override. Admins can delete overrides for any user. After deletion, the
@@ -357,6 +372,8 @@ func newDeleteDefaultWarehouseOverride() *cobra.Command {
       string "me" for the current user.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -378,7 +395,7 @@ func newDeleteDefaultWarehouseOverride() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		deleteDefaultWarehouseOverrideReq.Name = args[0]
 
@@ -448,6 +465,8 @@ func newEdit() *cobra.Command {
     ID: Required. Id of the warehouse to configure.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -481,7 +500,7 @@ func newEdit() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		editReq.Id = args[0]
 
@@ -547,6 +566,8 @@ func newGet() *cobra.Command {
     ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -568,7 +589,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		getReq.Id = args[0]
 
@@ -607,8 +628,10 @@ func newGetDefaultWarehouseOverride() *cobra.Command {
 	var getDefaultWarehouseOverrideReq sql.GetDefaultWarehouseOverrideRequest
 
 	cmd.Use = "get-default-warehouse-override NAME"
-	cmd.Short = `Get default warehouse override.`
-	cmd.Long = `Get default warehouse override.
+	cmd.Short = `*Beta* Get default warehouse override.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get default warehouse override.
 
   Returns the default warehouse override for a user. Users can fetch their own
   override. Admins can fetch overrides for any user. If no override exists, the
@@ -621,6 +644,8 @@ func newGetDefaultWarehouseOverride() *cobra.Command {
       string "me" for the current user.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -642,7 +667,7 @@ func newGetDefaultWarehouseOverride() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		getDefaultWarehouseOverrideReq.Name = args[0]
 
@@ -690,6 +715,8 @@ func newGetPermissionLevels() *cobra.Command {
     WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -711,7 +738,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.WarehouseId = args[0]
 
@@ -760,6 +787,8 @@ func newGetPermissions() *cobra.Command {
     WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -781,7 +810,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
 		getPermissionsReq.WarehouseId = args[0]
 
@@ -824,6 +853,8 @@ func newGetWorkspaceWarehouseConfig() *cobra.Command {
   a workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -884,6 +915,8 @@ func newList() *cobra.Command {
   Lists all SQL warehouses that a user has access to.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -946,13 +979,17 @@ func newListDefaultWarehouseOverrides() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-default-warehouse-overrides"
-	cmd.Short = `List default warehouse overrides.`
-	cmd.Long = `List default warehouse overrides.
+	cmd.Short = `*Beta* List default warehouse overrides.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List default warehouse overrides.
 
   Lists all default warehouse overrides in the workspace. Only workspace
   administrators can list all overrides.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1018,6 +1055,8 @@ func newSetPermissions() *cobra.Command {
     WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1051,7 +1090,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
 		setPermissionsReq.WarehouseId = args[0]
 
@@ -1111,6 +1150,8 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
   a workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1184,6 +1225,8 @@ func newStart() *cobra.Command {
     ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1205,7 +1248,7 @@ func newStart() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		startReq.Id = args[0]
 
@@ -1277,6 +1320,8 @@ func newStop() *cobra.Command {
     ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1298,7 +1343,7 @@ func newStop() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		stopReq.Id = args[0]
 
@@ -1363,8 +1408,10 @@ func newUpdateDefaultWarehouseOverride() *cobra.Command {
 	cmd.Flags().StringVar(&updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, "warehouse-id", updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, `The specific warehouse ID when type is CUSTOM.`)
 
 	cmd.Use = "update-default-warehouse-override NAME UPDATE_MASK TYPE"
-	cmd.Short = `Update default warehouse override.`
-	cmd.Long = `Update default warehouse override.
+	cmd.Short = `*Beta* Update default warehouse override.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update default warehouse override.
 
   Updates an existing default warehouse override for a user. Users can update
   their own override. Admins can update overrides for any user.
@@ -1379,12 +1426,14 @@ func newUpdateDefaultWarehouseOverride() *cobra.Command {
       Supported values: [CUSTOM, LAST_SELECTED]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'type' in your JSON input")
 			}
 			return nil
 		}
@@ -1472,6 +1521,8 @@ func newUpdatePermissions() *cobra.Command {
     WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1505,7 +1556,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
 		updatePermissionsReq.WarehouseId = args[0]
 

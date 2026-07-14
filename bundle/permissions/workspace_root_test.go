@@ -70,7 +70,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 		},
 		WorkspaceObjectId:   "1234",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	diags := bundle.ApplySeq(t.Context(), b, ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions())
 	require.Empty(t, diags)
@@ -143,7 +143,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "1",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -153,7 +153,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "2",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -163,7 +163,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "3",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -173,7 +173,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "4",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -183,8 +183,57 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "5",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	diags := bundle.Apply(t.Context(), b, ApplyWorkspaceRootPermissions())
 	require.NoError(t, diags.Error())
+}
+
+func TestUndeclaredWriterTypes(t *testing.T) {
+	const deployer = "me@example.com"
+	self := resources.Permission{Level: CAN_MANAGE, UserName: deployer}
+	other := resources.Permission{Level: CAN_MANAGE, UserName: "other@example.com"}
+	sp := resources.Permission{Level: CAN_MANAGE, ServicePrincipalName: "sp-1"}
+	group := resources.Permission{Level: CAN_MANAGE, GroupName: "team"}
+
+	cases := []struct {
+		name                                   string
+		undeclared                             []resources.Permission
+		wantSelf, wantOther, wantSP, wantGroup bool
+	}{
+		{"empty", nil, false, false, false, false},
+		{"deploying user", []resources.Permission{self}, true, false, false, false},
+		{"other user", []resources.Permission{other}, false, true, false, false},
+		{"service principal", []resources.Permission{sp}, false, false, true, false},
+		{"group", []resources.Permission{group}, false, false, false, true},
+		{"all types", []resources.Permission{self, other, sp, group}, true, true, true, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotSelf, gotOther, gotSP, gotGroup := undeclaredWriterTypes(tc.undeclared, deployer)
+			require.Equal(t, tc.wantSelf, gotSelf)
+			require.Equal(t, tc.wantOther, gotOther)
+			require.Equal(t, tc.wantSP, gotSP)
+			require.Equal(t, tc.wantGroup, gotGroup)
+		})
+	}
+}
+
+func TestUserHomeOwner(t *testing.T) {
+	cases := []struct {
+		path  string
+		owner string
+		ok    bool
+	}{
+		{"/Workspace/Users/alice@example.com/.bundle/x/state", "alice@example.com", true},
+		{"/Workspace/Users/alice@example.com", "alice@example.com", true},
+		{"/Workspace/Shared/state", "", false},
+		{"/Workspace/team/state", "", false},
+		{"/Workspace/Users/", "", false},
+	}
+	for _, tc := range cases {
+		owner, ok := userHomeOwner(tc.path)
+		require.Equal(t, tc.ok, ok, tc.path)
+		require.Equal(t, tc.owner, owner, tc.path)
+	}
 }

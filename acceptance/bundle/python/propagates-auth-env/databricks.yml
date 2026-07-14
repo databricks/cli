@@ -1,0 +1,16 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  mutators:
+    - "mutators:capture_profile_env"
+
+workspace:
+  profile: my-profile
+
+resources:
+  jobs:
+    my_job:
+      name: "Job"

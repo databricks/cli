@@ -20,8 +20,8 @@ func TestMappingZeroValue(t *testing.T) {
 	value, ok := m.Get(dyn.V("key"))
 	assert.Equal(t, dyn.InvalidValue, value)
 	assert.False(t, ok)
-	assert.Len(t, m.Keys(), 0)
-	assert.Len(t, m.Values(), 0)
+	assert.Empty(t, m.Keys())
+	assert.Empty(t, m.Values())
 }
 
 func TestMappingGet(t *testing.T) {

@@ -9,6 +9,22 @@ type logger int
 
 var loggerKey logger
 
+type prefixKeyType struct{}
+
+// WithPrefix returns a context that prepends prefix to every log message emitted from it.
+// Calling WithPrefix on a context that already has a prefix appends with ": ".
+func WithPrefix(ctx context.Context, prefix string) context.Context {
+	if existing, _ := ctx.Value(prefixKeyType{}).(string); existing != "" {
+		prefix = existing + ": " + prefix
+	}
+	return context.WithValue(ctx, prefixKeyType{}, prefix)
+}
+
+func getPrefix(ctx context.Context) string {
+	prefix, _ := ctx.Value(prefixKeyType{}).(string)
+	return prefix
+}
+
 // NewContext returns a new Context that carries the specified logger.
 //
 // Discussion why this is not part of slog itself: https://github.com/golang/go/issues/58243.

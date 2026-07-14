@@ -67,7 +67,7 @@ type ResourceInstancePoolPreloadedDockerImage struct {
 }
 
 type ResourceInstancePoolProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceInstancePool struct {

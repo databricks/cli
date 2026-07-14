@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -68,7 +69,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 
 			if !cmdio.IsPromptSupported(ctx) {
 				result.Cancel()
-				logdiag.LogError(ctx, errors.New("This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.")) //nolint
+				logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
 				return
 			}
 

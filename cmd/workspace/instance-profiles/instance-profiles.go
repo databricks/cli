@@ -3,6 +3,7 @@
 package instance_profiles
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -30,6 +31,10 @@ func New() *cobra.Command {
 		GroupID: "compute",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newAdd())
@@ -80,12 +85,14 @@ func newAdd() *cobra.Command {
       field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'instance_profile_arn' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'instance_profile_arn' in your JSON input")
 			}
 			return nil
 		}
@@ -178,12 +185,14 @@ func newEdit() *cobra.Command {
       field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'instance_profile_arn' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'instance_profile_arn' in your JSON input")
 			}
 			return nil
 		}
@@ -260,6 +269,8 @@ func newList() *cobra.Command {
   This API is available to all users.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -318,12 +329,14 @@ func newRemove() *cobra.Command {
     INSTANCE_PROFILE_ARN: The ARN of the instance profile to remove. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'instance_profile_arn' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'instance_profile_arn' in your JSON input")
 			}
 			return nil
 		}

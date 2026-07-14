@@ -3,6 +3,7 @@
 package cluster_policies
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -47,6 +48,10 @@ func New() *cobra.Command {
 		GroupID: "compute",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -99,6 +104,8 @@ func newCreate() *cobra.Command {
   Creates a new policy with prescribed settings.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -171,12 +178,14 @@ func newDelete() *cobra.Command {
     POLICY_ID: The ID of the policy to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'policy_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'policy_id' in your JSON input")
 			}
 			return nil
 		}
@@ -215,7 +224,7 @@ func newDelete() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the policy to delete")
+				return errors.New("expected to have the id of the policy to delete")
 			}
 			deleteReq.PolicyId = args[0]
 		}
@@ -275,12 +284,14 @@ func newEdit() *cobra.Command {
     POLICY_ID: The ID of the policy to update.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'policy_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'policy_id' in your JSON input")
 			}
 			return nil
 		}
@@ -319,7 +330,7 @@ func newEdit() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the policy to update")
+				return errors.New("expected to have the id of the policy to update")
 			}
 			editReq.PolicyId = args[0]
 
@@ -368,6 +379,8 @@ func newGet() *cobra.Command {
     POLICY_ID: Canonical unique identifier for the Cluster Policy.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -389,7 +402,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have canonical unique identifier for the cluster policy")
+			return errors.New("expected to have canonical unique identifier for the cluster policy")
 		}
 		getReq.PolicyId = args[0]
 
@@ -437,6 +450,8 @@ func newGetPermissionLevels() *cobra.Command {
     CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -458,7 +473,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster policy for which to get or manage permissions")
+			return errors.New("expected to have the cluster policy for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.ClusterPolicyId = args[0]
 
@@ -507,6 +522,8 @@ func newGetPermissions() *cobra.Command {
     CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -528,7 +545,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster policy for which to get or manage permissions")
+			return errors.New("expected to have the cluster policy for which to get or manage permissions")
 		}
 		getPermissionsReq.ClusterPolicyId = args[0]
 
@@ -585,6 +602,8 @@ func newList() *cobra.Command {
   Returns a list of policies accessible by the requesting user.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -650,6 +669,8 @@ func newSetPermissions() *cobra.Command {
     CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -683,7 +704,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster policy for which to get or manage permissions")
+			return errors.New("expected to have the cluster policy for which to get or manage permissions")
 		}
 		setPermissionsReq.ClusterPolicyId = args[0]
 
@@ -737,6 +758,8 @@ func newUpdatePermissions() *cobra.Command {
     CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -770,7 +793,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster policy for which to get or manage permissions")
+			return errors.New("expected to have the cluster policy for which to get or manage permissions")
 		}
 		updatePermissionsReq.ClusterPolicyId = args[0]
 

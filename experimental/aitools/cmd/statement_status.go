@@ -2,10 +2,10 @@ package aitools
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
@@ -38,15 +38,16 @@ without blocking. For a blocking poll-until-terminal call, use
 
 // getStatementStatus performs a single GET against the Statements API, no polling.
 func getStatementStatus(ctx context.Context, api sql.StatementExecutionInterface, statementID string) (statementInfo, error) {
-	resp, err := api.GetStatementByStatementId(ctx, statementID)
+	// Get doesn't use the warehouse ID.
+	client := sqlexec.New(api, "")
+	stmt, err := client.Get(ctx, statementID)
 	if err != nil {
-		return statementInfo{}, fmt.Errorf("get statement: %w", err)
+		return statementInfo{}, err
 	}
 
-	info := statementInfo{StatementID: resp.StatementId}
-	if resp.Status != nil {
-		info.State = resp.Status.State
-	}
-	info.Error = statementErrorFromStatus(resp.Status)
-	return info, nil
+	return statementInfo{
+		StatementID: stmt.ID,
+		State:       stmt.State,
+		Error:       statementError(stmt.Err()),
+	}, nil
 }

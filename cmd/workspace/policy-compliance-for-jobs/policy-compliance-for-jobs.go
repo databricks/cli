@@ -3,6 +3,7 @@
 package policy_compliance_for_jobs
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -37,6 +38,10 @@ func New() *cobra.Command {
 		GroupID: "lakeflow",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newEnforceCompliance())
@@ -83,12 +88,14 @@ func newEnforceCompliance() *cobra.Command {
     JOB_ID: The ID of the job you want to enforce policy compliance on.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -167,6 +174,8 @@ func newGetCompliance() *cobra.Command {
     JOB_ID: The ID of the job whose compliance status you are requesting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -243,6 +252,8 @@ func newListCompliance() *cobra.Command {
     POLICY_ID: Canonical unique identifier for the cluster policy.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

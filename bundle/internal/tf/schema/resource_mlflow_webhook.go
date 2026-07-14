@@ -16,7 +16,7 @@ type ResourceMlflowWebhookJobSpec struct {
 }
 
 type ResourceMlflowWebhookProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceMlflowWebhook struct {

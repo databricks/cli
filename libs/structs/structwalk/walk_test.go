@@ -74,7 +74,7 @@ func TestValueTypesEmpty(t *testing.T) {
 	forcedResults := flatten(t, forced)
 
 	// Ensure forced fields are present with zero values
-	assert.Equal(t, "", forcedResults["omit_str"])
+	assert.Empty(t, forcedResults["omit_str"])
 	assert.Equal(t, false, forcedResults["omit_bool"])
 
 	// Non-forced omitempty zero field should remain absent

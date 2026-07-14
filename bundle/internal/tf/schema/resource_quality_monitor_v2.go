@@ -9,7 +9,7 @@ type ResourceQualityMonitorV2AnomalyDetectionConfig struct {
 }
 
 type ResourceQualityMonitorV2ProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceQualityMonitorV2ValidityCheckConfigurationsPercentNullValidityCheck struct {

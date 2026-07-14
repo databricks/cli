@@ -9,6 +9,10 @@ type DataSources struct {
 	AccountNetworkPolicy                        map[string]any `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2              map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                            map[string]any `json:"databricks_account_setting_v2,omitempty"`
+	AiSearchEndpoint                            map[string]any `json:"databricks_ai_search_endpoint,omitempty"`
+	AiSearchEndpoints                           map[string]any `json:"databricks_ai_search_endpoints,omitempty"`
+	AiSearchIndex                               map[string]any `json:"databricks_ai_search_index,omitempty"`
+	AiSearchIndexes                             map[string]any `json:"databricks_ai_search_indexes,omitempty"`
 	AlertV2                                     map[string]any `json:"databricks_alert_v2,omitempty"`
 	AlertsV2                                    map[string]any `json:"databricks_alerts_v2,omitempty"`
 	App                                         map[string]any `json:"databricks_app,omitempty"`
@@ -47,6 +51,10 @@ type DataSources struct {
 	DbfsFile                                    map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths                               map[string]any `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory                                   map[string]any `json:"databricks_directory,omitempty"`
+	DisasterRecoveryFailoverGroup               map[string]any `json:"databricks_disaster_recovery_failover_group,omitempty"`
+	DisasterRecoveryFailoverGroups              map[string]any `json:"databricks_disaster_recovery_failover_groups,omitempty"`
+	DisasterRecoveryStableUrl                   map[string]any `json:"databricks_disaster_recovery_stable_url,omitempty"`
+	DisasterRecoveryStableUrls                  map[string]any `json:"databricks_disaster_recovery_stable_urls,omitempty"`
 	Endpoint                                    map[string]any `json:"databricks_endpoint,omitempty"`
 	Endpoints                                   map[string]any `json:"databricks_endpoints,omitempty"`
 	EntityTagAssignment                         map[string]any `json:"databricks_entity_tag_assignment,omitempty"`
@@ -97,6 +105,7 @@ type DataSources struct {
 	PostgresBranch                              map[string]any `json:"databricks_postgres_branch,omitempty"`
 	PostgresBranches                            map[string]any `json:"databricks_postgres_branches,omitempty"`
 	PostgresCatalog                             map[string]any `json:"databricks_postgres_catalog,omitempty"`
+	PostgresDataApi                             map[string]any `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                            map[string]any `json:"databricks_postgres_database,omitempty"`
 	PostgresDatabases                           map[string]any `json:"databricks_postgres_databases,omitempty"`
 	PostgresEndpoint                            map[string]any `json:"databricks_postgres_endpoint,omitempty"`
@@ -113,6 +122,8 @@ type DataSources struct {
 	RfaAccessRequestDestinations                map[string]any `json:"databricks_rfa_access_request_destinations,omitempty"`
 	Schema                                      map[string]any `json:"databricks_schema,omitempty"`
 	Schemas                                     map[string]any `json:"databricks_schemas,omitempty"`
+	SecretUc                                    map[string]any `json:"databricks_secret_uc,omitempty"`
+	SecretUcs                                   map[string]any `json:"databricks_secret_ucs,omitempty"`
 	ServicePrincipal                            map[string]any `json:"databricks_service_principal,omitempty"`
 	ServicePrincipalFederationPolicies          map[string]any `json:"databricks_service_principal_federation_policies,omitempty"`
 	ServicePrincipalFederationPolicy            map[string]any `json:"databricks_service_principal_federation_policy,omitempty"`
@@ -125,6 +136,10 @@ type DataSources struct {
 	SqlWarehouses                               map[string]any `json:"databricks_sql_warehouses,omitempty"`
 	StorageCredential                           map[string]any `json:"databricks_storage_credential,omitempty"`
 	StorageCredentials                          map[string]any `json:"databricks_storage_credentials,omitempty"`
+	SupervisorAgent                             map[string]any `json:"databricks_supervisor_agent,omitempty"`
+	SupervisorAgentTool                         map[string]any `json:"databricks_supervisor_agent_tool,omitempty"`
+	SupervisorAgentTools                        map[string]any `json:"databricks_supervisor_agent_tools,omitempty"`
+	SupervisorAgents                            map[string]any `json:"databricks_supervisor_agents,omitempty"`
 	Table                                       map[string]any `json:"databricks_table,omitempty"`
 	Tables                                      map[string]any `json:"databricks_tables,omitempty"`
 	TagPolicies                                 map[string]any `json:"databricks_tag_policies,omitempty"`
@@ -151,6 +166,10 @@ func NewDataSources() *DataSources {
 		AccountNetworkPolicy:            make(map[string]any),
 		AccountSettingUserPreferenceV2:  make(map[string]any),
 		AccountSettingV2:                make(map[string]any),
+		AiSearchEndpoint:                make(map[string]any),
+		AiSearchEndpoints:               make(map[string]any),
+		AiSearchIndex:                   make(map[string]any),
+		AiSearchIndexes:                 make(map[string]any),
 		AlertV2:                         make(map[string]any),
 		AlertsV2:                        make(map[string]any),
 		App:                             make(map[string]any),
@@ -189,6 +208,10 @@ func NewDataSources() *DataSources {
 		DbfsFile:                        make(map[string]any),
 		DbfsFilePaths:                   make(map[string]any),
 		Directory:                       make(map[string]any),
+		DisasterRecoveryFailoverGroup:   make(map[string]any),
+		DisasterRecoveryFailoverGroups:  make(map[string]any),
+		DisasterRecoveryStableUrl:       make(map[string]any),
+		DisasterRecoveryStableUrls:      make(map[string]any),
 		Endpoint:                        make(map[string]any),
 		Endpoints:                       make(map[string]any),
 		EntityTagAssignment:             make(map[string]any),
@@ -239,6 +262,7 @@ func NewDataSources() *DataSources {
 		PostgresBranch:                              make(map[string]any),
 		PostgresBranches:                            make(map[string]any),
 		PostgresCatalog:                             make(map[string]any),
+		PostgresDataApi:                             make(map[string]any),
 		PostgresDatabase:                            make(map[string]any),
 		PostgresDatabases:                           make(map[string]any),
 		PostgresEndpoint:                            make(map[string]any),
@@ -255,6 +279,8 @@ func NewDataSources() *DataSources {
 		RfaAccessRequestDestinations:                make(map[string]any),
 		Schema:                                      make(map[string]any),
 		Schemas:                                     make(map[string]any),
+		SecretUc:                                    make(map[string]any),
+		SecretUcs:                                   make(map[string]any),
 		ServicePrincipal:                            make(map[string]any),
 		ServicePrincipalFederationPolicies:          make(map[string]any),
 		ServicePrincipalFederationPolicy:            make(map[string]any),
@@ -267,6 +293,10 @@ func NewDataSources() *DataSources {
 		SqlWarehouses:                               make(map[string]any),
 		StorageCredential:                           make(map[string]any),
 		StorageCredentials:                          make(map[string]any),
+		SupervisorAgent:                             make(map[string]any),
+		SupervisorAgentTool:                         make(map[string]any),
+		SupervisorAgentTools:                        make(map[string]any),
+		SupervisorAgents:                            make(map[string]any),
 		Table:                                       make(map[string]any),
 		Tables:                                      make(map[string]any),
 		TagPolicies:                                 make(map[string]any),

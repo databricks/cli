@@ -1,0 +1,34 @@
+# WAL (Write-Ahead Log) tests verify crash recovery during bundle deployment.
+# These tests simulate process crashes using KillCaller and verify state recovery.
+# Only runs with direct engine since WAL is a direct-engine feature.
+
+Local = true
+Env.DATABRICKS_CLI_TEST_PID = "1"
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[[Repls]]
+Old = 'script: line \d+:\s+\d+ Killed(: 9)?\s+"\$@"'
+New = '[PROCESS_KILLED]'
+
+[[Repls]]
+Old = '(\n>>> errcode [^\n]+\n)\nExit code:'
+New = "${1}[PROCESS_KILLED]\n\nExit code:"
+
+[[Repls]]
+Old = 'Exit code: 137'
+New = 'Exit code: [KILLED]'
+
+# On Linux, a KillCaller kill may surface as exit code 1 rather than 137.
+# Only normalise exit code 1 when it directly follows [PROCESS_KILLED] to
+# avoid masking genuine error exits (lineage-mismatch, future-serial-wal).
+[[Repls]]
+Old = '(\[PROCESS_KILLED\]\n\nExit code: )1'
+New = '${1}[KILLED]'
+
+# On Windows, no bash "Killed" message appears when CLI has produced output before termination.
+# Match the raw exit code 1 (Windows never gets 137 or [PROCESS_KILLED] marker first).
+[[Repls]]
+Old = '(Deploying resources\.\.\.)\n\nExit code: 1'
+New = "${1}\n[PROCESS_KILLED]\n\nExit code: [KILLED]"

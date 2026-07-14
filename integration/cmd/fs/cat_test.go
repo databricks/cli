@@ -27,7 +27,7 @@ func TestFsCat(t *testing.T) {
 			require.NoError(t, err)
 
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "cat", path.Join(tmpDir, "hello.txt"))
-			assert.Equal(t, "", stderr.String())
+			assert.Empty(t, stderr.String())
 			assert.Equal(t, "abcd", stdout.String())
 		})
 	}

@@ -19,6 +19,23 @@ type PostgresBranchConfig struct {
 
 	// Parent is the project containing this branch. Format: "projects/{project_id}"
 	Parent string `json:"parent"`
+
+	// ReplaceExisting, when true, takes over an existing branch with the same ID
+	// instead of returning ALREADY_EXISTS. Used to manage the implicitly-created
+	// production branch of a new project. Input-only: not returned by the GET API.
+	ReplaceExisting bool `json:"replace_existing,omitempty"`
+
+	// PurgeOnDelete, when true, hard-deletes the branch on destroy (Purge=true on
+	// DeleteBranch). When false or unset, the backend performs a soft delete that
+	// can be undone within the branch's retention window. Input-only: not
+	// returned by the GET API.
+	PurgeOnDelete bool `json:"purge_on_delete,omitempty"`
+
+	// ForceSendFields shadows the embedded BranchSpec.ForceSendFields so the
+	// SDK's marshal package tracks zero-value top-level fields (branch_id,
+	// parent, replace_existing, purge_on_delete) here instead of polluting
+	// BranchSpec.ForceSendFields with names that don't exist in that struct.
+	ForceSendFields []string `json:"-" url:"-"`
 }
 
 func (c *PostgresBranchConfig) UnmarshalJSON(b []byte) error {

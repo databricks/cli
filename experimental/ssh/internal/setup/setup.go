@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	sshclient "github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
@@ -28,34 +29,24 @@ type SetupOptions struct {
 	SSHKeysDir string
 	// Optional auth profile name. If present, will be added as --profile flag to the ProxyCommand
 	Profile string
-	// Proxy command to use for the SSH connection
-	ProxyCommand string
 	// Skip confirmation prompts (e.g. recreate existing host config without asking)
 	AutoApprove bool
 }
 
-func validateClusterAccess(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) error {
-	clusterInfo, err := client.Clusters.Get(ctx, compute.GetClusterRequest{ClusterId: clusterID})
-	if err != nil {
-		return fmt.Errorf("failed to get cluster information for cluster ID '%s': %w", clusterID, err)
-	}
-	if clusterInfo.DataSecurityMode != compute.DataSecurityModeSingleUser {
-		return fmt.Errorf("cluster '%s' does not have dedicated access mode. Current access mode: %s. Please ensure the cluster is configured with dedicated access mode (single user)", clusterID, clusterInfo.DataSecurityMode)
-	}
-	return nil
-}
-
-func generateHostConfig(ctx context.Context, opts SetupOptions) (string, error) {
+func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand string) (string, error) {
 	identityFilePath, err := keys.GetLocalSSHKeyPath(ctx, opts.ClusterID, opts.SSHKeysDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, opts.ProxyCommand)
+	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, proxyCommand)
 	return hostConfig, nil
 }
 
-func clusterSelectionPrompt(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
+// clusterSelectionPrompt is a package-level var so tests can replace it with a mock.
+var clusterSelectionPrompt = defaultClusterSelectionPrompt
+
+func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading clusters.")
 	clusters, err := client.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{
@@ -87,9 +78,23 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		return errors.New("cluster ID is required")
 	}
 
-	err := validateClusterAccess(ctx, client, opts.ClusterID)
+	err := sshclient.ValidateClusterAccess(ctx, client, opts.ClusterID)
 	if err != nil {
 		return err
+	}
+
+	// Build the ProxyCommand after the cluster ID is resolved. When the user
+	// omits --cluster, the ID is only known after the interactive picker above,
+	// so building it earlier would serialize an empty --cluster= flag.
+	clientOpts := sshclient.ClientOptions{
+		ClusterID:        opts.ClusterID,
+		AutoStartCluster: opts.AutoStartCluster,
+		ShutdownDelay:    opts.ShutdownDelay,
+		Profile:          opts.Profile,
+	}
+	proxyCommand, err := clientOpts.ToProxyCommand()
+	if err != nil {
+		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
 
 	configPath, err := sshconfig.GetMainConfigPathOrDefault(ctx, opts.SSHConfigPath)
@@ -102,7 +107,7 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		return err
 	}
 
-	hostConfig, err := generateHostConfig(ctx, opts)
+	hostConfig, err := generateHostConfig(ctx, opts, proxyCommand)
 	if err != nil {
 		return err
 	}

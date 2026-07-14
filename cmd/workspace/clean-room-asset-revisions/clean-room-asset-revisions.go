@@ -19,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "clean-room-asset-revisions",
-		Short: `Clean Room Asset Revisions denote new versions of uploaded assets (e.g.`,
-		Long: `Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
+		Short: `*Beta* Clean Room Asset Revisions denote new versions of uploaded assets (e.g.`,
+		Long: `This command is in Beta and may change without notice.
+
+Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
   notebooks) in the clean room.`,
 		GroupID: "cleanrooms",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -53,8 +59,10 @@ func newGet() *cobra.Command {
 	var getReq cleanrooms.GetCleanRoomAssetRevisionRequest
 
 	cmd.Use = "get CLEAN_ROOM_NAME ASSET_TYPE NAME ETAG"
-	cmd.Short = `Get an asset revision.`
-	cmd.Long = `Get an asset revision.
+	cmd.Short = `*Beta* Get an asset revision.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an asset revision.
 
   Get a specific revision of an asset
 
@@ -67,6 +75,8 @@ func newGet() *cobra.Command {
       returned.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(4)
@@ -135,8 +145,10 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CLEAN_ROOM_NAME ASSET_TYPE NAME"
-	cmd.Short = `List asset revisions.`
-	cmd.Long = `List asset revisions.
+	cmd.Short = `*Beta* List asset revisions.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List asset revisions.
 
   List revisions for an asset
 
@@ -147,6 +159,8 @@ func newList() *cobra.Command {
     NAME: Name of the asset.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)

@@ -1,0 +1,15 @@
+# Deploy first so the permissions resource exists; plan reads it on subsequent runs.
+$CLI bundle deploy
+rm -f out.requests.txt
+
+fault.py "GET /api/2.0/permissions/pipelines/*" 504 0 1
+trace $CLI bundle plan
+trace print_requests.py //api/2.0/permissions/pipelines --get --oneline | uniq -c | sed 's/^ *//' | contains.py "2 "
+
+fault.py "GET /api/2.0/permissions/pipelines/*" 504 0 2
+trace $CLI bundle plan
+print_requests.py //api/2.0/permissions/pipelines --get --oneline | uniq -c | sed 's/^ *//' | contains.py "3 "
+
+fault.py "GET /api/2.0/permissions/pipelines/*" 504 0 3
+trace musterr $CLI bundle plan
+print_requests.py //api/2.0/permissions/pipelines --get --oneline | uniq -c | sed 's/^ *//' | contains.py "3 "

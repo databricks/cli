@@ -10,6 +10,7 @@ import (
 	libpsql "github.com/databricks/cli/libs/psql"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/google/uuid"
 )
 
@@ -26,7 +27,7 @@ func connectProvisioned(ctx context.Context, instanceName string, retryConfig li
 		return err
 	}
 
-	user, err := w.CurrentUser.Me(ctx)
+	user, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}

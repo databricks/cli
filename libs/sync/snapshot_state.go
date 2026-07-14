@@ -2,12 +2,11 @@ package sync
 
 import (
 	"fmt"
-	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/notebook"
 )
 
 // SnapshotState keeps track of files on the local filesystem and their corresponding
@@ -57,8 +56,7 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 			continue
 		}
 		if isNotebook {
-			ext := path.Ext(remoteName)
-			remoteName = strings.TrimSuffix(remoteName, ext)
+			remoteName = notebook.StripExtension(remoteName)
 		}
 
 		// Add the file to snapshot state

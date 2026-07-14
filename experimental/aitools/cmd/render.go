@@ -1,6 +1,7 @@
 package aitools
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -9,25 +10,12 @@ import (
 	"text/tabwriter"
 
 	"github.com/databricks/cli/libs/tableview"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 const (
 	// maxColumnWidth is the maximum display width for any single column in static table output.
 	maxColumnWidth = 40
 )
-
-// extractColumns returns column names from the query result manifest.
-func extractColumns(manifest *sql.ResultManifest) []string {
-	if manifest == nil || manifest.Schema == nil {
-		return nil
-	}
-	columns := make([]string, len(manifest.Schema.Columns))
-	for i, col := range manifest.Schema.Columns {
-		columns[i] = col.Name
-	}
-	return columns
-}
 
 // renderBatchJSON writes batch results as a JSON array. The array preserves
 // input order and includes one object per submitted statement.
@@ -126,6 +114,6 @@ func renderStaticTable(w io.Writer, columns []string, rows [][]string) error {
 }
 
 // renderInteractiveTable displays query results in the interactive table browser.
-func renderInteractiveTable(w io.Writer, columns []string, rows [][]string) error {
-	return tableview.Run(w, columns, rows)
+func renderInteractiveTable(ctx context.Context, w io.Writer, columns []string, rows [][]string) error {
+	return tableview.Run(ctx, w, columns, rows)
 }

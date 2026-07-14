@@ -67,6 +67,13 @@ func (out *LogsOutput) String() (string, error) {
 func toRunOutput(output *jobs.RunOutput) RunOutput {
 	switch {
 	case output.NotebookOutput != nil:
+		if output.NotebookOutput.Result == "" && !output.NotebookOutput.Truncated && output.Logs != "" {
+			result := LogsOutput{
+				Logs:          output.Logs,
+				LogsTruncated: output.LogsTruncated,
+			}
+			return &result
+		}
 		result := NotebookOutput(*output.NotebookOutput)
 		return &result
 	case output.DbtOutput != nil:

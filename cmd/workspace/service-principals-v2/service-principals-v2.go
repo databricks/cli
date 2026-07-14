@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "service-principals-v2",
-		Short: `Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.`,
-		Long: `Identities for use with jobs, automated tools, and systems such as scripts,
+		Short: `*Public Preview* Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Identities for use with jobs, automated tools, and systems such as scripts,
   apps, and CI/CD platforms. Databricks recommends creating service principals
   to run production jobs or modify production data. If all processes that act on
   production data run with service principals, interactive users do not need any
@@ -30,6 +32,10 @@ func New() *cobra.Command {
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -75,12 +81,16 @@ func newCreate() *cobra.Command {
 	// TODO: array: schemas
 
 	cmd.Use = "create"
-	cmd.Short = `Create a service principal.`
-	cmd.Long = `Create a service principal.
+	cmd.Short = `*Public Preview* Create a service principal.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a service principal.
 
   Creates a new service principal in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -140,8 +150,10 @@ func newDelete() *cobra.Command {
 	var deleteReq iam.DeleteServicePrincipalRequest
 
 	cmd.Use = "delete ID"
-	cmd.Short = `Delete a service principal.`
-	cmd.Long = `Delete a service principal.
+	cmd.Short = `*Public Preview* Delete a service principal.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a service principal.
 
   Delete a single service principal in the Databricks workspace.
 
@@ -149,6 +161,8 @@ func newDelete() *cobra.Command {
     ID: Unique ID for a service principal in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -196,8 +210,10 @@ func newGet() *cobra.Command {
 	var getReq iam.GetServicePrincipalRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `Get service principal details.`
-	cmd.Long = `Get service principal details.
+	cmd.Short = `*Public Preview* Get service principal details.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get service principal details.
 
   Gets the details for a single service principal define in the Databricks
   workspace.
@@ -206,6 +222,8 @@ func newGet() *cobra.Command {
     ID: Unique ID for a service principal in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -273,12 +291,16 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("count").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List service principals.`
-	cmd.Long = `List service principals.
+	cmd.Short = `*Public Preview* List service principals.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List service principals.
 
   Gets the set of service principals associated with a Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -334,8 +356,10 @@ func newPatch() *cobra.Command {
 	// TODO: array: schemas
 
 	cmd.Use = "patch ID"
-	cmd.Short = `Update service principal details.`
-	cmd.Long = `Update service principal details.
+	cmd.Short = `*Public Preview* Update service principal details.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update service principal details.
 
   Partially updates the details of a single service principal in the Databricks
   workspace.
@@ -344,6 +368,8 @@ func newPatch() *cobra.Command {
     ID: Unique ID in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -415,8 +441,10 @@ func newUpdate() *cobra.Command {
 	// TODO: array: schemas
 
 	cmd.Use = "update ID"
-	cmd.Short = `Replace service principal.`
-	cmd.Long = `Replace service principal.
+	cmd.Short = `*Public Preview* Replace service principal.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Replace service principal.
 
   Updates the details of a single service principal.
 
@@ -426,6 +454,8 @@ func newUpdate() *cobra.Command {
     ID: Databricks service principal ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

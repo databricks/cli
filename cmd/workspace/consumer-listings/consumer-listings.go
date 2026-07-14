@@ -3,6 +3,7 @@
 package consumer_listings
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -19,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer-listings",
-		Short: `Listings are the core entities in the Marketplace.`,
-		Long: `Listings are the core entities in the Marketplace. They represent the products
+		Short: `*Public Preview* Listings are the core entities in the Marketplace.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Listings are the core entities in the Marketplace. They represent the products
   that are available for consumption.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newBatchGet())
@@ -57,13 +64,17 @@ func newBatchGet() *cobra.Command {
 	// TODO: array: ids
 
 	cmd.Use = "batch-get"
-	cmd.Short = `Get one batch of listings. One may specify up to 50 IDs per request.`
-	cmd.Long = `Get one batch of listings. One may specify up to 50 IDs per request.
+	cmd.Short = `*Public Preview* Get one batch of listings. One may specify up to 50 IDs per request.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get one batch of listings. One may specify up to 50 IDs per request.
 
   Batch get a published listing in the Databricks Marketplace that the consumer
   has access to.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -110,13 +121,17 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetListingRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `Get listing.`
-	cmd.Long = `Get listing.
+	cmd.Short = `*Public Preview* Get listing.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get listing.
 
   Get a published listing in the Databricks Marketplace that the consumer has
   access to.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -138,7 +153,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getReq.Id = args[0]
 
@@ -187,7 +202,7 @@ func newList() *cobra.Command {
 	cmd.Flags().BoolVar(&listReq.IsStaffPick, "is-staff-pick", listReq.IsStaffPick, `Filters each listing based on whether it is a staff pick.`)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	// TODO: array: provider_ids
-	// TODO: array: tags
+	// TODO: complex arg: tags
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -197,13 +212,17 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List listings.`
-	cmd.Long = `List listings.
+	cmd.Short = `*Public Preview* List listings.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List listings.
 
   List all published listings in the Databricks Marketplace that the consumer
   has access to.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -271,8 +290,10 @@ func newSearch() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search QUERY"
-	cmd.Short = `Search listings.`
-	cmd.Long = `Search listings.
+	cmd.Short = `*Public Preview* Search listings.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Search listings.
 
   Search published listings in the Databricks Marketplace that the consumer has
   access to. This query supports a variety of different search parameters and
@@ -282,6 +303,8 @@ func newSearch() *cobra.Command {
     QUERY: Fuzzy matches query`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -303,7 +326,7 @@ func newSearch() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have fuzzy matches query")
+			return errors.New("expected to have fuzzy matches query")
 		}
 		searchReq.Query = args[0]
 

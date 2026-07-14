@@ -73,7 +73,7 @@ func TestExecuteBatchAllSucceed(t *testing.T) {
 		}, nil).Once()
 	}
 
-	results := executeBatch(ctx, mockAPI, "wh-123", sqls, 8)
+	results := executeBatch(ctx, mockAPI, "wh-123", sqls, nil, 8)
 
 	require.Len(t, results, 3)
 	for i, r := range results {
@@ -84,6 +84,25 @@ func TestExecuteBatchAllSucceed(t *testing.T) {
 		assert.Equal(t, [][]string{{strconv.Itoa(i + 1)}}, r.Rows, "result %d rows", i)
 		assert.NotEmpty(t, r.StatementID, "result %d statement_id", i)
 	}
+}
+
+func TestExecuteBatchPassesParametersToAllStatements(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	params := []sql.StatementParameterListItem{
+		{Name: "since", Type: "DATE", Value: "2026-01-01"},
+	}
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
+		return assert.ObjectsAreEqual(params, req.Parameters)
+	})).Return(&sql.StatementResponse{
+		StatementId: "stmt",
+		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+	}, nil).Times(2)
+
+	results := executeBatch(ctx, mockAPI, "wh-1", []string{"SELECT 1 WHERE 1=1 AND :since IS NOT NULL", "SELECT 2 WHERE :since IS NOT NULL"}, params, 8)
+	require.Len(t, results, 2)
 }
 
 func TestExecuteBatchPartialFailure(t *testing.T) {
@@ -112,7 +131,7 @@ func TestExecuteBatchPartialFailure(t *testing.T) {
 		},
 	}, nil).Once()
 
-	results := executeBatch(ctx, mockAPI, "wh-123", []string{"SELECT 1", "SELECT bad"}, 8)
+	results := executeBatch(ctx, mockAPI, "wh-123", []string{"SELECT 1", "SELECT bad"}, nil, 8)
 
 	require.Len(t, results, 2)
 	assert.Nil(t, results[0].Error)
@@ -141,7 +160,7 @@ func TestExecuteBatchSubmissionFailure(t *testing.T) {
 		return req.Statement == "SELECT broken"
 	})).Return(nil, errors.New("network unreachable")).Once()
 
-	results := executeBatch(ctx, mockAPI, "wh-123", []string{"SELECT good", "SELECT broken"}, 8)
+	results := executeBatch(ctx, mockAPI, "wh-123", []string{"SELECT good", "SELECT broken"}, nil, 8)
 
 	require.Len(t, results, 2)
 	assert.Nil(t, results[0].Error)
@@ -163,7 +182,7 @@ func TestExecuteBatchSetsOnWaitTimeoutContinue(t *testing.T) {
 		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
 	}, nil).Times(2)
 
-	results := executeBatch(ctx, mockAPI, "wh-123", []string{"q1", "q2"}, 8)
+	results := executeBatch(ctx, mockAPI, "wh-123", []string{"q1", "q2"}, nil, 8)
 	require.Len(t, results, 2)
 }
 
@@ -196,7 +215,7 @@ func TestExecuteBatchPreservesInputOrder(t *testing.T) {
 	}
 
 	sqls := []string{"SELECT 'slow'", "SELECT 'fast1'", "SELECT 'fast2'"}
-	results := executeBatch(ctx, mockAPI, "wh-1", sqls, 8)
+	results := executeBatch(ctx, mockAPI, "wh-1", sqls, nil, 8)
 
 	require.Len(t, results, 3)
 	for i, r := range results {
@@ -233,7 +252,7 @@ func TestExecuteBatchContextCancellationCancelsInFlight(t *testing.T) {
 
 	cancel()
 
-	results := executeBatch(ctx, mockAPI, "wh", []string{"q1", "q2", "q3"}, 8)
+	results := executeBatch(ctx, mockAPI, "wh", []string{"q1", "q2", "q3"}, nil, 8)
 
 	require.Len(t, results, 3)
 	for i, r := range results {

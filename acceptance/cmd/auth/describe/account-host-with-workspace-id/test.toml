@@ -1,0 +1,14 @@
+Ignore = [
+    "home"
+]
+
+# Simulate an account console host: it cannot serve workspace APIs, so the
+# workspace-side verification call fails even though the credentials are valid.
+[[Server]]
+Pattern = "GET /api/2.0/preview/scim/v2/Me"
+Response.Body = 'Unable to load OAuth Config'
+Response.StatusCode = 400
+
+[[Server]]
+Pattern = "GET /api/2.0/accounts/acct-123/workspaces"
+Response.Body = '[]'

@@ -11,7 +11,6 @@ import codegen.generated_imports as generated_imports
 import codegen.jsonschema as openapi
 import codegen.jsonschema_patch as openapi_patch
 import codegen.packages as packages
-
 from codegen.code_builder import CodeBuilder
 from codegen.generated_dataclass import GeneratedDataclass, GeneratedType
 from codegen.generated_enum import GeneratedEnum
@@ -65,7 +64,7 @@ def _transitively_mark_deprecated_and_private(
 
     for schema_name, schema in schemas.items():
         if schema_name not in not_private:
-            schema.stage = openapi.Stage.PRIVATE
+            schema.stage = openapi.LaunchStage.PRIVATE_PREVIEW
 
         if schema_name not in not_deprecated:
             schema.deprecated = True
@@ -88,7 +87,10 @@ def _remove_deprecated_fields(
         if schema.type == openapi.SchemaType.OBJECT:
             new_properties = {}
             for field_name, field in schema.properties.items():
-                if field.deprecated and field.stage == openapi.Stage.PRIVATE:
+                if (
+                    field.deprecated
+                    and field.stage == openapi.LaunchStage.PRIVATE_PREVIEW
+                ):
                     continue
 
                 new_properties[field_name] = field
@@ -254,7 +256,10 @@ def _collect_reachable_schemas(
                 if field.ref:
                     name = field.ref.split("/")[-1]
 
-                    if not include_private and field.stage == openapi.Stage.PRIVATE:
+                    if (
+                        not include_private
+                        and field.stage == openapi.LaunchStage.PRIVATE_PREVIEW
+                    ):
                         continue
 
                     if not include_deprecated and field.deprecated:
@@ -288,7 +293,7 @@ def _write_code(
     package_code = {}
     typechecking_imports = {}
 
-    for schema_name, generated in dataclasses.items():
+    for _schema_name, generated in dataclasses.items():
         package = generated.package
         code = generated_dataclass.get_code(generated)
 
@@ -298,7 +303,7 @@ def _write_code(
         package_code[package] = package_code.get(package, "")
         package_code[package] += "\n" + code
 
-    for schema_name, generated in enums.items():
+    for _schema_name, generated in enums.items():
         package = generated.package
         code = generated_enum.get_code(generated)
 

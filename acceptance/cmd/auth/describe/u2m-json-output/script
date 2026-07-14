@@ -1,0 +1,16 @@
+sethome "./home"
+
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+unset DATABRICKS_AUTH_STORAGE
+
+cat > "./home/.databrickscfg" <<ENDCFG
+[u2m-profile]
+host       = https://u2m-profile.databricks.test
+auth_type  = databricks-cli
+ENDCFG
+
+# Filter to just the new token_storage object so the assertion is focused
+# and doesn't churn when other fields evolve.
+trace $CLI auth describe --profile u2m-profile --output json | jq '.token_storage'

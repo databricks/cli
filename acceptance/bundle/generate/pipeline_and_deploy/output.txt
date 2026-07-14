@@ -1,0 +1,40 @@
+
+=== Upload files to workspace
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/notebook-[UNIQUE_NAME].py --file notebook.py --format AUTO --overwrite
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME].py --file test.py --format AUTO --overwrite
+
+=== Create a pipeline that references the filesCreated pipeline
+
+=== Generate bundle config from the pipelineFile successfully saved to src/notebook-[UNIQUE_NAME].py
+File successfully saved to src/test-[UNIQUE_NAME].py
+Pipeline configuration successfully saved to resources/out.pipeline.yml
+Warning: Generated configuration is not included in the bundle
+
+The file resources/out.pipeline.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - resources/*.yml
+
+
+=== Verify generated yaml has expected fields
+=== Deploy the generated bundle
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Deployment complete!
+
+=== Destroy the deployed bundle
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+=== Cleanup: delete the original pipeline and files
+>>> errcode [CLI] pipelines delete [PIPELINE_ID]
+
+>>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/notebook-[UNIQUE_NAME]
+
+>>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME].py

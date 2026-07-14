@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceOnlineStoresOnlineStoresProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceOnlineStoresOnlineStores struct {
@@ -18,7 +18,7 @@ type DataSourceOnlineStoresOnlineStores struct {
 }
 
 type DataSourceOnlineStoresProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceOnlineStores struct {

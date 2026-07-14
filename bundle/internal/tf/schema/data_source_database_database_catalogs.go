@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceDatabaseDatabaseCatalogsDatabaseCatalogsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDatabaseDatabaseCatalogsDatabaseCatalogs struct {
@@ -16,7 +16,7 @@ type DataSourceDatabaseDatabaseCatalogsDatabaseCatalogs struct {
 }
 
 type DataSourceDatabaseDatabaseCatalogsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDatabaseDatabaseCatalogs struct {

@@ -1,0 +1,1 @@
+$CLI sandbox delete happy-panda-1234 --auto-approve

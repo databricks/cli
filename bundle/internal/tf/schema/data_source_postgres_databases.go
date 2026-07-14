@@ -3,7 +3,7 @@
 package schema
 
 type DataSourcePostgresDatabasesDatabasesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePostgresDatabasesDatabasesSpec struct {
@@ -12,12 +12,14 @@ type DataSourcePostgresDatabasesDatabasesSpec struct {
 }
 
 type DataSourcePostgresDatabasesDatabasesStatus struct {
+	DatabaseId       string `json:"database_id,omitempty"`
 	PostgresDatabase string `json:"postgres_database,omitempty"`
 	Role             string `json:"role,omitempty"`
 }
 
 type DataSourcePostgresDatabasesDatabases struct {
 	CreateTime     string                                              `json:"create_time,omitempty"`
+	DatabaseId     string                                              `json:"database_id,omitempty"`
 	Name           string                                              `json:"name"`
 	Parent         string                                              `json:"parent,omitempty"`
 	ProviderConfig *DataSourcePostgresDatabasesDatabasesProviderConfig `json:"provider_config,omitempty"`
@@ -27,7 +29,7 @@ type DataSourcePostgresDatabasesDatabases struct {
 }
 
 type DataSourcePostgresDatabasesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePostgresDatabases struct {

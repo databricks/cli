@@ -3,7 +3,7 @@
 package schema
 
 type ResourceDatabaseDatabaseCatalogProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceDatabaseDatabaseCatalog struct {

@@ -3,6 +3,7 @@
 package repos
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -34,6 +35,10 @@ func New() *cobra.Command {
 		GroupID: "workspace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -71,6 +76,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().Int64Var(&createReq.GitCredentialId, "git-credential-id", createReq.GitCredentialId, `Git credential ID to use when cloning the repository.`)
 	cmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
 	// TODO: complex arg: sparse_checkout
 
@@ -85,17 +91,21 @@ func newCreate() *cobra.Command {
   Arguments:
     URL: URL of the Git repository to be linked.
     PROVIDER: Git provider. This field is case-insensitive. The available Git providers
-      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices,
-      gitHubEnterprise, bitbucketServer, gitLabEnterpriseEdition and
-      awsCodeCommit.`
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices (Azure
+      DevOps Services, including Microsoft Entra ID authentication),
+      gitHubEnterprise, bitbucketServer (Bitbucket Data Center),
+      gitLabEnterpriseEdition (GitLab Self-Managed), and awsCodeCommit
+      (deprecated by AWS, not accepting new customers).`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'url', 'provider' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'url', 'provider' in your JSON input")
 			}
 			return nil
 		}
@@ -171,6 +181,8 @@ func newDelete() *cobra.Command {
     REPO_ID: The ID for the corresponding repo to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -192,7 +204,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to delete")
+			return errors.New("expected to have the id for the corresponding repo to delete")
 		}
 		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
 		if err != nil {
@@ -242,6 +254,8 @@ func newGet() *cobra.Command {
     REPO_ID: ID of the Git folder (repo) object in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -263,7 +277,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have id of the git folder (repo) object in the workspace")
+			return errors.New("expected to have id of the git folder (repo) object in the workspace")
 		}
 		_, err = fmt.Sscan(args[0], &getReq.RepoId)
 		if err != nil {
@@ -314,6 +328,8 @@ func newGetPermissionLevels() *cobra.Command {
     REPO_ID: The repo for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -335,7 +351,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.RepoId = args[0]
 
@@ -384,6 +400,8 @@ func newGetPermissions() *cobra.Command {
     REPO_ID: The repo for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -405,7 +423,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
 		getPermissionsReq.RepoId = args[0]
 
@@ -464,6 +482,8 @@ func newList() *cobra.Command {
   next_page_token to iterate through additional pages.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -529,6 +549,8 @@ func newSetPermissions() *cobra.Command {
     REPO_ID: The repo for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -562,7 +584,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
 		setPermissionsReq.RepoId = args[0]
 
@@ -604,6 +626,8 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
+	cmd.Flags().BoolVar(&updateReq.DangerouslyForceDiscardAll, "dangerously-force-discard-all", updateReq.DangerouslyForceDiscardAll, `WARNING: DESTRUCTIVE AND IRREVERSIBLE.`)
+	cmd.Flags().Int64Var(&updateReq.GitCredentialId, "git-credential-id", updateReq.GitCredentialId, `Git credential ID to use for this update operation.`)
 	// TODO: complex arg: sparse_checkout
 	cmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to.`)
 
@@ -618,6 +642,8 @@ func newUpdate() *cobra.Command {
     REPO_ID: ID of the Git folder (repo) object in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -651,7 +677,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have id of the git folder (repo) object in the workspace")
+			return errors.New("expected to have id of the git folder (repo) object in the workspace")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
 		if err != nil {
@@ -707,6 +733,8 @@ func newUpdatePermissions() *cobra.Command {
     REPO_ID: The repo for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -740,7 +768,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
 		updatePermissionsReq.RepoId = args[0]
 

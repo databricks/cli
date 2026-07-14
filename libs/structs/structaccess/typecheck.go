@@ -54,7 +54,7 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 		}
 
 		// Index access: slice/array
-		if _, isIndex := node.Index(); isIndex {
+		if idx, isIndex := node.Index(); isIndex {
 			if cur.Kind() == reflect.Struct {
 				if embedType := findEmbedFieldType(cur); embedType != nil {
 					cur = embedType
@@ -62,6 +62,11 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
+				// Terraform represents single-block fields as lists and uses [0] to access them.
+				// Treat [0] on a struct as a no-op so TF-style paths work against DABs structs.
+				if idx == 0 && kind == reflect.Struct {
+					continue
+				}
 				return fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
 			cur = cur.Elem()
@@ -142,8 +147,7 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 	}
 
 	// First pass: direct fields
-	for i := range t.NumField() {
-		sf := t.Field(i)
+	for sf := range t.Fields() {
 		if sf.PkgPath != "" { // unexported
 			continue
 		}
@@ -162,8 +166,7 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 	}
 
 	// Second pass: search embedded anonymous structs recursively (flattening semantics)
-	for i := range t.NumField() {
-		sf := t.Field(i)
+	for sf := range t.Fields() {
 		if !sf.Anonymous {
 			continue
 		}

@@ -3,7 +3,7 @@
 package schema
 
 type ResourceRestrictWorkspaceAdminsSettingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceRestrictWorkspaceAdminsSettingRestrictWorkspaceAdmins struct {

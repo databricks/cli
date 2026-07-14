@@ -19,7 +19,7 @@ class Compute:
 
     hardware_accelerator: VariableOrOptional[HardwareAcceleratorType] = None
     """
-    Hardware accelerator configuration for Serverless GPU workloads.
+    [Beta] Hardware accelerator configuration for Serverless GPU workloads.
     """
 
     @classmethod
@@ -35,7 +35,7 @@ class ComputeDict(TypedDict, total=False):
 
     hardware_accelerator: VariableOrOptional[HardwareAcceleratorTypeParam]
     """
-    Hardware accelerator configuration for Serverless GPU workloads.
+    [Beta] Hardware accelerator configuration for Serverless GPU workloads.
     """
 
 

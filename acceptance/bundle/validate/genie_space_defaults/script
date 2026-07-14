@@ -1,0 +1,1 @@
+$CLI bundle validate -o json | jq '.resources.genie_spaces | map_values({title: .title, parent_path: .parent_path})'

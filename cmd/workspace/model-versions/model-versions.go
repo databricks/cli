@@ -32,6 +32,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
@@ -78,6 +82,8 @@ func newDelete() *cobra.Command {
     VERSION: The integer version number of the model version`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -147,6 +153,8 @@ func newGet() *cobra.Command {
     VERSION: The integer version number of the model version`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -216,6 +224,8 @@ func newGetByAlias() *cobra.Command {
     ALIAS: The name of the alias`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -288,7 +298,7 @@ func newList() *cobra.Command {
   The returned models are filtered based on the privileges of the calling user.
   For example, the metastore admin is able to list all the model versions. A
   regular user needs to be the owner or have the **EXECUTE** privilege on the
-  parent registered model to recieve the model versions in the response. For the
+  parent registered model to receive the model versions in the response. For the
   latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
   schema.
@@ -306,6 +316,8 @@ func newList() *cobra.Command {
       model versions`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -395,6 +407,8 @@ func newUpdate() *cobra.Command {
     VERSION: The integer version number of the model version`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

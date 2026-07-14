@@ -31,6 +31,7 @@ type DataSourceCatalogCatalogInfo struct {
 	ConnectionName                      string                                                           `json:"connection_name,omitempty"`
 	CreatedAt                           int                                                              `json:"created_at,omitempty"`
 	CreatedBy                           string                                                           `json:"created_by,omitempty"`
+	CustomMaxRetentionHours             int                                                              `json:"custom_max_retention_hours,omitempty"`
 	EnablePredictiveOptimization        string                                                           `json:"enable_predictive_optimization,omitempty"`
 	FullName                            string                                                           `json:"full_name,omitempty"`
 	IsolationMode                       string                                                           `json:"isolation_mode,omitempty"`
@@ -52,7 +53,7 @@ type DataSourceCatalogCatalogInfo struct {
 }
 
 type DataSourceCatalogProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceCatalog struct {

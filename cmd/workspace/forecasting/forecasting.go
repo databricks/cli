@@ -3,6 +3,7 @@
 package forecasting
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -30,6 +31,10 @@ func New() *cobra.Command {
 		Hidden: true,
 		RunE:   root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateExperiment())
@@ -103,12 +108,14 @@ func newCreateExperiment() *cobra.Command {
       the model should forecast.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'train_data_path', 'target_column', 'time_column', 'forecast_granularity', 'forecast_horizon' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'train_data_path', 'target_column', 'time_column', 'forecast_granularity', 'forecast_horizon' in your JSON input")
 			}
 			return nil
 		}
@@ -209,6 +216,8 @@ func newGetExperiment() *cobra.Command {
     EXPERIMENT_ID: The unique ID of a forecasting experiment`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

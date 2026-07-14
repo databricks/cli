@@ -1,0 +1,15 @@
+sethome "./home"
+
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+
+export DATABRICKS_AUTH_STORAGE=plaintext
+
+cat > "./home/.databrickscfg" <<ENDCFG
+[u2m-profile]
+host       = https://u2m-profile.databricks.test
+auth_type  = databricks-cli
+ENDCFG
+
+trace $CLI auth describe --profile u2m-profile
