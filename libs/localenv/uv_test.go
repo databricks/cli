@@ -1,6 +1,7 @@
 package localenv
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -13,6 +14,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// writePipConf writes conf to the primary OS-specific pip config path under a
+// fresh temp home and returns a context rooted at that home. On Windows the
+// primary path is %APPDATA%\pip\pip.ini, so APPDATA is pointed inside the temp
+// home too; without this the file would land in a location pipConfPaths never
+// probes on that OS and the test would read an empty index-url.
+func writePipConf(t *testing.T, conf string) context.Context {
+	t.Helper()
+	tmp := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), tmp)
+	if runtime.GOOS == "windows" {
+		ctx = env.Set(ctx, "APPDATA", filepath.Join(tmp, "AppData", "Roaming"))
+	}
+	paths := pipConfPaths(ctx)
+	require.NotEmpty(t, paths)
+	primary := paths[0]
+	require.NoError(t, os.MkdirAll(filepath.Dir(primary), 0o755))
+	require.NoError(t, os.WriteFile(primary, []byte(conf), 0o644))
+	return ctx
+}
+
 func TestUvArgs(t *testing.T) {
 	m := &uvManager{bin: "uv"}
 	assert.Equal(t, []string{"sync"}, m.syncArgs())
@@ -22,7 +43,13 @@ func TestUvArgs(t *testing.T) {
 
 func TestDiscoverUvFindsBinOnPath(t *testing.T) {
 	dir := t.TempDir()
-	bin := filepath.Join(dir, "uv")
+	// exec.LookPath only resolves a bare "uv" to a file with a PATHEXT extension
+	// on Windows, so the on-PATH binary must be named uv.exe there.
+	exe := "uv"
+	if runtime.GOOS == "windows" {
+		exe = "uv.exe"
+	}
+	bin := filepath.Join(dir, exe)
 	require.NoError(t, os.WriteFile(bin, []byte("#!/bin/sh\n"), 0o755))
 	t.Setenv("PATH", dir)
 	got, err := discoverUv(t.Context())
@@ -118,13 +145,7 @@ func TestPipConfIndexURLReadsLegacyPath(t *testing.T) {
 
 func TestPipConfIndexURL(t *testing.T) {
 	t.Run("returns_url_from_pip_conf", func(t *testing.T) {
-		tmp := t.TempDir()
-		confDir := filepath.Join(tmp, ".config", "pip")
-		require.NoError(t, os.MkdirAll(confDir, 0o755))
-		confContent := "[global]\nindex-url = https://proxy.example/simple\n"
-		require.NoError(t, os.WriteFile(filepath.Join(confDir, "pip.conf"), []byte(confContent), 0o644))
-
-		ctx := env.WithUserHomeDir(t.Context(), tmp)
+		ctx := writePipConf(t, "[global]\nindex-url = https://proxy.example/simple\n")
 		got := pipConfIndexURL(ctx)
 		assert.Equal(t, "https://proxy.example/simple", got)
 	})
@@ -137,13 +158,7 @@ func TestPipConfIndexURL(t *testing.T) {
 	})
 
 	t.Run("returns_empty_when_no_index_url_in_conf", func(t *testing.T) {
-		tmp := t.TempDir()
-		confDir := filepath.Join(tmp, ".config", "pip")
-		require.NoError(t, os.MkdirAll(confDir, 0o755))
-		confContent := "[global]\nextra-index-url = https://other.example/simple\n"
-		require.NoError(t, os.WriteFile(filepath.Join(confDir, "pip.conf"), []byte(confContent), 0o644))
-
-		ctx := env.WithUserHomeDir(t.Context(), tmp)
+		ctx := writePipConf(t, "[global]\nextra-index-url = https://other.example/simple\n")
 		got := pipConfIndexURL(ctx)
 		assert.Empty(t, got)
 	})
@@ -153,29 +168,24 @@ func TestResolveIndexURLRespectsExistingEnv(t *testing.T) {
 	m := &uvManager{}
 
 	t.Run("returns_empty_when_UV_INDEX_URL_already_set", func(t *testing.T) {
-		// When UV_INDEX_URL is in ctx, resolveIndexURL must not override it.
-		ctx := env.Set(t.Context(), "UV_INDEX_URL", "https://explicit.example/simple")
-
 		// Set up a pip.conf that would otherwise be used.
-		tmp := t.TempDir()
-		confDir := filepath.Join(tmp, ".config", "pip")
-		require.NoError(t, os.MkdirAll(confDir, 0o755))
-		confContent := "[global]\nindex-url = https://proxy.example/simple\n"
-		require.NoError(t, os.WriteFile(filepath.Join(confDir, "pip.conf"), []byte(confContent), 0o644))
-		ctx = env.WithUserHomeDir(ctx, tmp)
+		ctx := writePipConf(t, "[global]\nindex-url = https://proxy.example/simple\n")
+		// When UV_INDEX_URL is in ctx, resolveIndexURL must not override it.
+		ctx = env.Set(ctx, "UV_INDEX_URL", "https://explicit.example/simple")
 
 		got := m.resolveIndexURL(ctx)
 		assert.Empty(t, got)
 	})
 
 	t.Run("returns_pip_conf_url_when_UV_INDEX_URL_unset", func(t *testing.T) {
-		tmp := t.TempDir()
-		confDir := filepath.Join(tmp, ".config", "pip")
-		require.NoError(t, os.MkdirAll(confDir, 0o755))
-		confContent := "[global]\nindex-url = https://proxy.example/simple\n"
-		require.NoError(t, os.WriteFile(filepath.Join(confDir, "pip.conf"), []byte(confContent), 0o644))
+		// CI sets UV_INDEX_URL to a package mirror in the process environment, and
+		// env.Lookup falls back to os.LookupEnv, so it must actually be removed
+		// (setting it to "" still reports ok=true) for resolveIndexURL to fall
+		// through to pip.conf. t.Setenv registers the cleanup that restores it.
+		t.Setenv("UV_INDEX_URL", "")
+		os.Unsetenv("UV_INDEX_URL")
 
-		ctx := env.WithUserHomeDir(t.Context(), tmp)
+		ctx := writePipConf(t, "[global]\nindex-url = https://proxy.example/simple\n")
 		got := m.resolveIndexURL(ctx)
 		assert.Equal(t, "https://proxy.example/simple", got)
 	})
