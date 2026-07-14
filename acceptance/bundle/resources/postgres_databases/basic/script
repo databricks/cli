@@ -17,7 +17,7 @@ trace $CLI bundle deploy
 project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 branch_name="${project_name}/branches/main"
 database_name="${branch_name}/databases/my-database"
-trace $CLI postgres get-database "${database_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-database "${database_name}" | database_fields
 
 trace $CLI bundle summary
 
