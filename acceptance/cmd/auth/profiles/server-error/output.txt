@@ -1,5 +1,5 @@
 
-=== 5xx from validation endpoint: profile reported as unknown (transient)
+=== 5xx from validation endpoint: profile is invalid (NO), full error in valid_reason
 >>> [CLI] auth profiles --output json
 {
   "profiles": [
@@ -8,8 +8,8 @@
       "host": "[DATABRICKS_URL]",
       "cloud": "aws",
       "auth_type": "pat",
-      "status": "unknown",
-      "error": "server error: 500"
+      "valid": false,
+      "valid_reason": "Internal server error"
     }
   ]
 }

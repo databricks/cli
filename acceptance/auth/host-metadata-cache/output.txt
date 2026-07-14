@@ -7,7 +7,6 @@
       "host": "[DATABRICKS_URL]",
       "cloud": "aws",
       "auth_type": "pat",
-      "status": "valid",
       "valid": true
     }
   ]
@@ -21,7 +20,6 @@
       "host": "[DATABRICKS_URL]",
       "cloud": "aws",
       "auth_type": "pat",
-      "status": "valid",
       "valid": true
     }
   ]

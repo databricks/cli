@@ -1,5 +1,5 @@
 
-=== Expired token: profile is reported invalid with remediation hint
+=== Expired token: profile is invalid (NO), full error in valid_reason
 >>> [CLI] auth profiles --output json
 {
   "profiles": [
@@ -8,9 +8,8 @@
       "host": "[DATABRICKS_URL]",
       "cloud": "aws",
       "auth_type": "pat",
-      "status": "invalid",
-      "error": "authentication failed (token may have expired — try 'databricks auth login -p expired')",
-      "valid": false
+      "valid": false,
+      "valid_reason": "Token is invalid or expired."
     }
   ]
 }

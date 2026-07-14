@@ -7,7 +7,8 @@
       "host": "https://workspace.cloud.databricks.test",
       "cloud": "aws",
       "auth_type": "",
-      "status": "unvalidated"
+      "valid": false,
+      "valid_reason": "validation skipped (--skip-validate)"
     },
     {
       "name": "account-profile",
@@ -15,7 +16,8 @@
       "account_id": "test-account-123",
       "cloud": "aws",
       "auth_type": "",
-      "status": "unvalidated"
+      "valid": false,
+      "valid_reason": "validation skipped (--skip-validate)"
     },
     {
       "name": "unified-profile",
@@ -24,7 +26,8 @@
       "workspace_id": "[NUMID]",
       "cloud": "aws",
       "auth_type": "",
-      "status": "unvalidated"
+      "valid": false,
+      "valid_reason": "validation skipped (--skip-validate)"
     }
   ]
 }

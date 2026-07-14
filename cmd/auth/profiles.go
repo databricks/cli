@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"net"
-	"net/url"
 	"sync"
 	"time"
 
@@ -17,22 +15,21 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
 
-// profileStatus is the three-state result of validating a profile, plus a
-// fourth state for "validation skipped". Reported as `status` in JSON output.
+// profileStatus is the three-state result of listing a profile. It drives the
+// YES/NO/?? cell in the text table. Only YES (validated) and NO (validation
+// failed) reflect an actual check; ?? means validation was skipped.
 type profileStatus string
 
 const (
-	profileStatusValid       profileStatus = "valid"       // API call succeeded
-	profileStatusInvalid     profileStatus = "invalid"     // proven bad: auth/config error
-	profileStatusUnknown     profileStatus = "unknown"     // could not determine (network, transient)
-	profileStatusUnvalidated profileStatus = "unvalidated" // --skip-validate
+	profileStatusValid   profileStatus = "valid"   // validation succeeded
+	profileStatusInvalid profileStatus = "invalid" // validation failed (any error)
+	profileStatusSkipped profileStatus = "skipped" // --skip-validate; not checked
 )
 
 // profileValidationTimeout bounds the per-profile validation API call so a
@@ -40,25 +37,24 @@ const (
 const profileValidationTimeout = 10 * time.Second
 
 type profileMetadata struct {
-	Name        string        `json:"name"`
-	Host        string        `json:"host,omitempty"`
-	AccountID   string        `json:"account_id,omitempty"`
-	WorkspaceID string        `json:"workspace_id,omitempty"`
-	Cloud       string        `json:"cloud"`
-	AuthType    string        `json:"auth_type"`
-	Status      profileStatus `json:"status"`
-	Error       string        `json:"error,omitempty"`
-	Default     bool          `json:"default,omitempty"`
+	Name        string `json:"name"`
+	Host        string `json:"host,omitempty"`
+	AccountID   string `json:"account_id,omitempty"`
+	WorkspaceID string `json:"workspace_id,omitempty"`
+	Cloud       string `json:"cloud"`
+	AuthType    string `json:"auth_type"`
 
-	// Valid is the legacy compat field. Emitted only when Status is conclusively
-	// valid or invalid; absent (omitempty) for unknown/unvalidated. Old scripts
-	// that branch on `valid: true` keep working; scripts that branch on
-	// `valid: false` keep working for proven-bad profiles and now see the field
-	// missing for the cases we previously misreported as "false".
-	Valid *bool `json:"valid,omitempty"`
+	// Valid is true only when validation conclusively succeeded. ValidReason
+	// explains a false result: the full underlying error when validation failed,
+	// or a "skipped" note under --skip-validate. It is empty only on success.
+	// The text table shows only YES/NO/?? (via StatusDisplay); the reason detail
+	// is reserved for --output json.
+	Valid       bool   `json:"valid"`
+	ValidReason string `json:"valid_reason,omitempty"`
+	Default     bool   `json:"default,omitempty"`
 
-	// statusDisplay is the colored cell rendered for the text "Valid" column.
-	// Populated by Load; never serialized.
+	// StatusDisplay is the colored YES/NO/?? cell for the text table. Not
+	// serialized; the JSON form uses Valid + ValidReason instead.
 	StatusDisplay string `json:"-"`
 }
 
@@ -66,82 +62,27 @@ func (c *profileMetadata) IsEmpty() bool {
 	return c.Host == "" && c.AccountID == ""
 }
 
-// setStatus records the classification result and keeps the legacy Valid field
-// in sync. Valid is left nil for unknown/unvalidated so omitempty drops it.
-func (c *profileMetadata) setStatus(ctx context.Context, status profileStatus, msg string) {
-	c.Status = status
-	c.Error = msg
-	switch status {
-	case profileStatusValid:
-		t := true
-		c.Valid = &t
-	case profileStatusInvalid:
-		f := false
-		c.Valid = &f
-	case profileStatusUnknown, profileStatusUnvalidated:
-		// Leave Valid nil; omitempty drops the legacy field.
-	}
+// setStatus records the validation result: Valid is true only for a
+// conclusively valid profile, and reason explains a non-valid result (the
+// underlying error, or a skip note) for JSON output.
+func (c *profileMetadata) setStatus(ctx context.Context, status profileStatus, reason string) {
+	c.Valid = status == profileStatusValid
+	c.ValidReason = reason
 	c.StatusDisplay = renderStatusCell(ctx, status)
 }
 
-// renderStatusCell formats a profileStatus for the text "Valid" column. We
-// keep the values short so the column width stays close to the previous
-// YES/NO output.
+// renderStatusCell formats a profileStatus for the text "Valid" column:
+// YES (green, validated) / NO (red, validation failed) / ?? (grey, skipped).
 func renderStatusCell(ctx context.Context, s profileStatus) string {
 	switch s {
 	case profileStatusValid:
-		return cmdio.Green(ctx, "valid")
+		return cmdio.Green(ctx, "YES")
 	case profileStatusInvalid:
-		return cmdio.Red(ctx, "invalid")
-	case profileStatusUnknown:
-		return cmdio.Yellow(ctx, "unknown")
-	case profileStatusUnvalidated:
-		return "-"
+		return cmdio.Red(ctx, "NO")
+	case profileStatusSkipped:
+		return cmdio.HiBlack(ctx, "??")
 	}
-	return "-"
-}
-
-// classifyValidationError maps an error returned by the validation API call
-// to a (status, message) pair. The profile name is interpolated into auth
-// remediation hints. Order matters: timeout is checked first because the
-// SDK can wrap context.DeadlineExceeded in url.Error, and APIError sentinels
-// before the generic *url.Error / *net.OpError fallthrough.
-func classifyValidationError(profileName string, err error) (profileStatus, string) {
-	if err == nil {
-		return profileStatusValid, ""
-	}
-	if errors.Is(err, context.DeadlineExceeded) {
-		return profileStatusUnknown, "validation timed out"
-	}
-	if errors.Is(err, apierr.ErrUnauthenticated) {
-		return profileStatusInvalid, fmt.Sprintf("authentication failed (token may have expired — try 'databricks auth login -p %s')", profileName)
-	}
-	if errors.Is(err, apierr.ErrPermissionDenied) {
-		return profileStatusInvalid, "credentials lack permission for the validation API call"
-	}
-	var apiErr *apierr.APIError
-	if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 {
-		return profileStatusUnknown, fmt.Sprintf("server error: %d", apiErr.StatusCode)
-	}
-	if reason, ok := networkErrorReason(err); ok {
-		return profileStatusUnknown, "could not reach host: " + reason
-	}
-	return profileStatusUnknown, err.Error()
-}
-
-// networkErrorReason returns the short reason from a *url.Error / *net.OpError
-// chain (skipping the URL prefix that url.Error.Error() prepends). The second
-// return is false when err is not a network error.
-func networkErrorReason(err error) (string, bool) {
-	var urlErr *url.Error
-	if errors.As(err, &urlErr) && urlErr.Err != nil {
-		return urlErr.Err.Error(), true
-	}
-	var netErr *net.OpError
-	if errors.As(err, &netErr) {
-		return netErr.Error(), true
-	}
-	return "", false
+	return cmdio.HiBlack(ctx, "??")
 }
 
 func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipValidate bool) {
@@ -182,7 +123,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 	if skipValidate {
 		c.Host = cfg.CanonicalHostName()
 		c.AuthType = cfg.AuthType
-		c.setStatus(ctx, profileStatusUnvalidated, "")
+		c.setStatus(ctx, profileStatusSkipped, "validation skipped (--skip-validate)")
 		return
 	}
 
@@ -220,8 +161,13 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 	c.Host = cfg.Host
 	c.AuthType = cfg.AuthType
 
-	status, msg := classifyValidationError(c.Name, err)
-	c.setStatus(ctx, status, msg)
+	// Any validation error means NO; the full error is preserved in ValidReason
+	// for --output json. The text table shows only the YES/NO/?? cell.
+	if err != nil {
+		c.setStatus(ctx, profileStatusInvalid, err.Error())
+		return
+	}
+	c.setStatus(ctx, profileStatusValid, "")
 }
 
 func newProfilesCommand() *cobra.Command {

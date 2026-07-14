@@ -1,12 +1,9 @@
 package auth
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/databrickscfg"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,8 +47,8 @@ func TestProfiles(t *testing.T) {
 	assert.Equal(t, "https://abc.cloud.databricks.com", profile.Host)
 	assert.Equal(t, "aws", profile.Cloud)
 	assert.Equal(t, "pat", profile.AuthType)
-	assert.Equal(t, profileStatusUnvalidated, profile.Status)
-	assert.Nil(t, profile.Valid, "Valid should be unset for unvalidated")
+	assert.False(t, profile.Valid, "Valid should be false when validation is skipped")
+	assert.Contains(t, profile.ValidReason, "skip-validate")
 }
 
 // TestProfileLoadSkipValidateMakesNoRequests guards the --skip-validate
@@ -81,7 +77,7 @@ func TestProfileLoadSkipValidateMakesNoRequests(t *testing.T) {
 
 	assert.Zero(t, requests.Load(), "expected no network calls with skipValidate")
 	assert.Equal(t, server.URL, p.Host)
-	assert.Nil(t, p.Valid, "Valid should be unset for unvalidated")
+	assert.False(t, p.Valid, "Valid should be false when validation is skipped")
 }
 
 func TestProfilesDefaultMarker(t *testing.T) {
@@ -225,9 +221,8 @@ func TestProfileLoadSPOGConfigType(t *testing.T) {
 			}
 			p.Load(t.Context(), configFile, false)
 
-			assert.Equal(t, profileStatusValid, p.Status, "status mismatch")
-			require.NotNil(t, p.Valid)
-			assert.True(t, *p.Valid)
+			assert.True(t, p.Valid)
+			assert.Empty(t, p.ValidReason)
 			assert.NotEmpty(t, p.Host, "Host should be set")
 			assert.NotEmpty(t, p.AuthType, "AuthType should be set")
 		})
@@ -283,84 +278,9 @@ func TestProfileLoadNoDiscoveryStaysWorkspace(t *testing.T) {
 	}
 	p.Load(t.Context(), configFile, false)
 
-	assert.Equal(t, profileStatusValid, p.Status, "should validate as workspace when discovery is unavailable")
+	assert.True(t, p.Valid, "should validate as workspace when discovery is unavailable")
 	assert.NotEmpty(t, p.Host)
 	assert.Equal(t, "pat", p.AuthType)
-}
-
-func TestClassifyValidationError(t *testing.T) {
-	cases := []struct {
-		name       string
-		err        error
-		wantStatus profileStatus
-		wantMsgSub string
-	}{
-		{
-			name:       "nil error -> valid",
-			err:        nil,
-			wantStatus: profileStatusValid,
-		},
-		{
-			name:       "deadline exceeded -> unknown timeout",
-			err:        context.DeadlineExceeded,
-			wantStatus: profileStatusUnknown,
-			wantMsgSub: "validation timed out",
-		},
-		{
-			name:       "url.Error wrapping deadline -> unknown timeout",
-			err:        &url.Error{Op: "Get", URL: "https://x.test/", Err: context.DeadlineExceeded},
-			wantStatus: profileStatusUnknown,
-			wantMsgSub: "validation timed out",
-		},
-		{
-			name:       "401 -> invalid with auth remediation",
-			err:        &apierr.APIError{StatusCode: 401, Message: "unauthorized"},
-			wantStatus: profileStatusInvalid,
-			wantMsgSub: "databricks auth login -p test-profile",
-		},
-		{
-			name:       "403 -> invalid with permission message",
-			err:        &apierr.APIError{StatusCode: 403, Message: "forbidden"},
-			wantStatus: profileStatusInvalid,
-			wantMsgSub: "credentials lack permission",
-		},
-		{
-			name:       "500 -> unknown server error",
-			err:        &apierr.APIError{StatusCode: 500, Message: "internal"},
-			wantStatus: profileStatusUnknown,
-			wantMsgSub: "server error: 500",
-		},
-		{
-			name:       "503 -> unknown server error",
-			err:        &apierr.APIError{StatusCode: 503, Message: "unavailable"},
-			wantStatus: profileStatusUnknown,
-			wantMsgSub: "server error: 503",
-		},
-		{
-			name:       "network error -> unknown could-not-reach",
-			err:        &url.Error{Op: "Get", URL: "https://x.test/", Err: errors.New("dial tcp: lookup x.test: no such host")},
-			wantStatus: profileStatusUnknown,
-			wantMsgSub: "could not reach host",
-		},
-		{
-			name:       "fallthrough -> unknown with raw message",
-			err:        errors.New("strange unknown failure"),
-			wantStatus: profileStatusUnknown,
-			wantMsgSub: "strange unknown failure",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			status, msg := classifyValidationError("test-profile", tc.err)
-			assert.Equal(t, tc.wantStatus, status)
-			if tc.wantMsgSub == "" {
-				assert.Empty(t, msg)
-			} else {
-				assert.Contains(t, msg, tc.wantMsgSub)
-			}
-		})
-	}
 }
 
 func TestProfileLoadStatusMatrix(t *testing.T) {
@@ -384,40 +304,36 @@ func TestProfileLoadStatusMatrix(t *testing.T) {
 		return server
 	}
 
+	// Any validation error (auth, permission, server, network) is reported as
+	// NO with the full error preserved in ValidReason for --output json.
 	t.Run("401 -> invalid", func(t *testing.T) {
 		s := statusServer(t, http.StatusUnauthorized)
 		p := loadFromHost(t, s.URL)
-		assert.Equal(t, profileStatusInvalid, p.Status)
-		require.NotNil(t, p.Valid)
-		assert.False(t, *p.Valid)
-		assert.Contains(t, p.Error, "databricks auth login")
+		assert.False(t, p.Valid)
+		assert.NotEmpty(t, p.ValidReason)
 	})
 
 	t.Run("403 -> invalid", func(t *testing.T) {
 		s := statusServer(t, http.StatusForbidden)
 		p := loadFromHost(t, s.URL)
-		assert.Equal(t, profileStatusInvalid, p.Status)
-		require.NotNil(t, p.Valid)
-		assert.False(t, *p.Valid)
-		assert.Contains(t, p.Error, "permission")
+		assert.False(t, p.Valid)
+		assert.NotEmpty(t, p.ValidReason)
 	})
 
-	t.Run("500 -> unknown", func(t *testing.T) {
+	t.Run("500 -> invalid", func(t *testing.T) {
 		s := statusServer(t, http.StatusInternalServerError)
 		p := loadFromHost(t, s.URL)
-		assert.Equal(t, profileStatusUnknown, p.Status)
-		assert.Nil(t, p.Valid, "Valid is omitted for unknown")
-		assert.Contains(t, p.Error, "server error")
+		assert.False(t, p.Valid)
+		assert.NotEmpty(t, p.ValidReason)
 	})
 
-	t.Run("network down -> unknown", func(t *testing.T) {
+	t.Run("network down -> invalid", func(t *testing.T) {
 		// Start and immediately close the server to simulate a dead host.
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 		s.Close()
 		p := loadFromHost(t, s.URL)
-		assert.Equal(t, profileStatusUnknown, p.Status)
-		assert.Nil(t, p.Valid)
-		assert.Contains(t, p.Error, "could not reach host")
+		assert.False(t, p.Valid)
+		assert.NotEmpty(t, p.ValidReason)
 	})
 
 	t.Run("InvalidConfig -> invalid", func(t *testing.T) {
@@ -445,18 +361,15 @@ func TestProfileLoadStatusMatrix(t *testing.T) {
 
 		p := &profileMetadata{Name: "bad", Host: server.URL}
 		p.Load(t.Context(), configFile, false)
-		assert.Equal(t, profileStatusInvalid, p.Status)
-		require.NotNil(t, p.Valid)
-		assert.False(t, *p.Valid)
-		assert.Contains(t, p.Error, "fields conflict")
+		assert.False(t, p.Valid)
+		assert.Contains(t, p.ValidReason, "fields conflict")
 	})
 
-	t.Run("skip-validate -> unvalidated", func(t *testing.T) {
+	t.Run("skip-validate -> skipped", func(t *testing.T) {
 		s := statusServer(t, http.StatusOK)
 		p := loadFromHost(t, s.URL, withSkipValidate())
-		assert.Equal(t, profileStatusUnvalidated, p.Status)
-		assert.Nil(t, p.Valid)
-		assert.Empty(t, p.Error)
+		assert.False(t, p.Valid)
+		assert.Contains(t, p.ValidReason, "skip-validate")
 	})
 }
 

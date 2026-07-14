@@ -6,5 +6,5 @@ host = ${DATABRICKS_HOST}
 token = test-token
 EOF
 
-title "5xx from validation endpoint: profile reported as unknown (transient)"
+title "5xx from validation endpoint: profile is invalid (NO), full error in valid_reason"
 trace $CLI auth profiles --output json
