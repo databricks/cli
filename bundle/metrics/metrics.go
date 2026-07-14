@@ -33,9 +33,12 @@ const (
 
 	// Recorded when an automatic post-deploy migration to the direct engine
 	// actually ran (state was rewritten). Exactly one of the two keys is true;
-	// both are absent when auto-migration did not run.
-	//   - via_config: opt-in was bundle.engine = "direct" in the bundle config.
-	//   - via_env:    opt-in was the DATABRICKS_BUNDLE_ENGINE=direct env var.
+	// both are absent when auto-migration did not run. If both config and env
+	// set direct, ConfigType wins per ResolveEngineSetting, so via_config
+	// covers the "durable opt-in" population and via_env covers the
+	// "env-var only" population.
+	//   - via_config: bundle.engine = "direct" was set in the bundle config.
+	//   - via_env:    only DATABRICKS_BUNDLE_ENGINE=direct was set.
 	DirectAutoMigrateViaConfig = "direct_migrated_via_config"
 	DirectAutoMigrateViaEnv    = "direct_migrated_via_env"
 

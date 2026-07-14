@@ -82,7 +82,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 			return
 		}
 		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (opted in via "+requestedEngine.Source+")...")
-		if err := sweepEmptyTerraformState(ctx, b); err != nil {
+		if err := backupTerraformState(ctx, b); err != nil {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
 			log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 			return
@@ -149,7 +149,11 @@ func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 }
 
 // recordAutoMigrateSource sets exactly one of the migrated-via-* telemetry
-// keys to distinguish committed config change vs. transient env-var override.
+// keys. requestedEngine.Type may resolve to direct from either the config or
+// the env var (config wins in ResolveEngineSetting). ConfigType is set only
+// when the config populated the setting, so it's the correct signal for
+// "was this a durable opt-in?" — env-only opt-ins are the ones with
+// ConfigType == EngineNotSet.
 func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	if requestedEngine.ConfigType == engine.EngineDirect {
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaConfig, true)
@@ -158,18 +162,21 @@ func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSett
 	}
 }
 
-// sweepEmptyTerraformState removes a terraform.tfstate file that has no
-// databricks_* resources — locally by renaming to .backup, remotely by
-// backing up and deleting. With no state anywhere, the next deploy falls
-// back to engine.Default (direct), which respects the user's opt-in.
-func sweepEmptyTerraformState(ctx context.Context, b *bundle.Bundle) error {
-	_, localTerraformPath := b.StateFilenameTerraform(ctx)
-
+// backupTerraformState moves the terraform state to .backup both remotely
+// (read → write .backup → delete) and locally (rename). Every step must
+// succeed, so callers get an accurate error path — a stale terraform state
+// left anywhere lets it win over remote direct in PullResourcesState when
+// AlwaysPull is off. Missing files (both local and remote) are treated as
+// no-ops, so this helper is safe to call whether or not any state exists.
+// Contrast with BackupRemoteTerraformState, which only handles the remote
+// half and swallows errors via log.Warnf for best-effort direct-engine
+// cleanup on unrelated code paths.
+func backupTerraformState(ctx context.Context, b *bundle.Bundle) error {
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		return err
 	}
-	remoteTerraformPath, _ := b.StateFilenameTerraform(ctx)
+	remoteTerraformPath, localTerraformPath := b.StateFilenameTerraform(ctx)
 	reader, err := f.Read(ctx, remoteTerraformPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("reading remote terraform state %s: %w", remoteTerraformPath, err)
@@ -184,11 +191,6 @@ func sweepEmptyTerraformState(ctx context.Context, b *bundle.Bundle) error {
 		}
 	}
 
-	// Local rename must succeed: leaving a stale local terraform.tfstate
-	// behind causes the next deploy's PullResourcesState to pick it as the
-	// state file (there's no remote counterpart anymore) and re-enter the
-	// mismatch loop. ErrNotExist is fine — the file may have never been
-	// synced locally.
 	if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("renaming local terraform state to %s.backup: %w", localTerraformPath, err)
 	}
