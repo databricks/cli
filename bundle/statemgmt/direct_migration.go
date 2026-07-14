@@ -66,7 +66,6 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 
 	if tfState == nil {
 		// No terraform state file to migrate; nothing to do either way.
-		recordDryRunNoop(b, requestedEngine)
 		return
 	}
 
