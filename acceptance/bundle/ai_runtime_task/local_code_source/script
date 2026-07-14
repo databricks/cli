@@ -1,0 +1,15 @@
+# A local code_source_path is packaged into a tarball and uploaded to the user's
+# repo_snapshots directory; the archive is timestamp-named.
+
+title "deploy packages the local code source and rewrites code_source_path\n"
+trace $CLI bundle deploy
+
+title "the snapshot tarball is uploaded to the user's repo_snapshots directory\n"
+# The upload appears twice: WSFS import-file 404s until the parent dir exists, then
+# the filer mkdirs and retries. Collapse to the distinct path.
+jq -r 'select(.path | test("/import-file/.*/.air/repo_snapshots/src/src_")) | .path' out.requests.txt | sort -u
+
+title "the created job's code_source_path points at the uploaded archive\n"
+jq -r 'select(.path == "/api/2.2/jobs/create") | .body.tasks[0].ai_runtime_task.code_source_path' out.requests.txt
+
+rm out.requests.txt

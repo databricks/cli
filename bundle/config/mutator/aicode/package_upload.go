@@ -5,22 +5,19 @@
 // volume path to an uploaded code archive; its doc comment states that the CLI
 // is responsible for packaging the user's local code directory into that
 // archive. This mutator implements that contract for DABs: when a user points
-// code_source_path at a local directory, it snapshots the directory (git archive
-// of HEAD when the tree is a clean git repo, otherwise a plain tar; .git and
-// gitignored files excluded), uploads the archive to the user's workspace code
-// snapshot cache, and rewrites the field to the resulting remote path so the
-// deployed job runs against the uploaded code. Values that are already remote are
-// left untouched.
+// code_source_path at a local directory, it packages the directory into a plain
+// tarball (.git and gitignored files excluded), uploads the archive to the user's
+// workspace code snapshot directory, and rewrites the field to the resulting
+// remote path so the deployed job runs against the uploaded code. Values that are
+// already remote are left untouched.
 //
-// The snapshot approach mirrors PR #5897, which ported it from the Python air CLI
-// (see snapshot_resolve.go / snapshot_package.go / snapshot_cachekey.go).
+// The tarball builder is ported from PR #5897 (see snapshot_package.go).
 package aicode
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -31,7 +28,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/cli/libs/log"
 )
 
 // codeSourcePatterns are the config locations of an AI Runtime task's
@@ -122,20 +118,16 @@ func (m *packageAndUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	return diags
 }
 
-// repoSnapshotsSubdir is the per-user workspace location for cached code
-// snapshots, under the user's home. It matches the Python air CLI (and PR #5897)
-// so a snapshot is cached in a stable place that bundle deploy does not wipe.
-//
-// Deliberately NOT <artifact_path>/.internal: artifacts.CleanUp() deletes that
-// directory at the start of every deploy, which would defeat the git-archive
-// snapshot cache. Keeping snapshots under ~/.air/repo_snapshots lets an unchanged
-// commit skip re-upload across deploys.
+// repoSnapshotsSubdir is the per-user workspace location for code snapshots,
+// under the user's home. It matches the Python air CLI (and PR #5897) and is
+// deliberately NOT <artifact_path>/.internal, which artifacts.CleanUp() deletes at
+// the start of every deploy.
 const repoSnapshotsSubdir = ".air/repo_snapshots"
 
-// packageOne snapshots the local directory for a single code source, uploads the
-// archive to the user's repo_snapshots dir (skipping the upload when an identical
-// git-archive snapshot already exists), and returns the remote path the config
-// should point to.
+// packageOne packages the local directory for a single code source into a plain
+// tarball, uploads it to the user's repo_snapshots dir, and returns the remote
+// path the config should point to. The archive is timestamp-named so concurrent
+// deploys do not clobber each other.
 func (m *packageAndUpload) packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource, stagingDir, userDir string) (string, error) {
 	localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(cs.value))
 	dirName := filepath.Base(localDir)
@@ -150,81 +142,28 @@ func (m *packageAndUpload) packageOne(ctx context.Context, b *bundle.Bundle, cs 
 		}
 	}
 
-	git := newGitRepo(localDir)
-	plan, err := resolveSnapshotPlan(ctx, git)
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve code_source_path %q: %w", cs.value, err)
-	}
-
-	// git_archive is cacheable by (commit, include_paths): a hit means the identical
-	// tarball is already uploaded, so packaging and upload are skipped entirely.
-	if plan.mode == modeGitArchive {
-		cacheKey := computeSnapshotCacheKey(plan.commitSHA, plan.includePaths)
-		archiveName := fmt.Sprintf("%s_%s.tar.gz", dirName, cacheKey[:16])
-		remotePath := path.Join(uploadPath, archiveName)
-
-		exists, err := archiveExists(ctx, client, archiveName)
-		if err != nil {
-			return "", err
-		}
-		if exists {
-			log.Debugf(ctx, "code snapshot for %s already present at %s, skipping upload", shortSHA(plan.commitSHA), remotePath)
-			return remotePath, nil
-		}
-
-		if err := packageAndUploadArchive(ctx, client, stagingDir, archiveName, func(out string) error {
-			return createGitArchiveSnapshot(ctx, git, plan.commitSHA, out, dirName, plan.includePaths)
-		}); err != nil {
-			return "", err
-		}
-		return remotePath, nil
-	}
-
-	// plain_tar is not cacheable (working-tree content isn't pinned to a SHA), so it
-	// is timestamp-named to avoid clobbering a concurrent deploy.
 	archiveName := fmt.Sprintf("%s_%s.tar.gz", dirName, time.Now().UTC().Format("20060102_150405"))
-	remotePath := path.Join(uploadPath, archiveName)
-	if err := packageAndUploadArchive(ctx, client, stagingDir, archiveName, func(out string) error {
-		return createPlainTarball(ctx, localDir, out, plan.includePaths)
-	}); err != nil {
+	localArchive := filepath.Join(stagingDir, archiveName)
+	defer os.Remove(localArchive)
+
+	if err := createPlainTarball(ctx, localDir, localArchive); err != nil {
+		return "", fmt.Errorf("failed to package code_source_path %q: %w", cs.value, err)
+	}
+	if err := libraries.UploadFile(ctx, localArchive, client); err != nil {
 		return "", err
 	}
-	return remotePath, nil
+
+	return path.Join(uploadPath, archiveName), nil
 }
 
 // userWorkspaceHome returns the current user's workspace home directory
-// (/Workspace/Users/<user>), the root under which code snapshots are cached.
+// (/Workspace/Users/<user>), the root under which code snapshots are stored.
 func userWorkspaceHome(b *bundle.Bundle) (string, error) {
 	u := b.Config.Workspace.CurrentUser
 	if u == nil || u.User == nil || u.UserName == "" {
 		return "", errors.New("unable to resolve code snapshot location: current user not set")
 	}
 	return "/Workspace/Users/" + u.UserName, nil
-}
-
-// archiveExists reports whether archiveName already exists in the store, treating
-// fs.ErrNotExist as "no".
-func archiveExists(ctx context.Context, client filer.Filer, archiveName string) (bool, error) {
-	_, err := client.Stat(ctx, archiveName)
-	if err == nil {
-		return true, nil
-	}
-	if errors.Is(err, fs.ErrNotExist) {
-		return false, nil
-	}
-	return false, fmt.Errorf("failed to check for existing code snapshot %q: %w", archiveName, err)
-}
-
-// packageAndUploadArchive writes the tarball via pkg into a temp file under
-// stagingDir, then uploads it as archiveName. The temp file is always removed.
-func packageAndUploadArchive(ctx context.Context, client filer.Filer, stagingDir, archiveName string, pkg func(outputPath string) error) error {
-	localArchive := filepath.Join(stagingDir, archiveName)
-	defer os.Remove(localArchive)
-
-	if err := pkg(localArchive); err != nil {
-		return err
-	}
-	return libraries.UploadFile(ctx, localArchive, client)
 }
 
 // collectLocalCodeSources returns every AI Runtime task code_source_path that

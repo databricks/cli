@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// tarEntryNames returns the sorted set of entry names in a gzipped tarball file.
+// tarEntryNames returns the set of entry names in a gzipped tarball file.
 func tarEntryNames(t *testing.T, tarballPath string) map[string]bool {
 	t.Helper()
 	f, err := os.Open(tarballPath)
@@ -33,7 +33,7 @@ func tarEntryNames(t *testing.T, tarballPath string) map[string]bool {
 	return names
 }
 
-func TestCreatePlainTarballExcludesGitAndGitignored(t *testing.T) {
+func TestCreatePlainTarballPrefixesExcludesGitAndGitignored(t *testing.T) {
 	dir := t.TempDir()
 	code := filepath.Join(dir, "mycode")
 	require.NoError(t, os.MkdirAll(filepath.Join(code, "pkg"), 0o755))
@@ -50,9 +50,11 @@ func TestCreatePlainTarballExcludesGitAndGitignored(t *testing.T) {
 	write("._resource_fork", "apple double")
 
 	out := filepath.Join(dir, "out.tar.gz")
-	require.NoError(t, createPlainTarball(t.Context(), code, out, nil))
+	require.NoError(t, createPlainTarball(t.Context(), code, out))
 
 	names := tarEntryNames(t, out)
+	// Entries are prefixed with the code dir basename (the runtime extracts to
+	// /databricks/code_source/<dir>).
 	assert.True(t, names["mycode/train.py"])
 	assert.True(t, names["mycode/pkg/util.py"])
 	assert.True(t, names["mycode/.gitignore"])
@@ -60,24 +62,4 @@ func TestCreatePlainTarballExcludesGitAndGitignored(t *testing.T) {
 	assert.False(t, names["mycode/debug.log"], "gitignored glob must be excluded")
 	assert.False(t, names["mycode/.git/config"], ".git must never be archived")
 	assert.False(t, names["mycode/._resource_fork"], "AppleDouble metadata must be excluded")
-}
-
-func TestCreateGitArchiveSnapshotPrefixesAndScopesToSubdir(t *testing.T) {
-	// Repo with two top-level dirs; archiving the "src" subdir must include only
-	// src, prefixed by its basename (the runtime extracts to code_source/<dir>).
-	repo := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(repo, "src"), 0o755))
-	require.NoError(t, os.MkdirAll(filepath.Join(repo, "other"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(repo, "src", "a.py"), []byte("a"), 0o644))
-	require.NoError(t, os.WriteFile(filepath.Join(repo, "other", "b.py"), []byte("b"), 0o644))
-	commit := initGitRepo(t, repo)
-
-	src := filepath.Join(repo, "src")
-	out := filepath.Join(t.TempDir(), "out.tar.gz")
-	require.NoError(t, createGitArchiveSnapshot(t.Context(), newGitRepo(src), commit, out, "src", nil))
-
-	names := tarEntryNames(t, out)
-	assert.True(t, names["src/a.py"])
-	assert.False(t, names["other/b.py"], "sibling dir must not be in a src-scoped archive")
-	assert.False(t, names["src/../other/b.py"])
 }

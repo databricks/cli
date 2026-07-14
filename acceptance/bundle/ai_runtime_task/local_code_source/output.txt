@@ -1,5 +1,5 @@
 
-=== deploy packages the code source and rewrites code_source_path
+=== deploy packages the local code source and rewrites code_source_path
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
@@ -7,17 +7,8 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== the snapshot tarball is uploaded to the user's repo_snapshots cache
+=== the snapshot tarball is uploaded to the user's repo_snapshots directory
 /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/repo_snapshots/src/src_[SNAPSHOT].tar.gz
 
 === the created job's code_source_path points at the uploaded archive
 /Workspace/Users/[USERNAME]/.air/repo_snapshots/src/src_[SNAPSHOT].tar.gz
-
-=== re-deploying the same commit is a cache hit: the tarball is not re-uploaded
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-tarball uploads on redeploy: 0
