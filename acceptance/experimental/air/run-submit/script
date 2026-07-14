@@ -12,7 +12,7 @@ sed "s/COMMIT_SHA/$(git rev-parse HEAD)/" run.yaml.tmpl > run.yaml
 title "submit with a git code_source"
 trace $CLI experimental air run -f run.yaml
 
-title "the ai_runtime_task carries the snapshot + provenance paths"
+title "the ai_runtime_task carries the code_source_path"
 trace print_requests.py //api/2.2/jobs/runs/submit
 
 rm -fr .git
