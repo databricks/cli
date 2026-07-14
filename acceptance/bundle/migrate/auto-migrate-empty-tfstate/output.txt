@@ -38,6 +38,11 @@ direct_migrated_via_config true
 "POST /api/2.0/workspace/delete"
 "POST /api/2.0/workspace/delete"
 
+=== debug states confirms no terraform.tfstate anywhere; only .backup remains
+
+>>> [CLI] bundle debug states --force-pull
+
+
 === Next deploy uses direct engine by default (no more mismatch warning)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

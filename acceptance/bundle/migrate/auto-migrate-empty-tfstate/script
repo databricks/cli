@@ -21,6 +21,9 @@ trace print_migration_telemetry
 title "Sweep also affected the workspace: .backup uploaded, terraform.tfstate deleted\n"
 trace print_requests.py //workspace-files/import-file //workspace/delete --sort | jq '.method + " " + .path' | contains.py 'terraform.tfstate.backup' 'workspace/delete'
 
+title "debug states confirms no terraform.tfstate anywhere; only .backup remains\n"
+trace $CLI bundle debug states --force-pull
+
 title "Next deploy uses direct engine by default (no more mismatch warning)"
 trace $CLI bundle deploy 2>&1 | contains.py '!does not match the existing state'
 trace print_migration_telemetry
