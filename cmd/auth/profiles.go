@@ -32,10 +32,6 @@ const (
 	profileStatusSkipped profileStatus = "skipped" // --skip-validate; not checked
 )
 
-// profileValidationTimeout bounds the per-profile validation API call so a
-// single hung profile (dead host, no route) does not stall the whole listing.
-const profileValidationTimeout = 10 * time.Second
-
 type profileMetadata struct {
 	Name        string `json:"name"`
 	Host        string `json:"host,omitempty"`
@@ -86,21 +82,11 @@ func renderStatusCell(ctx context.Context, s profileStatus) string {
 }
 
 func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipValidate bool) {
-	timeoutSeconds := int(profileValidationTimeout / time.Second)
 	cfg := &config.Config{
 		Loaders:           []config.Loader{config.ConfigFile},
 		ConfigFile:        configFilePath,
 		Profile:           c.Name,
 		DatabricksCliPath: env.Get(ctx, "DATABRICKS_CLI_PATH"),
-
-		// Bound the SDK's per-request and total-retry budgets to the same
-		// per-profile ceiling. EnsureResolved fetches host metadata via the
-		// SDK's retrier, which defaults to 5 minutes — without this, a single
-		// dead host stalls the listing well past the validation context's
-		// timeout (the EnsureResolved call uses context.Background internally,
-		// so our context.WithTimeout below cannot reach it).
-		HTTPTimeoutSeconds:  timeoutSeconds,
-		RetryTimeoutSeconds: timeoutSeconds,
 	}
 	if skipValidate {
 		// EnsureResolved fetches <host>/.well-known/databricks-config to enrich
@@ -137,22 +123,19 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	callCtx, cancel := context.WithTimeout(ctx, profileValidationTimeout)
-	defer cancel()
-
 	var err error
 	switch configType {
 	case config.AccountConfig:
 		var a *databricks.AccountClient
 		a, err = databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err == nil {
-			_, err = a.Workspaces.List(callCtx)
+			_, err = a.Workspaces.List(ctx)
 		}
 	case config.WorkspaceConfig:
 		var w *databricks.WorkspaceClient
 		w, err = databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 		if err == nil {
-			_, err = w.CurrentUser.Me(callCtx, iam.MeRequest{})
+			_, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 		}
 	case config.InvalidConfig:
 		// Handled above with an early return; listed here for switch exhaustiveness.

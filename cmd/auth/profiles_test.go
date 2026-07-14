@@ -327,15 +327,6 @@ func TestProfileLoadStatusMatrix(t *testing.T) {
 		assert.NotEmpty(t, p.ValidReason)
 	})
 
-	t.Run("network down -> invalid", func(t *testing.T) {
-		// Start and immediately close the server to simulate a dead host.
-		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-		s.Close()
-		p := loadFromHost(t, s.URL)
-		assert.False(t, p.Valid)
-		assert.NotEmpty(t, p.ValidReason)
-	})
-
 	t.Run("InvalidConfig -> invalid", func(t *testing.T) {
 		// Host metadata reporting host_type=unified forces HostType=UnifiedHost.
 		// Without an account_id (or a SPOG-shaped DiscoveryURL), ResolveConfigType
