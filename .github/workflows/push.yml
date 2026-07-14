@@ -262,9 +262,10 @@ jobs:
         with:
           cache-key: test-exp-ssh
 
-      # The proxy tests exercise a real OpenSSH server, which the runner image
-      # ships only the client half of. Install it on Linux (the OS the sshd
-      # test is gated to); other platforms skip that test.
+      # The ssh acceptance test drives a real OpenSSH server behind the test
+      # server's tunnel, which the runner image ships only the client half of.
+      # Install it on Linux (the OS the test is gated to); other platforms and
+      # the general test job (no install) skip it via SKIP_TEST.
       - name: Install OpenSSH server
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y openssh-server

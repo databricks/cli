@@ -16,10 +16,18 @@ if [ -n "${CLOUD_ENV:-}" ]; then
     trace $CLI jobs get-run "$run_id" > LOG.job
   fi
 else
-  # No compute locally, but proxy mode still submits the bootstrap job and then
-  # pipes stdin/stdout over the driver-proxy websocket, which the test server
-  # echoes. One run asserts both the job and a working ws:// tunnel; proxy mode
-  # skips the ssh spawn, so it can't hang on a handshake against the echo.
-  printf 'hello over the ssh tunnel\n' | errcode $CLI ssh connect --proxy --name serverless-gpu-test --accelerator=GPU_1xA10 --releases-dir=$CLI_RELEASES_DIR >out.proxy.txt 2>LOG.stderr
+  # No Databricks compute locally, but the test server upgrades the driver-proxy
+  # /ssh websocket to a real `sshd -i`, so the same full handshake, public-key
+  # auth, and remote exec run end to end over the ws:// tunnel. This one run
+  # asserts both the bootstrap job submission and a working tunnel.
+  #
+  # Needs a real OpenSSH server; the general test job doesn't provision one (only
+  # `task test-exp-ssh` does), so skip there. The test server probes sshd the same
+  # way, so agreement is guaranteed on a given machine.
+  if [ -z "$(command -v sshd || ls /usr/sbin/sshd /usr/local/sbin/sshd /sbin/sshd 2>/dev/null)" ]; then
+    echo "SKIP_TEST sshd (openssh-server) not installed"
+    exit 0
+  fi
+  errcode $CLI ssh connect --name serverless-gpu-test --accelerator=GPU_1xA10 --releases-dir=$CLI_RELEASES_DIR --user-known-hosts-file=known_hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
   trace print_requests.py //api/2.2/jobs/runs/submit
 fi

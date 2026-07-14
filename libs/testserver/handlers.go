@@ -744,9 +744,11 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// SSH tunnel server behind the driver proxy: /metadata returns the remote
-	// login user, /logs is a best-effort error tail fetched on failure.
+	// login user, /logs is a best-effort error tail fetched on failure. The user
+	// must be the OS user the local sshd runs as (the real server reports the same),
+	// so `ssh -l <user>` matches the account authorized in authorized_keys.
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
-		return Response{Body: sshTunnelRemoteUser}
+		return Response{Body: sshTunnelRemoteUser()}
 	})
 
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/logs", func(req Request) any {
@@ -755,7 +757,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// /ssh upgrades to a websocket, so it hijacks the connection rather than
 	// returning a normal response.
-	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", sshTunnelEchoHandler)
+	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
 
 	// Secrets ACLs:
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {

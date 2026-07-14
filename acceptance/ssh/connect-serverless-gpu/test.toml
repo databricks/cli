@@ -12,6 +12,12 @@ Ignore = [
   "releases",
 ]
 
+# The local run drives a real sshd behind the test server's tunnel; running it as
+# a non-root user in inetd mode with a throwaway config is reliable on Linux (which
+# is where task test-exp-ssh provisions openssh-server), not on macOS/Windows.
+[GOOS]
+  linux = true
+
 # Serverless GPU is not available in GCP yet
 [CloudEnvs]
   gcp = false
