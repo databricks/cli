@@ -18,6 +18,8 @@ func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle) error {
 	if b == nil {
 		return nil
 	}
+	// Mask only in the display copy: the live config must carry the real values
+	// through the deployment pipeline (e.g. UC secrets must reach the API call).
 	v, err := bundleconfig.MaskSensitiveFields(b.Config.Value())
 	if err != nil {
 		return err

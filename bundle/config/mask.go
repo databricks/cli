@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -22,9 +23,9 @@ var (
 	})
 )
 
-// sensitiveFields returns a map of JSON field names → true for resource type
+// SensitiveFields returns a map of JSON field names → true for a resource type
 // key (e.g. "secrets"). Built once from the convert.SensitiveFieldNames helper.
-func sensitiveFields(resourceTypeKey string) map[string]bool {
+func SensitiveFields(resourceTypeKey string) map[string]bool {
 	sensitiveFieldsCacheOnce()
 	return sensitiveFieldsCache[resourceTypeKey]
 }
@@ -47,20 +48,28 @@ func MaskSensitiveFields(v dyn.Value) (dyn.Value, error) {
 			return resource, nil
 		}
 		resourceType := p[1].Key()
-		fields := sensitiveFields(resourceType)
+		fields := SensitiveFields(resourceType)
 		if len(fields) == 0 {
 			return resource, nil
 		}
 
 		for fieldName := range fields {
 			fv, err := dyn.GetByPath(resource, dyn.NewPath(dyn.Key(fieldName)))
+			if dyn.IsNoSuchKeyError(err) {
+				// Field not present in this resource instance — nothing to mask.
+				continue
+			}
 			if err != nil {
-				// Field not present — nothing to mask.
+				return dyn.InvalidValue, err
+			}
+			if fv.Kind() == dyn.KindNil {
 				continue
 			}
 			s, ok := fv.AsString()
-			if !ok || s == "" {
-				// Not a non-empty string — nothing to mask.
+			if !ok {
+				return dyn.InvalidValue, fmt.Errorf("sensitive field %q must be a string, got %s", fieldName, fv.Kind())
+			}
+			if s == "" {
 				continue
 			}
 			resource, err = dyn.SetByPath(resource, dyn.NewPath(dyn.Key(fieldName)),
