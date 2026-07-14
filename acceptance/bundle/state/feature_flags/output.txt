@@ -1,0 +1,13 @@
+
+=== a version-3 state with an empty features map is accepted (treated as version 2)
+>>> [CLI] bundle plan
+create jobs.my_job
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== a version-3 state recording a feature is rejected (this CLI records no features yet)
+>>> errcode [CLI] bundle plan
+Error: migrating state [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: the deployment state requires features this CLI does not support: future_feature; upgrade to the latest CLI version and see https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features for more information
+
+
+Exit code: 1

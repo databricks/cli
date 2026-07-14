@@ -21,11 +21,39 @@ import (
 )
 
 const (
+	// currentStateVersion is the schema version written for deployments that record
+	// no feature flags, and the version legacy states are migrated up to on load.
 	currentStateVersion = 2
-	initialBufferSize   = 64 * 1024
-	maxWalEntrySize     = 10 * 1024 * 1024
-	walSuffix           = ".wal"
+
+	// featureStateVersion is the schema version a future CLI will write once it
+	// records deployment state "feature flags" (see Header.Features). This CLI does
+	// not write it and records no features; it exists now only so this CLI reads
+	// such states correctly (see migrateState):
+	//   - featureStateVersion with no features  -> read as currentStateVersion
+	//   - featureStateVersion with any feature   -> refuse, tell the user to upgrade
+	//
+	// This is forward-compat scaffolding so that a later release can start writing
+	// featureStateVersion + features without older CLIs (with this change) either
+	// mishandling a feature they lack or rejecting a featureless state outright.
+	// featureStateVersion is always 3.
+	//
+	// IMPORTANT: the "version 3 + no features == version 2" equivalence is special-
+	// cased to version 3 only; it is scaffolding, not a general rule. When the
+	// baseline (currentStateVersion) is actually bumped to 3, delete
+	// featureStateVersion and its handling in migrateState (and the test that pins
+	// this), otherwise a real v3 state gets silently reinterpreted as v2.
+	featureStateVersion = 3
+
+	initialBufferSize = 64 * 1024
+	maxWalEntrySize   = 10 * 1024 * 1024
+	walSuffix         = ".wal"
 )
+
+// featuresDocURL is the single documentation page describing deployment state
+// feature flags. It is shown when a state records a feature this CLI does not
+// support; it is a fixed link for all features. The #state-features anchor points
+// at the feature table; if it ever breaks, the user still lands on the page.
+const featuresDocURL = "https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features"
 
 // errStaleWAL is returned when the WAL serial is behind the expected serial.
 // The caller should delete the stale WAL and proceed normally.
@@ -42,10 +70,18 @@ type DeploymentState struct {
 }
 
 type Header struct {
-	StateVersion int    `json:"state_version"`
-	CLIVersion   string `json:"cli_version"`
-	Lineage      string `json:"lineage"`
-	Serial       int    `json:"serial"`
+	StateVersion int `json:"state_version"`
+
+	// Features maps each feature flag this state depends on to a (currently empty)
+	// value. This CLI writes no features; it only reads the field to detect a state
+	// that depends on features it lacks and refuse it (see migrateState). It is a
+	// map so a future CLI can attach per-feature data without reshaping the state.
+	// Empty/omitted for states that use no features.
+	Features map[string]struct{} `json:"features,omitempty"`
+
+	CLIVersion string `json:"cli_version"`
+	Lineage    string `json:"lineage"`
+	Serial     int    `json:"serial"`
 }
 
 type Database struct {
