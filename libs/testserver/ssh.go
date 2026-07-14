@@ -128,15 +128,12 @@ func (s *Server) sshTunnelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var closeOnce sync.Once
-	closeConn := func() { closeOnce.Do(func() { _ = conn.Close() }) }
+	closeConn := sync.OnceFunc(func() { _ = conn.Close() })
 
 	var wg sync.WaitGroup
-	wg.Add(2)
 
 	// sshd stdout -> websocket binary frames.
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		buf := make([]byte, 4096)
 		for {
 			n, readErr := sshdStdout.Read(buf)
@@ -151,11 +148,10 @@ func (s *Server) sshTunnelHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		// sshd exited (or the client is gone): unblock the reader below.
 		closeConn()
-	}()
+	})
 
 	// websocket binary frames -> sshd stdin.
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			messageType, data, readErr := conn.ReadMessage()
 			if readErr != nil {
@@ -170,7 +166,7 @@ func (s *Server) sshTunnelHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		// The client closed its side (ssh session ended): EOF sshd's stdin so it exits.
 		_ = sshdStdin.Close()
-	}()
+	})
 
 	wg.Wait()
 	cancel()
