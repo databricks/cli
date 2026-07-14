@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"maps"
 	"reflect"
 	"testing"
 
@@ -28,9 +29,7 @@ func withSensitiveResourceType(t *testing.T) {
 	t.Helper()
 	orig := config.ResourcesTypes
 	patched := make(map[string]reflect.Type, len(orig)+1)
-	for k, v := range orig {
-		patched[k] = v
-	}
+	maps.Copy(patched, orig)
 	patched["secrets"] = reflect.TypeFor[sensitiveTestResource]()
 	config.ResourcesTypes = patched
 	t.Cleanup(func() { config.ResourcesTypes = orig })
