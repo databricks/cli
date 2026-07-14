@@ -77,14 +77,11 @@ func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
 	// Rules mirror the schemas backend_defaults in resources.yml, but the test is
 	// deliberately self-contained so that edits to resources.yml don't break it.
 	// The real wiring is covered by acceptance/bundle/resources/schemas/drift.
-	rowTracking, err := structpath.ParsePattern("properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']")
-	require.NoError(t, err)
-	catalogManaged, err := structpath.ParsePattern("properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']")
+	managedDefaults, err := structpath.ParsePattern("properties['unity.catalog.managed.*.defaults.*']")
 	require.NoError(t, err)
 	cfg := &dresources.ResourceLifecycleConfig{
 		BackendDefaults: []dresources.BackendDefaultRule{
-			{Field: rowTracking},
-			{Field: catalogManaged},
+			{Field: managedDefaults},
 		},
 	}
 
@@ -107,8 +104,32 @@ func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
 			expected: true,
 		},
 		{
+			name:     "managed delta cluster by auto property",
+			path:     "properties['unity.catalog.managed.delta.defaults.defaultClusterByAuto']",
+			remote:   "true",
+			expected: true,
+		},
+		{
+			name:     "managed delta checkpoint policy property",
+			path:     "properties['unity.catalog.managed.delta.defaults.delta.checkpointPolicy']",
+			remote:   "v2",
+			expected: true,
+		},
+		{
+			name:     "managed delta feature catalogManaged property",
+			path:     "properties['unity.catalog.managed.delta.defaults.delta.feature.catalogManaged']",
+			remote:   "supported",
+			expected: true,
+		},
+		{
 			name:     "unmanaged remote-only property is not skipped",
 			path:     "properties['custom.remote_only']",
+			remote:   "true",
+			expected: false,
+		},
+		{
+			name:     "managed prefix without defaults segment is not skipped",
+			path:     "properties['unity.catalog.managed.delta.other.delta.enableRowTracking']",
 			remote:   "true",
 			expected: false,
 		},

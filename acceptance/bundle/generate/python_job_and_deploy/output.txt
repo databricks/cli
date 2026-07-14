@@ -8,6 +8,14 @@
 >>> [CLI] bundle generate job --existing-job-id [JOB_ID] --key out --config-dir resources --source-dir src --force
 File successfully saved to src/test_notebook-[UNIQUE_NAME].py
 Job configuration successfully saved to resources/out.job.yml
+Warning: Generated configuration is not included in the bundle
+
+The file resources/out.job.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - resources/*.yml
+
 
 === Verify generated yaml has expected fields
 === Deploy the generated bundle

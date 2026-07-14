@@ -31,26 +31,14 @@ Deployment complete!
   "endpoint_id": "my-endpoint",
   "name": "[MY_ENDPOINT_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "uid": "[ENDPOINT_UID]",
   "status": {
-    "autoscaling_limit_max_cu": 8,
-    "autoscaling_limit_min_cu": 0.5,
-    "current_state": "ACTIVE",
-    "disabled": false,
     "endpoint_id": "my-endpoint",
     "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
-    "group": {
-      "enable_readable_secondaries": true,
-      "max": 1,
-      "min": 1
-    },
-    "hosts": {
-      "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com",
-      "read_only_host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
-    },
-    "settings": {},
+    "autoscaling_limit_min_cu": 0.5,
+    "autoscaling_limit_max_cu": 8,
     "suspend_timeout_duration": "300s"
-  },
-  "uid": "[ENDPOINT_UID]"
+  }
 }
 
 === Verify no changes
@@ -120,26 +108,14 @@ Deployment complete!
   "endpoint_id": "my-endpoint",
   "name": "[MY_ENDPOINT_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "uid": "[ENDPOINT_UID]",
   "status": {
-    "autoscaling_limit_max_cu": 4,
-    "autoscaling_limit_min_cu": 0.5,
-    "current_state": "ACTIVE",
-    "disabled": false,
     "endpoint_id": "my-endpoint",
     "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
-    "group": {
-      "enable_readable_secondaries": true,
-      "max": 1,
-      "min": 1
-    },
-    "hosts": {
-      "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com",
-      "read_only_host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
-    },
-    "settings": {},
+    "autoscaling_limit_min_cu": 0.5,
+    "autoscaling_limit_max_cu": 4,
     "suspend_timeout_duration": "300s"
-  },
-  "uid": "[ENDPOINT_UID]"
+  }
 }
 
 === Restore endpoint autoscaling to original value
@@ -165,26 +141,14 @@ Deployment complete!
   "endpoint_id": "my-endpoint",
   "name": "[MY_ENDPOINT_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "uid": "[ENDPOINT_UID]",
   "status": {
-    "autoscaling_limit_max_cu": 8,
-    "autoscaling_limit_min_cu": 0.5,
-    "current_state": "ACTIVE",
-    "disabled": false,
     "endpoint_id": "my-endpoint",
     "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
-    "group": {
-      "enable_readable_secondaries": true,
-      "max": 1,
-      "min": 1
-    },
-    "hosts": {
-      "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com",
-      "read_only_host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
-    },
-    "settings": {},
+    "autoscaling_limit_min_cu": 0.5,
+    "autoscaling_limit_max_cu": 8,
     "suspend_timeout_duration": "300s"
-  },
-  "uid": "[ENDPOINT_UID]"
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve
