@@ -3,12 +3,14 @@ package agents
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -98,6 +100,26 @@ func TestMaybeHint_PluginInstalledSilent(t *testing.T) {
 
 	MaybeHint(ctx, regularCmd())
 	assert.Empty(t, stderr.String())
+}
+
+func TestClaudeToolingInstalled_LogsPluginVersion(t *testing.T) {
+	home := t.TempDir()
+	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"version":"0.2.6"}]}}`)
+
+	// Capture debug output by installing a text logger on the context.
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: log.LevelDebug})
+	ctx := log.NewContext(t.Context(), slog.New(handler))
+	ctx = env.WithUserHomeDir(ctx, home)
+
+	assert.True(t, claudeToolingInstalled(ctx))
+
+	// The text handler escapes the inner quotes around the version, so assert on
+	// the stable, unescaped fragments rather than the full quoted message.
+	out := buf.String()
+	assert.Contains(t, out, "Databricks plugin detected for Claude Code")
+	assert.Contains(t, out, "0.2.6")
+	assert.Contains(t, out, "skipping install hint")
 }
 
 func TestMaybeHint_SkillsInstalledSilent(t *testing.T) {
