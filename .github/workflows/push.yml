@@ -262,10 +262,9 @@ jobs:
         with:
           cache-key: test-exp-ssh
 
-      # The ssh acceptance test drives a real OpenSSH server behind the test
-      # server's tunnel, which the runner image ships only the client half of.
-      # Install it on Linux (the OS the test is gated to); other platforms and
-      # the general test job (no install) skip it via SKIP_TEST.
+      # The ssh acceptance test drives a real sshd behind the tunnel; the runner
+      # ships only the client. Install it on Linux (the OS the test is gated to);
+      # elsewhere and in the general test job it skips via SKIP_TEST.
       - name: Install OpenSSH server
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y openssh-server

@@ -19,9 +19,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// sshTunnelRemoteUser reports the login user the driver-proxy /metadata endpoint
-// returns. The local sshd runs as the current OS user, so `ssh -l <user>` must use
-// that same account; the real tunnel server likewise reports its current user.
+// sshTunnelRemoteUser is the login user /metadata reports. It must be the OS user
+// the local sshd runs as, so `ssh -l <user>` matches; the real server reports the same.
 func sshTunnelRemoteUser() string {
 	if u, err := user.Current(); err == nil {
 		return u.Username
@@ -29,22 +28,17 @@ func sshTunnelRemoteUser() string {
 	return ""
 }
 
-// sshClientPublicKeySecretKey is the secret key name the CLI stores the client's
-// authorized public key under (mirrors clientPublicKeyName in experimental/ssh).
-// The tunnel server on a real cluster reads it to build authorized_keys; the test
-// server does the same so the local handshake authenticates the CLI's key.
+// sshClientPublicKeySecretKey is the secret the CLI stores its authorized public key
+// under (mirrors clientPublicKeyName in experimental/ssh); sshd authorizes it below.
 const sshClientPublicKeySecretKey = "client-public-key"
 
-// sshTunnelUpgrader upgrades the driver-proxy /ssh request to a websocket.
 var sshTunnelUpgrader = websocket.Upgrader{}
 
-// sshdTerminationTimeout bounds how long we wait for sshd to exit after the
-// tunnel closes before Cmd.Wait gives up, so a stuck child can't wedge the test.
+// sshdTerminationTimeout caps how long Cmd.Wait blocks on a stuck sshd once the tunnel closes.
 const sshdTerminationTimeout = 10 * time.Second
 
-// findSSHD returns the path to the OpenSSH server binary, or "" if it isn't installed.
-// LookPath usually misses sshd because it lives in sbin (not on a non-root PATH), so
-// probe the conventional locations directly. Mirrors the acceptance test's own probe.
+// findSSHD returns the sshd path, or "" if absent. LookPath misses it in sbin, so also
+// probe the usual locations. Mirrors the acceptance test's probe.
 func findSSHD() string {
 	if p, err := exec.LookPath("sshd"); err == nil {
 		return p
@@ -57,9 +51,8 @@ func findSSHD() string {
 	return ""
 }
 
-// sshClientAuthorizedKey returns the client's authorized public key the CLI uploaded
-// via secrets/put, scanning every scope since the scope name is derived from the
-// session and current user. Returns nil if no such secret exists.
+// sshClientAuthorizedKey returns the public key the CLI uploaded via secrets/put, or nil.
+// Scans all scopes since the scope name embeds the session and current user.
 func (s *FakeWorkspace) sshClientAuthorizedKey() []byte {
 	defer s.LockUnlock()()
 	for _, scope := range s.Secrets {
@@ -70,16 +63,10 @@ func (s *FakeWorkspace) sshClientAuthorizedKey() []byte {
 	return nil
 }
 
-// sshTunnelHandler stands in for the tunnel server a real cluster runs behind the
-// driver proxy. With no Databricks compute locally, it upgrades the /ssh request to
-// a websocket and drives a real `sshd -i` over that transport, so `ssh connect`
-// completes an actual SSH handshake, public-key auth, and remote command exec end to
-// end. It is the local stand-in for cluster connectivity: the tunnel must carry the
-// SSH protocol faithfully in both directions.
-//
-// Requires a real OpenSSH server; callers gate the test to skip where sshd is absent
-// (see acceptance/ssh/connect-serverless-gpu). sshd -i as a non-root user with a
-// throwaway config is reliable on Linux, which is where that test runs.
+// sshTunnelHandler stands in for a cluster's tunnel server: it upgrades /ssh to a
+// websocket and drives a real `sshd -i` over it, so `ssh connect` runs a full handshake,
+// auth, and remote exec locally. Requires sshd; the acceptance test skips when it's absent
+// and is pinned to Linux, where sshd -i as a non-root user is reliable.
 func (s *Server) sshTunnelHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := sshTunnelUpgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -92,8 +79,8 @@ func (s *Server) sshTunnelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The ws dial carries the CLI's bearer token, so the token-scoped workspace here
-	// is the same one the connect flow uploaded the client's public key to.
+	// The ws dial carries the CLI's bearer token, so this token-scoped workspace is the
+	// one that stored the uploaded public key.
 	authorizedKey := s.getWorkspaceForToken(getToken(r)).sshClientAuthorizedKey()
 	if authorizedKey == nil {
 		return
@@ -173,10 +160,9 @@ func (s *Server) sshTunnelHandler(w http.ResponseWriter, r *http.Request) {
 	_ = cmd.Wait()
 }
 
-// writeSSHDFiles lays out the host key, authorized_keys, and a minimal sshd_config
-// in dir and returns the config path. StrictModes/UsePAM are off so sshd doesn't
-// reject the temp-dir key files or try to switch users when run as a non-root user
-// in inetd mode (-i).
+// writeSSHDFiles writes an ephemeral host key, authorized_keys, and a minimal sshd_config,
+// returning the config path. StrictModes/UsePAM are off so sshd accepts the temp-dir keys
+// and doesn't try to switch users when run non-root in inetd mode (-i).
 func writeSSHDFiles(dir string, authorizedKey []byte) (string, error) {
 	_, hostPriv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {

@@ -12,11 +12,9 @@ Ignore = [
   "releases",
 ]
 
-# The local run drives a real sshd behind the test server's tunnel; running it as
-# a non-root user in inetd mode with a throwaway config is reliable on Linux (which
-# is where task test-exp-ssh provisions openssh-server), not on macOS/Windows. GOOS
-# keys absent from this map default to enabled, so the other OSes must be disabled
-# explicitly to keep the test Linux-only.
+# Linux-only: the local run drives a real sshd, reliable only there (and where
+# task test-exp-ssh provisions it). Absent GOOS keys default to enabled, so the
+# other OSes must be disabled explicitly.
 [GOOS]
   linux = true
   darwin = false
