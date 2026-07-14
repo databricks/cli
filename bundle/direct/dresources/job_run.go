@@ -7,12 +7,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
+
+// jobRunTimeout bounds how long WaitAfterCreate waits for a run to finish.
+// Matches the SDK's default RunNow waiter timeout.
+const jobRunTimeout = 20 * time.Minute
 
 // JobRunState is what we persist for a triggered run: the RunNow request.
 type JobRunState struct {
@@ -150,12 +155,28 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 	return strconv.FormatInt(wait.RunId, 10), nil, nil
 }
 
+func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobRunState) (*JobRunRemote, error) {
+	runID, err := parseRunID(id)
+	if err != nil {
+		return nil, err
+	}
+	// TERMINATED/SKIPPED succeed even on a FAILED/TIMEDOUT/CANCELED result_state:
+	// the outcome is surfaced as readable state, not a deploy failure. Only
+	// INTERNAL_ERROR fails the deploy.
+	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, jobRunTimeout, nil)
+	if err != nil {
+		return nil, err
+	}
+	return makeJobRunRemote(run), nil
+}
+
 // DoUpdate is intentionally not implemented: a run can't be modified in place,
 // so any change recreates it (delete + a fresh RunNow).
 
-// DoDelete deletes the run via jobs/runs/delete, on both destroy and the
-// recreate path. The API rejects a still-active run; this milestone doesn't
-// await completion, so that error surfaces to the user.
+// DoDelete deletes the run via jobs/runs/delete, on both destroy and recreate.
+// WaitAfterCreate leaves a run terminal by the end of its deploy, so on recreate
+// the prior run is safe to delete; destroying a run still active from an
+// interrupted deploy is rejected by the API and surfaces to the user.
 func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *JobRunState) error {
 	runID, err := parseRunID(id)
 	if err != nil {

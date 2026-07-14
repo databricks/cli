@@ -1,0 +1,26 @@
+bundle:
+  name: job-runs-wait-output
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+    # Reads the run's output. Must not be my_job (the run's target), or the
+    # reference would cycle: my_run already depends on my_job.id.
+    downstream_job:
+      name: downstream-job
+      tags:
+        run_result: ${resources.job_runs.my_run.state.result_state}
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}

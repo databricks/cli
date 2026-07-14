@@ -1,12 +1,12 @@
 
-=== initial deploy triggers the run
+=== initial deploy triggers the run and waits for it to finish
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-idempotent-recreate/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== drop the job run from local state but keep the job (simulates a lost run id)
+=== retry mid-run after a lost run id (deploy crashed before the id was recorded)
 >>> [CLI] bundle plan -o json
 {
   "depends_on": [
@@ -23,14 +23,23 @@ Deployment complete!
   }
 }
 
-=== redeploy re-issues run-now; the token dedupes to the existing run
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-idempotent-recreate/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== run-now was issued twice with the same token, but no duplicate run was created
+=== retry mid-run after the run id was recorded (deploy crashed during the wait)
+>>> [CLI] bundle plan -o json
+"skip"
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-idempotent-recreate/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== run-now was issued exactly twice, both with the same token, and no duplicate run was created
 >>> print_requests.py //jobs/run-now
 {
   "method": "POST",
@@ -48,7 +57,7 @@ Deployment complete!
     "job_id": [NUMID]
   }
 }
-run id unchanged after recreate: the idempotency token deduped to the existing run
+run id stable across both retries ([NUMID]): the idempotency token reused the existing run
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

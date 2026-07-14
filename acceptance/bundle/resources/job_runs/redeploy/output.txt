@@ -68,7 +68,8 @@ Resources:
     "run_page_url": "[DATABRICKS_URL]/?o=[NUMID]#job/[MY_JOB_ID]/run/[NUMID]",
     "run_type": "JOB_RUN",
     "state": {
-      "life_cycle_state": "RUNNING"
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS"
     }
   },
   "changes": {

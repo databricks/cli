@@ -9,25 +9,32 @@ run_id() {
     jq -r '.state["resources.job_runs.my_run"].__id__' "$STATE"
 }
 
-title "initial deploy triggers the run"
+title "initial deploy triggers the run and waits for it to finish"
 trace $CLI bundle deploy
 before=$(run_id)
 
-title "drop the job run from local state but keep the job (simulates a lost run id)"
-# The job stays deployed, so job_id -- and therefore the derived idempotency
-# token -- is unchanged, which is what lets the retried run-now dedupe.
+title "retry mid-run after a lost run id (deploy crashed before the id was recorded)"
+# Simulates a deploy that fired run-now but crashed before saving the run id.
+# job_id (and thus the idempotency token) is unchanged, so the retried run-now
+# dedupes to the existing run instead of starting a second one.
 jq 'del(.state["resources.job_runs.my_run"])' "$STATE" > "$STATE.new"
 mv "$STATE.new" "$STATE"
 trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"]'
-
-title "redeploy re-issues run-now; the token dedupes to the existing run"
 trace $CLI bundle deploy
-after=$(run_id)
+after_lost=$(run_id)
 
-title "run-now was issued twice with the same token, but no duplicate run was created"
+title "retry mid-run after the run id was recorded (deploy crashed during the wait)"
+# The run id is still in state, so the retry is a no-op: no second run-now.
+trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"].action // "none"'
+trace $CLI bundle deploy
+after_kept=$(run_id)
+
+title "run-now was issued exactly twice, both with the same token, and no duplicate run was created"
+# Two run-now calls total (initial + lost-id retry); the recorded-id retry adds
+# none. All share one token, so only one run ever exists.
 trace print_requests.py //jobs/run-now
-if [ "$before" = "$after" ]; then
-    echo "run id unchanged after recreate: the idempotency token deduped to the existing run"
+if [ "$before" = "$after_lost" ] && [ "$after_lost" = "$after_kept" ]; then
+    echo "run id stable across both retries ($before): the idempotency token reused the existing run"
 else
-    echo "run id changed ($before -> $after): a duplicate run was created"
+    echo "run id changed ($before -> $after_lost -> $after_kept): a duplicate run was created"
 fi
