@@ -31,7 +31,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.AllResourcesHaveValues(),
 		validate.NoInterpolationInAuthConfig(),
 		validate.NoInterpolationInBundleName(),
-		validate.NoReferenceToSensitiveFields(),
 		validate.ValidateEngine(),
 		validate.Scripts(),
 

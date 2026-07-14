@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	bundleconfig "github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -18,13 +17,7 @@ func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle) error {
 	if b == nil {
 		return nil
 	}
-	// Mask only in the display copy: the live config must carry the real values
-	// through the deployment pipeline (e.g. UC secrets must reach the API call).
-	v, err := bundleconfig.MaskSensitiveFields(b.Config.Value())
-	if err != nil {
-		return err
-	}
-	buf, err := json.MarshalIndent(v.AsAny(), "", "  ")
+	buf, err := json.MarshalIndent(b.Config.Value().AsAny(), "", "  ")
 	if err != nil {
 		return err
 	}

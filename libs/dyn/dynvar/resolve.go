@@ -153,10 +153,16 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 		// of where it is used. This also means that relative path resolution is done
 		// relative to where a variable is used, not where it is defined.
 		//
-		return dyn.NewValue(resolved[0].Value(), ref.Value.Locations()), nil
+		result := dyn.NewValue(resolved[0].Value(), ref.Value.Locations())
+		if resolved[0].IsSensitive() {
+			result = result.MarkSensitive()
+		}
+		return result, nil
 	}
 
 	// Not pure; perform string interpolation.
+	// Track whether any resolved value is sensitive; if so, the result is also sensitive.
+	anySensitive := false
 	for j := range ref.Matches {
 		// The value is invalid if resolution returned [ErrSkipResolution].
 		// We must skip those and leave the original variable reference in place.
@@ -164,7 +170,12 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 			continue
 		}
 
+		if resolved[j].IsSensitive() {
+			anySensitive = true
+		}
+
 		// Try to turn the resolved value into a string.
+		// Use AsString (not AsAny) to get the real value even for sensitive strings.
 		s, ok := resolved[j].AsString()
 		if !ok {
 			// Only allow primitive types to be converted to string.
@@ -179,7 +190,11 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 		ref.Str = strings.Replace(ref.Str, ref.Matches[j][0], s, 1)
 	}
 
-	return dyn.NewValue(ref.Str, ref.Value.Locations()), nil
+	result := dyn.NewValue(ref.Str, ref.Value.Locations())
+	if anySensitive {
+		result = result.MarkSensitive()
+	}
+	return result, nil
 }
 
 func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {

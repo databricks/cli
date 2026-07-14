@@ -19,6 +19,11 @@ type Value struct {
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
 	anchor bool
+
+	// Whether or not this value is sensitive.
+	// Sensitive values are replaced by a redaction placeholder in JSON/YAML output.
+	// The underlying value is still accessible via AsString/MustString.
+	sensitive bool
 }
 
 // InvalidValue is equal to the zero-value of Value.
@@ -61,16 +66,37 @@ func (v Value) WithLocations(loc []Location) Value {
 
 		// create a copy of the locations, so that mutations to the original slice
 		// don't affect new value.
-		l: slices.Clone(loc),
+		l:         slices.Clone(loc),
+		sensitive: v.sensitive,
 	}
 }
 
 func (v Value) AppendLocationsFromValue(w Value) Value {
 	return Value{
-		v: v.v,
-		k: v.k,
-		l: append(v.l, w.l...),
+		v:         v.v,
+		k:         v.k,
+		l:         append(v.l, w.l...),
+		sensitive: v.sensitive,
 	}
+}
+
+// MarkSensitive returns a copy of the value marked as sensitive.
+// When a sensitive value is marshaled to JSON or YAML, it is replaced by a redaction placeholder.
+// The underlying value is still accessible via AsString/MustString for use in the deployment pipeline.
+func (v Value) MarkSensitive() Value {
+	v.sensitive = true
+	return v
+}
+
+// IsSensitive reports whether this value is marked sensitive.
+func (v Value) IsSensitive() bool {
+	return v.sensitive
+}
+
+// WithSensitive returns a copy of the value with the sensitive flag set to the given value.
+func (v Value) WithSensitive(sensitive bool) Value {
+	v.sensitive = sensitive
+	return v
 }
 
 func (v Value) Kind() Kind {
@@ -120,6 +146,9 @@ func (v Value) AsAny() any {
 	case KindNil:
 		return v.v
 	case KindString:
+		if v.sensitive {
+			return "********"
+		}
 		return v.v
 	case KindBool:
 		return v.v
@@ -201,6 +230,9 @@ func (v Value) eq(w Value) bool {
 		return false
 	}
 	if !slices.Equal(v.l, w.l) {
+		return false
+	}
+	if v.sensitive != w.sensitive {
 		return false
 	}
 

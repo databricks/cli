@@ -142,9 +142,10 @@ func (c pathComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOpt
 		m = m.Clone()
 		m.SetLoc(c.key, nil, nv)
 		return Value{
-			v: m,
-			k: KindMap,
-			l: v.l,
+			v:         m,
+			k:         KindMap,
+			l:         v.l,
+			sensitive: v.sensitive,
 		}, nil
 
 	case c.isIndex():
@@ -181,9 +182,10 @@ func (c pathComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOpt
 		s = slices.Clone(s)
 		s[c.index] = nv
 		return Value{
-			v: s,
-			k: KindSequence,
-			l: v.l,
+			v:         s,
+			k:         KindSequence,
+			l:         v.l,
+			sensitive: v.sensitive,
 		}, nil
 
 	default:

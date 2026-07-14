@@ -50,6 +50,39 @@ func TestValueIsValid(t *testing.T) {
 	assert.True(t, intValue.IsValid())
 }
 
+func TestMarkSensitive(t *testing.T) {
+	v := dyn.V("secret-value")
+	assert.False(t, v.IsSensitive())
+
+	sv := v.MarkSensitive()
+	assert.True(t, sv.IsSensitive())
+
+	// AsAny returns the redaction placeholder for sensitive strings.
+	assert.Equal(t, "********", sv.AsAny())
+
+	// MustString returns the real underlying value.
+	assert.Equal(t, "secret-value", sv.MustString())
+}
+
+func TestSensitivePreservedByWithLocations(t *testing.T) {
+	locs := []dyn.Location{{File: "file", Line: 1, Column: 1}}
+	v := dyn.V("secret").MarkSensitive()
+	v2 := v.WithLocations(locs)
+	assert.True(t, v2.IsSensitive())
+	assert.Equal(t, locs, v2.Locations())
+}
+
+func TestSensitivePreservedByWithSensitive(t *testing.T) {
+	v := dyn.V("secret").MarkSensitive()
+	assert.True(t, v.IsSensitive())
+
+	v2 := v.WithSensitive(false)
+	assert.False(t, v2.IsSensitive())
+
+	v3 := v2.WithSensitive(true)
+	assert.True(t, v3.IsSensitive())
+}
+
 func TestIsZero(t *testing.T) {
 	assert.True(t, dyn.V(0).IsZero(), "int")
 	assert.True(t, dyn.V(int(0)).IsZero(), "int")

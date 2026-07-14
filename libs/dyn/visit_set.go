@@ -43,9 +43,10 @@ func SetByPath(v Value, p Path, nv Value) (Value, error) {
 				m = m.Clone()
 				m.SetLoc(component.key, nil, nv)
 				return Value{
-					v: m,
-					k: KindMap,
-					l: v.l,
+					v:         m,
+					k:         KindMap,
+					l:         v.l,
+					sensitive: v.sensitive,
 				}, nil
 
 			case component.isIndex():
@@ -64,9 +65,10 @@ func SetByPath(v Value, p Path, nv Value) (Value, error) {
 				s = slices.Clone(s)
 				s[component.index] = nv
 				return Value{
-					v: s,
-					k: KindSequence,
-					l: v.l,
+					v:         s,
+					k:         KindSequence,
+					l:         v.l,
+					sensitive: v.sensitive,
 				}, nil
 
 			default:

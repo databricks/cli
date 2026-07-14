@@ -64,6 +64,25 @@ func TestMarshal_Sequence(t *testing.T) {
 	}
 }
 
+func TestMarshal_Sensitive(t *testing.T) {
+	v := dyn.V("real-secret").MarkSensitive()
+	b, err := Marshal(v)
+	if assert.NoError(t, err) {
+		assert.JSONEq(t, `"********"`, string(b))
+	}
+}
+
+func TestMarshal_SensitiveInMap(t *testing.T) {
+	m := dyn.NewMapping()
+	m.SetLoc("token", nil, dyn.V("my-token").MarkSensitive())
+	m.SetLoc("name", nil, dyn.V("public"))
+
+	b, err := Marshal(dyn.V(m))
+	if assert.NoError(t, err) {
+		assert.JSONEq(t, `{"token":"********","name":"public"}`, string(b))
+	}
+}
+
 func TestMarshal_Complex(t *testing.T) {
 	map1 := dyn.NewMapping()
 	map1.SetLoc("str1", nil, dyn.V("value1"))

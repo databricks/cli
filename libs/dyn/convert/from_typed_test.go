@@ -926,3 +926,30 @@ func TestFromTypedForceSendFieldsEmbedded(t *testing.T) {
 	assert.Equal(t, dyn.KindNil, field.Kind(), "embedded field should be present due to ForceSendFields")
 	assert.Equal(t, dyn.V("value"), other)
 }
+
+func TestFromTypedSensitiveField(t *testing.T) {
+	type Tmp struct {
+		Name  string `json:"name"`
+		Token string `json:"token" bundle:"sensitive"`
+	}
+
+	src := Tmp{
+		Name:  "my-resource",
+		Token: "super-secret",
+	}
+
+	nv, err := FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	name := nv.Get("name")
+	token := nv.Get("token")
+
+	assert.False(t, name.IsSensitive(), "name should not be sensitive")
+	assert.True(t, token.IsSensitive(), "token should be sensitive due to bundle:\"sensitive\" tag")
+
+	// MustString returns the real value.
+	assert.Equal(t, "super-secret", token.MustString())
+	// AsAny returns the redaction placeholder.
+	assert.Equal(t, "********", token.AsAny())
+}
+
