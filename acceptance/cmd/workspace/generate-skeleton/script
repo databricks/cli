@@ -1,0 +1,8 @@
+title "Plain --json request body: skeleton is the request struct itself\n"
+trace $CLI vector-search-endpoints create-endpoint --generate-skeleton
+
+title "Request-body-field command: skeleton is the body field, positional args relaxed\n"
+trace $CLI entity-tag-assignments create --generate-skeleton
+
+title "--generate-skeleton is incompatible with --json\n"
+musterr $CLI jobs create --generate-skeleton --json '{}'

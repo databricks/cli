@@ -1,0 +1,3 @@
+# --generate-skeleton is offline and not bundle-aware; run it once instead of per-engine.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []

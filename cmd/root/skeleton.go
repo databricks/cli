@@ -2,6 +2,7 @@ package root
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -52,7 +53,7 @@ func RegisterGenerateSkeleton(cmd *cobra.Command, req any) {
 			return apiCall(cmd, args)
 		}
 		if cmd.Flags().Changed("json") {
-			return fmt.Errorf("--generate-skeleton cannot be combined with --json")
+			return errors.New("--generate-skeleton cannot be combined with --json")
 		}
 		skeleton := jsonSkeleton(reflect.TypeOf(req).Elem(), map[reflect.Type]bool{})
 		out, err := json.MarshalIndent(skeleton, "", "  ")
@@ -73,7 +74,7 @@ func jsonSkeleton(t reflect.Type, seen map[reflect.Type]bool) any {
 	case reflect.Pointer:
 		return jsonSkeleton(t.Elem(), seen)
 	case reflect.Struct:
-		if t == reflect.TypeOf(time.Time{}) {
+		if t == reflect.TypeFor[time.Time]() {
 			return ""
 		}
 		if seen[t] {
@@ -83,8 +84,7 @@ func jsonSkeleton(t reflect.Type, seen map[reflect.Type]bool) any {
 		seen[t] = true
 		defer delete(seen, t)
 		obj := map[string]any{}
-		for i := range t.NumField() {
-			f := t.Field(i)
+		for f := range t.Fields() {
 			if f.PkgPath != "" {
 				continue // unexported
 			}
