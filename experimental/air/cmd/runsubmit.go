@@ -47,7 +47,7 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 // omitempty so the wire form matches the Python CLI (which never emits a bare
 // "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
 // workload.
-func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string) jobs.SubmitRun {
+func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapshotResult) jobs.SubmitRun {
 	task := jobs.AiRuntimeTask{
 		Experiment: cfg.ExperimentName,
 		Deployments: []jobs.DeploymentSpec{{
@@ -57,6 +57,16 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string) jobs.Submit
 				AcceleratorCount: cfg.Compute.NumAccelerators,
 			},
 		}},
+		CodeSourcePath: snap.CodeSourcePath,
+		// TEMP: git_state_path / git_diff_path are intentionally NOT sent. The typed
+		// jobs.AiRuntimeTask (and its source proto, ai_runtime_task.proto) has no such
+		// fields, so the typed SDK path cannot carry them. This is safe today because
+		// nothing in the backend consumes those fields — the AI Runtime task proto
+		// never declared them, so even the Python CLI's raw-JSON values were dropped
+		// on deserialization. The git_state.json / git_diff.patch sidecars are still
+		// uploaded next to the tarball (see snapshot.go) for human inspection.
+		// If the backend later adds these fields to the proto, regenerate the SDK and
+		// wire snap.GitStatePath / snap.GitDiffPath back in here.
 	}
 	if cfg.MLflowRunName != nil {
 		task.MlflowRun = *cfg.MLflowRunName
@@ -111,13 +121,10 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
 // returns the new run_id and its dashboard URL.
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string) (int64, string, error) {
-	// Resolving usage_policy_name to a budget policy id and packaging a
-	// code_source snapshot are not ported yet; reject rather than silently drop.
+	// Resolving usage_policy_name to a budget policy id is not ported yet; reject
+	// rather than silently drop.
 	if cfg.UsagePolicyName != nil {
 		return 0, "", errors.New("usage_policy_name is not yet supported")
-	}
-	if cfg.CodeSource != nil {
-		return 0, "", errors.New("code_source is not yet supported")
 	}
 
 	// Resolve the idempotency token first so a bad key fails before any upload.
@@ -156,8 +163,20 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
+	// Package and upload the code snapshot, if any. The resulting paths ride on the
+	// ai_runtime_task; a run with no code_source leaves them empty. Snapshot is the
+	// only code_source type; guard against a nil block so snapshotCodeSource never
+	// dereferences a missing snapshot.
+	var snap snapshotResult
+	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
+		snap, err = snapshotCodeSource(ctx, w, cfg.CodeSource.Snapshot, configPath, base, funcDir)
+		if err != nil {
+			return 0, "", err
+		}
+	}
+
 	runtimeVersion, _ := cfg.runtimeVersion()
-	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion))
+	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), snap)
 	payload.IdempotencyToken = token
 
 	// Submit returns as soon as the run is created; we don't wait for it to finish.

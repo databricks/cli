@@ -64,7 +64,6 @@ code_source:
     remote_volume: /Volumes/main/default/code
     git:
       branch: main
-      remote: origin
     include_paths:
       - src
       - configs/train.yaml
@@ -92,8 +91,6 @@ permissions:
 	require.NotNil(t, cfg.CodeSource.Snapshot.Git)
 	require.NotNil(t, cfg.CodeSource.Snapshot.Git.Branch)
 	assert.Equal(t, "main", *cfg.CodeSource.Snapshot.Git.Branch)
-	assert.True(t, cfg.CodeSource.Snapshot.Git.Remote.isString)
-	assert.Equal(t, "origin", cfg.CodeSource.Snapshot.Git.Remote.name)
 	assert.Len(t, cfg.Permissions, 2)
 }
 
@@ -111,8 +108,8 @@ environment:
 		assert.Equal(t, "requirements.yaml", cfg.Environment.Dependencies.path)
 	})
 
-	t.Run("git remote as bool true", func(t *testing.T) {
-		cfg, err := loadRunConfig(writeConfig(t, minimalConfig+`
+	t.Run("git remote as bool true is rejected", func(t *testing.T) {
+		_, err := loadRunConfig(writeConfig(t, minimalConfig+`
 code_source:
   type: snapshot
   snapshot:
@@ -121,11 +118,8 @@ code_source:
       branch: main
       remote: true
 `))
-		require.NoError(t, err)
-		r := cfg.CodeSource.Snapshot.Git.Remote
-		assert.False(t, r.isString)
-		assert.True(t, r.enabled)
-		assert.True(t, r.truthy())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "git.remote is no longer supported")
 	})
 
 	t.Run("git remote defaults to false when unset", func(t *testing.T) {
@@ -334,12 +328,12 @@ func TestGitRefValidate(t *testing.T) {
 	}{
 		{"branch only ok", gitRef{Branch: str("main")}, ""},
 		{"commit only ok", gitRef{Commit: str("abc123")}, ""},
-		{"branch with remote ok", gitRef{Branch: str("main"), Remote: gitRemote{set: true, enabled: true}}, ""},
+		{"remote false is ok", gitRef{Branch: str("main"), Remote: gitRemote{set: true, enabled: false}}, ""},
 		{"neither branch nor commit", gitRef{}, "must specify either 'branch' or 'commit'"},
 		{"both branch and commit", gitRef{Branch: str("main"), Commit: str("abc")}, "mutually exclusive"},
-		{"remote without branch", gitRef{Commit: str("abc"), Remote: gitRemote{set: true, isString: true, name: "origin"}}, "requires git.branch"},
+		{"remote true rejected", gitRef{Branch: str("main"), Remote: gitRemote{set: true, enabled: true}}, "git.remote is no longer supported"},
+		{"remote name rejected", gitRef{Branch: str("main"), Remote: gitRemote{set: true, isString: true, name: "origin"}}, "git.remote is no longer supported"},
 		{"bad branch chars", gitRef{Branch: str("bad branch")}, "invalid git.branch"},
-		{"empty remote string", gitRef{Branch: str("main"), Remote: gitRemote{set: true, isString: true, name: ""}}, "cannot be empty"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

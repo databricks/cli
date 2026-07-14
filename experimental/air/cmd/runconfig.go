@@ -27,8 +27,8 @@ import (
 // Jobs API task_key rejects.
 var taskKeyRe = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
-// gitRefRe guards branch/remote names against command injection. Only safe ref
-// characters are allowed.
+// gitRefRe guards the branch name against command injection (it flows into git
+// exec args). Only safe ref characters are allowed.
 var gitRefRe = regexp.MustCompile(`^[\w./-]+$`)
 
 // runConfig is the top-level run YAML schema: experiment_name + compute /
@@ -372,13 +372,12 @@ func (g *gitRef) validate() error {
 	if g.Branch != nil && !gitRefRe.MatchString(*g.Branch) {
 		return fmt.Errorf("invalid git.branch format %q: only alphanumeric characters, hyphens, dots, slashes, and underscores are allowed", *g.Branch)
 	}
-	if g.Remote.isString {
-		if g.Remote.name == "" {
-			return errors.New("git.remote string cannot be empty; use 'true' to auto-detect")
-		}
-		if !gitRefRe.MatchString(g.Remote.name) {
-			return fmt.Errorf("invalid git.remote name %q: only alphanumeric characters, hyphens, dots, slashes, and underscores are allowed", g.Remote.name)
-		}
+
+	// The remote-fetch path (fetching a branch's remote HEAD) is deprecated: the
+	// snapshot archives the local copy only. A truthy git.remote (a name or `true`)
+	// is rejected; `remote: false` is the default (local HEAD) and stays valid.
+	if g.Remote.truthy() {
+		return errors.New("git.remote is no longer supported: the snapshot archives your local copy, so a branch resolves to its local HEAD. To deploy a specific committed revision, use git.commit")
 	}
 
 	if g.Branch == nil && g.Commit == nil {
@@ -386,9 +385,6 @@ func (g *gitRef) validate() error {
 	}
 	if g.Branch != nil && g.Commit != nil {
 		return errors.New("git: 'branch' and 'commit' are mutually exclusive — specify only one")
-	}
-	if g.Remote.truthy() && g.Branch == nil {
-		return errors.New("git.remote requires git.branch (only valid with branch refs)")
 	}
 	return nil
 }

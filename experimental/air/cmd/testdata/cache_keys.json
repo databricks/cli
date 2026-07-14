@@ -1,0 +1,77 @@
+[
+  {
+    "name": "commit_no_paths",
+    "commit_sha": "a3492b801c0ffee00000000000000000000dead",
+    "include_paths": null,
+    "cache_key": "8d7bc445ac83dfe432a353718ae8b1ae40eb00c860352662e6df96b7fdf862a5"
+  },
+  {
+    "name": "commit_empty_paths_none",
+    "commit_sha": "0000000000000000000000000000000000000000",
+    "include_paths": null,
+    "cache_key": "a07e0fa4d38f3c2d08c3ff6bbff0158cea01796aaaf5368b0d0e247cebd27c80"
+  },
+  {
+    "name": "single_path",
+    "commit_sha": "a3492b801c0ffee00000000000000000000dead",
+    "include_paths": [
+      "research"
+    ],
+    "cache_key": "97bd562ad591af23b9a05651d88c01abbbcc24632e9a8f2534230a61492b9e0a"
+  },
+  {
+    "name": "multi_path_sorted",
+    "commit_sha": "a3492b801c0ffee00000000000000000000dead",
+    "include_paths": [
+      "a",
+      "b",
+      "c"
+    ],
+    "cache_key": "17d021577e3615e9a603a2f701f918d74ad16218efc4b2950ee20f6a18b1a174"
+  },
+  {
+    "name": "multi_path_unsorted",
+    "commit_sha": "a3492b801c0ffee00000000000000000000dead",
+    "include_paths": [
+      "c",
+      "a",
+      "b"
+    ],
+    "cache_key": "17d021577e3615e9a603a2f701f918d74ad16218efc4b2950ee20f6a18b1a174"
+  },
+  {
+    "name": "path_whitespace",
+    "commit_sha": "a3492b801c0ffee00000000000000000000dead",
+    "include_paths": [
+      "  research  ",
+      "  data "
+    ],
+    "cache_key": "c6a6fa1d866ac90a5f371610ee08efa8aeb061a43b8a4acae30765db21f4155b"
+  },
+  {
+    "name": "nested_paths",
+    "commit_sha": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "include_paths": [
+      "src/models",
+      "src/data",
+      "README.md"
+    ],
+    "cache_key": "2b18452b1019186a8e5b34af540a0545f96f24bc61771f58fa71fc218cb0275c"
+  },
+  {
+    "name": "short_sha",
+    "commit_sha": "a3492b8",
+    "include_paths": null,
+    "cache_key": "16be4d7d83ecd01b8d3d274dafb07b3bccc72cf7f7299578e634cd01e1825345"
+  },
+  {
+    "name": "dup_paths",
+    "commit_sha": "a3492b801c0ffee00000000000000000000dead",
+    "include_paths": [
+      "x",
+      "x",
+      "y"
+    ],
+    "cache_key": "407a5d8c3a0e9438d5abf653c4d3a43928c300b5630e2f83f435661b9fbd599e"
+  }
+]
