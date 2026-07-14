@@ -16,13 +16,10 @@ if [ -n "${CLOUD_ENV:-}" ]; then
     trace $CLI jobs get-run "$run_id" > LOG.job
   fi
 else
-  # Locally there's no compute for a full SSH handshake, but proxy mode still
-  # submits the same serverless GPU bootstrap job and then pipes stdin/stdout
-  # over the driver-proxy websocket, which the test server echoes back. A single
-  # run therefore asserts both the submitted job and a working tunnel (the CLI
-  # dialing the driver-proxy over ws:// and proxying bytes across it), so we need
-  # neither the full ssh spawn (it would hang looping its handshake against the
-  # echo) nor a separate Go proxy test.
+  # No compute locally, but proxy mode still submits the bootstrap job and then
+  # pipes stdin/stdout over the driver-proxy websocket, which the test server
+  # echoes. One run asserts both the job and a working ws:// tunnel; proxy mode
+  # skips the ssh spawn, so it can't hang on a handshake against the echo.
   printf 'hello over the ssh tunnel\n' | errcode $CLI ssh connect --proxy --name serverless-gpu-test --accelerator=GPU_1xA10 --releases-dir=$CLI_RELEASES_DIR >out.proxy.txt 2>LOG.stderr
   trace print_requests.py //api/2.2/jobs/runs/submit
 fi

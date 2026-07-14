@@ -93,12 +93,9 @@ func (r *Router) Handle(method, path string, handler HandlerFunc) {
 	})
 }
 
-// HandleRaw registers a handler that receives the raw http.ResponseWriter and
-// *http.Request, bypassing the JSON serve() pipeline. It is needed for endpoints
-// that take over the connection themselves (e.g. a websocket upgrade), which
-// serve()'s buffered write path cannot express. First registration wins, matching
-// Handle. Only wildcard patterns are supported, which is all the current callers
-// need (the driver-proxy websocket path).
+// HandleRaw registers a handler with the raw ResponseWriter and Request, bypassing
+// the JSON serve() pipeline, for endpoints that take over the connection (e.g. a
+// websocket upgrade). First registration wins; only wildcard patterns are supported.
 func (r *Router) HandleRaw(method, path string, handler http.HandlerFunc) {
 	pattern := method + " " + path
 	if r.wildcard[pattern] {

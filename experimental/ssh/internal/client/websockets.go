@@ -46,14 +46,10 @@ func getProxyURL(ctx context.Context, client *databricks.WorkspaceClient, connID
 	return buildProxyWebsocketURL(client.Config.Host, workspaceID, clusterID, serverPort, connID)
 }
 
-// buildProxyWebsocketURL builds the driver-proxy websocket URL for an SSH tunnel
-// connection against the given workspace host.
+// buildProxyWebsocketURL builds the driver-proxy websocket URL for an SSH tunnel.
 //
-// The websocket scheme is derived from the host scheme rather than hardcoded: a
-// plaintext http host (the local acceptance test server) is dialed over ws, and
-// everything else over wss. Forcing wss would make the tunnel undiallable against
-// a plaintext test server, which is why the local flow can only be exercised
-// end-to-end once the scheme follows the host.
+// The scheme follows the host (http -> ws, else wss) instead of being hardcoded to
+// wss, so the tunnel is also diallable against the plaintext local test server.
 func buildProxyWebsocketURL(host, workspaceID, clusterID string, serverPort int, connID string) (string, error) {
 	u, err := url.Parse(host)
 	if err != nil {

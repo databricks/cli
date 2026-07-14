@@ -753,8 +753,8 @@ func AddDefaultHandlers(server *Server) {
 		return Response{Body: ""}
 	})
 
-	// The tunnel's /ssh endpoint upgrades to a websocket, so it takes over the
-	// connection itself instead of returning a normal JSON/text response.
+	// /ssh upgrades to a websocket, so it hijacks the connection rather than
+	// returning a normal response.
 	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", sshTunnelEchoHandler)
 
 	// Secrets ACLs:
