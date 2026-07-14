@@ -295,7 +295,8 @@ func installUv(ctx context.Context) error {
 // XDG_BIN_HOME is specified by the XDG Base Directory Specification:
 // https://specifications.freedesktop.org/basedir-spec/latest/
 func discoverUv(ctx context.Context) (string, error) {
-	// Prefer PATH lookup first; it respects user customisation.
+	// Prefer PATH lookup first; it respects user customisation. exec.LookPath
+	// applies PATHEXT on Windows, so "uv" resolves to uv.exe there.
 	if p, err := exec.LookPath("uv"); err == nil {
 		return p, nil
 	}
@@ -305,9 +306,14 @@ func discoverUv(ctx context.Context) (string, error) {
 	// XDG_BIN_HOME defaults to $HOME/.local/bin when unset.
 	xdgBinHome, _ := env.Lookup(ctx, "XDG_BIN_HOME")
 
+	// The installer writes uv.exe on Windows; os.Stat needs the exact name.
+	exe := "uv"
+	if runtime.GOOS == "windows" {
+		exe = "uv.exe"
+	}
 	candidates := []string{
-		filepath.Join(home, ".local", "bin", "uv"),
-		filepath.Join(xdgBinHome, "uv"),
+		filepath.Join(home, ".local", "bin", exe),
+		filepath.Join(xdgBinHome, exe),
 		"/opt/homebrew/bin/uv",
 		"/usr/local/bin/uv",
 	}

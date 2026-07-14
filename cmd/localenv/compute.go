@@ -48,6 +48,13 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 		return "", false, "", fmt.Errorf("job %d has no settings", id)
 	}
 
+	// A job that declares both serverless environments and classic job clusters is
+	// ambiguous: its tasks can run on different compute, so there is no single
+	// correct local environment to provision. Refuse rather than guess serverless.
+	if len(job.Settings.Environments) > 0 && len(job.Settings.JobClusters) > 0 {
+		return "", false, "", fmt.Errorf("job %d has both serverless environments and job clusters; pass --cluster or --serverless explicitly to disambiguate", id)
+	}
+
 	// Serverless jobs have Environments populated; classic compute uses JobClusters.
 	if len(job.Settings.Environments) > 0 {
 		return "", true, "", nil

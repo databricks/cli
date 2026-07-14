@@ -30,6 +30,27 @@ func TestDiscoverUvFindsBinOnPath(t *testing.T) {
 	assert.Equal(t, bin, got)
 }
 
+func TestDiscoverUvFindsBinInLocalBin(t *testing.T) {
+	// The installer drops uv (uv.exe on Windows) under ~/.local/bin; discoverUv
+	// must find it there when it is not on PATH, using the OS-appropriate name.
+	home := t.TempDir()
+	binDir := filepath.Join(home, ".local", "bin")
+	require.NoError(t, os.MkdirAll(binDir, 0o755))
+	exe := "uv"
+	if runtime.GOOS == "windows" {
+		exe = "uv.exe"
+	}
+	bin := filepath.Join(binDir, exe)
+	require.NoError(t, os.WriteFile(bin, []byte("#!/bin/sh\n"), 0o755))
+
+	t.Setenv("PATH", t.TempDir()) // no uv on PATH
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	ctx = env.Set(ctx, "XDG_BIN_HOME", "")
+	got, err := discoverUv(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, bin, got)
+}
+
 func TestDiscoverUvSkipsRelativeCandidatesWhenHomeUnset(t *testing.T) {
 	// Regression: when HOME and XDG_BIN_HOME are unset the candidate paths
 	// collapse to relative "uv" / ".local/bin/uv". discoverUv must not os.Stat
