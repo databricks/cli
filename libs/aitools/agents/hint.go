@@ -31,8 +31,8 @@ const (
 	aiToolsCommandName = "aitools"
 
 	// claudeSessionEnv is Claude Code's per-session identifier. It keys the
-	// once-per-session throttle; when unset (older Claude) the hint degrades to
-	// per-command.
+	// per-session throttle (at most one hint per hintSessionTTL per session);
+	// when unset (older Claude) the hint degrades to per-command.
 	claudeSessionEnv = "CLAUDE_CODE_SESSION_ID"
 
 	// hintCacheComponent names the cache bucket holding per-session "already
@@ -48,8 +48,9 @@ const hintSessionTTL = time.Hour
 // MaybeHint prints a one-line recommendation to install the Databricks AI
 // tooling when Claude Code drives the CLI without it installed. It is a no-op
 // for human callers, other agents, aitools commands themselves, when there is
-// no output stream, once the tooling is present, and after the first hint in a
-// session. Best-effort: it writes only to stderr and never fails the command.
+// no output stream, once the tooling is present, and when the session was
+// hinted within the last hintSessionTTL. Best-effort: it writes only to stderr
+// and never fails the command.
 func MaybeHint(ctx context.Context, cmd *cobra.Command) {
 	if useragent.AgentProvider() != claudeAgentProvider {
 		return
@@ -114,8 +115,9 @@ func claudeToolingInstalled(ctx context.Context) bool {
 		HasDatabricksSkillsIn(filepath.Join(home, LegacySkillsDir))
 }
 
-// alreadyHintedThisSession reports whether this Claude session was already
-// hinted. With no session id it returns false so the hint fires per command.
+// alreadyHintedThisSession reports whether this Claude session was hinted
+// within the last hintSessionTTL. With no session id it returns false so the
+// hint fires per command.
 func alreadyHintedThisSession(ctx context.Context) bool {
 	session := env.Get(ctx, claudeSessionEnv)
 	if session == "" {
@@ -126,8 +128,9 @@ func alreadyHintedThisSession(ctx context.Context) bool {
 	return seen
 }
 
-// recordSessionHint marks the current Claude session as hinted, so a later
-// command in the same session stays quiet. No-op when the session id is unset.
+// recordSessionHint marks the current Claude session as hinted, so later
+// commands in the same session stay quiet until the marker expires
+// (hintSessionTTL). No-op when the session id is unset.
 func recordSessionHint(ctx context.Context) {
 	session := env.Get(ctx, claudeSessionEnv)
 	if session == "" {
