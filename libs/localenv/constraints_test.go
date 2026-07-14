@@ -30,7 +30,7 @@ func TestRepoConstraintBaseURL(t *testing.T) {
 func TestFetchConstraintsNoSourceConfigured(t *testing.T) {
 	// An empty base URL means no constraint host is configured; it must classify as
 	// E_FETCH (surfaced at the fetch phase) and name the env var to set.
-	_, err := FetchConstraints(t.Context(), "", "serverless/serverless-v4", t.TempDir())
+	_, err := FetchConstraints(t.Context(), "", "serverless/serverless-v4", t.TempDir(), true)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrFetch, pe.Code)
@@ -116,12 +116,29 @@ func TestFetchConstraintsCreatesCacheDir(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", cacheDir)
+	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", cacheDir, true)
 	require.NoError(t, err)
 	// The cache file was written into the freshly created directory.
 	written, err := os.ReadFile(filepath.Join(cacheDir, cacheFileName("serverless/serverless-v4")))
 	require.NoError(t, err)
 	assert.Equal(t, sampleToml, string(written))
+}
+
+func TestFetchConstraintsSkipsCacheWriteWhenDisabled(t *testing.T) {
+	// With writeCache=false (the --check dry-run path), a successful live fetch
+	// must not write anything to cacheDir.
+	cacheDir := t.TempDir()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(sampleToml))
+	}))
+	defer srv.Close()
+
+	c, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", cacheDir, false)
+	require.NoError(t, err)
+	assert.False(t, c.FromCache)
+	entries, err := os.ReadDir(cacheDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "no cache file should be written under --check")
 }
 
 func TestCacheFileNameInjective(t *testing.T) {
@@ -140,7 +157,7 @@ func TestFetchConstraintsHTTP(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", t.TempDir())
+	c, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", t.TempDir(), true)
 	require.NoError(t, err)
 	assert.False(t, c.FromCache)
 	assert.Equal(t, "databricks-connect~=17.2.0", c.DatabricksConnect)
@@ -155,7 +172,7 @@ func TestFetchConstraintsEnvKeyNotFound(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := FetchConstraints(t.Context(), srv.URL, "dbr/99.9.x-scala2.12", t.TempDir())
+	_, err := FetchConstraints(t.Context(), srv.URL, "dbr/99.9.x-scala2.12", t.TempDir(), true)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrEnvUnsupported, pe.Code)
@@ -167,7 +184,7 @@ func TestFetchConstraintsTransportFailureNoCache(t *testing.T) {
 	url := down.URL
 	down.Close()
 
-	_, err := FetchConstraints(t.Context(), url, "serverless/serverless-v4", t.TempDir())
+	_, err := FetchConstraints(t.Context(), url, "serverless/serverless-v4", t.TempDir(), true)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrFetch, pe.Code)
@@ -182,7 +199,7 @@ func TestFetchConstraintsRejectsOversizedBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", t.TempDir())
+	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", t.TempDir(), true)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrFetch, pe.Code)
@@ -194,12 +211,12 @@ func TestFetchConstraintsFallsBackToCache(t *testing.T) {
 	good := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(sampleToml))
 	}))
-	_, err := FetchConstraints(t.Context(), good.URL, "serverless/serverless-v4", cacheDir)
+	_, err := FetchConstraints(t.Context(), good.URL, "serverless/serverless-v4", cacheDir, true)
 	require.NoError(t, err)
 	good.Close()
 
 	// Now the server is down; fetch must serve the cache.
-	c, err := FetchConstraints(t.Context(), good.URL, "serverless/serverless-v4", cacheDir)
+	c, err := FetchConstraints(t.Context(), good.URL, "serverless/serverless-v4", cacheDir, true)
 	require.NoError(t, err)
 	assert.True(t, c.FromCache)
 }

@@ -20,6 +20,21 @@ Warning: Pattern user_repls.json does not match any files
   },
   "tasks": [
     {
+      "ai_runtime_task": {
+        "deployments": [
+          {
+            "command_path": "${workspace.snapshot_path}/src/files/src/main.py",
+            "compute": {
+              "accelerator_count": 1,
+              "accelerator_type": "GPU_1xA10"
+            }
+          }
+        ],
+        "experiment": "my-experiment"
+      },
+      "task_key": "my_ai_runtime_task"
+    },
+    {
       "existing_cluster_id": "0101-120000-aaaaaaaa",
       "spark_python_task": {
         "python_file": "${workspace.snapshot_path}/src/files/src/main.py"

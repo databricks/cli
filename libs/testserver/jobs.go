@@ -15,6 +15,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 const missingJobGitProviderMessage = "git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit"
@@ -519,7 +520,43 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 		Tasks:      tasks,
 	}
 
+	// No tunnel server runs locally, so synthesize the metadata.json it would
+	// publish; `ssh connect` polls for it before connecting.
+	if strings.HasPrefix(runName, sshTunnelBootstrapRunPrefix) {
+		s.writeSSHTunnelMetadata(request)
+	}
+
 	return Response{Body: jobs.SubmitRunResponse{RunId: runId}}
+}
+
+const (
+	sshTunnelBootstrapRunPrefix = "ssh-server-bootstrap-"
+	sshTunnelBootstrapNotebook  = "ssh-server-bootstrap"
+	sshTunnelServerPort         = 7772
+	sshTunnelClusterID          = "1234-567890-serverless"
+	sshTunnelRemoteUser         = "spark"
+)
+
+// writeSSHTunnelMetadata publishes the metadata.json a real tunnel server would
+// write next to the bootstrap notebook. Callers must hold the workspace lock.
+func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
+	for _, t := range request.Tasks {
+		if t.NotebookTask == nil {
+			continue
+		}
+		metadataPath := strings.TrimSuffix(t.NotebookTask.NotebookPath, sshTunnelBootstrapNotebook) + "metadata.json"
+		metadata, err := json.Marshal(map[string]any{
+			"port":       sshTunnelServerPort,
+			"cluster_id": sshTunnelClusterID,
+		})
+		if err != nil {
+			continue
+		}
+		s.files[metadataPath] = FileEntry{
+			Info: workspace.ObjectInfo{ObjectType: "FILE", Path: metadataPath},
+			Data: metadata,
+		}
+	}
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.
