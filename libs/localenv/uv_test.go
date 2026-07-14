@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -27,6 +28,41 @@ func TestDiscoverUvFindsBinOnPath(t *testing.T) {
 	got, err := discoverUv(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, bin, got)
+}
+
+func TestDiscoverUvSkipsRelativeCandidatesWhenHomeUnset(t *testing.T) {
+	// Regression: when HOME and XDG_BIN_HOME are unset the candidate paths
+	// collapse to relative "uv" / ".local/bin/uv". discoverUv must not os.Stat
+	// them against the CWD and return a stray ./uv as if it were the real binary.
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "uv"), []byte("#!/bin/sh\n"), 0o755))
+	t.Chdir(dir)
+	t.Setenv("PATH", t.TempDir()) // a PATH with no uv, so LookPath falls through
+
+	ctx := env.WithUserHomeDir(t.Context(), "")
+	ctx = env.Set(ctx, "XDG_BIN_HOME", "")
+	got, err := discoverUv(ctx)
+	if err == nil {
+		assert.True(t, filepath.IsAbs(got), "discoverUv must not return a relative path; got %q", got)
+	}
+}
+
+func TestPipConfIndexURLReadsOSSpecificPath(t *testing.T) {
+	// The primary pip config path for the current OS must be honored, not just
+	// the Linux/XDG ~/.config/pip/pip.conf location.
+	tmp := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), tmp)
+	if runtime.GOOS == "windows" {
+		ctx = env.Set(ctx, "APPDATA", filepath.Join(tmp, "AppData", "Roaming"))
+	}
+
+	paths := pipConfPaths(ctx)
+	require.NotEmpty(t, paths)
+	primary := paths[0]
+	require.NoError(t, os.MkdirAll(filepath.Dir(primary), 0o755))
+	require.NoError(t, os.WriteFile(primary, []byte("[global]\nindex-url = https://proxy.example/simple\n"), 0o644))
+
+	assert.Equal(t, "https://proxy.example/simple", pipConfIndexURL(ctx))
 }
 
 func TestPipConfIndexURL(t *testing.T) {

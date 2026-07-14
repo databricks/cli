@@ -46,10 +46,7 @@ func (m *uvManager) Name() string {
 func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 	bin, err := discoverUv(ctx)
 	if err != nil {
-		// Install uv using the official installer script.
-		// https://astral.sh/uv/install.sh
-		_, installErr := process.Background(ctx, []string{"sh", "-c", "curl -LsSf https://astral.sh/uv/install.sh | sh"})
-		if installErr != nil {
+		if installErr := installUv(ctx); installErr != nil {
 			return "", NewError(ErrUvMissing, installErr, "uv installation failed")
 		}
 		bin, err = discoverUv(ctx)
@@ -183,17 +180,52 @@ func (m *uvManager) pipSeedArgs(venvPython string) []string {
 // pipIndexURLRe matches `index-url = <url>` lines in pip.conf.
 var pipIndexURLRe = regexp.MustCompile(`(?i)^\s*index-url\s*=\s*(\S+)`)
 
-// pipConfIndexURL reads ~/.config/pip/pip.conf and returns the index-url value.
+// pipConfIndexURL reads the user's pip config and returns the index-url value.
 // uv ignores pip.conf; on Databricks-managed machines pypi.org is blocked and
 // the corporate PyPI proxy is declared via pip.conf. Bridging the value through
 // UV_INDEX_URL lets uv reach the proxy.
-// https://pip.pypa.io/en/stable/topics/configuration/
+//
+// pip stores its per-user config in OS-specific locations, so we probe them in
+// order and return the first index-url found.
+// https://pip.pypa.io/en/stable/topics/configuration/#location
 func pipConfIndexURL(ctx context.Context) string {
+	for _, confPath := range pipConfPaths(ctx) {
+		if url := indexURLFromFile(confPath); url != "" {
+			return url
+		}
+	}
+	return ""
+}
+
+// pipConfPaths returns the per-user pip config file locations to probe, in
+// precedence order, for the current OS. An empty home yields no paths.
+// https://pip.pypa.io/en/stable/topics/configuration/#location
+func pipConfPaths(ctx context.Context) []string {
 	home, err := env.UserHomeDir(ctx)
 	if err != nil || home == "" {
-		return ""
+		return nil
 	}
-	confPath := filepath.Join(home, ".config", "pip", "pip.conf")
+	switch runtime.GOOS {
+	case "windows":
+		// pip reads %APPDATA%\pip\pip.ini; fall back to the home-relative path
+		// when APPDATA is unset.
+		if appData, ok := env.Lookup(ctx, "APPDATA"); ok && appData != "" {
+			return []string{filepath.Join(appData, "pip", "pip.ini")}
+		}
+		return []string{filepath.Join(home, "pip", "pip.ini")}
+	case "darwin":
+		return []string{
+			filepath.Join(home, "Library", "Application Support", "pip", "pip.conf"),
+			filepath.Join(home, ".config", "pip", "pip.conf"),
+		}
+	default:
+		return []string{filepath.Join(home, ".config", "pip", "pip.conf")}
+	}
+}
+
+// indexURLFromFile returns the first index-url value in a pip config file, or ""
+// if the file is absent or has no index-url entry.
+func indexURLFromFile(confPath string) string {
 	f, err := os.Open(confPath)
 	if err != nil {
 		return ""
@@ -238,6 +270,23 @@ func uvFailure(code ErrorCode, err error, action string) *PipelineError {
 	return NewError(code, err, "%s", msg)
 }
 
+// installUv runs the official uv installer for the current OS. Unix uses the
+// shell installer; Windows uses the PowerShell installer, because the Unix
+// `sh`/`curl` pipeline is not available in a default Windows shell.
+// https://docs.astral.sh/uv/getting-started/installation/
+func installUv(ctx context.Context) error {
+	var cmd []string
+	if runtime.GOOS == "windows" {
+		// https://astral.sh/uv/install.ps1
+		cmd = []string{"powershell", "-ExecutionPolicy", "ByPass", "-Command", "irm https://astral.sh/uv/install.ps1 | iex"}
+	} else {
+		// https://astral.sh/uv/install.sh
+		cmd = []string{"sh", "-c", "curl -LsSf https://astral.sh/uv/install.sh | sh"}
+	}
+	_, err := process.Background(ctx, cmd)
+	return err
+}
+
 // discoverUv searches for the uv binary on PATH and in well-known install
 // locations. It returns NewError(ErrUvMissing, ...) if uv is not found.
 //
@@ -264,8 +313,10 @@ func discoverUv(ctx context.Context) (string, error) {
 	}
 
 	for _, c := range candidates {
-		if c == "/uv" || c == "" {
-			// Skip degenerate paths produced when home or xdgBinHome is empty.
+		// Skip relative paths produced when home or xdgBinHome is empty (e.g.
+		// filepath.Join("", "uv") == "uv"): os.Stat would resolve them against the
+		// CWD and could pick up a stray ./uv that is not the real binary.
+		if !filepath.IsAbs(c) {
 			continue
 		}
 		if _, err := os.Stat(c); err == nil {
