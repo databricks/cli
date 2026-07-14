@@ -952,4 +952,3 @@ func TestFromTypedSensitiveField(t *testing.T) {
 	// AsAny returns the redaction placeholder.
 	assert.Equal(t, "********", token.AsAny())
 }
-
