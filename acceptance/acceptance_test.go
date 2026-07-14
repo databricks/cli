@@ -111,6 +111,12 @@ const (
 
 var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
 
+// IsPullRequest is true when the test run was triggered by a GitHub pull_request
+// event. GitHub Actions sets GITHUB_EVENT_NAME automatically. On pull requests we
+// additionally apply each test's GOOSOnPR filter, so OS-independent tests can be
+// skipped on windows/macOS for PRs while still running on every OS on push to main.
+var IsPullRequest = os.Getenv("GITHUB_EVENT_NAME") == "pull_request"
+
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
 		return ".exe"
@@ -410,6 +416,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		repls.Set(base, "[CLI_VERSION]")
 	}
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
+	testdiff.PrepareReplacementTfProviderVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
 	t.Setenv("TESTROOT", cwd)
@@ -652,6 +659,13 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
+	}
+
+	if IsPullRequest {
+		isEnabled, isPresent := config.GOOSOnPR[runtime.GOOS]
+		if isPresent && !isEnabled {
+			return fmt.Sprintf("Disabled via GOOSOnPR.%s setting in %s", runtime.GOOS, configPath)
+		}
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")

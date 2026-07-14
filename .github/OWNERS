@@ -1,11 +1,11 @@
 # Maintainers (can approve any PR)
-*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db @janniklasrose
+*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db @janniklasrose @lennartkats-db
 
 # Bundles
-/bundle/                    team:bundle @lennartkats-db
-/cmd/bundle/                team:bundle @lennartkats-db
-/acceptance/bundle/         team:bundle @lennartkats-db
-/libs/template/             team:bundle @lennartkats-db
+/bundle/                    team:bundle
+/cmd/bundle/                team:bundle
+/acceptance/bundle/         team:bundle
+/libs/template/             team:bundle
 
 # Pipelines
 /cmd/pipelines/             @jefferycheng1 @kanterov @lennartkats-db

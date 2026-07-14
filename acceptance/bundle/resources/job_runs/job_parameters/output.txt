@@ -1,0 +1,49 @@
+
+=== deploy triggers the run with only the overridden parameter
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-job-parameters/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [NUMID],
+    "job_parameters": {
+      "env": "prod"
+    }
+  }
+}
+
+=== plan is stable: the resolved job default does not look like drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle summary
+Name: job-runs-job-parameters
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-job-parameters/default
+Resources:
+  Job Runs:
+    my_run:
+      Name: 
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?w=[NUMID]
+  Jobs:
+    my_job:
+      Name: my-job
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-job-parameters/default
+
+Deleting files...
+Destroy complete!

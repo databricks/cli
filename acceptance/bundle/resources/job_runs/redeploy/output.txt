@@ -1,0 +1,136 @@
+
+=== initial deploy triggers the first run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary
+Name: job-runs-redeploy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
+Resources:
+  Job Runs:
+    my_run:
+      Name: 
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?w=[NUMID]
+  Jobs:
+    my_job:
+      Name: my-job
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+
+>>> read_id.py my_job
+[MY_JOB_ID]
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID],
+    "job_parameters": {
+      "env": "dev"
+    }
+  }
+}
+
+=== change the run configuration and redeploy
+>>> update_file.py databricks.yml env: dev env: prod
+
+>>> [CLI] bundle plan -o json
+{
+  "depends_on": [
+    {
+      "node": "resources.jobs.my_job",
+      "label": "${resources.jobs.my_job.id}"
+    }
+  ],
+  "action": "recreate",
+  "new_state": {
+    "value": {
+      "job_id": [MY_JOB_ID],
+      "job_parameters": {
+        "env": "prod"
+      }
+    }
+  },
+  "remote_state": {
+    "job_id": [MY_JOB_ID],
+    "job_parameters": {
+      "env": "dev"
+    },
+    "run_id": [NUMID],
+    "run_name": "my-job",
+    "run_page_url": "[DATABRICKS_URL]/?o=[NUMID]#job/[MY_JOB_ID]/run/[NUMID]",
+    "run_type": "JOB_RUN",
+    "state": {
+      "life_cycle_state": "RUNNING"
+    }
+  },
+  "changes": {
+    "job_parameters['env']": {
+      "action": "recreate",
+      "reason": "immutable",
+      "old": "dev",
+      "new": "prod",
+      "remote": "dev"
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary
+Name: job-runs-redeploy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
+Resources:
+  Job Runs:
+    my_run:
+      Name: 
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?w=[NUMID]
+  Jobs:
+    my_job:
+      Name: my-job
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+
+=== the config change deleted the previous run and triggered a second, different run
+>>> print_requests.py --keep //jobs/runs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/delete",
+  "body": {
+    "run_id": [NUMID]
+  }
+}
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID],
+    "job_parameters": {
+      "env": "prod"
+    }
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
+
+Deleting files...
+Destroy complete!

@@ -1,4 +1,4 @@
-Local = false
+Local = true
 Cloud = false
 RequiresUnityCatalog = true
 CloudEnvs.gcp = false

@@ -50,9 +50,7 @@ class TableSpecificConfig:
 
     clustering_columns: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] List of column names to use for clustering the destination table.
+    [Beta] List of column names to use for clustering the destination table.
     When specified, the destination Delta table will be clustered by these columns.
     This can improve query performance when filtering on these columns.
     Note: clustering_columns in table specific configuration will override the pipeline definition.
@@ -62,9 +60,7 @@ class TableSpecificConfig:
 
     enable_auto_clustering: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Whether to enable auto clustering on the destination table.
+    [Beta] Whether to enable auto clustering on the destination table.
     When enabled, Delta will automatically optimize the data layout
     based on the clustering columns for improved query performance.
     Note: enable_auto_clustering in table specific configuration will override the pipeline definition.
@@ -127,9 +123,7 @@ class TableSpecificConfig:
 
     table_properties: VariableOrDict[str] = field(default_factory=dict)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Table properties to set on the destination table.
+    [Beta] Table properties to set on the destination table.
     These are key-value pairs that configure various Delta table behaviors or any user defined properties.
     Example: {"delta.feature.variantType": "supported", "delta.enableTypeWidening": "true"}
     Note: table_properties in table specific configuration will override the table_properties of the pipeline definition.
@@ -172,9 +166,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     clustering_columns: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] List of column names to use for clustering the destination table.
+    [Beta] List of column names to use for clustering the destination table.
     When specified, the destination Delta table will be clustered by these columns.
     This can improve query performance when filtering on these columns.
     Note: clustering_columns in table specific configuration will override the pipeline definition.
@@ -184,9 +176,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     enable_auto_clustering: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Whether to enable auto clustering on the destination table.
+    [Beta] Whether to enable auto clustering on the destination table.
     When enabled, Delta will automatically optimize the data layout
     based on the clustering columns for improved query performance.
     Note: enable_auto_clustering in table specific configuration will override the pipeline definition.
@@ -249,9 +239,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     table_properties: VariableOrDict[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Table properties to set on the destination table.
+    [Beta] Table properties to set on the destination table.
     These are key-value pairs that configure various Delta table behaviors or any user defined properties.
     Example: {"delta.feature.variantType": "supported", "delta.enableTypeWidening": "true"}
     Note: table_properties in table specific configuration will override the table_properties of the pipeline definition.

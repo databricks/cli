@@ -1,0 +1,30 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Destroy"
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Selecting a resource pulls in its grants/permissions sub-nodes even though the
+# dependency edge runs sub-node -> parent, so the plan would never reach them from
+# the parent otherwise (issue #5794).
+trace $CLI bundle plan --select jobs.my_job
+trace $CLI bundle plan --select schemas.my_schema
+
+# Grants and permissions sub-nodes are not addressable via --select.
+musterr trace $CLI bundle plan --select jobs.my_job.permissions
+musterr trace $CLI bundle plan --select schemas.my_schema.grants
+
+# Deploying a selected resource applies its permissions/grants too.
+$CLI bundle plan --select jobs.my_job -o json > plan-job.json
+title "bundle deploy --select jobs.my_job\n"
+$CLI bundle deploy --select jobs.my_job $(readplanarg plan-job.json)
+
+$CLI bundle plan --select schemas.my_schema -o json > plan-schema.json
+title "bundle deploy --select schemas.my_schema\n"
+$CLI bundle deploy --select schemas.my_schema $(readplanarg plan-schema.json)
+
+# Assert the permissions PUT and grants PATCH were emitted for the selected resources.
+trace print_requests.py --sort //permissions

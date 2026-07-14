@@ -138,6 +138,15 @@ resources:
       - field: tasks[*].for_each_task.task.new_cluster.data_security_mode
       - field: job_clusters[*].new_cluster.data_security_mode
 
+  job_runs:
+    # A run is immutable and fire-once: re-trigger only on a local config change,
+    # never on remote drift. Both rules omit `field` to match every field (root;
+    # see TestFieldRuleOmittedIsRoot). `field: ""` would instead match nothing.
+    ignore_remote_changes:
+      - reason: immutable
+    recreate_on_changes:
+      - reason: immutable
+
   pipelines:
     recreate_on_changes:
       - field: storage
@@ -385,9 +394,8 @@ resources:
       - field: name
         reason: id_changes
     backend_defaults:
-      # UC auto-populates these system-managed keys after create (same as schemas).
-      - field: properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']
-      - field: properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']
+      # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
+      - field: properties['unity.catalog.managed.*.defaults.*']
 
   schemas:
     provided_id_fields:
@@ -403,11 +411,10 @@ resources:
       - field: storage_root
         reason: uc_strips_trailing_slash
     backend_defaults:
-      # UC auto-populates these system-managed keys after create.
+      # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
       # Without this, every subsequent plan produces an Update whose payload is empty,
       # and UC rejects it with "UpdateSchema Nothing to update".
-      - field: properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']
-      - field: properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']
+      - field: properties['unity.catalog.managed.*.defaults.*']
 
   external_locations:
     recreate_on_changes:
@@ -655,6 +662,10 @@ resources:
         reason: id_field
       - field: database_id
         reason: id_field
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
 
   postgres_endpoints:
     provided_id_fields:
@@ -695,6 +706,10 @@ resources:
       - reason: immutable
 
   postgres_roles:
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
     recreate_on_changes:
       # parent and role_id are immutable (together they form the hierarchical name).
       - field: parent

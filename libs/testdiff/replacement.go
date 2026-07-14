@@ -27,6 +27,8 @@ var (
 	privatePathRegex = regexp.MustCompile(`(/tmp|/private)(/.*)/([a-zA-Z0-9]+)`)
 	// Matches databricks-sdk-go/0.90.0
 	sdkVersionRegex = regexp.MustCompile(`databricks-sdk-go/[0-9]+\.[0-9]+\.[0-9]+`)
+	// Matches databricks-tf-provider/1.121.0
+	tfProviderVersionRegex = regexp.MustCompile(`databricks-tf-provider/[0-9]+\.[0-9]+\.[0-9]+`)
 )
 
 type Replacement struct {
@@ -245,6 +247,11 @@ func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsC
 func PrepareReplacementSdkVersion(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(sdkVersionRegex, "databricks-sdk-go/[SDK_VERSION]", 0)
+}
+
+func PrepareReplacementTfProviderVersion(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.append(tfProviderVersionRegex, "databricks-tf-provider/[TF_PROVIDER_VERSION]", 0)
 }
 
 func goVersion() string {
