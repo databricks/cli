@@ -161,13 +161,14 @@ func TestSubmitWorkload(t *testing.T) {
 func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
-	testserver.AddDefaultHandlers(server)
 
-	var got jobsSubmitRun
+	// Register before AddDefaultHandlers: the router is first-wins, so this must claim the route ahead of the default handler.
+	var got jobs.SubmitRun
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return submitRunResponse{RunID: 555}
+		return jobs.SubmitRunResponse{RunId: 555}
 	})
+	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
@@ -192,12 +193,12 @@ code_source:
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
-	// The tarball path is under the user's repo_snapshots dir; the clean repo also
-	// attaches a git_state sidecar (no diff).
+	// The tarball path is under the user's repo_snapshots dir. git_state_path /
+	// git_diff_path are not asserted: the typed jobs.AiRuntimeTask has no such fields
+	// (see the TEMP note in buildSubmitPayload), so they aren't sent. The git_state
+	// sidecar file is still uploaded next to the tarball — covered by TestRunSnapshot.
 	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/"+filepath.Base(repo)+"/")
 	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
-	assert.True(t, strings.HasSuffix(at.GitStatePath, "/"+gitStateName), at.GitStatePath)
-	assert.Empty(t, at.GitDiffPath)
 }
 
 func TestSubmitWorkloadGuards(t *testing.T) {
