@@ -7,16 +7,22 @@ if [ -z "${CLOUD_ENV:-}" ]; then
   CLI_RELEASES_DIR="$PWD/releases"
 fi
 
-errcode $CLI ssh connect --cluster=$TEST_DEFAULT_CLUSTER_ID --releases-dir=$CLI_RELEASES_DIR --user-known-hosts-file=known_hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
-
 if [ -n "${CLOUD_ENV:-}" ]; then
-  # On cloud the connection runs the remote command; dump the run on failure.
+  # On cloud a real dedicated cluster runs the remote command over a full SSH
+  # handshake; dump the run on failure.
+  errcode $CLI ssh connect --cluster=$TEST_DEFAULT_CLUSTER_ID --releases-dir=$CLI_RELEASES_DIR --user-known-hosts-file=known_hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
   if ! grep -q "Connection successful" out.stdout.txt; then
     run_id=$(cat LOG.stderr | grep -o "Job submitted successfully with run ID: [0-9]*" | grep -o "[0-9]*$")
     trace $CLI jobs get-run "$run_id" > LOG.job
   fi
 else
-  # Locally the handshake can't complete (no compute); just assert the CLI
-  # submitted the right dedicated-cluster bootstrap job.
+  # Locally there's no compute for a full SSH handshake, but proxy mode still
+  # submits the same dedicated-cluster bootstrap job and then pipes stdin/stdout
+  # over the driver-proxy websocket, which the test server echoes back. A single
+  # run therefore asserts both the submitted job and a working tunnel (the CLI
+  # dialing the driver-proxy over ws:// and proxying bytes across it), so we need
+  # neither the full ssh spawn (it would hang looping its handshake against the
+  # echo) nor a separate Go proxy test.
+  printf 'hello over the ssh tunnel\n' | errcode $CLI ssh connect --proxy --cluster=$TEST_DEFAULT_CLUSTER_ID --releases-dir=$CLI_RELEASES_DIR >out.proxy.txt 2>LOG.stderr
   trace print_requests.py //api/2.2/jobs/runs/submit
 fi
