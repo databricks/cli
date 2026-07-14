@@ -8,7 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/muesli/termenv"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
@@ -20,11 +19,7 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int) error {
 	ctx := cmd.Context()
 	out := cmd.OutOrStdout()
 
-	color := cmdio.SupportsColor(ctx, out)
-	r := lipgloss.NewRenderer(out)
-	if !color {
-		r.SetColorProfile(termenv.Ascii)
-	}
+	r, color := cmdio.NewRenderer(ctx, out)
 
 	// Navigate only with a full color TTY and no explicit --limit (which means
 	// "just print these N"). Everything else — piped, NO_COLOR, --limit — prints

@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,9 +22,8 @@ func testListRows() []listRow {
 	}
 }
 
-func testListModel() listModel {
-	r := lipgloss.NewRenderer(io.Discard)
-	r.SetColorProfile(termenv.Ascii)
+func testListModel(t *testing.T) listModel {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
 	return newListModel(r, nil, testListRows(), false)
 }
 
@@ -35,7 +34,7 @@ func key(t *testing.T, m listModel, s string) listModel {
 }
 
 func TestListModelNavigation(t *testing.T) {
-	m := testListModel()
+	m := testListModel(t)
 	require.Equal(t, 0, m.cursor)
 
 	m = key(t, m, "j")
@@ -50,7 +49,7 @@ func TestListModelNavigation(t *testing.T) {
 }
 
 func TestListModelWindowScrolls(t *testing.T) {
-	m := testListModel()
+	m := testListModel(t)
 	// Height 5 leaves room for ~2 rows (header + hint reserved).
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 200, Height: 5})
 	m = next.(listModel)
@@ -67,8 +66,7 @@ func TestListModelPageCap(t *testing.T) {
 	for i := range rows {
 		rows[i] = listRow{RunID: strconv.Itoa(i)}
 	}
-	r := lipgloss.NewRenderer(io.Discard)
-	r.SetColorProfile(termenv.Ascii)
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
 	m := newListModel(r, nil, rows, false)
 
 	// A tall terminal still shows at most listPageRows per page.
@@ -81,8 +79,7 @@ func TestListModelPaging(t *testing.T) {
 	for i := range rows {
 		rows[i] = listRow{RunID: strconv.Itoa(i)}
 	}
-	r := lipgloss.NewRenderer(io.Discard)
-	r.SetColorProfile(termenv.Ascii)
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
 	m := newListModel(r, nil, rows, false)
 
 	// Height 7 leaves a 4-row window (header + hint reserved).
@@ -105,7 +102,7 @@ func TestListModelPaging(t *testing.T) {
 }
 
 func TestListModelMoreRows(t *testing.T) {
-	m := testListModel()
+	m := testListModel(t)
 	m.loading = true
 	before := len(m.rows)
 
@@ -120,7 +117,7 @@ func TestListModelMoreRows(t *testing.T) {
 }
 
 func TestListModelMoreRowsError(t *testing.T) {
-	m := testListModel()
+	m := testListModel(t)
 	m.loading = true
 	before := len(m.rows)
 
@@ -134,8 +131,7 @@ func TestListModelMoreRowsError(t *testing.T) {
 }
 
 func TestListModelMoreRowsEmptyKeepsPaging(t *testing.T) {
-	r := lipgloss.NewRenderer(io.Discard)
-	r.SetColorProfile(termenv.Ascii)
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
 
 	// An empty page while more runs remain re-fetches; once exhausted it stops.
 	m := newListModel(r, &runFetcher{}, testListRows(), false)
@@ -151,14 +147,14 @@ func TestListModelMoreRowsEmptyKeepsPaging(t *testing.T) {
 }
 
 func TestListModelQuit(t *testing.T) {
-	m := testListModel()
+	m := testListModel(t)
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
 	require.NotNil(t, cmd)
 	assert.Equal(t, tea.QuitMsg{}, cmd())
 }
 
 func TestListModelView(t *testing.T) {
-	next, _ := testListModel().Update(tea.WindowSizeMsg{Width: 200, Height: 24})
+	next, _ := testListModel(t).Update(tea.WindowSizeMsg{Width: 200, Height: 24})
 	out := next.(listModel).View()
 
 	assert.NotContains(t, out, "\x1b", "Ascii profile + no links should produce no escapes")
@@ -175,8 +171,7 @@ func TestListModelView(t *testing.T) {
 }
 
 func TestStaticListTable(t *testing.T) {
-	r := lipgloss.NewRenderer(io.Discard)
-	r.SetColorProfile(termenv.Ascii)
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
 	out := staticListTable(r, testListRows(), false)
 
 	assert.NotContains(t, out, "\x1b")

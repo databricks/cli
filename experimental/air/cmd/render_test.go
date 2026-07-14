@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/muesli/termenv"
@@ -15,9 +16,8 @@ import (
 
 // asciiPalette returns a palette whose styles emit no escape codes, so render
 // output is plain text and assertions stay readable.
-func asciiPalette() palette {
-	r := lipgloss.NewRenderer(io.Discard)
-	r.SetColorProfile(termenv.Ascii)
+func asciiPalette(t *testing.T) palette {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
 	return newPalette(r)
 }
 
@@ -98,7 +98,7 @@ func TestSynthConfigYAML(t *testing.T) {
 }
 
 func TestColorizeConfigLine(t *testing.T) {
-	p := asciiPalette()
+	p := asciiPalette(t)
 	// Under the Ascii profile colorization adds no escapes, so each line is
 	// preserved verbatim (indentation included) regardless of its role.
 	for _, line := range []string{
@@ -122,7 +122,7 @@ func TestIsConfigKey(t *testing.T) {
 }
 
 func TestRenderBox(t *testing.T) {
-	p := asciiPalette()
+	p := asciiPalette(t)
 	out := renderBox(p, configBoxTitle, "experiment_name: stream-latency-test\ncompute:")
 	lines := strings.Split(out, "\n")
 
@@ -139,7 +139,7 @@ func TestRenderBox(t *testing.T) {
 }
 
 func TestRenderFields(t *testing.T) {
-	p := asciiPalette()
+	p := asciiPalette(t)
 	out := renderFields(p, false, runView{
 		runID:        "836121283738861",
 		dashboardURL: "https://h.test/jobs/runs/836121283738861",
@@ -172,7 +172,7 @@ func TestRenderFields(t *testing.T) {
 }
 
 func TestLink(t *testing.T) {
-	p := asciiPalette()
+	p := asciiPalette(t)
 	// Color off: the bare label, no URL.
 	assert.Equal(t, "label", link(false, p.blue, "label", "https://h.test"))
 	assert.Equal(t, "label", link(false, p.blue, "label", ""))

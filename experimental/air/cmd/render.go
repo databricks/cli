@@ -85,13 +85,10 @@ type runView struct {
 // one-shot renderer — it builds the full string and writes it once, with no
 // streaming, spinner, or redraw.
 func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceClient, run *jobs.Run, data *getData, ids *mlflowIdentifiers) {
-	colorOn := cmdio.SupportsColor(ctx, out)
-	renderer := lipgloss.NewRenderer(out)
-	if !colorOn {
-		// Ascii emits no SGR codes; combined with the link fallback below this
-		// gives clean, un-escaped output under --no-color / NO_COLOR / piped stdout.
-		renderer.SetColorProfile(termenv.Ascii)
-	}
+	// cmdio.NewRenderer sets the Ascii color profile when color is off, which
+	// emits no SGR codes; combined with the link fallback below this gives clean,
+	// un-escaped output under --no-color / NO_COLOR / piped stdout.
+	renderer, colorOn := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)
 
 	view := runView{
