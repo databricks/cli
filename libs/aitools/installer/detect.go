@@ -22,11 +22,11 @@ func InstalledTools(ctx context.Context) []string {
 		if a.Plugin == nil {
 			continue
 		}
-		version, ok := a.DatabricksPluginVersion(ctx)
-		if !ok {
-			version, ok = recorded[a.Name]
+		version, _ := a.DatabricksPluginVersion(ctx)
+		if version == "" {
+			version = recorded[a.Name]
 		}
-		if ok {
+		if version != "" {
 			tools = append(tools, a.Name+"_"+version)
 		}
 	}

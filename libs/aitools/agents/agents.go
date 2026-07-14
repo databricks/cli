@@ -2,14 +2,11 @@ package agents
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/databricks/cli/libs/env"
-	"golang.org/x/mod/semver"
 )
 
 // PluginSpec describes the databricks plugin for an agent. A non-nil
@@ -51,10 +48,10 @@ type Agent struct {
 	// agent has no plugin and skills files are its native delivery.
 	Plugin *PluginSpec
 	// pluginVersion reads the installed databricks plugin version from the
-	// agent's own authoritative manifest (not the plugin cache, which can hold
-	// orphaned versions). It is set only for agents whose manifest format is
-	// verified; when nil, DatabricksPluginVersion reports no version and callers
-	// fall back to the CLI install state.
+	// agent's own plugin manifest. Each agent's manifest format differs, so it is
+	// set per agent (only for formats we have verified); when nil,
+	// DatabricksPluginVersion reports no version. New agents extend support by
+	// providing their own reader here.
 	pluginVersion func(ctx context.Context, a *Agent) (string, bool)
 }
 
@@ -79,58 +76,6 @@ func (a *Agent) SkillsDir(ctx context.Context) (string, error) {
 		subdir = "skills"
 	}
 	return filepath.Join(configDir, subdir), nil
-}
-
-// DatabricksPluginVersion returns the installed databricks plugin version from
-// the agent's own authoritative manifest, unprefixed (e.g. "0.2.9"). ok is false
-// when the agent has no plugin, no verified manifest reader, or the plugin is not
-// recorded as installed.
-func (a *Agent) DatabricksPluginVersion(ctx context.Context) (string, bool) {
-	if a.Plugin == nil || a.pluginVersion == nil {
-		return "", false
-	}
-	return a.pluginVersion(ctx, a)
-}
-
-// claudePluginVersion reads the installed databricks plugin version from Claude
-// Code's installed_plugins.json. That manifest is authoritative,
-// keying each plugin as "<id>@<marketplace>" with one entry per install scope.
-// See https://code.claude.com/docs/en/plugins-reference (version management).
-func claudePluginVersion(ctx context.Context, a *Agent) (string, bool) {
-	configDir, err := a.ConfigDir(ctx)
-	if err != nil {
-		return "", false
-	}
-	data, err := os.ReadFile(filepath.Join(configDir, "plugins", "installed_plugins.json"))
-	if err != nil {
-		return "", false
-	}
-
-	var manifest struct {
-		Plugins map[string][]struct {
-			Version string `json:"version"`
-		} `json:"plugins"`
-	}
-	if err := json.Unmarshal(data, &manifest); err != nil {
-		return "", false
-	}
-
-	// The key is "<plugin-id>@<marketplace>"; the marketplace segment varies, so
-	// match on the id prefix. Among a plugin's per-scope entries take the highest
-	// version so an install in any scope is reflected.
-	best := ""
-	for key, entries := range manifest.Plugins {
-		id, _, found := strings.Cut(key, "@")
-		if !found || id != a.Plugin.ID {
-			continue
-		}
-		for _, e := range entries {
-			if e.Version != "" && (best == "" || semver.Compare("v"+e.Version, "v"+best) > 0) {
-				best = e.Version
-			}
-		}
-	}
-	return best, best != ""
 }
 
 // homeSubdir returns a function that computes ~/subpath.
