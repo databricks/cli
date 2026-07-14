@@ -1,8 +1,17 @@
-title "Plain --json request body: skeleton is the request struct itself\n"
-trace $CLI vector-search-endpoints create-endpoint --generate-skeleton
+title "Plain --json request body: full skeleton is the whole request struct\n"
+trace $CLI vector-search-endpoints create-endpoint --generate-skeleton-full
 
-title "Request-body-field command: skeleton is the body field, positional args relaxed\n"
-trace $CLI entity-tag-assignments create --generate-skeleton
+title "Plain --json request body: required-only keeps just the mandatory fields\n"
+trace $CLI vector-search-endpoints create-endpoint --generate-skeleton-required-only
 
-title "--generate-skeleton is incompatible with --json\n"
-musterr $CLI jobs create --generate-skeleton --json '{}'
+title "Request-body-field command: full skeleton, positional args relaxed\n"
+trace $CLI entity-tag-assignments create --generate-skeleton-full
+
+title "Request-body-field command: required-only recurses into the body field\n"
+trace $CLI entity-tag-assignments create --generate-skeleton-required-only
+
+title "The two skeleton flags are mutually exclusive\n"
+musterr $CLI vector-search-endpoints create-endpoint --generate-skeleton-full --generate-skeleton-required-only
+
+title "A skeleton flag is incompatible with --json\n"
+musterr $CLI jobs create --generate-skeleton-full --json '{}'

@@ -1,7 +1,7 @@
 
-=== Plain --json request body: skeleton is the request struct itself
+=== Plain --json request body: full skeleton is the whole request struct
 
->>> [CLI] vector-search-endpoints create-endpoint --generate-skeleton
+>>> [CLI] vector-search-endpoints create-endpoint --generate-skeleton-full
 {
   "budget_policy_id": "",
   "endpoint_type": "",
@@ -10,9 +10,17 @@
   "usage_policy_id": ""
 }
 
-=== Request-body-field command: skeleton is the body field, positional args relaxed
+=== Plain --json request body: required-only keeps just the mandatory fields
 
->>> [CLI] entity-tag-assignments create --generate-skeleton
+>>> [CLI] vector-search-endpoints create-endpoint --generate-skeleton-required-only
+{
+  "endpoint_type": "",
+  "name": ""
+}
+
+=== Request-body-field command: full skeleton, positional args relaxed
+
+>>> [CLI] entity-tag-assignments create --generate-skeleton-full
 {
   "entity_name": "",
   "entity_type": "",
@@ -23,5 +31,17 @@
   "updated_by": ""
 }
 
-=== --generate-skeleton is incompatible with --json
-Error: --generate-skeleton cannot be combined with --json
+=== Request-body-field command: required-only recurses into the body field
+
+>>> [CLI] entity-tag-assignments create --generate-skeleton-required-only
+{
+  "entity_name": "",
+  "entity_type": "",
+  "tag_key": ""
+}
+
+=== The two skeleton flags are mutually exclusive
+Error: if any flags in the group [generate-skeleton-full generate-skeleton-required-only] are set none of the others can be; [generate-skeleton-full generate-skeleton-required-only] were all set
+
+=== A skeleton flag is incompatible with --json
+Error: --generate-skeleton-full cannot be combined with --json
