@@ -60,12 +60,16 @@ function makeCore() {
  * @param {Array} opts.files - PR files to return (objects with .filename)
  * @param {Object} opts.teamMembers - { teamSlug: [logins] }
  * @param {Array} opts.existingComments - Existing PR comments to return
+ * @param {number} opts.flakyCreates - Number of leading checks.create calls that
+ *   return 2xx but do not persist (not visible to the follow-up listForRef read),
+ *   simulating GitHub eventual-consistency flakes.
  */
-function makeGithub({ reviews = [], files = [], teamMembers = {}, existingComments = [] } = {}) {
+function makeGithub({ reviews = [], files = [], teamMembers = {}, existingComments = [], flakyCreates = 0 } = {}) {
   const listReviews = Symbol("listReviews");
   const listFiles = Symbol("listFiles");
   const listComments = Symbol("listComments");
   const checkRuns = [];
+  const persistedCheckRuns = [];
   const createdComments = [];
   const updatedComments = [];
   const deletedCommentIds = [];
@@ -85,7 +89,17 @@ function makeGithub({ reviews = [], files = [], teamMembers = {}, existingCommen
       checks: {
         create: async (params) => {
           checkRuns.push(params);
+          if (checkRuns.length > flakyCreates) {
+            persistedCheckRuns.push(params);
+          }
         },
+        listForRef: async ({ ref, check_name }) => ({
+          data: {
+            check_runs: persistedCheckRuns.filter(
+              (r) => r.head_sha === ref && r.name === check_name
+            ),
+          },
+        }),
       },
       issues: {
         listComments,
@@ -111,6 +125,7 @@ function makeGithub({ reviews = [], files = [], teamMembers = {}, existingCommen
       },
     },
     _checkRuns: checkRuns,
+    _persistedCheckRuns: persistedCheckRuns,
     _comments: createdComments,
     _updatedComments: updatedComments,
     _deletedCommentIds: deletedCommentIds,
@@ -128,6 +143,8 @@ describe("maintainer-approval", () => {
     originalWorkspace = process.env.GITHUB_WORKSPACE;
     tmpDir = makeTmpOwners(OWNERS_CONTENT, OWNERTEAMS_CONTENT);
     process.env.GITHUB_WORKSPACE = tmpDir;
+    // Skip the retry backoff so flake tests do not sleep.
+    process.env.MAINTAINER_APPROVAL_VERIFY_DELAY_MS = "0";
   });
 
   after(() => {
@@ -136,6 +153,7 @@ describe("maintainer-approval", () => {
     } else {
       delete process.env.GITHUB_WORKSPACE;
     }
+    delete process.env.MAINTAINER_APPROVAL_VERIFY_DELAY_MS;
     fs.rmSync(tmpDir, { recursive: true });
   });
 
@@ -557,5 +575,48 @@ describe("maintainer-approval", () => {
     const body = github._comments[0].body;
     assert.ok(body.includes("4 files changed"), "should show count for bundle group");
     assert.ok(!body.includes("`bundle/a.go`"), "should not list individual bundle files");
+  });
+
+  // --- Check persistence (PR #5868 flake) ---
+
+  it("retries checks.create when the first write does not persist", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "maintainer1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+      flakyCreates: 1,
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    // First create was lost; second landed. No failure recorded.
+    assert.equal(github._checkRuns.length, 2);
+    assert.equal(github._persistedCheckRuns.length, 1);
+    assert.equal(github._persistedCheckRuns[0].conclusion, "success");
+    assert.equal(core._log.failed.length, 0);
+    assert.ok(core._log.warning.length >= 1);
+  });
+
+  it("fails the run when the check never persists", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "maintainer1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+      flakyCreates: Infinity,
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    // Exhausted all attempts without the required check becoming visible.
+    assert.equal(github._checkRuns.length, 3);
+    assert.equal(github._persistedCheckRuns.length, 0);
+    assert.equal(core._log.failed.length, 1);
+    assert.ok(core._log.failed[0].includes("could not be set"));
   });
 });
