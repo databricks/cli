@@ -13,6 +13,8 @@ CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_clust
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers}'
 
 title "Updating cluster should call update API\n"
-update_file.py databricks.yml "\"spark.executor.memory\": \"2g\"" "\"spark.executor.memory\": \"4g\""
+# The cluster routes through the shared instance pool (node type c5d.xlarge),
+# whose maximum executor heap is 3157 MB, so keep the bumped value under that.
+update_file.py databricks.yml "\"spark.executor.memory\": \"2g\"" "\"spark.executor.memory\": \"3g\""
 trace $CLI bundle plan
 trace $CLI bundle deploy

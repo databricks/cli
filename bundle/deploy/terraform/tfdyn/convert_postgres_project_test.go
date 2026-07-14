@@ -108,6 +108,35 @@ func TestConvertPostgresProjectWithPermissions(t *testing.T) {
 	}, out.Permissions["postgres_project_my_postgres_project"])
 }
 
+func TestConvertPostgresProjectPurgeOnDelete(t *testing.T) {
+	src := resources.PostgresProject{
+		PostgresProjectConfig: resources.PostgresProjectConfig{
+			ProjectId:     "my-project",
+			PurgeOnDelete: true,
+			ProjectSpec: postgres.ProjectSpec{
+				DisplayName: "My Postgres Project",
+			},
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := t.Context()
+	out := schema.NewResources()
+	err = postgresProjectConverter{}.Convert(ctx, "my_postgres_project", vin, out)
+	require.NoError(t, err)
+
+	postgresProject := out.PostgresProject["my_postgres_project"]
+	assert.Equal(t, map[string]any{
+		"project_id":      "my-project",
+		"purge_on_delete": true,
+		"spec": map[string]any{
+			"display_name": "My Postgres Project",
+		},
+	}, postgresProject)
+}
+
 func TestConvertPostgresProjectMinimal(t *testing.T) {
 	src := resources.PostgresProject{
 		PostgresProjectConfig: resources.PostgresProjectConfig{

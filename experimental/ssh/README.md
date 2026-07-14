@@ -23,6 +23,9 @@ databricks ssh connect --cluster=id
 ./cli ssh connect --cluster=<id> --releases-dir=./dist --debug # or modify ssh config accordingly
 ```
 
+To reproduce and test the known `ssh connect` failure modes (container missing `sshd`, or a
+container that can't run the Python bootstrap), see [FAILURE_MODES.md](./FAILURE_MODES.md).
+
 ## Design
 
 High level:

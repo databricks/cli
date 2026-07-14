@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate
+Executing 'preinit' script
+line 1
+line 2
+line without newline
+Name: scripts_no_trailing_newline
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/scripts_no_trailing_newline/default
+
+Validation OK!

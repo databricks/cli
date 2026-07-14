@@ -27,10 +27,11 @@ type ResourcePipelineClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourcePipelineClusterAzureAttributes struct {
-	Availability     string                                                  `json:"availability,omitempty"`
-	FirstOnDemand    int                                                     `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                     `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourcePipelineClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                  `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                  `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                     `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                     `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourcePipelineClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourcePipelineClusterClusterLogConfDbfs struct {
@@ -133,8 +134,10 @@ type ResourcePipelineCluster struct {
 }
 
 type ResourcePipelineDeployment struct {
+	DeploymentId     string `json:"deployment_id,omitempty"`
 	Kind             string `json:"kind"`
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+	VersionId        string `json:"version_id,omitempty"`
 }
 
 type ResourcePipelineEnvironment struct {
@@ -201,6 +204,8 @@ type ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationWorkdayRe
 }
 
 type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
+	ClusteringColumns              []string                                                                                     `json:"clustering_columns,omitempty"`
+	EnableAutoClustering           bool                                                                                         `json:"enable_auto_clustering,omitempty"`
 	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                                     `json:"primary_keys,omitempty"`
@@ -208,6 +213,7 @@ type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
+	TableProperties                map[string]string                                                                            `json:"table_properties,omitempty"`
 	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
@@ -259,6 +265,42 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGoogleAdsOp
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsJiraOptions struct {
 	IncludeJiraSpaces []string `json:"include_jira_spaces,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformer struct {
+	Format      string                                                                                                 `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformer struct {
+	Format      string                                                                                                   `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions struct {
+	ClientConfig         map[string]string                                                                             `json:"client_config,omitempty"`
+	MaxOffsetsPerTrigger int                                                                                           `json:"max_offsets_per_trigger,omitempty"`
+	StartingOffset       string                                                                                        `json:"starting_offset,omitempty"`
+	TopicPattern         string                                                                                        `json:"topic_pattern,omitempty"`
+	Topics               []string                                                                                      `json:"topics,omitempty"`
+	KeyTransformer       *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformer   `json:"key_transformer,omitempty"`
+	ValueTransformer     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformer `json:"value_transformer,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptions struct {
@@ -334,6 +376,7 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions struct {
 	GdriveOptions         *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGdriveOptions         `json:"gdrive_options,omitempty"`
 	GoogleAdsOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGoogleAdsOptions      `json:"google_ads_options,omitempty"`
 	JiraOptions           *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsJiraOptions           `json:"jira_options,omitempty"`
+	KafkaOptions          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions          `json:"kafka_options,omitempty"`
 	MetaAdsOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptions        `json:"meta_ads_options,omitempty"`
 	OutlookOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOptions        `json:"outlook_options,omitempty"`
 	SharepointOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptions     `json:"sharepoint_options,omitempty"`
@@ -365,6 +408,8 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationWorkdayRe
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
+	ClusteringColumns              []string                                                                                     `json:"clustering_columns,omitempty"`
+	EnableAutoClustering           bool                                                                                         `json:"enable_auto_clustering,omitempty"`
 	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                                     `json:"primary_keys,omitempty"`
@@ -372,6 +417,7 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
+	TableProperties                map[string]string                                                                            `json:"table_properties,omitempty"`
 	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
@@ -424,6 +470,42 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGoogleAdsOpt
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsJiraOptions struct {
 	IncludeJiraSpaces []string `json:"include_jira_spaces,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformer struct {
+	Format      string                                                                                                `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformer struct {
+	Format      string                                                                                                  `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions struct {
+	ClientConfig         map[string]string                                                                            `json:"client_config,omitempty"`
+	MaxOffsetsPerTrigger int                                                                                          `json:"max_offsets_per_trigger,omitempty"`
+	StartingOffset       string                                                                                       `json:"starting_offset,omitempty"`
+	TopicPattern         string                                                                                       `json:"topic_pattern,omitempty"`
+	Topics               []string                                                                                     `json:"topics,omitempty"`
+	KeyTransformer       *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformer   `json:"key_transformer,omitempty"`
+	ValueTransformer     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformer `json:"value_transformer,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptions struct {
@@ -499,6 +581,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptions struct {
 	GdriveOptions         *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGdriveOptions         `json:"gdrive_options,omitempty"`
 	GoogleAdsOptions      *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGoogleAdsOptions      `json:"google_ads_options,omitempty"`
 	JiraOptions           *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsJiraOptions           `json:"jira_options,omitempty"`
+	KafkaOptions          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions          `json:"kafka_options,omitempty"`
 	MetaAdsOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptions        `json:"meta_ads_options,omitempty"`
 	OutlookOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptions        `json:"outlook_options,omitempty"`
 	SharepointOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptions     `json:"sharepoint_options,omitempty"`
@@ -530,6 +613,8 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationWorkdayRep
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
+	ClusteringColumns              []string                                                                                    `json:"clustering_columns,omitempty"`
+	EnableAutoClustering           bool                                                                                        `json:"enable_auto_clustering,omitempty"`
 	ExcludeColumns                 []string                                                                                    `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                    `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                                    `json:"primary_keys,omitempty"`
@@ -537,6 +622,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                                        `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                      `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                    `json:"sequence_by,omitempty"`
+	TableProperties                map[string]string                                                                           `json:"table_properties,omitempty"`
 	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
@@ -605,6 +691,8 @@ type ResourcePipelineIngestionDefinitionTableConfigurationWorkdayReportParameter
 }
 
 type ResourcePipelineIngestionDefinitionTableConfiguration struct {
+	ClusteringColumns              []string                                                                        `json:"clustering_columns,omitempty"`
+	EnableAutoClustering           bool                                                                            `json:"enable_auto_clustering,omitempty"`
 	ExcludeColumns                 []string                                                                        `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                        `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                        `json:"primary_keys,omitempty"`
@@ -612,6 +700,7 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                            `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                          `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                        `json:"sequence_by,omitempty"`
+	TableProperties                map[string]string                                                               `json:"table_properties,omitempty"`
 	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
@@ -689,8 +778,7 @@ type ResourcePipelineTriggerCron struct {
 	TimezoneId         string `json:"timezone_id,omitempty"`
 }
 
-type ResourcePipelineTriggerManual struct {
-}
+type ResourcePipelineTriggerManual struct{}
 
 type ResourcePipelineTrigger struct {
 	Cron   *ResourcePipelineTriggerCron   `json:"cron,omitempty"`
@@ -719,6 +807,7 @@ type ResourcePipeline struct {
 	RunAsUserName        string                               `json:"run_as_user_name,omitempty"`
 	Schema               string                               `json:"schema,omitempty"`
 	Serverless           bool                                 `json:"serverless,omitempty"`
+	ServerlessComputeId  string                               `json:"serverless_compute_id,omitempty"`
 	State                string                               `json:"state,omitempty"`
 	Storage              string                               `json:"storage,omitempty"`
 	Tags                 map[string]string                    `json:"tags,omitempty"`

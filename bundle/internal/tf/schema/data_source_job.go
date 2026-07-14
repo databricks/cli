@@ -17,8 +17,10 @@ type DataSourceJobJobSettingsSettingsDbtTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsDeployment struct {
+	DeploymentId     string `json:"deployment_id,omitempty"`
 	Kind             string `json:"kind"`
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+	VersionId        string `json:"version_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsEmailNotifications struct {

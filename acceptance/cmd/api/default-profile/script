@@ -22,7 +22,7 @@ unset DATABRICKS_CONFIG_PROFILE
 
 title "default_profile is used when no --profile flag and no DATABRICKS_CONFIG_PROFILE\n"
 MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/clusters/list
-trace print_requests.py --get //api/2.0/clusters/list | contains.py "X-Databricks-Org-Id"
+trace print_requests.py --get //api/2.0/clusters/list | contains.py "X-Databricks-Workspace-Id"
 
 title "--profile overrides default_profile (negative case)\n"
 MSYS_NO_PATHCONV=1 errcode $CLI api get /api/2.0/clusters/list -p other 2>&1 | contains.py "other.test"

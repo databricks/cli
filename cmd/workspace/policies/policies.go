@@ -3,6 +3,7 @@
 package policies
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,10 +21,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "policies",
-		Short: `*Public Preview* Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog.`,
-		Long: `This command is in Public Preview and may change without notice.
-
-Attribute-Based Access Control (ABAC) provides high leverage governance for
+		Short: `Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog.`,
+		Long: `Attribute-Based Access Control (ABAC) provides high leverage governance for
   enforcing compliance policies in Unity Catalog. With ABAC policies, access is
   controlled in a hierarchical and scalable manner, based on data attributes
   rather than specific resources, enabling more flexible and comprehensive
@@ -36,8 +35,8 @@ Attribute-Based Access Control (ABAC) provides high leverage governance for
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreatePolicy())
@@ -101,10 +100,8 @@ func newCreatePolicy() *cobra.Command {
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.WhenCondition, "when-condition", createPolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
 
 	cmd.Use = "create-policy TO_PRINCIPALS FOR_SECURABLE_TYPE POLICY_TYPE"
-	cmd.Short = `*Public Preview* Create an ABAC policy.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create an ABAC policy.
+	cmd.Short = `Create an ABAC policy.`
+	cmd.Long = `Create an ABAC policy.
 
   Creates a new policy on a securable. The new policy applies to the securable
   and all its descendants.
@@ -137,14 +134,14 @@ Create an ABAC policy.
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'to_principals', 'for_securable_type', 'policy_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'to_principals', 'for_securable_type', 'policy_type' in your JSON input")
 			}
 			return nil
 		}
@@ -226,10 +223,8 @@ func newDeletePolicy() *cobra.Command {
 	var deletePolicyReq catalog.DeletePolicyRequest
 
 	cmd.Use = "delete-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME"
-	cmd.Short = `*Public Preview* Delete an ABAC policy.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Delete an ABAC policy.
+	cmd.Short = `Delete an ABAC policy.`
+	cmd.Long = `Delete an ABAC policy.
 
   Delete an ABAC policy defined on a securable.
 
@@ -240,8 +235,8 @@ Delete an ABAC policy.
     NAME: Required. The name of the policy to delete`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -292,10 +287,8 @@ func newGetPolicy() *cobra.Command {
 	var getPolicyReq catalog.GetPolicyRequest
 
 	cmd.Use = "get-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME"
-	cmd.Short = `*Public Preview* Get an ABAC policy.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get an ABAC policy.
+	cmd.Short = `Get an ABAC policy.`
+	cmd.Long = `Get an ABAC policy.
 
   Get the policy definition on a securable
 
@@ -305,8 +298,8 @@ Get an ABAC policy.
     NAME: Required. The name of the policy to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -371,10 +364,8 @@ func newListPolicies() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-policies ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME"
-	cmd.Short = `*Public Preview* List ABAC policies.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List ABAC policies.
+	cmd.Short = `List ABAC policies.`
+	cmd.Long = `List ABAC policies.
 
   List all policies defined on a securable. Optionally, the list can include
   inherited policies defined on the securable's parent schema or catalog.
@@ -389,8 +380,8 @@ List ABAC policies.
     ON_SECURABLE_FULLNAME: Required. The fully qualified name of securable to list policies for.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -476,10 +467,8 @@ func newUpdatePolicy() *cobra.Command {
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.WhenCondition, "when-condition", updatePolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
 
 	cmd.Use = "update-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME TO_PRINCIPALS FOR_SECURABLE_TYPE POLICY_TYPE"
-	cmd.Short = `*Public Preview* Update an ABAC policy.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Update an ABAC policy.
+	cmd.Short = `Update an ABAC policy.`
+	cmd.Long = `Update an ABAC policy.
 
   Update an ABAC policy on a securable.
 
@@ -515,14 +504,14 @@ Update an ABAC policy.
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(3)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only ON_SECURABLE_TYPE, ON_SECURABLE_FULLNAME, NAME as positional arguments. Provide 'to_principals', 'for_securable_type', 'policy_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only ON_SECURABLE_TYPE, ON_SECURABLE_FULLNAME, NAME as positional arguments. Provide 'to_principals', 'for_securable_type', 'policy_type' in your JSON input")
 			}
 			return nil
 		}

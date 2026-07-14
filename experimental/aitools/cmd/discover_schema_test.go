@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
@@ -50,17 +51,17 @@ func TestQuoteTableName(t *testing.T) {
 }
 
 func TestParseDescribeResultSkipsMetadataRows(t *testing.T) {
-	resp := &dbsql.StatementResponse{
-		Result: &dbsql.ResultData{DataArray: [][]string{
+	result := &sqlexec.Result{
+		Rows: [][]string{
 			{"id", "BIGINT", ""},
 			{"name", "STRING", ""},
 			{"# Partition Information", "", ""},
 			{"region", "STRING", ""},
 			{"", "STRING", ""},
-		}},
+		},
 	}
 
-	cols, types := parseDescribeResult(resp)
+	cols, types := parseDescribeResult(result)
 	assert.Equal(t, []string{"id", "name", "region"}, cols)
 	assert.Equal(t, []string{"BIGINT", "STRING", "STRING"}, types)
 }
@@ -82,9 +83,9 @@ func TestSQLGateRunPinsOnWaitTimeoutAndRecordsID(t *testing.T) {
 	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
 	gate := newSQLGate(2)
 
-	resp, err := gate.run(ctx, w, "wh-1", "SELECT 1")
+	result, err := gate.run(ctx, w, "wh-1", "SELECT 1")
 	require.NoError(t, err)
-	assert.Equal(t, "stmt-1", resp.StatementId)
+	assert.Equal(t, [][]string{{"1"}}, result.Rows)
 	assert.Equal(t, []string{"stmt-1"}, gate.trackedIDs())
 }
 

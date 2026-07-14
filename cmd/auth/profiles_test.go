@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"testing"
 
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -46,6 +47,35 @@ func TestProfiles(t *testing.T) {
 	assert.Equal(t, "https://abc.cloud.databricks.com", profile.Host)
 	assert.Equal(t, "aws", profile.Cloud)
 	assert.Equal(t, "pat", profile.AuthType)
+}
+
+// TestProfileLoadSkipValidateMakesNoRequests guards the --skip-validate
+// contract: EnsureResolved would otherwise fetch /.well-known/databricks-config
+// for every profile, so the handler counts every request it receives.
+func TestProfileLoadSkipValidateMakesNoRequests(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(server.Close)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	t.Setenv("HOME", dir)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", dir)
+	}
+
+	content := "[offline-profile]\nhost = " + server.URL + "\ntoken = test-token\n"
+	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
+
+	p := &profileMetadata{Name: "offline-profile", Host: server.URL}
+	p.Load(t.Context(), configFile, true)
+
+	assert.Zero(t, requests.Load(), "expected no network calls with skipValidate")
+	assert.Equal(t, server.URL, p.Host)
+	assert.False(t, p.Valid)
 }
 
 func TestProfilesDefaultMarker(t *testing.T) {

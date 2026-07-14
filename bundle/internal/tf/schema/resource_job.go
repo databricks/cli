@@ -18,8 +18,10 @@ type ResourceJobDbtTask struct {
 }
 
 type ResourceJobDeployment struct {
+	DeploymentId     string `json:"deployment_id,omitempty"`
 	Kind             string `json:"kind"`
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+	VersionId        string `json:"version_id,omitempty"`
 }
 
 type ResourceJobEmailNotifications struct {
@@ -103,10 +105,11 @@ type ResourceJobJobClusterNewClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceJobJobClusterNewClusterAzureAttributes struct {
-	Availability     string                                                          `json:"availability,omitempty"`
-	FirstOnDemand    int                                                             `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                             `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobJobClusterNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                          `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                          `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                             `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                             `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobJobClusterNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterClusterLogConfDbfs struct {
@@ -363,10 +366,11 @@ type ResourceJobNewClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceJobNewClusterAzureAttributes struct {
-	Availability     string                                                `json:"availability,omitempty"`
-	FirstOnDemand    int                                                   `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                   `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                   `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                   `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobNewClusterClusterLogConfDbfs struct {
@@ -632,6 +636,25 @@ type ResourceJobSparkSubmitTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
+type ResourceJobTaskAiRuntimeTaskDeploymentsCompute struct {
+	AcceleratorCount int    `json:"accelerator_count"`
+	AcceleratorType  string `json:"accelerator_type"`
+}
+
+type ResourceJobTaskAiRuntimeTaskDeployments struct {
+	CommandPath string                                          `json:"command_path"`
+	Name        string                                          `json:"name,omitempty"`
+	Compute     *ResourceJobTaskAiRuntimeTaskDeploymentsCompute `json:"compute,omitempty"`
+}
+
+type ResourceJobTaskAiRuntimeTask struct {
+	CodeSourcePath            string                                    `json:"code_source_path,omitempty"`
+	Experiment                string                                    `json:"experiment"`
+	MlflowExperimentDirectory string                                    `json:"mlflow_experiment_directory,omitempty"`
+	MlflowRun                 string                                    `json:"mlflow_run,omitempty"`
+	Deployments               []ResourceJobTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
+}
+
 type ResourceJobTaskAlertTaskSubscribers struct {
 	DestinationId string `json:"destination_id,omitempty"`
 	UserName      string `json:"user_name,omitempty"`
@@ -711,6 +734,25 @@ type ResourceJobTaskEmailNotifications struct {
 	OnStart                            []string `json:"on_start,omitempty"`
 	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeploymentsCompute struct {
+	AcceleratorCount int    `json:"accelerator_count"`
+	AcceleratorType  string `json:"accelerator_type"`
+}
+
+type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments struct {
+	CommandPath string                                                         `json:"command_path"`
+	Name        string                                                         `json:"name,omitempty"`
+	Compute     *ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeploymentsCompute `json:"compute,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskAiRuntimeTask struct {
+	CodeSourcePath            string                                                   `json:"code_source_path,omitempty"`
+	Experiment                string                                                   `json:"experiment"`
+	MlflowExperimentDirectory string                                                   `json:"mlflow_experiment_directory,omitempty"`
+	MlflowRun                 string                                                   `json:"mlflow_run,omitempty"`
+	Deployments               []ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskAlertTaskSubscribers struct {
@@ -876,10 +918,11 @@ type ResourceJobTaskForEachTaskTaskNewClusterAzureAttributesLogAnalyticsInfo str
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterAzureAttributes struct {
-	Availability     string                                                                   `json:"availability,omitempty"`
-	FirstOnDemand    int                                                                      `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                                      `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobTaskForEachTaskTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                                   `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                                   `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                                      `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                                      `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobTaskForEachTaskTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterClusterLogConfDbfs struct {
@@ -1089,8 +1132,13 @@ type ResourceJobTaskForEachTaskTaskNotificationSettings struct {
 }
 
 type ResourceJobTaskForEachTaskTaskPipelineTask struct {
-	FullRefresh bool   `json:"full_refresh,omitempty"`
-	PipelineId  string `json:"pipeline_id"`
+	FullRefresh              bool              `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string          `json:"full_refresh_selection,omitempty"`
+	Parameters               map[string]string `json:"parameters,omitempty"`
+	PipelineId               string            `json:"pipeline_id"`
+	RefreshFlowSelection     []string          `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string          `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string          `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskPowerBiTaskPowerBiModel struct {
@@ -1116,6 +1164,16 @@ type ResourceJobTaskForEachTaskTaskPowerBiTask struct {
 	Tables                 []ResourceJobTaskForEachTaskTaskPowerBiTaskTables      `json:"tables,omitempty"`
 }
 
+type ResourceJobTaskForEachTaskTaskPythonOperatorTaskParameters struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskPythonOperatorTask struct {
+	Main       string                                                       `json:"main,omitempty"`
+	Parameters []ResourceJobTaskForEachTaskTaskPythonOperatorTaskParameters `json:"parameters,omitempty"`
+}
+
 type ResourceJobTaskForEachTaskTaskPythonWheelTask struct {
 	EntryPoint      string            `json:"entry_point,omitempty"`
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
@@ -1124,7 +1182,11 @@ type ResourceJobTaskForEachTaskTaskPythonWheelTask struct {
 }
 
 type ResourceJobTaskForEachTaskTaskRunJobTaskPipelineParams struct {
-	FullRefresh bool `json:"full_refresh,omitempty"`
+	FullRefresh              bool     `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string `json:"full_refresh_selection,omitempty"`
+	RefreshFlowSelection     []string `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskRunJobTask struct {
@@ -1239,6 +1301,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	RunIf                   string                                                `json:"run_if,omitempty"`
 	TaskKey                 string                                                `json:"task_key"`
 	TimeoutSeconds          int                                                   `json:"timeout_seconds,omitempty"`
+	AiRuntimeTask           *ResourceJobTaskForEachTaskTaskAiRuntimeTask          `json:"ai_runtime_task,omitempty"`
 	AlertTask               *ResourceJobTaskForEachTaskTaskAlertTask              `json:"alert_task,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
 	Compute                 *ResourceJobTaskForEachTaskTaskCompute                `json:"compute,omitempty"`
@@ -1257,6 +1320,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	NotificationSettings    *ResourceJobTaskForEachTaskTaskNotificationSettings   `json:"notification_settings,omitempty"`
 	PipelineTask            *ResourceJobTaskForEachTaskTaskPipelineTask           `json:"pipeline_task,omitempty"`
 	PowerBiTask             *ResourceJobTaskForEachTaskTaskPowerBiTask            `json:"power_bi_task,omitempty"`
+	PythonOperatorTask      *ResourceJobTaskForEachTaskTaskPythonOperatorTask     `json:"python_operator_task,omitempty"`
 	PythonWheelTask         *ResourceJobTaskForEachTaskTaskPythonWheelTask        `json:"python_wheel_task,omitempty"`
 	RunJobTask              *ResourceJobTaskForEachTaskTaskRunJobTask             `json:"run_job_task,omitempty"`
 	SparkJarTask            *ResourceJobTaskForEachTaskTaskSparkJarTask           `json:"spark_jar_task,omitempty"`
@@ -1354,10 +1418,11 @@ type ResourceJobTaskNewClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceJobTaskNewClusterAzureAttributes struct {
-	Availability     string                                                    `json:"availability,omitempty"`
-	FirstOnDemand    int                                                       `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                       `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                    `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                    `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                       `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                       `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobTaskNewClusterClusterLogConfDbfs struct {
@@ -1568,8 +1633,13 @@ type ResourceJobTaskNotificationSettings struct {
 }
 
 type ResourceJobTaskPipelineTask struct {
-	FullRefresh bool   `json:"full_refresh,omitempty"`
-	PipelineId  string `json:"pipeline_id"`
+	FullRefresh              bool              `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string          `json:"full_refresh_selection,omitempty"`
+	Parameters               map[string]string `json:"parameters,omitempty"`
+	PipelineId               string            `json:"pipeline_id"`
+	RefreshFlowSelection     []string          `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string          `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string          `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskPowerBiTaskPowerBiModel struct {
@@ -1595,6 +1665,16 @@ type ResourceJobTaskPowerBiTask struct {
 	Tables                 []ResourceJobTaskPowerBiTaskTables      `json:"tables,omitempty"`
 }
 
+type ResourceJobTaskPythonOperatorTaskParameters struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ResourceJobTaskPythonOperatorTask struct {
+	Main       string                                        `json:"main,omitempty"`
+	Parameters []ResourceJobTaskPythonOperatorTaskParameters `json:"parameters,omitempty"`
+}
+
 type ResourceJobTaskPythonWheelTask struct {
 	EntryPoint      string            `json:"entry_point,omitempty"`
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
@@ -1603,7 +1683,11 @@ type ResourceJobTaskPythonWheelTask struct {
 }
 
 type ResourceJobTaskRunJobTaskPipelineParams struct {
-	FullRefresh bool `json:"full_refresh,omitempty"`
+	FullRefresh              bool     `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string `json:"full_refresh_selection,omitempty"`
+	RefreshFlowSelection     []string `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskRunJobTask struct {
@@ -1718,6 +1802,7 @@ type ResourceJobTask struct {
 	RunIf                   string                                 `json:"run_if,omitempty"`
 	TaskKey                 string                                 `json:"task_key"`
 	TimeoutSeconds          int                                    `json:"timeout_seconds,omitempty"`
+	AiRuntimeTask           *ResourceJobTaskAiRuntimeTask          `json:"ai_runtime_task,omitempty"`
 	AlertTask               *ResourceJobTaskAlertTask              `json:"alert_task,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
 	Compute                 *ResourceJobTaskCompute                `json:"compute,omitempty"`
@@ -1737,6 +1822,7 @@ type ResourceJobTask struct {
 	NotificationSettings    *ResourceJobTaskNotificationSettings   `json:"notification_settings,omitempty"`
 	PipelineTask            *ResourceJobTaskPipelineTask           `json:"pipeline_task,omitempty"`
 	PowerBiTask             *ResourceJobTaskPowerBiTask            `json:"power_bi_task,omitempty"`
+	PythonOperatorTask      *ResourceJobTaskPythonOperatorTask     `json:"python_operator_task,omitempty"`
 	PythonWheelTask         *ResourceJobTaskPythonWheelTask        `json:"python_wheel_task,omitempty"`
 	RunJobTask              *ResourceJobTaskRunJobTask             `json:"run_job_task,omitempty"`
 	SparkJarTask            *ResourceJobTaskSparkJarTask           `json:"spark_jar_task,omitempty"`

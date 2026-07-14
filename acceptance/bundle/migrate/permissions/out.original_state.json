@@ -21,8 +21,10 @@
             "dbt_task": [],
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json",
+                "version_id": ""
               }
             ],
             "description": null,
@@ -82,6 +84,7 @@
             "tags": null,
             "task": [
               {
+                "ai_runtime_task": [],
                 "alert_task": [],
                 "clean_rooms_notebook_task": [],
                 "compute": [],
@@ -125,6 +128,7 @@
                 "notification_settings": [],
                 "pipeline_task": [],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
                 "run_if": "ALL_SUCCESS",
@@ -195,6 +199,7 @@
             "id": "/jobs/[NUMID]",
             "instance_pool_id": null,
             "job_id": "[NUMID]",
+            "knowledge_assistant_id": null,
             "notebook_id": null,
             "notebook_path": null,
             "object_type": "job",
@@ -212,6 +217,7 @@
             "sql_dashboard_id": null,
             "sql_endpoint_id": null,
             "sql_query_id": null,
+            "supervisor_agent_id": null,
             "vector_search_endpoint_id": null,
             "workspace_file_id": null,
             "workspace_file_path": null
@@ -261,6 +267,7 @@
             "id": "/pipelines/[UUID]",
             "instance_pool_id": null,
             "job_id": null,
+            "knowledge_assistant_id": null,
             "notebook_id": null,
             "notebook_path": null,
             "object_type": "pipelines",
@@ -278,6 +285,7 @@
             "sql_dashboard_id": null,
             "sql_endpoint_id": null,
             "sql_query_id": null,
+            "supervisor_agent_id": null,
             "vector_search_endpoint_id": null,
             "workspace_file_id": null,
             "workspace_file_path": null
@@ -311,8 +319,10 @@
             "creator_user_name": "[USERNAME]",
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json",
+                "version_id": ""
               }
             ],
             "development": false,
@@ -355,6 +365,7 @@
             "run_as_user_name": "[USERNAME]",
             "schema": null,
             "serverless": false,
+            "serverless_compute_id": null,
             "state": "IDLE",
             "storage": "dbfs:/pipelines/[UUID]",
             "tags": null,

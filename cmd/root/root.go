@@ -149,6 +149,12 @@ Stack Trace:
 			cfg := cmdctx.ConfigUsed(cmd.Context())
 			err = auth.EnrichAuthError(cmd.Context(), cfg, err)
 		}
+		// A workspace client on the context means the command operates against
+		// a workspace; see AppendAccountHostHint for why every error from such
+		// commands gets the account-console-host note.
+		if cmdctx.HasWorkspaceClient(cmd.Context()) {
+			err = auth.AppendAccountHostHint(cmdctx.WorkspaceClient(cmd.Context()).Config, err)
+		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 

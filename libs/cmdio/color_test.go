@@ -1,10 +1,12 @@
 package cmdio_test
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,6 +65,78 @@ func TestColorHelpersDoNotPanicWithoutCmdIO(t *testing.T) {
 	assert.Equal(t, "hello", cmdio.Red(ctx, "hello"))
 	assert.Equal(t, "ok", cmdio.Green(ctx, "ok"))
 	assert.Equal(t, "label: ", cmdio.Cyan(ctx, "label: "))
+}
+
+func TestWidth(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want int
+	}{
+		{"empty", "", 0},
+		{"ascii", "hello", 5},
+		{"ansi wrapped", "\x1b[1mhello\x1b[0m", 5},
+		{"nested ansi", "\x1b[1m\x1b[36mid\x1b[0m", 2},
+		{"fullwidth latin", "ＮＡＭＥ", 8},
+		{"emoji", "🚀", 2},
+		{"ansi wrapped fullwidth", "\x1b[36mＣＬＩ\x1b[0m", 6},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, c.want, cmdio.Width(c.in))
+		})
+	}
+}
+
+func TestPadRight(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		n    int
+		want string
+	}{
+		{"pads ascii", "hi", 5, "hi   "},
+		{"exact width unchanged", "hello", 5, "hello"},
+		{"over width unchanged", "toolong", 3, "toolong"},
+		{"measures past ansi", "\x1b[1mhi\x1b[0m", 5, "\x1b[1mhi\x1b[0m   "},
+		{"counts wide glyphs", "ＣＬＩ", 8, "ＣＬＩ  "},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, c.want, cmdio.PadRight(c.in, c.n))
+		})
+	}
+}
+
+func TestPadLeft(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		n    int
+		want string
+	}{
+		{"pads ascii", "hi", 5, "   hi"},
+		{"exact width unchanged", "hello", 5, "hello"},
+		{"over width unchanged", "toolong", 3, "toolong"},
+		{"measures past ansi", "\x1b[1mhi\x1b[0m", 5, "   \x1b[1mhi\x1b[0m"},
+		{"counts wide glyphs", "ＣＬＩ", 8, "  ＣＬＩ"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, c.want, cmdio.PadLeft(c.in, c.n))
+		})
+	}
+}
+
+func TestNewRendererForcesAsciiWhenNoColor(t *testing.T) {
+	ctx := noColorContext(t)
+
+	// A bytes.Buffer is never a TTY, so the renderer must fall back to Ascii and
+	// its styles must render without SGR escapes.
+	r, color := cmdio.NewRenderer(ctx, &bytes.Buffer{})
+	assert.False(t, color)
+	assert.Equal(t, termenv.Ascii, r.ColorProfile())
+	assert.Equal(t, "hi", r.NewStyle().Bold(true).Render("hi"))
 }
 
 func TestRenderFuncMap(t *testing.T) {

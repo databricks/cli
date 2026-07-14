@@ -24,6 +24,13 @@ func TestJsonFlagEmpty(t *testing.T) {
 	assert.Nil(t, request)
 }
 
+func TestJsonFlagEmptyValue(t *testing.T) {
+	var body JsonFlag
+
+	err := body.Set("")
+	assert.EqualError(t, err, "expected inline JSON or @path/to/file, got an empty string")
+}
+
 func TestJsonFlagInline(t *testing.T) {
 	var body JsonFlag
 

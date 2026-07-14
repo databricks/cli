@@ -63,14 +63,14 @@ func (s *Sync) applyMkdir(ctx context.Context, localName string) error {
 func (s *Sync) applyPut(ctx context.Context, localName string) error {
 	s.notifyProgress(ctx, EventActionPut, localName, 0.0)
 
-	localFile, err := s.LocalRoot.Open(localName)
-	if err != nil {
-		return err
-	}
-
-	defer localFile.Close()
-
 	if !s.DryRun {
+		localFile, err := s.LocalRoot.Open(localName)
+		if err != nil {
+			return err
+		}
+
+		defer localFile.Close()
+
 		opts := []filer.WriteMode{filer.CreateParentDirectories, filer.OverwriteIfExists}
 		err = s.filer.Write(ctx, localName, localFile, opts...)
 		if err != nil {

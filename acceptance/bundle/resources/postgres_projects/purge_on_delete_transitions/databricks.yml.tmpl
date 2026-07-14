@@ -1,0 +1,17 @@
+bundle:
+  name: pg-purge-transitions-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+# Walks purge_on_delete through unset -> true -> false -> unset, deploying
+# at each step and inspecting the persisted state so reviewers can see that
+# state tracks the user's latest intent. The final destroy is a soft delete
+# (state has purge_on_delete unset), recorded for regression coverage.
+resources:
+  postgres_projects:
+    proj:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Transitions test"
+      pg_version: 16
+      # PURGE_ON_DELETE

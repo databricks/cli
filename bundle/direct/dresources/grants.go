@@ -123,9 +123,11 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 	}
 	removedPrincipals := removedGrantPrincipals(state.EmbeddedSlice, entry)
 	_, err := r.client.Grants.Update(ctx, catalog.UpdatePermissions{
-		SecurableType: state.SecurableType,
-		FullName:      state.FullName,
-		Changes:       buildGrantChanges(state.EmbeddedSlice, removedPrincipals),
+		SecurableType:             state.SecurableType,
+		FullName:                  state.FullName,
+		Changes:                   buildGrantChanges(state.EmbeddedSlice, removedPrincipals),
+		OmitPermissionsInResponse: false,
+		ForceSendFields:           nil,
 	})
 	return nil, err
 }

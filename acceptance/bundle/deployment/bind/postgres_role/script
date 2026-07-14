@@ -1,0 +1,6 @@
+ROLE_NAME="projects/test-project/branches/main/roles/test-role"
+trace $CLI bundle deployment bind role1 "${ROLE_NAME}" --auto-approve
+trace $CLI bundle summary
+
+trace $CLI bundle deployment unbind role1
+trace $CLI bundle summary

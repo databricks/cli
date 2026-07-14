@@ -47,13 +47,15 @@ After the commands above pass, scrub the diff before pushing. The quick version:
 
 Follow `.github/PULL_REQUEST_TEMPLATE.md` exactly. Use its section headings (`## Changes`, `## Why`, `## Tests`) in the same order, and fill each one in. Do not invent new sections (`## Summary`, `## Test plan`, etc.), do not drop sections, and do not leave the HTML comment placeholders in the final body — replace them with real content. If a section genuinely does not apply (e.g. a docs-only change has no test steps), say so explicitly under that heading rather than removing it.
 
+**RULE: Be concise in the PR summary.** Overly verbose descriptions tend to be ignored by reviewers. Let the diff speak for itself and only describe at a high level what you have implemented/what components were touched.
+
 When using `gh pr create`, read `.github/PULL_REQUEST_TEMPLATE.md` first and base `--body` on it.
 
 If an agent (you) authored or substantially helped author the PR, disclose it on the last line of the body, e.g. `_This PR was written by Claude Code._` or `_PR description drafted with Claude Code._`. Be honest about the level of involvement — "written by" vs. "drafted with" vs. "reviewed by" — and keep it to a single italicized line so it doesn't crowd the template sections.
 
 ## Changelog entry
 
-Add a `NEXT_CHANGELOG.md` entry when your change is user-visible. CI generates the real `CHANGELOG.md` from `NEXT_CHANGELOG.md` at release time, so never hand-edit `CHANGELOG.md` directly.
+Add a changelog fragment under `.nextchanges/` when your change is user-visible. Each PR adds its own file, so entries never conflict between PRs. The release renders these fragments into the real `CHANGELOG.md`, so never hand-edit `CHANGELOG.md` directly.
 
 **When to add an entry:**
 - New or changed CLI command, flag, or subcommand behavior
@@ -67,7 +69,7 @@ Add a `NEXT_CHANGELOG.md` entry when your change is user-visible. CI generates t
 - Auto-generated output changes without a corresponding user-facing change
 
 **How to add:**
-- Pick the right section (`CLI`, `Bundles`, `Dependency updates`) under the current `## Release vX.Y.Z` header.
-- One or two sentences, user-facing language, no Jira links.
-- Reference the PR number once it's open: after `gh pr create`, edit the entry to append ` (#NNNN)` or similar matching nearby entries.
-- Match the voice and tense of the existing entries in the file.
+- Create `.nextchanges/<section>/<name>.md`, picking the section folder that fits: `cli`, `bundles`, `dependency-updates`, `notable-changes`, or `api-changes`. `<name>` is arbitrary (a feature name or your PR number) — just keep it unique.
+- Write one or two sentences in user-facing language, no Jira links. The leading `* ` is optional. Match the voice and tense of existing changelog entries.
+- A PR link is optional: write `(#NNNN)` (with NNNN being the PR number) in the text and it's expanded to a full link automatically.
+- See `.nextchanges/README.md` for details.

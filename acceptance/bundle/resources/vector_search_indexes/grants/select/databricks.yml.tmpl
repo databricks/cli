@@ -16,7 +16,10 @@ resources:
       primary_key: id
       index_type: DIRECT_ACCESS
       direct_access_index_spec:
-        schema_json: '{"columns":[{"name":"id","type":"integer"}]}'
+        schema_json: '{"id":"integer","vector":"array<float>"}'
+        embedding_vector_columns:
+          - name: vector
+            embedding_dimension: 768
       grants:
         - principal: deco-test-user@databricks.com
           privileges:

@@ -14,12 +14,12 @@ type DataSourcePostgresCatalogSpec struct {
 
 type DataSourcePostgresCatalogStatus struct {
 	Branch           string `json:"branch,omitempty"`
-	CatalogId        string `json:"catalog_id,omitempty"`
 	PostgresDatabase string `json:"postgres_database,omitempty"`
 	Project          string `json:"project,omitempty"`
 }
 
 type DataSourcePostgresCatalog struct {
+	CatalogId      string                                   `json:"catalog_id,omitempty"`
 	CreateTime     string                                   `json:"create_time,omitempty"`
 	Name           string                                   `json:"name"`
 	ProviderConfig *DataSourcePostgresCatalogProviderConfig `json:"provider_config,omitempty"`

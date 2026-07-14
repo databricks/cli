@@ -3,6 +3,7 @@
 package tokens
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -62,6 +63,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createReq.AutoscopeEnabled, "autoscope-enabled", createReq.AutoscopeEnabled, `Whether to enable autoscoping for this token.`)
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Optional description to attach to the token.`)
 	cmd.Flags().Int64Var(&createReq.LifetimeSeconds, "lifetime-seconds", createReq.LifetimeSeconds, `The lifetime of the token, in seconds.`)
 	// TODO: array: scopes
@@ -159,7 +161,7 @@ func newDelete() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'token_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'token_id' in your JSON input")
 			}
 			return nil
 		}
@@ -198,7 +200,7 @@ func newDelete() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the token to be revoked")
+				return errors.New("expected to have the id of the token to be revoked")
 			}
 			deleteReq.TokenId = args[0]
 		}
@@ -303,7 +305,7 @@ func newUpdate() *cobra.Command {
   Updates the comment or scopes of a token.
 
   If a token with the specified ID is not valid, this call returns an error
-  **RESOURCE_DOES_NOT_EXIST**.
+  **NOT_FOUND**.
 
   Arguments:
     TOKEN_ID: The SHA-256 hash of the token to be updated.`
@@ -334,7 +336,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.TokenId = args[0]
 

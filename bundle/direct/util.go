@@ -6,10 +6,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
-func isResourceGone(err error) bool {
-	return errors.Is(err, apierr.ErrResourceDoesNotExist) || errors.Is(err, apierr.ErrNotFound)
-}
-
 // isManagedByParent reports whether err is an API error carrying the
 // declarative_context=MANAGED_BY_PARENT marker in ErrorInfo.metadata. The
 // server uses this to signal that a resource's lifecycle is owned by a

@@ -117,9 +117,11 @@ use the flags directly to specify both.
 
 The host URL may include query parameters to set the workspace and account ID:
 
-  databricks auth login --host "https://<host>?o=<workspace_id>&account_id=<id>"
+  databricks auth login --host "https://<host>?w=<workspace_id>&account_id=<id>"
 
-Note: URLs containing "?" must be quoted to prevent shell interpretation.
+The workspace ID may be passed as ?w= (preferred), ?o= (legacy), or
+?workspace_id=. Note: URLs containing "?" must be quoted to prevent shell
+interpretation.
 
 If a profile with the given name already exists, it is updated. Otherwise
 a new profile is created.
@@ -408,14 +410,21 @@ a new profile is created.
 
 // shouldPromptWorkspace reports whether the login flow should ask the user to
 // pick a workspace. We prompt when we have an account_id but no workspace_id
-// and the user did not pass --skip-workspace, with one exception: re-login
-// into an existing profile that's already account-only for the SAME account
-// (account_id matches and workspace_id is absent or the legacy "none"
-// sentinel) honors the user's prior "skip" choice instead of re-prompting on
-// every login. We require the account_id to match so reusing a profile name
-// against a different account still gets the workspace prompt.
+// and the user did not pass --skip-workspace, with two exceptions:
+//   - Classic account console hosts (accounts.*) serve only account-level
+//     APIs, so a selected workspace_id would be unusable against that host
+//     and only misleads later commands.
+//   - Re-login into an existing profile that's already account-only for the
+//     SAME account (account_id matches and workspace_id is absent or the
+//     legacy "none" sentinel) honors the user's prior "skip" choice instead
+//     of re-prompting on every login. We require the account_id to match so
+//     reusing a profile name against a different account still gets the
+//     workspace prompt.
 func shouldPromptWorkspace(authArguments *auth.AuthArguments, existingProfile *profile.Profile, skipWorkspace bool) bool {
 	if authArguments.AccountID == "" || authArguments.WorkspaceID != "" || skipWorkspace {
+		return false
+	}
+	if auth.IsClassicAccountHost((&config.Config{Host: authArguments.Host}).CanonicalHostName()) {
 		return false
 	}
 	if existingProfile != nil &&

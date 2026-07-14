@@ -1,5 +1,5 @@
-Error: git clone failed: git clone https://invalid-domain-123.databricks.com/hello/world (redacted) --no-tags --depth=1: exit status 128. Cloning into '(redacted)'...
-fatal: repository 'https://invalid-domain-123.databricks.com/hello/world/' not found
+Error: git clone failed: git clone https://invalid-domain-123.databricks.invalid/hello/world (redacted) --no-tags --depth=1: exit status 128. Cloning into '(redacted)'...
+fatal: unable to access 'https://invalid-domain-123.databricks.invalid/hello/world/': (redacted)
 
 
 Exit code: 1

@@ -32,6 +32,9 @@ type BundleDeployEvent struct {
 	ResourceClusterIDs   []string `json:"resource_cluster_ids,omitempty"`
 	ResourceDashboardIDs []string `json:"resource_dashboard_ids,omitempty"`
 
+	// Per-resource-type metadata (counts and state-size statistics).
+	ResourcesMetadata *BundleResourcesMetadata `json:"resources_metadata,omitempty"`
+
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
 }
 
@@ -84,8 +87,63 @@ type BundleDeployExperimental struct {
 	// Number of resource mutators declared at 'python/mutators' in databricks.yml
 	PythonResourceMutatorsCount int64 `json:"python_resource_mutators_count,omitempty"`
 
+	// Number of files in the synced source tree considered for upload: the full
+	// set, not the incremental delta actually transferred (an incremental deploy
+	// reports the full count even when nothing changed). The set is whatever the
+	// bundle's sync settings select (sync paths/include/exclude); artifacts
+	// (wheels/jars) upload via a separate path and are not counted.
+	UploadFileCount int64 `json:"upload_file_count"`
+
+	// Histogram of the sizes (in bytes) of the files uploaded to the workspace.
+	// Fixed-length and positional: entry i counts files whose size falls in
+	// [bound[i-1], bound[i]); the last entry counts files at least as large as
+	// the last bound. A histogram is sent instead of one entry per file to keep
+	// the event small for bundles with many files.
+	//
+	// Bucket upper bounds (exclusive), a power-of-2 ladder kept in sync with
+	// uploadFileSizeBucketBounds in bundle/phases/telemetry.go. Treat as frozen:
+	// changing them changes the meaning of every entry.
+	//   256 B, 512 B, 1 KiB, 2 KiB, 4 KiB, 8 KiB, 16 KiB, 32 KiB, 64 KiB, 128 KiB,
+	//   256 KiB, 512 KiB, 1 MiB, 2 MiB, 4 MiB, 8 MiB, 16 MiB, 32 MiB, 64 MiB
+	//   (the 20th bucket is >= 64 MiB)
+	UploadFileSizes []int64 `json:"upload_file_sizes,omitempty"`
+
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
+}
+
+// BundleResourcesMetadata mirrors the universe proto. Per-resource-type
+// state-size metadata for one bundle deployment.
+//
+// Only direct deploys are measured: the direct engine persists each resource's
+// state as a JSON blob in resources.json, so sizes are read off directly as
+// len(state) — no serialization happens at telemetry time. Terraform stores
+// state in a different shape and is not collected (the field is absent there).
+type BundleResourcesMetadata struct {
+	// Always "direct"; terraform deploys do not populate this message.
+	StateEngine string `json:"state_engine,omitempty"`
+
+	// Size in bytes of the direct engine's resources.json state file on disk.
+	StateFileSizeBytes int64 `json:"state_file_size_bytes,omitempty"`
+
+	// One entry per resource type present in the deployment state.
+	Resources []ResourceMetadata `json:"resources,omitempty"`
+}
+
+// ResourceMetadata holds metadata about resources of a single type within one
+// bundle deployment.
+type ResourceMetadata struct {
+	// Resource type name: "jobs", "pipelines", "schemas", ...
+	ResourceType string `json:"resource_type,omitempty"`
+
+	// Number of resources of this type tracked in the deployment state.
+	Count int64 `json:"count,omitempty"`
+
+	// State-size statistics across resources of this type, each measured as
+	// len(state) of the JSON blob stored in resources.json.
+	StateSizeMaxBytes    int64 `json:"state_size_max_bytes,omitempty"`
+	StateSizeMeanBytes   int64 `json:"state_size_mean_bytes,omitempty"`
+	StateSizeMedianBytes int64 `json:"state_size_median_bytes,omitempty"`
 }
 
 type BoolMapEntry struct {

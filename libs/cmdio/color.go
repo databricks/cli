@@ -3,7 +3,12 @@ package cmdio
 import (
 	"context"
 	"fmt"
+	"io"
+	"strings"
 	"text/template"
+
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 )
 
 // SGR (Select Graphic Rendition) escapes; see
@@ -106,4 +111,46 @@ func templateColor(ctx context.Context, code string) func(string, ...any) string
 		}
 		return render(ctx, code, msg)
 	}
+}
+
+// Width returns the visible cell width of s. ANSI color escapes (such as those
+// emitted by the helpers above) are ignored, and wide glyphs like CJK
+// characters and emoji are counted as two cells. Use this instead of len() or
+// utf8.RuneCountInString when aligning columns of rendered text.
+func Width(s string) int {
+	return lipgloss.Width(s)
+}
+
+// PadRight returns s padded with trailing spaces to a visible width of n (see
+// Width). Because it measures the rendered string, cells already wrapped by the
+// color helpers stay aligned. Strings at or beyond width n are returned as-is.
+func PadRight(s string, n int) string {
+	if pad := n - Width(s); pad > 0 {
+		return s + strings.Repeat(" ", pad)
+	}
+	return s
+}
+
+// PadLeft returns s padded with leading spaces to a visible width of n (see
+// Width), right-aligning the rendered content. Strings at or beyond width n are
+// returned as-is.
+func PadLeft(s string, n int) string {
+	if pad := n - Width(s); pad > 0 {
+		return strings.Repeat(" ", pad) + s
+	}
+	return s
+}
+
+// NewRenderer returns a lipgloss renderer targeting w, along with whether w
+// supports color. When it does not (NO_COLOR, TERM=dumb, or w is piped or
+// redirected) the renderer is forced to the Ascii profile so every Style it
+// mints emits no SGR escapes. Callers still write rendered strings to w
+// themselves; the renderer only carries the color profile.
+func NewRenderer(ctx context.Context, w io.Writer) (*lipgloss.Renderer, bool) {
+	color := SupportsColor(ctx, w)
+	r := lipgloss.NewRenderer(w)
+	if !color {
+		r.SetColorProfile(termenv.Ascii)
+	}
+	return r, color
 }

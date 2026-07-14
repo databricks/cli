@@ -1,0 +1,5 @@
+Error: "resources.jobs.src.always_running": Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine
+  in databricks.yml:10:13
+
+
+Exit code: 1

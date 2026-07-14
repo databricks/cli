@@ -1,0 +1,10 @@
+Local = true
+RecordRequests = false
+
+# This test performs static validation; no need to run on cloud.
+Cloud = false
+
+Ignore = [".databricks", "databricks.yml"]
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform"]

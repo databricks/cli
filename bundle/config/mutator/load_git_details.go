@@ -2,8 +2,6 @@ package mutator
 
 import (
 	"context"
-	"errors"
-	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
@@ -26,9 +24,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	var diags diag.Diagnostics
 	info, err := git.FetchRepositoryInfo(ctx, b.BundleRoot.Native(), b.WorkspaceClient(ctx))
 	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			diags = append(diags, diag.WarningFromErr(err)...)
-		}
+		diags = append(diags, diag.WarningFromErr(err)...)
 	}
 
 	if info.WorktreeRoot == "" {

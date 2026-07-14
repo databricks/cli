@@ -52,6 +52,12 @@ func (i *InitializerNodeJs) NextSteps() string {
 	return "npm run dev"
 }
 
+func (i *InitializerNodeJs) InstallCommand() string {
+	// Mirrors runNpmInstall — `npm ci` reproduces the lockfile and is what
+	// the background install in cmd/apps would have run.
+	return "npm ci"
+}
+
 func (i *InitializerNodeJs) RunDev(ctx context.Context, workDir string) error {
 	cmdio.LogString(ctx, "Starting development server (npm run dev)...")
 	cmd := exec.CommandContext(ctx, "npm", "run", "dev")

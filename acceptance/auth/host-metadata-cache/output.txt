@@ -6,8 +6,8 @@
       "name": "cached",
       "host": "[DATABRICKS_URL]",
       "cloud": "aws",
-      "auth_type": "",
-      "valid": false
+      "auth_type": "pat",
+      "valid": true
     }
   ]
 }
@@ -19,8 +19,8 @@
       "name": "cached",
       "host": "[DATABRICKS_URL]",
       "cloud": "aws",
-      "auth_type": "",
-      "valid": false
+      "auth_type": "pat",
+      "valid": true
     }
   ]
 }

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+dashboard_id=$(read_id.py my_dashboard)
+
+title "Modify the dashboard out of band to bump its remote etag"
+echo
+# Keep only lifecycle_state: the full response carries a nondeterministic etag
+# and update_time that would churn the snapshot.
+$CLI lakeview update "$dashboard_id" --json '{"serialized_dashboard": "{}", "warehouse_id": "'$TEST_DEFAULT_WAREHOUSE_ID'"}' | jq '{lifecycle_state}'
+
+title "Detect changes: etag drift must not be reported"
+echo
+trace $CLI bundle config-remote-sync
+
+title "Save changes: config must not be modified"
+echo
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

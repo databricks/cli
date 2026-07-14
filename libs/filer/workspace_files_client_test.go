@@ -61,7 +61,7 @@ func TestWorkspaceFilesDirEntry(t *testing.T) {
 	assert.True(t, i2.IsDir())
 }
 
-func TestWorkspaceFilesClientOrgIDHeaders(t *testing.T) {
+func TestWorkspaceFilesClientWorkspaceIDHeaders(t *testing.T) {
 	tests := []struct {
 		name        string
 		workspaceID string
@@ -70,7 +70,7 @@ func TestWorkspaceFilesClientOrgIDHeaders(t *testing.T) {
 		{
 			name:        "with workspace ID",
 			workspaceID: "7474644166319138",
-			expect:      map[string]string{"X-Databricks-Org-Id": "7474644166319138"},
+			expect:      map[string]string{"X-Databricks-Workspace-Id": "7474644166319138"},
 		},
 		{
 			name:        "without workspace ID",
@@ -87,13 +87,13 @@ func TestWorkspaceFilesClientOrgIDHeaders(t *testing.T) {
 					},
 				},
 			}
-			assert.Equal(t, tc.expect, w.orgIDHeaders())
+			assert.Equal(t, tc.expect, w.workspaceIDHeaders())
 		})
 	}
 
 	t.Run("nil workspace client", func(t *testing.T) {
 		w := &WorkspaceFilesClient{}
-		assert.Nil(t, w.orgIDHeaders())
+		assert.Nil(t, w.workspaceIDHeaders())
 	})
 }
 

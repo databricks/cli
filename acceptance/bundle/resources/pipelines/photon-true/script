@@ -1,0 +1,2 @@
+trace $CLI bundle deploy
+print_requests.py //api/2.0/pipelines

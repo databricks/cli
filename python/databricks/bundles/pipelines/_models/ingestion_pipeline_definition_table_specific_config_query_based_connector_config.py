@@ -17,7 +17,7 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig:
 
     cursor_columns: VariableOrList[str] = field(default_factory=list)
     """
-    The names of the monotonically increasing columns in the source table that are used to enable
+    [Public Preview] The names of the monotonically increasing columns in the source table that are used to enable
     the table to be read and ingested incrementally through structured streaming.
     The columns are allowed to have repeated values but have to be non-decreasing.
     If the source data is merged into the destination (e.g., using SCD Type 1 or Type 2), these
@@ -27,7 +27,7 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig:
 
     deletion_condition: VariableOrOptional[str] = None
     """
-    Specifies a SQL WHERE condition that specifies that the source row has been deleted.
+    [Public Preview] Specifies a SQL WHERE condition that specifies that the source row has been deleted.
     This is sometimes referred to as "soft-deletes".
     For example: "Operation = 'DELETE'" or "is_deleted = true".
     This field is orthogonal to `hard_deletion_sync_interval_in_seconds`,
@@ -38,7 +38,7 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig:
 
     hard_deletion_sync_min_interval_in_seconds: VariableOrOptional[int] = None
     """
-    Specifies the minimum interval (in seconds) between snapshots on primary keys
+    [Beta] Specifies the minimum interval (in seconds) between snapshots on primary keys
     for detecting and synchronizing hard deletions—i.e., rows that have been
     physically removed from the source table.
     This interval acts as a lower bound. If ingestion runs less frequently than
@@ -68,7 +68,7 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDic
 
     cursor_columns: VariableOrList[str]
     """
-    The names of the monotonically increasing columns in the source table that are used to enable
+    [Public Preview] The names of the monotonically increasing columns in the source table that are used to enable
     the table to be read and ingested incrementally through structured streaming.
     The columns are allowed to have repeated values but have to be non-decreasing.
     If the source data is merged into the destination (e.g., using SCD Type 1 or Type 2), these
@@ -78,7 +78,7 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDic
 
     deletion_condition: VariableOrOptional[str]
     """
-    Specifies a SQL WHERE condition that specifies that the source row has been deleted.
+    [Public Preview] Specifies a SQL WHERE condition that specifies that the source row has been deleted.
     This is sometimes referred to as "soft-deletes".
     For example: "Operation = 'DELETE'" or "is_deleted = true".
     This field is orthogonal to `hard_deletion_sync_interval_in_seconds`,
@@ -89,7 +89,7 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDic
 
     hard_deletion_sync_min_interval_in_seconds: VariableOrOptional[int]
     """
-    Specifies the minimum interval (in seconds) between snapshots on primary keys
+    [Beta] Specifies the minimum interval (in seconds) between snapshots on primary keys
     for detecting and synchronizing hard deletions—i.e., rows that have been
     physically removed from the source table.
     This interval acts as a lower bound. If ingestion runs less frequently than

@@ -2,13 +2,18 @@
   "method": "POST",
   "path": "/api/2.0/vector-search/indexes",
   "body": {
-    "delta_sync_index_spec": {
-      "pipeline_type": "TRIGGERED",
-      "source_table": "main.default.source_[UNIQUE_NAME]"
+    "direct_access_index_spec": {
+      "embedding_vector_columns": [
+        {
+          "embedding_dimension": 768,
+          "name": "vector"
+        }
+      ],
+      "schema_json": "{\"id\":\"integer\",\"vector\":\"array<float>\"}"
     },
     "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
-    "index_type": "DELTA_SYNC",
-    "name": "vs-index-[UNIQUE_NAME]",
+    "index_type": "DIRECT_ACCESS",
+    "name": "main.default.vs_index_[UNIQUE_NAME]",
     "primary_key": "id"
   }
 }

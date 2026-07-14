@@ -19,7 +19,16 @@ Deployment complete!
       },
       "name": "prod"
     }
-  ]
+  ],
+  "traffic_config": {
+    "routes": [
+      {
+        "served_entity_name": "prod",
+        "served_model_name": "prod",
+        "traffic_percentage": 100
+      }
+    ]
+  }
 }
 
 >>> update_file.py databricks.yml value: my-team-one value: my-team-two
@@ -104,7 +113,16 @@ Deployment complete!
       },
       "name": "prod"
     }
-  ]
+  ],
+  "traffic_config": {
+    "routes": [
+      {
+        "served_entity_name": "prod",
+        "served_model_name": "prod",
+        "traffic_percentage": 100
+      }
+    ]
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve

@@ -2,8 +2,33 @@
 
 package schema
 
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigKeyPasswordRef struct {
+	Key   string `json:"key"`
+	Scope string `json:"scope"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigKeystorePasswordRef struct {
+	Key   string `json:"key"`
+	Scope string `json:"scope"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigTruststorePasswordRef struct {
+	Key   string `json:"key"`
+	Scope string `json:"scope"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfig struct {
+	DisableHostnameVerification bool                                                                                           `json:"disable_hostname_verification,omitempty"`
+	KeyPasswordRef              *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigKeyPasswordRef        `json:"key_password_ref,omitempty"`
+	KeystoreLocation            string                                                                                         `json:"keystore_location"`
+	KeystorePasswordRef         *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigKeystorePasswordRef   `json:"keystore_password_ref,omitempty"`
+	TruststoreLocation          string                                                                                         `json:"truststore_location"`
+	TruststorePasswordRef       *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigTruststorePasswordRef `json:"truststore_password_ref,omitempty"`
+}
+
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfig struct {
-	UcServiceCredentialName string `json:"uc_service_credential_name,omitempty"`
+	MtlsConfig              *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfig `json:"mtls_config,omitempty"`
+	UcServiceCredentialName string                                                                    `json:"uc_service_credential_name,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSourceDeltaTableSource struct {
@@ -18,6 +43,33 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSourceDeltaTabl
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSource struct {
 	DeltaTableName   string                                                                              `json:"delta_table_name,omitempty"`
 	DeltaTableSource *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSourceDeltaTableSource `json:"delta_table_source,omitempty"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigBackfillSourceDeltaTableSource struct {
+	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
+	EntityColumns     []string `json:"entity_columns,omitempty"`
+	FilterCondition   string   `json:"filter_condition,omitempty"`
+	FullName          string   `json:"full_name"`
+	TimeseriesColumn  string   `json:"timeseries_column,omitempty"`
+	TransformationSql string   `json:"transformation_sql,omitempty"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigBackfillSource struct {
+	DeltaTableName   string                                                                                             `json:"delta_table_name,omitempty"`
+	DeltaTableSource *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigBackfillSourceDeltaTableSource `json:"delta_table_source,omitempty"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigIngestionDestination struct {
+	DeltaTableName string `json:"delta_table_name,omitempty"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfig struct {
+	BackfillJobId        int                                                                                      `json:"backfill_job_id,omitempty"`
+	BackfillSource       *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigBackfillSource       `json:"backfill_source,omitempty"`
+	DeduplicationColumns []string                                                                                 `json:"deduplication_columns,omitempty"`
+	IngestionDestination *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigIngestionDestination `json:"ingestion_destination,omitempty"`
+	IngestionJobId       int                                                                                      `json:"ingestion_job_id,omitempty"`
+	IngestionPipelineId  string                                                                                   `json:"ingestion_pipeline_id,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsKeySchema struct {
@@ -43,6 +95,7 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigs struct {
 	BackfillSource   *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSource   `json:"backfill_source,omitempty"`
 	BootstrapServers string                                                                `json:"bootstrap_servers,omitempty"`
 	ExtraOptions     map[string]string                                                     `json:"extra_options,omitempty"`
+	IngestionConfig  *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfig  `json:"ingestion_config,omitempty"`
 	KeySchema        *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsKeySchema        `json:"key_schema,omitempty"`
 	Name             string                                                                `json:"name"`
 	ProviderConfig   *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsProviderConfig   `json:"provider_config,omitempty"`

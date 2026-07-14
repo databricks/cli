@@ -1,0 +1,26 @@
+# Validate complex genie spaces. ConfigureGenieSpaceSerializedSpace
+# normalizes inline serialized_space YAML to a JSON string so the field has
+# the same shape as the file_path code path; the script parses the JSON
+# back to verify that the original structure is preserved.
+$CLI bundle validate -o json | jq '{
+  full_featured: .resources.genie_spaces.full_featured | {
+    title,
+    warehouse_id,
+    serialized_space_is_string: (.serialized_space | type == "string")
+  },
+  inline_yaml: .resources.genie_spaces.inline_yaml | {
+    title,
+    serialized_space_type: (.serialized_space | type),
+    parsed: (.serialized_space | fromjson) | {
+      tables_count: (.data_sources.tables | length),
+      has_column_configs: ((.data_sources.tables[0].column_configs | length) > 0),
+      has_text_instructions: ((.instructions.text_instructions | length) > 0)
+    }
+  },
+  minimal_valid: .resources.genie_spaces.minimal_valid | {
+    title,
+    parsed: (.serialized_space | fromjson) | {
+      tables_count: (.data_sources.tables | length)
+    }
+  }
+}'

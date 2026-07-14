@@ -1,0 +1,6 @@
+Local = true
+Cloud = false
+
+# Genie spaces only support direct deployment engine.
+[Env]
+DATABRICKS_BUNDLE_ENGINE = "direct"

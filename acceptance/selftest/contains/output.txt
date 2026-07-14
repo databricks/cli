@@ -4,10 +4,14 @@
 Hello world
 contains error: 'not_found' not found in the output.
 
+Exit code: 1
+
 === This should complain about not_found not found
 >>> musterr python3 ./failure.py
 Failed script
 contains error: 'not_found' not found in the output.
+
+Exit code: 1
 
 === This should not complain
 >>> python3 ./success.py
@@ -21,6 +25,8 @@ Failed script
 >>> python3 ./success.py
 Hello world
 contains error: 'Hello' was not expected: 'Hello world'
+
+Exit code: 1
 
 === This should not complain
 >>> python3 ./success.py

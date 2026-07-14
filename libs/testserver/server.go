@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,11 +18,30 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/testserver/testsql"
 )
 
 const testPidKey = "test-pid"
 
 var testPidRegex = regexp.MustCompile(testPidKey + `/(\d+)`)
+
+// IsLocalhostProbe reports whether r is an external port-classification probe
+// rather than traffic from the CLI-under-test or its helper scripts.
+//
+// Some Databricks-internal development environments run a port watcher that
+// auto-forwards every new localhost listener and probes it to decide whether it
+// speaks HTTP or HTTPS, connecting back and sending `HEAD / HTTP/1.0` with
+// `Host: localhost`. All legitimate test traffic is configured against
+// 127.0.0.1:PORT, so the Host is the reliable discriminator: a request whose
+// host is bare "localhost" never originates from the test. The method and path
+// checks keep the match tight so a genuinely misdirected request still surfaces.
+func IsLocalhostProbe(r *http.Request) bool {
+	host := r.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	return host == "localhost" && r.Method == http.MethodHead && r.URL.Path == "/"
+}
 
 func ExtractPidFromHeaders(headers http.Header) int {
 	ua := headers.Get("User-Agent")
@@ -48,6 +68,8 @@ type Server struct {
 
 	kills  *killRules
 	faults *FaultRules
+
+	sqlHandler *testsql.Handler
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
@@ -228,6 +250,7 @@ func New(t testutil.TestingT) *Server {
 		fakeOidc:       &FakeOidc{url: server.URL},
 		kills:          kills,
 		faults:         faults,
+		sqlHandler:     testsql.New(),
 	}
 	router.Dispatch = s.serve
 
@@ -239,6 +262,13 @@ func New(t testutil.TestingT) *Server {
 
 	// Set up the not found handler as fallback
 	notFoundFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Answer external port-classification probes benignly instead of failing
+		// the test with a spurious "No handler" error. See IsLocalhostProbe.
+		if IsLocalhostProbe(r) {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		pattern := r.Method + " " + r.URL.Path
 		bodyBytes, err := io.ReadAll(r.Body)
 		var body string
@@ -296,19 +326,33 @@ Response.Body = '<response body here>'
 	return s
 }
 
+// workspaceKeyForToken strips the identity prefix so a test's user, primary SP,
+// and guest tokens resolve to the same FakeWorkspace and share state. The uuid
+// suffix keeps distinct tests isolated.
+func workspaceKeyForToken(token string) string {
+	for _, prefix := range []string{UserNameTokenPrefix, ServicePrincipalTokenPrefix, GuestServicePrincipalTokenPrefix} {
+		if s, ok := strings.CutPrefix(token, prefix); ok {
+			return s
+		}
+	}
+	return token
+}
+
 func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	if token == "" {
 		return nil
 	}
 
+	key := workspaceKeyForToken(token)
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, ok := s.fakeWorkspaces[token]; !ok {
-		s.fakeWorkspaces[token] = NewFakeWorkspace(s.URL, token)
+	if _, ok := s.fakeWorkspaces[key]; !ok {
+		s.fakeWorkspaces[key] = NewFakeWorkspace(s.URL, token)
 	}
 
-	return s.fakeWorkspaces[token]
+	return s.fakeWorkspaces[key]
 }
 
 func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFunc, vars map[string]string) {

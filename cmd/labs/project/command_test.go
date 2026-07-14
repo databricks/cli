@@ -2,15 +2,20 @@ package project_test
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type echoOut struct {
@@ -66,4 +71,27 @@ func TestRenderingTable(t *testing.T) {
 	First  Second
 	Third  Fourth
 	`)
+}
+
+func TestRunningCommandWhenUpdateCheckFails(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	home := copyTestdata(t, "testdata/installed-in-home")
+	// Drop the cached releases so the update check has to hit the API.
+	err := os.Remove(filepath.Join(home, ".databricks", "labs", "blueprint", "cache", "databrickslabs-blueprint-releases.json"))
+	require.NoError(t, err)
+
+	ctx := github.WithApiOverride(t.Context(), server.URL)
+	ctx = env.WithUserHomeDir(ctx, home)
+	py, _ := python.DetectExecutable(ctx)
+	py, _ = filepath.Abs(py)
+	ctx = env.Set(ctx, "PYTHON_BIN", py)
+
+	r := testcli.NewRunner(t, ctx, "labs", "blueprint", "echo")
+	var out echoOut
+	r.RunAndParseJSON(&out)
+	assert.Equal(t, "echo", out.Command)
 }

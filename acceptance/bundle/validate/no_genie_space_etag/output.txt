@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate
+Error: genie space "foobar" has an etag set. Etags must not be set in bundle configuration
+  at resources.genie_spaces.foobar
+  in databricks.yml:7:7
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error

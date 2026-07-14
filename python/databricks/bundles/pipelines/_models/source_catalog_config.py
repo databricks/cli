@@ -21,12 +21,12 @@ class SourceCatalogConfig:
 
     postgres: VariableOrOptional[PostgresCatalogConfig] = None
     """
-    Postgres-specific catalog-level configuration parameters
+    [Public Preview] Postgres-specific catalog-level configuration parameters
     """
 
     source_catalog: VariableOrOptional[str] = None
     """
-    Source catalog name
+    [Public Preview] Source catalog name
     """
 
     @classmethod
@@ -42,12 +42,12 @@ class SourceCatalogConfigDict(TypedDict, total=False):
 
     postgres: VariableOrOptional[PostgresCatalogConfigParam]
     """
-    Postgres-specific catalog-level configuration parameters
+    [Public Preview] Postgres-specific catalog-level configuration parameters
     """
 
     source_catalog: VariableOrOptional[str]
     """
-    Source catalog name
+    [Public Preview] Source catalog name
     """
 
 

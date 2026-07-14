@@ -1,0 +1,12 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Deploying without the genie space warns before deleting it (chat history loss)"
+envsubst < no_space.yml.tmpl > databricks.yml
+trace $CLI bundle deploy --auto-approve

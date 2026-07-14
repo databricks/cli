@@ -1,0 +1,141 @@
+
+>>> [CLI] bundle plan --select bar
+create jobs.bar
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan --select jobs.bar --select jobs.baz
+create jobs.bar
+create jobs.baz
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan --select jobs.bar,jobs.baz
+create jobs.bar
+create jobs.baz
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan --select jobs.foo
+create jobs.bar
+create jobs.foo
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== bundle deploy --select jobs.foo
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Telemetry:
+select_used true
+
+>>> print_requests.py --sort //jobs
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "bar-[UNIQUE_NAME]",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo-[UNIQUE_NAME]",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "run_job_task": {
+          "job_id": [NUMID]
+        },
+        "task_key": "run_bar"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle summary
+Name: select-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default
+Resources:
+  Jobs:
+    bar:
+      Name: bar-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+    baz:
+      Name: baz-[UNIQUE_NAME]
+      URL:  (not deployed)
+    foo:
+      Name: foo-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+
+=== Full plan after partial deploy
+>>> [CLI] bundle plan
+create jobs.baz
+
+Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Full deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --sort //jobs
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "baz-[UNIQUE_NAME]",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+
+=== Full plan again
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+=== Destroy
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.bar
+  delete resources.jobs.baz
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

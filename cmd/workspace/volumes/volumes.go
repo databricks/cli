@@ -3,6 +3,7 @@
 package volumes
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,15 +21,15 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "volumes",
-		Short: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing and processing files.`,
+		Short: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing, and processing files.`,
 		Long: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing,
-  organizing and processing files. Use cases include running machine learning on
-  unstructured data such as image, audio, video, or PDF files, organizing data
-  sets during the data exploration stages in data science, working with
+  organizing, and processing files. Use cases include running machine learning
+  on unstructured data such as image, audio, video, or PDF files, organizing
+  data sets during the data exploration stages in data science, working with
   libraries that require access to the local file system on cluster machines,
   storing library and config files of arbitrary formats such as .whl or .txt
-  centrally and providing secure access across workspaces to it, or transforming
-  and querying non-tabular data files in ETL.`,
+  centrally and providing secure access to those files across workspaces, or
+  transforming and querying non-tabular data files in ETL.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -115,7 +116,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'catalog_name', 'schema_name', 'name', 'volume_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'catalog_name', 'schema_name', 'name', 'volume_type' in your JSON input")
 			}
 			return nil
 		}
@@ -228,7 +229,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
+			return errors.New("expected to have the three-level (fully qualified) name of the volume")
 		}
 		deleteReq.Name = args[0]
 
@@ -398,7 +399,7 @@ func newRead() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
+			return errors.New("expected to have the three-level (fully qualified) name of the volume")
 		}
 		readReq.Name = args[0]
 
@@ -495,7 +496,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
+			return errors.New("expected to have the three-level (fully qualified) name of the volume")
 		}
 		updateReq.Name = args[0]
 

@@ -92,6 +92,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				JobRuns: map[string]*resources.JobRun{
+					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
+				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
 				},
@@ -151,6 +154,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"dashboard1": {
 						DashboardConfig: resources.DashboardConfig{
 							DisplayName: "dashboard1",
+						},
+					},
+				},
+				GenieSpaces: map[string]*resources.GenieSpace{
+					"geniespace1": {
+						GenieSpaceConfig: resources.GenieSpaceConfig{
+							Title: "geniespace1",
 						},
 					},
 				},
@@ -254,6 +264,25 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresDatabases: map[string]*resources.PostgresDatabase{
+					"postgres_database1": {
+						PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+							DatabaseId: "postgres-database-1",
+							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
+						},
+					},
+				},
+				PostgresRoles: map[string]*resources.PostgresRole{
+					"postgres_role1": {
+						PostgresRoleConfig: resources.PostgresRoleConfig{
+							RoleId: "postgres-role-1",
+							Parent: "projects/postgres-project-1/branches/postgres-branch-1",
+							RoleRoleSpec: postgres.RoleRoleSpec{
+								PostgresRole: "postgres_role_1",
+							},
+						},
+					},
+				},
 				PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
 					"postgres_synced_table1": {
 						PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
@@ -349,6 +378,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Dashboards
 	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
+
+	// Genie Spaces
+	assert.Equal(t, "[dev lennart] geniespace1", b.Config.Resources.GenieSpaces["geniespace1"].Title)
 
 	// Alert 1: has schedule without pause status set - should be paused
 	assert.Equal(t, "[dev lennart] alert1", b.Config.Resources.Alerts["alert1"].DisplayName)
@@ -470,6 +502,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 		"PostgresBranches",
 		"PostgresEndpoints",
 		"PostgresCatalogs",
+		"PostgresDatabases",
 		"PostgresSyncedTables",
 	}
 

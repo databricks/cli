@@ -43,33 +43,17 @@ func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 	}
 }
 
+// SyncedDatabaseTableUpdate models the real Database API, which has no update
+// endpoint: PATCH /api/2.0/database/synced_tables/{name} returns 501
+// NOT_IMPLEMENTED. The direct engine recreates synced_database_tables on any
+// change and never calls this; modeling the 501 guards against reintroducing an
+// update path.
 func (s *FakeWorkspace) SyncedDatabaseTableUpdate(req Request, name string) Response {
-	defer s.LockUnlock()()
-
-	var updateReq database.UpdateSyncedDatabaseTableRequest
-	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
-		return Response{
-			Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
-			StatusCode: 400,
-		}
+	return Response{
+		StatusCode: 501,
+		Body: map[string]string{
+			"error_code": "NOT_IMPLEMENTED",
+			"message":    "Update Synced Database Table is not yet implemented.",
+		},
 	}
-
-	// Ensure the resource exists
-	existing, ok := s.SyncedDatabaseTables[name]
-	if !ok {
-		return Response{
-			Body:       fmt.Sprintf("synced database table with name '%s' not found", name),
-			StatusCode: 404,
-		}
-	}
-
-	// Apply updates: shallow replace with provided struct while preserving name
-	updated := updateReq.SyncedTable
-	if updated.Name == "" {
-		updated.Name = existing.Name
-	}
-
-	s.SyncedDatabaseTables[name] = updated
-
-	return Response{Body: updated}
 }

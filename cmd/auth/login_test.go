@@ -567,6 +567,31 @@ func TestShouldPromptWorkspace(t *testing.T) {
 			want:          true,
 		},
 		{
+			name:          "classic account console host never prompts",
+			authArguments: auth.AuthArguments{Host: "https://accounts.test", AccountID: "acc"},
+			want:          false,
+		},
+		{
+			name:          "classic account console host without scheme never prompts",
+			authArguments: auth.AuthArguments{Host: "accounts.test", AccountID: "acc"},
+			want:          false,
+		},
+		{
+			name:          "accounts-dod host never prompts",
+			authArguments: auth.AuthArguments{Host: "https://accounts-dod.test", AccountID: "acc"},
+			want:          false,
+		},
+		{
+			name:          "workspace host with account_id prompts",
+			authArguments: auth.AuthArguments{Host: "https://myworkspace.test", AccountID: "acc"},
+			want:          true,
+		},
+		{
+			name:          "classic account console host with workspace_id set never prompts",
+			authArguments: auth.AuthArguments{Host: "https://accounts.test", AccountID: "acc", WorkspaceID: "12345"},
+			want:          false,
+		},
+		{
 			name:            "re-login into legacy account-only profile (workspace_id = none)",
 			authArguments:   auth.AuthArguments{AccountID: "spog-account"},
 			existingProfile: legacyAccountProfile,

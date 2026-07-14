@@ -33,7 +33,7 @@ class WebhookNotifications:
 
     on_streaming_backlog_exceeded: VariableOrList[Webhook] = field(default_factory=list)
     """
-    An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.
+    [Public Preview] An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.
     Streaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.
     Alerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.
     A maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.
@@ -72,7 +72,7 @@ class WebhookNotificationsDict(TypedDict, total=False):
 
     on_streaming_backlog_exceeded: VariableOrList[WebhookParam]
     """
-    An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.
+    [Public Preview] An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.
     Streaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.
     Alerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.
     A maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.

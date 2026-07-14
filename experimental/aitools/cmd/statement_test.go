@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sqlexec"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
@@ -161,10 +162,12 @@ func TestGetStatementResultChunkFetchFailureRendersPartialInfo(t *testing.T) {
 	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
 	require.NoError(t, err)
 	assert.Equal(t, sql.StatementStateSucceeded, info.State)
-	assert.Equal(t, []string{"n"}, info.Columns, "columns from the initial response are still surfaced")
 	require.NotNil(t, info.Error)
 	assert.Contains(t, info.Error.Message, "fetch result rows")
 	assert.Contains(t, info.Error.Message, "network blip")
+	// Column metadata is known from the manifest before the failed chunk fetch,
+	// so it is still surfaced alongside the error.
+	assert.Equal(t, []string{"n"}, info.Columns)
 }
 
 func TestGetStatementStatusSinglePoll(t *testing.T) {
@@ -303,63 +306,45 @@ func TestStatementSubmitRejectsMultipleSQLsBeforeWorkspaceClient(t *testing.T) {
 	assert.Contains(t, err.Error(), "exactly one")
 }
 
-func TestStatementErrorFromStatus(t *testing.T) {
+func TestStatementError(t *testing.T) {
 	tests := []struct {
 		name     string
-		status   *sql.StatementStatus
+		err      error
 		wantNil  bool
 		wantMsg  string
 		wantCode string
 	}{
 		{
-			name:    "nil status",
-			status:  nil,
+			name:    "nil error",
+			err:     nil,
 			wantNil: true,
 		},
 		{
-			name:    "succeeded never produces an error",
-			status:  &sql.StatementStatus{State: sql.StatementStateSucceeded},
-			wantNil: true,
-		},
-		{
-			name:    "running is not terminal",
-			status:  &sql.StatementStatus{State: sql.StatementStateRunning},
-			wantNil: true,
-		},
-		{
-			name:    "pending is not terminal",
-			status:  &sql.StatementStatus{State: sql.StatementStatePending},
-			wantNil: true,
-		},
-		{
-			name: "failed with backend error preserves both fields",
-			status: &sql.StatementStatus{
-				State: sql.StatementStateFailed,
-				Error: &sql.ServiceError{ErrorCode: "SYNTAX_ERROR", Message: "near 'bad'"},
-			},
+			name:     "failed with backend error preserves both fields",
+			err:      &sqlexec.StatementError{State: sql.StatementStateFailed, Code: "SYNTAX_ERROR", Message: "near 'bad'"},
 			wantMsg:  "near 'bad'",
 			wantCode: "SYNTAX_ERROR",
 		},
 		{
-			name:    "failed without backend error synthesizes message",
-			status:  &sql.StatementStatus{State: sql.StatementStateFailed},
+			name:    "failed without backend error surfaces synthesized message",
+			err:     &sqlexec.StatementError{State: sql.StatementStateFailed, Message: "statement reached terminal state FAILED"},
 			wantMsg: "statement reached terminal state FAILED",
 		},
 		{
-			name:    "canceled without backend error synthesizes message",
-			status:  &sql.StatementStatus{State: sql.StatementStateCanceled},
+			name:    "canceled without backend error surfaces synthesized message",
+			err:     &sqlexec.StatementError{State: sql.StatementStateCanceled, Message: "statement reached terminal state CANCELED"},
 			wantMsg: "statement reached terminal state CANCELED",
 		},
 		{
-			name:    "closed without backend error synthesizes message",
-			status:  &sql.StatementStatus{State: sql.StatementStateClosed},
+			name:    "closed without backend error surfaces synthesized message",
+			err:     &sqlexec.StatementError{State: sql.StatementStateClosed, Message: "statement reached terminal state CLOSED"},
 			wantMsg: "statement reached terminal state CLOSED",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := statementErrorFromStatus(tc.status)
+			got := statementError(tc.err)
 			if tc.wantNil {
 				assert.Nil(t, got)
 				return

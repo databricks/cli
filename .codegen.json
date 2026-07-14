@@ -1,6 +1,5 @@
 {
-    "mode": "cli_v0",
-    "api_changelog": true,
+    "mode": "cli_v1",
     "formatter": "go run golang.org/x/tools/cmd/goimports@latest -w $FILENAMES && go fmt ./...",
     "version": {
         "python/README.md": "version $VERSION or above",

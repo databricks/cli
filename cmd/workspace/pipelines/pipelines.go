@@ -3,6 +3,7 @@
 package pipelines
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -118,7 +119,7 @@ Apply the latest environment to the pipeline.
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		applyEnvironmentReq.PipelineId = args[0]
 
@@ -196,7 +197,7 @@ func newClone() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		cloneReq.PipelineId = args[0]
 
@@ -265,7 +266,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Pipelines.Create(ctx, createReq)
@@ -337,7 +338,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		deleteReq.PipelineId = args[0]
 
@@ -402,7 +403,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getReq.PipelineId = args[0]
 
@@ -473,7 +474,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the pipeline for which to get or manage permissions")
+			return errors.New("expected to have the pipeline for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.PipelineId = args[0]
 
@@ -545,7 +546,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the pipeline for which to get or manage permissions")
+			return errors.New("expected to have the pipeline for which to get or manage permissions")
 		}
 		getPermissionsReq.PipelineId = args[0]
 
@@ -692,7 +693,7 @@ func newListPipelineEvents() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the pipeline to return events for")
+			return errors.New("expected to have the pipeline to return events for")
 		}
 		listPipelineEventsReq.PipelineId = args[0]
 
@@ -842,7 +843,7 @@ func newListUpdates() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the pipeline to return updates for")
+			return errors.New("expected to have the pipeline to return updates for")
 		}
 		listUpdatesReq.PipelineId = args[0]
 
@@ -932,7 +933,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the pipeline for which to get or manage permissions")
+			return errors.New("expected to have the pipeline for which to get or manage permissions")
 		}
 		setPermissionsReq.PipelineId = args[0]
 
@@ -1034,7 +1035,7 @@ func newStartUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		startUpdateReq.PipelineId = args[0]
 
@@ -1109,7 +1110,7 @@ func newStop() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		stopReq.PipelineId = args[0]
 
@@ -1181,12 +1182,14 @@ func newUpdate() *cobra.Command {
 	// TODO: array: libraries
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
 	// TODO: array: notifications
+	// TODO: map via StringToStringVar: parameters
 	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
 	// TODO: complex arg: restart_window
 	cmd.Flags().StringVar(&updateReq.RootPath, "root-path", updateReq.RootPath, `Root path for this pipeline.`)
 	// TODO: complex arg: run_as
 	cmd.Flags().StringVar(&updateReq.Schema, "schema", updateReq.Schema, `The default schema (database) where tables are read from or published to.`)
 	cmd.Flags().BoolVar(&updateReq.Serverless, "serverless", updateReq.Serverless, `Whether serverless compute is enabled for this pipeline.`)
+	cmd.Flags().StringVar(&updateReq.ServerlessComputeId, "serverless-compute-id", updateReq.ServerlessComputeId, `Serverless compute ID specified by the user for serverless pipelines.`)
 	cmd.Flags().StringVar(&updateReq.Storage, "storage", updateReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
 	// TODO: map via StringToStringVar: tags
 	cmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
@@ -1238,7 +1241,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique identifier for this pipeline")
+			return errors.New("expected to have unique identifier for this pipeline")
 		}
 		updateReq.PipelineId = args[0]
 
@@ -1326,7 +1329,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the pipeline for which to get or manage permissions")
+			return errors.New("expected to have the pipeline for which to get or manage permissions")
 		}
 		updatePermissionsReq.PipelineId = args[0]
 

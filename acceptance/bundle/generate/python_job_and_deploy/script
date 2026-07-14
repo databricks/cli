@@ -1,5 +1,10 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Upload notebook to a workspace path"
-trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/test_notebook.py" --file test_notebook.py --format AUTO --overwrite
+# The terraform and direct engine variants run concurrently against the same workspace user,
+# so embed $UNIQUE_NAME in the remote path: otherwise one variant's cleanup deletes the shared
+# notebook out from under the other variant's bundle generate read.
+trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/test_notebook-${UNIQUE_NAME}.py" --file test_notebook.py --format AUTO --overwrite
 
 title "Create a job that references the notebook"
 JOB_ID=$($CLI jobs create --json '{
@@ -10,7 +15,7 @@ JOB_ID=$($CLI jobs create --json '{
     {
       "task_key": "test_task",
       "notebook_task": {
-        "notebook_path": "/Workspace/Users/'${CURRENT_USER_NAME}'/test_notebook"
+        "notebook_path": "/Workspace/Users/'${CURRENT_USER_NAME}'/test_notebook-'${UNIQUE_NAME}'"
       },
       "new_cluster": {
         "spark_version": "'${DEFAULT_SPARK_VERSION}'",
@@ -28,7 +33,7 @@ env -u MSYS_NO_PATHCONV add_repl.py "$JOB_ID" JOB_ID
 cleanup() {
     title "Cleanup: delete the original job and notebook"
     trace errcode $CLI jobs delete "$JOB_ID"
-    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/test_notebook"
+    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/test_notebook-${UNIQUE_NAME}"
 }
 trap cleanup EXIT
 
@@ -36,7 +41,7 @@ title "Generate bundle config from the job"
 trace $CLI bundle generate job --existing-job-id "$JOB_ID" --key out --config-dir resources --source-dir src --force
 
 title "Verify generated yaml has expected fields"
-cat resources/out.job.yml | env -u MSYS_NO_PATHCONV contains.py "task_key: test_task" "notebook_task:" "notebook_path: ../src/test_notebook.py" > /dev/null
+cat resources/out.job.yml | env -u MSYS_NO_PATHCONV contains.py "task_key: test_task" "notebook_task:" "notebook_path: ../src/test_notebook-${UNIQUE_NAME}.py" > /dev/null
 
 title "Deploy the generated bundle"
 trace $CLI bundle deploy

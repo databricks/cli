@@ -10,13 +10,9 @@ class GoogleDriveOptionsGoogleDriveEntityType(Enum):
     FILE = "FILE"
     FILE_METADATA = "FILE_METADATA"
     PERMISSION = "PERMISSION"
-    FILE_PERMISSION = "FILE_PERMISSION"
-    GROUP_MEMBERSHIP = "GROUP_MEMBERSHIP"
 
 
 GoogleDriveOptionsGoogleDriveEntityTypeParam = (
-    Literal[
-        "FILE", "FILE_METADATA", "PERMISSION", "FILE_PERMISSION", "GROUP_MEMBERSHIP"
-    ]
+    Literal["FILE", "FILE_METADATA", "PERMISSION"]
     | GoogleDriveOptionsGoogleDriveEntityType
 )

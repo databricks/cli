@@ -1,0 +1,43 @@
+
+=== Deploy project, branch, and role
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-bind-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Unbind the role: it now exists on the branch but is untracked
+>>> [CLI] bundle deployment unbind my_role
+Updating deployment state...
+
+=== Bind the existing role to take explicit ownership of it
+>>> [CLI] bundle deployment bind my_role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role --auto-approve
+Updating deployment state...
+Successfully bound postgres_role with an id 'projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Re-deploy now succeeds: the role is managed, not re-created
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-bind-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.my_role
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/inherited-role-bind-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

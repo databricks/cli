@@ -3,10 +3,10 @@ package aitools
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
@@ -86,23 +86,15 @@ bind values.`,
 
 // submitStatement issues an asynchronous ExecuteStatement and returns the handle.
 func submitStatement(ctx context.Context, api sql.StatementExecutionInterface, statement, warehouseID string, params []sql.StatementParameterListItem) (statementInfo, error) {
-	resp, err := api.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
-		WarehouseId:   warehouseID,
-		Statement:     statement,
-		Parameters:    params,
-		WaitTimeout:   "0s",
-		OnWaitTimeout: sql.ExecuteStatementRequestOnWaitTimeoutContinue,
-	})
+	client := sqlexec.New(api, warehouseID)
+	stmt, err := client.Submit(ctx, statement, sqlexec.WithParameters(params))
 	if err != nil {
-		return statementInfo{}, fmt.Errorf("execute statement: %w", err)
+		return statementInfo{}, err
 	}
 
-	info := statementInfo{
-		StatementID: resp.StatementId,
+	return statementInfo{
+		StatementID: stmt.ID,
+		State:       stmt.State,
 		WarehouseID: warehouseID,
-	}
-	if resp.Status != nil {
-		info.State = resp.Status.State
-	}
-	return info, nil
+	}, nil
 }

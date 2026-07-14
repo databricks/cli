@@ -1,9 +1,13 @@
 package testserver
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"path"
 	"strings"
@@ -70,13 +74,18 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req Request) any {
 		return Response{
 			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
-			Body:    req.Workspace.CurrentUser(),
+			Body:    req.Workspace.MeUser(req.Token),
 		}
 	})
 
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req Request) any {
 		path := req.URL.Query().Get("path")
 		return req.Workspace.WorkspaceGetStatus(path)
+	})
+
+	server.Handle("GET", "/api/2.0/workspace/list", func(req Request) any {
+		path := req.URL.Query().Get("path")
+		return req.Workspace.WorkspaceList(path)
 	})
 
 	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req Request) any {
@@ -94,7 +103,29 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/workspace/export", func(req Request) any {
 		path := req.URL.Query().Get("path")
-		return req.Workspace.WorkspaceExport(path)
+		data := req.Workspace.WorkspaceExport(path)
+
+		// A missing object returns 404, matching the real API; returning the nil
+		// body otherwise trips the response normalizer.
+		if data == nil {
+			return Response{
+				StatusCode: 404,
+				Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", path)},
+			}
+		}
+
+		// The filer reads the raw object body via ?direct_download=true, while
+		// the SDK's Workspace.Export (used by `databricks workspace export`)
+		// requests JSON and expects the base64-encoded content field.
+		if req.URL.Query().Get("direct_download") == "true" {
+			return data
+		}
+
+		return Response{
+			Body: workspace.ExportResponse{
+				Content: base64.StdEncoding.EncodeToString(data),
+			},
+		}
 	})
 
 	server.Handle("POST", "/api/2.0/workspace/delete", func(req Request) any {
@@ -125,13 +156,6 @@ func AddDefaultHandlers(server *Server) {
 			}
 		}
 
-		if request.Format != workspace.ImportFormatAuto {
-			return Response{
-				Body:       "internal error: The test server only supports auto format.",
-				StatusCode: http.StatusInternalServerError,
-			}
-		}
-
 		// The /workspace/import endpoint expects the content as base64 encoded string.
 		// We need to decode it to get the actual content.
 		decoded, err := base64.StdEncoding.DecodeString(request.Content)
@@ -142,7 +166,21 @@ func AddDefaultHandlers(server *Server) {
 			}
 		}
 
-		return req.Workspace.WorkspaceFilesImportFile(request.Path, decoded, request.Overwrite)
+		switch request.Format {
+		case workspace.ImportFormatAuto:
+			return req.Workspace.WorkspaceFilesImportFile(request.Path, decoded, request.Overwrite)
+		case workspace.ImportFormatSource, "":
+			// SOURCE imports a single notebook with an explicit language, e.g.
+			// `databricks workspace import --language PYTHON`. The CLI leaves the
+			// format empty in that case and treats empty as SOURCE (see
+			// cmd/workspace/workspace/overrides.go).
+			return req.Workspace.WorkspaceImportNotebook(request.Path, decoded, request.Language, request.Overwrite)
+		default:
+			return Response{
+				Body:       "internal error: The test server only supports auto and source formats.",
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
 	})
 
 	server.Handle("GET", "/api/2.0/workspace-files/{path...}", func(req Request) any {
@@ -230,7 +268,7 @@ func AddDefaultHandlers(server *Server) {
 				Body:       fmt.Sprintf("request parsing error: %s", err),
 			}
 		}
-		return MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
+		return req.Workspace.JobsDelete(req, request.JobId)
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {
@@ -253,8 +291,16 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsRunNow(req)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req Request) any {
+		return req.Workspace.JobsSubmit(req)
+	})
+
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any {
 		return req.Workspace.JobsGetRun(req)
+	})
+
+	server.Handle("POST", "/api/2.2/jobs/runs/delete", func(req Request) any {
+		return req.Workspace.JobsDeleteRun(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req Request) any {
@@ -286,7 +332,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// Dashboards:
 	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+		return req.Workspace.DashboardGet(req)
 	})
 	server.Handle("POST", "/api/2.0/lakeview/dashboards", func(req Request) any {
 		return req.Workspace.DashboardCreate(req)
@@ -307,6 +353,20 @@ func AddDefaultHandlers(server *Server) {
 	})
 	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
 		return req.Workspace.DashboardUnpublish(req)
+	})
+
+	// Genie Spaces:
+	server.Handle("GET", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceGet(req)
+	})
+	server.Handle("POST", "/api/2.0/genie/spaces", func(req Request) any {
+		return req.Workspace.GenieSpaceCreate(req)
+	})
+	server.Handle("PATCH", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceUpdate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceTrash(req)
 	})
 
 	// Pipelines:
@@ -537,6 +597,45 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.ReposDelete(req)
 	})
 
+	server.Handle("POST", "/api/2.0/repos/snapshots", func(req Request) any {
+		contentType := req.Headers.Get("Content-Type")
+		mediaType, params, err := mime.ParseMediaType(contentType)
+		if err != nil || !strings.HasPrefix(mediaType, "multipart/") {
+			return Response{StatusCode: http.StatusBadRequest}
+		}
+
+		mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
+		var bundleID, snapshotID string
+		for {
+			p, err := mr.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return Response{StatusCode: http.StatusInternalServerError}
+			}
+			data, err := io.ReadAll(p)
+			if err != nil {
+				return Response{StatusCode: http.StatusInternalServerError}
+			}
+			switch p.FormName() {
+			case "bundle_id":
+				bundleID = string(data)
+			case "snapshot_id":
+				snapshotID = string(data)
+			}
+		}
+
+		// The real API uses the workspace user UUID (not email) in the snapshot path,
+		// matching service-principal identities used in cloud acceptance tests.
+		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
+		return map[string]any{
+			"snapshot": map[string]any{
+				"path": snapshotPath,
+			},
+		}
+	})
+
 	// SQL Warehouses:
 
 	server.Handle("GET", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
@@ -555,9 +654,28 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SqlWarehousesUpsert(req, req.Vars["warehouse_id"])
 	})
 
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/start", func(req Request) any {
+		return req.Workspace.SqlWarehousesStart(req, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/stop", func(req Request) any {
+		return req.Workspace.SqlWarehousesStop(req, req.Vars["warehouse_id"])
+	})
+
 	server.Handle("DELETE", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
 	})
+
+	// SQL Statement Execution lifecycle. Tests program these by registering
+	// matchers via Server.HandleSQL / HandleSQLPattern (see statements.go).
+	// They live here, not in New, so they act as overridable defaults: a test
+	// that needs raw control over a SQL endpoint (malformed body, transport
+	// error, custom status) can register its own handler for the same pattern
+	// before calling AddDefaultHandlers, or stub it via test.toml in acceptance.
+	server.Handle("POST", "/api/2.0/sql/statements", server.sqlExecuteStatement)
+	server.Handle("GET", "/api/2.0/sql/statements/{statement_id}", server.sqlGetStatement)
+	server.Handle("GET", "/api/2.0/sql/statements/{statement_id}/result/chunks/{chunk_index}", server.sqlGetStatementResultChunk)
+	server.Handle("POST", "/api/2.0/sql/statements/{statement_id}/cancel", server.sqlCancelStatement)
 
 	server.Handle("GET", "/api/2.0/preview/sql/data_sources", func(req Request) any {
 		return req.Workspace.SqlDataSourcesList(req)
@@ -619,6 +737,20 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/secrets/get", func(req Request) any {
 		return req.Workspace.SecretsGet(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/list", func(req Request) any {
+		return req.Workspace.SecretsList(req)
+	})
+
+	// SSH tunnel server behind the driver proxy: /metadata returns the remote
+	// login user, /logs is a best-effort error tail fetched on failure.
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
+		return Response{Body: sshTunnelRemoteUser}
+	})
+
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/logs", func(req Request) any {
+		return Response{Body: ""}
 	})
 
 	// Secrets ACLs:
@@ -879,6 +1011,16 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresOperationGet(name)
 	})
 
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
 	// Postgres Projects:
 	server.Handle("POST", "/api/2.0/postgres/projects", func(req Request) any {
 		projectID := req.URL.Query().Get("project_id")
@@ -981,6 +1123,62 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresOperationGet(name)
 	})
 
+	// Postgres Databases:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		databaseID := req.URL.Query().Get("database_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresDatabaseCreate(req, parent, databaseID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresDatabaseList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseDelete(name)
+	})
+
+	// Postgres Roles:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		roleID := req.URL.Query().Get("role_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresRoleCreate(req, parent, roleID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresRoleList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleDelete(name)
+	})
+
 	// Postgres Synced Tables:
 	server.Handle("POST", "/api/2.0/postgres/synced_tables", func(req Request) any {
 		syncedTableID := req.URL.Query().Get("synced_table_id")
@@ -1002,6 +1200,34 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/postgres/operations/{operation_id}", func(req Request) any {
 		return req.Workspace.PostgresOperationGet("operations/" + req.Vars["operation_id"])
+	})
+
+	// Postgres Roles:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		roleID := req.URL.Query().Get("role_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresRoleCreate(req, parent, roleID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresRoleList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleDelete(name)
 	})
 
 	// Catch-all handler for invalid postgres resource names.

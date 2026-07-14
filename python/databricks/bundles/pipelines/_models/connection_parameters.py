@@ -19,7 +19,7 @@ class ConnectionParameters:
     """
     :meta private: [EXPERIMENTAL]
     
-    Source catalog for initial connection.
+    [Private Preview] Source catalog for initial connection.
     This is necessary for schema exploration in some database systems like Oracle, and optional but nice-to-have
     in some other database systems like Postgres.
     For Oracle databases, this maps to a service name.
@@ -40,7 +40,7 @@ class ConnectionParametersDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Source catalog for initial connection.
+    [Private Preview] Source catalog for initial connection.
     This is necessary for schema exploration in some database systems like Oracle, and optional but nice-to-have
     in some other database systems like Postgres.
     For Oracle databases, this maps to a service name.

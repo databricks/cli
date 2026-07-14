@@ -5,6 +5,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
 )
@@ -61,6 +63,23 @@ func TestPrependWorkspacePrefix(t *testing.T) {
 		require.Equal(t, tc.expected, b.Config.Workspace.StatePath)
 		require.Equal(t, tc.expected, b.Config.Workspace.ResourcePath)
 	}
+}
+
+func TestPrependWorkspacePrefixPreservesLocations(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath: "/Users/test",
+			},
+		},
+	}
+	locations := []dyn.Location{{File: "databricks.yml", Line: 42, Column: 5}}
+	bundletest.SetLocation(b, "workspace.root_path", locations)
+
+	diags := bundle.Apply(t.Context(), b, PrependWorkspacePrefix())
+	require.Empty(t, diags)
+	require.Equal(t, "/Workspace/Users/test", b.Config.Workspace.RootPath)
+	require.Equal(t, locations, b.Config.GetLocations("workspace.root_path"))
 }
 
 func TestPrependWorkspaceForDefaultConfig(t *testing.T) {

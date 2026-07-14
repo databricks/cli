@@ -1,0 +1,14 @@
+bundle:
+  name: zero-value-fields
+
+resources:
+  pipelines:
+    my:
+      name: test-pipeline
+      photon: false
+      serverless: false
+      continuous: false
+      development: false
+      libraries:
+        - file:
+            path: "./foo.py"

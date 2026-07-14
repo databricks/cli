@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -207,9 +208,12 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	}
 
 	// Normalize the output value to the target schema.
+	// A diagnostic here means the field is unknown to the pinned Terraform provider
+	// schema and is dropped from the deployment; warn so the drop is not silent.
+	// Normalize only emits warning severity, so this cannot fail the deploy.
 	vout, diags = convert.Normalize(schema.ResourceJob{}, vout)
-	for _, diag := range diags {
-		log.Debugf(ctx, "job normalization diagnostic: %s", diag.Summary)
+	for _, d := range diags {
+		logdiag.LogDiag(ctx, d)
 	}
 
 	// Apply __apply_policy_default_values_allow_list for tasks

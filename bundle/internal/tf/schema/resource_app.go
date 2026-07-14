@@ -46,8 +46,9 @@ type ResourceAppActiveDeployment struct {
 }
 
 type ResourceAppAppStatus struct {
-	Message string `json:"message,omitempty"`
-	State   string `json:"state,omitempty"`
+	Message          string `json:"message,omitempty"`
+	RunningInstances int    `json:"running_instances,omitempty"`
+	State            string `json:"state,omitempty"`
 }
 
 type ResourceAppComputeStatus struct {
@@ -193,6 +194,8 @@ type ResourceApp struct {
 	ActiveDeployment            *ResourceAppActiveDeployment             `json:"active_deployment,omitempty"`
 	AppStatus                   *ResourceAppAppStatus                    `json:"app_status,omitempty"`
 	BudgetPolicyId              string                                   `json:"budget_policy_id,omitempty"`
+	ComputeMaxInstances         int                                      `json:"compute_max_instances,omitempty"`
+	ComputeMinInstances         int                                      `json:"compute_min_instances,omitempty"`
 	ComputeSize                 string                                   `json:"compute_size,omitempty"`
 	ComputeStatus               *ResourceAppComputeStatus                `json:"compute_status,omitempty"`
 	CreateTime                  string                                   `json:"create_time,omitempty"`

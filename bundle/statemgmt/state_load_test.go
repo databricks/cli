@@ -27,6 +27,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	state := ExportedResourcesMap{
 		"resources.jobs.test_job":                                       {ID: "1"},
+		"resources.job_runs.test_job_run":                               {ID: "1"},
 		"resources.pipelines.test_pipeline":                             {ID: "1"},
 		"resources.models.test_mlflow_model":                            {ID: "1"},
 		"resources.experiments.test_mlflow_experiment":                  {ID: "1"},
@@ -39,6 +40,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.volumes.test_volume":                                 {ID: "1"},
 		"resources.clusters.test_cluster":                               {ID: "1"},
 		"resources.dashboards.test_dashboard":                           {ID: "1"},
+		"resources.genie_spaces.test_genie_space":                       {ID: "1"},
 		"resources.apps.test_app":                                       {ID: "app1"},
 		"resources.secret_scopes.test_secret_scope":                     {ID: "secret_scope1"},
 		"resources.sql_warehouses.test_sql_warehouse":                   {ID: "1"},
@@ -50,6 +52,8 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_branches.test_postgres_branch":              {ID: "projects/test-project/branches/main"},
 		"resources.postgres_endpoints.test_postgres_endpoint":           {ID: "projects/test-project/branches/main/endpoints/primary"},
 		"resources.postgres_catalogs.test_postgres_catalog":             {ID: "catalogs/test_catalog"},
+		"resources.postgres_databases.test_postgres_database":           {ID: "projects/test-project/branches/main/databases/test-db"},
+		"resources.postgres_roles.test_postgres_role":                   {ID: "projects/test-project/branches/main/roles/test-role"},
 		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
 		"resources.vector_search_indexes.test_vector_search_index":      {ID: "vs-index-1"},
@@ -59,6 +63,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Jobs["test_job"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.JobRuns["test_job_run"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.JobRuns["test_job_run"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Pipelines["test_pipeline"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
@@ -96,6 +103,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
+	assert.Equal(t, "1", config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+
 	assert.Equal(t, "app1", config.Resources.Apps["test_app"].ID)
 	assert.Empty(t, config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
@@ -124,6 +134,15 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "catalogs/test_catalog", config.Resources.PostgresCatalogs["test_postgres_catalog"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresCatalogs["test_postgres_catalog"].ModifiedStatus)
 
+	assert.Equal(t, "projects/test-project/branches/main/databases/test-db", config.Resources.PostgresDatabases["test_postgres_database"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresDatabases["test_postgres_database"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/roles/test-role", config.Resources.PostgresRoles["test_postgres_role"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresRoles["test_postgres_role"].ModifiedStatus)
+
+	assert.Equal(t, "synced_tables/main.public.test_synced_table", config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ModifiedStatus)
+
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
@@ -140,6 +159,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_job": {
 					JobSettings: jobs.JobSettings{
 						Name: "test_job",
+					},
+				},
+			},
+			JobRuns: map[string]*resources.JobRun{
+				"test_job_run": {
+					RunNow: jobs.RunNow{
+						JobId: 1234,
 					},
 				},
 			},
@@ -228,6 +254,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			GenieSpaces: map[string]*resources.GenieSpace{
+				"test_genie_space": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space",
+					},
+				},
+			},
 			Apps: map[string]*resources.App{
 				"test_app": {
 					App: apps.App{
@@ -308,6 +341,22 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresDatabases: map[string]*resources.PostgresDatabase{
+				"test_postgres_database": {
+					PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+						DatabaseId: "test-db",
+						Parent:     "projects/test-project/branches/main",
+					},
+				},
+			},
+			PostgresRoles: map[string]*resources.PostgresRole{
+				"test_postgres_role": {
+					PostgresRoleConfig: resources.PostgresRoleConfig{
+						RoleId: "test-role",
+						Parent: "projects/test-project/branches/main",
+					},
+				},
+			},
 			PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
 				"test_postgres_synced_table": {
 					PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
@@ -337,6 +386,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.Jobs["test_job"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Jobs["test_job"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.JobRuns["test_job_run"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.JobRuns["test_job_run"].ModifiedStatus)
 
 	assert.Empty(t, config.Resources.Pipelines["test_pipeline"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
@@ -374,6 +426,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Empty(t, config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+
 	assert.Empty(t, config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app"].ModifiedStatus)
 
@@ -407,6 +462,15 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Empty(t, config.Resources.PostgresCatalogs["test_postgres_catalog"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresCatalogs["test_postgres_catalog"].ModifiedStatus)
 
+	assert.Empty(t, config.Resources.PostgresDatabases["test_postgres_database"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresDatabases["test_postgres_database"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.PostgresRoles["test_postgres_role"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresRoles["test_postgres_role"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ModifiedStatus)
+
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
@@ -428,6 +492,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_job_new": {
 					JobSettings: jobs.JobSettings{
 						Name: "test_job_new",
+					},
+				},
+			},
+			JobRuns: map[string]*resources.JobRun{
+				"test_job_run": {
+					RunNow: jobs.RunNow{
+						JobId: 1234,
+					},
+				},
+				"test_job_run_new": {
+					RunNow: jobs.RunNow{
+						JobId: 5678,
 					},
 				},
 			},
@@ -571,6 +647,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			GenieSpaces: map[string]*resources.GenieSpace{
+				"test_genie_space": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space",
+					},
+				},
+				"test_genie_space_new": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space_new",
+					},
+				},
+			},
 			Apps: map[string]*resources.App{
 				"test_app": {
 					App: apps.App{
@@ -709,6 +797,34 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresDatabases: map[string]*resources.PostgresDatabase{
+				"test_postgres_database": {
+					PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+						DatabaseId: "test-db",
+						Parent:     "projects/test-project/branches/main",
+					},
+				},
+				"test_postgres_database_new": {
+					PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+						DatabaseId: "new-db",
+						Parent:     "projects/test-project-new/branches/dev",
+					},
+				},
+			},
+			PostgresRoles: map[string]*resources.PostgresRole{
+				"test_postgres_role": {
+					PostgresRoleConfig: resources.PostgresRoleConfig{
+						RoleId: "primary",
+						Parent: "projects/test-project/branches/main",
+					},
+				},
+				"test_postgres_role_new": {
+					PostgresRoleConfig: resources.PostgresRoleConfig{
+						RoleId: "replica",
+						Parent: "projects/test-project-new/branches/dev",
+					},
+				},
+			},
 			PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
 				"test_postgres_synced_table": {
 					PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
@@ -745,6 +861,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	state := ExportedResourcesMap{
 		"resources.jobs.test_job":                                           {ID: "1"},
 		"resources.jobs.test_job_old":                                       {ID: "2"},
+		"resources.job_runs.test_job_run":                                   {ID: "1"},
+		"resources.job_runs.test_job_run_old":                               {ID: "2"},
 		"resources.pipelines.test_pipeline":                                 {ID: "1"},
 		"resources.pipelines.test_pipeline_old":                             {ID: "2"},
 		"resources.models.test_mlflow_model":                                {ID: "1"},
@@ -767,6 +885,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.clusters.test_cluster_old":                               {ID: "2"},
 		"resources.dashboards.test_dashboard":                               {ID: "1"},
 		"resources.dashboards.test_dashboard_old":                           {ID: "2"},
+		"resources.genie_spaces.test_genie_space":                           {ID: "1"},
+		"resources.genie_spaces.test_genie_space_old":                       {ID: "2"},
 		"resources.apps.test_app":                                           {ID: "test_app"},
 		"resources.apps.test_app_old":                                       {ID: "test_app_old"},
 		"resources.secret_scopes.test_secret_scope":                         {ID: "test_secret_scope"},
@@ -785,6 +905,10 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.postgres_endpoints.test_postgres_endpoint_old":           {ID: "projects/test-project/branches/main/endpoints/old"},
 		"resources.postgres_catalogs.test_postgres_catalog":                 {ID: "catalogs/test_catalog"},
 		"resources.postgres_catalogs.test_postgres_catalog_old":             {ID: "catalogs/test_catalog_old"},
+		"resources.postgres_databases.test_postgres_database":               {ID: "projects/test-project/branches/main/databases/test-db"},
+		"resources.postgres_databases.test_postgres_database_old":           {ID: "projects/test-project/branches/main/databases/old-db"},
+		"resources.postgres_roles.test_postgres_role":                       {ID: "projects/test-project/branches/main/roles/primary"},
+		"resources.postgres_roles.test_postgres_role_old":                   {ID: "projects/test-project/branches/main/roles/old"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint":     {ID: "vs-endpoint-1"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint_old": {ID: "vs-endpoint-old"},
 		"resources.vector_search_indexes.test_vector_search_index":          {ID: "vs-index-1"},
@@ -799,6 +923,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Jobs["test_job_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.Jobs["test_job_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Jobs["test_job_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.JobRuns["test_job_run"].ID)
+	assert.Empty(t, config.Resources.JobRuns["test_job_run"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.JobRuns["test_job_run_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.JobRuns["test_job_run_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.JobRuns["test_job_run_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.JobRuns["test_job_run_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Pipelines["test_pipeline"].ID)
 	assert.Empty(t, config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
@@ -877,6 +1008,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Empty(t, config.Resources.Dashboards["test_dashboard_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
 
+	assert.Equal(t, "1", config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.GenieSpaces["test_genie_space_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.GenieSpaces["test_genie_space_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space_new"].ModifiedStatus)
+
 	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)
 	assert.Empty(t, config.Resources.Apps["test_app"].ModifiedStatus)
 	assert.Equal(t, "test_app_old", config.Resources.Apps["test_app_old"].ID)
@@ -941,6 +1079,20 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresCatalogs["test_postgres_catalog_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.PostgresCatalogs["test_postgres_catalog_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresCatalogs["test_postgres_catalog_new"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/databases/test-db", config.Resources.PostgresDatabases["test_postgres_database"].ID)
+	assert.Empty(t, config.Resources.PostgresDatabases["test_postgres_database"].ModifiedStatus)
+	assert.Equal(t, "projects/test-project/branches/main/databases/old-db", config.Resources.PostgresDatabases["test_postgres_database_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresDatabases["test_postgres_database_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.PostgresDatabases["test_postgres_database_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresDatabases["test_postgres_database_new"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/roles/primary", config.Resources.PostgresRoles["test_postgres_role"].ID)
+	assert.Empty(t, config.Resources.PostgresRoles["test_postgres_role"].ModifiedStatus)
+	assert.Equal(t, "projects/test-project/branches/main/roles/old", config.Resources.PostgresRoles["test_postgres_role_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresRoles["test_postgres_role_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.PostgresRoles["test_postgres_role_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresRoles["test_postgres_role_new"].ModifiedStatus)
 
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)

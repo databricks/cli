@@ -1,0 +1,49 @@
+# Cleanup function to delete database and other resources
+cleanup() {
+   # Try to delete with current config
+   trace $CLI bundle destroy --auto-approve
+
+   # Also try to delete the databases directly in case they weren't cleaned up
+   $CLI postgres delete-database "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/databases/test-database-${UNIQUE_NAME}" 2>/dev/null || true
+   $CLI postgres delete-database "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/databases/test-database-${UNIQUE_NAME}-v2" 2>/dev/null || true
+
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy with first database_id
+envsubst < databricks.yml.tmpl | sed "s/DATABASE_ID_PLACEHOLDER/test-database-${UNIQUE_NAME}/" > databricks.yml
+
+trace cat databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+database_id_1=`read_id.py my_database`
+
+trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'
+
+# Change database_id (should trigger recreation)
+envsubst < databricks.yml.tmpl | sed "s/DATABASE_ID_PLACEHOLDER/test-database-${UNIQUE_NAME}-v2/" > databricks.yml
+
+trace cat databricks.yml
+
+trace $CLI bundle plan
+
+title "Recreate requires approval: non-interactive deploy must abort, not silently delete the database"
+musterr trace $CLI bundle deploy
+
+trace $CLI bundle deploy --auto-approve
+
+trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'
+
+title "Fetch database and verify it exists after recreation"
+
+database_id_2=`read_id.py my_database`
+# Verify the database was recreated (DELETE/POST in requests proves recreation)
+trace $CLI postgres get-database $database_id_2 | jq 'del(.create_time, .update_time)'
+
+title "Destroy and verify cleanup"
+trace $CLI bundle destroy --auto-approve
+
+trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'
