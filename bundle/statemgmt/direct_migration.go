@@ -91,11 +91,17 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		return
 	}
 
-	tempStatePath, resourceCount, hasWarnings, err := dryRunMigrate(ctx, b, tfState)
+	tempStatePath, resourceCount, hasWarnings, err := convertTFStateToDirect(ctx, b, tfState)
 	if tempStatePath != "" {
-		// commitMigration renames the state file out of this dir, but the dir
-		// itself and any leftover files (WAL, etc.) still need cleanup.
-		defer os.RemoveAll(filepath.Dir(tempStatePath))
+		// The temp file sits next to the real resources.json path (same
+		// filesystem, so commitMigration's os.Rename works even when
+		// os.TempDir() is on a different volume). Clean up the temp file
+		// and its WAL sibling — commitMigration renames the state file out
+		// of the way on success, so these Removes are no-ops in that case.
+		defer func() {
+			_ = os.Remove(tempStatePath)
+			_ = os.Remove(tempStatePath + ".wal")
+		}()
 	}
 
 	if err != nil {
@@ -197,22 +203,27 @@ func backupTerraformState(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-// dryRunMigrate converts the given terraform state to the direct engine state,
+// convertTFStateToDirect converts the given terraform state to the direct engine state,
 // returning the path to the converted state file, the number of resources
 // migrated, and whether any warnings were emitted. Callers must ensure
 // tfState is non-nil and has at least one resource ID (the empty and nil
 // cases are handled by MigrateToDirect directly, since they take different
 // commit paths). The caller is responsible for deleting the temp state's
 // parent directory when it is done with the file.
-func dryRunMigrate(ctx context.Context, b *bundle.Bundle, tfState *migrate.TFState) (string, int, bool, error) {
-	// Write the converted state to a temp dir. If the dry-run is clean and the
-	// caller commits the migration, the state file is moved into place; otherwise
-	// the caller removes the whole temp dir (along with the WAL created below).
-	tempDir, err := os.MkdirTemp("", "databricks-direct-migration-")
-	if err != nil {
-		return "", 0, false, fmt.Errorf("failed to create temp dir: %w", err)
-	}
-	tempStatePath := filepath.Join(tempDir, "resources.json")
+func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migrate.TFState) (string, int, bool, error) {
+	// Write the converted state to a sibling of the final resources.json
+	// path so commitMigration's os.Rename stays within one filesystem
+	// (os.TempDir() often lives on a different volume from the project;
+	// cross-filesystem Rename fails with EXDEV). The state DB creates the
+	// file and its .wal itself, so a deterministic sibling name is enough
+	// — no CreateTemp placeholder needed.
+	// UpgradeToWrite creates the parent directory itself, so no MkdirAll here.
+	_, localDirectPath := b.StateFilenameDirect(ctx)
+	tempStatePath := filepath.Join(filepath.Dir(localDirectPath), "resources.migrating.json")
+	// Clean up any leftovers from a crashed previous run so UpgradeToWrite
+	// (which opens the .wal with O_EXCL) succeeds.
+	_ = os.Remove(tempStatePath)
+	_ = os.Remove(tempStatePath + ".wal")
 	resourceCount := len(tfState.IDs)
 
 	// SecretScopeFixups and the direct-engine state builder report failures via
