@@ -81,12 +81,13 @@ func newTestServer(t *testing.T) *httptest.Server {
 func TestPipelineCheckMutatesNothing(t *testing.T) {
 	dir := writeProject(t)
 	before, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	cacheDir := t.TempDir()
 	srv := newTestServer(t)
 	defer srv.Close()
 
 	p := &Pipeline{
 		Mode: ModeDefault, Check: true, ProjectDir: dir,
-		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		ConstraintBaseURL: srv.URL, CacheDir: cacheDir,
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
@@ -98,6 +99,11 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	assert.Contains(t, res.Plan.Diff, "==3.12.*")
 	after, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	assert.Equal(t, string(before), string(after)) // unchanged
+
+	// --check must not populate the constraint cache either (no disk writes).
+	entries, err := os.ReadDir(cacheDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }
 
 func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {
@@ -225,6 +231,39 @@ func TestPipelineGreenfieldCreatesNewPyproject(t *testing.T) {
 	assert.Contains(t, string(data), `"databricks-connect~=17.2.0",`)
 	// No backup created when pyproject.toml did not previously exist.
 	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
+}
+
+func TestProjectName(t *testing.T) {
+	// "." / "" / root resolve to the real directory name, not an invalid literal;
+	// non-alphanumeric runs collapse to "-"; unusable input falls back to a default.
+	cwd, err := filepath.Abs(".")
+	require.NoError(t, err)
+	assert.Equal(t, sanitizeProjectName(filepath.Base(cwd)), projectName("."))
+	assert.Equal(t, sanitizeProjectName(filepath.Base(cwd)), projectName(""))
+	assert.Equal(t, "my-proj", projectName("/tmp/my proj"))
+	assert.Equal(t, "my-proj", projectName("/tmp/.my.proj."))
+	assert.Equal(t, defaultProjectName, sanitizeProjectName("."))
+	assert.Equal(t, defaultProjectName, sanitizeProjectName("///"))
+}
+
+func TestPipelineGreenfieldFromDotDirRendersValidName(t *testing.T) {
+	// Running greenfield with ProjectDir="." must not render name = ".".
+	dir := t.TempDir()
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.Greenfield)
+	data, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	assert.NotContains(t, string(data), `name = "."`)
+	assert.Contains(t, string(data), `name = "`+sanitizeProjectName(filepath.Base(dir))+`"`)
 }
 
 func TestPipelineExistingBacksUp(t *testing.T) {
