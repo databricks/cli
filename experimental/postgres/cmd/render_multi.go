@@ -2,6 +2,7 @@ package postgrescmd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 )
@@ -14,14 +15,14 @@ import (
 // errIndex/errResult identifies the unit that errored (-1 if none); we still
 // render any successful prefix. The error itself is surfaced by the caller
 // via cobra's default error rendering.
-func renderTextMulti(out io.Writer, results []*unitResult) error {
+func renderTextMulti(ctx context.Context, out io.Writer, results []*unitResult) error {
 	for i, r := range results {
 		if i > 0 {
 			if _, err := io.WriteString(out, "\n"); err != nil {
 				return err
 			}
 		}
-		if err := renderTextResult(out, r); err != nil {
+		if err := renderTextResult(ctx, out, r); err != nil {
 			return err
 		}
 	}
@@ -30,7 +31,7 @@ func renderTextMulti(out io.Writer, results []*unitResult) error {
 
 // renderTextResult renders a single buffered unitResult in the same shape as
 // textSink would for a streamed result.
-func renderTextResult(out io.Writer, r *unitResult) error {
+func renderTextResult(ctx context.Context, out io.Writer, r *unitResult) error {
 	if !r.IsRowsProducing() {
 		_, err := fmt.Fprintln(out, r.CommandTag)
 		return err
@@ -47,7 +48,7 @@ func renderTextResult(out io.Writer, r *unitResult) error {
 			return err
 		}
 	}
-	return sink.End(r.CommandTag)
+	return sink.End(ctx, r.CommandTag)
 }
 
 // renderJSONMulti emits the wrapped multi-input JSON shape: a top-level
@@ -68,7 +69,7 @@ func renderTextResult(out io.Writer, r *unitResult) error {
 //
 // elapsed_ms is present on errors too: it captures how long the failing
 // statement ran before the error fired.
-func renderJSONMulti(out, stderr io.Writer, results []*unitResult, errored *unitResult, errMessage string) error {
+func renderJSONMulti(ctx context.Context, out, stderr io.Writer, results []*unitResult, errored *unitResult, errMessage string) error {
 	if _, err := io.WriteString(out, "[\n"); err != nil {
 		return err
 	}
@@ -80,7 +81,7 @@ func renderJSONMulti(out, stderr io.Writer, results []*unitResult, errored *unit
 			}
 		}
 		var unitBuf bytes.Buffer
-		if err := renderJSONUnit(&unitBuf, stderr, r); err != nil {
+		if err := renderJSONUnit(ctx, &unitBuf, stderr, r); err != nil {
 			return err
 		}
 		if _, err := out.Write(unitBuf.Bytes()); err != nil {
@@ -107,7 +108,7 @@ func renderJSONMulti(out, stderr io.Writer, results []*unitResult, errored *unit
 // renderJSONUnit writes one buffered result object to buf, using the
 // existing single-input json rendering for the rows array so the value
 // mapping stays consistent across single- and multi-input shapes.
-func renderJSONUnit(buf *bytes.Buffer, stderr io.Writer, r *unitResult) error {
+func renderJSONUnit(ctx context.Context, buf *bytes.Buffer, stderr io.Writer, r *unitResult) error {
 	if err := writeJSONUnitHeader(buf, r); err != nil {
 		return err
 	}
@@ -143,7 +144,7 @@ func renderJSONUnit(buf *bytes.Buffer, stderr io.Writer, r *unitResult) error {
 			return err
 		}
 	}
-	if err := sink.End(""); err != nil {
+	if err := sink.End(ctx, ""); err != nil {
 		return err
 	}
 	rowsTrimmed := bytes.TrimRight(rowsBuf.Bytes(), "\n")
