@@ -156,13 +156,20 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	}
 
 	if requiredEngine.Type != engine.EngineNotSet && requiredEngine.Type != winner.Engine {
-		msg := fmt.Sprintf("Deployment engine %q configured in %s does not match the existing state (engine %q). Using %q engine from the existing state.", requiredEngine.Type, requiredEngine.Source, winner.Engine, winner.Engine)
-		// Warn only when the config also disagrees with the state. If the env var overrides
-		// a config that matches the state, log at info level to avoid noise.
-		if requiredEngine.ConfigType != engine.EngineNotSet && requiredEngine.ConfigType != winner.Engine {
-			logStatesWarning(ctx, msg, states)
-		} else {
-			log.Infof(ctx, "%s", msg)
+		// A direct opt-in against a terraform state is the auto-migration
+		// path; the deploy caller (process.go) prints a dedicated pre-deploy
+		// hint for that case, so stay quiet here to avoid printing the same
+		// event twice.
+		autoMigratePath := requiredEngine.Type == engine.EngineDirect && !winner.Engine.IsDirect()
+		if !autoMigratePath {
+			msg := fmt.Sprintf("Deployment engine %q configured in %s does not match the existing state (engine %q). Using %q engine from the existing state.", requiredEngine.Type, requiredEngine.Source, winner.Engine, winner.Engine)
+			// Warn only when the config also disagrees with the state. If the env var overrides
+			// a config that matches the state, log at info level to avoid noise.
+			if requiredEngine.ConfigType != engine.EngineNotSet && requiredEngine.ConfigType != winner.Engine {
+				logStatesWarning(ctx, msg, states)
+			} else {
+				log.Infof(ctx, "%s", msg)
+			}
 		}
 	}
 

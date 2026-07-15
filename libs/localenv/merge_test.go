@@ -253,6 +253,196 @@ dev = [
 	assert.Contains(t, string(out), `    "databricks-connect~=17.2.0",`)
 }
 
+func TestMergeInsertsDatabricksConnectMultiLine(t *testing.T) {
+	// Existing project with a dev group that does not pin databricks-connect: the
+	// pin must be inserted (mirroring greenfield) rather than left absent.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = [
+    "pytest~=8.0",
+]
+`)
+	out, regions, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
+	assert.Contains(t, s, `"pytest~=8.0",`, "existing element preserved")
+	assert.Contains(t, regions, "databricks-connect")
+	// Idempotent: a second merge finds the element and rewrites in place.
+	out2, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, s, string(out2))
+}
+
+func TestMergeInsertsDatabricksConnectSingleLine(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["pytest~=8.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `dev = ["databricks-connect~=17.2.0", "pytest~=8.0"]`)
+	out2, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, string(out), string(out2))
+}
+
+func TestMergeInsertsDatabricksConnectEmptyDev(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = []
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `dev = ["databricks-connect~=17.2.0"]`)
+}
+
+func TestMergeInsertsDevKeyWhenAbsent(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+test = ["pytest~=8.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
+	assert.Contains(t, s, `test = ["pytest~=8.0"]`, "sibling group untouched")
+	out2, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, s, string(out2))
+}
+
+func TestMergeInsertsDependencyGroupsWhenAbsent(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "[dependency-groups]")
+	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
+	out2, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, s, string(out2))
+}
+
+func TestMergeReplacesDatabricksConnectOnDevLine(t *testing.T) {
+	// The pin shares the opening "dev = [" line of a multi-line array. It must be
+	// rewritten in place, not duplicated by the insert path.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0",
+    "pytest~=8.0",
+]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Equal(t, 1, strings.Count(s, "databricks-connect"), "must not duplicate the pin")
+	assert.Contains(t, s, "databricks-connect~=17.2.0")
+	assert.NotContains(t, s, "databricks-connect~=16.0.0")
+}
+
+func TestMergeReplacesDatabricksConnectWithTrailingComment(t *testing.T) {
+	// The pin element carries a trailing comment. It must be rewritten in place
+	// (comment preserved), not duplicated.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = [
+    "databricks-connect~=16.0.0", # keep me
+    "pytest~=8.0",
+]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Equal(t, 1, strings.Count(s, "databricks-connect"), "must not duplicate the pin")
+	assert.Contains(t, s, `"databricks-connect~=17.2.0", # keep me`)
+}
+
+func TestMergePreservesCommentMentioningDatabricksConnect(t *testing.T) {
+	// A trailing comment that itself contains a quoted "databricks-connect..."
+	// token must be preserved byte-for-byte; only the code element is rewritten.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = [
+    "databricks-connect~=16.0.0", # was "databricks-connect~=16.0.0"
+    "pytest~=8.0",
+]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	// Code element is rewritten; the comment mention is left verbatim.
+	assert.Contains(t, s, `"databricks-connect~=17.2.0", # was "databricks-connect~=16.0.0"`)
+	assert.Equal(t, 1, strings.Count(s, "databricks-connect~=16.0.0"), "only the comment mention of the old pin remains")
+}
+
+func TestMergeRewritesNonCanonicalDatabricksConnectSpelling(t *testing.T) {
+	// A pin spelled with PEP 503-equivalent separators/case must be rewritten in
+	// place, not left undetected so the insert path adds a conflicting second pin.
+	for _, spelling := range []string{"databricks_connect", "Databricks-Connect", "databricks.connect"} {
+		in := []byte("[project]\nrequires-python = \">=3.10\"\n\n[dependency-groups]\ndev = [\n    \"" + spelling + "~=16.0.0\",\n]\n")
+		out, _, err := MergeManaged(in, testConstraints())
+		require.NoError(t, err, spelling)
+		s := string(out)
+		assert.Equal(t, 1, strings.Count(s, `"databricks-connect~=17.2.0"`), "spelling %q must be rewritten in place, not duplicated:\n%s", spelling, s)
+		assert.NotContains(t, s, "~=16.0.0", "old pin (any spelling) must be gone")
+	}
+}
+
+func TestMergeInsertsCommaWhenLastElementHasNone(t *testing.T) {
+	// TOML permits the final array element to omit its trailing comma. Inserting
+	// after it must first add the separating comma, or the result is invalid TOML.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = [
+    "pytest~=8.0"
+]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `"pytest~=8.0",`, "previous last element gains a separating comma")
+	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
+	// Round-trips as valid TOML.
+	out2, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, s, string(out2))
+}
+
+func TestMergeConstraintsOnlyDoesNotInsertDatabricksConnect(t *testing.T) {
+	// Empty DatabricksConnect (constraints-only) must not add a pin.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["pytest~=8.0"]
+`)
+	c := testConstraints()
+	c.DatabricksConnect = ""
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	assert.NotContains(t, string(out), "databricks-connect")
+	assert.NotContains(t, regions, "databricks-connect")
+}
+
 func TestRenderFreshPyproject(t *testing.T) {
 	out := RenderFreshPyproject("demo", testConstraints())
 	s := string(out)

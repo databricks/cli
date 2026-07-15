@@ -743,15 +743,18 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SecretsList(req)
 	})
 
-	// SSH tunnel server behind the driver proxy: /metadata returns the remote
-	// login user, /logs is a best-effort error tail fetched on failure.
+	// SSH tunnel server behind the driver proxy: /metadata returns the remote login
+	// user, /logs is a best-effort error tail, /ssh hijacks the connection for a
+	// websocket (so it's raw, not a JSON response).
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
-		return Response{Body: sshTunnelRemoteUser}
+		return Response{Body: sshTunnelRemoteUser()}
 	})
 
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/logs", func(req Request) any {
 		return Response{Body: ""}
 	})
+
+	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
 
 	// Secrets ACLs:
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {

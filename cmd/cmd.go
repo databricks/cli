@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/cmd/experimental"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
+	"github.com/databricks/cli/cmd/localenv"
 	"github.com/databricks/cli/cmd/pipelines"
 	"github.com/databricks/cli/cmd/quickstart"
 	"github.com/databricks/cli/cmd/root"
@@ -113,6 +114,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(cache.New())
 	cli.AddCommand(experimental.New())
 	cli.AddCommand(psql.New())
+	cli.AddCommand(localenv.New())
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))

@@ -219,32 +219,33 @@ func trailingComment(line string) string {
 	return ""
 }
 
-// dbconnectLineRe captures, for a line holding a databricks-connect dependency element:
-// (1) the leading whitespace, and (3) any trailing comma (with optional trailing space),
-// so that indentation and comma style are preserved when the quoted token is replaced.
-var dbconnectLineRe = regexp.MustCompile(`^(\s*)"databricks-connect[^"]*"(\s*,?\s*)$`)
-
 // devKeyRe matches the start of the dev array assignment within [dependency-groups]
 // (e.g. "dev = [" or "dev=["), capturing leading whitespace. Only this key is
 // managed; sibling groups such as test/docs are user-owned and left untouched.
 var devKeyRe = regexp.MustCompile(`^\s*dev\s*=`)
 
-// mergeDatabricksConnect replaces the databricks-connect element inside
-// [dependency-groups].dev only. It handles both the multi-line array form (one
-// element per line) and the single-line array form (dev = ["databricks-connect~=..."]).
-// An empty value (constraints-only mode) is a no-op: the user's dev group is left
-// untouched rather than having its databricks-connect pin blanked out.
+// mergeDatabricksConnect ensures [dependency-groups].dev pins databricks-connect
+// to value. It replaces an existing databricks-connect element (multi-line or
+// single-line array form) and, when none exists, inserts one — creating the dev
+// key and the [dependency-groups] table when those are absent too, mirroring
+// RenderFreshPyproject so an existing project without a pin provisions the same as
+// a greenfield one. An empty value (constraints-only mode) is a no-op: the user's
+// dev group is left untouched rather than having its pin blanked out or one added.
 //
-// The rewrite is scoped to the dev array's own span (found via bracket depth), so a
+// The edit is scoped to the dev array's own span (found via bracket depth), so a
 // databricks-connect pin sitting in a sibling group (e.g. docs/test) or inside a
-// trailing comment on some other line is never clobbered.
+// trailing comment on some other line is never clobbered. The insert path is
+// idempotent: a subsequent merge finds the element and rewrites it in place.
 func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
 	if value == "" {
 		return lines, false
 	}
+	elem := `"` + value + `"`
+
 	header, end, found := tableBounds(lines, "[dependency-groups]")
 	if !found {
-		return lines, false
+		// No [dependency-groups] table: append a fresh managed dev group.
+		return appendManagedBlock(lines, []string{"[dependency-groups]", "dev = [", "    " + elem + ",", "]"}), true
 	}
 
 	// Locate the dev assignment and the line span of its array value.
@@ -256,39 +257,133 @@ func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
 		}
 	}
 	if devStart == -1 {
-		return lines, false
+		// The table exists but has no dev key: insert one right after the header.
+		insert := []string{"dev = [", "    " + elem + ",", "]"}
+		out := make([]string, 0, len(lines)+len(insert))
+		out = append(out, lines[:header+1]...)
+		out = append(out, insert...)
+		out = append(out, lines[header+1:]...)
+		return out, true
 	}
 	arrayLast, _ := arrayLineSpan(lines, devStart, end)
 
-	// Single-line form: the whole array is on the dev line itself. Only rewrite
+	// Single-line form: the whole array is on the dev line itself. Only edit
 	// within the array (through its closing "]"); a trailing comment after it is
 	// user content and must be left byte-for-byte intact.
 	if devStart == arrayLast {
 		line := lines[devStart]
 		arrayPart, commentPart := splitAtArrayClose(line)
-		if !strings.Contains(arrayPart, `"databricks-connect`) {
+		if replaced, ok := replaceDbconnectElement(arrayPart, elem); ok {
+			newLine := replaced + commentPart
+			if newLine == line {
+				return lines, false
+			}
+			lines[devStart] = newLine
+			return lines, true
+		}
+		// No databricks-connect element: insert one as the first array element.
+		open := strings.Index(arrayPart, "[")
+		closeIdx := strings.LastIndex(arrayPart, "]")
+		if open < 0 || closeIdx < open {
 			return lines, false
 		}
-		replaced := dbconnectTokenRe.ReplaceAllString(arrayPart, `"`+value+`"`) + commentPart
-		if replaced == line {
-			return lines, false
+		inner := strings.TrimSpace(arrayPart[open+1 : closeIdx])
+		newInner := elem
+		if inner != "" {
+			newInner = elem + ", " + inner
 		}
-		lines[devStart] = replaced
+		lines[devStart] = arrayPart[:open+1] + newInner + arrayPart[closeIdx:] + commentPart
 		return lines, true
 	}
 
-	// Multi-line form: one element per line, between the dev line and the closing "]".
-	for i := devStart + 1; i <= arrayLast; i++ {
-		if m := dbconnectLineRe.FindStringSubmatch(lines[i]); m != nil {
-			replacement := fmt.Sprintf(`%s"%s"%s`, m[1], value, m[2])
-			if lines[i] == replacement {
+	// Multi-line form: the array spans devStart..arrayLast. An existing
+	// databricks-connect element may sit on a dedicated element line, share the
+	// opening "dev = [" line, or carry a trailing comment, and may be spelled with
+	// any PEP 503-equivalent separators/case — so detect it (outside comments,
+	// name-normalized) anywhere in the span and rewrite in place. Only when no
+	// element exists anywhere do we insert, which avoids duplicating a pin a raw
+	// substring match would miss.
+	lastElem := -1
+	for i := devStart; i <= arrayLast; i++ {
+		code, comment := lines[i], ""
+		if c := commentStart(code); c >= 0 {
+			code, comment = code[:c], code[c:]
+		}
+		if replaced, ok := replaceDbconnectElement(code, elem); ok {
+			// Rewrite only the code portion; a trailing comment is user content and
+			// must be preserved byte-for-byte, even if it contains a quoted token.
+			newLine := replaced + comment
+			if newLine == lines[i] {
 				return lines, false
 			}
-			lines[i] = replacement
+			lines[i] = newLine
 			return lines, true
 		}
+		if dbconnectQuotedRe.MatchString(code) {
+			lastElem = i
+		}
 	}
-	return lines, false
+	// No databricks-connect element anywhere in the array: insert one before the
+	// closing "]", matching the indentation of the existing elements (default four
+	// spaces when empty).
+	indent := "    "
+	for i := devStart + 1; i < arrayLast; i++ {
+		if strings.TrimSpace(lines[i]) != "" {
+			indent = leadingWhitespace(lines[i])
+			break
+		}
+	}
+	// TOML lets the final element omit its trailing comma; appending after it would
+	// then leave two adjacent elements with no separator. Ensure the current last
+	// element (if it is on its own line, not the "]" line) carries a comma first.
+	if lastElem >= 0 && lastElem < arrayLast {
+		lines[lastElem] = ensureTrailingComma(lines[lastElem])
+	}
+	out := make([]string, 0, len(lines)+1)
+	out = append(out, lines[:arrayLast]...)
+	out = append(out, indent+elem+",")
+	out = append(out, lines[arrayLast:]...)
+	return out, true
+}
+
+// dbconnectQuotedRe matches any double-quoted array element token.
+var dbconnectQuotedRe = regexp.MustCompile(`"[^"]*"`)
+
+// replaceDbconnectElement replaces the first quoted element in code whose package
+// name is databricks-connect (compared under PEP 503 normalization, so
+// "databricks_connect" / "Databricks-Connect" / "databricks.connect" all match)
+// with elem. It returns the rewritten code and whether a replacement was made.
+// Matching mirrors the artifact side (isDatabricksConnectDep) so a differently
+// spelled existing pin is rewritten in place rather than left for the insert path
+// to duplicate.
+func replaceDbconnectElement(code, elem string) (string, bool) {
+	for _, m := range dbconnectQuotedRe.FindAllStringIndex(code, -1) {
+		inner := code[m[0]+1 : m[1]-1]
+		if isDatabricksConnectDep(inner) {
+			return code[:m[0]] + elem + code[m[1]:], true
+		}
+	}
+	return code, false
+}
+
+// ensureTrailingComma appends a "," after the last non-space code character of
+// line when it lacks one, preserving any trailing whitespace and inline comment.
+// A blank or comment-only line is returned unchanged.
+func ensureTrailingComma(line string) string {
+	code, comment := line, ""
+	if c := commentStart(code); c >= 0 {
+		code, comment = code[:c], code[c:]
+	}
+	trimmed := strings.TrimRight(code, " \t")
+	if trimmed == "" || strings.HasSuffix(trimmed, ",") {
+		return line
+	}
+	return trimmed + "," + code[len(trimmed):] + comment
+}
+
+// leadingWhitespace returns the run of spaces and tabs at the start of s.
+func leadingWhitespace(s string) string {
+	return s[:len(s)-len(strings.TrimLeft(s, " \t"))]
 }
 
 // splitAtArrayClose splits a single-line array assignment into the part up to and
@@ -345,10 +440,6 @@ func arrayLineSpan(lines []string, start, limit int) (last int, multiline bool) 
 	}
 	return limit - 1, true
 }
-
-// dbconnectTokenRe matches a quoted databricks-connect element anywhere in a line, used
-// for the single-line array form.
-var dbconnectTokenRe = regexp.MustCompile(`"databricks-connect[^"]*"`)
 
 // mergeToolUv rewrites the managed [tool.uv] constraint-dependencies block. If a
 // marker-bracketed block already exists, its contents are replaced in place. Otherwise any
