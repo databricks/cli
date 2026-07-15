@@ -233,11 +233,9 @@ type jobsScanStrategy struct {
 }
 
 func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *jobsScanStrategy {
-	// AIR runs are now runs OF a persistent DABs job (RunType JOB_RUN), not the
-	// ephemeral SUBMIT_RUN the retired runs/submit path produced. A SUBMIT_RUN
-	// server filter would hide them, so we leave RunType unset and let isAirRun
-	// (task-shape) select AIR runs. Leaving it unset also still surfaces any
-	// pre-migration ephemeral SUBMIT_RUNs that remain in the workspace.
+	// AIR runs are runs OF a persistent DABs job (RunType JOB_RUN), so a SUBMIT_RUN
+	// server filter would hide them. RunType is left unset and isAirRun (task-shape)
+	// selects AIR runs; this also still surfaces any older ephemeral SUBMIT_RUNs.
 	req := jobs.ListRunsRequest{
 		ExpandTasks: true,
 		Limit:       jobsPageLimit,

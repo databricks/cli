@@ -1,6 +1,8 @@
 package aircmd
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -31,7 +33,9 @@ func TestConvertToBundleBasic(t *testing.T) {
 
 	require.Len(t, task.AiRuntimeTask.Deployments, 1)
 	dep := task.AiRuntimeTask.Deployments[0]
-	assert.Equal(t, workspaceFilePathRef+"/"+bundleCommandScript, dep.CommandPath)
+	// command_path is relative to the bundle root; translate_paths rewrites it to
+	// the deployed location.
+	assert.Equal(t, bundleCommandScript, dep.CommandPath)
 	assert.Equal(t, "GPU_8xH100", dep.Compute.AcceleratorType)
 	assert.Equal(t, 16, dep.Compute.AcceleratorCount)
 
@@ -93,9 +97,67 @@ func TestCheckBundleConvertibleRejectsCodeSourcePathCommand(t *testing.T) {
 	assert.Contains(t, err.Error(), codeSourcePathVar)
 }
 
+func TestCheckBundleConvertibleCodeSource(t *testing.T) {
+	base := func() *runConfig {
+		return &runConfig{
+			ExperimentName: "exp",
+			Command:        new("python train.py"),
+			Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+		}
+	}
+
+	// A plain working-tree snapshot is convertible: it uploads via immutable folder.
+	ok := base()
+	ok.CodeSource = &codeSourceConfig{Type: "snapshot", Snapshot: &snapshotSourceConfig{RootPath: "."}}
+	assert.NoError(t, checkBundleConvertible(ok))
+
+	// A git-pinned snapshot can't be represented (working-tree upload only).
+	git := base()
+	git.CodeSource = &codeSourceConfig{Type: "snapshot", Snapshot: &snapshotSourceConfig{RootPath: ".", Git: &gitRef{Commit: new("abc123")}}}
+	err := checkBundleConvertible(git)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "git")
+
+	// A UC Volume destination isn't supported (Workspace Files only).
+	vol := base()
+	vol.CodeSource = &codeSourceConfig{Type: "snapshot", Snapshot: &snapshotSourceConfig{RootPath: ".", RemoteVolume: new("/Volumes/c/s/v")}}
+	err = checkBundleConvertible(vol)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "remote_volume")
+}
+
+func TestStageCodeSource(t *testing.T) {
+	// A working-tree snapshot copies the tree into the bundle root; include_paths
+	// restricts to the named subpaths.
+	src := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(src, "train.py"), []byte("print()"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(src, "pkg"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "pkg", "mod.py"), []byte("x=1"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "ignore.txt"), []byte("no"), 0o644))
+
+	t.Run("whole tree", func(t *testing.T) {
+		dst := t.TempDir()
+		snap := &snapshotSourceConfig{RootPath: src}
+		require.NoError(t, stageCodeSource(t.Context(), snap, "train.yaml", dst))
+		assert.FileExists(t, filepath.Join(dst, "train.py"))
+		assert.FileExists(t, filepath.Join(dst, "pkg", "mod.py"))
+		assert.FileExists(t, filepath.Join(dst, "ignore.txt"))
+	})
+
+	t.Run("include_paths only", func(t *testing.T) {
+		dst := t.TempDir()
+		snap := &snapshotSourceConfig{RootPath: src, IncludePaths: []string{"train.py", "pkg"}}
+		require.NoError(t, stageCodeSource(t.Context(), snap, "train.yaml", dst))
+		assert.FileExists(t, filepath.Join(dst, "train.py"))
+		assert.FileExists(t, filepath.Join(dst, "pkg", "mod.py"))
+		assert.NoFileExists(t, filepath.Join(dst, "ignore.txt"))
+	})
+}
+
 func TestRenderBundleIncludesTargetsAndConvertGate(t *testing.T) {
-	// renderBundle (what --dry-run --via-dabs shows and what the run path deploys)
-	// must include the converted job AND the appended dev targets block.
+	// renderBundle (what --dry-run shows and what the run path deploys) must include
+	// the converted job, the appended dev targets block, and the immutable_folder
+	// flag that routes deploy through the content-addressed snapshot path.
 	cfg := &runConfig{
 		ExperimentName: "exp",
 		Command:        new("python train.py"),
@@ -108,6 +170,7 @@ func TestRenderBundleIncludesTargetsAndConvertGate(t *testing.T) {
 	assert.Contains(t, out, "FOO: bar")
 	assert.Contains(t, out, "targets:")
 	assert.Contains(t, out, "mode: development")
+	assert.Contains(t, out, "immutable_folder: true")
 
 	// The convertibility gate still applies: an unconvertible config errors instead
 	// of rendering a lossy bundle.

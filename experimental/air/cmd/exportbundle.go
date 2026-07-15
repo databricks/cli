@@ -8,21 +8,14 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// This file implements the train.yaml -> databricks.yml conversion behind
-// `air export-bundle`: a one-time converter that turns an AIR run YAML into a
-// Databricks Asset Bundle deploying the same workload as a native ai_runtime_task.
-// It is the durable counterpart to `air run` (which submits an ephemeral one-time
-// run): the emitted bundle is a persistent Jobs resource the user owns and deploys
-// with `databricks bundle deploy`.
+// This file converts a train.yaml runConfig to a databricks.yml Asset Bundle
+// deploying the same workload as a native ai_runtime_task. It backs both
+// `air export-bundle` and the `air run` submit path (rundabs.go).
 //
-// The field mapping mirrors buildSubmitPayload (runsubmit.go) so the generated
-// task is the shape `air run` would submit. Structural validity is already
-// guaranteed upstream by runConfig.validate(); this file adds a second,
-// converter-specific gate — checkBundleConvertible — that rejects the configs a
-// bundle cannot represent faithfully, rather than emitting a databricks.yml that
-// deploys but misbehaves. The gate exists because train.yaml and a bundle are not
-// 1:1: some run fields have no bundle equivalent, and some assume the AIR run
-// harness (e.g. $CODE_SOURCE_PATH) that a bundle does not provide.
+// checkBundleConvertible rejects configs a bundle cannot represent faithfully:
+// train.yaml and a bundle are not 1:1, and some run fields have no bundle
+// equivalent or assume the AIR run harness (e.g. $CODE_SOURCE_PATH) a bundle does
+// not provide.
 
 // bundleCommandScript is the entrypoint filename the emitted bundle references and
 // that `bundle sync` uploads alongside the user's code.
@@ -30,31 +23,24 @@ const bundleCommandScript = "command.sh"
 
 // codeSourcePathVar is the environment variable the AIR run harness sets to the
 // extracted snapshot directory. A bundle delivers code via `bundle sync` and never
-// sets it, so a command relying on it would break at runtime — the convertibility
-// gate rejects such commands.
+// sets it, so the gate rejects commands relying on it.
 const codeSourcePathVar = "$CODE_SOURCE_PATH"
 
 // workspaceFilePathRef is the bundle variable that resolves to where `bundle
 // deploy` syncs this folder; the emitted command_path points under it.
 const workspaceFilePathRef = "${workspace.file_path}"
 
-// aiRuntimeEnvVarsKey is the key linking the task's environment_variables_key to
-// the single job-level env-var profile the converter emits. Mirrors
-// AI_RUNTIME_ENV_VARS_KEY in the Python CLI (common Jobs env-var API, API-293).
+// aiRuntimeEnvVarsKey links the task's environment_variables_key to the single
+// job-level env-var profile the converter emits.
 const aiRuntimeEnvVarsKey = "default"
 
 // checkBundleConvertible reports why a structurally-valid runConfig cannot be
-// converted to a faithful bundle, or nil if it can. Every reason names the source
-// field and why it can't be represented, so the CLI can reject with an actionable
-// message instead of emitting a lossy databricks.yml.
+// converted to a faithful bundle, or nil if it can. Each reason names the source
+// field so the CLI can reject with an actionable message rather than emit a lossy
+// databricks.yml. env_variables/secrets are representable (see envVarProfiles) and
+// are not rejected here.
 func checkBundleConvertible(cfg *runConfig) error {
 	var reasons []string
-
-	// env_variables / secrets ARE now representable: they ride the common Jobs
-	// env-var API (API-293) as a job-level environment_variables profile the task
-	// references by key. convertToBundle emits that profile, so no rejection here.
-	// (Verified on staging: the profile persists on runs/get; secrets are emitted
-	// as {{secrets/scope/key}} refs resolved by Jobs at run time.)
 
 	// docker_image: a custom image must be registered before it can be referenced;
 	// that registration is not part of a bundle deploy.
@@ -71,11 +57,21 @@ func checkBundleConvertible(cfg *runConfig) error {
 		reasons = append(reasons, "usage_policy_id: budget policy binding is not represented on the ai_runtime_task bundle path yet")
 	}
 
-	// code_source with a git ref: bundle sync uploads the working tree; it cannot
-	// pin to a specific commit or fetch a remote branch (the R1/R3 gap in the
-	// uploads-vs-DABs design doc). Dropping the pin would silently change what runs.
-	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil && cfg.CodeSource.Snapshot.Git != nil {
-		reasons = append(reasons, "code_source.snapshot.git: bundle sync cannot pin to a git commit or fetch a remote branch")
+	// code_source snapshots are delivered by uploading the working tree as an
+	// immutable-folder snapshot (see writeBundleProject). Two sub-cases can't be
+	// represented that way:
+	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
+		snap := cfg.CodeSource.Snapshot
+		// git ref: the snapshot uploads the live working tree; it cannot pin to a
+		// commit or fetch a remote branch. Dropping the pin would change what runs.
+		if snap.Git != nil {
+			reasons = append(reasons, "code_source.snapshot.git: the immutable-folder snapshot uploads the working tree and cannot pin a git commit or fetch a remote branch")
+		}
+		// remote_volume: the immutable-folder snapshot uploads to Workspace Files
+		// only, not a UC Volume.
+		if snap.RemoteVolume != nil {
+			reasons = append(reasons, "code_source.snapshot.remote_volume: the immutable-folder snapshot uploads to Workspace Files, not a UC Volume")
+		}
 	}
 
 	// A command that reads $CODE_SOURCE_PATH assumes the AIR run harness, which a
@@ -98,12 +94,21 @@ func checkBundleConvertible(cfg *runConfig) error {
 // name plus one job with a single ai_runtime_task. It marshals to YAML, so field
 // order here is the emitted key order.
 type exportedBundle struct {
-	Bundle    bundleBlock            `yaml:"bundle"`
-	Resources exportedResourcesBlock `yaml:"resources"`
+	Bundle       bundleBlock            `yaml:"bundle"`
+	Resources    exportedResourcesBlock `yaml:"resources"`
+	Experimental *exportedExperimental  `yaml:"experimental,omitempty"`
 }
 
 type bundleBlock struct {
 	Name string `yaml:"name"`
+}
+
+// exportedExperimental carries experimental.immutable_folder. air run uploads the
+// synced code as a single content-addressed snapshot (/api/2.0/repos/snapshots)
+// rather than per-file — the mechanism that mirrors AIR's own zip-and-fingerprint
+// model. Requires the direct deployment engine, which the run path uses.
+type exportedExperimental struct {
+	ImmutableFolder bool `yaml:"immutable_folder"`
 }
 
 type exportedResourcesBlock struct {
@@ -114,28 +119,26 @@ type exportedJob struct {
 	Name         string                `yaml:"name"`
 	Tasks        []exportedTask        `yaml:"tasks"`
 	Environments []exportedEnvironment `yaml:"environments"`
-	// EnvironmentVariables carries env-var profiles via the common Jobs env-var API
-	// (API-293). Emitted only when the run declares env_variables/secrets; the task
-	// references a profile by key (see exportedTask.EnvironmentVariablesKey).
+	// EnvironmentVariables holds env-var profiles, referenced by a task's
+	// EnvironmentVariablesKey. Emitted only when the run declares env_variables or
+	// secrets.
 	EnvironmentVariables []exportedEnvVarProfile `yaml:"environment_variables,omitempty"`
 }
 
 type exportedTask struct {
 	TaskKey        string `yaml:"task_key"`
 	EnvironmentKey string `yaml:"environment_key"`
-	// EnvironmentVariablesKey references a job-level environment_variables profile
-	// (common Jobs env-var API). Omitted when the run has no env vars/secrets so the
-	// wire form matches the submit path, which sets it only under the same gate.
+	// EnvironmentVariablesKey references a job-level environment_variables profile.
+	// Omitted when the run has no env vars or secrets.
 	EnvironmentVariablesKey string                `yaml:"environment_variables_key,omitempty"`
 	MaxRetries              int                   `yaml:"max_retries"`
 	TimeoutSeconds          int                   `yaml:"timeout_seconds,omitempty"`
 	AiRuntimeTask           exportedAiRuntimeTask `yaml:"ai_runtime_task"`
 }
 
-// exportedEnvVarProfile is one entry in the job-level environment_variables list
-// (common Jobs env-var API). variables holds plain values inline and secrets as
-// {{secrets/scope/key}} references, resolved by Jobs at run time — the exact shape
-// the ai_runtime_task submit path emits (jobs_api_client.py, API-293).
+// exportedEnvVarProfile is one entry in the job-level environment_variables list.
+// Variables holds plain values inline and secrets as {{secrets/scope/key}}
+// references, resolved by Jobs at run time.
 type exportedEnvVarProfile struct {
 	EnvironmentVariablesKey string            `yaml:"environment_variables_key"`
 	Variables               map[string]string `yaml:"variables"`
@@ -175,28 +178,26 @@ type exportedEnvSpec struct {
 }
 
 // databricksAITokenPrefix marks an environment.version that selects the
-// databricks-ai managed base environment rather than a bare channel. Mirrors
-// _DATABRICKS_AI_TOKEN_PREFIX in the Python CLI's jobs_api_client.py.
+// databricks-ai managed base environment rather than a bare channel.
 const databricksAITokenPrefix = "databricks_ai_v"
 
 // databricksAIBaseEnvironment is the system base_environment id the databricks-ai
-// token resolves to. Mirrors _DATABRICKS_AI_BASE_ENVIRONMENT in the Python CLI.
+// token resolves to.
 const databricksAIBaseEnvironment = "workspace-base-environments/"
 
-// convertToBundle maps a convertible runConfig to the emitted bundle. It assumes
-// checkBundleConvertible has already passed. The command_path points at the synced
-// command.sh under ${workspace.file_path}; the runtime channel is resolved the same
-// way `air run` resolves it (config version, else the default), minus the process
-// env lookup so a generated artifact is reproducible rather than host-dependent.
+// convertToBundle maps a convertible runConfig to the emitted bundle, assuming
+// checkBundleConvertible has already passed. command_path is emitted as a path
+// relative to the bundle root; the bundle's translate_paths mutator rewrites it to
+// the deployed location (for immutable_folder, under the content-addressed
+// snapshot). Emitting ${workspace.file_path} directly would instead be validated as
+// a local file and fail.
 func convertToBundle(cfg *runConfig) *exportedBundle {
 	task := exportedAiRuntimeTask{
 		Experiment: cfg.ExperimentName,
 		Deployments: []exportedDeployment{{
-			// `air run` submits a single unnamed deployment; the bundle names it
-			// "worker" so the authored YAML reads clearly. The name is cosmetic (the
-			// submit payload carries none), so this does not change behavior.
+			// The deployment name is cosmetic (the wire payload carries none).
 			Name:        "worker",
-			CommandPath: workspaceFilePathRef + "/" + bundleCommandScript,
+			CommandPath: bundleCommandScript,
 			Compute: exportedCompute{
 				AcceleratorType:  cfg.Compute.AcceleratorType,
 				AcceleratorCount: cfg.Compute.NumAccelerators,
@@ -218,16 +219,15 @@ func convertToBundle(cfg *runConfig) *exportedBundle {
 		AiRuntimeTask:  task,
 	}
 
-	// Env vars ride the common Jobs env-var API: one job-level profile, referenced
-	// by the task's environment_variables_key. Emitted only when there are vars or
-	// secrets, so a var-free run's wire form matches the submit path exactly.
+	// One job-level env-var profile, referenced by the task's
+	// environment_variables_key. Emitted only when there are vars or secrets.
 	profiles := envVarProfiles(cfg)
 	if len(profiles) > 0 {
 		tsk.EnvironmentVariablesKey = aiRuntimeEnvVarsKey
 	}
 
-	// Resource key shares the task_key charset, which validateExperimentName
-	// already guarantees, so the experiment name is safe to use verbatim.
+	// The experiment name is safe as a resource key: validateExperimentName already
+	// guarantees the task_key charset.
 	return &exportedBundle{
 		Bundle: bundleBlock{Name: cfg.ExperimentName},
 		Resources: exportedResourcesBlock{
@@ -243,15 +243,14 @@ func convertToBundle(cfg *runConfig) *exportedBundle {
 				},
 			},
 		},
+		Experimental: &exportedExperimental{ImmutableFolder: true},
 	}
 }
 
 // envVarProfiles builds the job-level env-var profile list from the run's
 // env_variables and secrets, or nil when there are none. Plain values are inline;
 // each secret (ENV_VAR -> "scope/key") becomes a {{secrets/scope/key}} reference
-// Jobs resolves at run time. This mirrors the Python CLI's ai_runtime_task path
-// (jobs_api_client.py, API-293) and was verified against staging: the profile
-// persists on runs/get and secret refs resolve at run time.
+// Jobs resolves at run time.
 func envVarProfiles(cfg *runConfig) []exportedEnvVarProfile {
 	if len(cfg.EnvVariables) == 0 && len(cfg.Secrets) == 0 {
 		return nil
@@ -269,23 +268,11 @@ func envVarProfiles(cfg *runConfig) []exportedEnvVarProfile {
 	}}
 }
 
-// exportBundleEnvSpec resolves the serverless runtime selection for the bundle,
-// branching on environment.version the same way the Python CLI's jobs_api_client
-// does (jobs_api_client.py:1562-1565): a "databricks_ai_v<N>" token selects the
-// managed databricks-ai base_environment (torch + ML venv), while a bare numeric
-// channel ("4", "5", ...) uses environment_version. Unlike dlRuntimeImage it does
-// not read process env, so the generated bundle is reproducible. A requirements-file
-// dependency set carries its version in the file, so this falls back to the default
-// channel there (same as the submit path).
-//
-// TODO(air): the Go `air run` submit path (runsubmit.go) only ever emits
-// environment_version and cannot select base_environment, so a `version:
-// databricks_ai_v<N>` run lands on a bare GPU channel without torch/mlflow and
-// fails at import. This converter hardcodes the correct base_environment branch so
-// exported bundles run today; once `air run` forwards env vars/dependencies through
-// the new BYOT common Jobs API (env_file/env_var work, ETA EOQ2), the submit path
-// and this converter should share one runtime-selection helper instead of
-// duplicating the branch.
+// exportBundleEnvSpec resolves the serverless runtime selection: a
+// "databricks_ai_v<N>" token selects the managed databricks-ai base_environment
+// (torch + ML venv), while a bare numeric channel ("4", "5", ...) uses
+// environment_version. It does not read process env, so the generated bundle is
+// reproducible.
 func exportBundleEnvSpec(cfg *runConfig) exportedEnvSpec {
 	channel := strings.TrimPrefix(defaultDlRuntimeImage, "CLIENT-GPU-")
 	if v, ok := cfg.runtimeVersion(); ok {

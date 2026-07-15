@@ -75,8 +75,7 @@ The workload is described by a YAML config file (see --file).`,
 		}
 
 		if dryRun {
-			// A dry run shows the generated bundle so the user can see the artifact
-			// we'd deploy on their behalf (transparency); it does not deploy.
+			// Show the generated bundle without deploying.
 			bundleYAML, err := renderBundle(cfg, file)
 			if err != nil {
 				return err
