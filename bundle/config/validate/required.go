@@ -126,24 +126,18 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	}
 
 	// sql_warehouses.name is required by the backend but optional in the SDK
-	// (json:"name,omitempty"), so warnForMissingFields never flags it.
-	_, err := dyn.MapByPattern(
-		b.Config.Value(),
-		dyn.NewPattern(dyn.Key("resources"), dyn.Key("sql_warehouses"), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			if isMissingOrBlankString(v.Get("name")) {
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "sql_warehouse name is required",
-					Locations: v.Locations(),
-					Paths:     []dyn.Path{slices.Clone(p)},
-				})
-			}
-			return v, nil
-		},
-	)
-	if err != nil {
-		return diag.FromErr(err)
+	// (json:"name,omitempty"), so warnForMissingFields never flags it. The backend
+	// rejects names failing name.trim.nonEmpty, so treat whitespace-only as missing.
+	for key, warehouse := range b.Config.Resources.SqlWarehouses {
+		if strings.TrimSpace(warehouse.Name) == "" {
+			path := "resources.sql_warehouses." + key
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "sql_warehouse name is required",
+				Locations: b.Config.GetLocations(path),
+				Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+			})
+		}
 	}
 
 	sortDiagnostics(diags)
@@ -192,15 +186,6 @@ func isMissingOrEmptyString(v dyn.Value) bool {
 	default:
 		return false
 	}
-}
-
-// isMissingOrBlankString reports whether v is unset, null, or blank (whitespace
-// only), mirroring the sql_warehouses backend check name.trim.nonEmpty.
-func isMissingOrBlankString(v dyn.Value) bool {
-	if isMissingOrEmptyString(v) {
-		return true
-	}
-	return v.Kind() == dyn.KindString && strings.TrimSpace(v.MustString()) == ""
 }
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
