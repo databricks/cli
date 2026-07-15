@@ -70,12 +70,14 @@ func (s *FakeWorkspace) sshClientAuthorizedKey() []byte {
 func (s *Server) sshTunnelHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := sshTunnelUpgrader.Upgrade(w, r, nil)
 	if err != nil {
+		s.t.Logf("ssh tunnel: websocket upgrade failed: %s", err)
 		return
 	}
 	defer conn.Close()
 
 	sshdPath := findSSHD()
 	if sshdPath == "" {
+		s.t.Logf("ssh tunnel: sshd not found; tunnel cannot start")
 		return
 	}
 
@@ -83,17 +85,20 @@ func (s *Server) sshTunnelHandler(w http.ResponseWriter, r *http.Request) {
 	// one that stored the uploaded public key.
 	authorizedKey := s.getWorkspaceForToken(getToken(r)).sshClientAuthorizedKey()
 	if authorizedKey == nil {
+		s.t.Logf("ssh tunnel: client public key secret %q not found", sshClientPublicKeySecretKey)
 		return
 	}
 
 	dir, err := os.MkdirTemp("", "testserver-sshd-")
 	if err != nil {
+		s.t.Logf("ssh tunnel: temp dir: %s", err)
 		return
 	}
 	defer os.RemoveAll(dir)
 
 	configPath, err := writeSSHDFiles(dir, authorizedKey)
 	if err != nil {
+		s.t.Logf("ssh tunnel: write sshd files: %s", err)
 		return
 	}
 
@@ -105,13 +110,16 @@ func (s *Server) sshTunnelHandler(w http.ResponseWriter, r *http.Request) {
 	cmd.Stderr = io.Discard
 	sshdStdin, err := cmd.StdinPipe()
 	if err != nil {
+		s.t.Logf("ssh tunnel: stdin pipe: %s", err)
 		return
 	}
 	sshdStdout, err := cmd.StdoutPipe()
 	if err != nil {
+		s.t.Logf("ssh tunnel: stdout pipe: %s", err)
 		return
 	}
 	if err := cmd.Start(); err != nil {
+		s.t.Logf("ssh tunnel: start sshd: %s", err)
 		return
 	}
 
