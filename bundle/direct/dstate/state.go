@@ -24,6 +24,9 @@ const (
 	// currentStateVersion is the schema version written for deployments that record
 	// no feature flags, and the version legacy states are migrated up to on load.
 	currentStateVersion = 2
+	initialBufferSize   = 64 * 1024
+	maxWalEntrySize     = 10 * 1024 * 1024
+	walSuffix           = ".wal"
 
 	// featureStateVersion is the schema version a future CLI will write once it
 	// records deployment state "feature flags" (see Header.Features). This CLI does
@@ -47,10 +50,6 @@ const (
 	// the current feature-flag scaffolding, where this CLI reads (but does not
 	// write) featureStateVersion. A state newer than this is rejected as too new.
 	supportedStateVersion = featureStateVersion
-
-	initialBufferSize = 64 * 1024
-	maxWalEntrySize   = 10 * 1024 * 1024
-	walSuffix         = ".wal"
 )
 
 // featuresDocURL is the single documentation page describing deployment state
@@ -74,7 +73,10 @@ type DeploymentState struct {
 }
 
 type Header struct {
-	StateVersion int `json:"state_version"`
+	StateVersion int    `json:"state_version"`
+	CLIVersion   string `json:"cli_version"`
+	Lineage      string `json:"lineage"`
+	Serial       int    `json:"serial"`
 
 	// Features maps each feature flag this state depends on to a (currently empty)
 	// value. This CLI writes no features; it only reads the field to detect a state
@@ -82,10 +84,6 @@ type Header struct {
 	// map so a future CLI can attach per-feature data without reshaping the state.
 	// Empty/omitted for states that use no features.
 	Features map[string]struct{} `json:"features,omitempty"`
-
-	CLIVersion string `json:"cli_version"`
-	Lineage    string `json:"lineage"`
-	Serial     int    `json:"serial"`
 }
 
 type Database struct {
