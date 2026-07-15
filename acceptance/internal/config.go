@@ -104,6 +104,16 @@ type TestConfig struct {
 	// Requires Badness to be set, documenting why each file is shielded.
 	SoftFailFiles []string
 
+	// If true, ALL golden files for this test (including output.txt) are soft-failed:
+	// any content diff is downgraded to a non-blocking SOFTFAIL marker. This is a
+	// blunt, whole-test shield reserved for tests whose behavior end-to-end depends
+	// on an artifact fetched at runtime outside our control (e.g. a remotely-hosted
+	// template), where an upstream change breaks not just captured output but the
+	// run itself. Only use it when the CLI behavior under test is also covered by a
+	// hermetic local test. Requires Badness to be set. Prefer the per-file
+	// SoftFailFiles whenever a volatility seam can be isolated.
+	SoftFail *bool
+
 	CompiledIgnoreObject *ignore.GitIgnore
 
 	// Environment variables
@@ -272,11 +282,14 @@ func validateConfig(t *testing.T, config TestConfig, configPath string) {
 	}
 }
 
-// validateSoftFailFiles enforces the SoftFailFiles invariants: every shield needs
-// a Badness justification, output.txt can never be shielded (it carries the CLI
-// behavior a local regression would corrupt), and only generated files (out*) are
-// eligible.
+// validateSoftFailFiles enforces the soft-fail invariants: every shield needs a
+// Badness justification; per-file entries may not target output.txt (it carries the
+// CLI behavior a local regression would corrupt) and must be generated files (out*).
+// The whole-test SoftFail shield deliberately has no such file restriction.
 func validateSoftFailFiles(config TestConfig) error {
+	if isTruePtr(config.SoftFail) && config.Badness == nil {
+		return errors.New("SoftFail requires Badness to be set, documenting why the test is shielded")
+	}
 	if len(config.SoftFailFiles) == 0 {
 		return nil
 	}

@@ -66,6 +66,25 @@ trace $CLI some-command-with-drifty-output &> out.drifty.txt
 A pure local testserver test is deterministic and cannot drift, so soft-fail is only ever
 appropriate for cloud tests and tests that consume remotely-fetched artifacts.
 
+### Whole-test shield (`SoftFail`)
+
+When a test's behavior *end-to-end* depends on a runtime-fetched artifact outside our
+control — so an upstream change breaks not just captured output but the run itself (e.g. a
+remotely-hosted template whose new resources fail to deploy) — no volatility seam exists to
+split, because `output.txt` itself is the drift. `SoftFail = true` shields **every** golden
+for that test, including `output.txt`:
+
+```toml
+Badness = "mlops-stacks template is fetched remotely; upstream changes break this e2e test"
+SoftFail = true
+```
+
+This is a blunt instrument. Only use it when the CLI behavior under test is **also covered
+by a hermetic local test**, so shielding the whole e2e test can't hide a real regression in
+that behavior (it would still turn the local test red). Prefer `SoftFailFiles` whenever a
+seam can be isolated. `Badness` is still required, and structural failures (panics,
+unexpected/missing files) stay hard even under `SoftFail`.
+
 ### Refresh cadence (oncall)
 
 Soft-failed goldens are reported to the GitHub step summary on every run (via

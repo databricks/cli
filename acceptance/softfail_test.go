@@ -45,6 +45,7 @@ func TestSoftFailComparison(t *testing.T) {
 		name          string
 		relPath       string
 		softFailFiles []string
+		softFailAll   bool
 		wantFailed    bool
 		wantSoftfail  bool
 	}{
@@ -69,6 +70,20 @@ func TestSoftFailComparison(t *testing.T) {
 			wantFailed:    true,
 			wantSoftfail:  false,
 		},
+		{
+			name:         "whole-test shield drifts green with marker",
+			relPath:      "out.other.txt",
+			softFailAll:  true,
+			wantFailed:   false,
+			wantSoftfail: true,
+		},
+		{
+			name:         "whole-test shield covers output.txt",
+			relPath:      "output.txt",
+			softFailAll:  true,
+			wantFailed:   false,
+			wantSoftfail: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -79,7 +94,7 @@ func TestSoftFailComparison(t *testing.T) {
 			testutil.WriteFile(t, filepath.Join(dirNew, tt.relPath), "drifted\n")
 
 			rt := &recordingT{ctx: t.Context()}
-			doComparison(rt, testdiff.ReplacementsContext{}, dirRef, dirNew, tt.relPath, tt.softFailFiles, nil)
+			doComparison(rt, testdiff.ReplacementsContext{}, dirRef, dirNew, tt.relPath, tt.softFailFiles, tt.softFailAll, nil)
 
 			assert.Equal(t, tt.wantFailed, rt.failed)
 			gotSoftfail := strings.Contains(rt.logs.String(), "SOFTFAIL "+tt.relPath)

@@ -244,6 +244,7 @@ func TestSubsetExpanded_ScriptUsesEngine(t *testing.T) {
 
 func TestValidateSoftFailFiles(t *testing.T) {
 	badness := "backend rewords this message out of our control"
+	yes := true
 	tests := []struct {
 		name    string
 		config  TestConfig
@@ -271,6 +272,15 @@ func TestValidateSoftFailFiles(t *testing.T) {
 			name:    "non-out file is rejected",
 			config:  TestConfig{Badness: &badness, SoftFailFiles: []string{"databricks.yml"}},
 			wantErr: "must start with",
+		},
+		{
+			name:   "whole-test SoftFail with badness",
+			config: TestConfig{Badness: &badness, SoftFail: &yes},
+		},
+		{
+			name:    "whole-test SoftFail requires badness",
+			config:  TestConfig{SoftFail: &yes},
+			wantErr: "SoftFail requires Badness",
 		},
 	}
 

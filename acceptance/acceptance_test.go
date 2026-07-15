@@ -978,7 +978,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		doComparison(t, repls, dir, tmpDir, relPath, config.SoftFailFiles, &printedRepls)
+		doComparison(t, repls, dir, tmpDir, relPath, config.SoftFailFiles, isTruePtr(config.SoftFail), &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -1012,7 +1012,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, config.SoftFailFiles, &printedRepls)
+			doComparison(t, repls, dir, tmpDir, relPath, config.SoftFailFiles, isTruePtr(config.SoftFail), &printedRepls)
 		}
 	}
 
@@ -1085,7 +1085,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t testutil.TestingT, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, softFailFiles []string, printedRepls *bool) {
+func doComparison(t testutil.TestingT, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, softFailFiles []string, softFailAll bool, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -1145,11 +1145,12 @@ func doComparison(t testutil.TestingT, repls testdiff.ReplacementsContext, dirRe
 		return
 	}
 
-	// Soft-fail: a content diff in a listed golden is downgraded to a recorded,
-	// non-blocking marker instead of failing the test. This must run before
-	// AssertEqualTexts, which calls testify's assert.Equal and marks the test
-	// failed as a side effect that its bool return cannot undo.
-	if valueRef != valueNew && slices.Contains(softFailFiles, relPath) {
+	// Soft-fail: a content diff in a shielded golden is downgraded to a recorded,
+	// non-blocking marker instead of failing the test. softFailAll shields every
+	// file including output.txt; softFailFiles shields named files only. This must
+	// run before AssertEqualTexts, which calls testify's assert.Equal and marks the
+	// test failed as a side effect that its bool return cannot undo.
+	if valueRef != valueNew && (softFailAll || slices.Contains(softFailFiles, relPath)) {
 		diff := testdiff.UnifiedDiff(pathRef, pathNew, valueRef, valueNew)
 		t.Logf("SOFTFAIL %s\n%s", relPath, diff)
 		return
