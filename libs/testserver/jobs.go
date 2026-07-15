@@ -534,7 +534,6 @@ const (
 	sshTunnelBootstrapNotebook  = "ssh-server-bootstrap"
 	sshTunnelServerPort         = 7772
 	sshTunnelClusterID          = "1234-567890-serverless"
-	sshTunnelRemoteUser         = "spark"
 )
 
 // writeSSHTunnelMetadata publishes the metadata.json a real tunnel server would
