@@ -978,7 +978,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+		doComparison(t, repls, dir, tmpDir, relPath, config.SoftFailFiles, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -1012,7 +1012,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, dir, tmpDir, relPath, config.SoftFailFiles, &printedRepls)
 		}
 	}
 
@@ -1085,7 +1085,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
+func doComparison(t testutil.TestingT, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, softFailFiles []string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -1142,6 +1142,16 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 			t.Logf("Overwriting existing output file: %s", relPath)
 			testutil.WriteFile(t, pathRef, valueNew)
 		}
+		return
+	}
+
+	// Soft-fail: a content diff in a listed golden is downgraded to a recorded,
+	// non-blocking marker instead of failing the test. This must run before
+	// AssertEqualTexts, which calls testify's assert.Equal and marks the test
+	// failed as a side effect that its bool return cannot undo.
+	if valueRef != valueNew && slices.Contains(softFailFiles, relPath) {
+		diff := testdiff.UnifiedDiff(pathRef, pathNew, valueRef, valueNew)
+		t.Logf("SOFTFAIL %s\n%s", relPath, diff)
 		return
 	}
 
@@ -1441,7 +1451,7 @@ func formatOutput(w io.Writer, err error) {
 	}
 }
 
-func tryReading(t *testing.T, path string) (string, bool) {
+func tryReading(t testutil.TestingT, path string) (string, bool) {
 	info, err := os.Stat(path)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {

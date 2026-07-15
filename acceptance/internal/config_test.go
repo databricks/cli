@@ -242,6 +242,51 @@ func TestSubsetExpanded_ScriptUsesEngine(t *testing.T) {
 	assert.True(t, engines["DATABRICKS_BUNDLE_ENGINE=direct"])
 }
 
+func TestValidateSoftFailFiles(t *testing.T) {
+	badness := "backend rewords this message out of our control"
+	tests := []struct {
+		name    string
+		config  TestConfig
+		wantErr string
+	}{
+		{
+			name:   "empty is allowed without badness",
+			config: TestConfig{},
+		},
+		{
+			name:   "valid out file with badness",
+			config: TestConfig{Badness: &badness, SoftFailFiles: []string{"out.drifty.txt"}},
+		},
+		{
+			name:    "requires badness",
+			config:  TestConfig{SoftFailFiles: []string{"out.drifty.txt"}},
+			wantErr: "requires Badness",
+		},
+		{
+			name:    "output.txt is rejected",
+			config:  TestConfig{Badness: &badness, SoftFailFiles: []string{"output.txt"}},
+			wantErr: "must not contain",
+		},
+		{
+			name:    "non-out file is rejected",
+			config:  TestConfig{Badness: &badness, SoftFailFiles: []string{"databricks.yml"}},
+			wantErr: "must start with",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateSoftFailFiles(tt.config)
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestLoadConfigPhaseIsNotInherited(t *testing.T) {
 	tests := []struct {
 		name       string

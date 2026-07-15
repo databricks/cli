@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"hash/fnv"
 	"io/fs"
 	"maps"
@@ -94,6 +95,14 @@ type TestConfig struct {
 
 	// List of gitignore patterns to ignore when checking output files
 	Ignore []string
+
+	// Golden files whose content diffs are downgraded from a hard failure to a
+	// recorded, non-blocking SOFTFAIL. Use ONLY for files that capture volatility
+	// outside our control that a Repls mask or field-projection can't express
+	// (reworded backend messages, remotely-updated template dumps). "output.txt"
+	// is rejected: it carries the CLI behavior a local regression would corrupt.
+	// Requires Badness to be set, documenting why each file is shielded.
+	SoftFailFiles []string
 
 	CompiledIgnoreObject *ignore.GitIgnore
 
@@ -257,6 +266,32 @@ func validateConfig(t *testing.T, config TestConfig, configPath string) {
 				"Output files must not be ignored.", configPath, pattern)
 		}
 	}
+
+	if err := validateSoftFailFiles(config); err != nil {
+		t.Fatalf("Invalid config %s: %s", configPath, err)
+	}
+}
+
+// validateSoftFailFiles enforces the SoftFailFiles invariants: every shield needs
+// a Badness justification, output.txt can never be shielded (it carries the CLI
+// behavior a local regression would corrupt), and only generated files (out*) are
+// eligible.
+func validateSoftFailFiles(config TestConfig) error {
+	if len(config.SoftFailFiles) == 0 {
+		return nil
+	}
+	if config.Badness == nil {
+		return errors.New("SoftFailFiles requires Badness to be set, documenting why each file is shielded")
+	}
+	for _, name := range config.SoftFailFiles {
+		if name == "output.txt" {
+			return fmt.Errorf("SoftFailFiles must not contain %q; it carries CLI behavior a local regression would corrupt", name)
+		}
+		if !strings.HasPrefix(name, "out") {
+			return fmt.Errorf("SoftFailFiles entry %q must start with \"out\"; only generated output files can be soft-failed", name)
+		}
+	}
+	return nil
 }
 
 func DoLoadConfig(t *testing.T, path string) TestConfig {

@@ -65,6 +65,10 @@ func GenerateMaterializedConfig(config *TestConfig) string {
 		writeTomlStringArray(&buf, "EnvMatrix."+k, envMatrix[k])
 	}
 
+	if len(config.SoftFailFiles) > 0 {
+		writeTomlStringArray(&buf, "SoftFailFiles", config.SoftFailFiles)
+	}
+
 	return buf.String()
 }
 

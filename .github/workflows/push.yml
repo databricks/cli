@@ -152,6 +152,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      - name: Report soft-failed acceptance goldens
+        # Non-blocking: surfaces goldens that drifted but did not fail the build,
+        # so oncall can refresh them on a cadence. Runs even when tests failed.
+        if: ${{ always() }}
+        run: |
+          if [ -f test-output.json ]; then
+            python3 tools/softfail_report.py test-output.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Check no files changed or appeared after running tests
         run: |
           # Register untracked files with intent-to-add so `git diff` reports them
