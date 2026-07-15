@@ -118,11 +118,6 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		log.Debugf(ctx, "Profile %q: overrode config type from %s to %s (SPOG host)", c.Name, cfg.ConfigType(), configType)
 	}
 
-	if configType == config.InvalidConfig {
-		c.setStatus(ctx, profileStatusInvalid, "profile fields conflict (e.g. workspace and account configured together)")
-		return
-	}
-
 	var err error
 	switch configType {
 	case config.AccountConfig:
@@ -138,7 +133,8 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 			_, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 		}
 	case config.InvalidConfig:
-		// Handled above with an early return; listed here for switch exhaustiveness.
+		c.setStatus(ctx, profileStatusInvalid, "profile fields conflict (e.g. workspace and account configured together)")
+		return
 	}
 
 	c.Host = cfg.Host
