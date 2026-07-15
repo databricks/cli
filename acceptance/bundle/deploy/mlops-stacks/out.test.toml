@@ -1,5 +1,5 @@
 Local = false
 Cloud = true
-SoftFail = true
 RequiresUnityCatalog = true
+SoftFail = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
