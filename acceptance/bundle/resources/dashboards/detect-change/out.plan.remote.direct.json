@@ -1,0 +1,27 @@
+{
+  "resources.dashboards.file_reference": {
+    "remote_state": {
+      "create_time": "[TIMESTAMP]",
+      "dashboard_id": "[DASHBOARD_ID]",
+      "display_name": "test-dashboard-[UNIQUE_NAME]",
+      "embed_credentials": false,
+      "etag": "[ETAG_2]",
+      "lifecycle_state": "ACTIVE",
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
+      "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json",
+      "published": true,
+      "serialized_dashboard": "{}\n",
+      "update_time": "[TIMESTAMP]",
+      "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+    },
+    "changes": {
+      "create_time": "[TIMESTAMP]",
+      "dashboard_id": "[DASHBOARD_ID]",
+      "etag": "[ETAG_2]",
+      "lifecycle_state": "ACTIVE",
+      "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json",
+      "serialized_dashboard": "{}\n",
+      "update_time": "[TIMESTAMP]"
+    }
+  }
+}

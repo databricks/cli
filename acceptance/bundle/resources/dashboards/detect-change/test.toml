@@ -1,6 +1,18 @@
 Local = true
 Cloud = true
 
+# The plan's remote view (remote_state + each change's `remote` value) mirrors the
+# dashboards API response. Its output-only fields (create_time, update_time, etag,
+# lifecycle_state, path, ...) are populated by the backend and grow/change out of our
+# control on cloud, so the remote-only file is soft-failed. The planning decisions in
+# out.plan.$engine.json stay strict. Only the direct engine exposes a remote view; the
+# terraform remote file is structurally empty and stays strict (a regression that
+# suddenly populated it should turn the test red).
+Badness = "plan remote view mirrors the backend dashboards response, whose output-only fields drift on cloud"
+SoftFailFiles = [
+    "out.plan.remote.direct.json",
+]
+
 Ignore = [
     "databricks.yml",
 ]
