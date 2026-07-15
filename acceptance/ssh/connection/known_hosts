@@ -1,2 +1,1 @@
-# not actually checked by tests
-cluster ssh-rsa key
+# not actually checked by tests; accept-new appends the ephemeral host key here
