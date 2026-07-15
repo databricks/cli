@@ -118,3 +118,31 @@ Hello from notebook2!
     ]
   }
 }
+
+>>> [CLI] bundle run my_job --only +task_1,task_2+
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+
+[TIMESTAMP] "my_job" RUNNING
+[TIMESTAMP] "my_job" TERMINATED SUCCESS
+Output:
+=======
+Task task_1:
+Hello from notebook1!
+
+=======
+Task task_2:
+Hello from notebook2!
+
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [NUMID],
+    "only": [
+      "+task_1",
+      "task_2+"
+    ]
+  }
+}

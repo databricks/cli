@@ -74,7 +74,7 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req Request) any {
 		return Response{
 			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
-			Body:    req.Workspace.CurrentUser(),
+			Body:    req.Workspace.MeUser(req.Token),
 		}
 	})
 
@@ -104,6 +104,15 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/workspace/export", func(req Request) any {
 		path := req.URL.Query().Get("path")
 		data := req.Workspace.WorkspaceExport(path)
+
+		// A missing object returns 404, matching the real API; returning the nil
+		// body otherwise trips the response normalizer.
+		if data == nil {
+			return Response{
+				StatusCode: 404,
+				Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", path)},
+			}
+		}
 
 		// The filer reads the raw object body via ?direct_download=true, while
 		// the SDK's Workspace.Export (used by `databricks workspace export`)
@@ -259,7 +268,7 @@ func AddDefaultHandlers(server *Server) {
 				Body:       fmt.Sprintf("request parsing error: %s", err),
 			}
 		}
-		return MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
+		return req.Workspace.JobsDelete(req, request.JobId)
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {
@@ -282,8 +291,16 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsRunNow(req)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req Request) any {
+		return req.Workspace.JobsSubmit(req)
+	})
+
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any {
 		return req.Workspace.JobsGetRun(req)
+	})
+
+	server.Handle("POST", "/api/2.2/jobs/runs/delete", func(req Request) any {
+		return req.Workspace.JobsDeleteRun(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req Request) any {
@@ -315,7 +332,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// Dashboards:
 	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+		return req.Workspace.DashboardGet(req)
 	})
 	server.Handle("POST", "/api/2.0/lakeview/dashboards", func(req Request) any {
 		return req.Workspace.DashboardCreate(req)
@@ -722,6 +739,20 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SecretsGet(req)
 	})
 
+	server.Handle("GET", "/api/2.0/secrets/list", func(req Request) any {
+		return req.Workspace.SecretsList(req)
+	})
+
+	// SSH tunnel server behind the driver proxy: /metadata returns the remote
+	// login user, /logs is a best-effort error tail fetched on failure.
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
+		return Response{Body: sshTunnelRemoteUser}
+	})
+
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/logs", func(req Request) any {
+		return Response{Body: ""}
+	})
+
 	// Secrets ACLs:
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {
 		return req.Workspace.SecretsAclsGet(req)
@@ -1096,7 +1127,8 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
 		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
 		databaseID := req.URL.Query().Get("database_id")
-		return req.Workspace.PostgresDatabaseCreate(req, parent, databaseID)
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresDatabaseCreate(req, parent, databaseID, replaceExisting)
 	})
 
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
@@ -1123,7 +1155,8 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
 		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
 		roleID := req.URL.Query().Get("role_id")
-		return req.Workspace.PostgresRoleCreate(req, parent, roleID)
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresRoleCreate(req, parent, roleID, replaceExisting)
 	})
 
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
@@ -1173,7 +1206,8 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
 		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
 		roleID := req.URL.Query().Get("role_id")
-		return req.Workspace.PostgresRoleCreate(req, parent, roleID)
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresRoleCreate(req, parent, roleID, replaceExisting)
 	})
 
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {

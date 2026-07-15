@@ -166,6 +166,8 @@ func (g *genieSpace) saveConfiguration(ctx context.Context, b *bundle.Bundle, ge
 		return err
 	}
 
+	warnIfNotIncluded(ctx, b, resourcePath)
+
 	return nil
 }
 

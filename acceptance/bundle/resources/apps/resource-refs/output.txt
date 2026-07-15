@@ -7,7 +7,7 @@ Deployment complete!
 
 >>> [CLI] bundle run data_app
 ✓ Getting the status of the app data-app
-✓ App is in RUNNING state
+✓ App is in UNAVAILABLE state
 ✓ App compute is in STOPPED state
 ✓ Starting the app data-app
 ✓ App is starting...

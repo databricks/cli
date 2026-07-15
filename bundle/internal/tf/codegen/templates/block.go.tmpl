@@ -3,9 +3,13 @@
 package schema
 
 {{ range .StructTypes }}
+{{- if .Fields }}
 type {{ .Name }} struct {
     {{- range .Fields }}
     {{ .Name }} {{ .Type }} `json:"{{ .Tag }}"`
     {{- end }}
 }
+{{ else }}
+type {{ .Name }} struct{}
 {{ end }}
+{{- end }}

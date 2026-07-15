@@ -262,6 +262,13 @@ jobs:
         with:
           cache-key: test-exp-ssh
 
+      # The proxy tests exercise a real OpenSSH server, which the runner image
+      # ships only the client half of. Install it on Linux (the OS the sshd
+      # test is gated to); other platforms skip that test.
+      - name: Install OpenSSH server
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y openssh-server
+
       - name: Run tests
         run: |
           go tool -modfile=tools/task/go.mod task test-exp-ssh
@@ -425,11 +432,6 @@ jobs:
       - name: Verify that generated files are up to date
         run: |
           go tool -modfile=tools/task/go.mod task --force generate-check
-          # pydabs-codegen's `uv run` rewrites uv.lock with the JFrog pypi proxy
-          # URLs that setup-jfrog configures (and drops some size fields), whereas
-          # the committed locks use pypi.org. That churn is environment noise, not
-          # codegen drift, so discard it before diffing.
-          git checkout -- python/uv.lock python/codegen/uv.lock
           # Register untracked files with intent-to-add so `git diff` reports new
           # files (e.g. a newly generated command) too, not just modifications.
           git add --intent-to-add .
@@ -556,15 +558,15 @@ jobs:
             -f pull_request_number=${{ github.event.pull_request.number }} \
             -f commit_sha=${{ github.event.pull_request.head.sha }}
 
-      # Use the PR workflow (which runs in short mode) so commits to main do not
-      # trigger the slow CloudSlow integration tests. Those run only on the
-      # nightly schedule (and on workflow-file changes), not on every commit.
+      # Dispatch the nightly workflow; as a workflow_dispatch event it runs
+      # integration-short (CloudSlow still skips via -short, but locally-covered
+      # tests run against real clouds, unlike the PR task's skiplocal variant).
       - name: Trigger integration tests (push to main)
         if: ${{ github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |-
-          gh workflow run cli-isolated-pr.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
+          gh workflow run cli-isolated-nightly.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
             --ref main \
             -f commit_sha=${{ github.event.after }}
 

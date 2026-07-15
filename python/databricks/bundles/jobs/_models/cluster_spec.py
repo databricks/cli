@@ -222,7 +222,7 @@ class ClusterSpec:
     This field encodes, through a single value, the resources available to each of
     the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
     and optimized for memory or compute intensive workloads. A list of available node
-    types can be retrieved by using the :method:clusters/listNodeTypes API call.
+    types can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.
     """
 
     num_workers: VariableOrOptional[int] = None
@@ -289,7 +289,7 @@ class ClusterSpec:
     """
     The Spark version of the cluster, e.g. `3.3.x-scala2.11`.
     A list of available Spark versions can be retrieved by using
-    the :method:clusters/sparkVersions API call.
+    the [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.
     """
 
     ssh_public_keys: VariableOrList[str] = field(default_factory=list)
@@ -493,7 +493,7 @@ class ClusterSpecDict(TypedDict, total=False):
     This field encodes, through a single value, the resources available to each of
     the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
     and optimized for memory or compute intensive workloads. A list of available node
-    types can be retrieved by using the :method:clusters/listNodeTypes API call.
+    types can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.
     """
 
     num_workers: VariableOrOptional[int]
@@ -560,7 +560,7 @@ class ClusterSpecDict(TypedDict, total=False):
     """
     The Spark version of the cluster, e.g. `3.3.x-scala2.11`.
     A list of available Spark versions can be retrieved by using
-    the :method:clusters/sparkVersions API call.
+    the [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.
     """
 
     ssh_public_keys: VariableOrList[str]

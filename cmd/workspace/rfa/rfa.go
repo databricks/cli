@@ -3,6 +3,7 @@
 package rfa
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -265,7 +266,7 @@ Update Access Request Destinations.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'securable' in your JSON input")
+				return errors.New("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'securable' in your JSON input")
 			}
 			return nil
 		}
