@@ -1,6 +1,6 @@
-trace $CLI bundle init skeleton --config-file ./input.json --output-dir output
+trace $CLI bundle init empty --config-file ./input.json --output-dir output
 
-cd output/my_skeleton
+cd output/my_empty
 
 # Verify that the empty resources directory is preserved
 [ -d "resources" ] || exit 1

@@ -1,7 +1,7 @@
-# This is a Databricks asset bundle definition for my_skeleton.
+# This is a Databricks asset bundle definition for my_empty.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
-  name: my_skeleton
+  name: my_empty
 
 include:
   - resources/*.yml

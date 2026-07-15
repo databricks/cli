@@ -11,7 +11,7 @@ func TestTemplateHelpDescriptions(t *testing.T) {
 	expected := `- default-python: The default Python template for Notebooks and Lakeflow
 - default-sql: The default SQL template for .sql files that run with Databricks SQL
 - default-minimal: The minimal template, for advanced users
-- skeleton: A bare bundle with just a databricks.yml and an empty resources directory
+- empty: A bare bundle with just a databricks.yml and an empty resources directory
 - default-scala: The default Scala template for JAR jobs
 - dbt-sql: The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)
 - mlops-stacks: The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)
@@ -24,7 +24,7 @@ func TestTemplateOptions(t *testing.T) {
 		{Name: "default-python", Id: "The default Python template for Notebooks and Lakeflow"},
 		{Name: "default-sql", Id: "The default SQL template for .sql files that run with Databricks SQL"},
 		{Name: "default-minimal", Id: "The minimal template, for advanced users"},
-		{Name: "skeleton", Id: "A bare bundle with just a databricks.yml and an empty resources directory"},
+		{Name: "empty", Id: "A bare bundle with just a databricks.yml and an empty resources directory"},
 		{Name: "default-scala", Id: "The default Scala template for JAR jobs"},
 		{Name: "dbt-sql", Id: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)"},
 		{Name: "mlops-stacks", Id: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)"},
@@ -60,7 +60,7 @@ func TestTemplateGetDatabricksTemplate(t *testing.T) {
 	names := []TemplateName{
 		DefaultPython,
 		DefaultMinimal,
-		Skeleton,
+		Empty,
 		DefaultScala,
 		DefaultSql,
 		DbtSql,

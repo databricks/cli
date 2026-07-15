@@ -1,5 +1,5 @@
 {
-    "welcome_message": "\nWelcome to the skeleton template for Declarative Automation Bundles!\n\nThis template creates a bare-bones bundle with just a databricks.yml and an empty\nresources/ directory, ready for you to add your own jobs, pipelines, and other resources.\n\nA workspace was selected based on your current profile. For information about how to\nchange this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
+    "welcome_message": "\nWelcome to the empty template for Declarative Automation Bundles!\n\nThis template creates a bare-bones bundle with just a databricks.yml and an empty\nresources/ directory, ready for you to add your own jobs, pipelines, and other resources.\n\nA workspace was selected based on your current profile. For information about how to\nchange this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
     "properties": {
         "project_name": {
             "type": "string",
