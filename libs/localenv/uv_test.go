@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
@@ -220,4 +221,47 @@ func TestUvFailureIncludesStderr(t *testing.T) {
 		assert.Equal(t, ErrProvision, pe.Code)
 		assert.Equal(t, "uv sync failed", pe.Msg)
 	})
+}
+
+func TestConfirmUvInstall(t *testing.T) {
+	t.Run("opt_in_env_var_consents_without_prompt", func(t *testing.T) {
+		// Non-interactive context, but the opt-in env var grants consent.
+		ctx := env.Set(t.Context(), EnvAutoInstallUv, "1")
+		assert.True(t, confirmUvInstall(ctx))
+	})
+
+	t.Run("non_interactive_without_opt_in_declines", func(t *testing.T) {
+		// SetupTest defaults to PromptSupported=false, i.e. non-interactive.
+		ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
+		assert.False(t, confirmUvInstall(ctx))
+	})
+
+	t.Run("falsey_opt_in_does_not_consent_when_non_interactive", func(t *testing.T) {
+		ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
+		ctx = env.Set(ctx, EnvAutoInstallUv, "0")
+		assert.False(t, confirmUvInstall(ctx))
+	})
+}
+
+func TestLineWithPrefix(t *testing.T) {
+	// A stray leading line (as uv might emit) must not shift the parse: the
+	// value is located by prefix, not position.
+	out := "warning: something\nPYVER:3.12\nDBCVER:17.2.0\n"
+
+	pyVer, ok := lineWithPrefix(out, validatePyPrefix)
+	assert.True(t, ok)
+	assert.Equal(t, "3.12", pyVer)
+
+	dbcVer, ok := lineWithPrefix(out, validateDBCPrefix)
+	assert.True(t, ok)
+	assert.Equal(t, "17.2.0", dbcVer)
+
+	// An empty DBC value (databricks-connect absent) is found but blank.
+	empty, ok := lineWithPrefix("PYVER:3.12\nDBCVER:\n", validateDBCPrefix)
+	assert.True(t, ok)
+	assert.Empty(t, empty)
+
+	// A missing prefix reports not-found rather than a wrong line.
+	_, ok = lineWithPrefix("PYVER:3.12\n", validateDBCPrefix)
+	assert.False(t, ok)
 }

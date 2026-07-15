@@ -12,10 +12,16 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 )
+
+// EnvAutoInstallUv opts into installing uv without an interactive prompt. It
+// exists so non-interactive runs (CI, IDE integrations) can allow the install
+// that would otherwise be declined for lack of a TTY. Any truthy value enables it.
+const EnvAutoInstallUv = "DATABRICKS_LOCALENV_AUTO_INSTALL_UV"
 
 // uvManager implements PackageManager using the uv tool.
 // https://docs.astral.sh/uv/
@@ -23,16 +29,10 @@ type uvManager struct {
 	bin string
 }
 
-// newUvManager returns a uvManager whose binary path is resolved lazily via
-// EnsureAvailable.
-func newUvManager() *uvManager {
-	return &uvManager{}
-}
-
-// NewUvManager returns a PackageManager backed by the uv tool.
-// This is the exported constructor for use outside this package.
+// NewUvManager returns a PackageManager backed by the uv tool. The binary path
+// is resolved lazily via EnsureAvailable.
 func NewUvManager() PackageManager {
-	return newUvManager()
+	return &uvManager{}
 }
 
 // Name returns "uv".
@@ -47,6 +47,10 @@ func (m *uvManager) Name() string {
 func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 	bin, err := discoverUv(ctx)
 	if err != nil {
+		if !confirmUvInstall(ctx) {
+			return "", NewError(ErrUvMissing, nil,
+				"uv is required but not installed; install it (https://docs.astral.sh/uv/getting-started/installation/) or set %s=1 to let this command install it for you", EnvAutoInstallUv)
+		}
 		if installErr := installUv(ctx); installErr != nil {
 			return "", NewError(ErrUvMissing, installErr, "uv installation failed")
 		}
@@ -66,17 +70,24 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 	return strings.TrimSpace(version), nil
 }
 
+// runUv runs the uv binary with args in dir, injecting UV_INDEX_URL from pip.conf
+// when appropriate. An empty dir runs in the current working directory
+// (process.WithDir("") is a no-op). The index-url is injected only when
+// resolveIndexURL returns non-empty; it returns "" when UV_INDEX_URL is already
+// set, so an explicit value in the environment is never clobbered.
+func (m *uvManager) runUv(ctx context.Context, args []string, dir string) error {
+	if indexURL := m.resolveIndexURL(ctx); indexURL != "" {
+		_, err := process.Background(ctx, args, process.WithDir(dir), process.WithEnv("UV_INDEX_URL", indexURL))
+		return err
+	}
+	_, err := process.Background(ctx, args, process.WithDir(dir))
+	return err
+}
+
 // EnsurePython installs the requested Python minor version via uv.
 func (m *uvManager) EnsurePython(ctx context.Context, minor string) error {
 	args := append([]string{m.bin}, m.pythonInstallArgs(minor)...)
-	indexURL := m.resolveIndexURL(ctx)
-	var err error
-	if indexURL != "" {
-		_, err = process.Background(ctx, args, process.WithEnv("UV_INDEX_URL", indexURL))
-	} else {
-		_, err = process.Background(ctx, args)
-	}
-	if err != nil {
+	if err := m.runUv(ctx, args, ""); err != nil {
 		return uvFailure(ErrPythonInstall, err, "uv python install "+minor)
 	}
 	return nil
@@ -85,14 +96,7 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor string) error {
 // Provision runs `uv sync` inside projectDir to install project dependencies.
 func (m *uvManager) Provision(ctx context.Context, projectDir string) error {
 	args := append([]string{m.bin}, m.syncArgs()...)
-	indexURL := m.resolveIndexURL(ctx)
-	var err error
-	if indexURL != "" {
-		_, err = process.Background(ctx, args, process.WithDir(projectDir), process.WithEnv("UV_INDEX_URL", indexURL))
-	} else {
-		_, err = process.Background(ctx, args, process.WithDir(projectDir))
-	}
-	if err != nil {
+	if err := m.runUv(ctx, args, projectDir); err != nil {
 		return uvFailure(ErrProvision, err, "uv sync")
 	}
 	return nil
@@ -117,14 +121,7 @@ func venvPython(projectDir string) string {
 // activated.
 func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error {
 	args := append([]string{m.bin}, m.pipSeedArgs(venvPython(projectDir))...)
-	indexURL := m.resolveIndexURL(ctx)
-	var err error
-	if indexURL != "" {
-		_, err = process.Background(ctx, args, process.WithDir(projectDir), process.WithEnv("UV_INDEX_URL", indexURL))
-	} else {
-		_, err = process.Background(ctx, args, process.WithDir(projectDir))
-	}
-	if err != nil {
+	if err := m.runUv(ctx, args, projectDir); err != nil {
 		return uvFailure(ErrProvision, err, "uv pip seed")
 	}
 	return nil
@@ -136,12 +133,16 @@ func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error 
 // error: PackageNotFoundError is caught so the probe never fails just because the
 // package is absent. The caller decides whether an empty version is acceptable.
 func (m *uvManager) Validate(ctx context.Context, projectDir string) (string, string, error) {
+	// Each value is printed with a unique prefix so parsing greps for the prefix
+	// rather than relying on line position: any stray line uv or the interpreter
+	// writes to stdout (e.g. a warning) would otherwise shift a positional parse.
+	// A missing databricks-connect prints an empty DBC: value, not an error.
 	pyCode := `import sys, importlib.metadata
-print(f"{sys.version_info.major}.{sys.version_info.minor}")
+print(f"` + validatePyPrefix + `{sys.version_info.major}.{sys.version_info.minor}")
 try:
-    print(importlib.metadata.version("databricks-connect"))
+    print("` + validateDBCPrefix + `" + importlib.metadata.version("databricks-connect"))
 except importlib.metadata.PackageNotFoundError:
-    print("")`
+    print("` + validateDBCPrefix + `")`
 	// --no-project runs the interpreter from the created .venv without re-resolving/syncing
 	// the project's declared dependencies, so validation observes exactly what was installed.
 	out, err := process.Background(ctx,
@@ -151,16 +152,32 @@ except importlib.metadata.PackageNotFoundError:
 	if err != nil {
 		return "", "", uvFailure(ErrValidate, err, "uv run python validation")
 	}
-	lines := strings.Split(strings.TrimSpace(out), "\n")
-	if len(lines) < 1 || strings.TrimSpace(lines[0]) == "" {
+	pyVer, ok := lineWithPrefix(out, validatePyPrefix)
+	if !ok || pyVer == "" {
 		return "", "", NewError(ErrValidate, nil, "unexpected output from uv run: %q", out)
 	}
-	// The databricks-connect line is empty when the package is not installed.
-	dbcVer := ""
-	if len(lines) >= 2 {
-		dbcVer = strings.TrimSpace(lines[len(lines)-1])
+	// The databricks-connect value is empty when the package is not installed.
+	dbcVer, _ := lineWithPrefix(out, validateDBCPrefix)
+	return pyVer, dbcVer, nil
+}
+
+// Validation output prefixes: uv run's stdout is grepped for these rather than
+// parsed positionally, so extra lines from uv or the interpreter don't break it.
+const (
+	validatePyPrefix  = "PYVER:"
+	validateDBCPrefix = "DBCVER:"
+)
+
+// lineWithPrefix returns the trimmed remainder of the first line in out that
+// starts with prefix, and whether such a line was found.
+func lineWithPrefix(out, prefix string) (string, bool) {
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		if after, ok := strings.CutPrefix(line, prefix); ok {
+			return strings.TrimSpace(after), true
+		}
 	}
-	return strings.TrimSpace(lines[0]), dbcVer, nil
+	return "", false
 }
 
 // syncArgs returns the argument slice for `uv sync` (without the binary).
@@ -289,6 +306,22 @@ func uvFailure(code ErrorCode, err error, action string) *PipelineError {
 		msg = msg + ": " + strings.TrimSpace(perr.Stderr)
 	}
 	return NewError(code, err, "%s", msg)
+}
+
+// confirmUvInstall reports whether the caller has consented to installUv running
+// a remote installer that mutates the machine. The EnvAutoInstallUv opt-in wins
+// outright (for CI / IDE integrations); otherwise an interactive session is
+// prompted, and a non-interactive session without the opt-in declines rather than
+// silently downloading and executing an installer.
+func confirmUvInstall(ctx context.Context) bool {
+	if optIn, ok := env.GetBool(ctx, EnvAutoInstallUv); ok && optIn {
+		return true
+	}
+	if !cmdio.IsPromptSupported(ctx) {
+		return false
+	}
+	ok, err := cmdio.AskYesOrNo(ctx, "uv is not installed. Download and run the official uv installer (https://astral.sh/uv/install.sh)?")
+	return err == nil && ok
 }
 
 // installUv runs the official uv installer for the current OS. Unix uses the

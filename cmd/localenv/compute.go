@@ -57,7 +57,15 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 
 	// Serverless jobs have Environments populated; classic compute uses JobClusters.
 	if len(job.Settings.Environments) > 0 {
-		return "", true, "", nil
+		// The serverless environment version (e.g. "4") is recorded on the job's
+		// environment spec, unlike the bundle path where it is unavailable. Return
+		// it so ResolveTarget pins the matching serverless-vN instead of defaulting
+		// to v4. Spec/version may be empty on older jobs; that falls back to v4.
+		version := ""
+		if spec := job.Settings.Environments[0].Spec; spec != nil {
+			version = spec.EnvironmentVersion
+		}
+		return "", true, version, nil
 	}
 
 	if len(job.Settings.JobClusters) > 0 {
