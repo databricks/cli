@@ -43,8 +43,13 @@ cleanup() {
 
 trap cleanup EXIT
 
-$CLI bundle plan -o json > plan.json 2>LOG.plan_initial.err
-cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
+# Only compute a plan up front when the READPLAN variant actually consumes it via --plan.
+# Without READPLAN, deploy computes its own plan internally, so a separate `bundle plan`
+# invocation is pure waste.
+if [[ -n "$READPLAN" ]]; then
+    $CLI bundle plan -o json > plan.json 2>LOG.plan_initial.err
+    cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
+fi
 
 trace $CLI bundle deploy $(readplanarg plan.json) &> LOG.deploy
 deploy_rc=$?
@@ -59,14 +64,27 @@ deployed=1
 echo INPUT_CONFIG_OK
 
 # A fuzzed config can deploy yet legitimately differ from the fake server, so the
-# fuzzer sets SKIP_DRIFT_CHECK to assert only no-panic; curated configs check drift.
+# fuzzer sets SKIP_DRIFT_CHECK to swap the exact no-drift check for the weaker but
+# fidelity-independent plan-determinism oracle; curated configs check full drift.
 if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
-    # Check both text and JSON plan for no changes
-    # Note, expect that there maybe more than one resource unchanged
+    # JSON plan asserts every action is "skip" -- a strict superset of the text
+    # renderer's "Plan: 0 to add, 0 to change, 0 to delete" summary.
     $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
     cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
     verify_no_drift.py LOG.planjson
-
-    $CLI bundle plan 2>LOG.plan.err | contains.py '!panic:' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
-    cat LOG.plan.err | contains.py '!panic:' '!internal error' > /dev/null
+else
+    # Fuzz mode: the exact no-drift check false-positives because the fake server does
+    # not round-trip every field, and "no destructive re-plan" is no better -- for an
+    # unchanged config any recreate is just a local-vs-remote representation mismatch on
+    # an immutable field (fake-server fidelity), not real churn. So assert the one
+    # invariant that is independent of server fidelity: planning is deterministic. Two
+    # consecutive plans of the same deployed state must be byte-identical; a diff means
+    # nondeterministic planning/serialization (unstable map order, per-run randomness), a
+    # real bug. `|| true`: a plan that fails on an unstubbed read is a coverage gap, not a
+    # bug -- both plans are then empty and the diff trivially passes.
+    $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err || true
+    cat LOG.plan1.err | contains.py '!panic:' '!internal error' > /dev/null
+    $CLI bundle plan -o json > LOG.plan2.json 2>LOG.plan2.err || true
+    cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
+    diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
 fi
