@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -76,6 +77,13 @@ var testConfig map[string]any = map[string]any{
 	"database_instances": &resources.DatabaseInstance{
 		DatabaseInstance: database.DatabaseInstance{
 			Name: "mydbinstance",
+		},
+	},
+
+	"instance_pools": &resources.InstancePool{
+		CreateInstancePool: compute.CreateInstancePool{
+			InstancePoolName: "my-instance-pool",
+			NodeTypeId:       "i3.xlarge",
 		},
 	},
 
@@ -427,6 +435,16 @@ var testDeps = map[string]prepareWorkspace{
 	"clusters.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"instance_pools.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/instance-pools/pool-permissions",
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",

@@ -232,6 +232,26 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Instance Pools: Prefix, Tags
+	for _, pool := range r.InstancePools {
+		if pool == nil {
+			continue
+		}
+		pool.InstancePoolName = prefix + pool.InstancePoolName
+		if len(tags) > 0 {
+			if pool.CustomTags == nil {
+				pool.CustomTags = make(map[string]string, len(tags))
+			}
+			for _, tag := range tags {
+				k := b.Tagging.NormalizeKey(tag.Key)
+				v := b.Tagging.NormalizeValue(tag.Value)
+				if _, ok := pool.CustomTags[k]; !ok {
+					pool.CustomTags[k] = v
+				}
+			}
+		}
+	}
+
 	// Dashboards: Prefix
 	for _, dashboard := range r.Dashboards {
 		if dashboard == nil {
