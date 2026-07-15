@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle validate
-Error: grant principal is required
+Warning: grant principal is required
   at resources.catalogs.my_catalog.grants[0]
   in databricks.yml:11:11
 
@@ -10,6 +10,4 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 1 error
-
-Exit code: 1
+Found 1 warning

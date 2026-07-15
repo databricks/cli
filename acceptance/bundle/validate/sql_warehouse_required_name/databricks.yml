@@ -7,3 +7,8 @@ resources:
     # (json:"name,omitempty").
     my_warehouse:
       cluster_size: "2X-Small"
+    # Whitespace-only name: the backend rejects name.trim.nonEmpty, so this is
+    # treated as missing too.
+    blank_warehouse:
+      name: "   "
+      cluster_size: "2X-Small"
