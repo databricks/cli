@@ -27,6 +27,7 @@ func newRunCommand() *cobra.Command {
 		overrides      []string
 		dryRun         bool
 		idempotencyKey string
+		viaDABS        bool
 	)
 
 	cmd := &cobra.Command{
@@ -43,6 +44,10 @@ The workload is described by a YAML config file (see --file).`,
 	cmd.Flags().StringArrayVar(&overrides, "override", nil, "Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate the config without submitting")
 	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Return the existing run if this key was already used")
+	// [experimental] Submit as a Databricks Asset Bundle (a persistent job:
+	// convert -> deploy -> run) instead of an ephemeral run. Default off; the
+	// ephemeral runs/submit path is unchanged. Also honors AIR_VIA_DABS=1.
+	cmd.Flags().BoolVar(&viaDABS, "via-dabs", false, "[experimental] Submit via a DABs bundle (persistent job) instead of an ephemeral run")
 	_ = cmd.MarkFlagRequired("file")
 
 	// --dry-run only validates the config locally, so it needs no workspace.
@@ -80,7 +85,15 @@ The workload is described by a YAML config file (see --file).`,
 		}
 
 		w := cmdctx.WorkspaceClient(ctx)
-		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey)
+
+		// submitWorkload (ephemeral runs/submit) and submitViaDABS (persistent
+		// bundle job) share a signature, so the DABs gate is a call-site swap; the
+		// whole downstream (envelope, dashboard URL) is reused unchanged.
+		submit := submitWorkload
+		if resolveViaDABS(ctx, viaDABS) {
+			submit = submitViaDABS
+		}
+		runID, dashboardURL, err := submit(ctx, w, cfg, file, idempotencyKey)
 		if err != nil {
 			return err
 		}
