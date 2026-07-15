@@ -1,0 +1,1 @@
+* `databricks auth profiles` no longer stalls on an unreachable workspace. Each profile is now validated with a 10s timeout (also applied to the host-metadata fetch in `EnsureResolved`), so a host the SDK would otherwise retry — connection refused, connect/TLS timeout, or a retriable 5xx — can't block the whole listing for the SDK's default ~5-minute retry budget.
