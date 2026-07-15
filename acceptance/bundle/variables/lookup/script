@@ -1,1 +1,8 @@
+# The SP display name to look up differs per environment; TEST_SP_DISPLAY_NAME is
+# provisioned in the cloud env, and we fall back to the name the local testserver
+# reports so the test passes in both. Mask it to a stable placeholder either way.
+export TEST_SP_DISPLAY_NAME="${TEST_SP_DISPLAY_NAME:-deco-test-spn}"
+echo "$TEST_SP_DISPLAY_NAME:TEST_SP_DISPLAY_NAME" >> ACC_REPLS
+envsubst < databricks.yml.tmpl > databricks.yml
+
 trace $CLI bundle validate -o json | jq '.variables'

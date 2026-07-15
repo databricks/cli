@@ -19,8 +19,8 @@ trace $CLI bundle validate
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
-trace $CLI postgres get-branch "${hard_branch}" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
-trace $CLI postgres get-branch "${soft_branch}" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
+trace $CLI postgres get-branch "${hard_branch}" | branch_fields
+trace $CLI postgres get-branch "${soft_branch}" | branch_fields
 
 # Deploy requests are split per-engine: Terraform sends "parent" in the branch
 # create body, the direct engine sends it only as a query parameter.

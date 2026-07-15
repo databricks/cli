@@ -3,6 +3,7 @@ package cmdio
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -35,15 +36,17 @@ func WithElapsedTime() SpinnerOption {
 	}
 }
 
-// newSpinnerModel creates a new spinner model.
-func newSpinnerModel(opts ...SpinnerOption) spinnerModel {
+// newSpinnerModel creates a new spinner model. The style is minted from a
+// renderer targeting w so color handling stays centralized in NewRenderer.
+func newSpinnerModel(ctx context.Context, w io.Writer, opts ...SpinnerOption) spinnerModel {
 	s := bubblespinner.New()
 	// Braille spinner frames with 200ms timing
 	s.Spinner = bubblespinner.Spinner{
 		Frames: []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"},
 		FPS:    time.Second / 5, // 200ms = 5 FPS
 	}
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("10")) // Green
+	r, _ := NewRenderer(ctx, w)
+	s.Style = r.NewStyle().Foreground(lipgloss.Color("10")) // Green
 
 	m := spinnerModel{
 		spinner: s,
@@ -147,7 +150,7 @@ func (c *cmdIO) NewSpinner(ctx context.Context, opts ...SpinnerOption) *spinner 
 	}
 
 	// Create model and program
-	m := newSpinnerModel(opts...)
+	m := newSpinnerModel(ctx, c.err, opts...)
 	p := tea.NewProgram(
 		m,
 		tea.WithInput(nil),
