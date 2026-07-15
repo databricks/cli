@@ -146,7 +146,7 @@ func TestHasDatabricksSkillsInstalledLegacyPath(t *testing.T) {
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("USERPROFILE", tmpHome)
 	// Skills only in the legacy location should still be detected.
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, legacySkillsDir, "databricks"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, LegacySkillsDir, "databricks"), 0o755))
 
 	agentDir := filepath.Join(tmpHome, ".claude")
 	require.NoError(t, os.MkdirAll(agentDir, 0o755))

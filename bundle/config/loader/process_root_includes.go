@@ -39,6 +39,10 @@ func hasGlobCharacters(path string) (string, bool) {
 func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var out []bundle.Mutator
 
+	// Preserve the raw include patterns before they are replaced below with the
+	// expanded list of loaded files, so IsFileIncluded can re-match against them.
+	b.SetIncludePatterns(b.Config.Include)
+
 	// Map with files we've already seen to avoid loading them twice.
 	seen := map[string]bool{}
 
