@@ -66,6 +66,8 @@ The remote modifications will be lost.
 update dashboards.file_reference
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
 Warning: dashboard "file_reference" has been modified remotely
   at resources.dashboards.file_reference
   in databricks.yml:10:7

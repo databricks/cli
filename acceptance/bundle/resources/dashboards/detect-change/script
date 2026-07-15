@@ -43,7 +43,7 @@ trace $CLI bundle plan
 # remote_state (the full backend read) and each change's `remote` value -- mirrors
 # the dashboards API response, whose output-only fields grow and change out of our
 # control on cloud, so it is routed to its own soft-failed file (see test.toml).
-$CLI bundle plan -o json > plan.json
+trace $CLI bundle plan -o json > plan.json
 trace jq 'del(.plan[].remote_state?) | del(.plan[].changes[]?.remote)' plan.json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace jq '.plan | map_values({remote_state, changes: (.changes // {} | map_values(.remote))})' plan.json > out.plan.remote.$DATABRICKS_BUNDLE_ENGINE.json
 rm plan.json
