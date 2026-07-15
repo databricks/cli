@@ -304,6 +304,10 @@ func installUv(ctx context.Context) error {
 		// https://astral.sh/uv/install.sh
 		cmd = []string{"sh", "-c", "curl -LsSf https://astral.sh/uv/install.sh | sh"}
 	}
+	// This downloads and runs a remote installer that mutates the user's machine
+	// (~/.local/bin), so record exactly what ran before it fires — visible under
+	// --debug for anyone auditing where uv came from.
+	log.Debugf(ctx, "uv: not found; running installer: %s", strings.Join(cmd, " "))
 	_, err := process.Background(ctx, cmd)
 	return err
 }

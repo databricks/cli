@@ -47,7 +47,12 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 
 	if pipelineErr != nil {
 		cmdio.LogString(ctx, "For more detail, re-run with --debug, or --output json to share a structured report.")
-		return pipelineErr
+		// The failing phase's message was already printed by the phase loop above
+		// (Pipeline.fail sets the errored phase's Detail to the error text).
+		// Returning pipelineErr would make root print "Error: ..." with the same
+		// message again, since PipelineError.Unwrap yields the cause, not the
+		// ErrAlreadyPrinted sentinel. Signal already-printed to exit non-zero once.
+		return root.ErrAlreadyPrinted
 	}
 
 	// Print a final success / check summary.
