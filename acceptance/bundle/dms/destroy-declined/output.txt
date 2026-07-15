@@ -1,0 +1,56 @@
+
+=== Deploy creates the DMS deployment + version 1
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-destroy-declined/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Destroy without --auto-approve is declined: it must not create a DMS version or delete the deployment
+>>> [CLI] bundle destroy
+Error: this command will destroy all resources deployed by this bundle, including workspace files in the deployment directory.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve.
+
+Exit code: 1
+
+=== Only the deploy's DMS calls were recorded — no destroy version, no DELETE from the declined destroy
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "q": {
+    "deployment_id": "[UUID]"
+  },
+  "body": {
+    "target_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "q": {
+    "version_id": "0"
+  },
+  "body": {
+    "cli_version": "[DEV_VERSION]",
+    "target_name": "default",
+    "version_type": "VERSION_TYPE_DEPLOY"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/0/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-destroy-declined/default
+
+Deleting files...
+Destroy complete!

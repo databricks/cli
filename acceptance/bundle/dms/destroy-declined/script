@@ -1,0 +1,14 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy creates the DMS deployment + version 1"
+trace $CLI bundle deploy
+
+title "Destroy without --auto-approve is declined: it must not create a DMS version or delete the deployment"
+errcode trace $CLI bundle destroy
+
+title "Only the deploy's DMS calls were recorded — no destroy version, no DELETE from the declined destroy"
+trace print_requests.py //api/2.0/bundle

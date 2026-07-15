@@ -1,0 +1,23 @@
+cleanup() {
+    title "Destroy: a DMS version is recorded while the file lock is held"
+    trace $CLI bundle destroy --auto-approve
+    trace print_requests.py //api/2.0/bundle --keep
+    trace print_requests.py //deploy.lock
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy: a DMS deployment + version are recorded while the file lock is held"
+trace $CLI bundle deploy
+
+title "DMS API calls made during deploy (create deployment, create + complete version)"
+trace print_requests.py //api/2.0/bundle --keep
+
+title "The workspace-filesystem lock is applied alongside DMS (deploy.lock written)"
+trace print_requests.py //deploy.lock
+
+title "Redeploy after deleting local cache (.databricks): the lineage is recovered from remote state, so the same deployment is reused and the version increments (no new CreateDeployment)"
+rm -rf .databricks
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --keep
+trace print_requests.py //deploy.lock
