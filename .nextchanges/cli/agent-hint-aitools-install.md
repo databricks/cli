@@ -1,1 +1,0 @@
-When Claude Code runs the CLI without the Databricks AI tooling installed, the CLI now prints a one-line recommendation on stderr to run `databricks aitools install`. The recommendation is shown at most once per hour per Claude session, and never for human callers or `aitools` commands.

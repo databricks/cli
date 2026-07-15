@@ -1,1 +1,0 @@
-Fixed `databricks auth describe` misattributing a profile selected via `DATABRICKS_CONFIG_PROFILE` as `(from bundle)` when run inside a bundle root ([#5904](https://github.com/databricks/cli/pull/5904)).

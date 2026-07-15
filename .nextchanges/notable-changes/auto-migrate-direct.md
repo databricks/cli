@@ -1,1 +1,0 @@
-Auto-migrate a bundle from terraform to the direct engine when `bundle.engine` is `"direct"` (or `DATABRICKS_BUNDLE_ENGINE=direct`) and the post-deploy dry-run migration is clean; a warning is emitted if the dry-run surfaces errors or warnings so the automatic migration is skipped.
