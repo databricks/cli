@@ -59,7 +59,8 @@ deployed=1
 echo INPUT_CONFIG_OK
 
 # A fuzzed config can deploy yet legitimately fail to redeploy or differ, so the fuzzer
-# sets SKIP_DRIFT_CHECK to assert only no-panic; curated configs check the no-op.
+# sets SKIP_DRIFT_CHECK to swap the exact no-op check for the weaker but
+# fidelity-independent plan-determinism oracle; curated configs check the no-op.
 if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
     trace $CLI bundle deploy &> LOG.redeploy
     cat LOG.redeploy | contains.py '!panic:' '!internal error' > /dev/null
@@ -71,4 +72,26 @@ if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
 
     $CLI bundle plan 2>LOG.plan.err | contains.py '!panic:' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
     cat LOG.plan.err | contains.py '!panic:' '!internal error' > /dev/null
+else
+    # Fuzz mode: the exact no-op check false-positives because the fake server does not
+    # round-trip every field, so a redeploy can legitimately want a destructive recreate
+    # (e.g. an immutable field the fake server reformats) and then fail non-interactively.
+    # That is a fidelity gap, not a bug, so tolerate a non-zero redeploy; a panic in it is
+    # still caught below. On a clean redeploy, assert the one fidelity-independent
+    # invariant: planning is deterministic -- two consecutive plans of the redeployed state
+    # must be byte-identical. A diff means nondeterministic planning/serialization
+    # (unstable map order, per-run randomness), a real bug.
+    redeploy_rc=0
+    trace $CLI bundle deploy &> LOG.redeploy || redeploy_rc=$?
+    cat LOG.redeploy | contains.py '!panic:' '!internal error' > /dev/null
+
+    if [ "$redeploy_rc" -eq 0 ]; then
+        # `|| true`: a plan that fails on an unstubbed read is a coverage gap, not a bug --
+        # both plans are then empty and the diff trivially passes.
+        $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err || true
+        cat LOG.plan1.err | contains.py '!panic:' '!internal error' > /dev/null
+        $CLI bundle plan -o json > LOG.plan2.json 2>LOG.plan2.err || true
+        cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
+        diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
+    fi
 fi

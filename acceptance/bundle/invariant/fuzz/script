@@ -13,9 +13,14 @@ COUNT="${FUZZ_SEED_COUNT:-5}"
 # goroutines for triage) then SIGKILL and flag a hang. Needs GNU timeout; else uncapped.
 SEED_TIMEOUT="${FUZZ_SEED_TIMEOUT:-180}"
 
-# Optional overall budget (seconds): stop starting new seeds past it and exit cleanly, so
-# a slow-but-progressing variant isn't force-killed and read as a failure. Unset = no cap.
-BUDGET="${FUZZ_TIME_BUDGET:-}"
+# Overall budget (seconds): stop starting new seeds past it and exit cleanly, so a
+# slow-but-progressing variant (the mutate/deploy combos never finish a large seed window)
+# is not force-killed at the per-script Timeout and read as a failure. Defaults on rather
+# than opt-in so a direct `go test` run truncates cleanly too, not just `task test-fuzz`.
+# 900s leaves margin under the 20m Timeout in test.toml for the last-started seed (capped at
+# SEED_TIMEOUT) plus teardown; keep it comfortably below Timeout - SEED_TIMEOUT. Set
+# FUZZ_TIME_BUDGET=0 to disable the cap (e.g. a completionist run with a raised Timeout).
+BUDGET="${FUZZ_TIME_BUDGET:-900}"
 
 if [ -z "${FUZZ_CHECK_DRIFT:-}" ]; then
     export SKIP_DRIFT_CHECK=1
@@ -66,8 +71,8 @@ record() {
 
 for ((offset = 0; offset < COUNT; offset++)); do
     # Stop before the per-test timeout kills us mid-seed; a clean stop, not a failure, so
-    # log to a file rather than the compared stdout/stderr.
-    if [ -n "$BUDGET" ] && [ "$SECONDS" -ge "$BUDGET" ]; then
+    # log to a file rather than the compared stdout/stderr. BUDGET=0 disables the cap.
+    if [ "$BUDGET" != "0" ] && [ "$SECONDS" -ge "$BUDGET" ]; then
         echo "fuzz: stopping after $offset/$COUNT seeds; hit FUZZ_TIME_BUDGET=${BUDGET}s" > LOG.budget
         break
     fi
@@ -83,6 +88,14 @@ for ((offset = 0; offset < COUNT; offset++)); do
 
     if [ "$rc" -eq 0 ]; then
         record deployed "$seed"
+        # Optional generator-independent regression corpus: persist configs that actually
+        # deployed, so runs accumulate known-good inputs that stay valid (and replayable)
+        # even after the generator changes. Unset by default, so the committed run and its
+        # empty-output assertion are unaffected.
+        if [ -n "${FUZZ_CORPUS_DIR:-}" ]; then
+            mkdir -p "$FUZZ_CORPUS_DIR"
+            cp "$dir/databricks.yml" "$FUZZ_CORPUS_DIR/${FUZZ_MODE:-generate}-${FUZZ_TARGET:-no_drift}-count${FUZZ_RESOURCE_COUNT:-1}-seed${seed}.yml"
+        fi
         continue
     fi
 

@@ -485,7 +485,7 @@ def to_yaml(obj, indent=0, list_item=False):
             if isinstance(v, (dict, list)) and v:
                 out += f"{prefix}{k}:\n" + to_yaml(v, child_indent)
             else:
-                out += f"{prefix}{k}: {json.dumps(v)}\n"
+                out += f"{prefix}{k}: {dump_scalar(v)}\n"
             first = False
         return out
     if isinstance(obj, list):
@@ -496,9 +496,19 @@ def to_yaml(obj, indent=0, list_item=False):
             if isinstance(item, (dict, list)):
                 out += to_yaml(item, indent, list_item=True)
             else:
-                out += f"{pad}- {json.dumps(item)}\n"
+                out += f"{pad}- {dump_scalar(item)}\n"
         return out
-    return f"{pad}{json.dumps(obj)}\n"
+    return f"{pad}{dump_scalar(obj)}\n"
+
+
+def dump_scalar(v):
+    # ensure_ascii=False keeps non-ASCII as literal UTF-8. The default would escape an
+    # astral char (e.g. the 🚀 probe) into a UTF-16 surrogate pair (\ud83d\ude80), which
+    # YAML's parser rejects as an "invalid Unicode character escape code" -- so the config
+    # dies at parse time and never reaches bundle logic. A literal UTF-8 scalar is valid
+    # YAML and exercises the CLI's actual unicode handling instead. Control chars (\n, \t)
+    # are still escaped by json.dumps regardless, which YAML accepts.
+    return json.dumps(v, ensure_ascii=False)
 
 
 def main():
