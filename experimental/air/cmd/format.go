@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/muesli/termenv"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -26,12 +27,6 @@ func orNA(s string) string {
 	return s
 }
 
-// osc8Link wraps label in an OSC 8 terminal hyperlink to url.
-// See https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
-func osc8Link(label, url string) string {
-	return "\x1b]8;;" + url + "\x1b\\" + label + "\x1b]8;;\x1b\\"
-}
-
 // hyperlink renders label as a terminal hyperlink to url when out is a rich
 // terminal, otherwise it returns label unchanged. This mirrors the Python CLI's
 // Rich link markup, which drops the URL on non-terminals (so piped or captured
@@ -40,7 +35,7 @@ func hyperlink(ctx context.Context, out io.Writer, label, url string) string {
 	if url == "" || !cmdio.SupportsColor(ctx, out) {
 		return label
 	}
-	return osc8Link(label, url)
+	return termenv.Hyperlink(url, label)
 }
 
 // reformatYAMLForDisplay re-renders a training-config YAML so multi-line strings

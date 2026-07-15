@@ -1,7 +1,3 @@
-# This command does not deploy a bundle, so no engine matrix is needed.
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
-
 # Disable the on-disk run cache so --all-status output is deterministic across runs.
 [Env]
 DATABRICKS_CACHE_ENABLED = "false"
