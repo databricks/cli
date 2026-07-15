@@ -2,9 +2,9 @@ Ignore = [
     "home"
 ]
 
-# A 500 from the validation endpoint says nothing about the profile itself —
-# the platform is broken. The status should be "unknown", not "invalid",
-# so users don't think their credentials are bad.
+# A 500 from the validation endpoint fails validation like any other error:
+# the profile is reported valid=false with the backend error echoed verbatim
+# in valid_reason, so users can see it was the platform, not their credentials.
 [[Server]]
 Pattern = "GET /api/2.0/preview/scim/v2/Me"
 Response.StatusCode = 500
