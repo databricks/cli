@@ -115,27 +115,15 @@ func queryCapturingServer(t *testing.T, gotRunType *string, body string) *httpte
 	return srv
 }
 
-func TestListDefaultScanRestrictsToSubmitRun(t *testing.T) {
-	// Without --via-dabs the jobs scan restricts to SUBMIT_RUN server-side (the
-	// ephemeral runs air submits today).
-	var runType string
-	srv := queryCapturingServer(t, &runType, runsListBody(t, "", airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "exp")))
-	_, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
-		activeOnly: true, userFilter: "me@example.com",
-	}).next(10)
-	require.NoError(t, err)
-	assert.Equal(t, "SUBMIT_RUN", runType)
-}
-
-func TestListViaDABSIncludesJobRuns(t *testing.T) {
-	// --via-dabs drops the SUBMIT_RUN restriction so DABs-submitted AIR runs
-	// (RunType JOB_RUN, i.e. runs of a persistent job) are not filtered out
-	// server-side; isAirRun still selects by task shape.
+func TestListScanIncludesJobRuns(t *testing.T) {
+	// AIR runs are now runs of a persistent DABs job (RunType JOB_RUN), so the jobs
+	// scan must NOT restrict to SUBMIT_RUN server-side — that would hide them.
+	// run_type is left unset and isAirRun selects AIR runs by task shape.
 	var runType string
 	dabsRun := airBaseRun(9, "me@example.com", "GPU_1xA10", 1, "exp")
 	srv := queryCapturingServer(t, &runType, runsListBody(t, "", dabsRun))
 	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
-		activeOnly: true, userFilter: "me@example.com", includeDABs: true,
+		activeOnly: true, userFilter: "me@example.com",
 	}).next(10)
 	require.NoError(t, err)
 	assert.Empty(t, runType, "run_type must be unset so JOB_RUN DABs runs are included")

@@ -1,108 +1,114 @@
 package aircmd
 
-// PROTOTYPE — Option D: `air run --via-dabs` submits the workload as a Databricks
-// Asset Bundle (a persistent Jobs resource: deploy then run) instead of the
-// ephemeral runs/submit path in runsubmit.go.
+// air run submits a training workload by converting the run YAML to a Databricks
+// Asset Bundle and driving `bundle deploy` + `bundle run` in-process. This is the
+// ONLY submit path: per the AIR-CLI/DABs agreement with Pieter Noordhuis (DECO
+// requires AIR to integrate with DABs and submit through the public Jobs API, not
+// an internal proxy), `air run` is a high-level wrapper of
+// [convert train.yaml -> databricks.yml -> deploy -> run].
 //
-// Design (per the "AIR CLI + DABs" design meeting, Jul 14): `air run` becomes a
-// high-level caller of [convert -> bundle deploy -> bundle run]. This reuses the
-// exportbundle.go converter (train.yaml -> databricks.yml) verbatim, so the
-// generated ai_runtime_task — including env vars via the common Jobs env-var API —
-// is exactly what `air export-bundle` produces and what `air run` would submit.
+// The bundle is a persistent Jobs resource, so `air list` finds it via the indexed
+// jobs-list path and re-runs anchor to a standing job. It reuses the exportbundle.go
+// converter verbatim, so the deployed ai_runtime_task — including env vars via the
+// common Jobs env-var API — is exactly what `air export-bundle` emits.
 //
-// It is gated behind --via-dabs (and AIR_VIA_DABS=1); the ephemeral path stays the
-// default and untouched. This is additive.
+// IN-PROCESS, NOT SHELL-OUT: deploy and run call the bundle libraries directly
+// (cmd/bundle/utils.ProcessBundle + bundle/run), the same entry points the
+// `databricks bundle` commands use and the pattern the pipelines CLI established
+// (cmd/pipelines). There is no child `databricks` process, so the deploy always
+// uses this build's ai_runtime_task-aware bundle schema — an older `databricks` on
+// PATH would drop the unknown ai_runtime_task field and deploy a task-less job.
 //
-// PROTOTYPE SCOPE / shell-out choice: deploy+run are driven by shelling out to the
-// `databricks bundle` CLI, which is the literal "wrapper around DABs" the meeting
-// described and keeps this diff legible. A production version would instead call
-// cmd/bundle/utils.ProcessBundle(...) in-process (see TODO(prototype) below) to
-// avoid the child-process dependency. The behavior (persistent job, deploy
-// latency, no ephemeral-job GC) is identical either way — the point being to
-// exercise the real DABs path end to end.
-//
-// KNOWN GAP (called out in the design doc): the deployed job is PERSISTENT and is
-// NOT swept by the Jobs ephemeral-job GC (JobsSoftDeletion only sweeps
-// EPHEMERAL/WORKFLOW types). Every `air run --via-dabs` leaves a job behind. A real
-// impl must choose a reuse/cleanup policy (stable per-experiment bundle so re-runs
-// update one job, or `bundle destroy` after run). The prototype leaves the job and
-// logs the tradeoff.
+// KNOWN TRADEOFF (design doc): the deployed job is PERSISTENT and is NOT swept by
+// the Jobs ephemeral-job GC (JobsSoftDeletion only sweeps EPHEMERAL/WORKFLOW
+// types). Runs of distinct experiments accumulate distinct jobs, drifting toward
+// the per-workspace saved-jobs cap. Job reuse (a stable per-experiment bundle name,
+// so re-runs update one job) mitigates it; a cleanup/TTL story is future work.
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
+	bundleresources "github.com/databricks/cli/bundle/resources"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/spf13/cobra"
 )
 
-// viaDABSEnv opts into the DABs submit path without the flag (flag wins).
-const viaDABSEnv = "AIR_VIA_DABS"
-
-// dabsTarget is the bundle target the prototype deploys/runs against. A real impl
-// would let the user pick (or default per-workspace); "dev" gets DABs dev-mode
-// (per-user name prefix + isolation), which suits AIR's per-user runs.
+// dabsTarget is the bundle target air deploys/runs against. `dev` mode gives DABs
+// dev-mode (per-user name prefix + isolation), which matches AIR's per-user runs
+// and keeps one user's jobs from colliding with another's on the same experiment.
 const dabsTarget = "dev"
 
-// submitViaDABS is the Option-D analogue of submitWorkload (runsubmit.go), with the
-// identical signature so run.go can pick either at the call site. It converts the
-// run config to a bundle, writes the project (databricks.yml + command.sh + code),
-// then deploys and runs it. Returns the run_id + dashboard URL.
-func submitViaDABS(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string) (int64, string, error) {
+// submitWorkload converts the run config to a bundle, deploys it (creating/updating
+// a persistent job), then triggers a run. It returns the new run_id and its
+// dashboard URL. The whole flow is in-process: deploy reuses the bundle deploy
+// orchestration (state, sync, engine) via ProcessBundle; run calls Jobs.RunNow on
+// the deployed job so the run_id is returned directly (fire-and-return, no wait).
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string) (int64, string, error) {
 	// The converter's gate rejects configs a bundle can't represent faithfully
-	// (e.g. git-pinned code_source, $CODE_SOURCE_PATH commands). Fail fast with its
-	// actionable message before we write or deploy anything.
+	// (docker_image, usage_policy, git-pinned code_source, $CODE_SOURCE_PATH
+	// commands). Fail fast with its actionable message before writing or deploying.
 	if err := checkBundleConvertible(cfg); err != nil {
 		return 0, "", err
 	}
 
-	// Idempotency doesn't map onto deploy+run (two calls, not one tokened submit);
-	// note rather than silently honor it. A real impl dedupes on bundle/job identity.
+	// Idempotency does not map onto deploy+run (two calls, not one tokened submit).
+	// Note it rather than silently honoring it; job identity (stable bundle name)
+	// is the DABs-native dedupe mechanism.
 	if idempotencyKey != "" || cfg.IdempotencyToken != nil {
 		cmdio.LogString(ctx, "note: --idempotency-key is ignored on the DABs path (deploy+run is not a single idempotent call)")
 	}
 
-	root, cleanup, err := writeBundleProject(cfg, configPath)
+	bundleRoot, cleanup, err := writeBundleProject(cfg, configPath)
 	if err != nil {
 		return 0, "", err
 	}
 	defer cleanup()
 
 	// Surface the generated artifact's path (transparency): the user can inspect
-	// what we deploy on their behalf. The dir is temporary (auto-removed on exit) —
-	// labeled as such so we don't imply a durable, user-managed location. For the
-	// full contents without deploying, use `air run --dry-run --via-dabs`.
-	cmdio.LogString(ctx, "Generated bundle (temporary): "+filepath.Join(root, "databricks.yml"))
+	// what we deploy on their behalf. The dir is temporary (auto-removed on exit).
+	// For the full contents without deploying, use `air run --dry-run`.
+	cmdio.LogString(ctx, "Generated bundle (temporary): "+filepath.Join(bundleRoot, "databricks.yml"))
 
 	// deploy: creates/updates the persistent job. This is the step that adds
-	// latency vs the ephemeral submit (measured ~2-3s warm, ~12s first-of-session).
+	// latency vs the old ephemeral submit (~2-3s warm, ~12s first-of-session).
 	cmdio.LogString(ctx, "Deploying bundle (creates a persistent job)...")
-	if err := runBundle(ctx, w, root, "deploy"); err != nil {
+	b, err := deployBundle(ctx, w, bundleRoot)
+	if err != nil {
 		return 0, "", fmt.Errorf("bundle deploy: %w", err)
 	}
 
-	// run: RunNow on the deployed job. --no-wait returns as soon as the run starts,
-	// matching the ephemeral path's fire-and-return (we don't block on completion).
+	// run: RunNow on the just-deployed job, returning as soon as the run is created
+	// (no wait), matching the old submit path's fire-and-return.
 	cmdio.LogString(ctx, "Triggering run...")
-	if err := runBundle(ctx, w, root, "run", cfg.ExperimentName, "--no-wait"); err != nil {
+	runID, err := runDeployedJob(ctx, w, b, cfg.ExperimentName)
+	if err != nil {
 		return 0, "", fmt.Errorf("bundle run: %w", err)
 	}
 
 	cmdio.LogString(ctx, "note: this run created a PERSISTENT job (not auto-GC'd like an ephemeral run). Use `air list` to find it.")
 
-	// TODO(prototype): parse run_id + dashboard URL from `databricks bundle run
-	// --output json`. For now return 0 and the jobs page; the run is live either way.
-	return 0, workspaceJobsURL(w), nil
+	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
+	return runID, dashboardURL, nil
 }
 
-// renderBundle produces the exact databricks.yml the run path would deploy: the
+// renderBundle produces the exact databricks.yml the run path deploys: the
 // exportbundle.go converter output plus the dev targets block the run path appends.
-// It touches no filesystem and does not deploy, so `air run --dry-run --via-dabs`
-// can show the user the artifact we'd generate on their behalf (transparency), and
+// It touches no filesystem and does not deploy, so `air run --dry-run` can show the
+// user the artifact we'd generate on their behalf (transparency), and
 // writeBundleProject reuses it so preview and real run never diverge.
 func renderBundle(cfg *runConfig, configPath string) (string, error) {
 	if err := checkBundleConvertible(cfg); err != nil {
@@ -119,37 +125,36 @@ func renderBundle(cfg *runConfig, configPath string) (string, error) {
 }
 
 // writeBundleProject renders databricks.yml (via renderBundle) plus the command.sh
-// and code the bundle syncs, into a temp bundle root. Returns the root and a
-// cleanup func.
+// the bundle syncs, into a temp bundle root. Returns the root and a cleanup func.
 //
-// TODO(prototype): reuse the ephemeral path's snapshot/upload staging so the exact
-// code tree + command.sh land in the bundle folder. This sketch writes command.sh
-// from cfg.Command; wiring code_source snapshotting through the inherited
-// bundle/config/mutator/aicode mutator is the remaining piece.
+// TODO(air): reuse the code-snapshot staging (snapshot.go) so the user's code tree
+// lands in the bundle folder for `bundle sync` to upload. This writes command.sh
+// from cfg.Command; wiring code_source snapshotting into the synced folder is the
+// remaining piece before code_source runs are supported on this path.
 func writeBundleProject(cfg *runConfig, configPath string) (string, func(), error) {
 	body, err := renderBundle(cfg, configPath)
 	if err != nil {
 		return "", func() {}, err
 	}
-	root, err := os.MkdirTemp("", "air-dabs-*")
+	bundleRoot, err := os.MkdirTemp("", "air-dabs-*")
 	if err != nil {
 		return "", func() {}, err
 	}
-	cleanup := func() { _ = os.RemoveAll(root) }
+	cleanup := func() { _ = os.RemoveAll(bundleRoot) }
 
-	if err := os.WriteFile(filepath.Join(root, "databricks.yml"), []byte(body), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(bundleRoot, "databricks.yml"), []byte(body), 0o600); err != nil {
 		cleanup()
 		return "", func() {}, err
 	}
 
 	// command.sh: the entrypoint the task's command_path points at (synced by deploy).
 	if cfg.Command != nil {
-		if err := os.WriteFile(filepath.Join(root, bundleCommandScript), []byte(*cfg.Command), 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(bundleRoot, bundleCommandScript), []byte(*cfg.Command), 0o600); err != nil {
 			cleanup()
 			return "", func() {}, err
 		}
 	}
-	return root, cleanup, nil
+	return bundleRoot, cleanup, nil
 }
 
 // bundleTargetsBlock is the minimal dev target appended to the converted YAML so
@@ -157,43 +162,106 @@ func writeBundleProject(cfg *runConfig, configPath string) (string, func(), erro
 // isolation. The workspace host comes from the active CLI profile, so it's omitted
 // here (the bundle resolves it from auth at deploy time).
 func bundleTargetsBlock() string {
-	// The comment supersedes the export-bundle header's "add a targets block"
-	// note: on the run path we append this dev target for you (host resolved from
-	// your CLI profile at deploy time), so `air run --via-dabs` needs no manual edit.
-	return "\n# Appended by `air run --via-dabs` (host resolved from your CLI profile at deploy time):\ntargets:\n  " + dabsTarget + ":\n    mode: development\n    default: true\n"
+	return "\n# Appended by `air run` (host resolved from your CLI profile at deploy time):\ntargets:\n  " + dabsTarget + ":\n    mode: development\n    default: true\n"
 }
 
-// runBundle shells out to `databricks bundle <args...> -t <target>` in the bundle
-// root. Uses the direct engine (no Terraform / no registry.terraform.io dep — GA
-// default on new CLIs, set explicitly for older ones). Auth is inherited from the
-// same profile/env the parent air command resolved.
+// deployBundle deploys the bundle rooted at bundleRoot in-process and returns the
+// configured *bundle.Bundle (with resource IDs populated, so the caller can resolve
+// the deployed job). It reuses cmd/bundle/utils.ProcessBundle — the exact
+// orchestration `databricks bundle deploy` runs (load, validate, build, sync,
+// deploy) — via a synthetic carrier command:
 //
-// TODO(prototype): replace with an in-process cmd/bundle/utils.ProcessBundle call
-// so there's no dependency on a `databricks` binary on PATH.
-func runBundle(ctx context.Context, w *databricks.WorkspaceClient, root string, args ...string) error {
-	full := append([]string{"bundle"}, args...)
-	full = append(full, "-t", dabsTarget)
-	cmd := exec.CommandContext(ctx, "databricks", full...)
-	cmd.Dir = root
-	cmd.Env = append(os.Environ(),
-		"DATABRICKS_BUNDLE_ENGINE=direct",
-		"DATABRICKS_HOST="+w.Config.Host,
-	)
-	cmd.Stdout = os.Stderr // keep our stdout clean for the JSON envelope
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
+//   - air's own cobra command carries none of the flags ProcessBundle reads
+//     (--var, --target, --profile, --output), so we build a throwaway command that
+//     declares them and seed the context (logdiag + auth profile + bundle root).
+//   - the bundle root is steered to bundleRoot with DATABRICKS_BUNDLE_ROOT on the
+//     context (env.Set is context-scoped, not a real env var), so MustConfigureBundle
+//     loads our generated databricks.yml instead of walking cwd.
+//   - the direct engine (DATABRICKS_BUNDLE_ENGINE=direct) avoids the Terraform
+//     provider/registry dependency; it is the GA default on new CLIs and set
+//     explicitly here so the deploy is self-contained.
+func deployBundle(ctx context.Context, w *databricks.WorkspaceClient, bundleRoot string) (*bundle.Bundle, error) {
+	cmd := newBundleCarrierCommand(ctx, w, bundleRoot)
 
-func workspaceJobsURL(w *databricks.WorkspaceClient) string {
-	host := w.Config.Host
-	for len(host) > 0 && host[len(host)-1] == '/' {
-		host = host[:len(host)-1]
+	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		FastValidate: true,
+		Build:        true,
+		Deploy:       true,
+		// air's command context already has logdiag initialized (root's
+		// PersistentPreRunE); re-initializing panics ("InitContext twice"). Same as
+		// the pipelines CLI run path.
+		SkipInitContext: true,
+	})
+	if err != nil {
+		return nil, err
 	}
-	return host + "/jobs"
+	if b == nil || logdiag.HasError(cmd.Context()) {
+		return nil, errors.New("bundle deploy failed")
+	}
+	return b, nil
 }
 
-// resolveViaDABS decides whether to take the DABs submit path: the --via-dabs flag
-// or AIR_VIA_DABS=1. Kept here so run.go's wiring stays a one-liner.
-func resolveViaDABS(ctx context.Context, flag bool) bool {
-	return flag || env.Get(ctx, viaDABSEnv) == "1"
+// newBundleCarrierCommand builds the synthetic cobra command deployBundle hands to
+// ProcessBundle. It declares the flags ProcessBundle/configureBundle read and seeds
+// the context so the deploy runs with air's resolved auth against the generated
+// bundle root. The command is never added to a tree and never Execute()d — it only
+// carries flags + context into the bundle libraries.
+func newBundleCarrierCommand(ctx context.Context, w *databricks.WorkspaceClient, bundleRoot string) *cobra.Command {
+	cmd := &cobra.Command{Use: "air-bundle-deploy"}
+
+	// Flags ProcessBundleRet (and the bundle root loader) read by name.
+	cmd.Flags().StringSlice("var", nil, "")
+	cmd.Flags().StringP("target", "t", dabsTarget, "")
+	cmd.Flags().StringP("profile", "p", "", "")
+	outputFlag := flags.OutputText
+	cmd.Flags().Var(&outputFlag, "output", "")
+
+	// Forward air's active profile so the bundle authenticates the same way air
+	// did, instead of falling back to the default profile.
+	if w.Config.Profile != "" {
+		_ = cmd.Flags().Set("profile", w.Config.Profile)
+	}
+
+	// logdiag is how the bundle libraries report diagnostics; ProcessBundle asserts
+	// it is set up (we pass SkipInitContext=false, so it initializes, but the auth
+	// profile + bundle root must be seeded before that on the same context).
+	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_ENGINE", "direct")
+	cmd.SetContext(ctx)
+	return cmd
+}
+
+// runDeployedJob triggers a run of the just-deployed job and returns the new run_id
+// without waiting for completion. It resolves the job by its bundle resource key
+// (the experiment name) to get the server-assigned job_id that deploy populated,
+// then calls Jobs.RunNow. AIR runs take no run parameters, so RunNow needs only the
+// job_id. (We call RunNow directly rather than the bundle runner's NoWait path,
+// which returns nil instead of the run_id.)
+func runDeployedJob(ctx context.Context, w *databricks.WorkspaceClient, b *bundle.Bundle, experimentName string) (int64, error) {
+	ref, err := bundleresources.Lookup(b, experimentName, isRunnableJob)
+	if err != nil {
+		return 0, fmt.Errorf("locating the deployed job: %w", err)
+	}
+	job, ok := ref.Resource.(*resources.Job)
+	if !ok {
+		return 0, fmt.Errorf("deployed resource %q is not a job", experimentName)
+	}
+	jobID, err := strconv.ParseInt(job.ID, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("deployed job has no valid id (deploy may have failed): %q", job.ID)
+	}
+
+	wait, err := w.Jobs.RunNow(ctx, jobs.RunNow{JobId: jobID})
+	if err != nil {
+		return 0, err
+	}
+	return wait.RunId, nil
+}
+
+// isRunnableJob filters resources.Lookup to job resources, so an experiment name
+// that also matched another resource type can't be selected. AIR bundles only ever
+// contain one job, so this is a safety guard rather than a disambiguator.
+func isRunnableJob(ref bundleresources.Reference) bool {
+	_, ok := ref.Resource.(*resources.Job)
+	return ok
 }
