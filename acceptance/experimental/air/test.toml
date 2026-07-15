@@ -1,0 +1,4 @@
+# No air command deploys a bundle, so the engine matrix is unnecessary for the
+# whole air test tree.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
