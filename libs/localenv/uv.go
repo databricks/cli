@@ -171,7 +171,7 @@ const (
 // lineWithPrefix returns the trimmed remainder of the first line in out that
 // starts with prefix, and whether such a line was found.
 func lineWithPrefix(out, prefix string) (string, bool) {
-	for _, line := range strings.Split(out, "\n") {
+	for line := range strings.SplitSeq(out, "\n") {
 		line = strings.TrimSpace(line)
 		if after, ok := strings.CutPrefix(line, prefix); ok {
 			return strings.TrimSpace(after), true
