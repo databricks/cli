@@ -83,7 +83,10 @@ func TestBuildArtifacts_InlineRequirementsAndParameters(t *testing.T) {
 	assert.Contains(t, req, "- torch")
 }
 
-func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
+func TestBuildArtifacts_EnvVarsNotStagedAsSidecars(t *testing.T) {
+	// Env vars and secrets ride the common Jobs env-var API (the converter's
+	// environment_variables profile), not sidecar files — matching the Python CLI,
+	// which dropped the env_vars.json / secret_env_vars.json side-channel.
 	path := writeConfigFile(t, "run.yaml", "x: y\n")
 	cfg := &runConfig{
 		Command:      new("echo hi"),
@@ -93,14 +96,8 @@ func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
 
 	items, err := buildArtifacts(cfg, path)
 	require.NoError(t, err)
-	assert.Subset(t, itemNames(items), []string{envVarsName, secretEnvVarsName})
-
-	byName := map[string][]byte{}
-	for _, it := range items {
-		byName[it.name] = it.data
-	}
-	assert.JSONEq(t, `[{"name":"WANDB","value":"demo"}]`, string(byName[envVarsName]))
-	assert.JSONEq(t, `[{"name":"HF_TOKEN","secret_scope":"myscope","secret_key":"hf"}]`, string(byName[secretEnvVarsName]))
+	assert.NotContains(t, itemNames(items), "env_vars.json")
+	assert.NotContains(t, itemNames(items), "secret_env_vars.json")
 }
 
 func TestBuildArtifacts_RequirementsFile(t *testing.T) {

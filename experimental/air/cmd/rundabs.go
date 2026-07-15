@@ -107,12 +107,17 @@ func renderBundle(cfg *runConfig, configPath string) (string, error) {
 	return string(body) + bundleTargetsBlock(), nil
 }
 
-// writeBundleProject renders databricks.yml (via renderBundle) plus command.sh and,
-// for a code_source snapshot, the user's code tree, into a temp bundle root. Deploy
-// uploads the whole root as an immutable-folder snapshot. Returns the root and a
-// cleanup func.
+// writeBundleProject renders databricks.yml plus the launch artifacts the AI Runtime
+// harness reads (command.sh, training_config.yaml, requirements.yaml, and — when
+// present — hyperparameters.yaml and env-var sidecars) and, for a code_source
+// snapshot, the user's code tree, into a temp bundle root. Deploy uploads the whole
+// root as an immutable-folder snapshot. Returns the root and a cleanup func.
 func writeBundleProject(ctx context.Context, cfg *runConfig, configPath string) (string, func(), error) {
 	body, err := renderBundle(cfg, configPath)
+	if err != nil {
+		return "", func() {}, err
+	}
+	artifacts, err := buildArtifacts(cfg, configPath)
 	if err != nil {
 		return "", func() {}, err
 	}
@@ -122,8 +127,8 @@ func writeBundleProject(ctx context.Context, cfg *runConfig, configPath string) 
 	}
 	cleanup := func() { _ = os.RemoveAll(bundleRoot) }
 
-	// Copy the code_source working tree into the bundle root first, so a stray
-	// command.sh / databricks.yml in the user's tree can't shadow ours below.
+	// Copy the code_source working tree first, so a stray command.sh / databricks.yml
+	// in the user's tree can't shadow the generated files written below.
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 		if err := stageCodeSource(ctx, cfg.CodeSource.Snapshot, configPath, bundleRoot); err != nil {
 			cleanup()
@@ -136,9 +141,10 @@ func writeBundleProject(ctx context.Context, cfg *runConfig, configPath string) 
 		return "", func() {}, err
 	}
 
-	// command.sh: the entrypoint the task's command_path points at.
-	if cfg.Command != nil {
-		if err := os.WriteFile(filepath.Join(bundleRoot, bundleCommandScript), []byte(*cfg.Command), 0o600); err != nil {
+	// The launch artifacts the harness expects co-located with command.sh, the same
+	// set the retired ephemeral path uploaded (buildArtifacts).
+	for _, it := range artifacts {
+		if err := os.WriteFile(filepath.Join(bundleRoot, it.name), it.data, 0o600); err != nil {
 			cleanup()
 			return "", func() {}, err
 		}

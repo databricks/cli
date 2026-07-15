@@ -15,13 +15,11 @@ import (
 )
 
 func TestWriteBundleProject(t *testing.T) {
-	cfg := &runConfig{
-		ExperimentName: "exp",
-		Command:        new("echo hi"),
-		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
-	}
+	configPath := writeConfigFile(t, "train.yaml", minimalConfig)
+	cfg, err := loadRunConfig(configPath)
+	require.NoError(t, err)
 
-	root, cleanup, err := writeBundleProject(t.Context(), cfg, "train.yaml")
+	root, cleanup, err := writeBundleProject(t.Context(), cfg, configPath)
 	require.NoError(t, err)
 	defer cleanup()
 
@@ -32,10 +30,12 @@ func TestWriteBundleProject(t *testing.T) {
 	assert.Contains(t, string(body), "immutable_folder: true")
 	assert.Contains(t, string(body), "mode: development")
 
-	// command.sh holds the run's command verbatim.
+	// The launch artifacts the AI Runtime harness reads are staged next to command.sh.
+	assert.FileExists(t, filepath.Join(root, bundleCommandScript))
+	assert.FileExists(t, filepath.Join(root, trainingConfigName))
 	script, err := os.ReadFile(filepath.Join(root, bundleCommandScript))
 	require.NoError(t, err)
-	assert.Equal(t, "echo hi", string(script))
+	assert.Equal(t, "python train.py", string(script))
 
 	// cleanup removes the temp root.
 	cleanup()
@@ -49,14 +49,16 @@ func TestWriteBundleProjectStagesCodeSource(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(src, "pkg"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(src, "pkg", "mod.py"), []byte("x=1"), 0o644))
 
-	cfg := &runConfig{
-		ExperimentName: "exp",
-		Command:        new("python train.py"),
-		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
-		CodeSource:     &codeSourceConfig{Type: "snapshot", Snapshot: &snapshotSourceConfig{RootPath: src}},
-	}
+	configPath := writeConfigFile(t, "train.yaml", minimalConfig+`
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: `+src+`
+`)
+	cfg, err := loadRunConfig(configPath)
+	require.NoError(t, err)
 
-	root, cleanup, err := writeBundleProject(t.Context(), cfg, "train.yaml")
+	root, cleanup, err := writeBundleProject(t.Context(), cfg, configPath)
 	require.NoError(t, err)
 	defer cleanup()
 
@@ -69,35 +71,42 @@ func TestWriteBundleProjectStagesCodeSource(t *testing.T) {
 
 func TestWriteBundleProjectCommandShadowProtection(t *testing.T) {
 	// A command.sh in the user's tree must not shadow the one we generate from the
-	// run's command: our write happens after the tree copy.
+	// run's command: the artifact writes happen after the tree copy.
 	src := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(src, bundleCommandScript), []byte("STALE"), 0o644))
 
-	cfg := &runConfig{
-		ExperimentName: "exp",
-		Command:        new("FRESH"),
-		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
-		CodeSource:     &codeSourceConfig{Type: "snapshot", Snapshot: &snapshotSourceConfig{RootPath: src}},
-	}
+	configPath := writeConfigFile(t, "train.yaml", minimalConfig+`
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: `+src+`
+`)
+	cfg, err := loadRunConfig(configPath)
+	require.NoError(t, err)
 
-	root, cleanup, err := writeBundleProject(t.Context(), cfg, "train.yaml")
+	root, cleanup, err := writeBundleProject(t.Context(), cfg, configPath)
 	require.NoError(t, err)
 	defer cleanup()
 
+	// minimalConfig's command is "python train.py", not the STALE tree copy.
 	script, err := os.ReadFile(filepath.Join(root, bundleCommandScript))
 	require.NoError(t, err)
-	assert.Equal(t, "FRESH", string(script))
+	assert.Equal(t, "python train.py", string(script))
 }
 
 func TestWriteBundleProjectRejectsUnconvertible(t *testing.T) {
 	// A gate failure (here: a $CODE_SOURCE_PATH command) surfaces before any temp
 	// directory is created.
-	cfg := &runConfig{
-		ExperimentName: "exp",
-		Command:        new("cd $CODE_SOURCE_PATH && python train.py"),
-		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
-	}
-	_, _, err := writeBundleProject(t.Context(), cfg, "train.yaml")
+	configPath := writeConfigFile(t, "train.yaml", `
+experiment_name: exp
+command: cd $CODE_SOURCE_PATH && python train.py
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 1
+`)
+	cfg, err := loadRunConfig(configPath)
+	require.NoError(t, err)
+	_, _, err = writeBundleProject(t.Context(), cfg, configPath)
 	require.Error(t, err)
 }
 
