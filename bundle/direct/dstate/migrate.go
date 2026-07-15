@@ -36,8 +36,8 @@ func migrateState(db *Database) error {
 	if db.StateVersion == currentStateVersion {
 		return nil
 	}
-	if db.StateVersion > featureStateVersion {
-		return fmt.Errorf("state version %d is newer than supported version %d; upgrade the CLI", db.StateVersion, featureStateVersion)
+	if db.StateVersion > supportedStateVersion {
+		return fmt.Errorf("state version %d is newer than supported version %d; upgrade the CLI", db.StateVersion, supportedStateVersion)
 	}
 
 	for version := db.StateVersion; version < currentStateVersion; version++ {

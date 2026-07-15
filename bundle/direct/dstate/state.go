@@ -44,6 +44,13 @@ const (
 	// this), otherwise a real v3 state gets silently reinterpreted as v2.
 	featureStateVersion = 3
 
+	// supportedStateVersion is the highest schema version this CLI can read. It is
+	// normally equal to currentStateVersion — the version this CLI reads is the
+	// version it writes — and exceeds it only during a two-phase version bump like
+	// the current feature-flag scaffolding, where this CLI reads (but does not
+	// write) featureStateVersion. A state newer than this is rejected as too new.
+	supportedStateVersion = featureStateVersion
+
 	initialBufferSize = 64 * 1024
 	maxWalEntrySize   = 10 * 1024 * 1024
 	walSuffix         = ".wal"
