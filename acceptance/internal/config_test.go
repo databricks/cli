@@ -243,7 +243,6 @@ func TestSubsetExpanded_ScriptUsesEngine(t *testing.T) {
 }
 
 func TestValidateSoftFailFiles(t *testing.T) {
-	badness := "backend rewords this message out of our control"
 	yes := true
 	tests := []struct {
 		name    string
@@ -251,36 +250,26 @@ func TestValidateSoftFailFiles(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name:   "empty is allowed without badness",
+			name:   "empty is allowed",
 			config: TestConfig{},
 		},
 		{
-			name:   "valid out file with badness",
-			config: TestConfig{Badness: &badness, SoftFailFiles: []string{"out.drifty.txt"}},
-		},
-		{
-			name:    "requires badness",
-			config:  TestConfig{SoftFailFiles: []string{"out.drifty.txt"}},
-			wantErr: "requires Badness",
+			name:   "valid out file",
+			config: TestConfig{SoftFailFiles: []string{"out.drifty.txt"}},
 		},
 		{
 			name:    "output.txt is rejected",
-			config:  TestConfig{Badness: &badness, SoftFailFiles: []string{"output.txt"}},
+			config:  TestConfig{SoftFailFiles: []string{"output.txt"}},
 			wantErr: "must not contain",
 		},
 		{
 			name:    "non-out file is rejected",
-			config:  TestConfig{Badness: &badness, SoftFailFiles: []string{"databricks.yml"}},
+			config:  TestConfig{SoftFailFiles: []string{"databricks.yml"}},
 			wantErr: "must start with",
 		},
 		{
-			name:   "whole-test SoftFail with badness",
-			config: TestConfig{Badness: &badness, SoftFail: &yes},
-		},
-		{
-			name:    "whole-test SoftFail requires badness",
-			config:  TestConfig{SoftFail: &yes},
-			wantErr: "SoftFail requires Badness",
+			name:   "whole-test SoftFail",
+			config: TestConfig{SoftFail: &yes},
 		},
 	}
 

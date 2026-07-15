@@ -41,14 +41,14 @@ non-blocking `SOFTFAIL` marker. It is the last resort — reach for these tools 
 ### How it works
 
 Add the golden's name to `SoftFailFiles` in `test.toml` (inherited from a parent like any
-other config, and surfaced in `out.test.toml` so reviewers see the shield on every PR):
+other config, and surfaced in `out.test.toml` so reviewers see the shield on every PR).
+Add a comment explaining why the file drifts:
 
 ```toml
-Badness = "mlops-stacks template is fetched remotely and updated out of band"
+# out.template.txt is a dump of the remotely-fetched mlops-stacks template
 SoftFailFiles = ["out.template.txt"]
 ```
 
-- **`Badness` is required** — every shield carries an in-tree justification.
 - **`output.txt` can never be shielded** (a hard config error), and entries must start with `out`. `output.txt` carries the CLI behavior a local regression would corrupt, so a regression in our own logic still turns the test red.
 - Only a *content diff* is downgraded. A panic, an unexpected exit code, a missing golden, or an unexpected new file stays a hard failure.
 
@@ -75,15 +75,15 @@ split, because `output.txt` itself is the drift. `SoftFail = true` shields **eve
 for that test, including `output.txt`:
 
 ```toml
-Badness = "mlops-stacks template is fetched remotely; upstream changes break this e2e test"
+# mlops-stacks template is fetched remotely; upstream changes break this e2e test
 SoftFail = true
 ```
 
 This is a blunt instrument. Only use it when the CLI behavior under test is **also covered
 by a hermetic local test**, so shielding the whole e2e test can't hide a real regression in
 that behavior (it would still turn the local test red). Prefer `SoftFailFiles` whenever a
-seam can be isolated. `Badness` is still required, and structural failures (panics,
-unexpected/missing files) stay hard even under `SoftFail`.
+seam can be isolated. Structural failures (panics, unexpected/missing files) stay hard even
+under `SoftFail`.
 
 ### Refresh cadence (oncall)
 

@@ -101,7 +101,6 @@ type TestConfig struct {
 	// outside our control that a Repls mask or field-projection can't express
 	// (reworded backend messages, remotely-updated template dumps). "output.txt"
 	// is rejected: it carries the CLI behavior a local regression would corrupt.
-	// Requires Badness to be set, documenting why each file is shielded.
 	SoftFailFiles []string
 
 	// If true, ALL golden files for this test (including output.txt) are soft-failed:
@@ -110,8 +109,8 @@ type TestConfig struct {
 	// on an artifact fetched at runtime outside our control (e.g. a remotely-hosted
 	// template), where an upstream change breaks not just captured output but the
 	// run itself. Only use it when the CLI behavior under test is also covered by a
-	// hermetic local test. Requires Badness to be set. Prefer the per-file
-	// SoftFailFiles whenever a volatility seam can be isolated.
+	// hermetic local test. Prefer the per-file SoftFailFiles whenever a volatility
+	// seam can be isolated.
 	SoftFail *bool
 
 	CompiledIgnoreObject *ignore.GitIgnore
@@ -282,20 +281,11 @@ func validateConfig(t *testing.T, config TestConfig, configPath string) {
 	}
 }
 
-// validateSoftFailFiles enforces the soft-fail invariants: every shield needs a
-// Badness justification; per-file entries may not target output.txt (it carries the
-// CLI behavior a local regression would corrupt) and must be generated files (out*).
-// The whole-test SoftFail shield deliberately has no such file restriction.
+// validateSoftFailFiles enforces the per-file soft-fail structural guards: an
+// entry may not target output.txt (it carries the CLI behavior a local regression
+// would corrupt) and must be a generated file (out*). The whole-test SoftFail
+// shield deliberately has no such file restriction.
 func validateSoftFailFiles(config TestConfig) error {
-	if isTruePtr(config.SoftFail) && config.Badness == nil {
-		return errors.New("SoftFail requires Badness to be set, documenting why the test is shielded")
-	}
-	if len(config.SoftFailFiles) == 0 {
-		return nil
-	}
-	if config.Badness == nil {
-		return errors.New("SoftFailFiles requires Badness to be set, documenting why each file is shielded")
-	}
 	for _, name := range config.SoftFailFiles {
 		if name == "output.txt" {
 			return fmt.Errorf("SoftFailFiles must not contain %q; it carries CLI behavior a local regression would corrupt", name)

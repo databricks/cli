@@ -8,7 +8,6 @@ Cloud = true
 # out.plan.$engine.json stay strict. Only the direct engine exposes a remote view; the
 # terraform remote file is structurally empty and stays strict (a regression that
 # suddenly populated it should turn the test red).
-Badness = "plan remote view mirrors the backend dashboards response, whose output-only fields drift on cloud"
 SoftFailFiles = [
     "out.plan.remote.direct.json",
 ]
