@@ -6,8 +6,7 @@ resources:
     my_catalog:
       name: my_catalog
       grants:
-        # Missing principal: required by the backend, optional in the SDK
-        # (json:"principal,omitempty").
+        # Missing principal (warns).
         - privileges:
             - ALL_PRIVILEGES
   schemas:
@@ -15,7 +14,7 @@ resources:
       catalog_name: my_catalog
       name: my_schema
       grants:
-        # Valid grant: principal is set.
+        # Valid grant (principal set).
         - principal: alice@example.com
           privileges:
             - USE_SCHEMA

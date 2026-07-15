@@ -126,9 +126,8 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		})
 	}
 
-	// sql_warehouses.name is required by the backend but optional in the SDK
-	// (json:"name,omitempty"), so warnForMissingFields never flags it. The backend
-	// rejects names failing name.trim.nonEmpty, so treat whitespace-only as missing.
+	// sql_warehouses.name is optional in the SDK (json:"name,omitempty") but required
+	// by the backend, which rejects whitespace-only names (name.trim.nonEmpty).
 	for key, warehouse := range b.Config.Resources.SqlWarehouses {
 		if strings.TrimSpace(warehouse.Name) == "" {
 			path := "resources.sql_warehouses." + key
@@ -151,7 +150,6 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 func warnForMissingBackendFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	// grants[*].principal is optional in the SDK (json:"principal,omitempty").
 	// Grants exist on the following securable types.
 	r := &b.Config.Resources
 	for key, res := range r.Catalogs {
@@ -178,7 +176,7 @@ func warnForMissingBackendFields(ctx context.Context, b *bundle.Bundle) diag.Dia
 	return diags
 }
 
-// warnForMissingGrantPrincipal warns for each grant on a securable that has no principal set.
+// warnForMissingGrantPrincipal warns for each grant that has no principal set.
 func warnForMissingGrantPrincipal(b *bundle.Bundle, resourceType, key string, grants []catalog.PrivilegeAssignment) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 	for i, grant := range grants {

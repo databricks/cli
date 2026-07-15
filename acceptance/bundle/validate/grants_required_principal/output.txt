@@ -2,7 +2,7 @@
 >>> [CLI] bundle validate
 Warning: grant principal is required
   at resources.catalogs.my_catalog.grants[0]
-  in databricks.yml:11:11
+  in databricks.yml:10:11
 
 Name: test-bundle
 Target: default
