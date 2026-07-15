@@ -1,6 +1,7 @@
 package postgrescmd
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -63,7 +64,7 @@ func (s *csvSink) Row(values []any) error {
 	return s.w.Error()
 }
 
-func (s *csvSink) End(commandTag string) error {
+func (s *csvSink) End(ctx context.Context, commandTag string) error {
 	if !s.rowsProducing {
 		_, err := fmt.Fprintln(s.stderr, commandTag)
 		return err

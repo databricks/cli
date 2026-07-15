@@ -1,0 +1,27 @@
+echo "*" > .gitignore
+
+trace export COMMENT="original comment"
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Initial deployment with aliases set"
+trace $CLI bundle deploy
+
+title "Plan is a no-op: GET never echoes aliases, so they must not drift"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+
+title "The config-set aliases are skipped as input_only (confirms the matched rule)"
+trace $CLI bundle plan --output json | jq '.plan[].changes.aliases'
+
+title "Edit the comment: an in-place update, not a recreate"
+export COMMENT="updated comment"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete"
+trace $CLI bundle deploy
+
+title "Re-plan after the edit converges: no further changes"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"

@@ -15,7 +15,7 @@ trace $CLI bundle deploy
 
 # Direct mode already waits for the project to be READY during deployment
 # Get project details - exclude timestamps that vary
-trace $CLI postgres get-project "projects/test-pg-proj-${UNIQUE_NAME}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-project "projects/test-pg-proj-${UNIQUE_NAME}" | project_fields
 
 trace $CLI bundle summary
 
