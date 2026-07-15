@@ -3197,6 +3197,11 @@
                 "content": {
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.259.0"
+                },
+                "env": {
+                  "description": "A map of environment variables to export when running the script. Values may reference `${bundle.*}`, `${workspace.*}`, and `${var.*}` and are resolved before the script runs; reference them from `content` with `$NAME`.",
+                  "$ref": "#/$defs/map/string",
+                  "x-since-version": "v1.8.0"
                 }
               },
               "additionalProperties": false,
