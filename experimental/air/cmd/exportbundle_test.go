@@ -1,0 +1,139 @@
+package aircmd
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestConvertToBundleBasic(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("python train.py"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_8xH100", NumAccelerators: 16},
+		MaxRetries:     new(2),
+		TimeoutMinutes: new(30),
+	}
+
+	b := convertToBundle(cfg)
+
+	assert.Equal(t, "exp", b.Bundle.Name)
+	job, ok := b.Resources.Jobs["exp"]
+	require.True(t, ok, "job keyed by experiment name")
+	require.Len(t, job.Tasks, 1)
+	task := job.Tasks[0]
+	assert.Equal(t, "exp", task.TaskKey)
+	assert.Equal(t, aiRuntimeEnvironmentKey, task.EnvironmentKey)
+	assert.Equal(t, 2, task.MaxRetries)
+	assert.Equal(t, 1800, task.TimeoutSeconds)
+
+	require.Len(t, task.AiRuntimeTask.Deployments, 1)
+	dep := task.AiRuntimeTask.Deployments[0]
+	assert.Equal(t, workspaceFilePathRef+"/"+bundleCommandScript, dep.CommandPath)
+	assert.Equal(t, "GPU_8xH100", dep.Compute.AcceleratorType)
+	assert.Equal(t, 16, dep.Compute.AcceleratorCount)
+
+	// No env vars -> no profile and no task key, so the wire form matches a
+	// var-free submit exactly.
+	assert.Empty(t, job.EnvironmentVariables)
+	assert.Empty(t, task.EnvironmentVariablesKey)
+}
+
+func TestConvertToBundleEnvVarsAndSecrets(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("python train.py"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+		EnvVariables:   map[string]string{"FOO": "bar", "LOG_LEVEL": "INFO"},
+		Secrets:        map[string]string{"TOKEN": "myscope/mykey"},
+	}
+
+	b := convertToBundle(cfg)
+	job := b.Resources.Jobs["exp"]
+
+	// The task references the single profile by key.
+	assert.Equal(t, aiRuntimeEnvVarsKey, job.Tasks[0].EnvironmentVariablesKey)
+
+	// One profile, keyed to match, carrying plain values inline and the secret as a
+	// {{secrets/scope/key}} reference (common Jobs env-var API; resolved by Jobs at
+	// run time). Verified against staging: this shape persists on runs/get.
+	require.Len(t, job.EnvironmentVariables, 1)
+	prof := job.EnvironmentVariables[0]
+	assert.Equal(t, aiRuntimeEnvVarsKey, prof.EnvironmentVariablesKey)
+	assert.Equal(t, "bar", prof.Variables["FOO"])
+	assert.Equal(t, "INFO", prof.Variables["LOG_LEVEL"])
+	assert.Equal(t, "{{secrets/myscope/mykey}}", prof.Variables["TOKEN"])
+}
+
+func TestCheckBundleConvertibleAllowsEnvVars(t *testing.T) {
+	// env_variables and secrets are now representable via the common Jobs env-var
+	// API, so the gate must NOT reject them (regression guard for the lift).
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("python train.py"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+		EnvVariables:   map[string]string{"FOO": "bar"},
+		Secrets:        map[string]string{"TOKEN": "s/k"},
+	}
+	assert.NoError(t, checkBundleConvertible(cfg))
+}
+
+func TestCheckBundleConvertibleRejectsCodeSourcePathCommand(t *testing.T) {
+	// A command that reads $CODE_SOURCE_PATH assumes the air run harness a bundle
+	// doesn't provide; the gate must still reject it with an actionable message.
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("cd $CODE_SOURCE_PATH && python train.py"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+	}
+	err := checkBundleConvertible(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), codeSourcePathVar)
+}
+
+func TestRenderBundleIncludesTargetsAndConvertGate(t *testing.T) {
+	// renderBundle (what --dry-run --via-dabs shows and what the run path deploys)
+	// must include the converted job AND the appended dev targets block.
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("python train.py"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+		EnvVariables:   map[string]string{"FOO": "bar"},
+	}
+	out, err := renderBundle(cfg, "train.yaml")
+	require.NoError(t, err)
+	assert.Contains(t, out, "ai_runtime_task:")
+	assert.Contains(t, out, "FOO: bar")
+	assert.Contains(t, out, "targets:")
+	assert.Contains(t, out, "mode: development")
+
+	// The convertibility gate still applies: an unconvertible config errors instead
+	// of rendering a lossy bundle.
+	bad := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("cd $CODE_SOURCE_PATH && python train.py"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+	}
+	_, err = renderBundle(bad, "train.yaml")
+	require.Error(t, err)
+}
+
+func TestMarshalBundleEnvVarsRoundTrip(t *testing.T) {
+	// The emitted YAML must carry the env-var profile so `bundle deploy` sends it.
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+		EnvVariables:   map[string]string{"FOO": "bar"},
+	}
+	out, err := marshalBundle(convertToBundle(cfg), "train.yaml")
+	require.NoError(t, err)
+	body := string(out)
+	assert.Contains(t, body, "environment_variables_key: default")
+	assert.Contains(t, body, "environment_variables:")
+	assert.Contains(t, body, "FOO: bar")
+	// Header provenance line is present.
+	assert.True(t, strings.Contains(body, "Generated by `air export-bundle`"))
+}

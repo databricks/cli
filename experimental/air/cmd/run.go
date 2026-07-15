@@ -18,6 +18,9 @@ type runResult struct {
 	DryRun       bool   `json:"dry_run,omitempty"`
 	RunID        string `json:"run_id,omitempty"`
 	DashboardURL string `json:"dashboard_url,omitempty"`
+	// Bundle is the generated databricks.yml, included in a --dry-run --via-dabs
+	// so the user can see exactly what would be deployed on their behalf.
+	Bundle string `json:"bundle,omitempty"`
 }
 
 func newRunCommand() *cobra.Command {
@@ -27,6 +30,7 @@ func newRunCommand() *cobra.Command {
 		overrides      []string
 		dryRun         bool
 		idempotencyKey string
+		viaDABS        bool
 	)
 
 	cmd := &cobra.Command{
@@ -43,6 +47,10 @@ The workload is described by a YAML config file (see --file).`,
 	cmd.Flags().StringArrayVar(&overrides, "override", nil, "Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate the config without submitting")
 	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Return the existing run if this key was already used")
+	// [experimental] Submit as a Databricks Asset Bundle (a persistent job:
+	// convert -> deploy -> run) instead of an ephemeral run. Default off; the
+	// ephemeral runs/submit path is unchanged. Also honors AIR_VIA_DABS=1.
+	cmd.Flags().BoolVar(&viaDABS, "via-dabs", false, "[experimental] Submit via a DABs bundle (persistent job) instead of an ephemeral run")
 	_ = cmd.MarkFlagRequired("file")
 
 	// --dry-run only validates the config locally, so it needs no workspace.
@@ -72,6 +80,20 @@ The workload is described by a YAML config file (see --file).`,
 		}
 
 		if dryRun {
+			// On the DABs path, a dry run shows the generated bundle so the user can
+			// see the artifact we'd deploy on their behalf (transparency); it does not
+			// deploy. Falls back to the plain "config is valid" message otherwise.
+			if resolveViaDABS(ctx, viaDABS) {
+				bundleYAML, err := renderBundle(cfg, file)
+				if err != nil {
+					return err
+				}
+				if root.OutputType(cmd) == flags.OutputText {
+					cmdio.LogString(ctx, fmt.Sprintf("Dry run: %q would deploy as this bundle (not deploying):\n\n%s", cfg.ExperimentName, bundleYAML))
+					return nil
+				}
+				return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true, Bundle: bundleYAML})
+			}
 			if root.OutputType(cmd) == flags.OutputText {
 				cmdio.LogString(ctx, fmt.Sprintf("Dry run: configuration for %q is valid; not submitting.", cfg.ExperimentName))
 				return nil
@@ -80,7 +102,15 @@ The workload is described by a YAML config file (see --file).`,
 		}
 
 		w := cmdctx.WorkspaceClient(ctx)
-		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey)
+
+		// submitWorkload (ephemeral runs/submit) and submitViaDABS (persistent
+		// bundle job) share a signature, so the DABs gate is a call-site swap; the
+		// whole downstream (envelope, dashboard URL) is reused unchanged.
+		submit := submitWorkload
+		if resolveViaDABS(ctx, viaDABS) {
+			submit = submitViaDABS
+		}
+		runID, dashboardURL, err := submit(ctx, w, cfg, file, idempotencyKey)
 		if err != nil {
 			return err
 		}

@@ -191,6 +191,12 @@ func runNotFound(err error) bool {
 
 // cancelRun requests cancellation of a single job run. The cancel is async, so
 // the returned waiter is ignored.
+//
+// DABs note: this works unchanged for DABs-submitted runs. A `bundle run` produces
+// a normal Jobs run with a run_id, and cancelling that run terminates the AIR
+// workload the same way — BYOT/AICM dispatch is keyed on task type, not on how the
+// run was submitted. (`cancel --all` discovers runs via `air list`, which the
+// --via-dabs list mode widens to include DABs JOB_RUNs.)
 func cancelRun(ctx context.Context, w *databricks.WorkspaceClient, rid string) error {
 	runID, err := strconv.ParseInt(rid, 10, 64)
 	if err != nil || runID <= 0 {

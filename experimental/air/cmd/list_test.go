@@ -99,6 +99,50 @@ func TestListAirRunsExperimentFilter(t *testing.T) {
 	assert.Equal(t, "1", rows[0].RunID)
 }
 
+// queryCapturingServer records the run_type query param on the runs/list request,
+// so a test can assert how the jobs scan narrows (or doesn't) server-side.
+func queryCapturingServer(t *testing.T, gotRunType *string, body string) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.2/jobs/runs/list" {
+			*gotRunType = r.URL.Query().Get("run_type")
+			_, _ = w.Write([]byte(body))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestListDefaultScanRestrictsToSubmitRun(t *testing.T) {
+	// Without --via-dabs the jobs scan restricts to SUBMIT_RUN server-side (the
+	// ephemeral runs air submits today).
+	var runType string
+	srv := queryCapturingServer(t, &runType, runsListBody(t, "", airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "exp")))
+	_, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true, userFilter: "me@example.com",
+	}).next(10)
+	require.NoError(t, err)
+	assert.Equal(t, "SUBMIT_RUN", runType)
+}
+
+func TestListViaDABSIncludesJobRuns(t *testing.T) {
+	// --via-dabs drops the SUBMIT_RUN restriction so DABs-submitted AIR runs
+	// (RunType JOB_RUN, i.e. runs of a persistent job) are not filtered out
+	// server-side; isAirRun still selects by task shape.
+	var runType string
+	dabsRun := airBaseRun(9, "me@example.com", "GPU_1xA10", 1, "exp")
+	srv := queryCapturingServer(t, &runType, runsListBody(t, "", dabsRun))
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true, userFilter: "me@example.com", includeDABs: true,
+	}).next(10)
+	require.NoError(t, err)
+	assert.Empty(t, runType, "run_type must be unset so JOB_RUN DABs runs are included")
+	require.Len(t, rows, 1)
+	assert.Equal(t, "9", rows[0].RunID)
+}
+
 func TestListAirRunsLimitTruncates(t *testing.T) {
 	runs := []jobs.BaseRun{
 		airBaseRun(1, "me@example.com", "GPU_1xH100", 1, "exp-a"),

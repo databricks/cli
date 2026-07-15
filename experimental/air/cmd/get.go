@@ -91,6 +91,9 @@ func authError(ctx context.Context, cmd *cobra.Command, err error) error {
 
 // newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
 // configuration, and timing details for a specific run.
+// get works unchanged for DABs-submitted runs: it resolves by run_id via
+// Jobs.GetRun, and a `bundle run` produces a normal Jobs run with a run_id. No
+// submit-verb-specific handling is needed.
 func newGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get JOB_RUN_ID",

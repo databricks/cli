@@ -68,6 +68,9 @@ type listQuery struct {
 	filters     listFilters
 	fetchMLflow bool
 	limit       int
+	// includeDABs widens the jobs scan to include DABs-submitted AIR runs (JOB_RUN),
+	// not just ephemeral SUBMIT_RUNs. Set by --via-dabs / AIR_VIA_DABS.
+	includeDABs bool
 }
 
 func newListCommand() *cobra.Command {
@@ -76,6 +79,7 @@ func newListCommand() *cobra.Command {
 		allStatus bool
 		allUsers  bool
 		filters   []string
+		viaDABS   bool
 	)
 
 	cmd := &cobra.Command{
@@ -90,6 +94,9 @@ func newListCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&allStatus, "all-status", false, "Show runs in all states (default: active only)")
 	cmd.Flags().BoolVar(&allUsers, "all-users", false, "Show runs from all users")
 	cmd.Flags().StringArrayVar(&filters, "filter", nil, "Filter runs, e.g. experiment=foo* (repeatable)")
+	// [experimental] Also include DABs-submitted AIR runs (persistent JOB_RUNs), not
+	// just ephemeral runs/submit. Honors AIR_VIA_DABS=1.
+	cmd.Flags().BoolVar(&viaDABS, "via-dabs", false, "[experimental] Include DABs-submitted (persistent job) AIR runs")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -126,6 +133,7 @@ func newListCommand() *cobra.Command {
 			filters:     f,
 			fetchMLflow: root.OutputType(cmd) == flags.OutputText,
 			limit:       limit,
+			includeDABs: resolveViaDABS(ctx, viaDABS),
 		})
 
 		// JSON prints the newest `limit` runs once. Text renders the table:
@@ -238,6 +246,13 @@ func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q l
 		ExpandTasks: true,
 		Limit:       jobsPageLimit,
 		ActiveOnly:  q.activeOnly,
+	}
+	// DABs-submitted AIR runs are runs OF a persistent job (RunType JOB_RUN), not
+	// SUBMIT_RUN, so the SUBMIT_RUN server filter would hide them. When listing the
+	// DABs path, drop the run-type restriction and let isAirRun (task-shape) select;
+	// this unions ephemeral SUBMIT_RUNs and DABs JOB_RUNs during migration.
+	if q.includeDABs {
+		req.RunType = ""
 	}
 	return &jobsScanStrategy{
 		ctx:        ctx,
