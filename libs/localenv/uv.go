@@ -317,7 +317,10 @@ func confirmUvInstall(ctx context.Context) bool {
 	if optIn, ok := env.GetBool(ctx, EnvAutoInstallUv); ok && optIn {
 		return true
 	}
-	if !cmdio.IsPromptSupported(ctx) {
+	// EnsureAvailable is a library entry point reachable with a context that has
+	// no cmdio (e.g. Pipeline built with context.Background()); IsPromptSupported
+	// would panic there. Treat a missing cmdio as non-interactive and decline.
+	if !cmdio.HasIO(ctx) || !cmdio.IsPromptSupported(ctx) {
 		return false
 	}
 	ok, err := cmdio.AskYesOrNo(ctx, "uv is not installed. Download and run the official uv installer (https://astral.sh/uv/install.sh)?")

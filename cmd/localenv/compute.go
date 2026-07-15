@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // sdkCompute adapts the Databricks SDK to the localenv.ComputeClient interface.
@@ -60,10 +61,16 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 		// The serverless environment version (e.g. "4") is recorded on the job's
 		// environment spec, unlike the bundle path where it is unavailable. Return
 		// it so ResolveTarget pins the matching serverless-vN instead of defaulting
-		// to v4. Spec/version may be empty on older jobs; that falls back to v4.
-		version := ""
-		if spec := job.Settings.Environments[0].Spec; spec != nil {
-			version = spec.EnvironmentVersion
+		// to v4. An empty version (older jobs) falls back to v4 in ResolveTarget.
+		version := environmentVersion(job.Settings.Environments[0])
+		// Tasks can reference any environment_key, so if the job's environments do
+		// not all share one version there is no single correct local environment
+		// (mirrors the job-cluster check below). Refuse rather than guess from the
+		// first. A pinned-vs-unpinned mix is also ambiguous, so compare raw values.
+		for _, e := range job.Settings.Environments[1:] {
+			if environmentVersion(e) != version {
+				return "", false, "", fmt.Errorf("job %d has serverless environments with differing environment_version; pass --serverless explicitly to disambiguate", id)
+			}
 		}
 		return "", true, version, nil
 	}
@@ -85,4 +92,13 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 	}
 
 	return "", false, "", fmt.Errorf("could not determine compute for job %d from its environments or job clusters (task-level compute is not supported); pass --cluster or --serverless explicitly", id)
+}
+
+// environmentVersion returns the serverless environment_version recorded on a
+// job environment, or "" when the spec or version is absent.
+func environmentVersion(e jobs.JobEnvironment) string {
+	if e.Spec == nil {
+		return ""
+	}
+	return e.Spec.EnvironmentVersion
 }

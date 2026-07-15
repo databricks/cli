@@ -236,6 +236,14 @@ func TestConfirmUvInstall(t *testing.T) {
 		assert.False(t, confirmUvInstall(ctx))
 	})
 
+	t.Run("missing_cmdio_declines_without_panic", func(t *testing.T) {
+		// A context with no cmdio (library entry point) must not panic in
+		// IsPromptSupported; it declines like any other non-interactive run.
+		assert.NotPanics(t, func() {
+			assert.False(t, confirmUvInstall(t.Context()))
+		})
+	})
+
 	t.Run("falsey_opt_in_does_not_consent_when_non_interactive", func(t *testing.T) {
 		ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 		ctx = env.Set(ctx, EnvAutoInstallUv, "0")
