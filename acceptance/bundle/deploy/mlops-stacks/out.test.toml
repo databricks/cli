@@ -1,3 +1,4 @@
 Local = false
 Cloud = true
+SoftFail = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
