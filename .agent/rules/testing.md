@@ -208,6 +208,22 @@ trace $CLI postgres get-branch "$name"   # full payload straight into output.txt
 
 For a field that appears on some responses but not others (e.g. a provenance field absent on a default resource), append `| with_entries(select(.value != null))` to the projected object so the optional field is dropped rather than emitted as `null`.
 
+### Soft-failing volatile goldens
+
+Some goldens drift for reasons outside our control: a live backend rewords a message, a response grows a field we don't assert, or a remotely-hosted template is updated upstream. None is a regression, yet each turns cloud PRs and nightlies red. `SoftFailFiles` / `SoftFail` in `test.toml` downgrade a *content diff* from a hard failure to a non-blocking `SOFTFAIL` marker. See `acceptance/README.md` ("Soft-failing volatile goldens") for the full mechanism and oncall refresh cadence.
+
+**RULE: Soft-failing is the last resort. Reach for the cheaper tools first, in order.** A `Repls` regex mask for *describable* volatility (UUIDs, timestamps, versions); then field projection (`<resource>_fields()`, above) for "the backend added a field I don't assert" — projecting to the fields you assert ignores new fields with zero drift and should never reach soft-fail. Only *undescribable* drift you can't regex ahead of time (a reworded message whose new text is unknown, a wholesale remote-artifact dump) justifies `SoftFailFiles`.
+
+**RULE: Shield per file, and route the volatile output to its own `out.*` file so the assertable part stays strict.** Split along a *volatility* seam, not a *convenience* seam: keep our own logic (e.g. the plan's action/reason) in a strict golden and isolate only the backend-mirrored output into the soft-failed `out.*` file.
+
+**RULE: `output.txt` can never be soft-failed** (it's a hard config error), and every `SoftFailFiles` entry must start with `out`. `output.txt` carries the CLI behavior a local regression would corrupt, so our own logic still turns the test red.
+
+**RULE: Only a content diff is downgraded.** A panic, an unexpected exit code, a missing golden, or an unexpected new file stays a hard failure even under `SoftFail`.
+
+**RULE: The shield takes effect only on cloud runs.** `SoftFailFiles` and `SoftFail` are ignored when `CLOUD_ENV` is unset, because a pure local testserver test is deterministic and cannot drift — any diff on a local run stays a hard failure. A test that is both `Local` and `Cloud` therefore keeps its local golden strict while shielding cloud drift.
+
+**RULE: Reserve the whole-test shield `SoftFail = true` for e2e tests whose behavior depends on a runtime-fetched artifact, and only when the same behavior is also covered by a hermetic local test.** It shields *every* golden including `output.txt`, so it can only be safe when a real regression would still turn the local test red. Prefer `SoftFailFiles` whenever a volatility seam can be isolated.
+
 ### Test server
 
 Acceptance tests run against an in-process fake of the Databricks API in `libs/testserver/` (`FakeWorkspace` and the per-service handler files). The fake keeps real in-memory state and returns the same errors the backend does: 404 on a missing parent, 409 on a duplicate create, 400 on a missing required field, and so on. `test.toml` can also stub a single route with a canned response:
