@@ -1,4 +1,4 @@
-# This is a Databricks asset bundle definition for my_empty.
+# This is a Declarative Automation Bundle definition for my_empty.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: my_empty
@@ -14,3 +14,5 @@ targets:
   dev:
     mode: development
     default: true
+    workspace:
+      host: [DATABRICKS_URL]

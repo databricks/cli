@@ -18,6 +18,7 @@ Add resource definitions under my_empty/resources/, then deploy with:
 Name: my_empty
 Target: dev
 Workspace:
+  Host: [DATABRICKS_URL]
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/my_empty/dev
 
