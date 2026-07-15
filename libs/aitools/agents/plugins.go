@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/mod/semver"
 )
 
 // pluginManifestFile is the file an agent's own plugin CLI writes to record
@@ -21,16 +23,28 @@ type pluginInstall struct {
 }
 
 // DatabricksPluginVersion reports the recorded version of the databricks plugin
-// in the agent's own plugin manifest (<ConfigDir>/plugins/installed_plugins.json,
-// Claude Code's format) and whether the plugin is installed at all. It matches
-// an "<id>@<marketplace>" key whose id is the databricks plugin. This catches
-// installs done through `databricks aitools install` and a direct `<agent>
-// plugin install`, unlike the CLI's own state file, which only records
-// CLI-driven installs. Any read/parse failure reports ("", false), so an
-// unreadable manifest reads as "not installed". When the plugin is recorded for
-// more than one scope, the first recorded version is returned (they match in the
-// common single-scope case); the version is "" when installed but unversioned.
+// in the agent's own plugin manifest and whether the plugin is installed at all.
+// This catches installs done through `databricks aitools install` and a direct
+// `<agent> plugin install`, unlike the CLI's own state file, which only records
+// CLI-driven installs. Each agent's manifest format differs, so parsing is
+// delegated to a per-agent reader; agents without a verified reader report
+// ("", false), i.e. "not installed as far as we can tell".
 func (a *Agent) DatabricksPluginVersion(ctx context.Context) (string, bool) {
+	if a.pluginVersion == nil {
+		return "", false
+	}
+	return a.pluginVersion(ctx, a)
+}
+
+// claudePluginVersion reads the databricks plugin version from Claude Code's
+// installed_plugins.json (<ConfigDir>/plugins/), which keys each entry as
+// "<id>@<marketplace>" (e.g. "databricks@claude-plugins-official") with one
+// record per install scope. Any read/parse failure reports ("", false), so an
+// unreadable manifest reads as "not installed". When the plugin is recorded for
+// more than one scope, the highest recorded version is returned (they match in
+// the common single-scope case, but the cache can retain a stale scope); the
+// version is "" when installed but unversioned.
+func claudePluginVersion(ctx context.Context, a *Agent) (string, bool) {
 	configDir, err := a.ConfigDir(ctx)
 	if err != nil {
 		return "", false
@@ -50,10 +64,15 @@ func (a *Agent) DatabricksPluginVersion(ctx context.Context) (string, bool) {
 		if id != databricksPluginID {
 			continue
 		}
-		if len(installs) > 0 {
-			return installs[0].Version, true
+		// Installed. Report the highest version across scopes;
+		best := ""
+		for _, install := range installs {
+			// Compare as semver (versions are unprefixed, e.g. "0.2.9").
+			if install.Version != "" && (best == "" || semver.Compare("v"+install.Version, "v"+best) > 0) {
+				best = install.Version
+			}
 		}
-		return "", true
+		return best, true
 	}
 	return "", false
 }
