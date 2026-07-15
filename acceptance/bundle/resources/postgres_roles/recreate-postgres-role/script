@@ -32,7 +32,7 @@ trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint
 title "Fetch role and verify the new postgres_role value is live"
 
 role_name=`read_id.py my_role`
-trace $CLI postgres get-role $role_name | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-role $role_name | role_fields
 
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve

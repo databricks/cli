@@ -137,7 +137,12 @@ func writeCacheAtomic(path string, data []byte) error {
 // baseURL points at the repo hosting the constraint artifacts (see
 // RepoConstraintBaseURL); it is empty when no source is configured, which is
 // reported below as a fetch-phase error.
-func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*Constraints, error) {
+//
+// writeCache controls whether a successful live fetch populates the on-disk
+// cache. Callers pass false for a dry run (--check), which must not mutate
+// disk; an existing cache is still read for offline fallback, since reading is
+// not a mutation.
+func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string, writeCache bool) (*Constraints, error) {
 	if baseURL == "" {
 		// No constraint host is configured. This is reported at the fetch phase (as
 		// E_FETCH) rather than aborting earlier, so the failure flows through the
@@ -158,9 +163,12 @@ func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*C
 			return nil, fmt.Errorf("parse constraints for %s: %w", envKey, err)
 		}
 		// Write the cache copy (creating cacheDir if needed, atomically); non-fatal
-		// so a read-only cacheDir doesn't break the command.
-		if err := writeCacheAtomic(cachePath, data); err != nil {
-			log.Debugf(ctx, "failed to write constraint cache %s: %v", filepath.ToSlash(cachePath), err)
+		// so a read-only cacheDir doesn't break the command. Skipped under a dry
+		// run so --check performs no disk writes at all.
+		if writeCache {
+			if err := writeCacheAtomic(cachePath, data); err != nil {
+				log.Debugf(ctx, "failed to write constraint cache %s: %v", filepath.ToSlash(cachePath), err)
+			}
 		}
 		return &Constraints{
 			EnvKey:            envKey,
