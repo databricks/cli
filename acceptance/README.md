@@ -63,8 +63,10 @@ trace $CLI bundle plan | contains.py "Plan: 1 to add"
 trace $CLI some-command-with-drifty-output &> out.drifty.txt
 ```
 
-A pure local testserver test is deterministic and cannot drift, so soft-fail is only ever
-appropriate for cloud tests and tests that consume remotely-fetched artifacts.
+A pure local testserver test is deterministic and cannot drift, so the shield is
+**ignored on local runs**: `SoftFailFiles` and `SoftFail` take effect only when
+`CLOUD_ENV` is set, and any diff on a local run stays a hard failure. A test that is both
+`Local` and `Cloud` therefore keeps its local golden strict while shielding cloud drift.
 
 ### Whole-test shield (`SoftFail`)
 

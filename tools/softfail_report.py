@@ -16,22 +16,34 @@ import json
 import sys
 from collections import defaultdict
 
+MARKER = "SOFTFAIL "
+
+# Prefixes of go test status/control lines that the framework emits between a
+# test's own output and its terminating action (e.g. "    --- PASS: TestAccept/x").
+# The unified diff's own "--- <path>" / "+++ <path>" headers lack the colon, so
+# they are not mistaken for these.
+CONTROL_PREFIXES = ("--- PASS:", "--- FAIL:", "--- SKIP:", "--- BENCH:", "=== ")
+
 
 def collect_softfails(events):
     """Group SOFTFAIL diff blocks by test from `go test -json` output events.
 
-    Each SOFTFAIL marker line opens a block that runs until the next test-scoped
-    control event, so the unified diff that follows the marker is captured with it.
+    Each SOFTFAIL marker line opens a block that captures the unified diff that
+    follows it, closing on the next non-output action or go test status line so the
+    "--- PASS:" the framework emits for a passing soft-failed test stays out of the diff.
 
     >>> evs = [
     ...     {"Action": "output", "Test": "TestAccept/x", "Output": "    foo.go:1: SOFTFAIL out.drifty.txt\\n"},
     ...     {"Action": "output", "Test": "TestAccept/x", "Output": "        --- a\\n"},
     ...     {"Action": "output", "Test": "TestAccept/x", "Output": "        +++ b\\n"},
+    ...     {"Action": "output", "Test": "TestAccept/x", "Output": "    --- PASS: TestAccept/x (0.50s)\\n"},
     ...     {"Action": "pass", "Test": "TestAccept/x"},
     ... ]
     >>> result = collect_softfails(evs)
     >>> result["TestAccept/x"][0][0]
     'out.drifty.txt'
+    >>> "PASS" in "".join(result["TestAccept/x"][0][1])
+    False
     """
     blocks = defaultdict(list)
     open_block = {}
@@ -41,14 +53,16 @@ def collect_softfails(events):
             continue
         test = ev.get("Test")
         out = ev.get("Output", "")
-        marker = "SOFTFAIL "
-        idx = out.find(marker)
+        idx = out.find(MARKER)
         if idx != -1:
-            relpath = out[idx + len(marker) :].strip()
+            relpath = out[idx + len(MARKER) :].strip()
             block = [relpath, []]
             blocks[test].append(block)
             open_block[test] = block
         elif test in open_block:
+            if out.lstrip().startswith(CONTROL_PREFIXES):
+                open_block.pop(test)
+                continue
             open_block[test][1].append(out)
     return blocks
 

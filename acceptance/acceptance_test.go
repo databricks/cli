@@ -972,13 +972,23 @@ func runTest(t *testing.T,
 
 	pathFilter := preparePathFilter(config, customEnv)
 
+	// Soft-fail shields drift we don't control (cloud API output, remote artifacts),
+	// which only occurs on cloud runs. A local testserver run is deterministic, so any
+	// diff there is a real regression and must stay red regardless of the shield config.
+	softFailFiles := config.SoftFailFiles
+	softFailAll := isTruePtr(config.SoftFail)
+	if !isRunningOnCloud {
+		softFailFiles = nil
+		softFailAll = false
+	}
+
 	// Compare expected outputs
 	for relPath := range outputs {
 		if shouldSkip(pathFilter, relPath) {
 			continue
 		}
 
-		doComparison(t, repls, dir, tmpDir, relPath, config.SoftFailFiles, isTruePtr(config.SoftFail), &printedRepls)
+		doComparison(t, repls, dir, tmpDir, relPath, softFailFiles, softFailAll, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -1012,7 +1022,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, config.SoftFailFiles, isTruePtr(config.SoftFail), &printedRepls)
+			doComparison(t, repls, dir, tmpDir, relPath, softFailFiles, softFailAll, &printedRepls)
 		}
 	}
 
