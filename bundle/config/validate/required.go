@@ -151,9 +151,8 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	return diags
 }
 
-// Warn for fields the backend appears to require but that are optional in the SDK,
-// where the contract is unconfirmed. Warnings, not errors, so a wrong guess can't
-// block a valid deploy.
+// Warn for fields that are optional in the SDK but that the backend may require,
+// where we have not confirmed the contract.
 func warnForMissingBackendFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
