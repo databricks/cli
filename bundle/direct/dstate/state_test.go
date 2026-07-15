@@ -135,24 +135,24 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 	mustFinalize(t, &recovered)
 }
 
-// TestEmptyFeatureStateEquivalentToVersion2 documents and pins the special case
-// that a version-3 state with no features is read as version 2, and that a
-// version-3 state recording any feature is refused. This is scaffolding for the
-// deferred version bump, special-cased to version 3 only (see the
+// TestEmptyFeatureStateAcceptedWithoutFlippingVersion pins the special case that a
+// featureStateVersion state with no features is accepted as-is — the on-disk version
+// is left at featureStateVersion, not flipped down to currentStateVersion — and that
+// a featureStateVersion state recording any feature is refused. This is scaffolding
+// for the deferred version bump, special-cased to featureStateVersion only (see the
 // featureStateVersion doc comment).
 //
-// When the baseline is actually bumped to 3, this equivalence must go away — a real
-// version-3 state must not be reinterpreted as 2. This test is the forcing function:
-// it fails once featureStateVersion is removed or the normalization changes, making
-// the author decide what the post-bump behavior should be.
-func TestEmptyFeatureStateEquivalentToVersion2(t *testing.T) {
+// When the baseline is actually bumped to featureStateVersion, this special case must
+// go away. This test is the forcing function: it fails once featureStateVersion is
+// removed, making the author decide what the post-bump behavior should be.
+func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
 	// The special case applies to featureStateVersion (3) only.
 	require.Equal(t, 2, currentStateVersion, "when currentStateVersion is bumped, remove featureStateVersion and this special case")
 	require.Equal(t, 3, featureStateVersion)
 
 	empty := &Database{Header: Header{StateVersion: featureStateVersion}}
 	require.NoError(t, migrateState(empty))
-	assert.Equal(t, currentStateVersion, empty.StateVersion, "v3 + no features is read as v2")
+	assert.Equal(t, featureStateVersion, empty.StateVersion, "v3 + no features keeps its on-disk version, not flipped to v2")
 
 	// v3 that records a feature is refused: this CLI does not understand features.
 	withFeature := &Database{Header: Header{

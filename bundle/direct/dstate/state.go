@@ -29,19 +29,16 @@ const (
 	// records deployment state "feature flags" (see Header.Features). This CLI does
 	// not write it and records no features; it exists now only so this CLI reads
 	// such states correctly (see migrateState):
-	//   - featureStateVersion with no features  -> read as currentStateVersion
+	//   - featureStateVersion with no features  -> accept and leave the version as-is
 	//   - featureStateVersion with any feature   -> refuse, tell the user to upgrade
 	//
-	// This is forward-compat scaffolding so that a later release can start writing
-	// featureStateVersion + features without older CLIs (with this change) either
-	// mishandling a feature they lack or rejecting a featureless state outright.
-	// featureStateVersion is always 3.
-	//
-	// IMPORTANT: the "version 3 + no features == version 2" equivalence is special-
-	// cased to version 3 only; it is scaffolding, not a general rule. When the
-	// baseline (currentStateVersion) is actually bumped to 3, delete
-	// featureStateVersion and its handling in migrateState (and the test that pins
-	// this), otherwise a real v3 state gets silently reinterpreted as v2.
+	// A featureStateVersion state with no features is equivalent to
+	// currentStateVersion, but we deliberately do not flip the on-disk version down
+	// to currentStateVersion: a state written at featureStateVersion stays at
+	// featureStateVersion. This is forward-compat scaffolding so that a later release
+	// can start writing featureStateVersion + features without older CLIs (with this
+	// change) either mishandling a feature they lack or rejecting a featureless state
+	// outright. featureStateVersion is always 3.
 	featureStateVersion = 3
 
 	// supportedStateVersion is the highest schema version this CLI can read. It is
