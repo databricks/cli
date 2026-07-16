@@ -12,3 +12,5 @@ so it will not be deployed. Add a matching entry to the 'include' section, for e
 include:
   - out/resource/*.yml
 
+
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME] --recursive
