@@ -40,7 +40,7 @@ func (w wrap) MarshalJSON() ([]byte, error) {
 // marshalValue recursively writes JSON for a [dyn.Value] to the buffer.
 func marshalValue(buf *bytes.Buffer, v dyn.Value) error {
 	if v.IsSensitive() {
-		out, err := marshalNoEscape("********")
+		out, err := marshalNoEscape(dyn.SensitiveValueRedacted)
 		if err != nil {
 			return err
 		}

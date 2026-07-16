@@ -50,37 +50,32 @@ func TestValueIsValid(t *testing.T) {
 	assert.True(t, intValue.IsValid())
 }
 
-func TestMarkSensitive(t *testing.T) {
-	v := dyn.V("secret-value")
+func TestNewSensitiveValue(t *testing.T) {
+	v := dyn.NewSensitiveValue("secret-value", nil)
+	assert.True(t, v.IsSensitive())
+	assert.Equal(t, dyn.KindString, v.Kind())
+
+	// AsAny returns the redaction placeholder.
+	assert.Equal(t, dyn.SensitiveValueRedacted, v.AsAny())
+
+	// AsString / MustString return the real underlying value.
+	s, ok := v.AsString()
+	assert.True(t, ok)
+	assert.Equal(t, "secret-value", s)
+	assert.Equal(t, "secret-value", v.MustString())
+}
+
+func TestPlainStringNotSensitive(t *testing.T) {
+	v := dyn.V("hello")
 	assert.False(t, v.IsSensitive())
-
-	sv := v.MarkSensitive()
-	assert.True(t, sv.IsSensitive())
-
-	// AsAny returns the redaction placeholder for sensitive strings.
-	assert.Equal(t, "********", sv.AsAny())
-
-	// MustString returns the real underlying value.
-	assert.Equal(t, "secret-value", sv.MustString())
+	assert.Equal(t, "hello", v.AsAny())
 }
 
 func TestSensitivePreservedByWithLocations(t *testing.T) {
 	locs := []dyn.Location{{File: "file", Line: 1, Column: 1}}
-	v := dyn.V("secret").MarkSensitive()
-	v2 := v.WithLocations(locs)
-	assert.True(t, v2.IsSensitive())
-	assert.Equal(t, locs, v2.Locations())
-}
-
-func TestSensitivePreservedByWithSensitive(t *testing.T) {
-	v := dyn.V("secret").MarkSensitive()
+	v := dyn.NewSensitiveValue("secret", nil).WithLocations(locs)
 	assert.True(t, v.IsSensitive())
-
-	v2 := v.WithSensitive(false)
-	assert.False(t, v2.IsSensitive())
-
-	v3 := v2.WithSensitive(true)
-	assert.True(t, v3.IsSensitive())
+	assert.Equal(t, locs, v.Locations())
 }
 
 func TestIsZero(t *testing.T) {

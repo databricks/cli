@@ -73,7 +73,7 @@ func (s *saver) toYamlNode(v dyn.Value) (*yaml.Node, error) {
 
 func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, error) {
 	if v.IsSensitive() {
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: "********", Style: style}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: dyn.SensitiveValueRedacted, Style: style}, nil
 	}
 
 	switch v.Kind() {

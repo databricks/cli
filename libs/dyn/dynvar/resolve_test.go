@@ -374,7 +374,7 @@ func TestResolveMapVariable(t *testing.T) {
 func TestResolveSensitivePureSubstitution(t *testing.T) {
 	// A pure reference to a sensitive value must produce a sensitive result.
 	in := dyn.V(map[string]dyn.Value{
-		"secret": dyn.V("top-secret").MarkSensitive(),
+		"secret": dyn.NewSensitiveValue("top-secret", nil),
 		"ref":    dyn.V("${secret}"),
 	})
 
@@ -390,7 +390,7 @@ func TestResolveSensitivePureSubstitution(t *testing.T) {
 func TestResolveSensitiveStringInterpolation(t *testing.T) {
 	// When any resolved value is sensitive, the interpolated result must also be sensitive.
 	in := dyn.V(map[string]dyn.Value{
-		"secret": dyn.V("password123").MarkSensitive(),
+		"secret": dyn.NewSensitiveValue("password123", nil),
 		"prefix": dyn.V("token"),
 		"ref":    dyn.V("${prefix}:${secret}"),
 	})

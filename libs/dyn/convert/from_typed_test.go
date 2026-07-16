@@ -950,5 +950,5 @@ func TestFromTypedSensitiveField(t *testing.T) {
 	// MustString returns the real value.
 	assert.Equal(t, "super-secret", token.MustString())
 	// AsAny returns the redaction placeholder.
-	assert.Equal(t, "********", token.AsAny())
+	assert.Equal(t, dyn.SensitiveValueRedacted, token.AsAny())
 }

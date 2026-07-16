@@ -153,11 +153,13 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 		// of where it is used. This also means that relative path resolution is done
 		// relative to where a variable is used, not where it is defined.
 		//
-		result := dyn.NewValue(resolved[0].Value(), ref.Value.Locations())
+		// Preserve sensitivity: NewValue strips the secretString wrapper, so use
+		// NewSensitiveValue when the resolved value is a sensitive string.
 		if resolved[0].IsSensitive() {
-			result = result.MarkSensitive()
+			s, _ := resolved[0].AsString()
+			return dyn.NewSensitiveValue(s, ref.Value.Locations()), nil
 		}
-		return result, nil
+		return dyn.NewValue(resolved[0].Value(), ref.Value.Locations()), nil
 	}
 
 	// Not pure; perform string interpolation.

@@ -19,11 +19,6 @@ type Value struct {
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
 	anchor bool
-
-	// Whether or not this value is sensitive.
-	// Sensitive values are replaced by a redaction placeholder in JSON/YAML output.
-	// The underlying value is still accessible via AsString/MustString.
-	sensitive bool
 }
 
 // InvalidValue is equal to the zero-value of Value.
@@ -66,36 +61,33 @@ func (v Value) WithLocations(loc []Location) Value {
 
 		// create a copy of the locations, so that mutations to the original slice
 		// don't affect new value.
-		l:         slices.Clone(loc),
-		sensitive: v.sensitive,
+		l: slices.Clone(loc),
 	}
 }
 
 func (v Value) AppendLocationsFromValue(w Value) Value {
 	return Value{
-		v:         v.v,
-		k:         v.k,
-		l:         append(v.l, w.l...),
-		sensitive: v.sensitive,
+		v: v.v,
+		k: v.k,
+		l: append(v.l, w.l...),
 	}
 }
 
-// MarkSensitive returns a copy of the value marked as sensitive.
-// When a sensitive value is marshaled to JSON or YAML, it is replaced by a redaction placeholder.
-// The underlying value is still accessible via AsString/MustString for use in the deployment pipeline.
-func (v Value) MarkSensitive() Value {
-	v.sensitive = true
-	return v
-}
-
-// IsSensitive reports whether this value is marked sensitive.
+// IsSensitive reports whether this value holds a sensitive string.
+// Sensitivity is encoded in the type of v.v (secretString vs plain string),
+// so it is preserved automatically whenever v.v is copied.
 func (v Value) IsSensitive() bool {
-	return v.sensitive
+	_, ok := v.v.(secretString)
+	return ok
 }
 
-// WithSensitive returns a copy of the value with the sensitive flag set to the given value.
-func (v Value) WithSensitive(sensitive bool) Value {
-	v.sensitive = sensitive
+// MarkSensitive returns a copy of this value marked as sensitive.
+// If the value is already a KindString, its content is re-wrapped as a
+// secretString; otherwise the value is returned unchanged.
+func (v Value) MarkSensitive() Value {
+	if s, ok := v.v.(string); ok {
+		v.v = secretString{s}
+	}
 	return v
 }
 
@@ -146,8 +138,9 @@ func (v Value) AsAny() any {
 	case KindNil:
 		return v.v
 	case KindString:
-		if v.sensitive {
-			return "********"
+		// secretString holds a sensitive value; return the redaction placeholder.
+		if _, ok := v.v.(secretString); ok {
+			return SensitiveValueRedacted
 		}
 		return v.v
 	case KindBool:
@@ -230,9 +223,6 @@ func (v Value) eq(w Value) bool {
 		return false
 	}
 	if !slices.Equal(v.l, w.l) {
-		return false
-	}
-	if v.sensitive != w.sensitive {
 		return false
 	}
 

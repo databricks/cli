@@ -285,6 +285,10 @@ func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path 
 
 	switch src.Kind() {
 	case dyn.KindString:
+		// Preserve sensitive strings: NewValue would strip the secretString wrapper.
+		if src.IsSensitive() {
+			return src, nil
+		}
 		return dyn.NewValue(src.MustString(), src.Locations()), nil
 	case dyn.KindBool:
 		return dyn.NewValue(strconv.FormatBool(src.MustBool()), src.Locations()), nil
