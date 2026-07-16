@@ -7,7 +7,5 @@ code_source:
   type: snapshot
   snapshot:
     root_path: .
-    git:
-      branch: main
     include_paths:
       - src
