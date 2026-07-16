@@ -58,6 +58,7 @@ func (l *FileList) Files(ctx context.Context) ([]fileset.File, error) {
 		log.Errorf(ctx, "cannot list files: %s", err)
 		return nil, err
 	}
+
 	all.Add(gitFiles...)
 
 	include, err := l.includeFileSet.Files()
