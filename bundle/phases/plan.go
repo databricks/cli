@@ -36,19 +36,22 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine 
 // cascade_on_destroy is explicitly set to false. A lookup miss (unset field, or a non-pipeline
 // resource) means the default applies, so it returns true.
 // Reads from config like checkForPreventDestroy.
-func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action) bool {
+func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action) (bool, error) {
 	path, err := dyn.NewPathFromString(action.ResourceKey)
 	if err != nil {
-		return true
+		return false, fmt.Errorf("failed to parse %q", action.ResourceKey)
 	}
 	path = append(path, dyn.Key("cascade_on_destroy"))
 
 	v, err := dyn.GetByPath(b.Config.Value(), path)
 	if err != nil {
-		return true
+		return true, nil
 	}
 	cascade, ok := v.AsBool()
-	return !ok || cascade
+	if !ok {
+		return false, fmt.Errorf("internal error: cascade_on_destroy is not a boolean for %s", action.ResourceKey)
+	}
+	return cascade, nil
 }
 
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.

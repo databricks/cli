@@ -65,4 +65,5 @@ func TestValidateCascadeOnDestroyTerraformEngineSetEmitsError(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, mutator.ValidateCascadeOnDestroy(engine.EngineTerraform))
 	assert.Len(t, diags, 1)
 	assert.Equal(t, "cascade_on_destroy is only supported in direct deployment mode", diags[0].Summary)
+	assert.Contains(t, diags[0].Detail, "https://docs.databricks.com/dev-tools/bundles/direct")
 }

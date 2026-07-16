@@ -7,8 +7,74 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPipelineDeletionCascades(t *testing.T) {
+	b := &bundle.Bundle{}
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.Set(v, "resources", dyn.NewValue(map[string]dyn.Value{
+			"pipelines": dyn.NewValue(map[string]dyn.Value{
+				"cascade_true": dyn.NewValue(map[string]dyn.Value{
+					"cascade_on_destroy": dyn.NewValue(true, nil),
+				}, nil),
+				"cascade_false": dyn.NewValue(map[string]dyn.Value{
+					"cascade_on_destroy": dyn.NewValue(false, nil),
+				}, nil),
+				"cascade_unset": dyn.NewValue(map[string]dyn.Value{}, nil),
+				"cascade_not_bool": dyn.NewValue(map[string]dyn.Value{
+					"cascade_on_destroy": dyn.NewValue("yes", nil),
+				}, nil),
+			}, nil),
+		}, nil))
+	})
+	require.NoError(t, err)
+
+	tests := []struct {
+		name        string
+		resourceKey string
+		want        bool
+		wantErr     string
+	}{
+		{
+			name:        "cascade_on_destroy explicitly true",
+			resourceKey: "resources.pipelines.cascade_true",
+			want:        true,
+		},
+		{
+			name:        "cascade_on_destroy explicitly false",
+			resourceKey: "resources.pipelines.cascade_false",
+			want:        false,
+		},
+		{
+			name:        "cascade_on_destroy unset defaults to cascade",
+			resourceKey: "resources.pipelines.cascade_unset",
+			want:        true,
+		},
+		{
+			name:        "cascade_on_destroy not a bool errors",
+			resourceKey: "resources.pipelines.cascade_not_bool",
+			wantErr:     "internal error: cascade_on_destroy is not a boolean for resources.pipelines.cascade_not_bool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			action := deployplan.Action{
+				ResourceKey: tt.resourceKey,
+				ActionType:  deployplan.Delete,
+			}
+			cascade, err := pipelineDeletionCascades(b, action)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, cascade)
+		})
+	}
+}
 
 func TestCheckPreventDestroyForAllResources(t *testing.T) {
 	for resourceType := range config.SupportedResources() {

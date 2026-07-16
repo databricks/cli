@@ -48,12 +48,16 @@ var destroyApprovalGroups = []approvalGroup{
 
 // logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
 // a note that datasets will be deleted as well.
-func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action) {
+func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action) error {
 	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
 
 	var cascading, retaining []deployplan.Action
 	for _, a := range pipelineDeletes {
-		if pipelineDeletionCascades(b, a) {
+		cascade, err := pipelineDeletionCascades(b, a)
+		if err != nil {
+			return err
+		}
+		if cascade {
 			cascading = append(cascading, a)
 		} else {
 			retaining = append(retaining, a)
@@ -76,6 +80,7 @@ func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []
 		}
 		cmdio.LogString(ctx, "")
 	}
+	return nil
 }
 
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
@@ -102,7 +107,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	}
 
 	logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
-	logPipelineDeleteApproval(ctx, b, deleteActions)
+	if err := logPipelineDeleteApproval(ctx, b, deleteActions); err != nil {
+		return false, err
+	}
 
 	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
 	cmdio.LogString(ctx, "")

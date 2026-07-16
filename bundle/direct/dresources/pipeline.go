@@ -31,10 +31,10 @@ func (s PipelineState) MarshalJSON() ([]byte, error) {
 
 // PipelineRemote is the return type for DoRead. It embeds CreatePipeline so that all
 // paths in StateType are valid paths in RemoteType.
+// Note that cascade_on_destroy is intentionally absent: it is a delete-time-only setting
+// that the GET response never returns, so the engine suppresses its drift automatically
 type PipelineRemote struct {
 	pipelines.CreatePipeline
-
-	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
 
 	// Remote-specific fields from pipelines.GetPipelineResponse
 	Cause                   string                              `json:"cause,omitempty"`
@@ -79,8 +79,9 @@ func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *PipelineState 
 
 func (*ResourcePipeline) RemapState(remote *PipelineRemote) *PipelineState {
 	return &PipelineState{
-		CreatePipeline:   remote.CreatePipeline,
-		CascadeOnDestroy: remote.CascadeOnDestroy,
+		CreatePipeline: remote.CreatePipeline,
+		// cascade_on_destroy is input-only and absent from PipelineRemote, so it stays nil here.
+		CascadeOnDestroy: nil,
 	}
 }
 
@@ -136,9 +137,7 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 		}
 	}
 	return &PipelineRemote{
-		CreatePipeline: createPipeline,
-		// cascade_on_destroy is input-only; the GET response never carries it, so leave it nil.
-		CascadeOnDestroy:        nil,
+		CreatePipeline:          createPipeline,
 		Cause:                   p.Cause,
 		ClusterId:               p.ClusterId,
 		CreatorUserName:         p.CreatorUserName,

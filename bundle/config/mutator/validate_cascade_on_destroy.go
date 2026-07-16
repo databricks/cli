@@ -36,8 +36,11 @@ func (m *validateCascadeOnDestroy) Apply(_ context.Context, b *bundle.Bundle) di
 		}
 		path := "resources.pipelines." + key + ".cascade_on_destroy"
 		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   "cascade_on_destroy is only supported in direct deployment mode",
+			Severity: diag.Error,
+			Summary:  "cascade_on_destroy is only supported in direct deployment mode",
+			Detail: "cascade_on_destroy is not yet supported by the terraform provider. " +
+				"Set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' or set 'bundle.engine: direct' in your databricks.yml to use it.\n" +
+				"Learn more at https://docs.databricks.com/dev-tools/bundles/direct",
 			Locations: b.Config.GetLocations(path),
 		})
 	}
