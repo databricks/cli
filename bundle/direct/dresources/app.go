@@ -246,12 +246,23 @@ func hasAppChanges(entry *PlanEntry) bool {
 	return entry.Changes.HasChangeExcept("source_code_path", "config", "git_source", "lifecycle", "lifecycle.started")
 }
 
-// OverrideChangeDesc skips source_code_path drift when the remote value is empty.
-// This happens when an app has no deployment yet (DefaultSourceCodePath is unset).
+// OverrideChangeDesc skips drift on deploy-only fields (source_code_path, config,
+// git_source) until the app has a deployment: they're applied via an app deployment
+// (see manageLifecycle), so DoRead leaves them nil until then and any diff is
+// spurious. Real out-of-band drift is reported again once a deployment exists.
 func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
-	if path.String() == "source_code_path" && (remote.SourceCodePath == "" || remote.SourceCodePath == "null") {
-		change.Action = deployplan.Skip
-		change.Reason = "no deployment"
+	// Prefix(1) so a nested diff (e.g. config.command) matches its top-level field.
+	switch path.Prefix(1).String() {
+	case "source_code_path":
+		if remote.SourceCodePath == "" || remote.SourceCodePath == "null" {
+			change.Action = deployplan.Skip
+			change.Reason = "no deployment"
+		}
+	case "config", "git_source":
+		if remote.ActiveDeployment == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "no deployment"
+		}
 	}
 	return nil
 }
