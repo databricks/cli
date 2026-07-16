@@ -44,6 +44,49 @@ func TestConvertToBundleBasic(t *testing.T) {
 	assert.Empty(t, task.EnvironmentVariablesKey)
 }
 
+func TestConvertToBundlePermissions(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("python train.py"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+		Permissions: []permission{
+			{Level: "CAN_VIEW", GroupName: new("users")},
+			{Level: "CAN_MANAGE", UserName: new("a@b.com")},
+		},
+	}
+
+	job := convertToBundle(cfg).Resources.Jobs["exp"]
+	require.Len(t, job.Permissions, 2)
+	assert.Equal(t, exportedPermission{Level: "CAN_VIEW", GroupName: "users"}, job.Permissions[0])
+	assert.Equal(t, exportedPermission{Level: "CAN_MANAGE", UserName: "a@b.com"}, job.Permissions[1])
+
+	// No permissions declared -> field omitted (no empty permissions block).
+	assert.Empty(t, convertToBundle(&runConfig{
+		ExperimentName: "exp", Command: new("x"),
+		Compute: &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+	}).Resources.Jobs["exp"].Permissions)
+}
+
+func TestParsePermissions(t *testing.T) {
+	got, err := parsePermissions([]string{
+		"CAN_VIEW=group_name:users",
+		"CAN_MANAGE=user_name:a@b.com",
+		"CAN_RUN=service_principal_name:1234-abcd",
+	})
+	require.NoError(t, err)
+	require.Len(t, got, 3)
+	assert.Equal(t, "CAN_VIEW", got[0].Level)
+	assert.Equal(t, "users", *got[0].GroupName)
+	assert.Equal(t, "a@b.com", *got[1].UserName)
+	assert.Equal(t, "1234-abcd", *got[2].ServicePrincipalName)
+
+	// Malformed inputs error rather than silently drop.
+	for _, bad := range []string{"CAN_VIEW", "CAN_VIEW=users", "CAN_VIEW=bogus:x"} {
+		_, err := parsePermissions([]string{bad})
+		require.Error(t, err, "expected error for %q", bad)
+	}
+}
+
 func TestConvertToBundleEnvVarsAndSecrets(t *testing.T) {
 	cfg := &runConfig{
 		ExperimentName: "exp",

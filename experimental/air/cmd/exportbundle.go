@@ -124,6 +124,18 @@ type exportedJob struct {
 	// EnvironmentVariablesKey. Emitted only when the run declares env_variables or
 	// secrets.
 	EnvironmentVariables []exportedEnvVarProfile `yaml:"environment_variables,omitempty"`
+	// Permissions are the job's ACL grants, from the run's permissions block.
+	// Emitted only when the run declares any.
+	Permissions []exportedPermission `yaml:"permissions,omitempty"`
+}
+
+// exportedPermission is one job ACL grant: a level plus exactly one principal.
+// Matches the DABs job permissions shape.
+type exportedPermission struct {
+	Level                string `yaml:"level"`
+	UserName             string `yaml:"user_name,omitempty"`
+	GroupName            string `yaml:"group_name,omitempty"`
+	ServicePrincipalName string `yaml:"service_principal_name,omitempty"`
 }
 
 type exportedTask struct {
@@ -241,11 +253,35 @@ func convertToBundle(cfg *runConfig) *exportedBundle {
 						Spec:           exportBundleEnvSpec(cfg),
 					}},
 					EnvironmentVariables: profiles,
+					Permissions:          exportedPermissions(cfg),
 				},
 			},
 		},
 		Experimental: &exportedExperimental{ImmutableFolder: true},
 	}
+}
+
+// exportedPermissions maps the run's permissions block to job ACL grants, or nil
+// when none are declared. Each entry carries the level and its single principal;
+// validation (exactly one principal, non-empty level) already ran in runConfig.
+func exportedPermissions(cfg *runConfig) []exportedPermission {
+	if len(cfg.Permissions) == 0 {
+		return nil
+	}
+	out := make([]exportedPermission, 0, len(cfg.Permissions))
+	for _, p := range cfg.Permissions {
+		e := exportedPermission{Level: p.Level}
+		switch {
+		case p.UserName != nil:
+			e.UserName = *p.UserName
+		case p.GroupName != nil:
+			e.GroupName = *p.GroupName
+		case p.ServicePrincipalName != nil:
+			e.ServicePrincipalName = *p.ServicePrincipalName
+		}
+		out = append(out, e)
+	}
+	return out
 }
 
 // envVarProfiles builds the job-level env-var profile list from the run's
