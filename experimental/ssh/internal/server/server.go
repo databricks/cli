@@ -83,7 +83,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		return fmt.Errorf("failed to setup SSH configuration: %w", err)
 	}
 
-	err = saveJupyterInitScript(ctx)
+	err = saveJupyterInitScript(ctx, os.ExpandEnv("$HOME/.ipython"))
 	if err != nil {
 		return fmt.Errorf("failed to save Jupyter init script: %w", err)
 	}
@@ -92,8 +92,17 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	// sessions. The tunnel works without it (the non-interactive `-- <cmd>` path
 	// is unaffected), so a write failure on a locked-down home must not abort the
 	// server. Mirrors the /run/sshd handling in prepareSSHDConfig.
+	//
+	// seedEnvActivation and saveJupyterInitScript seed the compute's OS home, which
+	// the --ide path consumes (its remote server, terminal, and kernels run as the OS
+	// user). seedSessionConfig seeds the workspace home's .config, which the plain
+	// interactive session reads after it redirects HOME there (see buildRemoteShellArgs).
 	if err := seedEnvActivation(ctx); err != nil {
 		log.Warnf(ctx, "Failed to seed environment activation, bare python/pip may resolve to the wrong interpreter in interactive sessions: %v", err)
+	}
+
+	if err := seedSessionConfig(ctx, client); err != nil {
+		log.Warnf(ctx, "Failed to seed interactive session config in the workspace home, bare python/pip may resolve to the wrong interpreter in interactive sessions: %v", err)
 	}
 
 	createServerCommand := func(ctx context.Context) *exec.Cmd {
@@ -149,8 +158,10 @@ func findAvailablePort(startPort, maxAttempts int) (int, error) {
 	return 0, fmt.Errorf("no available port found after %d attempts starting from port %d", maxAttempts, startPort)
 }
 
-func saveJupyterInitScript(ctx context.Context) error {
-	ipythonStartupDir := os.ExpandEnv("$HOME/.ipython/profile_default/startup")
+// saveJupyterInitScript writes the Databricks IPython startup script under
+// ipythonDir (an IPYTHONDIR, i.e. the directory that contains profile_default).
+func saveJupyterInitScript(ctx context.Context, ipythonDir string) error {
+	ipythonStartupDir := filepath.Join(ipythonDir, "profile_default", "startup")
 
 	err := os.MkdirAll(ipythonStartupDir, 0o755)
 	if err != nil {
@@ -176,10 +187,14 @@ const envActivationMarker = "# added by databricks ssh tunnel (DECO-27499)"
 // shell (bash -i), which sources /etc/bash.bashrc; on serverless that file runs
 // activate_root_python_environment.sh, which prepends the cluster-libraries python
 // ahead of the environment interpreter that sshd forwards via SetEnv. bash sources
-// ~/.bashrc after /etc/bash.bashrc, so re-prepending here wins and bare python/pip
+// the rcfile after /etc/bash.bashrc, so re-prepending here wins and bare python/pip
 // resolve to $DATABRICKS_VIRTUAL_ENV. The guard makes it a no-op when the variable
 // is unset. /etc/bash.bashrc and /etc/profile.d are root-owned and not writable by
-// the non-root serverless user, so ~/.bashrc is the only usable hook.
+// the non-root serverless user, so the rcfile is the only usable hook.
+//
+// This is appended to the OS home's ~/.bashrc (for the --ide path) and to the rcfile
+// the plain interactive session loads via bash --rcfile (see seedSessionConfig and
+// buildRemoteShellArgs).
 //
 // The bootstrap sets DATABRICKS_VIRTUAL_ENV to sys.executable, always an absolute
 // path, so dirname yields the interpreter's bin directory (not "." for a bare name).
@@ -189,34 +204,110 @@ if [ -n "$DATABRICKS_VIRTUAL_ENV" ]; then
 fi
 `
 
+// osHomeSourceMarker identifies the block that sources the compute's OS-home ~/.bashrc.
+const osHomeSourceMarker = "# added by databricks ssh tunnel (source OS-home bashrc)"
+
+// osHomeSourceSnippet sources the compute's OS-home ~/.bashrc from the interactive
+// session, which otherwise never sees it because the session redirects HOME to the
+// workspace folder (see buildRemoteShellArgs). The OS-home path is passed live in
+// $DATABRICKS_OS_HOME (captured by the client before the redirect) rather than baked
+// in, since the rcfile persists on the workspace mount and is reused across clusters
+// where the path differs. HOME is restored to the OS home while sourcing so any
+// $HOME-relative logic inside that ~/.bashrc resolves against the compute home. This is
+// seeded ahead of envActivationSnippet so our PATH fixup runs last and still wins over
+// anything the OS-home config prepends.
+const osHomeSourceSnippet = osHomeSourceMarker + `
+if [ -n "$` + workspace.OSHomeEnvVar + `" ] && [ -f "$` + workspace.OSHomeEnvVar + `/.bashrc" ]; then
+	_dbx_ws_home="$HOME"; HOME="$` + workspace.OSHomeEnvVar + `"
+	. "$` + workspace.OSHomeEnvVar + `/.bashrc"
+	HOME="$_dbx_ws_home"; unset _dbx_ws_home
+fi
+`
+
 func seedEnvActivation(ctx context.Context) error {
 	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
-	bashrcPath := filepath.Join(homeDir, ".bashrc")
+	return appendGuarded(ctx, filepath.Join(homeDir, ".bashrc"), envActivationMarker, envActivationSnippet)
+}
 
+// appendGuarded appends snippet to the bashrc at bashrcPath, preserving any existing
+// content. The marker makes it a no-op when the snippet is already present, so it
+// never clobbers a user's edits and never duplicates the block when the server
+// restarts and re-seeds an rcfile the user may have customized.
+func appendGuarded(ctx context.Context, bashrcPath, marker, snippet string) error {
 	existing, err := os.ReadFile(bashrcPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to read %s: %w", bashrcPath, err)
 	}
-	if bytes.Contains(existing, []byte(envActivationMarker)) {
-		log.Info(ctx, "Environment activation already present in "+bashrcPath)
+	if bytes.Contains(existing, []byte(marker)) {
+		log.Info(ctx, "Snippet already present in "+bashrcPath)
 		return nil
 	}
 
-	// Append so the snippet runs after /etc/bash.bashrc and any existing ~/.bashrc
-	// content; the newline guards against a file that doesn't end in one.
+	// Append so the snippet runs after /etc/bash.bashrc and any existing content;
+	// the newline guards against a file that doesn't end in one.
 	separator := ""
 	if len(existing) > 0 && !bytes.HasSuffix(existing, []byte("\n")) {
 		separator = "\n"
 	}
-	content := string(existing) + separator + envActivationSnippet
-	err = os.WriteFile(bashrcPath, []byte(content), 0o644)
-	if err != nil {
+	content := string(existing) + separator + snippet
+	if err := os.WriteFile(bashrcPath, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", bashrcPath, err)
 	}
 
-	log.Info(ctx, "Seeded environment activation in "+bashrcPath)
+	log.Info(ctx, "Seeded snippet in "+bashrcPath)
+	return nil
+}
+
+// seedSessionConfig seeds the config that a plain interactive SSH session reads once
+// it redirects HOME to the user's workspace folder (see buildRemoteShellArgs). It
+// writes the bash rcfile (carrying the PATH fixup) and the IPython startup script
+// under HOME/.config so the workspace user-folder root stays free of dotfiles. The
+// server writes to the workspace FUSE mount, so the files persist across sessions and
+// are visible in the workspace file browser.
+func seedSessionConfig(ctx context.Context, client *databricks.WorkspaceClient) error {
+	// The seed target must match the HOME the client redirects the session to
+	// (client.go buildRemoteShellArgs, resolved via its own CurrentUser.Me). Both
+	// resolve to /Workspace/Users/<email> off the same identity: the server job is a
+	// jobs.submit run with no run_as, so it runs as the submitting client user. If a
+	// future change sets run_as to a different identity (e.g. a service principal),
+	// this would seed under the server identity's home while the session HOME stays
+	// the client's, and the rcfile/IPython config would never be found — seed under
+	// the connecting client's home in that case.
+	wsHome, err := workspace.UserWorkspaceHome(ctx, client)
+	if err != nil {
+		return err
+	}
+	return writeSessionConfig(ctx, wsHome)
+}
+
+// writeSessionConfig writes the session config files under wsHome/.config.
+func writeSessionConfig(ctx context.Context, wsHome string) error {
+	configDir := filepath.Join(wsHome, workspace.SessionConfigDir)
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create session config directory %s: %w", configDir, err)
+	}
+
+	// This rcfile is the user's general-purpose bashrc for interactive sessions: it
+	// persists on the workspace mount and users edit it. So append rather than
+	// overwriting, to preserve their customizations across server restarts.
+	//
+	// Source the compute's OS-home ~/.bashrc first (for the per-compute config placed
+	// there), then the PATH fixup last so it wins over anything that sourcing prepended.
+	bashrcPath := filepath.Join(wsHome, workspace.SessionBashrc)
+	if err := appendGuarded(ctx, bashrcPath, osHomeSourceMarker, osHomeSourceSnippet); err != nil {
+		return err
+	}
+	if err := appendGuarded(ctx, bashrcPath, envActivationMarker, envActivationSnippet); err != nil {
+		return err
+	}
+
+	if err := saveJupyterInitScript(ctx, filepath.Join(wsHome, workspace.SessionIPythonDir)); err != nil {
+		return err
+	}
+
+	log.Info(ctx, "Seeded interactive session config in "+configDir)
 	return nil
 }

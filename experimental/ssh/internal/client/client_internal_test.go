@@ -356,10 +356,20 @@ func TestBuildRemoteShellArgs(t *testing.T) {
 		assert.Equal(t, bashCmd, args[0])
 	})
 
-	t.Run("interactive cds into workspace home when set", func(t *testing.T) {
+	t.Run("interactive cds into workspace home, sets HOME, and redirects config into .config only when the seeded rcfile exists", func(t *testing.T) {
 		args := buildRemoteShellArgs(ClientOptions{}, "/Workspace/Users/me@example.com")
 		require.Len(t, args, 1)
-		assert.Equal(t, `cd '/Workspace/Users/me@example.com' 2>/dev/null; `+bashCmd, args[0])
+		const want = `cd '/Workspace/Users/me@example.com' 2>/dev/null; ` +
+			`if [ -f '/Workspace/Users/me@example.com/.config/bashrc' ]; then ` +
+			`export DATABRICKS_OS_HOME="$HOME"; ` +
+			`export HOME='/Workspace/Users/me@example.com'; ` +
+			`export XDG_CONFIG_HOME="$HOME/.config"; ` +
+			`export XDG_CACHE_HOME="$HOME/.config/cache"; ` +
+			`export IPYTHONDIR="$HOME/.config/ipython"; ` +
+			`export HISTFILE="$HOME/.config/bash_history"; ` +
+			`command -v bash >/dev/null 2>&1 && exec bash --rcfile "$HOME/.config/bashrc" -i || exec "${SHELL:-/bin/sh}" -i; ` +
+			`else ` + bashCmd + `; fi`
+		assert.Equal(t, want, args[0])
 	})
 
 	t.Run("non-interactive passes additional args verbatim", func(t *testing.T) {
@@ -388,7 +398,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 		assert.Less(t, ptyIdx, hostIdx, "-t must precede the destination host")
 		// The remote command is the final arg, after the host.
 		assert.Greater(t, len(args)-1, hostIdx)
-		assert.Contains(t, args[len(args)-1], "exec bash -i")
+		assert.Contains(t, args[len(args)-1], "exec bash --rcfile")
 	})
 
 	t.Run("non-interactive does not force a PTY", func(t *testing.T) {

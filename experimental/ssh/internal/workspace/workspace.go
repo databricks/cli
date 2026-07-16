@@ -15,18 +15,49 @@ import (
 
 const metadataFileName = "metadata.json"
 
+// Interactive SSH sessions set HOME to the user's workspace folder (see
+// buildRemoteShellArgs). Everything the tunnel seeds for those sessions lives under
+// HOME/.config, so the workspace user-folder root stays uncluttered and the files
+// persist and are visible in the workspace file browser. These are paths relative to
+// HOME; the client references them as $HOME/<path> and the server as <wsHome>/<path>.
+const (
+	SessionConfigDir  = ".config"              // XDG_CONFIG_HOME
+	SessionCacheDir   = ".config/cache"        // XDG_CACHE_HOME
+	SessionIPythonDir = ".config/ipython"      // IPYTHONDIR
+	SessionHistFile   = ".config/bash_history" // HISTFILE
+	SessionBashrc     = ".config/bashrc"       // bash --rcfile
+)
+
+// OSHomeEnvVar carries the compute's OS home path into the interactive session. The
+// client captures $HOME into it before redirecting HOME to the workspace folder (see
+// buildRemoteShellArgs), so the seeded rcfile can source the OS-home ~/.bashrc for the
+// per-compute config placed there. It is resolved live per session rather than baked
+// into the rcfile, which persists on the workspace mount and is reused across clusters
+// where the OS-home path differs.
+const OSHomeEnvVar = "DATABRICKS_OS_HOME"
+
 type WorkspaceMetadata struct {
 	Port int `json:"port"`
 	// ClusterID is required for Driver Proxy websocket connections (for any compute type, including serverless)
 	ClusterID string `json:"cluster_id,omitempty"`
 }
 
-func getWorkspaceRootDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
+// UserWorkspaceHome returns the current user's workspace home folder
+// (/Workspace/Users/<email>), used as HOME for interactive SSH sessions.
+func UserWorkspaceHome(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
 	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}
-	return fmt.Sprintf("/Workspace/Users/%s/.databricks/ssh-tunnel", me.UserName), nil
+	return "/Workspace/Users/" + me.UserName, nil
+}
+
+func getWorkspaceRootDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
+	home, err := UserWorkspaceHome(ctx, client)
+	if err != nil {
+		return "", err
+	}
+	return home + "/.databricks/ssh-tunnel", nil
 }
 
 func GetWorkspaceVersionedDir(ctx context.Context, client *databricks.WorkspaceClient, version string) (string, error) {

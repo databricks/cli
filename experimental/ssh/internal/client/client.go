@@ -717,11 +717,32 @@ func shellSingleQuote(s string) string {
 // (-l) would re-source /etc/profile, which rebuilds PATH from scratch and drops the
 // environment's bin directory that sshd forwards via SetEnv, so bare `python`/`pip`
 // would resolve to the system interpreter instead of $DATABRICKS_VIRTUAL_ENV. Using
-// -i avoids that reset; the server's ~/.bashrc snippet (see seedEnvActivation) then
-// re-prepends the environment bin after /etc/bash.bashrc runs, so bare `python`/`pip`
-// resolve to the environment interpreter. When wsHome is set, the shell first changes
-// into the user's workspace home folder; if that directory is missing the cd is
-// ignored and the shell still launches from $HOME.
+// -i avoids that reset; a bash rcfile carrying that PATH fixup (see seedSessionConfig
+// on the server) is sourced after /etc/bash.bashrc runs, so bare `python`/`pip`
+// resolve to the environment interpreter.
+//
+// When wsHome is set, the shell changes into the user's workspace home folder. The
+// server seeds the rcfile (and IPython/config) under that folder's .config only
+// best-effort (see seedSessionConfig), so this command guards on the rcfile's
+// existence and a seeding failure can't silently drop the PATH fixup:
+//
+//   - rcfile present: redirect HOME to the workspace folder so the session's $HOME is
+//     /Workspace/Users/<email> rather than the compute's OS home, and load the rcfile
+//     via --rcfile. To keep that folder free of dotfiles, HOME/.config holds everything
+//     the tunnel seeds and the XDG/IPython/history locations are redirected there too
+//     (matching the paths seedSessionConfig writes to). /etc/bash.bashrc is still
+//     sourced regardless of --rcfile, so the serverless activation ordering is
+//     preserved. The OS home is captured into $DATABRICKS_OS_HOME first, so the rcfile
+//     can source the compute's ~/.bashrc for the per-compute config placed there.
+//   - rcfile absent (seeding failed): leave HOME as the compute's OS home and launch a
+//     plain `bash -i`, which sources the OS-home ~/.bashrc that seedEnvActivation
+//     populated separately — the pre-workspace-home behavior — so the PATH fixup still
+//     applies. Pointing --rcfile at the missing file would instead make bash source
+//     nothing and silently drop it.
+//
+// The existence check tests the workspace path directly rather than "$HOME/..." because
+// HOME still points at the OS home when it runs. If the workspace home directory is
+// missing the cd is ignored and the shell still launches (from the OS home).
 //
 // For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
 // the user's command is returned verbatim so behavior is unchanged.
@@ -733,10 +754,32 @@ func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 	if len(opts.AdditionalArgs) > 0 {
 		return opts.AdditionalArgs
 	}
-	cmd := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
-	if wsHome != "" {
-		cmd = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + cmd
+	bashPlain := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
+	if wsHome == "" {
+		return []string{bashPlain}
 	}
+	home := shellSingleQuote(wsHome)
+	rcfile := shellSingleQuote(wsHome + "/" + sshWorkspace.SessionBashrc)
+	// HOME must be exported before the later exports reference $HOME; the commands run
+	// sequentially in the login shell before exec'ing the interactive shell.
+	exports := []string{
+		// Capture the compute's OS home before redirecting HOME, so the seeded rcfile can
+		// source its ~/.bashrc for the per-compute config placed there (see writeSessionConfig).
+		"export " + sshWorkspace.OSHomeEnvVar + `="$HOME"`,
+		"export HOME=" + home,
+		`export XDG_CONFIG_HOME="$HOME/` + sshWorkspace.SessionConfigDir + `"`,
+		`export XDG_CACHE_HOME="$HOME/` + sshWorkspace.SessionCacheDir + `"`,
+		`export IPYTHONDIR="$HOME/` + sshWorkspace.SessionIPythonDir + `"`,
+		`export HISTFILE="$HOME/` + sshWorkspace.SessionHistFile + `"`,
+	}
+	withRcfile := strings.Join(exports, "; ") + "; " +
+		`command -v bash >/dev/null 2>&1 && exec bash --rcfile "$HOME/` + sshWorkspace.SessionBashrc + `" -i || exec "${SHELL:-/bin/sh}" -i`
+	// Redirect HOME and load the seeded rcfile only when that rcfile exists; otherwise
+	// fall back to a plain interactive bash under the OS home so seedEnvActivation's
+	// PATH fixup in the OS-home ~/.bashrc still applies. The check tests the workspace
+	// path directly because HOME still points at the OS home at this point.
+	cmd := "cd " + home + " 2>/dev/null; " +
+		"if [ -f " + rcfile + " ]; then " + withRcfile + "; else " + bashPlain + "; fi"
 	return []string{cmd}
 }
 
@@ -778,14 +821,15 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 	hostName := opts.SessionIdentifier()
 
 	// For an interactive session (no remote command supplied), land the shell in
-	// the user's workspace home folder (/Workspace/Users/<email>) instead of the
-	// OS home. Only needed for an interactive session; skip the lookup otherwise.
+	// the user's workspace home folder (/Workspace/Users/<email>) and set $HOME to it
+	// instead of the OS home. Only needed for an interactive session; skip the lookup
+	// otherwise.
 	var wsHome string
 	if len(opts.AdditionalArgs) == 0 {
-		if currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+		if home, err := sshWorkspace.UserWorkspaceHome(ctx, client); err != nil {
 			log.Warnf(ctx, "Failed to resolve current user for workspace home directory: %v", err)
 		} else {
-			wsHome = "/Workspace/Users/" + currentUser.UserName
+			wsHome = home
 		}
 	}
 
