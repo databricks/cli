@@ -1,8 +1,31 @@
-Local = false
-Cloud = true
+Local = true
+Cloud = false
 
 # Serverless requires Unity Catalog
 RequiresUnityCatalog = true
+
+# Assert the serverless CPU bootstrap job the CLI submits on a local run.
+RecordRequests = true
+
+# Local runs stage stand-in release archives here; not part of the golden output.
+Ignore = [
+  "releases",
+]
+
+# Linux-only: the local run drives a real sshd, reliable only there (and where
+# task test-exp-ssh provisions it). Absent GOOS keys default to enabled, so the
+# other OSes must be disabled explicitly.
+[GOOS]
+  linux = true
+  darwin = false
+  windows = false
+
+# The bare `ssh connect` (no --name) derives the connection name from a hash of
+# the workspace host, which is a random localhost port locally. Normalize it so
+# the submitted job payload is deterministic.
+[[Repls]]
+Old = 'databricks-cpu-[0-9a-f]{8}'
+New = "[CPU_CONN]"
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["direct"]
