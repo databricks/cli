@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,9 +51,24 @@ func TestJSONSkeletonMapIsEmptyObject(t *testing.T) {
 	assert.Equal(t, `{}`, skeletonJSON(t, map[string]string(nil)))
 }
 
-func TestJSONSkeletonTimeIsEmptyString(t *testing.T) {
-	// The SDK marshals time.Time as an RFC 3339 string, not a struct.
-	assert.Equal(t, `""`, skeletonJSON(t, time.Time{}))
+func TestJSONSkeletonScalarWrapperTypesAreEmptyString(t *testing.T) {
+	// The SDK marshals these to a single JSON string, not an object. Reflecting
+	// into their (unexported) fields would render them as {}, so the skeleton must
+	// special-case them to "".
+	cases := []struct {
+		name string
+		val  any
+	}{
+		{"stdlib time.Time", time.Time{}},
+		{"sdk time.Time", sdktime.Time{}},
+		{"sdk duration.Duration", duration.Duration{}},
+		{"sdk fieldmask.FieldMask", fieldmask.FieldMask{}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, `""`, skeletonJSON(t, c.val))
+		})
+	}
 }
 
 func TestJSONSkeletonStructUsesJSONTags(t *testing.T) {

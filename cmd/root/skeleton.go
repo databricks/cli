@@ -9,8 +9,26 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/spf13/cobra"
 )
+
+// stringScalarTypes are struct types the SDK marshals to a single JSON string
+// rather than an object: stdlib time.Time (RFC 3339) and the protobuf-backed
+// well-known types the CLI codegen also treats as string-valued flags (see the
+// IsTimestamp/IsDuration/IsFieldMask handling in internal/cligen). Reflecting
+// into their unexported fields would otherwise render them as {}, so the
+// skeleton emits an empty string placeholder instead. NB: every SDK request and
+// message struct implements json.Marshaler too, so we cannot key off that
+// interface — only these specific types marshal to a scalar.
+var stringScalarTypes = map[reflect.Type]bool{
+	reflect.TypeFor[time.Time]():           true,
+	reflect.TypeFor[sdktime.Time]():        true,
+	reflect.TypeFor[duration.Duration]():   true,
+	reflect.TypeFor[fieldmask.FieldMask](): true,
+}
 
 const (
 	flagSkeletonFull         = "generate-skeleton-full"
@@ -99,7 +117,7 @@ func jsonSkeleton(t reflect.Type, requiredOnly bool, seen map[reflect.Type]bool)
 	case reflect.Pointer:
 		return jsonSkeleton(t.Elem(), requiredOnly, seen)
 	case reflect.Struct:
-		if t == reflect.TypeFor[time.Time]() {
+		if stringScalarTypes[t] {
 			return ""
 		}
 		if seen[t] {

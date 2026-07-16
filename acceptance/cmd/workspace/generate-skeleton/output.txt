@@ -27,7 +27,7 @@
   "source_type": "",
   "tag_key": "",
   "tag_value": "",
-  "update_time": {},
+  "update_time": "",
   "updated_by": ""
 }
 
