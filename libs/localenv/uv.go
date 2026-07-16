@@ -323,8 +323,19 @@ func confirmUvInstall(ctx context.Context) bool {
 	if !cmdio.HasIO(ctx) || !cmdio.IsPromptSupported(ctx) {
 		return false
 	}
-	ok, err := cmdio.AskYesOrNo(ctx, "uv is not installed. Download and run the official uv installer (https://astral.sh/uv/install.sh)?")
+	// Name the OS-specific installer URL that installUv will actually fetch, so
+	// the prompt is transparent about what runs (install.ps1 on Windows).
+	ok, err := cmdio.AskYesOrNo(ctx, "uv is not installed. Download and run the official uv installer ("+uvInstallerURL()+")?")
 	return err == nil && ok
+}
+
+// uvInstallerURL returns the URL of the official uv installer script that
+// installUv fetches for the current OS.
+func uvInstallerURL() string {
+	if runtime.GOOS == "windows" {
+		return "https://astral.sh/uv/install.ps1"
+	}
+	return "https://astral.sh/uv/install.sh"
 }
 
 // installUv runs the official uv installer for the current OS. Unix uses the
@@ -334,11 +345,9 @@ func confirmUvInstall(ctx context.Context) bool {
 func installUv(ctx context.Context) error {
 	var cmd []string
 	if runtime.GOOS == "windows" {
-		// https://astral.sh/uv/install.ps1
-		cmd = []string{"powershell", "-ExecutionPolicy", "ByPass", "-Command", "irm https://astral.sh/uv/install.ps1 | iex"}
+		cmd = []string{"powershell", "-ExecutionPolicy", "ByPass", "-Command", "irm " + uvInstallerURL() + " | iex"}
 	} else {
-		// https://astral.sh/uv/install.sh
-		cmd = []string{"sh", "-c", "curl -LsSf https://astral.sh/uv/install.sh | sh"}
+		cmd = []string{"sh", "-c", "curl -LsSf " + uvInstallerURL() + " | sh"}
 	}
 	// This downloads and runs a remote installer that mutates the user's machine
 	// (~/.local/bin), so record exactly what ran before it fires — visible under

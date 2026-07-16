@@ -69,7 +69,7 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 		// first. A pinned-vs-unpinned mix is also ambiguous, so compare raw values.
 		for _, e := range job.Settings.Environments[1:] {
 			if environmentVersion(e) != version {
-				return "", false, "", fmt.Errorf("job %d has serverless environments with differing environment_version; pass --serverless explicitly to disambiguate", id)
+				return "", false, "", fmt.Errorf("job %d has serverless environments with differing versions; pass --serverless explicitly to disambiguate", id)
 			}
 		}
 		return "", true, version, nil
@@ -94,11 +94,21 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 	return "", false, "", fmt.Errorf("could not determine compute for job %d from its environments or job clusters (task-level compute is not supported); pass --cluster or --serverless explicitly", id)
 }
 
-// environmentVersion returns the serverless environment_version recorded on a
+// environmentVersion returns the serverless environment version recorded on a
 // job environment, or "" when the spec or version is absent.
+//
+// The version can arrive in either of two fields. environment_version is the
+// current one; client is its deprecated predecessor ("Use environment_version
+// instead") and is still what some jobs pin. Reading both means the v4 fallback
+// and the divergence guard observe whichever field actually carries the pin,
+// rather than treating a client-pinned job as unversioned. base_environment is
+// deliberately ignored: it is a path/ID, not a version.
 func environmentVersion(e jobs.JobEnvironment) string {
 	if e.Spec == nil {
 		return ""
 	}
-	return e.Spec.EnvironmentVersion
+	if e.Spec.EnvironmentVersion != "" {
+		return e.Spec.EnvironmentVersion
+	}
+	return e.Spec.Client
 }
