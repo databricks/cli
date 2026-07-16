@@ -1,0 +1,1 @@
+* Fix a target override setting a field to `null` (e.g. `autoscale: null`) being ignored; the field now drops the value inherited from the base configuration instead of keeping it ([#5701](https://github.com/databricks/cli/issues/5701)).

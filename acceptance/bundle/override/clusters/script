@@ -1,2 +1,3 @@
 trace $CLI bundle validate -o json -t default | jq .resources.clusters.foo
 trace $CLI bundle validate -o json -t development | jq .resources.clusters.foo
+trace $CLI bundle validate -o json -t no_autoscale | jq .resources.clusters.foo
