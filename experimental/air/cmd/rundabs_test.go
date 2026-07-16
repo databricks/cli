@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -35,12 +36,12 @@ func TestWriteBundleProject(t *testing.T) {
 	assert.FileExists(t, filepath.Join(root, trainingConfigName))
 	script, err := os.ReadFile(filepath.Join(root, bundleCommandScript))
 	require.NoError(t, err)
-	assert.Equal(t, "python train.py", string(script))
+	assert.Equal(t, commandScript("python train.py"), string(script))
 
 	// cleanup removes the temp root.
 	cleanup()
 	_, err = os.Stat(root)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestWriteBundleProjectStagesCodeSource(t *testing.T) {
@@ -91,7 +92,7 @@ code_source:
 	// minimalConfig's command is "python train.py", not the STALE tree copy.
 	script, err := os.ReadFile(filepath.Join(root, bundleCommandScript))
 	require.NoError(t, err)
-	assert.Equal(t, "python train.py", string(script))
+	assert.Equal(t, commandScript("python train.py"), string(script))
 }
 
 func TestWriteBundleProjectRejectsUnconvertible(t *testing.T) {

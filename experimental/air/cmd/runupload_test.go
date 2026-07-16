@@ -54,7 +54,14 @@ func TestBuildArtifacts_CommandAndConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{trainingConfigName, commandScriptName}, itemNames(items))
 	assert.Equal(t, minimalConfig, string(items[0].data))
-	assert.Equal(t, "python train.py", string(items[1].data))
+	// command.sh cds to its own dir (the synced code_source location) before the command.
+	assert.Equal(t, "cd \"$(dirname \"$0\")\"\npython train.py", string(items[1].data))
+}
+
+func TestCommandScript(t *testing.T) {
+	// Prepends a cd to the script's own directory so relative refs resolve against
+	// the synced code_source location.
+	assert.Equal(t, "cd \"$(dirname \"$0\")\"\npython train.py", commandScript("python train.py"))
 }
 
 func TestBuildArtifacts_InlineRequirementsAndParameters(t *testing.T) {

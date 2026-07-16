@@ -69,7 +69,7 @@ func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 
 	items := []uploadItem{
 		{trainingConfigName, configData},
-		{commandScriptName, []byte(*cfg.Command)},
+		{commandScriptName, []byte(commandScript(*cfg.Command))},
 	}
 
 	switch reqPath, ok := cfg.requirementsFile(); {
@@ -127,6 +127,13 @@ func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 	}
 
 	return items, nil
+}
+
+// commandScript runs the user's command from command.sh's own directory, where the
+// synced code_source files live. The harness invokes command.sh from an unrelated
+// work dir, so relative references (e.g. `python train.py`) would otherwise fail.
+func commandScript(command string) string {
+	return `cd "$(dirname "$0")"` + "\n" + command
 }
 
 // envVarEntry is one entry in env_vars.json.
