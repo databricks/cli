@@ -1,61 +1,82 @@
 package phases
 
 import (
+	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPipelineDeletionCascades(t *testing.T) {
+	// The value must be read from persisted state (what the delete uses), not config.
 	b := &bundle.Bundle{}
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Set(v, "resources", dyn.NewValue(map[string]dyn.Value{
-			"pipelines": dyn.NewValue(map[string]dyn.Value{
-				"cascade_true": dyn.NewValue(map[string]dyn.Value{
-					"cascade_on_destroy": dyn.NewValue(true, nil),
-				}, nil),
-				"cascade_false": dyn.NewValue(map[string]dyn.Value{
-					"cascade_on_destroy": dyn.NewValue(false, nil),
-				}, nil),
-				"cascade_unset": dyn.NewValue(map[string]dyn.Value{}, nil),
-				"cascade_not_bool": dyn.NewValue(map[string]dyn.Value{
-					"cascade_on_destroy": dyn.NewValue("yes", nil),
-				}, nil),
-			}, nil),
-		}, nil))
-	})
-	require.NoError(t, err)
+	data := dstate.NewDatabase("lineage", 1)
+	data.State["resources.pipelines.cascade_true"] = dstate.ResourceEntry{ID: "1", State: json.RawMessage(`{"cascade_on_destroy": true}`)}
+	data.State["resources.pipelines.cascade_false"] = dstate.ResourceEntry{ID: "2", State: json.RawMessage(`{"cascade_on_destroy": false}`)}
+	data.State["resources.pipelines.cascade_unset"] = dstate.ResourceEntry{ID: "3", State: json.RawMessage(`{}`)}
+	data.State["resources.pipelines.cascade_empty"] = dstate.ResourceEntry{ID: "4"}
+	b.DeploymentBundle.StateDB.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), data)
+
+	// A bundle whose direct state DB was never opened, as happens under the terraform
+	// engine. pipelineDeletionCascades must not touch the state DB there.
+	bTerraform := &bundle.Bundle{}
 
 	tests := []struct {
 		name        string
+		bundle      *bundle.Bundle
+		engine      engine.EngineType
 		resourceKey string
 		want        bool
-		wantErr     string
 	}{
 		{
 			name:        "cascade_on_destroy explicitly true",
+			bundle:      b,
+			engine:      engine.EngineDirect,
 			resourceKey: "resources.pipelines.cascade_true",
 			want:        true,
 		},
 		{
 			name:        "cascade_on_destroy explicitly false",
+			bundle:      b,
+			engine:      engine.EngineDirect,
 			resourceKey: "resources.pipelines.cascade_false",
 			want:        false,
 		},
 		{
 			name:        "cascade_on_destroy unset defaults to cascade",
+			bundle:      b,
+			engine:      engine.EngineDirect,
 			resourceKey: "resources.pipelines.cascade_unset",
 			want:        true,
 		},
 		{
-			name:        "cascade_on_destroy not a bool errors",
-			resourceKey: "resources.pipelines.cascade_not_bool",
-			wantErr:     "internal error: cascade_on_destroy is not a boolean for resources.pipelines.cascade_not_bool",
+			name:        "empty persisted state defaults to cascade",
+			bundle:      b,
+			engine:      engine.EngineDirect,
+			resourceKey: "resources.pipelines.cascade_empty",
+			want:        true,
+		},
+		{
+			name:        "missing state entry defaults to cascade",
+			bundle:      b,
+			engine:      engine.EngineDirect,
+			resourceKey: "resources.pipelines.does_not_exist",
+			want:        true,
+		},
+		{
+			name:        "terraform engine defaults to cascade without reading state",
+			bundle:      bTerraform,
+			engine:      engine.EngineTerraform,
+			resourceKey: "resources.pipelines.cascade_false",
+			want:        true,
 		},
 	}
 
@@ -65,11 +86,7 @@ func TestPipelineDeletionCascades(t *testing.T) {
 				ResourceKey: tt.resourceKey,
 				ActionType:  deployplan.Delete,
 			}
-			cascade, err := pipelineDeletionCascades(b, action)
-			if tt.wantErr != "" {
-				require.EqualError(t, err, tt.wantErr)
-				return
-			}
+			cascade, err := pipelineDeletionCascades(tt.bundle, action, tt.engine)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, cascade)
 		})

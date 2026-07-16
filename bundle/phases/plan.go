@@ -2,6 +2,7 @@ package phases
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -33,25 +34,31 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine 
 
 // pipelineDeletionCascades reports whether deleting the pipeline referenced by a delete action
 // also deletes its datasets (MVs, STs, Views). This is the server default (cascade) unless
-// cascade_on_destroy is explicitly set to false. A lookup miss (unset field, or a non-pipeline
-// resource) means the default applies, so it returns true.
-// Reads from config like checkForPreventDestroy.
-func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action) (bool, error) {
-	path, err := dyn.NewPathFromString(action.ResourceKey)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse %q", action.ResourceKey)
-	}
-	path = append(path, dyn.Key("cascade_on_destroy"))
-
-	v, err := dyn.GetByPath(b.Config.Value(), path)
-	if err != nil {
+// cascade_on_destroy is explicitly set to false.
+//
+// Currently, this feature is only supported by the direct engine. We will read from the persisted
+// state to determine the value. For the Terraform engine, this parameter cannot be configured, so
+// there is no state to read from and we return the default of true.
+func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action, engine engine.EngineType) (bool, error) {
+	if !engine.IsDirect() {
 		return true, nil
 	}
-	cascade, ok := v.AsBool()
-	if !ok {
-		return false, fmt.Errorf("internal error: cascade_on_destroy is not a boolean for %s", action.ResourceKey)
+
+	entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(action.ResourceKey)
+	if !ok || len(entry.State) == 0 {
+		return true, nil
 	}
-	return cascade, nil
+
+	var holder struct {
+		CascadeOnDestroy *bool `json:"cascade_on_destroy"`
+	}
+	if err := json.Unmarshal(entry.State, &holder); err != nil {
+		return false, fmt.Errorf("parsing persisted state for %s: %w", action.ResourceKey, err)
+	}
+	if holder.CascadeOnDestroy == nil {
+		return true, nil
+	}
+	return *holder.CascadeOnDestroy, nil
 }
 
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.

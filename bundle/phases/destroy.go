@@ -48,12 +48,12 @@ var destroyApprovalGroups = []approvalGroup{
 
 // logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
 // a note that datasets will be deleted as well.
-func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action) error {
+func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, engine engine.EngineType) error {
 	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
 
 	var cascading, retaining []deployplan.Action
 	for _, a := range pipelineDeletes {
-		cascade, err := pipelineDeletionCascades(b, a)
+		cascade, err := pipelineDeletionCascades(b, a, engine)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []
 	return nil
 }
 
-func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
+func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (bool, error) {
 	deleteActions := plan.GetActions()
 
 	// Deletes of resources that are already gone remotely only clean up the state,
@@ -107,7 +107,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	}
 
 	logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
-	if err := logPipelineDeleteApproval(ctx, b, deleteActions); err != nil {
+	if err := logPipelineDeleteApproval(ctx, b, deleteActions, engine); err != nil {
 		return false, err
 	}
 
@@ -215,7 +215,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		}
 	}
 
-	hasApproval, err := approvalForDestroy(ctx, b, plan)
+	hasApproval, err := approvalForDestroy(ctx, b, plan, engine)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
