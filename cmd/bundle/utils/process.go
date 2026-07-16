@@ -170,20 +170,33 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
+	// Resolve engine setting up front so a garbage DATABRICKS_BUNDLE_ENGINE
+	// value fails every bundle command instead of only the ones that read
+	// state. The resolver is cheap (config lookup + env var read); no reason
+	// to gate it on state-touching options.
+	requiredEngine, err := ResolveEngineSetting(ctx, b)
+	if err != nil {
+		return b, nil, err
+	}
+
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
-		requiredEngine, err := ResolveEngineSetting(ctx, b)
-		if err != nil {
-			return b, nil, err
-		}
-
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
+
+		// Announce the auto-migration path here (only on deploy) so the user
+		// isn't surprised when MigrateToDirect commits state changes at the
+		// end. PullResourcesState is shared with non-deploy commands like
+		// `bundle debug states`, which would otherwise print the same hint
+		// even though they will not migrate.
+		if opts.Deploy && requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect() {
+			log.Warnf(ctx, "Direct engine requested in %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
+		}
 
 		// --select is only supported by the direct engine, which tracks resource
 		// dependencies in the plan graph (used to expand the selection transitively).
@@ -329,7 +342,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, plan)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, requiredEngine, libs, plan)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),

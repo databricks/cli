@@ -382,9 +382,15 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		ModelRegistryModels:       map[string]ml.Model{},
 		ModelRegistryModelIDs:     map[string]string{},
 		Clusters: map[string]compute.ClusterDetails{
+			// A running dedicated single-user cluster: the shape `ssh connect --cluster`
+			// requires (ValidateClusterAccess rejects anything else), matching the cloud
+			// TEST_DEFAULT_CLUSTER_ID this stands in for.
 			TestDefaultClusterId: {
-				ClusterId:   TestDefaultClusterId,
-				ClusterName: "DEFAULT Test Cluster",
+				ClusterId:        TestDefaultClusterId,
+				ClusterName:      "DEFAULT Test Cluster",
+				State:            compute.StateRunning,
+				DataSecurityMode: compute.DataSecurityModeSingleUser,
+				SingleUserName:   TestUser.UserName,
 			},
 		},
 	}

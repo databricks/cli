@@ -191,7 +191,7 @@ multi-query mode, the same parameter set is applied to every statement.`,
 			case queryOutputModeStaticTable:
 				return renderStaticTable(cmd.OutOrStdout(), columns, rows)
 			default:
-				return renderInteractiveTable(cmd.OutOrStdout(), columns, rows)
+				return renderInteractiveTable(ctx, cmd.OutOrStdout(), columns, rows)
 			}
 		},
 	}

@@ -25,7 +25,7 @@ project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 branch_name="${project_name}/branches/main"
 database_name="${branch_name}/databases/my-database"
 database_id_1=`read_id.py my_database`
-trace $CLI postgres get-database "${database_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-database "${database_name}" | database_fields
 
 title "Verify no changes"
 trace $CLI bundle plan
@@ -47,7 +47,7 @@ trace $CLI bundle deploy
 print_requests update
 
 database_id_2=`read_id.py my_database`
-trace $CLI postgres get-database "${database_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-database "${database_name}" | database_fields
 
 title "Restore postgres_database to original value"
 trace update_file.py databricks.yml "postgres_database: renamed_db_name" "postgres_database: initial_db_name"
@@ -58,4 +58,4 @@ trace $CLI bundle deploy
 
 print_requests restore
 
-trace $CLI postgres get-database "${database_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-database "${database_name}" | database_fields
