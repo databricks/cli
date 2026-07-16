@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type required struct{}
@@ -145,30 +144,29 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	return diags
 }
 
-// Warn for fields that are optional in the SDK but that the backend may require,
-// where we have not confirmed the contract.
-func warnForMissingBackendFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+// warnForMissingGrantPrincipals warns for any grant that is missing a principal.
+// grants[*].principal is optional in the SDK (json:"principal,omitempty") but the
+// backend requires it. Grants exist on every securable, so match any resource type.
+func warnForMissingGrantPrincipals(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	// Grants exist on the following securable types.
-	r := &b.Config.Resources
-	for key, res := range r.Catalogs {
-		diags = diags.Extend(warnForMissingGrantPrincipal(b, "catalogs", key, res.Grants))
-	}
-	for key, res := range r.Schemas {
-		diags = diags.Extend(warnForMissingGrantPrincipal(b, "schemas", key, res.Grants))
-	}
-	for key, res := range r.ExternalLocations {
-		diags = diags.Extend(warnForMissingGrantPrincipal(b, "external_locations", key, res.Grants))
-	}
-	for key, res := range r.Volumes {
-		diags = diags.Extend(warnForMissingGrantPrincipal(b, "volumes", key, res.Grants))
-	}
-	for key, res := range r.RegisteredModels {
-		diags = diags.Extend(warnForMissingGrantPrincipal(b, "registered_models", key, res.Grants))
-	}
-	for key, res := range r.VectorSearchIndexes {
-		diags = diags.Extend(warnForMissingGrantPrincipal(b, "vector_search_indexes", key, res.Grants))
+	_, err := dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants"), dyn.AnyIndex()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			if isMissingOrEmptyString(v.Get("principal")) {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Warning,
+					Summary:   "grant principal is required",
+					Locations: v.Locations(),
+					Paths:     []dyn.Path{slices.Clone(p)},
+				})
+			}
+			return v, nil
+		},
+	)
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	sortDiagnostics(diags)
@@ -176,21 +174,16 @@ func warnForMissingBackendFields(ctx context.Context, b *bundle.Bundle) diag.Dia
 	return diags
 }
 
-// warnForMissingGrantPrincipal warns for each grant that has no principal set.
-func warnForMissingGrantPrincipal(b *bundle.Bundle, resourceType, key string, grants []catalog.PrivilegeAssignment) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	for i, grant := range grants {
-		if grant.Principal == "" {
-			path := fmt.Sprintf("resources.%s.%s.grants[%d]", resourceType, key, i)
-			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Warning,
-				Summary:   "grant principal is required",
-				Locations: b.Config.GetLocations(path),
-				Paths:     []dyn.Path{dyn.MustPathFromString(path)},
-			})
-		}
+// isMissingOrEmptyString reports whether v is unset, null, or an empty string.
+func isMissingOrEmptyString(v dyn.Value) bool {
+	switch v.Kind() {
+	case dyn.KindInvalid, dyn.KindNil:
+		return true
+	case dyn.KindString:
+		return v.MustString() == ""
+	default:
+		return false
 	}
-	return diags
 }
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -199,6 +192,6 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		return diags
 	}
 	diags = diags.Extend(warnForMissingFields(ctx, b))
-	diags = diags.Extend(warnForMissingBackendFields(ctx, b))
+	diags = diags.Extend(warnForMissingGrantPrincipals(ctx, b))
 	return diags
 }
