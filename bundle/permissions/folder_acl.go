@@ -80,9 +80,13 @@ const (
 
 // CheckWritable reports whether user can write to folderPath, resolving the ACL
 // (walking up to the closest existing ancestor for a not-yet-created folder) and
-// interpreting a permission-denied error on the read as a definite "not writable":
-// reading a folder ACL requires manage access, so a 403 means the user cannot
-// manage — and therefore cannot write to — the folder.
+// interpreting a permission-denied error on the read as a definite "not writable".
+//
+// Reading a folder ACL requires CAN_MANAGE (managing permissions is exclusive to
+// CAN_MANAGE per the workspace ACL model; the permissions GET returns 403
+// "does not have Manage permissions" otherwise), so a 403 means the user cannot
+// manage, and therefore cannot write to, the folder.
+// See https://docs.databricks.com/aws/en/security/auth/access-control/
 func CheckWritable(ctx context.Context, w workspace.WorkspaceInterface, folderPath string, user *iam.User) Writability {
 	acl, err := ResolveFolderACL(ctx, w, folderPath)
 	if err != nil {
