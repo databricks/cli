@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 
@@ -256,9 +257,7 @@ func envVarProfiles(cfg *runConfig) []exportedEnvVarProfile {
 		return nil
 	}
 	variables := make(map[string]string, len(cfg.EnvVariables)+len(cfg.Secrets))
-	for k, v := range cfg.EnvVariables {
-		variables[k] = v
-	}
+	maps.Copy(variables, cfg.EnvVariables)
 	for envVar, secretRef := range cfg.Secrets {
 		variables[envVar] = "{{secrets/" + secretRef + "}}"
 	}
