@@ -9,9 +9,7 @@ import (
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/fileset"
-	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/set"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -48,9 +46,7 @@ type SyncOptions struct {
 type Sync struct {
 	*SyncOptions
 
-	fileSet        *git.FileSet
-	includeFileSet *fileset.FileSet
-	excludeFileSet *fileset.FileSet
+	fileList *FileList
 
 	snapshot *Snapshot
 	filer    filer.Filer
@@ -66,22 +62,12 @@ type Sync struct {
 
 // New initializes and returns a new [Sync] instance.
 func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
-	fileSet, err := git.NewFileSet(ctx, opts.WorktreeRoot, opts.LocalRoot, opts.Paths)
+	fileList, err := NewFileList(ctx, opts.WorktreeRoot, opts.LocalRoot, opts.Paths, opts.Include, opts.Exclude)
 	if err != nil {
 		return nil, err
 	}
 
 	WriteGitIgnore(ctx, opts.LocalRoot.Native())
-
-	includeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Include)
-	if err != nil {
-		return nil, err
-	}
-
-	excludeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Exclude)
-	if err != nil {
-		return nil, err
-	}
 
 	// Verify that the remote path we're about to synchronize to is valid and allowed.
 	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser, opts.DryRun)
@@ -131,9 +117,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	return &Sync{
 		SyncOptions: &opts,
 
-		fileSet:         fileSet,
-		includeFileSet:  includeFileSet,
-		excludeFileSet:  excludeFileSet,
+		fileList:        fileList,
 		snapshot:        snapshot,
 		filer:           filer,
 		notifier:        notifier,
@@ -211,67 +195,9 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 	return files, nil
 }
 
+// GetFileList returns the local files selected for sync, without syncing them.
 func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
-	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
-	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
-	all := set.NewSetF(func(f fileset.File) string {
-		return f.Relative
-	})
-	gitFiles, err := s.fileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list files: %s", err)
-		return nil, err
-	}
-	all.Add(gitFiles...)
-
-	include, err := s.includeFileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list include files: %s", err)
-		return nil, err
-	}
-
-	all.Add(include...)
-
-	exclude, err := s.excludeFileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list exclude files: %s", err)
-		return nil, err
-	}
-
-	for _, f := range exclude {
-		all.Remove(f)
-	}
-
-	return all.Iter(), nil
-}
-
-// GetFileList returns the list of files that would be synced given opts,
-// applying the same git-aware include/exclude logic as RunOnce.
-// Unlike New, it does not verify the remote path or load a sync snapshot.
-func GetFileList(ctx context.Context, opts SyncOptions) ([]fileset.File, error) {
-	paths := opts.Paths
-	if len(paths) == 0 {
-		paths = []string{"."}
-	}
-	fileSet, err := git.NewFileSet(ctx, opts.WorktreeRoot, opts.LocalRoot, paths)
-	if err != nil {
-		return nil, fmt.Errorf("build file set: %w", err)
-	}
-	includeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Include)
-	if err != nil {
-		return nil, err
-	}
-	excludeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Exclude)
-	if err != nil {
-		return nil, err
-	}
-	s := &Sync{
-		SyncOptions:    &opts,
-		fileSet:        fileSet,
-		includeFileSet: includeFileSet,
-		excludeFileSet: excludeFileSet,
-	}
-	return s.GetFileList(ctx)
+	return s.fileList.Files(ctx)
 }
 
 func (s *Sync) RunContinuous(ctx context.Context) error {
