@@ -95,7 +95,14 @@ func runPipeline(cmd *cobra.Command) error {
 	}
 	cacheDir = filepath.Join(cacheDir, "databricks", "localenv")
 
-	bt := bundleTarget(cmd)
+	// The bundle is only a fallback: ResolveTarget consults it solely when no
+	// explicit --cluster/--serverless/--job flag is set. Skip the bundle load
+	// entirely when a flag is present — it would otherwise re-run TryConfigureBundle
+	// (a second full load) and re-print any bundle load-time diagnostics for nothing.
+	var bt libslocalenv.BundleTarget
+	if cluster == "" && serverless == "" && job == "" {
+		bt = bundleTarget(cmd)
+	}
 
 	w := cmdctx.WorkspaceClient(ctx)
 	p := &libslocalenv.Pipeline{
