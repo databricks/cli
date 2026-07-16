@@ -28,8 +28,5 @@
             "databricks.yml",
             "databricks.yaml",
         ]
-    },
-    "files.watcherExclude": {
-        "**/target": true
     }
 }
