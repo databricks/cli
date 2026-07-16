@@ -1,0 +1,7 @@
+bundle:
+  name: test-pipeline-destroy-cascade-divergence
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-cascade-divergence
+      cascade_on_destroy: true
