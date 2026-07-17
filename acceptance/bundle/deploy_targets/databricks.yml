@@ -1,0 +1,23 @@
+bundle:
+  name: deploy-targets
+
+# Each job is defined once at the top level. deploy_targets restricts a job to
+# a subset of targets. A job with no deploy_targets is deployed to every target.
+resources:
+  jobs:
+    shared_job:
+      name: shared_job
+
+    dev_and_staging_job:
+      name: dev_and_staging_job
+      deploy_targets: [dev, staging]
+
+    prod_only_job:
+      name: prod_only_job
+      deploy_targets: [prod]
+
+targets:
+  dev:
+    default: true
+  staging:
+  prod:

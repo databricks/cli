@@ -2,34 +2,54 @@
 
 package terraform_dabs_map
 
-// alerts / databricks_alert_v2: 1 dabs-only
+// alerts / databricks_alert_v2: 2 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
-// apps / databricks_app: 16 dabs-only
+// apps / databricks_app: 17 dabs-only
 // apps / databricks_app: 1 tf-only
+// clusters / databricks_cluster: 1 dabs-only
 // clusters / databricks_cluster: 25 tf-only
+// dashboards / databricks_dashboard: 1 dabs-only
 // dashboards / databricks_dashboard: 2 tf-only
+// database_catalogs / databricks_database_database_catalog: 1 dabs-only
+// database_instances / databricks_database_instance: 1 dabs-only
 // database_instances / databricks_database_instance: 1 tf-only
+// experiments / databricks_mlflow_experiment: 1 dabs-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 16 dabs-only
+// jobs / databricks_job: 17 dabs-only
 // jobs / databricks_job: 258 tf-only
+// model_serving_endpoints / databricks_model_serving: 1 dabs-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
+// models / databricks_mlflow_model: 1 dabs-only
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 5 dabs-only
+// pipelines / databricks_pipeline: 6 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
+// postgres_branches / databricks_postgres_branch: 1 dabs-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
+// postgres_catalogs / databricks_postgres_catalog: 1 dabs-only
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
+// postgres_databases / databricks_postgres_database: 1 dabs-only
 // postgres_databases / databricks_postgres_database: 1 unwraps
+// postgres_endpoints / databricks_postgres_endpoint: 1 dabs-only
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
+// postgres_projects / databricks_postgres_project: 1 dabs-only
 // postgres_projects / databricks_postgres_project: 2 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
+// postgres_roles / databricks_postgres_role: 1 dabs-only
 // postgres_roles / databricks_postgres_role: 1 unwraps
+// postgres_synced_tables / databricks_postgres_synced_table: 1 dabs-only
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
-// schemas / databricks_schema: 1 dabs-only
+// quality_monitors / databricks_quality_monitor: 1 dabs-only
+// registered_models / databricks_registered_model: 1 dabs-only
+// schemas / databricks_schema: 2 dabs-only
 // schemas / databricks_schema: 1 tf-only
+// secret_scopes / databricks_secret_scope: 1 dabs-only
 // secret_scopes / databricks_secret_scope: 1 tf-only
+// sql_warehouses / databricks_sql_endpoint: 1 dabs-only
 // sql_warehouses / databricks_sql_endpoint: 2 tf-only
+// synced_database_tables / databricks_database_synced_database_table: 1 dabs-only
+// volumes / databricks_volume: 1 dabs-only
 
 // TerraformToDABsFieldMap maps DABs group name → nested TF segments → DABs segment name.
 // Navigate using TF field name segments; DABs is the corresponding DABs name when it differs.
@@ -88,7 +108,8 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 // DABsOnlyFields maps DABs group name → FieldSet of DABs fields with no TF equivalent.
 var DABsOnlyFields = map[string]FieldSet{
 	"alerts": {
-		"file_path": {},
+		"deploy_targets": {},
+		"file_path":      {},
 	},
 	"apps": {
 		"config": {
@@ -99,6 +120,7 @@ var DABsOnlyFields = map[string]FieldSet{
 				"value_from": {}, // apps.*.config.env.value_from
 			},
 		},
+		"deploy_targets": {},
 		"git_source": {
 			"branch": {}, // apps.*.git_source.branch
 			"commit": {}, // apps.*.git_source.commit
@@ -112,7 +134,23 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 		"source_code_path": {},
 	},
+	"clusters": {
+		"deploy_targets": {},
+	},
+	"dashboards": {
+		"deploy_targets": {},
+	},
+	"database_catalogs": {
+		"deploy_targets": {},
+	},
+	"database_instances": {
+		"deploy_targets": {},
+	},
+	"experiments": {
+		"deploy_targets": {},
+	},
 	"jobs": {
+		"deploy_targets": {},
 		"job_clusters": {
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
@@ -151,6 +189,12 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 	},
+	"model_serving_endpoints": {
+		"deploy_targets": {},
+	},
+	"models": {
+		"deploy_targets": {},
+	},
 	"pipelines": {
 		"clusters": {
 			"gcp_attributes": {
@@ -158,13 +202,54 @@ var DABsOnlyFields = map[string]FieldSet{
 				"use_preemptible_executors": {}, // pipelines.*.clusters.gcp_attributes.use_preemptible_executors
 			},
 		},
-		"dry_run": {},
+		"deploy_targets": {},
+		"dry_run":        {},
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
 		},
 	},
+	"postgres_branches": {
+		"deploy_targets": {},
+	},
+	"postgres_catalogs": {
+		"deploy_targets": {},
+	},
+	"postgres_databases": {
+		"deploy_targets": {},
+	},
+	"postgres_endpoints": {
+		"deploy_targets": {},
+	},
+	"postgres_projects": {
+		"deploy_targets": {},
+	},
+	"postgres_roles": {
+		"deploy_targets": {},
+	},
+	"postgres_synced_tables": {
+		"deploy_targets": {},
+	},
+	"quality_monitors": {
+		"deploy_targets": {},
+	},
+	"registered_models": {
+		"deploy_targets": {},
+	},
 	"schemas": {
 		"custom_max_retention_hours": {},
+		"deploy_targets":             {},
+	},
+	"secret_scopes": {
+		"deploy_targets": {},
+	},
+	"sql_warehouses": {
+		"deploy_targets": {},
+	},
+	"synced_database_tables": {
+		"deploy_targets": {},
+	},
+	"volumes": {
+		"deploy_targets": {},
 	},
 }
 

@@ -59,6 +59,7 @@ var knownMissingInRemoteType = map[string][]string{
 // commonMissingInStateType lists fields that are commonly missing across all resource types.
 // These are bundle-specific fields that exist in InputType but not in StateType.
 var commonMissingInStateType = []string{
+	"deploy_targets",
 	"grants",
 	"lifecycle",
 	"permissions",

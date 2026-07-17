@@ -238,6 +238,9 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "evaluation":
           "description": |-
             PLACEHOLDER
@@ -344,6 +347,9 @@ resources:
                 "value_from":
                   "description": |-
                     PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "effective_budget_policy_id":
           "description": |-
             PLACEHOLDER
@@ -505,6 +511,9 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "grants":
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
@@ -573,6 +582,9 @@ resources:
                       notebook_path: "./src/my_notebook.py"
           ```
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -648,6 +660,9 @@ resources:
         "dataset_schema":
           "description": |-
             Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "display_name":
           "description": |-
             The display name of the dashboard.
@@ -730,6 +745,9 @@ resources:
         "create_database_if_not_exists":
           "description": |-
             PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -740,6 +758,9 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -782,6 +803,9 @@ resources:
                 description: MLflow experiment used to track runs
           ```
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -819,6 +843,9 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "effective_file_event_queue":
           "$fields":
             "managed_aqs":
@@ -871,6 +898,9 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "description":
           "description": |-
             Description of the Genie space shown alongside the title in the Databricks UI.
@@ -916,6 +946,9 @@ resources:
       "description": |-
         The job run definitions for the bundle, where each key is the name of the job run. Each job run triggers a run of an existing job as part of bundle deployment.
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -946,6 +979,9 @@ resources:
 
           For information about defining job tasks and overriding job settings, see [_](/dev-tools/bundles/job-task-types.md), [_](/dev-tools/bundles/job-task-override.md), and [_](/dev-tools/bundles/cluster-override.md).
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "environments":
           "$fields":
             "spec":
@@ -1127,6 +1163,9 @@ resources:
                     "served_entity_name":
                       "description": |-
                         PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "description":
           "description": |-
             PLACEHOLDER
@@ -1172,6 +1211,9 @@ resources:
         "markdown_description": |-
           The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use Unity Catalog [registered models](#registered-model) instead.
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1234,6 +1276,9 @@ resources:
                       path: ./pipeline.py
           ```
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "ingestion_definition":
           "$fields":
             "objects":
@@ -1347,6 +1392,9 @@ resources:
         "branch_id":
           "description": |-
             PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "expire_time":
           "description": |-
             PLACEHOLDER
@@ -1393,6 +1441,9 @@ resources:
         "create_database_if_missing":
           "description": |-
             PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1406,6 +1457,9 @@ resources:
         "database_id":
           "description": |-
             PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1431,6 +1485,9 @@ resources:
         "autoscaling_limit_min_cu":
           "description": |-
             PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "disabled":
           "description": |-
             PLACEHOLDER
@@ -1477,6 +1534,9 @@ resources:
         "default_endpoint_settings":
           "description": |-
             PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "display_name":
           "description": |-
             PLACEHOLDER
@@ -1535,6 +1595,9 @@ resources:
         "auth_method":
           "description": |-
             How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "identity_type":
           "description": |-
             The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.
@@ -1569,6 +1632,9 @@ resources:
         "create_database_objects_if_missing":
           "description": |-
             PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "existing_pipeline_id":
           "description": |-
             PLACEHOLDER
@@ -1629,6 +1695,9 @@ resources:
                   timezone_id: UTC
           ```
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "inference_log":
           "description": |-
             PLACEHOLDER
@@ -1672,6 +1741,9 @@ resources:
                       principal: account users
           ```
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "grants":
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
@@ -1744,6 +1816,9 @@ resources:
                 catalog_name: main
             ```
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "grants":
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
@@ -1773,6 +1848,9 @@ resources:
         "backend_type":
           "description": |-
             The backend type the scope will be created with. If not specified, will default to `DATABRICKS`
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "keyvault_metadata":
           "description": |-
             The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
@@ -1820,6 +1898,9 @@ resources:
             "name":
               "description": |-
                 PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "enable_photon":
           "description": |-
             Configures whether the warehouse should use Photon optimized clusters.
@@ -1881,6 +1962,9 @@ resources:
                 "delta_table_sync_info":
                   "description": |-
                     PLACEHOLDER
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1888,6 +1972,9 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1912,6 +1999,9 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "grants":
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
@@ -1958,6 +2048,9 @@ resources:
 
           For an example bundle that runs a job that writes to a file in Unity Catalog volume, see the [bundle-examples GitHub repository](https://github.com/databricks/bundle-examples/tree/main/knowledge_base/write_from_job_to_volume).
       "$fields":
+        "deploy_targets":
+          "description": |-
+            A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.
         "grants":
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
