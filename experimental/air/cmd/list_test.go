@@ -99,8 +99,8 @@ func TestListAirRunsExperimentFilter(t *testing.T) {
 	assert.Equal(t, "1", rows[0].RunID)
 }
 
-// queryCapturingServer records the run_type query param on the runs/list request,
-// so a test can assert how the jobs scan narrows (or doesn't) server-side.
+// queryCapturingServer records the run_type query param on runs/list, so a test
+// can assert the scan does not narrow to SUBMIT_RUN server-side.
 func queryCapturingServer(t *testing.T, gotRunType *string, body string) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -116,9 +116,9 @@ func queryCapturingServer(t *testing.T, gotRunType *string, body string) *httpte
 }
 
 func TestListScanIncludesJobRuns(t *testing.T) {
-	// AIR runs are now runs of a persistent DABs job (RunType JOB_RUN), so the jobs
-	// scan must NOT restrict to SUBMIT_RUN server-side — that would hide them.
-	// run_type is left unset and isAirRun selects AIR runs by task shape.
+	// AIR runs are runs of a persistent DABs job (RunType JOB_RUN), so the scan must
+	// NOT restrict to SUBMIT_RUN server-side — that would hide them. run_type is left
+	// unset and isAirRun selects AIR runs by task shape.
 	var runType string
 	dabsRun := airBaseRun(9, "me@example.com", "GPU_1xA10", 1, "exp")
 	srv := queryCapturingServer(t, &runType, runsListBody(t, "", dabsRun))
@@ -132,6 +132,7 @@ func TestListScanIncludesJobRuns(t *testing.T) {
 }
 
 func TestListAirRunsLimitTruncates(t *testing.T) {
+	// runs/list returns newest-first; the scan yields in that order and stops at limit.
 	runs := []jobs.BaseRun{
 		airBaseRun(1, "me@example.com", "GPU_1xH100", 1, "exp-a"),
 		airBaseRun(2, "me@example.com", "GPU_1xH100", 1, "exp-b"),
@@ -147,6 +148,7 @@ func TestListAirRunsLimitTruncates(t *testing.T) {
 }
 
 func TestListAirRunsPaginates(t *testing.T) {
+	// The scan follows runs/list page tokens across pages.
 	page1 := runsListBody(t, "tok", airBaseRun(1, "me@example.com", "GPU_1xH100", 1, "exp-a"))
 	page2 := runsListBody(t, "", airBaseRun(2, "me@example.com", "GPU_1xH100", 1, "exp-b"))
 	srv := runsServer(t, page1, page2)
@@ -247,7 +249,7 @@ func TestBuildListRowSweep(t *testing.T) {
 func TestListInvalidLimit(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := newListCommand()
+	cmd := newListRunsCommand()
 	cmd.SetContext(ctx)
 	require.NoError(t, cmd.Flags().Set("limit", "0"))
 
@@ -259,7 +261,7 @@ func TestListInvalidLimit(t *testing.T) {
 func TestListInvalidFilter(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := newListCommand()
+	cmd := newListRunsCommand()
 	cmd.SetContext(ctx)
 	require.NoError(t, cmd.Flags().Set("filter", "bogus=1"))
 

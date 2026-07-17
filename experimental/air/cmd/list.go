@@ -16,16 +16,14 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// maxListScan bounds how many runs `air list` inspects while looking for AIR runs
-// that match the filters. runs/list returns runs of every kind, so this caps the
-// work on a workspace with a large run history.
+// maxListScan caps how many runs `air list` inspects while looking for AIR runs.
+// runs/list returns every run type, so this bounds the scan on a workspace with a
+// large run history where AIR runs are sparse.
 const maxListScan = 2000
 
-// jobsPageLimit is the per-request page size for runs/list; enrichConcurrency
-// bounds the parallel MLflow lookups.
 const (
-	jobsPageLimit     = 25
-	enrichConcurrency = 8
+	jobsPageLimit     = 25 // runs/list page size
+	enrichConcurrency = 8  // parallel MLflow lookups
 )
 
 // listData is the payload printed by `air list`.
@@ -70,7 +68,19 @@ type listQuery struct {
 	limit       int
 }
 
+// newListCommand returns the `air list` command group. Resources are addressed
+// as nouns: `air list runs` and `air list bundles`.
 func newListCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List a collection of resources (runs or bundles)",
+	}
+	cmd.AddCommand(newListRunsCommand())
+	cmd.AddCommand(newListBundlesCommand())
+	return cmd
+}
+
+func newListRunsCommand() *cobra.Command {
 	var (
 		limit     int
 		allStatus bool
@@ -79,7 +89,7 @@ func newListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   "runs",
 		Args:  root.NoArgs,
 		Short: "List your active runs for the current profile (use --all-status for finished runs)",
 	}
@@ -145,9 +155,7 @@ func newListCommand() *cobra.Command {
 	return cmd
 }
 
-// listStrategy is a source of matching runs, pulled in batches. Two implement it:
-// jobsScanStrategy pages runs/list; indexStrategy hydrates the AiTrainingService
-// index. The fetcher wraps whichever is chosen.
+// listStrategy is a source of matching runs, pulled in batches by the fetcher.
 type listStrategy interface {
 	// next returns up to want more matching runs (already row-built + task id).
 	next(want int) ([]listedRun, error)
@@ -178,22 +186,8 @@ func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQue
 	}
 }
 
-// newListStrategy picks the fetch source. The AiTrainingService index serves only
-// the caller's own runs, so it's used for an all-status self-scoped list; if the
-// index load fails (e.g. endpoint unavailable in this workspace), we fall back to
-// the Jobs scan so the command still returns. Everything else — the default
-// active list, --all-users, and --all-status for another user — uses the scan.
 func newListStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) listStrategy {
-	useIndex := !q.activeOnly && !q.allUsers && (q.userFilter == "" || q.userFilter == q.currentUser)
-	if !useIndex {
-		return newJobsScanStrategy(ctx, w, q)
-	}
-	idx := newIndexStrategy(ctx, w, q, q.limit)
-	if err := idx.load(); err != nil {
-		log.Debugf(ctx, "air list: AiTrainingService index unavailable, falling back to Jobs scan: %v", err)
-		return newJobsScanStrategy(ctx, w, q)
-	}
-	return idx
+	return newRunScanStrategy(ctx, w, q)
 }
 
 // next pulls the next batch from the strategy, enriches it with MLflow links for
@@ -219,10 +213,13 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 	return rows, nil
 }
 
-// jobsScanStrategy pages Jobs runs/list, keeping the AIR runs that match the user
-// and filters. It buffers a page's leftover runs so successive next() calls
-// resume where the last stopped.
-type jobsScanStrategy struct {
+// runScanStrategy pages Jobs runs/list, keeping the AIR runs that match the user
+// and filters. AIR runs are returned newest-first and cluster near the top, so a
+// small `limit` is satisfied in the first page or two; the scan stops early. A
+// SUBMIT_RUN server filter would hide DABs runs (they are JOB_RUN), so RunType is
+// left unset and isAirRun selects by task shape. maxListScan bounds the worst
+// case where AIR runs are sparse among other run types.
+type runScanStrategy struct {
 	ctx        context.Context
 	w          *databricks.WorkspaceClient
 	iter       listing.Iterator[jobs.BaseRun]
@@ -232,25 +229,21 @@ type jobsScanStrategy struct {
 	scanned int
 }
 
-func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *jobsScanStrategy {
-	// AIR runs are runs OF a persistent DABs job (RunType JOB_RUN), so a SUBMIT_RUN
-	// server filter would hide them. RunType is left unset and isAirRun (task-shape)
-	// selects AIR runs; this also still surfaces any older ephemeral SUBMIT_RUNs.
-	req := jobs.ListRunsRequest{
-		ExpandTasks: true,
-		Limit:       jobsPageLimit,
-		ActiveOnly:  q.activeOnly,
-	}
-	return &jobsScanStrategy{
-		ctx:        ctx,
-		w:          w,
-		iter:       w.Jobs.ListRuns(ctx, req),
+func newRunScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *runScanStrategy {
+	return &runScanStrategy{
+		ctx: ctx,
+		w:   w,
+		iter: w.Jobs.ListRuns(ctx, jobs.ListRunsRequest{
+			ExpandTasks: true,
+			Limit:       jobsPageLimit,
+			ActiveOnly:  q.activeOnly,
+		}),
 		userFilter: q.userFilter,
 		filters:    q.filters,
 	}
 }
 
-func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
+func (s *runScanStrategy) next(want int) ([]listedRun, error) {
 	var entries []listedRun
 	for len(entries) < want && s.scanned < maxListScan && s.iter.HasNext(s.ctx) {
 		base, err := s.iter.Next(s.ctx)
@@ -274,16 +267,16 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 	return entries, nil
 }
 
-func (s *jobsScanStrategy) done() bool {
+func (s *runScanStrategy) done() bool {
 	return s.scanned >= maxListScan || !s.iter.HasNext(s.ctx)
 }
 
-func (s *jobsScanStrategy) truncated() bool {
+func (s *runScanStrategy) truncated() bool {
 	return s.scanned >= maxListScan
 }
 
-// warnIfTruncated logs when a scan hit its safety cap, so one-shot output signals
-// its results may be incomplete.
+// warnIfTruncated logs when the scan hit its cap, so one-shot output signals its
+// results may be incomplete.
 func warnIfTruncated(ctx context.Context, f *runFetcher) {
 	if f.strategy.truncated() {
 		log.Warnf(ctx, "air list: stopped after scanning %d runs; results may be incomplete", maxListScan)

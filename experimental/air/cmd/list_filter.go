@@ -12,14 +12,6 @@ import (
 // supportedFilterKeys are the keys accepted by `air list --filter KEY=VALUE`.
 var supportedFilterKeys = []string{"accelerator_type", "experiment", "num_accelerators", "user"}
 
-// hasTaskFilter reports whether any filter is applied to a run's task fields
-// (experiment or accelerators), i.e. matched after a run is fetched rather than
-// while scanning. The index path uses this to skip its newest-N truncation, so a
-// dropped match doesn't shrink the result below --limit.
-func (f listFilters) hasTaskFilter() bool {
-	return f.Experiment != "" || f.AcceleratorType != "" || f.NumAccelerators != nil
-}
-
 // listFilters holds the parsed `--filter` values for `air list`.
 type listFilters struct {
 	// User is an exact creator-email match
