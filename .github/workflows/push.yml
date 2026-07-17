@@ -154,74 +154,10 @@ jobs:
 
       # `task test` prints a lot of output that GitHub is slow to render, so
       # surface just the failed test names on the job summary page (and in this
-      # step's log) for a quick read of what broke. jq is already used by the
-      # testmask job above; guard for the rare matrix runner that lacks it
-      # rather than erroring on an already-failed job.
+      # step's log) for a quick read of what broke.
       - name: Summarize failed tests
         if: ${{ failure() }}
-        run: |
-          if ! command -v jq >/dev/null 2>&1; then
-            echo "jq not available; skipping failed-test summary"
-            exit 0
-          fi
-          if [ ! -f test-output.json ]; then
-            echo "test-output.json not found; skipping failed-test summary"
-            exit 0
-          fi
-          # test-output.json is the concatenated gotestsum --jsonfile output
-          # (go test -json events). A test can appear more than once because of
-          # --rerun-fails, so group by package+test and keep only those whose
-          # last result was a failure (recovered flakes end on "pass").
-          rows=$(jq -rn '
-            [ inputs | select(.Test != null and (.Action == "pass" or .Action == "fail" or .Action == "skip")) ]
-            | group_by([.Package, .Test])
-            | map(select(.[-1].Action == "fail") | "| \(.[0].Package) | `\(.[0].Test)` |")
-            | .[]
-          ' test-output.json)
-          # A build error or panic surfaces as a package-level "fail" event (no
-          # Test) with no failing test in the package. go test -json also emits a
-          # package-level "fail" for every package that merely has a failing test,
-          # so exclude packages already listed above; otherwise those packages get
-          # double-reported here as spurious build errors. Group by package and
-          # keep only those whose last result was a failure (handles --rerun-fails
-          # attempts that later passed).
-          pkgs=$(jq -rn '
-            [ inputs | select(.Action == "pass" or .Action == "fail" or .Action == "skip") ]
-            | ( map(select(.Test != null))
-                | group_by([.Package, .Test])
-                | map(select(.[-1].Action == "fail") | .[0].Package)
-              ) as $failed_test_pkgs
-            | map(select(.Test == null))
-            | group_by(.Package)
-            | map(select(.[-1].Action == "fail") | .[0].Package)
-            | unique
-            | map(select(. as $p | $failed_test_pkgs | index($p) | not))
-            | .[]
-          ' test-output.json)
-          {
-            echo "## Failed tests"
-            if [ -n "$rows" ]; then
-              echo
-              echo "| Package | Test |"
-              echo "| --- | --- |"
-              echo "$rows"
-            fi
-            if [ -n "$pkgs" ]; then
-              echo
-              echo "### Packages that failed without a test (build error / panic)"
-              echo
-              echo '```'
-              echo "$pkgs"
-              echo '```'
-            fi
-            if [ -z "$rows" ] && [ -z "$pkgs" ]; then
-              echo
-              echo "No failed tests found in test-output.json (the failure may be outside the test run)."
-            fi
-          } >> "$GITHUB_STEP_SUMMARY"
-          echo "Failed tests:"
-          echo "$rows"
-          echo "$pkgs"
+        run: uv run tools/summarize_failed_tests.py test-output.json | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Check no files changed or appeared after running tests
         run: |
