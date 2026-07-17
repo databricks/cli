@@ -118,11 +118,11 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 		}
 		if isServerless {
 			// Use the job's recorded serverless environment version when present;
-			// fall back to v4 when the job did not pin one (documented stand-in from
-			// the original script, spec §4.3).
+			// fall back to the default when the job did not pin one (documented
+			// stand-in, spec §4.3).
 			v := version
 			if v == "" {
-				v = "v4"
+				v = defaultServerlessVersion
 			}
 			return &TargetInfo{
 				Source:            "job",
@@ -145,12 +145,12 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 	}
 
 	if bt.Serverless {
-		// Default to serverless-v4: the serverless env version is not recorded
-		// in the bundle/project (documented stand-in from the original script).
+		// The bundle records that the target is serverless but not which version,
+		// so use the default stand-in (spec §4.3).
 		return &TargetInfo{
 			Source:            "bundle",
-			ServerlessVersion: "v4",
-			EnvKey:            EnvKeyForServerless("v4"),
+			ServerlessVersion: NormalizeServerless(defaultServerlessVersion),
+			EnvKey:            EnvKeyForServerless(defaultServerlessVersion),
 		}, nil
 	}
 
