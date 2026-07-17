@@ -2,9 +2,11 @@ package aircmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -186,6 +188,112 @@ func TestDrainPagesDedupAndOrdering(t *testing.T) {
 	// fromSec advances to the newest record's floor-second (3000ns -> 0s here).
 	assert.Equal(t, "a\nb\nc\n", buf.String())
 	assert.Equal(t, int64(3000), st.lastNano)
+}
+
+func TestDisplayState(t *testing.T) {
+	assert.Equal(t, "SUCCESS", logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS"}.displayState())
+	assert.Equal(t, "RUNNING", logRunStatus{lifeCycleState: "RUNNING"}.displayState())
+	assert.Equal(t, "UNKNOWN", logRunStatus{}.displayState())
+}
+
+func TestEmitLogLineJSON(t *testing.T) {
+	var buf bytes.Buffer
+	emitLogLine(&buf, logRequest{node: 2, jsonOutput: true}, "hello")
+
+	var ev logEvent
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &ev))
+	assert.Equal(t, "LOG", ev.Type)
+	assert.Equal(t, 2, ev.Node)
+	assert.Equal(t, "hello", ev.Line)
+	assert.NotEmpty(t, ev.TS)
+}
+
+func TestEmitLogLineText(t *testing.T) {
+	var buf bytes.Buffer
+	emitLogLine(&buf, logRequest{node: 0}, "hello")
+	assert.Equal(t, "hello\n", buf.String())
+}
+
+func TestEmitNoLogs(t *testing.T) {
+	status := logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", stateMessage: "boom"}
+
+	var text bytes.Buffer
+	emitNoLogs(&text, logRequest{runID: 7}, status)
+	assert.Equal(t, "No logs available for run 7. Run terminated in state FAILED: boom\n", text.String())
+
+	var jsonBuf bytes.Buffer
+	emitNoLogs(&jsonBuf, logRequest{runID: 7, node: 1, jsonOutput: true}, status)
+	var ev logEvent
+	require.NoError(t, json.Unmarshal(jsonBuf.Bytes(), &ev))
+	assert.Equal(t, "ERROR", ev.Type)
+	assert.Equal(t, 1, ev.Node)
+	assert.Contains(t, ev.Line, "No logs available for run 7")
+	assert.Contains(t, ev.Line, "boom")
+}
+
+func TestRequestPageRetriesThenFallsBack(t *testing.T) {
+	// Shrink the retry wait so the transient-failure loop runs fast.
+	orig := retryCheckInterval
+	retryCheckInterval = time.Millisecond
+	t.Cleanup(func() { retryCheckInterval = orig })
+
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.Path, "/logs") {
+			// Ignore SDK host/config probes so `calls` counts only log requests.
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		calls++
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error_code": "INTERNAL_ERROR", "message": "transient"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	st := &bricklensStreamer{
+		ctx:  t.Context(),
+		w:    newTestWorkspaceClient(t, srv.URL),
+		req:  logRequest{runID: 1, node: 0, attempt: -1},
+		seen: newSeenSet(seenRecordsCap),
+	}
+	_, err := st.requestPage("", 0, 0, true)
+	// Persistent transient failures fall back to MLflow after the retry budget.
+	require.ErrorIs(t, err, errBricklensFeatureDisabled)
+	assert.Equal(t, maxTransientFailures, calls)
+}
+
+func TestRequestPageRetriesThenSucceeds(t *testing.T) {
+	orig := retryCheckInterval
+	retryCheckInterval = time.Millisecond
+	t.Cleanup(func() { retryCheckInterval = orig })
+
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.Path, "/logs") {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		calls++
+		if calls < 3 {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error_code": "INTERNAL_ERROR", "message": "transient"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"log_records": [{"time_unix_nano": 1, "body": "ok", "node_index": 0}]}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	st := &bricklensStreamer{
+		ctx:  t.Context(),
+		w:    newTestWorkspaceClient(t, srv.URL),
+		req:  logRequest{runID: 1, node: 0, attempt: -1},
+		seen: newSeenSet(seenRecordsCap),
+	}
+	resp, err := st.requestPage("", 0, 0, true)
+	require.NoError(t, err)
+	require.Len(t, resp.LogRecords, 1)
+	assert.Equal(t, "ok", resp.LogRecords[0].Body)
+	assert.Equal(t, 3, calls)
 }
 
 func TestSeenSetEviction(t *testing.T) {

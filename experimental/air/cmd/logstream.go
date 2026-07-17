@@ -15,8 +15,6 @@ import (
 )
 
 const (
-	// retryCheckInterval is the wait between status/log polls.
-	retryCheckInterval = 3 * time.Second
 	// maxTransientFailures is how many consecutive Bricklens failures to tolerate
 	// before falling back to MLflow.
 	maxTransientFailures = 5
@@ -26,6 +24,10 @@ const (
 	// seenRecordsCap bounds the dedup set, evicting oldest-inserted entries first.
 	seenRecordsCap = 100000
 )
+
+// retryCheckInterval is the wait between status/log polls. A var so tests can
+// shrink it.
+var retryCheckInterval = 3 * time.Second
 
 // errBricklensFeatureDisabled signals the caller to fall back to MLflow: Bricklens
 // is gated off (FEATURE_DISABLED), not deployed (ENDPOINT_NOT_FOUND / 404), or
