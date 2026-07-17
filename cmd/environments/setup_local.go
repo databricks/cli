@@ -13,6 +13,6 @@ import "github.com/spf13/cobra"
 // python / scala) would be additive if more languages are ever supported.
 func Commands() []*cobra.Command {
 	return []*cobra.Command{
-		newSyncCommand(),
+		newSetupLocalCommand(),
 	}
 }

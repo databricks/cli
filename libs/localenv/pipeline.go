@@ -61,7 +61,7 @@ type Pipeline struct {
 // Result always carries the full canonical phase list: phases completed before a
 // failure are "ok", the failing phase is "error", and the rest are "pending".
 func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
-	log.Debugf(ctx, "local-env: mode=%s check=%v project=%s cacheDir=%s constraintBaseURL=%s flags=%+v",
+	log.Debugf(ctx, CommandName+": mode=%s check=%v project=%s cacheDir=%s constraintBaseURL=%s flags=%+v",
 		p.Mode,
 		p.Check,
 		filepath.ToSlash(p.ProjectDir),
