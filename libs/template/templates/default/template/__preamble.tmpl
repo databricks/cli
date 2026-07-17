@@ -45,6 +45,7 @@ This file only contains template directives; it is skipped for the actual output
 
 {{if not $python_language}}
   {{skip "{{.project_name}}/pyproject.toml"}}
+  {{skip "{{.project_name}}/.vscode/__builtins__.pyi"}}
 {{end}}
 
 {{if $pydabs}}

@@ -28,7 +28,7 @@ Choose how you want to work on this project:
 
 (c) With command line tools, see https://docs.databricks.com/dev-tools/cli/databricks-cli.html
 
-{{- if not $is_lakeflow}}
+{{- if and (eq .language "python") (not $is_lakeflow)}}
 
 If you're developing with an IDE, dependencies for this project should be installed using uv:
 
