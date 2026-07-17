@@ -156,6 +156,39 @@ func TestSubmitWorkload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu1xH100, AcceleratorCount: 1}, d.Compute)
 }
 
+// TestSubmitWorkloadHonorsOverride proves a --override reaches the actual
+// runs/submit payload on a real submit, not just dry-run validation: the config
+// pins num_accelerators=1, the override bumps it to 4, and the recorded request
+// body must carry 4.
+func TestSubmitWorkloadHonorsOverride(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	// Register before AddDefaultHandlers: the router is first-wins, so this must
+	// claim the route ahead of the default jobs/runs/submit handler.
+	var got jobs.SubmitRun
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+	cfg, err := loadRunConfigWithOverrides(t.Context(), cfgPath, []string{"compute.num_accelerators=4"})
+	require.NoError(t, err)
+
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key")
+	require.NoError(t, err)
+
+	require.Len(t, got.Tasks, 1)
+	at := got.Tasks[0].AiRuntimeTask
+	require.NotNil(t, at)
+	require.Len(t, at.Deployments, 1)
+	assert.Equal(t, 4, at.Deployments[0].Compute.AcceleratorCount)
+}
+
 // TestSubmitWorkloadWithCodeSource exercises the snapshot path end to end: a
 // git-pinned code_source is packaged, uploaded, and its paths attached to the task.
 func TestSubmitWorkloadWithCodeSource(t *testing.T) {

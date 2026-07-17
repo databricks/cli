@@ -57,16 +57,12 @@ The workload is described by a YAML config file (see --file).`,
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		// These flags' pipelines are not ported yet; reject rather than silently
-		// ignore them.
-		if len(overrides) > 0 {
-			return errors.New("--override is not yet supported")
-		}
+		// --watch's pipeline is not ported yet; reject rather than silently ignore it.
 		if watch {
 			return errors.New("--watch is not yet supported")
 		}
 
-		cfg, err := loadRunConfig(file)
+		cfg, err := loadRunConfigWithOverrides(ctx, file, overrides)
 		if err != nil {
 			return err
 		}
