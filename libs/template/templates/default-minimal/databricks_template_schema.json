@@ -80,15 +80,16 @@
             "description": "Initial language for this project",
             "enum": [
                 "python",
+                "sql",
                 "skip"
             ],
             "order": 8
         },
         "language": {
-            "//": "Derived from language_choice: for Python, pyproject.toml and tests are included; for others they are excluded",
+            "//": "Mirrors language_choice: 'python' includes pyproject.toml and tests, 'sql' includes SQL sources, 'skip' includes neither",
             "skip_prompt_if": {},
             "type": "string",
-            "default": "{{if eq .language_choice \"python\"}}python{{else}}sql{{end}}",
+            "default": "{{.language_choice}}",
             "description": "Derived language property for template logic",
             "order": 9
         },
