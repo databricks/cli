@@ -26,7 +26,6 @@ type TemplateName string
 const (
 	DefaultPython             TemplateName = "default-python"
 	DefaultMinimal            TemplateName = "default-minimal"
-	Empty                     TemplateName = "empty"
 	DefaultScala              TemplateName = "default-scala"
 	ExperimentalDefaultPython TemplateName = "experimental-default-python-vnext"
 	DefaultSql                TemplateName = "default-sql"
@@ -57,14 +56,9 @@ var databricksTemplates = []Template{
 	{
 		name:        DefaultMinimal,
 		description: "The minimal template, for advanced users",
+		aliases:     []string{"empty"},
 		Reader:      &builtinReader{name: string(DefaultMinimal)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultMinimal}},
-	},
-	{
-		name:        Empty,
-		description: "A bare bundle with just a databricks.yml and an empty resources directory",
-		Reader:      &builtinReader{name: string(Empty)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Empty}},
 	},
 	{
 		name:        DefaultScala,

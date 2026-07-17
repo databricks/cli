@@ -27,6 +27,8 @@ artifacts:
 {{- end}}
 
 # Variable declarations. These variables are assigned in the dev/prod targets below.
+# Adjust the 'catalog' and 'schema' values in each target to point at the Unity Catalog
+# catalog and schema your resources should use.
 variables:
   catalog:
     description: The catalog to use
