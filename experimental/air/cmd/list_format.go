@@ -8,7 +8,7 @@ import (
 )
 
 // buildListRow extracts the columns shown for one run. Optional cells fall back
-// to "-".
+// to "-"; MLflowURL starts as "-" and setMLflowLinks fills it in for text output.
 func buildListRow(run *jobs.Run) listRow {
 	experiment := "-"
 	if e := jobExperiment(run); e != "" {
@@ -41,6 +41,7 @@ func buildListRow(run *jobs.Run) listRow {
 		IsSweep:      isSweep(run),
 		Experiment:   experiment,
 		Duration:     duration,
+		MLflowURL:    "-",
 		Accelerators: accel,
 	}
 }

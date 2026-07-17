@@ -64,6 +64,14 @@ func isSweep(r *jobs.Run) bool {
 	return len(r.Tasks) > 0 && r.Tasks[0].ForEachTask != nil
 }
 
+// taskRunID returns the run id of the AIR task, used to fetch its MLflow output.
+func taskRunID(r *jobs.Run) int64 {
+	if len(r.Tasks) == 0 {
+		return 0
+	}
+	return r.Tasks[0].RunId
+}
+
 // jobExperiment returns the run's MLflow experiment name (user-folder prefix
 // stripped), or "" when there is none.
 func jobExperiment(r *jobs.Run) string {

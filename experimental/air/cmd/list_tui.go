@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +38,7 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int) error {
 			return err
 		}
 		_, err = tea.NewProgram(
-			newListModel(r, f, first),
+			newListModel(r, f, first, color),
 			tea.WithContext(ctx),
 			tea.WithInput(cmd.InOrStdin()),
 			tea.WithOutput(out),
@@ -50,13 +51,13 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int) error {
 		return err
 	}
 	warnIfTruncated(ctx, f)
-	_, err = io.WriteString(out, staticListTable(r, rows))
+	_, err = io.WriteString(out, staticListTable(r, rows, color))
 	return err
 }
 
 // staticListTable renders the whole table once, with no selection — used when
 // piped or non-interactive.
-func staticListTable(r *lipgloss.Renderer, rows []listRow) string {
+func staticListTable(r *lipgloss.Renderer, rows []listRow, links bool) string {
 	if len(rows) == 0 {
 		return "No runs found.\n"
 	}
@@ -66,7 +67,7 @@ func staticListTable(r *lipgloss.Renderer, rows []listRow) string {
 	b.WriteString(styles.renderHeader(cols))
 	b.WriteByte('\n')
 	for _, row := range rows {
-		b.WriteString(styles.renderRow(cols, row, false))
+		b.WriteString(styles.renderRow(cols, row, false, links))
 		b.WriteByte('\n')
 	}
 	return b.String()
@@ -79,6 +80,7 @@ type listModel struct {
 	rows    []listRow
 	styles  listStyles
 	cols    listCols
+	links   bool
 	fetcher *runFetcher
 	loading bool
 	loadErr error
@@ -88,11 +90,12 @@ type listModel struct {
 	height int // terminal height, for windowing
 }
 
-func newListModel(r *lipgloss.Renderer, f *runFetcher, rows []listRow) listModel {
+func newListModel(r *lipgloss.Renderer, f *runFetcher, rows []listRow, links bool) listModel {
 	return listModel{
 		rows:    rows,
 		styles:  newListStyles(r),
 		cols:    computeListCols(rows),
+		links:   links,
 		fetcher: f,
 	}
 }
@@ -184,6 +187,13 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor = 0
 		case "end", "G":
 			m.cursor = len(m.rows) - 1
+		case "enter":
+			// Open the selected run's MLflow page in the browser.
+			if len(m.rows) > 0 {
+				if url := m.rows[m.cursor].MLflowURL; url != "" && url != "-" {
+					return m, openURL(url)
+				}
+			}
 		}
 		m.offset = m.clampedOffset()
 		return m.maybeFetch()
@@ -209,7 +219,7 @@ func (m listModel) View() string {
 	visible := m.visibleCount()
 	lines := []string{m.styles.renderHeader(m.cols)}
 	for i := m.offset; i < m.offset+visible && i < len(m.rows); i++ {
-		lines = append(lines, m.styles.renderRow(m.cols, m.rows[i], i == m.cursor))
+		lines = append(lines, m.styles.renderRow(m.cols, m.rows[i], i == m.cursor, m.links))
 	}
 	lines = append(lines, m.renderHint())
 	return strings.Join(lines, "\n") + "\n"
@@ -219,7 +229,7 @@ func (m listModel) View() string {
 // paging state (loading / load failed).
 func (m listModel) renderHint() string {
 	faint := m.styles.r.NewStyle().Foreground(colN7)
-	hint := fmt.Sprintf("↑/↓ navigate · ←/→ page · q quit  ·  row %d/%d", m.cursor+1, len(m.rows))
+	hint := fmt.Sprintf("↑/↓ navigate · ←/→ page · ↵ mlflow · q quit  ·  row %d/%d", m.cursor+1, len(m.rows))
 	switch {
 	case m.loadErr != nil:
 		hint += " (load failed)"
@@ -227,4 +237,12 @@ func (m listModel) renderHint() string {
 		hint += " (loading…)"
 	}
 	return faint.Render(hint)
+}
+
+// openURL opens a URL in the user's default browser, best-effort.
+func openURL(url string) tea.Cmd {
+	return func() tea.Msg {
+		_ = browser.OpenURL(url)
+		return nil
+	}
 }

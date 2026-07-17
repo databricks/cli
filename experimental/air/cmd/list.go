@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 // maxListScan caps how many runs `air list` inspects while looking for AIR runs.
@@ -20,7 +21,10 @@ import (
 // large run history where AIR runs are sparse.
 const maxListScan = 2000
 
-const jobsPageLimit = 25 // runs/list page size
+const (
+	jobsPageLimit     = 25 // runs/list page size
+	enrichConcurrency = 8  // parallel MLflow lookups
+)
 
 // listData is the payload printed by `air list`.
 type listData struct {
@@ -38,11 +42,19 @@ type listRow struct {
 	StartedAt *string `json:"started_at"`
 	IsSweep   bool    `json:"is_sweep"`
 
-	// Experiment, Duration and Accelerators are table-only columns, omitted from
-	// JSON to match `air list --json`.
+	// Experiment, Duration, MLflowURL and Accelerators are table-only columns,
+	// omitted from JSON to match `air list --json`.
 	Experiment   string `json:"-"`
 	Duration     string `json:"-"`
+	MLflowURL    string `json:"-"`
 	Accelerators string `json:"-"`
+}
+
+// listedRun pairs a row with its task run id, so the MLflow link can be fetched
+// after the run has been filtered in.
+type listedRun struct {
+	row       listRow
+	taskRunID int64
 }
 
 // listQuery holds the resolved inputs to a runFetcher.
@@ -52,6 +64,7 @@ type listQuery struct {
 	userFilter  string
 	currentUser string
 	filters     listFilters
+	fetchMLflow bool
 	limit       int
 }
 
@@ -121,6 +134,7 @@ func newListRunsCommand() *cobra.Command {
 			userFilter:  userFilter,
 			currentUser: currentUser,
 			filters:     f,
+			fetchMLflow: root.OutputType(cmd) == flags.OutputText,
 			limit:       limit,
 		})
 
@@ -141,10 +155,10 @@ func newListRunsCommand() *cobra.Command {
 	return cmd
 }
 
-// listStrategy is a source of matching run rows, pulled in batches by the fetcher.
+// listStrategy is a source of matching runs, pulled in batches by the fetcher.
 type listStrategy interface {
-	// next returns up to want more matching run rows.
-	next(want int) ([]listRow, error)
+	// next returns up to want more matching runs (already row-built + task id).
+	next(want int) ([]listedRun, error)
 	// done reports whether the source has no more runs to yield.
 	done() bool
 	// truncated reports whether a safety cap stopped the scan short of the end.
@@ -152,29 +166,50 @@ type listStrategy interface {
 }
 
 // runFetcher yields matching rows in batches, driving both one-shot output and
-// the interactive table's lazy paging.
+// the interactive table's lazy paging. It wraps a listStrategy and adds the
+// shared tail: MLflow enrichment (text only) and row projection.
 type runFetcher struct {
-	strategy listStrategy
+	ctx         context.Context
+	w           *databricks.WorkspaceClient
+	fetchMLflow bool
+	strategy    listStrategy
 
 	exhausted bool
 }
 
 func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *runFetcher {
-	return &runFetcher{strategy: newListStrategy(ctx, w, q)}
+	return &runFetcher{
+		ctx:         ctx,
+		w:           w,
+		fetchMLflow: q.fetchMLflow,
+		strategy:    newListStrategy(ctx, w, q),
+	}
 }
 
 func newListStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) listStrategy {
 	return newRunScanStrategy(ctx, w, q)
 }
 
-// next pulls the next batch from the strategy, setting exhausted once the strategy
-// is drained so the interactive table knows to stop paging.
+// next pulls the next batch from the strategy, enriches it with MLflow links for
+// text output, and projects it to rows. It sets exhausted once the strategy is
+// drained so the interactive table knows to stop paging.
 func (f *runFetcher) next(want int) ([]listRow, error) {
-	rows, err := f.strategy.next(want)
+	entries, err := f.strategy.next(want)
 	if err != nil {
 		return nil, err
 	}
 	f.exhausted = f.strategy.done()
+
+	// MLflow links appear only in the text table, so the per-run get-output
+	// lookups are skipped for JSON output (which omits the column anyway).
+	if f.fetchMLflow {
+		setMLflowLinks(f.ctx, f.w, entries)
+	}
+
+	rows := make([]listRow, len(entries))
+	for i, e := range entries {
+		rows[i] = e.row
+	}
 	return rows, nil
 }
 
@@ -208,9 +243,9 @@ func newRunScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q li
 	}
 }
 
-func (s *runScanStrategy) next(want int) ([]listRow, error) {
-	var rows []listRow
-	for len(rows) < want && s.scanned < maxListScan && s.iter.HasNext(s.ctx) {
+func (s *runScanStrategy) next(want int) ([]listedRun, error) {
+	var entries []listedRun
+	for len(entries) < want && s.scanned < maxListScan && s.iter.HasNext(s.ctx) {
 		base, err := s.iter.Next(s.ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list runs: %w", err)
@@ -227,9 +262,9 @@ func (s *runScanStrategy) next(want int) ([]listRow, error) {
 		if !s.filters.matches(run) {
 			continue
 		}
-		rows = append(rows, buildListRow(run))
+		entries = append(entries, listedRun{row: buildListRow(run), taskRunID: taskRunID(run)})
 	}
-	return rows, nil
+	return entries, nil
 }
 
 func (s *runScanStrategy) done() bool {
@@ -246,4 +281,21 @@ func warnIfTruncated(ctx context.Context, f *runFetcher) {
 	if f.strategy.truncated() {
 		log.Warnf(ctx, "air list: stopped after scanning %d runs; results may be incomplete", maxListScan)
 	}
+}
+
+// setMLflowLinks fills in each row's MLflow link in parallel, best-effort: a row
+// whose IDs can't be resolved keeps its "-" placeholder.
+func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, entries []listedRun) {
+	var g errgroup.Group
+	g.SetLimit(enrichConcurrency)
+	for i := range entries {
+		g.Go(func() error {
+			if ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID); ids != nil {
+				entries[i].row.MLflowURL = mlflowLogsURL(w.Config.Host, ids)
+			}
+			return nil
+		})
+	}
+	// mlflowIDsForTask never returns an error (it logs and yields nil), so Wait can't fail.
+	_ = g.Wait()
 }
