@@ -222,7 +222,6 @@ func TestBuildListRow(t *testing.T) {
 	assert.Equal(t, "exp", row.Experiment)
 	assert.Equal(t, "12s", row.Duration)
 	assert.Equal(t, "8x H100", row.Accelerators)
-	assert.Equal(t, "-", row.MLflowURL)
 	assert.False(t, row.IsSweep)
 	require.NotNil(t, row.StartedAt)
 }
@@ -233,7 +232,6 @@ func TestBuildListRowDashFallbacks(t *testing.T) {
 	assert.Equal(t, "-", row.Experiment)
 	assert.Equal(t, "-", row.Duration)
 	assert.Equal(t, "-", row.Accelerators)
-	assert.Equal(t, "-", row.MLflowURL)
 	assert.Equal(t, "UNKNOWN", row.Status)
 	assert.Nil(t, row.StartedAt)
 }

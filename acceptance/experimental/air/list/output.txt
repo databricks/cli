@@ -1,8 +1,8 @@
 
 === list (text)
 >>> [CLI] experimental air list runs
-   Run ID           Experiment  Status     Started              Duration  MLflow              User                   Accelerators
-   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s  …/runs/run1         [USERNAME]  8x H100
+   Run ID           Experiment  Status     Started              Duration  User                   Accelerators
+   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s  [USERNAME]  8x H100
 
 === list (json)
 >>> [CLI] experimental air list runs -o json
@@ -25,8 +25,8 @@
 
 === list --all-status (text)
 >>> [CLI] experimental air list runs --all-status
-   Run ID           Experiment  Status     Started              Duration  MLflow              User                   Accelerators
-   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s  …/runs/run1         [USERNAME]  8x H100
+   Run ID           Experiment  Status     Started              Duration  User                   Accelerators
+   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s  [USERNAME]  8x H100
 
 === list --all-status (json)
 >>> [CLI] experimental air list runs --all-status -o json

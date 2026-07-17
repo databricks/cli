@@ -19,10 +19,7 @@ const (
 	colGreen   = lipgloss.Color("#4CD964") // success
 	colAmber   = lipgloss.Color("#E8B84A") // running / pending
 	colRed     = lipgloss.Color("#EB6B6B") // failed
-	colBlue    = lipgloss.Color("#6CA8F0") // MLflow link
 )
-
-const mlflowColWidth = 18
 
 // listStyles renders the runs table. The renderer carries the color profile, so
 // styles render plain under --no-color / non-tty.
@@ -34,8 +31,8 @@ func newListStyles(r *lipgloss.Renderer) listStyles {
 	return listStyles{r: r}
 }
 
-// listCols holds the computed width of each variable-width column. MLflow is
-// fixed (a short link) and the gutter is one cell.
+// listCols holds the computed width of each variable-width column; the gutter is
+// one cell.
 type listCols struct {
 	runID, experiment, status, started, duration, user, accel int
 }
@@ -78,7 +75,6 @@ func (s listStyles) renderHeader(cols listCols) string {
 		h("Status", cols.status, false),
 		h("Started", cols.started, false),
 		h("Duration", cols.duration, true),
-		h("MLflow", mlflowColWidth, false),
 		h("User", cols.user, false),
 		h("Accelerators", cols.accel, false),
 	}
@@ -88,7 +84,7 @@ func (s listStyles) renderHeader(cols listCols) string {
 
 // renderRow renders one run. The selected row uses a subtle overlay fill + n12
 // text (not full inversion, not per-state color).
-func (s listStyles) renderRow(cols listCols, r listRow, selected, links bool) string {
+func (s listStyles) renderRow(cols listCols, r listRow, selected bool) string {
 	base := s.r.NewStyle()
 	if selected {
 		base = base.Background(colOverlay)
@@ -112,7 +108,6 @@ func (s listStyles) renderRow(cols listCols, r listRow, selected, links bool) st
 		s.cell(base, "● "+r.Status, cols.status, fg(statusColor(r.Status)), false, false, ""),
 		s.cell(base, startedDisplay(r), cols.started, fg(colN9), false, false, ""),
 		s.cell(base, r.Duration, cols.duration, fg(colN9), true, false, ""),
-		s.mlflowCell(base, r, selected, links),
 		s.cell(base, r.User, cols.user, fg(colN9), false, false, ""),
 		s.cell(base, r.Accelerators, cols.accel, fg(colN9), false, false, ""),
 	}
@@ -141,27 +136,6 @@ func (s listStyles) cell(base lipgloss.Style, text string, width int, fg lipglos
 	return rendered + padStr
 }
 
-// mlflowCell renders the fixed-width MLflow column: a short, blue, underlined
-// OSC 8 hyperlink (when links are enabled), or "-" when the run has no link.
-func (s listStyles) mlflowCell(base lipgloss.Style, r listRow, selected, links bool) string {
-	if r.MLflowURL == "" || r.MLflowURL == "-" {
-		fg := colN9
-		if selected {
-			fg = colN12
-		}
-		return s.cell(base, "-", mlflowColWidth, fg, false, false, "")
-	}
-	fg := colBlue
-	if selected {
-		fg = colN12
-	}
-	link := ""
-	if links {
-		link = r.MLflowURL
-	}
-	return s.cell(base, mlflowDisplay(r.MLflowURL), mlflowColWidth, fg, false, true, link)
-}
-
 // statusColor maps an air run status word to its data color.
 func statusColor(status string) lipgloss.Color {
 	switch status {
@@ -187,29 +161,6 @@ func startedDisplay(r listRow) string {
 		return s[:19]
 	}
 	return s
-}
-
-// mlflowDisplay shortens an MLflow run URL to a "…/runs/<id-prefix>" label; the
-// OSC 8 target keeps the full URL.
-func mlflowDisplay(url string) string {
-	id := mlflowRunID(url)
-	if id == "" {
-		return truncate(url, mlflowColWidth)
-	}
-	if len(id) > 8 {
-		id = id[:8] + "…"
-	}
-	return "…/runs/" + id
-}
-
-// mlflowRunID extracts the run-id path segment from an MLflow URL.
-func mlflowRunID(url string) string {
-	_, after, ok := strings.Cut(url, "/runs/")
-	if !ok {
-		return ""
-	}
-	id, _, _ := strings.Cut(after, "/")
-	return id
 }
 
 // pad pads (or truncates) s to a visible width of n, right-aligned when right is
