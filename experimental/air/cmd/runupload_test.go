@@ -52,10 +52,15 @@ func TestBuildArtifacts_CommandAndConfig(t *testing.T) {
 
 	items, err := buildArtifacts(cfg, path)
 	require.NoError(t, err)
-	assert.Equal(t, []string{trainingConfigName, commandScriptName}, itemNames(items))
+	// A config with no dependencies (environment: {}) still uploads an empty
+	// requirements.yaml: the server launcher aborts if the file is absent. This is
+	// the regression guard for the no-deps submit failure.
+	assert.Equal(t, []string{trainingConfigName, commandScriptName, requirementsName}, itemNames(items))
 	assert.Equal(t, minimalConfig, string(items[0].data))
 	// command.sh cds to its own dir (the synced code_source location) before the command.
 	assert.Equal(t, "cd \"$(dirname \"$0\")\"\npython train.py", string(items[1].data))
+	// The synthesized requirements.yaml carries an empty dependency list.
+	assert.Equal(t, "dependencies: []\n", string(items[2].data))
 }
 
 func TestCommandScript(t *testing.T) {

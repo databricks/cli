@@ -72,6 +72,9 @@ func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 		{commandScriptName, []byte(commandScript(*cfg.Command))},
 	}
 
+	// Always upload requirements.yaml; the server launcher aborts if it's absent.
+	// A file path is uploaded verbatim; otherwise the inline list (empty when
+	// unset) is synthesized.
 	switch reqPath, ok := cfg.requirementsFile(); {
 	case ok:
 		// Resolve a relative requirements path against the config's directory.
@@ -84,14 +87,13 @@ func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 		}
 		items = append(items, uploadItem{requirementsName, data})
 	default:
-		if deps, ok := cfg.inlineDependencies(); ok {
-			version, _ := cfg.runtimeVersion()
-			data, err := yaml.Marshal(requirementsDoc{Version: version, Dependencies: deps})
-			if err != nil {
-				return nil, fmt.Errorf("failed to synthesize requirements.yaml: %w", err)
-			}
-			items = append(items, uploadItem{requirementsName, data})
+		deps, _ := cfg.inlineDependencies()
+		version, _ := cfg.runtimeVersion()
+		data, err := yaml.Marshal(requirementsDoc{Version: version, Dependencies: deps})
+		if err != nil {
+			return nil, fmt.Errorf("failed to synthesize requirements.yaml: %w", err)
 		}
+		items = append(items, uploadItem{requirementsName, data})
 	}
 
 	if len(cfg.Parameters) > 0 {
