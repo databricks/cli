@@ -144,42 +144,61 @@ func TestLogsCompletedRunTail(t *testing.T) {
 	assert.Equal(t, "line one\nline two\n", buf.String())
 }
 
-// featureDisabledLogsServer serves a terminal runs/get and a Bricklens endpoint
-// gated off by the backend SAFE flag (FEATURE_DISABLED), so the command must
-// fall back to the MLflow path.
-func featureDisabledLogsServer(t *testing.T) *httptest.Server {
+// mlflowFallbackServer serves a terminal run whose Bricklens endpoint is gated
+// off (FEATURE_DISABLED), plus the full MLflow artifact path the fallback walks:
+// runs/get-output (MLflow ids), artifacts/list (logs dir + chunk file),
+// credentials-for-read (pre-signed URL), and the pre-signed chunk bytes itself.
+func mlflowFallbackServer(t *testing.T) *httptest.Server {
 	t.Helper()
+	var base string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/api/2.2/jobs/runs/get":
 			_, _ = w.Write([]byte(`{
 				"run_id": 5,
 				"state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
-				"tasks": [{"attempt_number": 0}]
+				"tasks": [{"run_id": 456, "attempt_number": 0}]
 			}`))
 		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
 			w.WriteHeader(http.StatusForbidden)
 			_, _ = w.Write([]byte(`{"error_code": "FEATURE_DISABLED", "message": "bricklens logs gated off"}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}`))
+		case r.URL.Path == "/api/2.0/mlflow/artifacts/list":
+			// The logs dir probe (format discovery) and the per-node chunk listing
+			// both hit this; return the old-format node dir and one chunk file.
+			if r.URL.Query().Get("path") == "logs" {
+				_, _ = w.Write([]byte(`{"files": [{"path": "logs/node_0", "is_dir": true}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"files": [{"path": "logs/node_0/logs-0.chunk.txt", "file_size": 12}]}`))
+		case r.URL.Path == "/api/2.0/mlflow/artifacts/credentials-for-read":
+			_, _ = w.Write([]byte(`{"credential_infos": [{"signed_uri": "` + base + `/presigned"}]}`))
+		case r.URL.Path == "/presigned":
+			_, _ = w.Write([]byte("line one\nline two\n"))
 		default:
 			_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
 		}
 	}))
+	base = srv.URL
 	t.Cleanup(srv.Close)
 	return srv
 }
 
 func TestLogsFallsBackToMLflow(t *testing.T) {
-	srv := featureDisabledLogsServer(t)
+	srv := mlflowFallbackServer(t)
+	var buf bytes.Buffer
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
 	cmd := withOutput(&cobra.Command{}, flags.OutputText)
 	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
 
-	// The Bricklens endpoint is gated off, so fetchLogs routes to the MLflow
-	// fallback. Until that path is implemented (air-logs-m3) it reports the
-	// explicit not-yet-available error, which proves the try/catch wiring fires.
+	// Bricklens is gated off, so fetchLogs routes to the MLflow fallback, which
+	// resolves the MLflow run, lists the chunk, downloads it via the pre-signed
+	// URL, and prints its lines.
 	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 0, attempt: -1})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "MLflow fallback is not yet implemented")
+	require.NoError(t, err)
+	assert.Equal(t, "line one\nline two\n", buf.String())
 }
 
 // activeRunPastRetryServer serves a still-RUNNING run with two attempts and a

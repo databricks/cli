@@ -3,7 +3,6 @@ package aircmd
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"slices"
@@ -400,31 +399,16 @@ func (st *bricklensStreamer) requestPage(pageToken string, toSec int64, pageSize
 	}
 }
 
-// emit writes one log line. In --json mode each line is a JSONL LOG event;
-// otherwise it is printed raw. The first line latches firstLogSeen so a terminal
-// run with no output can report "no logs".
+// emit writes one log line and latches firstLogSeen so a terminal run with no
+// output can report "no logs".
 func (st *bricklensStreamer) emit(body string) {
 	st.firstLogSeen = true
-	if st.req.jsonOutput {
-		printLogEvent(st.out, "LOG", st.req.node, body)
-		return
-	}
-	fmt.Fprintln(st.out, body)
+	emitLogLine(st.out, st.req, body)
 }
 
-// emitNoLogs reports that a terminal run produced no logs, with its termination
-// reason. In --json mode this is a JSONL ERROR so a consumer never sees an empty
-// stream; otherwise a plain warning line.
+// emitNoLogs reports that a terminal run produced no logs.
 func (st *bricklensStreamer) emitNoLogs() {
-	msg := fmt.Sprintf("No logs available for run %d. Run terminated in state %s", st.req.runID, st.status.displayState())
-	if st.status.stateMessage != "" {
-		msg = fmt.Sprintf("%s: %s", msg, st.status.stateMessage)
-	}
-	if st.req.jsonOutput {
-		printLogEvent(st.out, "ERROR", st.req.node, msg)
-		return
-	}
-	fmt.Fprintln(st.out, msg)
+	emitNoLogs(st.out, st.req, st.status)
 }
 
 // displayState is the run's terminal result state, falling back to the lifecycle

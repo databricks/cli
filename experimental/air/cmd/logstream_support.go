@@ -74,3 +74,28 @@ func printLogEvent(out io.Writer, eventType string, node int, line string) {
 	}
 	fmt.Fprintln(out, string(b))
 }
+
+// emitLogLine writes one log line, as a JSONL LOG event under --json or raw
+// otherwise. Shared by the Bricklens and MLflow paths so both emit identically.
+func emitLogLine(out io.Writer, req logRequest, body string) {
+	if req.jsonOutput {
+		printLogEvent(out, "LOG", req.node, body)
+		return
+	}
+	fmt.Fprintln(out, body)
+}
+
+// emitNoLogs reports that a run produced no logs, with its termination reason.
+// Under --json it is a JSONL ERROR (so a consumer never sees an empty stream);
+// otherwise a plain line. Shared by both backends.
+func emitNoLogs(out io.Writer, req logRequest, status logRunStatus) {
+	msg := fmt.Sprintf("No logs available for run %d. Run terminated in state %s", req.runID, status.displayState())
+	if status.stateMessage != "" {
+		msg = fmt.Sprintf("%s: %s", msg, status.stateMessage)
+	}
+	if req.jsonOutput {
+		printLogEvent(out, "ERROR", req.node, msg)
+		return
+	}
+	fmt.Fprintln(out, msg)
+}
