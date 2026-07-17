@@ -45,7 +45,7 @@ func getRootWithTraversal() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf(`unable to locate bundle root: %s not found. Run 'databricks bundle init' to create a bundle, or run this command from a directory that already contains one`, config.FileNames[0])
+	return "", fmt.Errorf(`unable to locate bundle root: %s not found`, config.FileNames[0])
 }
 
 // mustGetRoot returns a bundle root or an error if one cannot be found.
