@@ -1,14 +1,17 @@
 package aircmd
 
 import (
+	"bytes"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestClassifyLogError(t *testing.T) {
@@ -143,6 +146,46 @@ func TestLogRequestToSeconds(t *testing.T) {
 func TestLogRequestTailTarget(t *testing.T) {
 	assert.Equal(t, defaultCompletedRunTailLines, logRequest{}.tailTarget())
 	assert.Equal(t, 42, logRequest{tailLines: 42}.tailTarget())
+}
+
+func TestDrainPagesDedupAndOrdering(t *testing.T) {
+	// Two pages: page 1 has two ascending records; page 2 repeats the last record
+	// of page 1 (boundary re-query — must dedup) and includes an older record
+	// (out of order — must skip), then a genuinely newer one.
+	var page int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("page_token") == "" {
+			page = 1
+			_, _ = w.Write([]byte(`{"log_records": [
+				{"time_unix_nano": 1000, "body": "a", "node_index": 0},
+				{"time_unix_nano": 2000, "body": "b", "node_index": 0}
+			], "next_page_token": "p2"}`))
+			return
+		}
+		page = 2
+		_, _ = w.Write([]byte(`{"log_records": [
+			{"time_unix_nano": 2000, "body": "b", "node_index": 0},
+			{"time_unix_nano": 1500, "body": "stale", "node_index": 0},
+			{"time_unix_nano": 3000, "body": "c", "node_index": 0}
+		]}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	st := &bricklensStreamer{
+		ctx:  t.Context(),
+		w:    newTestWorkspaceClient(t, srv.URL),
+		out:  &buf,
+		req:  logRequest{runID: 1, node: 0, attempt: -1},
+		seen: newSeenSet(seenRecordsCap),
+	}
+	require.NoError(t, st.drainPages(0))
+	require.Equal(t, 2, page)
+
+	// "b" prints once (deduped), "stale" is skipped (older than last emitted), and
+	// fromSec advances to the newest record's floor-second (3000ns -> 0s here).
+	assert.Equal(t, "a\nb\nc\n", buf.String())
+	assert.Equal(t, int64(3000), st.lastNano)
 }
 
 func TestSeenSetEviction(t *testing.T) {

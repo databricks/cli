@@ -129,6 +129,12 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 			fmt.Errorf("invalid retry %d: available retries are 0 to %d", req.attempt, status.latestAttempt))
 	}
 
+	// A past retry of a still-active run has immutable logs: render them once
+	// rather than following the run to completion.
+	if req.attempt >= 0 && req.attempt < status.latestAttempt && !status.terminal() {
+		req.staticView = true
+	}
+
 	out := cmd.OutOrStdout()
 	success, err := fetchLogs(ctx, w, out, req, status)
 	if err != nil {

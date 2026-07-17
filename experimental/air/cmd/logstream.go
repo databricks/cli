@@ -51,7 +51,12 @@ type logRequest struct {
 	// windowMinutes, when > 0, restricts the fetch to the last N minutes.
 	windowMinutes int
 	// tailLines, when > 0, keeps only the last N lines of a completed run.
-	tailLines  int
+	tailLines int
+	// staticView renders a one-shot tail instead of following the run. It is set
+	// for a past retry of a still-active run: that attempt's logs are immutable,
+	// so streaming them would poll forever waiting for the run (not the attempt)
+	// to finish. A completed run is inherently static and does not need this.
+	staticView bool
 	jsonOutput bool
 }
 
@@ -199,6 +204,13 @@ func (st *bricklensStreamer) run() (bool, error) {
 	now := time.Now()
 	st.fromSec = st.req.fromSeconds(st.status, now)
 
+	// A past retry's logs are immutable, so render them as a one-shot tail even
+	// when the run is still active — the attempt has ended, and following the run
+	// would poll forever. Mirrors handle_logs' viewing_past_retry.
+	if st.req.staticView {
+		return st.drainStatic(st.req.toSeconds(st.status))
+	}
+
 	firstIteration := true
 	for {
 		if !firstIteration {
@@ -244,6 +256,20 @@ func (st *bricklensStreamer) run() (bool, error) {
 		firstIteration = false
 		time.Sleep(retryCheckInterval)
 	}
+}
+
+// drainStatic renders a single tail pass for an immutable attempt and returns
+// without following the run. Success reflects the run's current result state
+// (empty for an active run, so a past retry of a running job is not reported as
+// a failure).
+func (st *bricklensStreamer) drainStatic(toSec int64) (bool, error) {
+	if err := st.drainTail(toSec); err != nil {
+		return false, err
+	}
+	if !st.firstLogSeen {
+		st.emitNoLogs()
+	}
+	return st.status.succeeded(), nil
 }
 
 // tailTarget is the number of lines a completed-run tail should keep: --lines

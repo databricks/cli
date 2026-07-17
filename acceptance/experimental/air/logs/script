@@ -7,6 +7,12 @@ trace $CLI experimental air logs 123 -o json
 title "logs with --minutes"
 trace $CLI experimental air logs 123 --minutes 30
 
+title "logs with --lines"
+trace $CLI experimental air logs 123 --lines 1
+
+title "logs from a specific retry"
+trace $CLI experimental air logs 123 --retry 0
+
 title "logs --lines and --minutes are mutually exclusive"
 errcode trace $CLI experimental air logs 123 --lines 100 --minutes 30
 

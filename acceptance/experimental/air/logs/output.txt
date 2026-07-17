@@ -14,6 +14,15 @@ step 2
 step 1
 step 2
 
+=== logs with --lines
+>>> [CLI] experimental air logs 123 --lines 1
+step 2
+
+=== logs from a specific retry
+>>> [CLI] experimental air logs 123 --retry 0
+step 1
+step 2
+
 === logs --lines and --minutes are mutually exclusive
 >>> [CLI] experimental air logs 123 --lines 100 --minutes 30
 Error: cannot combine --lines with --minutes: --lines tails by line count, --minutes by time window

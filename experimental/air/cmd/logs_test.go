@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -179,4 +180,56 @@ func TestLogsFallsBackToMLflow(t *testing.T) {
 	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 0, attempt: -1})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "MLflow fallback is not yet implemented")
+}
+
+// activeRunPastRetryServer serves a still-RUNNING run with two attempts and a
+// single page of Bricklens logs. runs/get always returns RUNNING; a test that
+// follows the run would poll forever, so it also asserts the static path never
+// loops.
+func activeRunPastRetryServer(t *testing.T, getRunHits *int) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			*getRunHits++
+			_, _ = w.Write([]byte(`{
+				"run_id": 9,
+				"start_time": 1700000000000,
+				"state": {"life_cycle_state": "RUNNING"},
+				"tasks": [{"attempt_number": 0}, {"attempt_number": 1}]
+			}`))
+		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
+			_, _ = w.Write([]byte(`{"log_records": [
+				{"time_unix_nano": 1700000001000000000, "body": "retry 0 log", "node_index": 0}
+			]}`))
+		default:
+			_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestLogsPastRetryOfActiveRunIsStatic(t *testing.T) {
+	var getRunHits int
+	srv := activeRunPastRetryServer(t, &getRunHits)
+	var buf bytes.Buffer
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(&cobra.Command{}, flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+
+	// --retry 0 on a RUNNING run whose latest attempt is 1: the past attempt's
+	// logs are static, so they render once and the command returns instead of
+	// following the run (which would never terminate). The run itself has no
+	// SUCCESS result yet, so the command still exits non-zero (matching Python's
+	// `result_state == "SUCCESS"` exit-code rule) via ErrAlreadyPrinted — the
+	// logs are printed regardless.
+	err := runLogs(ctx, cmd, logRequest{runID: 9, node: 0, attempt: 0})
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, "retry 0 log\n", buf.String())
+
+	// Exactly one runs/get: the initial status resolve in runLogs. The static
+	// streamer must not re-poll (that is the loop this test guards against).
+	assert.Equal(t, 1, getRunHits)
 }
