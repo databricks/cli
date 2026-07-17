@@ -1,1 +1,1 @@
-Simplified the `default-minimal` bundle template: it no longer prompts for a personal schema, and the initial language question now offers a `skip` option for a bare bundle. You can also reach it with the friendlier alias `databricks bundle init empty` ([#5899](https://github.com/databricks/cli/pull/5899)).
+Simplified the `default-minimal` bundle template and added an alias `databricks bundle init empty` ([#5899](https://github.com/databricks/cli/pull/5899)).
