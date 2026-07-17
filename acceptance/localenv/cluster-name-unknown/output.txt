@@ -1,5 +1,5 @@
 preflight  ok  check
-resolve    error  resolving cluster name "dup": there are 2 active clusters named "dup"; use --cluster-id to disambiguate
+resolve    error  resolving cluster name "nope": no active cluster named "nope"
 fetch      pending
 merge      pending
 provision  pending

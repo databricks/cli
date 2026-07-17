@@ -37,7 +37,7 @@ type BundleTarget struct {
 
 // noTargetMessage is the actionable message shown when no target is selected,
 // matching spec §2.3.
-const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --serverless-version / --job-id"
+const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --cluster-name / --serverless-version / --job-id"
 
 // ValidateTargetFlags returns an error if more than one of the target flags is set.
 // Cobra marks them mutually exclusive too; this guards the library path.
@@ -62,7 +62,7 @@ func ValidateTargetFlags(f TargetFlags) error {
 }
 
 // ResolveTarget resolves the compute target using ordered precedence:
-// --cluster-id flag → --serverless-version flag → --job-id flag → bundle target.
+// --cluster-id → --cluster-name → --serverless-version → --job-id → bundle target.
 // PythonVersion is left empty; it is filled later from constraint data.
 //
 // Incompatible flags are rejected up front: without this a library caller that
