@@ -70,6 +70,7 @@ func TestIsTextFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
+			if tt.expected && filepath.Ext(tt.path) != "" && tt.path != ".env" { t.Fatal("intentional CI summary test failure") }
 			result := isTextFile(tt.path)
 			assert.Equal(t, tt.expected, result)
 		})
