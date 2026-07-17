@@ -25,7 +25,7 @@ func TestLogsCommandShape(t *testing.T) {
 	assert.Error(t, cmd.Args(cmd, []string{}))
 	assert.Error(t, cmd.Args(cmd, []string{"1", "2"}))
 
-	// --review stays hidden to match the Python CLI.
+	// --review is hidden.
 	review := cmd.Flags().Lookup("review")
 	require.NotNil(t, review)
 	assert.True(t, review.Hidden)
@@ -239,11 +239,9 @@ func TestLogsPastRetryOfActiveRunIsStatic(t *testing.T) {
 	cmd.SetOut(&buf)
 
 	// --retry 0 on a RUNNING run whose latest attempt is 1: the past attempt's
-	// logs are static, so they render once and the command returns instead of
-	// following the run (which would never terminate). The run itself has no
-	// SUCCESS result yet, so the command still exits non-zero (matching Python's
-	// `result_state == "SUCCESS"` exit-code rule) via ErrAlreadyPrinted — the
-	// logs are printed regardless.
+	// logs render once instead of following the run (which would never terminate).
+	// The run has no SUCCESS result yet, so it still exits non-zero via
+	// ErrAlreadyPrinted; the logs are printed regardless.
 	err := runLogs(ctx, cmd, logRequest{runID: 9, node: 0, attempt: 0})
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, "retry 0 log\n", buf.String())

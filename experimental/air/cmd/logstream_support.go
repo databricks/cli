@@ -8,18 +8,15 @@ import (
 	"time"
 )
 
-// seenNano keys the dedup set: a (nano, body) pair. time_unix_nano is nanosecond
-// units and all ranks funnel into one stream stamping from their own clocks, so
-// distinct log lines can share a nano — the body disambiguates them.
+// seenNano keys the dedup set. Distinct lines can share a nano (each rank stamps
+// from its own clock), so the body disambiguates them.
 type seenNano struct {
 	nano int64
 	body string
 }
 
 // seenSet is an insertion-ordered set bounded to a capacity, evicting the
-// oldest-inserted entry first. It lets the streamer re-query a boundary second
-// on the next poll without re-printing records already shown, while a large
-// initial drain can't grow without bound.
+// oldest-inserted entry first.
 type seenSet struct {
 	cap   int
 	items map[seenNano]*list.Element
@@ -52,8 +49,7 @@ func (s *seenSet) add(nano int64, body string) {
 	}
 }
 
-// logEvent is one JSONL streaming event, matching the Python CLI's
-// print_jsonl_event shape ({type, ts, node, line}).
+// logEvent is one JSONL streaming event.
 type logEvent struct {
 	Type string `json:"type"`
 	TS   string `json:"ts"`
@@ -75,8 +71,7 @@ func printLogEvent(out io.Writer, eventType string, node int, line string) {
 	fmt.Fprintln(out, string(b))
 }
 
-// emitLogLine writes one log line, as a JSONL LOG event under --json or raw
-// otherwise. Shared by the Bricklens and MLflow paths so both emit identically.
+// emitLogLine writes one log line: a JSONL LOG event under --json, else raw.
 func emitLogLine(out io.Writer, req logRequest, body string) {
 	if req.jsonOutput {
 		printLogEvent(out, "LOG", req.node, body)
@@ -86,8 +81,7 @@ func emitLogLine(out io.Writer, req logRequest, body string) {
 }
 
 // emitNoLogs reports that a run produced no logs, with its termination reason.
-// Under --json it is a JSONL ERROR (so a consumer never sees an empty stream);
-// otherwise a plain line. Shared by both backends.
+// Under --json it is a JSONL ERROR, so a consumer never sees an empty stream.
 func emitNoLogs(out io.Writer, req logRequest, status logRunStatus) {
 	msg := fmt.Sprintf("No logs available for run %d. Run terminated in state %s", req.runID, status.displayState())
 	if status.stateMessage != "" {

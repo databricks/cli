@@ -11,23 +11,19 @@ import (
 	"github.com/databricks/databricks-sdk-go/client"
 )
 
-// bricklensLogsPathFmt is the Bricklens-backed training-workflow log endpoint,
-// keyed by Jobs run id. It is called with a raw client.Do because the SDK does
-// not model the AiTrainingService log surface.
+// bricklensLogsPathFmt is the log endpoint, keyed by Jobs run id. Called with a
+// raw client.Do because the SDK does not model the AiTrainingService.
 const bricklensLogsPathFmt = "/api/2.0/ai-training/workflows/by-run-id/%d/logs"
 
-// logRecord is one log line from Bricklens. time_unix_nano stamps ordering and
-// dedup; body is the raw line; node_index identifies the emitting node.
+// logRecord is one log line from Bricklens.
 type logRecord struct {
-	// TimeUnixNano is nanosecond units; tolerate it arriving as a JSON number or
-	// string, matching the AiTrainingService index quirk in aitraining.go.
+	// TimeUnixNano may arrive as a JSON number or string.
 	TimeUnixNano json.Number `json:"time_unix_nano"`
 	Body         string      `json:"body"`
 	NodeIndex    int         `json:"node_index"`
 }
 
-// nano returns the record's time_unix_nano as an int64, or 0 when absent or
-// unparseable (so it sorts first and never blocks dedup).
+// nano returns time_unix_nano as an int64, or 0 when absent or unparseable.
 func (r logRecord) nano() int64 {
 	n, err := r.TimeUnixNano.Int64()
 	if err != nil {
@@ -41,9 +37,8 @@ type bricklensLogsResponse struct {
 	NextPageToken string      `json:"next_page_token"`
 }
 
-// bricklensLogsQuery is the request-field surface of the log endpoint. The
-// fields map to the query keys the Python CLI sends (ai_training_client.get_logs);
-// zero-valued optionals are omitted so the endpoint applies its own defaults.
+// bricklensLogsQuery is the request-field surface of the log endpoint.
+// Zero-valued optionals are omitted so the endpoint applies its own defaults.
 type bricklensLogsQuery struct {
 	// fromSeconds and toSeconds bound the query window in Unix epoch seconds.
 	fromSeconds int64
@@ -53,14 +48,13 @@ type bricklensLogsQuery struct {
 	// attemptNumber selects a retry attempt (0-indexed); -1 means latest.
 	attemptNumber int
 	nodeIndex     int
-	// ascending returns oldest-first; the endpoint defaults to ascending when
-	// the field is absent, so the tail fetch must send it explicitly false.
+	// ascending returns oldest-first. The endpoint defaults to ascending when
+	// absent, so the tail fetch must send an explicit false for newest-first.
 	ascending bool
 }
 
-// getBricklensLogs fetches one page of logs from the Bricklens endpoint. It
-// returns the raw error so the caller can classify it (feature-gated vs
-// transient vs genuine not-found) via classifyLogError.
+// getBricklensLogs fetches one page of logs. It returns the raw error so the
+// caller can classify it via classifyLogError.
 func getBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, runID int64, q bricklensLogsQuery) (*bricklensLogsResponse, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -68,8 +62,7 @@ func getBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, runID 
 	}
 
 	query := map[string]any{
-		// The endpoint defaults to ascending when absent, so always send it: the
-		// tail path relies on an explicit false to get newest-first.
+		// Always sent: the tail path relies on an explicit false for newest-first.
 		"ascending": strconv.FormatBool(q.ascending),
 	}
 	if q.fromSeconds > 0 {
