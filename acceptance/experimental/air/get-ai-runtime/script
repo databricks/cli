@@ -5,7 +5,7 @@ $CLI workspace mkdirs "/Workspace/Users/user@example.com/.air/cli_launch/my-exp/
 $CLI workspace import "/Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/training_config.yaml" --file training_config.yaml --format AUTO &> LOG.import
 
 title "get (text)"
-trace $CLI experimental air get 123
+trace $CLI experimental air get run 123
 
 title "get (json)"
-trace $CLI experimental air get 123 -o json
+trace $CLI experimental air get run 123 -o json

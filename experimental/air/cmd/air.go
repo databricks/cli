@@ -20,6 +20,7 @@ experimental and may change in future versions.`,
 	cmd.AddCommand(newRunCommand())
 	cmd.AddCommand(newGetCommand())
 	cmd.AddCommand(newListCommand())
+	cmd.AddCommand(newDeleteCommand())
 	cmd.AddCommand(newLogsCommand())
 	cmd.AddCommand(newCancelCommand())
 	cmd.AddCommand(newRegisterImageCommand())

@@ -5,4 +5,4 @@ title "help"
 trace $CLI experimental air --help
 
 title "list help"
-trace $CLI experimental air list --help
+trace $CLI experimental air list runs --help

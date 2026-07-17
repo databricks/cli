@@ -2,19 +2,30 @@ package aircmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"golang.org/x/sync/errgroup"
 )
 
-// hydrateConcurrency bounds the parallel runs/get calls when hydrating a batch
-// of run ids from the AiTrainingService index.
-const hydrateConcurrency = 16
+// currentUserName resolves the caller's username via the Me probe.
+func currentUserName(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve current user: %w", err)
+	}
+	return me.UserName, nil
+}
+
+// selfUserFilter returns the creator to scope a listing to: empty (all users)
+// when allUsers is set, otherwise the current user.
+func selfUserFilter(ctx context.Context, w *databricks.WorkspaceClient, allUsers bool) (string, error) {
+	if allUsers {
+		return "", nil
+	}
+	return currentUserName(ctx, w)
+}
 
 // firstTask returns the run's first task, unwrapping a foreach sweep to the
 // iterated task, or nil when the run has no tasks.
@@ -106,20 +117,6 @@ func jobTiming(r *jobs.Run) (startMillis, endMillis int64) {
 	return startMillis, endMillis
 }
 
-// isTerminal reports whether a run has finished and its details are immutable,
-// so its row is safe to cache.
-func isTerminal(r *jobs.Run) bool {
-	if r.State == nil {
-		return false
-	}
-	switch r.State.LifeCycleState {
-	case jobs.RunLifeCycleStateTerminated, jobs.RunLifeCycleStateInternalError, jobs.RunLifeCycleStateSkipped:
-		return true
-	default:
-		return false
-	}
-}
-
 // baseRunToRun converts a runs/list BaseRun into a Run so the display helpers
 // operate on a single type. The two share every field the list path reads.
 func baseRunToRun(b jobs.BaseRun) *jobs.Run {
@@ -142,39 +139,4 @@ func fetchJobRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64
 		return nil, fmt.Errorf("failed to get run %d: %w", runID, err)
 	}
 	return run, nil
-}
-
-// hydrateJobRuns fetches the given run ids concurrently via runs/get, preserving
-// input order. runs/get enforces per-run view ACLs, so an id the caller can't
-// view (403) or that has been purged (404) is dropped; any other error is
-// systemic and fails the whole batch.
-func hydrateJobRuns(ctx context.Context, w *databricks.WorkspaceClient, ids []int64) ([]*jobs.Run, error) {
-	runs := make([]*jobs.Run, len(ids))
-	g, gctx := errgroup.WithContext(ctx)
-	g.SetLimit(hydrateConcurrency)
-	for i, id := range ids {
-		g.Go(func() error {
-			run, err := fetchJobRun(gctx, w, id)
-			if err != nil {
-				if apiErr, ok := errors.AsType[*apierr.APIError](err); ok &&
-					(apiErr.StatusCode == http.StatusForbidden || apiErr.StatusCode == http.StatusNotFound) {
-					return nil // not viewable or purged: drop this id
-				}
-				return fmt.Errorf("failed to get run %d: %w", id, err)
-			}
-			runs[i] = run
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-
-	hydrated := make([]*jobs.Run, 0, len(runs))
-	for _, run := range runs {
-		if run != nil {
-			hydrated = append(hydrated, run)
-		}
-	}
-	return hydrated, nil
 }

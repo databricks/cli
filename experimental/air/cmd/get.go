@@ -89,11 +89,23 @@ func authError(ctx context.Context, cmd *cobra.Command, err error) error {
 		fmt.Errorf("failed to verify authentication: %w", err))
 }
 
-// newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
-// configuration, and timing details for a specific run.
+// newGetCommand returns the `air get` command group. Resources are addressed as
+// nouns: `air get run <id>` and `air get bundle <name>`.
 func newGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get JOB_RUN_ID",
+		Use:   "get",
+		Short: "Show details for a specific resource (run or bundle)",
+	}
+	cmd.AddCommand(newGetRunCommand())
+	cmd.AddCommand(newGetBundleCommand())
+	return cmd
+}
+
+// newGetRunCommand returns the `air get run JOB_RUN_ID` command, which shows
+// status, configuration, and timing details for a specific run.
+func newGetRunCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "run JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
 		Short: "Show status, configuration, and timing details for a specific run",
 		Annotations: map[string]string{

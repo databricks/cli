@@ -33,23 +33,30 @@ func renderGet(t *testing.T, data getData) string {
 	return buf.String()
 }
 
-// TestGetCommandShape locks in that `get` takes the run id directly as
-// `air get JOB_RUN_ID` and has no `run` subcommand (it was collapsed back into
-// `get`). The acceptance test exercises the happy path end to end.
+// TestGetCommandShape locks in the verb-noun structure: `get` is a group with
+// `run` and `bundle` subcommands, and `get run` takes exactly one run id.
 func TestGetCommandShape(t *testing.T) {
-	cmd := newGetCommand()
-	assert.Equal(t, "get JOB_RUN_ID", cmd.Use)
-	assert.Empty(t, cmd.Commands(), "get must not register subcommands")
+	get := newGetCommand()
+	assert.Equal(t, "get", get.Use)
+	names := make(map[string]bool)
+	for _, c := range get.Commands() {
+		names[c.Name()] = true
+	}
+	assert.True(t, names["run"], "get must register the run subcommand")
+	assert.True(t, names["bundle"], "get must register the bundle subcommand")
+
+	run := newGetRunCommand()
+	assert.Equal(t, "run JOB_RUN_ID", run.Use)
 	// ExactArgs(1): exactly one run id is required.
-	assert.NoError(t, cmd.Args(cmd, []string{"123"}))
-	assert.Error(t, cmd.Args(cmd, []string{}))
-	assert.Error(t, cmd.Args(cmd, []string{"1", "2"}))
+	assert.NoError(t, run.Args(run, []string{"123"}))
+	assert.Error(t, run.Args(run, []string{}))
+	assert.Error(t, run.Args(run, []string{"1", "2"}))
 }
 
 func TestGetRunInvalidID(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := withOutput(newGetCommand(), flags.OutputText)
+	cmd := withOutput(newGetRunCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, []string{"abc"})
@@ -78,7 +85,7 @@ func notFoundGetServer(t *testing.T) *httptest.Server {
 func TestGetRunNotFound(t *testing.T) {
 	srv := notFoundGetServer(t)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
-	cmd := withOutput(newGetCommand(), flags.OutputText)
+	cmd := withOutput(newGetRunCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, []string{"5"})
@@ -92,7 +99,7 @@ func TestGetRunAuthFailed(t *testing.T) {
 	// fetched, so GetRun is never reached and nothing is rendered.
 	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, apierr.ErrPermissionDenied)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := withOutput(newGetCommand(), flags.OutputText)
+	cmd := withOutput(newGetRunCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, []string{"5"})
@@ -106,7 +113,7 @@ func TestGetRunAuthTransient(t *testing.T) {
 	// error; it surfaces as a retryable internal error instead.
 	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, errors.New("connection reset"))
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := withOutput(newGetCommand(), flags.OutputText)
+	cmd := withOutput(newGetRunCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, []string{"5"})
@@ -117,7 +124,7 @@ func TestGetRunAuthTransient(t *testing.T) {
 
 func TestAuthError(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := withOutput(newGetCommand(), flags.OutputText)
+	cmd := withOutput(newGetRunCommand(), flags.OutputText)
 
 	// No configurable credentials maps to the missing-profile hint.
 	noProfile := authError(ctx, cmd, config.ErrCannotConfigureDefault)
@@ -144,7 +151,7 @@ func TestGetRunNotFoundJSON(t *testing.T) {
 	srv := notFoundGetServer(t)
 	ctx := cmdctx.SetWorkspaceClient(t.Context(), newTestWorkspaceClient(t, srv.URL))
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputJSON, nil, &buf, &buf, "", ""))
-	cmd := withOutput(newGetCommand(), flags.OutputJSON)
+	cmd := withOutput(newGetRunCommand(), flags.OutputJSON)
 	cmd.SetContext(ctx)
 
 	// In JSON mode the not-found error is a structured envelope, not a bare error.

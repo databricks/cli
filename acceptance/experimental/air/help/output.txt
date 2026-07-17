@@ -11,8 +11,9 @@ Usage:
 
 Available Commands:
   cancel         Cancel one or more runs
-  get            Show status, configuration, and timing details for a specific run
-  list           List your active runs for the current profile (use --all-status for finished runs)
+  delete         Delete a resource (bundle)
+  get            Show details for a specific resource (run or bundle)
+  list           List a collection of resources (runs or bundles)
   logs           Stream or fetch logs for a run
   register-image Mirror a Docker image into the workspace registry
   run            Submit a training workload from a YAML config
@@ -29,17 +30,17 @@ Global Flags:
 Use "databricks experimental air [command] --help" for more information about a command.
 
 === list help
->>> [CLI] experimental air list --help
+>>> [CLI] experimental air list runs --help
 List your active runs for the current profile (use --all-status for finished runs)
 
 Usage:
-  databricks experimental air list [flags]
+  databricks experimental air list runs [flags]
 
 Flags:
       --all-status           Show runs in all states (default: active only)
       --all-users            Show runs from all users
       --filter stringArray   Filter runs, e.g. experiment=foo* (repeatable)
-  -h, --help                 help for list
+  -h, --help                 help for runs
       --limit int            Maximum number of runs to show (default 20)
 
 Global Flags:
