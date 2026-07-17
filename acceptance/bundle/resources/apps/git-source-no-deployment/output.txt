@@ -6,16 +6,16 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Plan is a no-op: git_source drift is skipped while the app has no deployment
+=== Plan is a no-op: git_source drift is skipped while the app has no active deployment
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== git_source is skipped with reason "no deployment"
+=== git_source is skipped with reason "no active deployment"
 >>> [CLI] bundle plan -o json
 {
   "git_source": {
     "action": "skip",
-    "reason": "no deployment",
+    "reason": "no active deployment",
     "old": {
       "branch": "main"
     },

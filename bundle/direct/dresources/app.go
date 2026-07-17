@@ -246,22 +246,20 @@ func hasAppChanges(entry *PlanEntry) bool {
 	return entry.Changes.HasChangeExcept("source_code_path", "config", "git_source", "lifecycle", "lifecycle.started")
 }
 
-// OverrideChangeDesc skips drift on deploy-only fields (source_code_path, config,
-// git_source) until the app has a deployment: they're applied via an app deployment
-// (see manageLifecycle), so DoRead leaves them nil until then and any diff is
-// spurious. Real out-of-band drift is reported again once a deployment exists.
+// OverrideChangeDesc suppresses drift on the deploy-only fields (source_code_path,
+// config, git_source) whenever the app has no active deployment. DoRead can only
+// read these back from the active deployment, and the backend clears it whenever the
+// app is stopped, not just before the first deploy. Without an active deployment the
+// remote side is empty, so any diff against the configured value is spurious. Such a
+// change is applied on the next start (see manageLifecycle), not lost; once a
+// deployment exists, real out-of-band drift is reported normally.
 func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
 	// Prefix(1) so a nested diff (e.g. config.command) matches its top-level field.
 	switch path.Prefix(1).String() {
-	case "source_code_path":
-		if remote.SourceCodePath == "" || remote.SourceCodePath == "null" {
-			change.Action = deployplan.Skip
-			change.Reason = "no deployment"
-		}
-	case "config", "git_source":
+	case "source_code_path", "config", "git_source":
 		if remote.ActiveDeployment == nil {
 			change.Action = deployplan.Skip
-			change.Reason = "no deployment"
+			change.Reason = "no active deployment"
 		}
 	}
 	return nil

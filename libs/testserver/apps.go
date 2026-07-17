@@ -186,6 +186,11 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 		State:   "UNAVAILABLE",
 		Message: appStatusUnavailableMessage,
 	}
+	// The backend clears the active/pending deployment when compute stops; only
+	// default_source_code_path is retained. Mirror that so drift detection against a
+	// stopped app matches cloud behavior.
+	app.ActiveDeployment = nil
+	app.PendingDeployment = nil
 	s.Apps[name] = app
 
 	return Response{Body: app}

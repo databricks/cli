@@ -6,16 +6,16 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Plan is a no-op: config/source_code_path drift is skipped while the app has no deployment
+=== Plan is a no-op: config/source_code_path drift is skipped while the app has no active deployment
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== Both deploy-only fields are skipped with reason "no deployment"
+=== Both deploy-only fields are skipped with reason "no active deployment"
 >>> [CLI] bundle plan -o json
 {
   "config": {
     "action": "skip",
-    "reason": "no deployment",
+    "reason": "no active deployment",
     "old": {
       "command": [
         "python",
@@ -43,7 +43,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   },
   "source_code_path": {
     "action": "skip",
-    "reason": "no deployment",
+    "reason": "no active deployment",
     "old": "/Workspace/Users/[USERNAME]/.bundle/app-config-no-deployment/default/files/app",
     "new": "/Workspace/Users/[USERNAME]/.bundle/app-config-no-deployment/default/files/app"
   }
