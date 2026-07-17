@@ -7,8 +7,11 @@ resources:
       project_id: test-pg-project-$UNIQUE_NAME
       display_name: Test Postgres Project
 
+  # Take over the branch implicitly provisioned with the project rather than
+  # creating a new one.
   postgres_branches:
     foo:
       parent: ${resources.postgres_projects.project.name}
-      branch_id: test-branch-$UNIQUE_NAME
+      branch_id: production
+      replace_existing: true
       no_expiry: true

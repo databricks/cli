@@ -7,14 +7,19 @@ resources:
       project_id: test-pg-project-$UNIQUE_NAME
       display_name: Test Postgres Project
 
+  # Creating the project implicitly provisions a "production" branch and its
+  # primary read-write endpoint, so take both over with replace_existing rather
+  # than creating new ones (a second read_write endpoint is rejected with 400).
   postgres_branches:
     branch:
       parent: ${resources.postgres_projects.project.name}
-      branch_id: test-branch-$UNIQUE_NAME
+      branch_id: production
+      replace_existing: true
       no_expiry: true
 
   postgres_endpoints:
     foo:
       parent: ${resources.postgres_branches.branch.name}
-      endpoint_id: test-endpoint-$UNIQUE_NAME
+      endpoint_id: primary
+      replace_existing: true
       endpoint_type: ENDPOINT_TYPE_READ_WRITE
