@@ -1,4 +1,4 @@
-package localenv
+package environments
 
 import (
 	"context"
@@ -29,6 +29,11 @@ databricks-connect version, and dependency constraints published for that key,
 then provisions a matched .venv with uv. A project with no pyproject.toml is
 initialized from scratch; an existing pyproject.toml is merged in place (its
 env-owned sections are refreshed, user-owned content is preserved).`,
+		// Hidden until the environment constraints repository is publicly
+		// available: the command is runnable for dogfooding but stays out of
+		// help and completion until it is unveiled (mirrors the pre-rename state
+		// on main, where the local-env group carried this flag).
+		Hidden: true,
 	}
 	// The target is selected via flags; reject stray positional args rather than
 	// silently ignoring them.

@@ -1,1 +1,1 @@
-musterr $CLI local-env python sync --cluster abc --serverless v4
+musterr $CLI environments setup-local --cluster abc --serverless v4

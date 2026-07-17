@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "command": "local-env python sync",
+  "command": "environments setup-local",
   "ok": false,
   "mode": "default",
   "dryRun": false,

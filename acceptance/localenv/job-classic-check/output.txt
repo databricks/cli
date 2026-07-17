@@ -1,5 +1,5 @@
 
->>> [CLI] local-env python sync --job 12345 --check
+>>> [CLI] environments setup-local --job 12345 --check
 preflight  ok  check
 resolve    ok  source=job envKey=dbr/15.4.x-scala2.12
 fetch      ok  source=[DATABRICKS_URL]/dbr/15.4.x-scala2.12/pyproject.toml fromCache=false

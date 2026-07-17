@@ -1,4 +1,4 @@
-package localenv
+package environments
 
 import (
 	"context"

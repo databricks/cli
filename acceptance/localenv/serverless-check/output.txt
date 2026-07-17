@@ -1,5 +1,5 @@
 
->>> [CLI] local-env python sync --serverless v4 --check
+>>> [CLI] environments setup-local --serverless v4 --check
 preflight  ok  check
 resolve    ok  source=serverless envKey=serverless/serverless-v4
 fetch      ok  source=[DATABRICKS_URL]/serverless/serverless-v4/pyproject.toml fromCache=false
