@@ -64,6 +64,7 @@ const (
 type ErrorCode string
 
 const (
+	ErrUsage              ErrorCode = "E_USAGE"
 	ErrNoTarget           ErrorCode = "E_NO_TARGET"
 	ErrManagerUnsupported ErrorCode = "E_MANAGER_UNSUPPORTED"
 	ErrUvMissing          ErrorCode = "E_UV_MISSING"

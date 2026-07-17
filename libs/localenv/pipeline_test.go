@@ -78,6 +78,25 @@ func newTestServer(t *testing.T) *httptest.Server {
 	}))
 }
 
+func TestPipelineRejectsConflictingTargetFlagsAtPreflight(t *testing.T) {
+	// Incompatible target flags are a usage error surfaced as E_USAGE at
+	// preflight, before any manager/writability/fetch work.
+	dir := writeProject(t)
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Cluster: "abc", Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrUsage, pe.Code)
+	assert.Equal(t, PhasePreflight, pe.FailurePhase)
+	assert.False(t, pe.DiskMutated)
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrUsage, res.Error.Code)
+}
+
 func TestPipelineCheckMutatesNothing(t *testing.T) {
 	dir := writeProject(t)
 	before, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))

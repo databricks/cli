@@ -90,7 +90,16 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 // run drives the phases and returns the first phase error. Result bookkeeping
 // (phase status, error object) is handled by fail / markOK.
 func (p *Pipeline) run(ctx context.Context) error {
-	// Phase: preflight — manager detection, writability, package-manager availability.
+	// Phase: preflight — flag validation, manager detection, writability,
+	// package-manager availability.
+	//
+	// Incompatible target flags are a usage error (E_USAGE), reported at preflight
+	// before any other work so the failure flows through the phase/JSON reporting
+	// (a plain Cobra mutual-exclusion error would print no command JSON object,
+	// which the --output json consumer needs).
+	if err := ValidateTargetFlags(p.Flags); err != nil {
+		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
+	}
 	// P0 supports only uv; any other detected manager is a clean, non-blaming exit.
 	if m := detectManager(p.ProjectDir); m != managerUv {
 		return p.fail(PhasePreflight, false, NewError(ErrManagerUnsupported, nil, "%s", managerGuidance(m)))
