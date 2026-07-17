@@ -23,6 +23,20 @@ func (c sdkCompute) GetClusterSparkVersion(ctx context.Context, clusterID string
 	return d.SparkVersion, nil
 }
 
+// GetClusterByName resolves a cluster name to its ID and Spark version.
+//
+// The SDK's GetByClusterName lists clusters and matches on name; it returns an
+// error when the name is unknown or when more than one cluster shares it. Both
+// are surfaced to the caller so they become an actionable E_RESOLVE rather than
+// a silently-wrong target.
+func (c sdkCompute) GetClusterByName(ctx context.Context, name string) (string, string, error) {
+	d, err := c.w.Clusters.GetByClusterName(ctx, name)
+	if err != nil {
+		return "", "", fmt.Errorf("get cluster by name %q: %w", name, err)
+	}
+	return d.ClusterId, d.SparkVersion, nil
+}
+
 // GetJobSparkVersion inspects the job's configuration to determine compute type.
 //
 // A job is considered serverless when it has non-empty Environments (JobEnvironment

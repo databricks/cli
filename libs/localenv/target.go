@@ -10,6 +10,10 @@ import (
 type ComputeClient interface {
 	// GetClusterSparkVersion returns the Spark version string for a cluster.
 	GetClusterSparkVersion(ctx context.Context, clusterID string) (string, error)
+	// GetClusterByName resolves a cluster name to its ID and Spark version. It
+	// errors when the name is unknown or ambiguous (more than one cluster shares
+	// the name), so the caller can surface an actionable E_RESOLVE.
+	GetClusterByName(ctx context.Context, name string) (clusterID, sparkVersion string, err error)
 	// GetJobSparkVersion returns either a Spark version (isServerless=false) or a
 	// serverless marker (isServerless=true) for a job, plus a recorded version string.
 	GetJobSparkVersion(ctx context.Context, jobID string) (sparkVersion string, isServerless bool, version string, err error)
@@ -17,9 +21,10 @@ type ComputeClient interface {
 
 // TargetFlags holds the mutually-exclusive compute target flags from the CLI.
 type TargetFlags struct {
-	Cluster    string
-	Serverless string
-	Job        string
+	Cluster     string
+	ClusterName string
+	Serverless  string
+	Job         string
 }
 
 // BundleTarget is the three-state result of reading the bundle's configured
@@ -34,12 +39,15 @@ type BundleTarget struct {
 // matching spec §2.3.
 const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --serverless-version / --job-id"
 
-// ValidateTargetFlags returns an error if more than one of the three flags is set.
+// ValidateTargetFlags returns an error if more than one of the target flags is set.
 // Cobra marks them mutually exclusive too; this guards the library path.
 func ValidateTargetFlags(f TargetFlags) error {
 	var set []string
 	if f.Cluster != "" {
 		set = append(set, "--cluster-id")
+	}
+	if f.ClusterName != "" {
+		set = append(set, "--cluster-name")
 	}
 	if f.Serverless != "" {
 		set = append(set, "--serverless-version")
@@ -74,6 +82,22 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 		return &TargetInfo{
 			Source:       "cluster",
 			ClusterID:    f.Cluster,
+			SparkVersion: v,
+			EnvKey:       EnvKeyForSparkVersion(v),
+		}, nil
+	}
+
+	if f.ClusterName != "" {
+		// Resolve the name to an ID via the Clusters API; from there it is
+		// identical to --cluster-id. An unknown or ambiguous name (two clusters
+		// sharing it) yields an actionable E_RESOLVE.
+		id, v, err := c.GetClusterByName(ctx, f.ClusterName)
+		if err != nil {
+			return nil, NewError(ErrResolve, err, "resolving cluster name %q", f.ClusterName)
+		}
+		return &TargetInfo{
+			Source:       "cluster",
+			ClusterID:    id,
 			SparkVersion: v,
 			EnvKey:       EnvKeyForSparkVersion(v),
 		}, nil
