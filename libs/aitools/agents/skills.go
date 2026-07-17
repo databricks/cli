@@ -16,8 +16,8 @@ const (
 	// CanonicalSkillsDir is the shared location for skills when multiple agents are detected.
 	CanonicalSkillsDir = ".databricks/aitools/skills"
 
-	// legacySkillsDir is the old canonical location, checked for backward compatibility.
-	legacySkillsDir = ".databricks/agent-skills"
+	// LegacySkillsDir is the old canonical location, checked for backward compatibility.
+	LegacySkillsDir = ".databricks/agent-skills"
 )
 
 // HasDatabricksSkillsInstalled checks if Databricks skills are installed in the canonical location.
@@ -33,12 +33,12 @@ func HasDatabricksSkillsInstalled(ctx context.Context) bool {
 	if err != nil {
 		return false
 	}
-	return hasDatabricksSkillsIn(filepath.Join(homeDir, CanonicalSkillsDir)) ||
-		hasDatabricksSkillsIn(filepath.Join(homeDir, legacySkillsDir))
+	return HasDatabricksSkillsIn(filepath.Join(homeDir, CanonicalSkillsDir)) ||
+		HasDatabricksSkillsIn(filepath.Join(homeDir, LegacySkillsDir))
 }
 
-// hasDatabricksSkillsIn checks if dir contains a subdirectory starting with "databricks".
-func hasDatabricksSkillsIn(dir string) bool {
+// HasDatabricksSkillsIn checks if dir contains a subdirectory starting with "databricks".
+func HasDatabricksSkillsIn(dir string) bool {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return false

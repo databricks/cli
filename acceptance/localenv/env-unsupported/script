@@ -1,0 +1,1 @@
+musterr $CLI local-env python sync --cluster test-cluster-id --check

@@ -83,6 +83,15 @@ func IsPromptSupported(ctx context.Context) bool {
 	return c.capabilities.SupportsPrompt()
 }
 
+// IsPagerSupported reports whether stdin, stdout, and stderr are all interactive
+// terminals. This is the requirement for a full-screen or navigable output
+// program: unlike IsPromptSupported it also checks stdout, so it returns false
+// when stdout is piped or redirected.
+func IsPagerSupported(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.SupportsPager()
+}
+
 // SupportsColor returns true if the given writer supports colored output.
 // This checks both TTY status and environment variables (NO_COLOR, TERM=dumb).
 func SupportsColor(ctx context.Context, w io.Writer) bool {

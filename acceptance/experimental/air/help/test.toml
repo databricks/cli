@@ -1,0 +1,3 @@
+# --help prints without authenticating, so no server stubs are needed.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []

@@ -154,6 +154,8 @@ After generation, you can deploy this job to other targets using:
 
 		cmdio.LogString(ctx, "Job configuration successfully saved to "+filepath.ToSlash(filename))
 
+		warnIfNotIncluded(ctx, b, filename)
+
 		if bind {
 			return deployment.BindResource(cmd, jobKey, strconv.FormatInt(jobId, 10), true, false, true)
 		}

@@ -21,11 +21,42 @@ import (
 )
 
 const (
+	// currentStateVersion is the schema version written for deployments that record
+	// no feature flags, and the version legacy states are migrated up to on load.
 	currentStateVersion = 2
 	initialBufferSize   = 64 * 1024
 	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
+
+	// featureStateVersion is the schema version a future CLI will write once it
+	// records deployment state "feature flags" (see Header.Features). This CLI does
+	// not write it and records no features; it exists now only so this CLI reads
+	// such states correctly (see migrateState):
+	//   - featureStateVersion with no features  -> accept and leave the version as-is
+	//   - featureStateVersion with any feature   -> refuse, tell the user to upgrade
+	//
+	// A featureStateVersion state with no features is equivalent to
+	// currentStateVersion, but we deliberately do not flip the on-disk version down
+	// to currentStateVersion: a state written at featureStateVersion stays at
+	// featureStateVersion. This is forward-compat scaffolding so that a later release
+	// can start writing featureStateVersion + features without older CLIs (with this
+	// change) either mishandling a feature they lack or rejecting a featureless state
+	// outright. featureStateVersion is always 3.
+	featureStateVersion = 3
+
+	// supportedStateVersion is the highest schema version this CLI can read. It is
+	// normally equal to currentStateVersion — the version this CLI reads is the
+	// version it writes — and exceeds it only during a two-phase version bump like
+	// the current feature-flag scaffolding, where this CLI reads (but does not
+	// write) featureStateVersion. A state newer than this is rejected as too new.
+	supportedStateVersion = featureStateVersion
 )
+
+// featuresDocURL is the single documentation page describing deployment state
+// feature flags. It is shown when a state records a feature this CLI does not
+// support; it is a fixed link for all features. The #state-features anchor points
+// at the feature table; if it ever breaks, the user still lands on the page.
+const featuresDocURL = "https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features"
 
 // errStaleWAL is returned when the WAL serial is behind the expected serial.
 // The caller should delete the stale WAL and proceed normally.
@@ -46,6 +77,13 @@ type Header struct {
 	CLIVersion   string `json:"cli_version"`
 	Lineage      string `json:"lineage"`
 	Serial       int    `json:"serial"`
+
+	// Features maps each feature flag this state depends on to a (currently empty)
+	// value. This CLI writes no features; it only reads the field to detect a state
+	// that depends on features it lacks and refuse it (see migrateState). It is a
+	// map so a future CLI can attach per-feature data without reshaping the state.
+	// Empty/omitted for states that use no features.
+	Features map[string]struct{} `json:"features,omitempty"`
 }
 
 type Database struct {

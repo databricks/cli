@@ -13,7 +13,7 @@ Building python_artifact...
 [
   {
     "notebook_task": {
-      "notebook_path": "${workspace.snapshot_path}/src/files/src/notebook"
+      "notebook_path": "${workspace.snapshot_path}/files/src/notebook"
     },
     "task_key": "notebook_task"
   },
@@ -28,7 +28,7 @@ Building python_artifact...
   {
     "environment_key": "env",
     "spark_python_task": {
-      "python_file": "${workspace.snapshot_path}/src/files/src/main.py"
+      "python_file": "${workspace.snapshot_path}/files/src/main.py"
     },
     "task_key": "spark_python_task"
   }
@@ -42,14 +42,14 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] jobs get [NUMID]
-"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/src/files/src/main.py"
+"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
 
 >>> [CLI] jobs get [NUMID]
-"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/src/files/src/notebook"
+"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
 
 >>> [CLI] jobs get [NUMID]
 [
-  "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/src/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+  "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
 ]
 
 >>> [CLI] bundle destroy --auto-approve

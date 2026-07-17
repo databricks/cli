@@ -1,0 +1,1 @@
+trace $CLI local-env python sync --serverless v4 --check --output json

@@ -1,32 +1,6 @@
 sethome "./home"
 
-cat > "./home/.databrickscfg" <<'EOF'
-; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
-[DEFAULT]
-
-[dev]
-host = https://accounts.cloud.databricks.test
-account_id = account-id
-auth_type  = databricks-cli
-EOF
-
-mkdir -p "./home/.databricks"
-cat > "./home/.databricks/token-cache.json" <<'EOF'
-{
-  "version": 1,
-  "tokens": {
-    "dev": {
-      "access_token": "dev-cached-token",
-      "token_type": "Bearer"
-    },
-    "https://accounts.cloud.databricks.test/oidc/accounts/account-id": {
-      "access_token": "dev-host-token",
-      "token_type": "Bearer"
-    }
-  }
-}
-EOF
-
+# home/.databrickscfg and home/.databricks/token-cache.json are checked-in inputs.
 title "Token cache keys before logout\n"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
