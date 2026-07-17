@@ -1,0 +1,100 @@
+package aircmd
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
+
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
+)
+
+// bricklensLogsPathFmt is the Bricklens-backed training-workflow log endpoint,
+// keyed by Jobs run id. It is called with a raw client.Do because the SDK does
+// not model the AiTrainingService log surface.
+const bricklensLogsPathFmt = "/api/2.0/ai-training/workflows/by-run-id/%d/logs"
+
+// logRecord is one log line from Bricklens. time_unix_nano stamps ordering and
+// dedup; body is the raw line; node_index identifies the emitting node.
+type logRecord struct {
+	// TimeUnixNano is nanosecond units; tolerate it arriving as a JSON number or
+	// string, matching the AiTrainingService index quirk in aitraining.go.
+	TimeUnixNano json.Number `json:"time_unix_nano"`
+	Body         string      `json:"body"`
+	NodeIndex    int         `json:"node_index"`
+}
+
+// nano returns the record's time_unix_nano as an int64, or 0 when absent or
+// unparseable (so it sorts first and never blocks dedup).
+func (r logRecord) nano() int64 {
+	n, err := r.TimeUnixNano.Int64()
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+type bricklensLogsResponse struct {
+	LogRecords    []logRecord `json:"log_records"`
+	NextPageToken string      `json:"next_page_token"`
+}
+
+// bricklensLogsQuery is the request-field surface of the log endpoint. The
+// fields map to the query keys the Python CLI sends (ai_training_client.get_logs);
+// zero-valued optionals are omitted so the endpoint applies its own defaults.
+type bricklensLogsQuery struct {
+	// fromSeconds and toSeconds bound the query window in Unix epoch seconds.
+	fromSeconds int64
+	toSeconds   int64
+	pageToken   string
+	pageSize    int
+	// attemptNumber selects a retry attempt (0-indexed); -1 means latest.
+	attemptNumber int
+	nodeIndex     int
+	// ascending returns oldest-first; the endpoint defaults to ascending when
+	// the field is absent, so the tail fetch must send it explicitly false.
+	ascending bool
+}
+
+// getBricklensLogs fetches one page of logs from the Bricklens endpoint. It
+// returns the raw error so the caller can classify it (feature-gated vs
+// transient vs genuine not-found) via classifyLogError.
+func getBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, runID int64, q bricklensLogsQuery) (*bricklensLogsResponse, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	query := map[string]any{
+		// The endpoint defaults to ascending when absent, so always send it: the
+		// tail path relies on an explicit false to get newest-first.
+		"ascending": strconv.FormatBool(q.ascending),
+	}
+	if q.fromSeconds > 0 {
+		query["from"] = q.fromSeconds
+	}
+	if q.toSeconds > 0 {
+		query["to"] = q.toSeconds
+	}
+	if q.pageToken != "" {
+		query["page_token"] = q.pageToken
+	}
+	if q.pageSize > 0 {
+		query["page_size"] = q.pageSize
+	}
+	if q.attemptNumber >= 0 {
+		query["ref.attempt_number"] = q.attemptNumber
+	}
+	if q.nodeIndex >= 0 {
+		query["filter.node_index"] = q.nodeIndex
+	}
+
+	var resp bricklensLogsResponse
+	path := fmt.Sprintf(bricklensLogsPathFmt, runID)
+	if err := apiClient.Do(ctx, http.MethodGet, path, nil, nil, query, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}

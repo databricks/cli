@@ -1,7 +1,18 @@
 package aircmd
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"strconv"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -9,6 +20,7 @@ func newLogsCommand() *cobra.Command {
 	var (
 		node       int
 		lines      int
+		minutes    int
 		retry      int
 		downloadTo string
 		review     bool
@@ -19,18 +31,132 @@ func newLogsCommand() *cobra.Command {
 		Args:  root.ExactArgs(1),
 		Short: "Stream or fetch logs for a run",
 		Long:  `Stream logs from an active run, or fetch logs from a completed run.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return notImplemented("logs")
-		},
 	}
 
 	cmd.Flags().IntVar(&node, "node", 0, "Fetch logs from this node")
-	cmd.Flags().IntVar(&lines, "lines", 10000, "For completed runs, print the last N lines")
+	cmd.Flags().IntVar(&lines, "lines", 0, "For completed runs, print the last N lines (default 10000)")
+	cmd.Flags().IntVar(&minutes, "minutes", 0, "Fetch only logs from the last N minutes")
 	cmd.Flags().IntVar(&retry, "retry", -1, "View logs from a specific retry attempt; -1 means latest")
 	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing")
 	cmd.Flags().BoolVar(&review, "review", false, "Download logs from all nodes and filter for error signatures")
 	// Hidden in the Python `air` CLI (help=argparse.SUPPRESS); keep it internal here to match.
 	cmd.Flags().MarkHidden("review")
 
+	// In -o json mode an auth failure should be a JSON error envelope, not a bare
+	// error. ErrAlreadyPrinted passes through (already handled upstream).
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		err := root.MustWorkspaceClient(cmd, args)
+		if err == nil || errors.Is(err, root.ErrAlreadyPrinted) {
+			return err
+		}
+		return authError(cmd.Context(), cmd, err)
+	}
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+
+		// --download-to and --review are not yet ported. Reject them explicitly
+		// rather than silently ignoring, so the user knows they had no effect.
+		if downloadTo != "" {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				errors.New("--download-to is not implemented yet"))
+		}
+		if review {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				errors.New("--review is not implemented yet"))
+		}
+
+		// --lines is a line tail (MLflow-native); --minutes is a time window
+		// (Bricklens-native). They answer the same "how much" question two ways,
+		// so reject both at once rather than silently honoring one.
+		if lines > 0 && minutes > 0 {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				errors.New("cannot combine --lines with --minutes: --lines tails by line count, --minutes by time window"))
+		}
+		if lines < 0 {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				fmt.Errorf("invalid --lines %d: must be positive", lines))
+		}
+		if minutes < 0 {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				fmt.Errorf("invalid --minutes %d: must be positive", minutes))
+		}
+
+		runID, err := strconv.ParseInt(args[0], 10, 64)
+		if err != nil || runID <= 0 {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
+		}
+
+		return runLogs(ctx, cmd, logRequest{
+			runID:         runID,
+			node:          node,
+			attempt:       retry,
+			windowMinutes: minutes,
+			tailLines:     lines,
+			jsonOutput:    root.OutputType(cmd) == flags.OutputJSON,
+		})
+	}
+
 	return cmd
+}
+
+// runLogs resolves the run, validates the requested retry, and fetches logs
+// Bricklens-first with an MLflow fallback. It handles error reporting; the
+// backend selection lives in fetchLogs.
+func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
+	w := cmdctx.WorkspaceClient(ctx)
+
+	// Validate credentials server-side before fetching (MustWorkspaceClient only
+	// attaches credentials), so a bad token fails clearly here.
+	if _, err := w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+		return authError(ctx, cmd, err)
+	}
+
+	status, err := resolveRunStatus(ctx, w, req.runID)
+	if err != nil {
+		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+			return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
+				fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", req.runID))
+		}
+		return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
+			fmt.Errorf("failed to get status for run %d: %w", req.runID, err))
+	}
+
+	// Resolve --retry against the run's attempts. -1 (default) means latest.
+	if req.attempt >= 0 && req.attempt > status.latestAttempt {
+		return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+			fmt.Errorf("invalid retry %d: available retries are 0 to %d", req.attempt, status.latestAttempt))
+	}
+
+	out := cmd.OutOrStdout()
+	success, err := fetchLogs(ctx, w, out, req, status)
+	if err != nil {
+		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+			return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
+				fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", req.runID))
+		}
+		return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
+			fmt.Errorf("failed to fetch logs for run %d: %w", req.runID, err))
+	}
+
+	// A run that finished unsuccessfully exits non-zero, matching the Python CLI;
+	// output was already written, so don't reprint via Cobra.
+	if !success {
+		return root.ErrAlreadyPrinted
+	}
+	return nil
+}
+
+// fetchLogs is the Bricklens-first / MLflow-fallback decision. Bricklens serves
+// logs unless the backend has gated it off (a SAFE flag) or it is unavailable;
+// in that case streamBricklensLogs returns errBricklensFeatureDisabled and we
+// fall back to MLflow. Both paths honor the same logRequest (node, retry,
+// --minutes window, --lines tail).
+func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+	success, err := streamBricklensLogs(ctx, w, out, req, status)
+	if errors.Is(err, errBricklensFeatureDisabled) {
+		return mlflowLogFallback(ctx, w, out, req, status)
+	}
+	return success, err
 }
