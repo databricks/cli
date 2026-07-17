@@ -21,7 +21,7 @@ test.py
 
 === Deploy the bound job:
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/tmp/[UNIQUE_NAME]/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -31,7 +31,7 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.jobs.test_job
 
-All files and directories at the following location will be deleted: /Workspace/tmp/[UNIQUE_NAME]
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]
 
 Deleting files...
 Destroy complete!

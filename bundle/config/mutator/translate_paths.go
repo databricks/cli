@@ -333,10 +333,10 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 			}}
 		}
 		// Use a placeholder referencing workspace.snapshot_path so that paths are stored
-		// as ${workspace.snapshot_path}/src/files/<rel> during validate. After
+		// as ${workspace.snapshot_path}/files/<rel> during validate. After
 		// snapshot.Upload() sets workspace.snapshot_path, a variable-resolution pass
 		// expands these references to the actual content-addressed paths.
-		t.remoteRoot = "${workspace.snapshot_path}/src/files"
+		t.remoteRoot = "${workspace.snapshot_path}/files"
 	case config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment):
 		t.remoteRoot = t.b.SyncRootPath
 	default:

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // sdkCompute adapts the Databricks SDK to the localenv.ComputeClient interface.
@@ -57,7 +58,21 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 
 	// Serverless jobs have Environments populated; classic compute uses JobClusters.
 	if len(job.Settings.Environments) > 0 {
-		return "", true, "", nil
+		// The serverless environment version (e.g. "4") is recorded on the job's
+		// environment spec, unlike the bundle path where it is unavailable. Return
+		// it so ResolveTarget pins the matching serverless-vN instead of defaulting
+		// to v4. An empty version (older jobs) falls back to v4 in ResolveTarget.
+		version := environmentVersion(job.Settings.Environments[0])
+		// Tasks can reference any environment_key, so if the job's environments do
+		// not all share one version there is no single correct local environment
+		// (mirrors the job-cluster check below). Refuse rather than guess from the
+		// first. A pinned-vs-unpinned mix is also ambiguous, so compare raw values.
+		for _, e := range job.Settings.Environments[1:] {
+			if environmentVersion(e) != version {
+				return "", false, "", fmt.Errorf("job %d has serverless environments with differing versions; pass --serverless explicitly to disambiguate", id)
+			}
+		}
+		return "", true, version, nil
 	}
 
 	if len(job.Settings.JobClusters) > 0 {
@@ -77,4 +92,23 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 	}
 
 	return "", false, "", fmt.Errorf("could not determine compute for job %d from its environments or job clusters (task-level compute is not supported); pass --cluster or --serverless explicitly", id)
+}
+
+// environmentVersion returns the serverless environment version recorded on a
+// job environment, or "" when the spec or version is absent.
+//
+// The version can arrive in either of two fields. environment_version is the
+// current one; client is its deprecated predecessor ("Use environment_version
+// instead") and is still what some jobs pin. Reading both means the v4 fallback
+// and the divergence guard observe whichever field actually carries the pin,
+// rather than treating a client-pinned job as unversioned. base_environment is
+// deliberately ignored: it is a path/ID, not a version.
+func environmentVersion(e jobs.JobEnvironment) string {
+	if e.Spec == nil {
+		return ""
+	}
+	if e.Spec.EnvironmentVersion != "" {
+		return e.Spec.EnvironmentVersion
+	}
+	return e.Spec.Client
 }

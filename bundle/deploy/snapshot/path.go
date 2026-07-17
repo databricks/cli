@@ -74,7 +74,11 @@ func addSyncRootToZip(ctx context.Context, zw *zip.Writer, b *bundle.Bundle) (in
 	if err != nil {
 		return 0, err
 	}
-	fileList, err := libsync.GetFileList(ctx, *opts)
+	fl, err := libsync.NewFileList(ctx, opts.WorktreeRoot, opts.LocalRoot, opts.Paths, opts.Include, opts.Exclude)
+	if err != nil {
+		return 0, fmt.Errorf("build file set: %w", err)
+	}
+	fileList, err := fl.Files(ctx)
 	if err != nil {
 		return 0, err
 	}

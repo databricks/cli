@@ -90,6 +90,27 @@ func TestResolveJobClassicUsesSparkVersionReturn(t *testing.T) {
 	assert.Equal(t, "dbr/15.4.x-scala2.12", ti.EnvKey)
 }
 
+func TestResolveJobServerlessUsesRecordedVersion(t *testing.T) {
+	// A serverless job (isServerless=true) pins its serverless version via the
+	// third "recorded version" return; ResolveTarget must map it to the matching
+	// serverless-vN rather than the classic dbr path.
+	c := jobStubCompute{isServerless: true, version: "3"}
+	ti, err := ResolveTarget(t.Context(), TargetFlags{Job: "42"}, c, BundleTarget{})
+	require.NoError(t, err)
+	assert.Equal(t, "job", ti.Source)
+	assert.Empty(t, ti.SparkVersion)
+	assert.Equal(t, "serverless/serverless-v3", ti.EnvKey)
+}
+
+func TestResolveJobServerlessEmptyVersionFallsBackToV4(t *testing.T) {
+	// When the job records no serverless version, ResolveTarget defaults to v4
+	// (documented stand-in), matching the bundle serverless path.
+	c := jobStubCompute{isServerless: true, version: ""}
+	ti, err := ResolveTarget(t.Context(), TargetFlags{Job: "42"}, c, BundleTarget{})
+	require.NoError(t, err)
+	assert.Equal(t, "serverless/serverless-v4", ti.EnvKey)
+}
+
 func TestValidateTargetFlagsMutuallyExclusive(t *testing.T) {
 	assert.Error(t, ValidateTargetFlags(TargetFlags{Cluster: "a", Serverless: "v4"}))
 	assert.NoError(t, ValidateTargetFlags(TargetFlags{Cluster: "a"}))

@@ -97,6 +97,12 @@ no_postgres_synced_table_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres
 no_postgres_role_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_role.yml.tmpl"]
 no_postgres_database_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_database.yml.tmpl"]
 
+# Lakebase v1 (database instances/catalogs/synced tables) is not available on GCP,
+# so exclude these from all cloud runs (same as the postgres resources above).
+no_database_instance_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=database_instance.yml.tmpl"]
+no_database_catalog_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=database_catalog.yml.tmpl"]
+no_synced_database_table_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=synced_database_table.yml.tmpl"]
+
 # External locations require actual storage credentials with cloud IAM setup
 # which are environment-specific, so we only test locally with the mock server
 no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_location.yml.tmpl"]

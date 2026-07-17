@@ -1,0 +1,12 @@
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[profile-a]
+host      = ${DATABRICKS_HOST}
+token     = token-a
+auth_type = pat
+
+[profile-b]
+host      = ${DATABRICKS_HOST}
+token     = token-b
+auth_type = pat
