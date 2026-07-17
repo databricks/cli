@@ -1,11 +1,14 @@
 name: Changelog Preview
 
-# Renders the CHANGELOG.md section the next release would generate from this
-# PR's .nextchanges/ fragments, so reviewers can see the result (in this check's
-# logs / summary) without cutting a release.
+# Renders the CHANGELOG.md section the next release would generate from the
+# .nextchanges/ fragments into this check's job summary, so reviewers see the
+# rendered changelog without cutting a release. Fails the check if a fragment
+# is misplaced (so it can't be silently skipped by the renderer).
 #
-# Uses `pull_request` with a read-only token: it renders the PR's own
-# .nextchanges/ content and never needs write credentials.
+# Runs on pull requests (rendering the PR's own .nextchanges/ content) and on
+# pushes to main (so anyone can view the preview for any commit on main). Uses
+# a read-only token: it only reads .nextchanges/ and never needs write
+# credentials.
 on:
   pull_request:
     types: [opened, reopened, synchronize]
@@ -14,6 +17,9 @@ on:
       - "internal/genkit/**"
       - "tools/validate_nextchanges.py"
       - "tools/update_github_links.py"
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -30,16 +36,25 @@ jobs:
         with:
           version: "0.8.9"
 
+      # Fail the check on a misplaced/unexpected file under .nextchanges/ so it
+      # can't slip through as a silently-skipped (unrendered) fragment.
+      - name: Validate .nextchanges placement
+        run: uv run tools/validate_nextchanges.py
+
       - name: Render changelog preview
         run: |-
+          # Render into a variable first so a renderer error fails this step
+          # (rather than being swallowed by a pipe), then emit the .md directly
+          # into the job summary so GitHub renders it as the changelog.
+          preview=$(uv run --locked internal/genkit/release_tagging.py --preview)
           {
-            echo '### Changelog preview'
+            echo '## Changelog preview'
             echo ''
-            echo "What the next release would add to CHANGELOG.md from this PR's .nextchanges/:"
+            echo 'This is a preview of what the next release would add to CHANGELOG.md based on `.nextchanges/`.'
             echo ''
-            echo '```markdown'
-            uv run --locked internal/genkit/release_tagging.py --preview
-            echo '```'
+            echo '_NOTE: the date and version are computed at release time._'
             echo ''
-            echo '_Preview only — the date and version are computed at release time._'
-          } | tee "$GITHUB_STEP_SUMMARY"
+            echo '---'
+            echo ''
+            echo "$preview"
+          } >> "$GITHUB_STEP_SUMMARY"

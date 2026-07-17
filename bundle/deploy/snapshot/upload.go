@@ -68,13 +68,12 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	log.Infof(ctx, "Snapshot uploaded to %s", info.Path)
 
-	// The API unpacks the zip under a "src" subdirectory.
 	b.Config.Workspace.SnapshotPath = info.Path
-	b.Config.Workspace.FilePath = path.Join(info.Path, "src", "files")
+	b.Config.Workspace.FilePath = path.Join(info.Path, "files")
 	// Only set artifact_path when artifacts are present; with no artifacts the
-	// zip has no "src/artifacts" directory and a get-status on it would 404.
+	// zip has no "artifacts" directory and a get-status on it would 404.
 	if len(b.Config.Artifacts) > 0 {
-		b.Config.Workspace.ArtifactPath = path.Join(info.Path, "src", "artifacts")
+		b.Config.Workspace.ArtifactPath = path.Join(info.Path, "artifacts")
 	}
 
 	return diags

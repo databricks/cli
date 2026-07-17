@@ -1990,6 +1990,9 @@ scripts:
     "content":
       "description": |-
         PLACEHOLDER
+    "env":
+      "description": |-
+        A map of environment variables to export when running the script. Values may reference `${bundle.*}`, `${workspace.*}`, and `${var.*}` and are resolved before the script runs; reference them from `content` with `$NAME`.
 sync:
   "description": |-
     The files and file paths to include or exclude in the bundle.

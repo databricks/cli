@@ -35,7 +35,13 @@ cleanup() {
 trap cleanup EXIT
 
 title "Generate bundle config from the pipeline"
-$CLI bundle generate pipeline --existing-pipeline-id "$PIPELINE_ID" --key out --config-dir resources --source-dir src --force 2>&1 | sort
+# The concurrent downloader emits the "File successfully saved" lines in
+# nondeterministic order, so sort just those; the remaining lines (including the
+# multi-line include warning) are deterministic and kept in their natural order.
+$CLI bundle generate pipeline --existing-pipeline-id "$PIPELINE_ID" --key out --config-dir resources --source-dir src --force > out.gen.txt 2>&1
+grep '^File successfully saved to' out.gen.txt | sort
+grep -v '^File successfully saved to' out.gen.txt
+rm out.gen.txt
 
 title "Verify generated yaml has expected fields"
 cat resources/out.pipeline.yml | env -u MSYS_NO_PATHCONV contains.py "libraries:" "- notebook:" "path: ../src/notebook-${UNIQUE_NAME}.py" "- file:" "path: ../src/test-${UNIQUE_NAME}.py" > /dev/null

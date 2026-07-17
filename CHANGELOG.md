@@ -1,5 +1,26 @@
 # Version changelog
 
+## Release v1.8.0 (2026-07-15)
+
+### Notable Changes
+
+ * Auto-migrate a bundle from terraform to the direct engine when `bundle.engine` is `"direct"` (or `DATABRICKS_BUNDLE_ENGINE=direct`) and the post-deploy dry-run migration is clean; a warning is emitted if the dry-run surfaces errors or warnings so the automatic migration is skipped.
+
+### CLI
+
+ * experimental `ssh connect`: bare `python`/`pip` in an interactive session now resolve to the environment interpreter (`$DATABRICKS_VIRTUAL_ENV`) instead of the system or cluster-libraries interpreter, so packages installed in the environment are importable without extra setup. The interactive shell is now non-login (`bash -i`) and the server seeds a `~/.bashrc` snippet that re-prepends the environment's bin directory to `PATH` ([#5888](https://github.com/databricks/cli/pull/5888)).
+ * When Claude Code runs the CLI without the Databricks AI tooling installed, the CLI now prints a one-line recommendation on stderr to run `databricks aitools install`. The recommendation is shown at most once per hour per Claude session, and never for human callers or `aitools` commands.
+ * Fixed `databricks auth describe` misattributing a profile selected via `DATABRICKS_CONFIG_PROFILE` as `(from bundle)` when run inside a bundle root ([#5904](https://github.com/databricks/cli/pull/5904)).
+
+### Bundles
+
+ * `bundle generate` now warns when the generated configuration file is not matched by any pattern in the `include` section of `databricks.yml` ([#5868](https://github.com/databricks/cli/pull/5868)).
+ * direct: Match UC Auto Upgrade managed property defaults with a wildcard pattern instead of enumerating each key ([#5877](https://github.com/databricks/cli/pull/5877)).
+ * Recognize `ssh://` template URLs in `databricks bundle init` ([#5891](https://github.com/databricks/cli/pull/5891)).
+ * `databricks bundle init` now reports an actionable error when given a template URL with an unsupported protocol (`http://`, `git://`, `ftp://`, `ftps://`) instead of failing with a confusing "not a bundle template" message ([#5902](https://github.com/databricks/cli/pull/5902)).
+ * Added an `env:` section to `scripts.<name>` for declaring environment variables that may reference `${bundle.*}`, `${workspace.*}`, and `${var.*}` ([#4179](https://github.com/databricks/cli/issues/4179), [#5299](https://github.com/databricks/cli/pull/5299)).
+
+
 ## Release v1.7.0 (2026-07-09)
 
 ### CLI

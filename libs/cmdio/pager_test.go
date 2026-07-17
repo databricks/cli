@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"errors"
+	"io"
 	"reflect"
 	"testing"
 	"text/template"
@@ -20,7 +21,7 @@ func newTestPager(t *testing.T, iter listing.Iterator[int], pageSize int) *pager
 	require.NoError(t, err)
 	headerT, err := template.New("header").Funcs(fm).Parse("")
 	require.NoError(t, err)
-	return newPagerModel(ctx, iter, &templatePager{
+	return newPagerModel(ctx, io.Discard, iter, &templatePager{
 		headerT: headerT,
 		rowT:    rowT,
 	}, pageSize, 0)
