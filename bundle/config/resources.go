@@ -64,6 +64,10 @@ type ConfigResource interface {
 
 	// GetLifecycle returns the lifecycle settings for the resource.
 	GetLifecycle() resources.LifecycleConfig
+
+	// GetDeployTargets returns the targets the resource is restricted to, or an
+	// empty slice when the resource is not target-scoped.
+	GetDeployTargets() []string
 }
 
 // ResourceGroup represents a group of resources of the same type.

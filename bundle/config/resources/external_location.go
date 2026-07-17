@@ -17,7 +17,8 @@ type ExternalLocation struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	// Note: We intentionally don't include BaseResource.URL here to avoid conflict with Url field below
-	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
+	Lifecycle     Lifecycle `json:"lifecycle,omitempty"`
+	DeployTargets []string  `json:"deploy_targets,omitempty"`
 
 	catalog.CreateExternalLocation
 
@@ -65,6 +66,12 @@ func (e *ExternalLocation) GetName() string {
 // GetLifecycle returns the lifecycle settings for the resource.
 func (e *ExternalLocation) GetLifecycle() LifecycleConfig {
 	return e.Lifecycle
+}
+
+// GetDeployTargets returns the targets the resource is restricted to, or an
+// empty slice when the resource is not target-scoped.
+func (e *ExternalLocation) GetDeployTargets() []string {
+	return e.DeployTargets
 }
 
 func (e *ExternalLocation) UnmarshalJSON(b []byte) error {

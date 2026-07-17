@@ -160,6 +160,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// filter resources; the direct engine selects against the resolved keys later.
 		mutator.ResolveSelect(),
 
+		// Drop resources whose deploy_targets list does not include the selected
+		// target. Runs after all resource mutations so that dynamically added
+		// resources are also filtered, and before validation so required-field
+		// checks only see resources that will actually be deployed.
+		resourcemutator.FilterDeployTargets(),
+
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
 		validate.Required(),

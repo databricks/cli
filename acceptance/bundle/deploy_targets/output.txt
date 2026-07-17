@@ -1,0 +1,18 @@
+
+>>> [CLI] bundle validate -o json -t dev
+[
+  "dev_and_staging_job",
+  "shared_job"
+]
+
+>>> [CLI] bundle validate -o json -t staging
+[
+  "dev_and_staging_job",
+  "shared_job"
+]
+
+>>> [CLI] bundle validate -o json -t prod
+[
+  "prod_only_job",
+  "shared_job"
+]

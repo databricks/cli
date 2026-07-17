@@ -87,6 +87,10 @@
                         "description": "[Public Preview] Custom summary for the alert. support mustache template.",
                         "$ref": "#/$defs/string"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "display_name": {
                         "description": "[Public Preview] The display name of the alert.",
                         "$ref": "#/$defs/string"
@@ -175,6 +179,10 @@
                       },
                       "config": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppConfig"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "description": {
                         "description": "The description of the app.",
@@ -334,6 +342,10 @@
                         "description": "[Public Preview] Custom maximum retention period in hours for the catalog",
                         "$ref": "#/$defs/int64"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "grants": {
                         "description": "The Unity Catalog privileges to grant to principals on this securable.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
@@ -424,6 +436,10 @@
                       "data_security_mode": {
                         "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "docker_image": {
                         "description": "Custom docker image BYOC",
@@ -598,6 +614,10 @@
                         "description": "Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.",
                         "$ref": "#/$defs/string"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "display_name": {
                         "description": "The display name of the dashboard.",
                         "$ref": "#/$defs/string"
@@ -672,6 +692,10 @@
                         "description": "[Public Preview] The name of the database (in an instance) associated with the catalog.",
                         "$ref": "#/$defs/string"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
@@ -707,6 +731,10 @@
                       "custom_tags": {
                         "description": "[Beta] Custom tags associated with the instance. This field is only included on create and update responses.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.CustomTag"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "enable_pg_native_login": {
                         "description": "[Public Preview] Whether to enable PG native password login on the instance. Defaults to false.",
@@ -774,6 +802,10 @@
                         "description": "Name of the storage credential used with this location.",
                         "$ref": "#/$defs/string"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "enable_file_events": {
                         "description": "Whether to enable file events on this external location. Default to `true`. Set to `false` to disable file events.\nThe actual applied value may differ due to server-side defaults; check `effective_enable_file_events` for the effective state.",
                         "$ref": "#/$defs/bool"
@@ -834,6 +866,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "description": {
                         "description": "Description of the Genie space shown alongside the title in the Databricks UI.",
                         "$ref": "#/$defs/string"
@@ -891,6 +927,10 @@
                       "continuous": {
                         "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Continuous"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "description": {
                         "description": "An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.",
@@ -1045,6 +1085,10 @@
                         "doNotSuggest": true,
                         "deprecated": true
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "idempotency_token": {
                         "description": "An optional token to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly one run\nis launched with that idempotency token.\n\nThis token must have at most 64 characters.\n\nFor more information, see [How to ensure idempotency for jobs](https://kb.databricks.com/jobs/jobs-idempotency.html).",
                         "$ref": "#/$defs/string"
@@ -1186,6 +1230,10 @@
                         "description": "Location where all artifacts for the experiment are stored.\nIf not provided, the remote server will select an appropriate default.",
                         "$ref": "#/$defs/string"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
@@ -1254,6 +1302,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "description": {
                         "description": "Optional description for registered model.",
                         "$ref": "#/$defs/string"
@@ -1337,6 +1389,10 @@
                       "config": {
                         "description": "The core config of the serving endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "description": {
                         "$ref": "#/$defs/string"
@@ -1487,6 +1543,10 @@
                       "continuous": {
                         "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.",
                         "$ref": "#/$defs/bool"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "development": {
                         "description": "Whether the pipeline is in Development mode. Defaults to false.",
@@ -1656,6 +1716,10 @@
                       "branch_id": {
                         "$ref": "#/$defs/string"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "expire_time": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
@@ -1717,6 +1781,10 @@
                       "create_database_if_missing": {
                         "$ref": "#/$defs/bool"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
@@ -1744,6 +1812,10 @@
                     "properties": {
                       "database_id": {
                         "$ref": "#/$defs/string"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
@@ -1785,6 +1857,10 @@
                       },
                       "autoscaling_limit_min_cu": {
                         "$ref": "#/$defs/float64"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "disabled": {
                         "$ref": "#/$defs/bool"
@@ -1848,6 +1924,10 @@
                       "default_endpoint_settings": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "display_name": {
                         "$ref": "#/$defs/string"
                       },
@@ -1899,6 +1979,10 @@
                       "auth_method": {
                         "description": "How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAuthMethod"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "identity_type": {
                         "description": "The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.",
@@ -1954,6 +2038,10 @@
                       },
                       "create_database_objects_if_missing": {
                         "$ref": "#/$defs/bool"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "existing_pipeline_id": {
                         "$ref": "#/$defs/string"
@@ -2020,6 +2108,10 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig",
                         "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                         "doNotSuggest": true
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "inference_log": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog"
@@ -2111,6 +2203,10 @@
                         "description": "The identifier of the user who created the registered model",
                         "$ref": "#/$defs/string"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "full_name": {
                         "description": "The three-level (fully qualified) name of the registered model",
                         "$ref": "#/$defs/string"
@@ -2179,6 +2275,10 @@
                         "description": "[Public Preview] Custom maximum retention period in hours for the schema.",
                         "$ref": "#/$defs/int64"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "grants": {
                         "description": "The Unity Catalog privileges to grant to principals on this securable.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
@@ -2222,6 +2322,10 @@
                       "backend_type": {
                         "description": "The backend type the scope will be created with. If not specified, will default to `DATABRICKS`",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.ScopeBackendType"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "keyvault_metadata": {
                         "description": "The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`",
@@ -2322,6 +2426,10 @@
                         "description": "warehouse creator name",
                         "$ref": "#/$defs/string"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "enable_photon": {
                         "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
                         "$ref": "#/$defs/bool"
@@ -2420,6 +2528,10 @@
                         "description": "[Public Preview] Name of the target database instance. This is required when creating synced database tables in standard catalogs.\nThis is optional when creating synced database tables in registered catalogs. If this field is specified\nwhen creating synced database tables in registered catalogs, the database instance name MUST\nmatch that of the registered catalog (or the request will be rejected).",
                         "$ref": "#/$defs/string"
                       },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
@@ -2456,6 +2568,10 @@
                       "budget_policy_id": {
                         "description": "[Public Preview] The budget policy id to be applied",
                         "$ref": "#/$defs/string"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "endpoint_type": {
                         "description": "Type of endpoint",
@@ -2505,6 +2621,10 @@
                       "delta_sync_index_spec": {
                         "description": "Specification for Delta Sync Index. Required if `index_type` is `DELTA_SYNC`.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DeltaSyncVectorIndexSpecRequest"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "direct_access_index_spec": {
                         "description": "Specification for Direct Vector Access Index. Required if `index_type` is `DIRECT_ACCESS`.",
@@ -2566,6 +2686,10 @@
                       "comment": {
                         "description": "The comment attached to the volume",
                         "$ref": "#/$defs/string"
+                      },
+                      "deploy_targets": {
+                        "description": "A list of target names that this resource is deployed to. When omitted, the resource is deployed to every target. When set, the resource is deployed only to the targets whose names appear in the list, and it is dropped from the configuration for any other target.",
+                        "$ref": "#/$defs/slice/string"
                       },
                       "grants": {
                         "description": "The Unity Catalog privileges to grant to principals on this securable.",
