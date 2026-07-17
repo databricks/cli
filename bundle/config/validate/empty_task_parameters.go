@@ -30,6 +30,13 @@ func (v *emptyTaskParameters) Name() string {
 	return "validate:empty_task_parameters"
 }
 
+// Apply walks every job task (including tasks nested in a for_each_task) and
+// collects a warning for each empty string element in a parameters list. It
+// returns nothing when the effective engine is direct, because the direct
+// engine deploys empty parameters correctly; the panic is specific to the
+// Terraform provider. It must run after variable references in resources are
+// resolved, so that a parameter written as ${var.x} is seen as its final
+// string value.
 func (v *emptyTaskParameters) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Resolve effective engine: config takes precedence over env var.
 	effectiveEngine := b.Config.Bundle.Engine
@@ -54,6 +61,13 @@ func (v *emptyTaskParameters) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	return diags
 }
 
+// checkEmptyTaskParameters returns one warning per empty string element in the
+// given task's parameters list, covering the four task types whose parameters
+// are a plain list of strings (spark_python_task, python_wheel_task,
+// spark_jar_task, spark_submit_task). basePath is the config path of the task,
+// e.g. "resources.jobs.my_job.tasks[0]"; it anchors each warning to the exact
+// element (".<task_type>.parameters[<i>]") so the rendered diagnostic points
+// at the offending line in the user's YAML.
 func checkEmptyTaskParameters(b *bundle.Bundle, task *jobs.Task, basePath string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
