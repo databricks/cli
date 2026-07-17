@@ -20,10 +20,11 @@ var clauseRe = regexp.MustCompile(`^(>=|<=|===|==|~=|!=|<|>)?\s*(\d+)\.(\d+)(\.\
 // latest LTS (spec §4.3 / §target-resolution); VS Code resolves the real version
 // itself and passes --serverless-version explicitly, so this fallback only
 // applies when the version is genuinely unknown.
-const defaultServerlessVersion = "v5"
+const defaultServerlessVersion = "5"
 
 // NormalizeServerless returns the canonical "vN" spelling of a serverless
-// version accepting "4", "v4", or "V4".
+// version. The documented input is a bare number ("5"), but a "v"-prefixed form
+// ("v5"/"V5") is also accepted; both map to the "serverless-vN" env key.
 func NormalizeServerless(version string) string {
 	return "v" + strings.TrimPrefix(strings.ToLower(version), "v")
 }

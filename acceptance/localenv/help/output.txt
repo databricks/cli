@@ -16,7 +16,7 @@ Flags:
       --dry-run                     compute the plan without writing files or provisioning
   -h, --help                        help for setup-local
       --job-id string               job ID to use as the compute target
-      --serverless-version string   serverless version to use as the compute target (e.g. v4)
+      --serverless-version string   serverless version to use as the compute target (e.g. 5)
 
 Global Flags:
       --debug            enable debug logging

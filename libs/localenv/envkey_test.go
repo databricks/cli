@@ -8,9 +8,21 @@ import (
 )
 
 func TestEnvKeyForServerless(t *testing.T) {
+	// The documented input is a bare number; a "v"-prefixed form is also accepted.
+	// Both map to the "serverless-vN" env key.
 	for _, in := range []string{"4", "v4", "V4"} {
 		assert.Equal(t, "serverless/serverless-v4", EnvKeyForServerless(in))
 	}
+	for _, in := range []string{"5", "v5", "V5"} {
+		assert.Equal(t, "serverless/serverless-v5", EnvKeyForServerless(in))
+	}
+}
+
+func TestDefaultServerlessVersionIsBareNumber(t *testing.T) {
+	// The default stand-in is stored in the documented bare form; it still maps
+	// to the serverless-vN env key via NormalizeServerless.
+	assert.Equal(t, "5", defaultServerlessVersion)
+	assert.Equal(t, "serverless/serverless-v5", EnvKeyForServerless(defaultServerlessVersion))
 }
 
 func TestEnvKeyForSparkVersion(t *testing.T) {
