@@ -1,0 +1,14 @@
+title "Target with short-form empty override (targets.X.variables.user_prefix: \"\")"
+trace $CLI bundle validate -o json -t short_form_override | jq '.resources.jobs.demo_job.tasks[0].spark_python_task.parameters'
+
+title "Target with long-form empty override (default: \"\")"
+trace $CLI bundle validate -o json -t long_form_override | jq '.resources.jobs.demo_job.tasks[0].spark_python_task.parameters'
+
+title "Target with null override (targets.X.variables.user_prefix:)"
+trace errcode $CLI bundle validate -o json -t null_override | jq '.resources.jobs.demo_job.tasks[0].spark_python_task.parameters'
+
+title "Empty value via BUNDLE_VAR env var"
+trace env BUNDLE_VAR_user_prefix= $CLI bundle validate -o json -t short_form_override | jq '.resources.jobs.demo_job.tasks[0].spark_python_task.parameters'
+
+title "Empty value via --var flag"
+trace $CLI bundle validate -o json -t short_form_override --var="user_prefix=" | jq '.resources.jobs.demo_job.tasks[0].spark_python_task.parameters'

@@ -1,0 +1,48 @@
+bundle:
+  name: empty-variants
+
+variables:
+  user_prefix:
+    description: Optional prefix, empty everywhere but local dev
+    default: ""
+  derived_prefix:
+    description: Variable whose default is another variable
+    default: ${var.user_prefix}
+  settings:
+    description: Complex variable with an empty string field
+    type: complex
+    default:
+      prefix: ""
+
+resources:
+  jobs:
+    demo_job:
+      name: demo-job
+      tasks:
+        - task_key: main
+          spark_python_task:
+            python_file: ./src/main.py
+            parameters:
+              - "--a"
+              - ${var.user_prefix}
+              - "--b"
+              - ${var.derived_prefix}
+              - "--c"
+              - ${var.settings.prefix}
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
+
+targets:
+  short_form_override:
+    default: true
+    variables:
+      user_prefix: ""
+  long_form_override:
+    variables:
+      user_prefix:
+        default: ""
+  null_override:
+    variables:
+      user_prefix:

@@ -1,0 +1,23 @@
+bundle:
+  name: empty-in-task-params
+
+variables:
+  run_suffix:
+    description: Optional suffix appended to job parameters
+    default: ""
+
+resources:
+  jobs:
+    demo_job:
+      name: demo-job
+      tasks:
+        - task_key: main
+          spark_python_task:
+            python_file: ./src/main.py
+            parameters:
+              - "--suffix"
+              - ${var.run_suffix}
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
