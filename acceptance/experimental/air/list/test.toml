@@ -2,17 +2,26 @@
 [EnvMatrix]
 DATABRICKS_BUNDLE_ENGINE = []
 
+# A running run's duration is measured against now (no end_time), so mask the
+# hours-minutes-seconds cell to keep the golden deterministic.
+[[Repls]]
+Old = '\d+h \d+m \d+s'
+New = "[DURATION]"
+Order = 20
+
 # The SDK occasionally probes host reachability with a HEAD request; stub it so
 # the test is deterministic.
 [[Server]]
 Pattern = "HEAD /"
 Response.Body = ''
 
-# `air list` reads Jobs runs/list directly (expand_tasks), filtering to AIR runs.
-# The current runs carry an ai_runtime_task (not modeled by the typed SDK), which
-# is why the CLI parses the response raw. Both runs belong to the default user
-# (tester@databricks.com, from the built-in scim/v2/Me handler). The second run
-# has no AI task and must be filtered out.
+# `air list` reads Jobs runs/list (expand_tasks), filtering to AIR runs. It first
+# tries the server-side AI-Runtime filter (filter=runType=AI_RUNTIME); this fake
+# ignores query params and serves the same body, exercising the parse + client-side
+# filtering (AIR task-shape, active-only). All runs belong to the default user
+# (tester@databricks.com, from the built-in scim/v2/Me handler). qwen-train is
+# RUNNING so it shows in the active default; the terminated run shows only under
+# --all-status; the notebook run has no AI task and is filtered out.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/list"
 Response.Body = '''
@@ -23,13 +32,27 @@ Response.Body = '''
       "run_name": "qwen-train",
       "creator_user_name": "tester@databricks.com",
       "start_time": 1717608759000,
-      "end_time": 1717608771000,
-      "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "state": {"life_cycle_state": "RUNNING"},
       "tasks": [{
         "run_id": 334747067049497,
         "ai_runtime_task": {
           "experiment": "/Users/tester@databricks.com/qwen-train",
           "deployments": [{"compute": {"accelerator_type": "GPU_8xH100", "accelerator_count": 8}}]
+        }
+      }]
+    },
+    {
+      "run_id": 334747067049400,
+      "run_name": "llama-train",
+      "creator_user_name": "tester@databricks.com",
+      "start_time": 1717608700000,
+      "end_time": 1717608771000,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "tasks": [{
+        "run_id": 334747067049401,
+        "ai_runtime_task": {
+          "experiment": "/Users/tester@databricks.com/llama-train",
+          "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]
         }
       }]
     },

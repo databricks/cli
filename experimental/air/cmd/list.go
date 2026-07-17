@@ -186,8 +186,15 @@ func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQue
 	}
 }
 
+// newListStrategy prefers the server-side AI-Runtime filter (indexed, fast,
+// complete) and self-falls-back to the client-side scan when that filter is
+// unsupported (flag off) or the raw client can't be built.
 func newListStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) listStrategy {
-	return newRunScanStrategy(ctx, w, q)
+	idx, err := newIndexRunStrategy(ctx, w, q)
+	if err != nil {
+		return newRunScanStrategy(ctx, w, q)
+	}
+	return idx
 }
 
 // next pulls the next batch from the strategy, enriches it with MLflow links for

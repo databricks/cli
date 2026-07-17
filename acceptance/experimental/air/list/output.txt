@@ -1,8 +1,8 @@
 
 === list (text)
 >>> [CLI] experimental air list runs
-   Run ID           Experiment  Status     Started              Duration  MLflow              User                   Accelerators
-   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s  …/runs/run1         [USERNAME]  8x H100
+   Run ID           Experiment  Status     Started                    Duration  MLflow              User                   Accelerators
+   [NUMID]  qwen-train  ● RUNNING  [TIMESTAMP]  [DURATION]  …/runs/run1         [USERNAME]  8x H100
 
 === list (json)
 >>> [CLI] experimental air list runs -o json
@@ -15,7 +15,7 @@
         "run_id": "[NUMID]",
         "run_name": "qwen-train",
         "user": "[USERNAME]",
-        "status": "SUCCESS",
+        "status": "RUNNING",
         "started_at": "[TIMESTAMP]",
         "is_sweep": false
       }
@@ -25,8 +25,9 @@
 
 === list --all-status (text)
 >>> [CLI] experimental air list runs --all-status
-   Run ID           Experiment  Status     Started              Duration  MLflow              User                   Accelerators
-   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s  …/runs/run1         [USERNAME]  8x H100
+   Run ID           Experiment   Status     Started                    Duration  MLflow              User                   Accelerators
+   [NUMID]  qwen-train   ● RUNNING  [TIMESTAMP]  [DURATION]  …/runs/run1         [USERNAME]  8x H100
+   [NUMID]  llama-train  ● SUCCESS  [TIMESTAMP]          1m 11s  …/runs/run1         [USERNAME]  1x A10
 
 === list --all-status (json)
 >>> [CLI] experimental air list runs --all-status -o json
@@ -38,6 +39,14 @@
       {
         "run_id": "[NUMID]",
         "run_name": "qwen-train",
+        "user": "[USERNAME]",
+        "status": "RUNNING",
+        "started_at": "[TIMESTAMP]",
+        "is_sweep": false
+      },
+      {
+        "run_id": "[NUMID]",
+        "run_name": "llama-train",
         "user": "[USERNAME]",
         "status": "SUCCESS",
         "started_at": "[TIMESTAMP]",

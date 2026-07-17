@@ -64,6 +64,24 @@ func isSweep(r *jobs.Run) bool {
 	return len(r.Tasks) > 0 && r.Tasks[0].ForEachTask != nil
 }
 
+// isActiveRun reports whether a run is not yet in a terminal lifecycle state,
+// matching the server's active_only semantics. Used to filter active runs
+// client-side on the indexed path, where the filter query and active_only cannot
+// be combined server-side.
+func isActiveRun(r *jobs.Run) bool {
+	if r.State == nil {
+		return false
+	}
+	switch r.State.LifeCycleState {
+	case jobs.RunLifeCycleStateTerminated,
+		jobs.RunLifeCycleStateInternalError,
+		jobs.RunLifeCycleStateSkipped:
+		return false
+	default:
+		return true
+	}
+}
+
 // taskRunID returns the run id of the AIR task, used to fetch its MLflow output.
 func taskRunID(r *jobs.Run) int64 {
 	if len(r.Tasks) == 0 {
