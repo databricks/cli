@@ -35,7 +35,7 @@
   "error": {
     "code": "E_USAGE",
     "failurePhase": "preflight",
-    "message": "invalid compute target flags",
+    "message": "invalid compute target flags: flags --cluster-id and --serverless-version are mutually exclusive; specify at most one",
     "diskMutated": false
   },
   "durationMs": 0
