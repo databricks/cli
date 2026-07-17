@@ -47,27 +47,27 @@ env-owned sections are refreshed, user-owned content is preserved).`,
 
 // addTargetFlags adds the shared target and mode flags to a command.
 func addTargetFlags(cmd *cobra.Command) {
-	cmd.Flags().String("cluster", "", "cluster ID to use as the compute target")
-	cmd.Flags().String("serverless", "", "serverless version to use as the compute target (e.g. v4)")
-	cmd.Flags().String("job", "", "job ID to use as the compute target")
+	cmd.Flags().String("cluster-id", "", "cluster ID to use as the compute target")
+	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. v4)")
+	cmd.Flags().String("job-id", "", "job ID to use as the compute target")
 	cmd.Flags().Bool("constraints-only", false, "apply the Python version and constraints without adding the databricks-connect dependency")
-	cmd.Flags().Bool("check", false, "compute the plan without writing files or provisioning")
-	cmd.Flags().String("constraint-source", "", "URL for the constraint source (overrides "+envConstraintSource+")")
-	// Hide constraint-source from casual --help output; it is a power-user escape hatch.
-	_ = cmd.Flags().MarkHidden("constraint-source")
-	cmd.MarkFlagsMutuallyExclusive("cluster", "serverless", "job")
+	cmd.Flags().Bool("dry-run", false, "compute the plan without writing files or provisioning")
+	cmd.Flags().String("constraint-source-url", "", "URL for the constraint source (overrides "+envConstraintSource+")")
+	// Hide constraint-source-url from casual --help output; it is a power-user escape hatch.
+	_ = cmd.Flags().MarkHidden("constraint-source-url")
+	cmd.MarkFlagsMutuallyExclusive("cluster-id", "serverless-version", "job-id")
 }
 
 // runPipeline builds and runs the setup-local Pipeline.
 func runPipeline(cmd *cobra.Command) error {
 	ctx := cmd.Context()
 
-	cluster, _ := cmd.Flags().GetString("cluster")
-	serverless, _ := cmd.Flags().GetString("serverless")
-	job, _ := cmd.Flags().GetString("job")
+	cluster, _ := cmd.Flags().GetString("cluster-id")
+	serverless, _ := cmd.Flags().GetString("serverless-version")
+	job, _ := cmd.Flags().GetString("job-id")
 	constraintsOnly, _ := cmd.Flags().GetBool("constraints-only")
-	check, _ := cmd.Flags().GetBool("check")
-	constraintSource, _ := cmd.Flags().GetString("constraint-source")
+	check, _ := cmd.Flags().GetBool("dry-run")
+	constraintSource, _ := cmd.Flags().GetString("constraint-source-url")
 
 	targetFlags := libslocalenv.TargetFlags{
 		Cluster:    cluster,
@@ -100,7 +100,7 @@ func runPipeline(cmd *cobra.Command) error {
 	cacheDir = filepath.Join(cacheDir, "databricks", "localenv")
 
 	// The bundle is only a fallback: ResolveTarget consults it solely when no
-	// explicit --cluster/--serverless/--job flag is set. Skip the bundle load
+	// explicit --cluster-id/--serverless-version/--job-id flag is set. Skip the bundle load
 	// entirely when a flag is present — it would otherwise re-run TryConfigureBundle
 	// (a second full load) and re-print any bundle load-time diagnostics for nothing.
 	var bt libslocalenv.BundleTarget
@@ -126,7 +126,7 @@ func runPipeline(cmd *cobra.Command) error {
 }
 
 // resolveConstraintBaseURL returns the constraint base URL using ordered precedence:
-// an explicit --constraint-source flag, then a full-URL override from
+// an explicit --constraint-source-url flag, then a full-URL override from
 // DATABRICKS_LOCALENV_CONSTRAINT_SOURCE, then the URL derived from the hosting repo
 // (libslocalenv.RepoConstraintBaseURL). All three may be unset, in which case it
 // returns "" and the pipeline reports the missing source at the fetch phase.

@@ -1,5 +1,5 @@
 preflight  ok  check
-resolve    error  resolving job 12345: job 12345 has job clusters with differing spark_version; pass --cluster or --serverless explicitly to disambiguate
+resolve    error  resolving job 12345: job 12345 has job clusters with differing spark_version; pass --cluster-id or --serverless-version explicitly to disambiguate
 fetch      pending
 merge      pending
 provision  pending

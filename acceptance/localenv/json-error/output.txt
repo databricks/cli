@@ -35,7 +35,7 @@
   "error": {
     "code": "E_NO_TARGET",
     "failurePhase": "resolve",
-    "message": "No compute target is selected. Select a cluster or serverless target, or pass --cluster / --serverless / --job",
+    "message": "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --serverless-version / --job-id",
     "diskMutated": false
   },
   "durationMs": 0

@@ -1,5 +1,5 @@
 preflight  ok  uv [UV_VERSION]
-resolve    error  No compute target is selected. Select a cluster or serverless target, or pass --cluster / --serverless / --job
+resolve    error  No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --serverless-version / --job-id
 fetch      pending
 merge      pending
 provision  pending

@@ -10,12 +10,12 @@ Usage:
   databricks environments setup-local [flags]
 
 Flags:
-      --check               compute the plan without writing files or provisioning
-      --cluster string      cluster ID to use as the compute target
-      --constraints-only    apply the Python version and constraints without adding the databricks-connect dependency
-  -h, --help                help for setup-local
-      --job string          job ID to use as the compute target
-      --serverless string   serverless version to use as the compute target (e.g. v4)
+      --cluster-id string           cluster ID to use as the compute target
+      --constraints-only            apply the Python version and constraints without adding the databricks-connect dependency
+      --dry-run                     compute the plan without writing files or provisioning
+  -h, --help                        help for setup-local
+      --job-id string               job ID to use as the compute target
+      --serverless-version string   serverless version to use as the compute target (e.g. v4)
 
 Global Flags:
       --debug            enable debug logging

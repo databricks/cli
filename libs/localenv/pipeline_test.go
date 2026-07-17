@@ -26,29 +26,29 @@ func (f fakePM) Validate(context.Context, string) (string, string, error) {
 }
 
 // noProvisionPM fails any method that could touch the machine (install the
-// manager, install Python, sync, seed pip, validate). It asserts that --check
+// manager, install Python, sync, seed pip, validate). It asserts that --dry-run
 // never reaches those write-side operations.
 type noProvisionPM struct{}
 
 func (noProvisionPM) Name() string { return "noprov" }
 func (noProvisionPM) EnsureAvailable(context.Context) (string, error) {
-	return "", errors.New("EnsureAvailable must not be called under --check")
+	return "", errors.New("EnsureAvailable must not be called under --dry-run")
 }
 
 func (noProvisionPM) EnsurePython(context.Context, string) error {
-	return errors.New("EnsurePython must not be called under --check")
+	return errors.New("EnsurePython must not be called under --dry-run")
 }
 
 func (noProvisionPM) Provision(context.Context, string) error {
-	return errors.New("Provision must not be called under --check")
+	return errors.New("Provision must not be called under --dry-run")
 }
 
 func (noProvisionPM) PostProvision(context.Context, string) error {
-	return errors.New("PostProvision must not be called under --check")
+	return errors.New("PostProvision must not be called under --dry-run")
 }
 
 func (noProvisionPM) Validate(context.Context, string) (string, string, error) {
-	return "", "", errors.New("Validate must not be called under --check")
+	return "", "", errors.New("Validate must not be called under --dry-run")
 }
 
 // uvMissingPM fails EnsureAvailable, simulating a machine where the package
@@ -100,7 +100,7 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	after, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	assert.Equal(t, string(before), string(after)) // unchanged
 
-	// --check must not populate the constraint cache either (no disk writes).
+	// --dry-run must not populate the constraint cache either (no disk writes).
 	entries, err := os.ReadDir(cacheDir)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
@@ -108,7 +108,7 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 
 func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {
 	// On a re-run where the .bak already exists and the live file already equals
-	// the merged output, --check must report a plan a real run would perform: no
+	// the merged output, --dry-run must report a plan a real run would perform: no
 	// backup (the .bak is kept, not rewritten) and an empty diff (nothing changes).
 	dir := writeProject(t)
 	srv := newTestServer(t)
@@ -128,16 +128,16 @@ func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {
 	require.NoError(t, err)
 	require.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 
-	// Now --check on the already-synced project.
+	// Now --dry-run on the already-synced project.
 	res, err := newPipe(true).Run(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, res.Plan)
-	assert.Empty(t, res.Plan.WouldBackup, "a re-run keeps the existing .bak, so --check must not claim a backup")
+	assert.Empty(t, res.Plan.WouldBackup, "a re-run keeps the existing .bak, so --dry-run must not claim a backup")
 	assert.Empty(t, res.Plan.Diff, "the live file already equals the merged output; the diff must be empty")
 }
 
 func TestPipelineCheckDoesNotProvision(t *testing.T) {
-	// --check must not call any PackageManager method that could mutate the
+	// --dry-run must not call any PackageManager method that could mutate the
 	// machine (EnsureAvailable may install uv). noProvisionPM errors on all of
 	// them; the dry run must still succeed and produce a plan.
 	dir := writeProject(t)
@@ -164,7 +164,7 @@ func TestPipelineCheckWorksOnReadOnlyDir(t *testing.T) {
 	srv := newTestServer(t)
 	defer srv.Close()
 
-	// Make the project dir read-only: --check must still compute the plan without
+	// Make the project dir read-only: --dry-run must still compute the plan without
 	// a writability probe (which would both mutate disk and fail here).
 	require.NoError(t, os.Chmod(dir, 0o555))
 	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })

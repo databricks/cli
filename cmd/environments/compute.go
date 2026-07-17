@@ -33,7 +33,7 @@ func (c sdkCompute) GetClusterSparkVersion(ctx context.Context, clusterID string
 // job-level job_clusters) is not resolved here: it may vary per task and an
 // existing_cluster_id would need a second lookup, which is out of scope for the
 // initial job support. Such a job returns an actionable error rather than a wrong
-// guess; use --cluster or --serverless explicitly instead.
+// guess; use --cluster-id or --serverless-version explicitly instead.
 func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (sparkVersion string, isServerless bool, version string, err error) {
 	id, err := strconv.ParseInt(jobID, 10, 64)
 	if err != nil {
@@ -53,7 +53,7 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 	// ambiguous: its tasks can run on different compute, so there is no single
 	// correct local environment to provision. Refuse rather than guess serverless.
 	if len(job.Settings.Environments) > 0 && len(job.Settings.JobClusters) > 0 {
-		return "", false, "", fmt.Errorf("job %d has both serverless environments and job clusters; pass --cluster or --serverless explicitly to disambiguate", id)
+		return "", false, "", fmt.Errorf("job %d has both serverless environments and job clusters; pass --cluster-id or --serverless-version explicitly to disambiguate", id)
 	}
 
 	// Serverless jobs have Environments populated; classic compute uses JobClusters.
@@ -69,7 +69,7 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 		// first. A pinned-vs-unpinned mix is also ambiguous, so compare raw values.
 		for _, e := range job.Settings.Environments[1:] {
 			if environmentVersion(e) != version {
-				return "", false, "", fmt.Errorf("job %d has serverless environments with differing versions; pass --serverless explicitly to disambiguate", id)
+				return "", false, "", fmt.Errorf("job %d has serverless environments with differing versions; pass --serverless-version explicitly to disambiguate", id)
 			}
 		}
 		return "", true, version, nil
@@ -85,13 +85,13 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 		// Refuse rather than silently provisioning for the first cluster.
 		for _, jc := range job.Settings.JobClusters[1:] {
 			if jc.NewCluster.SparkVersion != sv {
-				return "", false, "", fmt.Errorf("job %d has job clusters with differing spark_version; pass --cluster or --serverless explicitly to disambiguate", id)
+				return "", false, "", fmt.Errorf("job %d has job clusters with differing spark_version; pass --cluster-id or --serverless-version explicitly to disambiguate", id)
 			}
 		}
 		return sv, false, sv, nil
 	}
 
-	return "", false, "", fmt.Errorf("could not determine compute for job %d from its environments or job clusters (task-level compute is not supported); pass --cluster or --serverless explicitly", id)
+	return "", false, "", fmt.Errorf("could not determine compute for job %d from its environments or job clusters (task-level compute is not supported); pass --cluster-id or --serverless-version explicitly", id)
 }
 
 // environmentVersion returns the serverless environment version recorded on a

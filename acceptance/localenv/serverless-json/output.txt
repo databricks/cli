@@ -1,5 +1,5 @@
 
->>> [CLI] environments setup-local --serverless v4 --check --output json
+>>> [CLI] environments setup-local --serverless-version v4 --dry-run --output json
 {
   "schemaVersion": 1,
   "command": "environments setup-local",

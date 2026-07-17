@@ -133,7 +133,7 @@ type ResolvedInfo struct {
 	ArtifactSource   string `json:"artifactSource"`
 }
 
-// Plan describes the changes a --check run would apply (spec §6.3).
+// Plan describes the changes a --dry-run run would apply (spec §6.3).
 // ChangedRegions is retained for text output only and is not serialized.
 type Plan struct {
 	WouldWrite         string `json:"wouldWrite"`

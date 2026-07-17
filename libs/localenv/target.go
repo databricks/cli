@@ -32,20 +32,20 @@ type BundleTarget struct {
 
 // noTargetMessage is the actionable message shown when no target is selected,
 // matching spec §2.3.
-const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster / --serverless / --job"
+const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --serverless-version / --job-id"
 
 // ValidateTargetFlags returns an error if more than one of the three flags is set.
 // Cobra marks them mutually exclusive too; this guards the library path.
 func ValidateTargetFlags(f TargetFlags) error {
 	var set []string
 	if f.Cluster != "" {
-		set = append(set, "--cluster")
+		set = append(set, "--cluster-id")
 	}
 	if f.Serverless != "" {
-		set = append(set, "--serverless")
+		set = append(set, "--serverless-version")
 	}
 	if f.Job != "" {
-		set = append(set, "--job")
+		set = append(set, "--job-id")
 	}
 	if len(set) > 1 {
 		return fmt.Errorf("flags %s are mutually exclusive; specify at most one", strings.Join(set, " and "))
@@ -54,7 +54,7 @@ func ValidateTargetFlags(f TargetFlags) error {
 }
 
 // ResolveTarget resolves the compute target using ordered precedence:
-// --cluster flag → --serverless flag → --job flag → bundle target.
+// --cluster-id flag → --serverless-version flag → --job-id flag → bundle target.
 // PythonVersion is left empty; it is filled later from constraint data.
 //
 // Incompatible flags are rejected up front: without this a library caller that

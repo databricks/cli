@@ -1,1 +1,1 @@
-trace $CLI environments setup-local --serverless v4 --constraints-only --check --output json
+trace $CLI environments setup-local --serverless-version v4 --constraints-only --dry-run --output json
