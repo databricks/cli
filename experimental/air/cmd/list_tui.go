@@ -134,14 +134,11 @@ func (m listModel) maybeFetch() (listModel, tea.Cmd) {
 // listPageRows is the most rows shown per page.
 const listPageRows = 20
 
-// visibleCount is how many rows a page shows: at most listPageRows, and never
-// more than fits below the header and hint.
+// visibleCount is how many rows a page shows: listPageRows, or fewer only when
+// that many rows aren't loaded yet. The page size is independent of pane height
+// so a full page of runs is shown regardless of terminal size.
 func (m listModel) visibleCount() int {
-	n := min(listPageRows, len(m.rows))
-	if m.height > 0 {
-		n = min(n, m.height-3)
-	}
-	return max(1, n)
+	return max(1, min(listPageRows, len(m.rows)))
 }
 
 func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

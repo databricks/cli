@@ -49,15 +49,23 @@ func TestListModelNavigation(t *testing.T) {
 }
 
 func TestListModelWindowScrolls(t *testing.T) {
-	m := testListModel(t)
-	// Height 5 leaves room for ~2 rows (header + hint reserved).
+	rows := make([]listRow, listPageRows+5)
+	for i := range rows {
+		rows[i] = listRow{RunID: strconv.Itoa(i)}
+	}
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	m := newListModel(r, nil, rows, false)
+
+	// The window is a full page regardless of a short pane.
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 200, Height: 5})
 	m = next.(listModel)
-	require.Equal(t, 2, m.visibleCount())
+	require.Equal(t, listPageRows, m.visibleCount())
 	require.Equal(t, 0, m.offset)
 
-	m = key(t, key(t, m, "j"), "j") // move to row index 2, past the window
-	assert.Equal(t, 2, m.cursor)
+	for range listPageRows { // move past the window to force a scroll
+		m = key(t, m, "j")
+	}
+	assert.Equal(t, listPageRows, m.cursor)
 	assert.Equal(t, 1, m.offset, "window scrolled to keep the cursor visible")
 }
 
@@ -75,28 +83,28 @@ func TestListModelPageCap(t *testing.T) {
 }
 
 func TestListModelPaging(t *testing.T) {
-	rows := make([]listRow, 10)
+	rows := make([]listRow, 50)
 	for i := range rows {
 		rows[i] = listRow{RunID: strconv.Itoa(i)}
 	}
 	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
 	m := newListModel(r, nil, rows, false)
 
-	// Height 7 leaves a 4-row window (header + hint reserved).
+	// The page is a full listPageRows window, independent of pane height.
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 7})
 	m = next.(listModel)
-	require.Equal(t, 4, m.visibleCount())
+	require.Equal(t, listPageRows, m.visibleCount())
 
 	page := func(k tea.KeyType) {
 		n, _ := m.Update(tea.KeyMsg{Type: k})
 		m = n.(listModel)
 	}
 	page(tea.KeyRight)
-	assert.Equal(t, 4, m.cursor)
+	assert.Equal(t, listPageRows, m.cursor)
 	page(tea.KeyEnd)
-	assert.Equal(t, 9, m.cursor)
+	assert.Equal(t, 49, m.cursor)
 	page(tea.KeyLeft)
-	assert.Equal(t, 5, m.cursor)
+	assert.Equal(t, 49-listPageRows, m.cursor)
 	page(tea.KeyHome)
 	assert.Equal(t, 0, m.cursor)
 }
