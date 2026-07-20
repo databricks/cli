@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_ads_custom_report_options import (
+    TikTokAdsOptionsTikTokAdsCustomReportOptions,
+    TikTokAdsOptionsTikTokAdsCustomReportOptionsParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -15,6 +19,19 @@ class TikTokAdsOptions:
     :meta private: [EXPERIMENTAL]
 
     TikTok Ads specific options for ingestion
+    """
+
+    custom_report_options: VariableOrOptional[
+        TikTokAdsOptionsTikTokAdsCustomReportOptions
+    ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Custom report definition. When set, the table is treated as a
+    user-defined TikTok Ads custom report: the connector synthesizes a report
+    request from the dimensions, metrics, report type, and data level specified
+    here. Supersedes the deprecated top-level dimensions/metrics/report_type/
+    data_level/query_lifetime fields above.
     """
 
     lookback_window_days: VariableOrOptional[int] = None
@@ -43,6 +60,19 @@ class TikTokAdsOptions:
 
 class TikTokAdsOptionsDict(TypedDict, total=False):
     """"""
+
+    custom_report_options: VariableOrOptional[
+        TikTokAdsOptionsTikTokAdsCustomReportOptionsParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Custom report definition. When set, the table is treated as a
+    user-defined TikTok Ads custom report: the connector synthesizes a report
+    request from the dimensions, metrics, report type, and data level specified
+    here. Supersedes the deprecated top-level dimensions/metrics/report_type/
+    data_level/query_lifetime fields above.
+    """
 
     lookback_window_days: VariableOrOptional[int]
     """

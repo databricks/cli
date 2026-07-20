@@ -21,7 +21,8 @@ Deployment complete!
 }
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop"
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
+  "body": {}
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]
@@ -51,7 +52,8 @@ Deployment complete!
 }
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop"
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
+  "body": {}
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]
