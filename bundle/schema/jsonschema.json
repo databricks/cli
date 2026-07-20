@@ -80,19 +80,18 @@
                     "type": "object",
                     "properties": {
                       "custom_description": {
-                        "description": "[Public Preview] Custom description for the alert. support mustache template.",
+                        "description": "Custom description for the alert. support mustache template.",
                         "$ref": "#/$defs/string"
                       },
                       "custom_summary": {
-                        "description": "[Public Preview] Custom summary for the alert. support mustache template.",
+                        "description": "Custom summary for the alert. support mustache template.",
                         "$ref": "#/$defs/string"
                       },
                       "display_name": {
-                        "description": "[Public Preview] The display name of the alert.",
+                        "description": "The display name of the alert.",
                         "$ref": "#/$defs/string"
                       },
                       "evaluation": {
-                        "description": "[Public Preview]",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation"
                       },
                       "file_path": {
@@ -103,7 +102,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent_path": {
-                        "description": "[Public Preview] The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.",
+                        "description": "The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
@@ -112,25 +111,24 @@
                         "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "query_text": {
-                        "description": "[Public Preview] Text of the query to be run.",
+                        "description": "Text of the query to be run.",
                         "$ref": "#/$defs/string"
                       },
                       "run_as": {
-                        "description": "[Public Preview] Specifies the identity that will be used to run the alert.\nThis field allows you to configure alerts to run as a specific user or service principal.\n- For user identity: Set `user_name` to the email of an active workspace user. Users can only set this to their own email.\n- For service principal: Set `service_principal_name` to the application ID. Requires the `servicePrincipal/user` role.\nIf not specified, the alert will run as the request user.",
+                        "description": "Specifies the identity that will be used to run the alert.\nThis field allows you to configure alerts to run as a specific user or service principal.\n- For user identity: Set `user_name` to the email of an active workspace user. Users can only set this to their own email.\n- For service principal: Set `service_principal_name` to the application ID. Requires the `servicePrincipal/user` role.\nIf not specified, the alert will run as the request user.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
                       },
                       "run_as_user_name": {
-                        "description": "[Public Preview] The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
+                        "description": "The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
                         "$ref": "#/$defs/string",
                         "deprecationMessage": "This field is deprecated",
                         "deprecated": true
                       },
                       "schedule": {
-                        "description": "[Public Preview]",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CronSchedule"
                       },
                       "warehouse_id": {
-                        "description": "[Public Preview] ID of the SQL warehouse attached to the alert.",
+                        "description": "ID of the SQL warehouse attached to the alert.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1202,6 +1200,12 @@
                       "tags": {
                         "description": "A collection of tags to set on the experiment. Maximum tag size and number of tags per request\ndepends on the storage backend. All storage backends are guaranteed to support tag keys up\nto 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also\nguaranteed to support up to 20 tags per request.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag"
+                      },
+                      "trace_location": {
+                        "description": "[Private Preview] The location where the experiment's traces are stored. When set, the\nunderlying storage is provisioned and the experiment's traces are routed\nto it. When unset, traces are stored in the default MLflow backend. This\nfield cannot be updated after the experiment is created.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ExperimentTraceLocation",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       }
                     },
                     "additionalProperties": false,
@@ -1766,7 +1770,8 @@
                     "additionalProperties": false,
                     "required": [
                       "database_id",
-                      "parent"
+                      "parent",
+                      "role"
                     ]
                   },
                   {
@@ -2091,10 +2096,6 @@
                         "description": "List of aliases associated with the registered model",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias"
                       },
-                      "browse_only": {
-                        "description": "Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.",
-                        "$ref": "#/$defs/bool"
-                      },
                       "catalog_name": {
                         "description": "The name of the catalog where the schema and the registered model reside",
                         "$ref": "#/$defs/string"
@@ -2315,7 +2316,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Channel"
                       },
                       "cluster_size": {
-                        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large\n- Auto",
+                        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large",
                         "$ref": "#/$defs/string"
                       },
                       "creator_name": {
@@ -4753,59 +4754,6 @@
                     "EXECUTE_CLEAN_ROOM_TASK",
                     "EXTERNAL_USE_SCHEMA",
                     "READ_METADATA"
-                  ],
-                  "enumDescriptions": [
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "[Public Preview]"
                   ]
                 },
                 {
@@ -6488,12 +6436,6 @@
                   "type": "object",
                   "description": "AiRuntimeTask: multi-node GPU compute task definition for Databricks AI\nRuntime workloads.\n\nJobs-framework-level concepts (retries, per-task timeout, idempotency\ntoken, usage/budget policy, permissions) live on the surrounding\nTaskSettings / run-submit request and are intentionally NOT duplicated\nhere. Users compose `ai_runtime_task` with the standard Jobs/DABs task\nwrapper to get those.",
                   "properties": {
-                    "code_source_path": {
-                      "description": "[Private Preview] Optional workspace or UC volume path of the uploaded code-source\narchive. The CLI packages the user's local code directory into an\narchive and populates this. Customers calling the Jobs API directly\nshould upload their archive to the workspace or a UC volume first and\nsupply the resulting path here.\n\nWhen set, the training node exposes the value via the `$CODE_SOURCE`\nenvironment variable.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
                     "deployments": {
                       "description": "[Private Preview] Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.DeploymentSpec",
@@ -6726,7 +6668,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Customer-facing AcceleratorType: hardware accelerator type for the\nAiRuntime workload. Per-node accelerator count is encoded in the value\nname (e.g. `GPU_8xH100` means 8 H100s per node).",
+                  "description": "Hardware accelerator type for the AiRuntime workload. Per-node\naccelerator count is encoded in the value name (e.g. `GPU_8xH100` means\n8 H100s per node).",
                   "enum": [
                     "GPU_1xA10",
                     "GPU_1xH100",
@@ -7006,7 +6948,7 @@
                   "description": "DeploymentSpec: configuration for one deployment within an AiRuntimeTask.\nEach entry in `AiRuntimeTask.deployments` describes a group of nodes that\nshare the same command and compute. Many single-program training\nalgorithms use a single entry where every node runs the same command;\nrole-split workloads (driver + worker, parameter server, separate eval\nnode, etc.) use multiple entries.",
                   "properties": {
                     "command_path": {
-                      "description": "[Private Preview] Workspace path of the bash script to execute on each node in this\ndeployment. The CLI uploads the user's script and populates this.\nCustomers calling the Jobs API directly should upload their script to\nthe workspace first and supply the resulting path here.",
+                      "description": "[Private Preview] Workspace path of the script to run on each node in this deployment.\nUpload the script to this path and supply the path here. When the task\nruns, the file at this path is run on each node; if it fails, the task\nfails with its exit code.\n\nExample script contents:\n\n# Plain Python:\npython train.py --epochs 10\n\n# Multi-GPU via accelerate:\naccelerate launch train.py --config config.yaml\n\n# Distributed via torchrun:\ntorchrun --nproc_per_node=8 train.py",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
@@ -7821,7 +7763,8 @@
                   "enum": [
                     "HOURS",
                     "DAYS",
-                    "WEEKS"
+                    "WEEKS",
+                    "MINUTES"
                   ]
                 },
                 {
@@ -9108,6 +9051,27 @@
                 }
               ]
             },
+            "ml.ExperimentTraceLocation": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The storage location for an experiment's traces.",
+                  "properties": {
+                    "uc_trace_location": {
+                      "description": "[Private Preview] A Unity Catalog schema where the experiment's traces are stored as\nDelta tables.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.UcTraceLocation",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.ModelTag": {
               "oneOf": [
                 {
@@ -9142,6 +9106,43 @@
                     "CAN_MANAGE_STAGING_VERSIONS",
                     "CAN_EDIT",
                     "CAN_READ"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.UcTraceLocation": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A Unity Catalog trace storage location. Traces are stored as Delta tables\nin the specified catalog and schema.",
+                  "properties": {
+                    "catalog": {
+                      "description": "[Private Preview] The name of the Unity Catalog catalog.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "schema": {
+                      "description": "[Private Preview] The name of the Unity Catalog schema within `catalog`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "table_prefix": {
+                      "description": "[Private Preview] The prefix for the trace tables, which are named\n`{catalog}.{schema}.{table_prefix}_otel_*`. May only contain letters,\ndigits, and underscores, and may be at most 238 characters. When unset, a\nserver-generated prefix derived from the experiment ID is used.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "catalog",
+                    "schema"
                   ]
                 },
                 {
@@ -9242,10 +9243,8 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JiraConnectorOptions"
                     },
                     "kafka_options": {
-                      "description": "[Private Preview]",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.KafkaOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta]",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.KafkaOptions"
                     },
                     "meta_ads_options": {
                       "description": "[Beta] Meta Marketing (Meta Ads) specific options for ingestion",
@@ -9589,11 +9588,11 @@
                     "NONE"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -9662,12 +9661,60 @@
                 }
               ]
             },
+            "pipelines.GoogleAdsCustomReportOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "User-defined custom report for the Google Ads connector. Mirrors the\nresource + fields + segments + metrics model that Google Ads GAQL exposes.\nThe customer account this report runs against is supplied by the source\nschema (namespace), not by this message. The whole message is gated by\nthe parent GoogleAdsOptions.custom_report_options stage; per-field stage\nannotations are intentionally omitted.\nOnly supported on table-type objects: a custom report requires a\ndestination table, so it cannot be specified at the schema/source level.",
+                  "properties": {
+                    "metrics": {
+                      "description": "[Private Preview] (Optional) Metric fields to select (e.g. \"metrics.clicks\",\n\"metrics.cost_micros\"). Multiple values are joined into the GAQL\nSELECT clause.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "resource": {
+                      "description": "[Private Preview] (Required) Google Ads resource to query (e.g. \"ad_group_ad\",\n\"keyword_view\", \"search_term_view\"). Must be a resource that has\nmetrics. Values are validated against Google Ads' field-service\ncatalog at pipeline plan time.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "resource_fields": {
+                      "description": "[Private Preview] (Optional) Resource fields to select, in fully-qualified GAQL form\n(e.g. \"ad_group_ad.ad.id\", \"ad_group_ad.status\"). Multiple values are\njoined into the GAQL SELECT clause.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "segments": {
+                      "description": "[Private Preview] (Optional) Segment fields to select (e.g. \"segments.date\",\n\"segments.device\"). Must include at least one of segments.date,\nsegments.week, or segments.month — that segment is used as the\nincremental cursor for the table.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "resource"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.GoogleAdsOptions": {
               "oneOf": [
                 {
                   "type": "object",
                   "description": "Google Ads specific options for ingestion (object-level).\nWhen set, these values override the corresponding fields in GoogleAdsConfig\n(source_configurations).",
                   "properties": {
+                    "custom_report_options": {
+                      "description": "[Private Preview] (Optional) Custom report definition. When set, the table is treated as a\nuser-defined Google Ads custom report: the connector synthesizes a GAQL\nquery from the resource, fields, segments, and metrics specified here.\nWhen unset, the table must match one of the connector's prebuilt sources.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsCustomReportOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "lookback_window_days": {
                       "description": "[Private Preview] (Optional) Number of days to look back for report tables to capture late-arriving data.\nIf not specified, defaults to 30 days.",
                       "$ref": "#/$defs/int",
@@ -10059,34 +10106,24 @@
                   "type": "object",
                   "properties": {
                     "as_variant": {
-                      "description": "[Private Preview] Parse the entire value as a single Variant column.",
-                      "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Parse the entire value as a single Variant column.",
+                      "$ref": "#/$defs/bool"
                     },
                     "schema": {
-                      "description": "[Private Preview] Inline schema string for JSON parsing (Spark DDL format).",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Inline schema string for JSON parsing (Spark DDL format).",
+                      "$ref": "#/$defs/string"
                     },
                     "schema_evolution_mode": {
-                      "description": "[Private Preview] (Optional) Schema evolution mode for schema inference.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsSchemaEvolutionMode",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] (Optional) Schema evolution mode for schema inference.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsSchemaEvolutionMode"
                     },
                     "schema_file_path": {
-                      "description": "[Private Preview] Path to a schema file (.ddl).",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Path to a schema file (.ddl).",
+                      "$ref": "#/$defs/string"
                     },
                     "schema_hints": {
-                      "description": "[Private Preview] (Optional) Schema hints as a comma-separated string of \"column_name type\" pairs.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] (Optional) Schema hints as a comma-separated string of \"column_name type\" pairs.",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -10109,10 +10146,8 @@
                       "doNotSuggest": true
                     },
                     "key_transformer": {
-                      "description": "[Private Preview] (Optional) Transformer for the message key.\nIf not specified, the key is left as raw bytes.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] (Optional) Transformer for the message key.\nIf not specified, the key is left as raw bytes.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer"
                     },
                     "max_offsets_per_trigger": {
                       "description": "[Private Preview] Internal option to control the maximum number of offsets to process per trigger.",
@@ -10121,28 +10156,20 @@
                       "doNotSuggest": true
                     },
                     "starting_offset": {
-                      "description": "[Private Preview] (Optional) Where to begin reading when no checkpoint exists.\nValid values: \"latest\" and \"earliest\". Defaults to \"latest\".",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] (Optional) Where to begin reading when no checkpoint exists.\nValid values: \"latest\" and \"earliest\". Defaults to \"latest\".",
+                      "$ref": "#/$defs/string"
                     },
                     "topic_pattern": {
-                      "description": "[Private Preview] Java regex pattern to subscribe to matching topics.\nOnly one of topics or topic_pattern must be specified.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Java regex pattern to subscribe to matching topics.\nOnly one of topics or topic_pattern must be specified.",
+                      "$ref": "#/$defs/string"
                     },
                     "topics": {
-                      "description": "[Private Preview] Topics to subscribe to.\nOnly one of topics or topic_pattern must be specified.",
-                      "$ref": "#/$defs/slice/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Topics to subscribe to.\nOnly one of topics or topic_pattern must be specified.",
+                      "$ref": "#/$defs/slice/string"
                     },
                     "value_transformer": {
-                      "description": "[Private Preview] (Optional) Transformer for the message value.\nIf not specified, the value is left as raw bytes.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] (Optional) Transformer for the message value.\nIf not specified, the value is left as raw bytes.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer"
                     }
                   },
                   "additionalProperties": false
@@ -10199,6 +10226,12 @@
                       "description": "[Beta] (Optional) Window in days to revisit data during sync to capture\nupdated conversion data from the API, shared by prebuilt and custom reports.",
                       "$ref": "#/$defs/int"
                     },
+                    "custom_report_options": {
+                      "description": "[Private Preview] (Optional) Per-table custom report definition. When set, defines the shape of the insights\ncall for this table (level/fields/breakdowns/action_breakdowns/etc.). Supersedes the deprecated\nflat report-shape fields above.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.MetaMarketingOptionsMetaMarketingCustomReportOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "level": {
                       "description": "[Beta] (Optional, DEPRECATED — use custom_report_options.level) Granularity of data to pull\n(account, ad, adset, campaign)",
                       "$ref": "#/$defs/string",
@@ -10214,6 +10247,57 @@
                       "$ref": "#/$defs/string",
                       "deprecationMessage": "This field is deprecated",
                       "deprecated": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.MetaMarketingOptionsMetaMarketingCustomReportOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Defines the shape of a single Meta Ads custom report (one /insights call shape).\nstart_date, custom_insights_lookback_window live on MetaMarketingOptions, not here.\nMetrics are not customer-selectable; the connector returns a fixed standard metric set.",
+                  "properties": {
+                    "action_attribution_windows": {
+                      "description": "[Private Preview] (Optional) Action attribution windows for insights reporting (e.g. \"28d_click\", \"1d_view\")",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "action_breakdowns": {
+                      "description": "[Private Preview] (Optional) Action breakdowns to configure for data aggregation",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "action_report_time": {
+                      "description": "[Private Preview] (Optional) Timing used to report action statistics (impression, conversion, mixed, or lifetime)",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "breakdowns": {
+                      "description": "[Private Preview] (Optional) Breakdowns to configure for data aggregation",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "level": {
+                      "description": "[Private Preview] (Optional) Granularity of data to pull (account, ad, adset, campaign)",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "time_increment": {
+                      "description": "[Private Preview] (Optional) Value in string by which to aggregate statistics (all_days, monthly or number of days)",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -11110,6 +11194,12 @@
                       "description": "[Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.",
                       "$ref": "#/$defs/slice/string"
                     },
+                    "source_metadata_column": {
+                      "description": "[Private Preview] (Optional) Name of the struct column added to each ingested record to hold per row source\nmetadata.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "table_properties": {
                       "description": "[Beta] Table properties to set on the destination table.\nThese are key-value pairs that configure various Delta table behaviors or any user defined properties.\nExample: {\"delta.feature.variantType\": \"supported\", \"delta.enableTypeWidening\": \"true\"}\nNote: table_properties in table specific configuration will override the table_properties of the pipeline definition.",
                       "$ref": "#/$defs/map/string"
@@ -11157,6 +11247,12 @@
                   "type": "object",
                   "description": "TikTok Ads specific options for ingestion",
                   "properties": {
+                    "custom_report_options": {
+                      "description": "[Private Preview] (Optional) Custom report definition. When set, the table is treated as a\nuser-defined TikTok Ads custom report: the connector synthesizes a report\nrequest from the dimensions, metrics, report type, and data level specified\nhere. Supersedes the deprecated top-level dimensions/metrics/report_type/\ndata_level/query_lifetime fields above.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "data_level": {
                       "description": "[Private Preview] Deprecated. Use custom_report_options.data_level instead.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokDataLevel",
@@ -11206,6 +11302,51 @@
                     "sync_start_date": {
                       "description": "[Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.",
                       "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "User-defined custom report for the TikTok Ads connector. Groups the\ndimensions + metrics + report type + data level that define a TikTok Ads\ncustom report request.",
+                  "properties": {
+                    "data_level": {
+                      "description": "[Private Preview] (Optional) Data level for the report.\nIf not specified, defaults to AUCTION_CAMPAIGN.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokDataLevel",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "dimensions": {
+                      "description": "[Private Preview] (Optional) Dimensions to include in the report (e.g. \"campaign_id\",\n\"adgroup_id\", \"ad_id\", \"stat_time_day\", \"stat_time_hour\").",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "metrics": {
+                      "description": "[Private Preview] (Optional) Metrics to include in the report (e.g. \"spend\", \"impressions\",\n\"clicks\", \"conversion\", \"cpc\").",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "query_lifetime": {
+                      "description": "[Private Preview] (Optional) Whether to request lifetime metrics (all-time aggregated data).\nWhen true, the report returns all-time data.\nIf not specified, defaults to false.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "report_type": {
+                      "description": "[Private Preview] (Optional) Report type for the TikTok Ads API.\nIf not specified, defaults to BASIC.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokReportType",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     }
@@ -11277,16 +11418,12 @@
                   "description": "Specifies how to transform binary data into structured data.",
                   "properties": {
                     "format": {
-                      "description": "[Private Preview] Required: the wire format of the data.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Required: the wire format of the data.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat"
                     },
                     "json_options": {
-                      "description": "[Private Preview]",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JsonTransformerOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta]",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JsonTransformerOptions"
                     }
                   },
                   "additionalProperties": false
@@ -11306,8 +11443,8 @@
                     "JSON"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -12887,16 +13024,6 @@
                     "MIN",
                     "MAX",
                     "STDDEV"
-                  ],
-                  "enumDescriptions": [
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]"
                   ]
                 },
                 {
@@ -12915,12 +13042,6 @@
                     "TRIGGERED",
                     "OK",
                     "ERROR"
-                  ],
-                  "enumDescriptions": [
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]"
                   ]
                 },
                 {
@@ -12936,10 +13057,6 @@
                   "enum": [
                     "ACTIVE",
                     "DELETED"
-                  ],
-                  "enumDescriptions": [
-                    "[Public Preview]",
-                    "[Public Preview]"
                   ]
                 },
                 {
@@ -12954,23 +13071,23 @@
                   "type": "object",
                   "properties": {
                     "comparison_operator": {
-                      "description": "[Public Preview] Operator used for comparison in alert evaluation.",
+                      "description": "Operator used for comparison in alert evaluation.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator"
                     },
                     "empty_result_state": {
-                      "description": "[Public Preview] Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.",
+                      "description": "Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState"
                     },
                     "notification": {
-                      "description": "[Public Preview] User or Notification Destination to notify when alert is triggered.",
+                      "description": "User or Notification Destination to notify when alert is triggered.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification"
                     },
                     "source": {
-                      "description": "[Public Preview] Source column from result to use to evaluate alert",
+                      "description": "Source column from result to use to evaluate alert",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn"
                     },
                     "threshold": {
-                      "description": "[Public Preview] Threshold to user for alert evaluation, can be a column or a value.",
+                      "description": "Threshold to user for alert evaluation, can be a column or a value.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand"
                     }
                   },
@@ -12992,15 +13109,14 @@
                   "type": "object",
                   "properties": {
                     "notify_on_ok": {
-                      "description": "[Public Preview] Whether to notify alert subscribers when alert returns back to normal.",
+                      "description": "Whether to notify alert subscribers when alert returns back to normal.",
                       "$ref": "#/$defs/bool"
                     },
                     "retrigger_seconds": {
-                      "description": "[Public Preview] Number of seconds an alert waits after being triggered before it is allowed to send another notification.\nIf set to 0 or omitted, the alert will not send any further notifications after the first trigger\nSetting this value to 1 allows the alert to send a notification on every evaluation where the condition is met, effectively making it always retrigger for notification purposes.",
+                      "description": "Number of seconds an alert waits after being triggered before it is allowed to send another notification.\nIf set to 0 or omitted, the alert will not send any further notifications after the first trigger\nSetting this value to 1 allows the alert to send a notification on every evaluation where the condition is met, effectively making it always retrigger for notification purposes.",
                       "$ref": "#/$defs/int"
                     },
                     "subscriptions": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription"
                     }
                   },
@@ -13018,11 +13134,9 @@
                   "type": "object",
                   "properties": {
                     "column": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn"
                     },
                     "value": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue"
                     }
                   },
@@ -13040,15 +13154,13 @@
                   "type": "object",
                   "properties": {
                     "aggregation": {
-                      "description": "[Public Preview] If not set, the behavior is equivalent to using `First row` in the UI.",
+                      "description": "If not set, the behavior is equivalent to using `First row` in the UI.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Aggregation"
                     },
                     "display": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/string"
                     },
                     "name": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -13069,15 +13181,12 @@
                   "type": "object",
                   "properties": {
                     "bool_value": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/bool"
                     },
                     "double_value": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/float64"
                     },
                     "string_value": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -13095,11 +13204,11 @@
                   "type": "object",
                   "properties": {
                     "service_principal_name": {
-                      "description": "[Public Preview] Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
+                      "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
                       "$ref": "#/$defs/string"
                     },
                     "user_name": {
-                      "description": "[Public Preview] The email of an active workspace user. Can only set this field to their own email.",
+                      "description": "The email of an active workspace user. Can only set this field to their own email.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -13117,11 +13226,9 @@
                   "type": "object",
                   "properties": {
                     "destination_id": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/string"
                     },
                     "user_email": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -13184,16 +13291,6 @@
                     "LESS_THAN_OR_EQUAL",
                     "IS_NULL",
                     "IS_NOT_NULL"
-                  ],
-                  "enumDescriptions": [
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]"
                   ]
                 },
                 {
@@ -13224,15 +13321,15 @@
                   "type": "object",
                   "properties": {
                     "pause_status": {
-                      "description": "[Public Preview] Indicate whether this schedule is paused or not.",
+                      "description": "Indicate whether this schedule is paused or not.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus"
                     },
                     "quartz_cron_schedule": {
-                      "description": "[Public Preview] A cron expression using quartz syntax that specifies the schedule for this pipeline.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
+                      "description": "A cron expression using quartz syntax that specifies the schedule for this pipeline.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
                       "$ref": "#/$defs/string"
                     },
                     "timezone_id": {
-                      "description": "[Public Preview] A Java timezone id. The schedule will be resolved using this timezone.\nThis will be combined with the quartz_cron_schedule to determine the schedule.\nSee https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.",
+                      "description": "A Java timezone id. The schedule will be resolved using this timezone.\nThis will be combined with the quartz_cron_schedule to determine the schedule.\nSee https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -13292,10 +13389,6 @@
                   "enum": [
                     "UNPAUSED",
                     "PAUSED"
-                  ],
-                  "enumDescriptions": [
-                    "[Public Preview]",
-                    "[Public Preview]"
                   ]
                 },
                 {

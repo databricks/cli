@@ -9,15 +9,15 @@ package terraform_dabs_map
 // clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
-// experiments / databricks_mlflow_experiment: 6 tf-only
+// experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 9 dabs-only
+// jobs / databricks_job: 7 dabs-only
 // jobs / databricks_job: 258 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
 // pipelines / databricks_pipeline: 5 dabs-only
-// pipelines / databricks_pipeline: 42 tf-only
+// pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
 // postgres_databases / databricks_postgres_database: 1 unwraps
@@ -119,14 +119,8 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"tasks": {
-			"ai_runtime_task": {
-				"code_source_path": {}, // jobs.*.tasks.ai_runtime_task.code_source_path
-			},
 			"for_each_task": {
 				"task": {
-					"ai_runtime_task": {
-						"code_source_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.code_source_path
-					},
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -216,13 +210,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 	},
 	"experiments": {
 		"description": {},
-		"trace_location": {
-			"uc_trace_location": {
-				"catalog":      {}, // databricks_mlflow_experiment.*.trace_location.uc_trace_location.catalog
-				"schema":       {}, // databricks_mlflow_experiment.*.trace_location.uc_trace_location.schema
-				"table_prefix": {}, // databricks_mlflow_experiment.*.trace_location.uc_trace_location.table_prefix
-			},
-		},
 	},
 	"jobs": {
 		"always_running":    {},
@@ -570,87 +557,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 	},
 	"pipelines": {
 		"expected_last_modified": {},
-		"ingestion_definition": {
-			"objects": {
-				"report": {
-					"table_configuration": {
-						"source_metadata_column": {}, // databricks_pipeline.*.ingestion_definition.objects.report.table_configuration.source_metadata_column
-					},
-				},
-				"schema": {
-					"connector_options": {
-						"google_ads_options": {
-							"custom_report_options": {
-								"metrics":         {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.metrics
-								"resource":        {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.resource
-								"resource_fields": {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.resource_fields
-								"segments":        {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.segments
-							},
-						},
-						"meta_ads_options": {
-							"custom_report_options": {
-								"action_attribution_windows": {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.action_attribution_windows
-								"action_breakdowns":          {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.action_breakdowns
-								"action_report_time":         {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.action_report_time
-								"breakdowns":                 {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.breakdowns
-								"level":                      {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.level
-								"time_increment":             {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.time_increment
-							},
-						},
-						"tiktok_ads_options": {
-							"custom_report_options": {
-								"data_level":     {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.tiktok_ads_options.custom_report_options.data_level
-								"dimensions":     {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.tiktok_ads_options.custom_report_options.dimensions
-								"metrics":        {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.tiktok_ads_options.custom_report_options.metrics
-								"query_lifetime": {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.tiktok_ads_options.custom_report_options.query_lifetime
-								"report_type":    {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.tiktok_ads_options.custom_report_options.report_type
-							},
-						},
-					},
-					"table_configuration": {
-						"source_metadata_column": {}, // databricks_pipeline.*.ingestion_definition.objects.schema.table_configuration.source_metadata_column
-					},
-				},
-				"table": {
-					"connector_options": {
-						"google_ads_options": {
-							"custom_report_options": {
-								"metrics":         {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.metrics
-								"resource":        {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.resource
-								"resource_fields": {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.resource_fields
-								"segments":        {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.segments
-							},
-						},
-						"meta_ads_options": {
-							"custom_report_options": {
-								"action_attribution_windows": {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.action_attribution_windows
-								"action_breakdowns":          {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.action_breakdowns
-								"action_report_time":         {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.action_report_time
-								"breakdowns":                 {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.breakdowns
-								"level":                      {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.level
-								"time_increment":             {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.time_increment
-							},
-						},
-						"tiktok_ads_options": {
-							"custom_report_options": {
-								"data_level":     {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.tiktok_ads_options.custom_report_options.data_level
-								"dimensions":     {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.tiktok_ads_options.custom_report_options.dimensions
-								"metrics":        {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.tiktok_ads_options.custom_report_options.metrics
-								"query_lifetime": {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.tiktok_ads_options.custom_report_options.query_lifetime
-								"report_type":    {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.tiktok_ads_options.custom_report_options.report_type
-							},
-						},
-					},
-					"table_configuration": {
-						"source_metadata_column": {}, // databricks_pipeline.*.ingestion_definition.objects.table.table_configuration.source_metadata_column
-					},
-				},
-			},
-			"table_configuration": {
-				"source_metadata_column": {}, // databricks_pipeline.*.ingestion_definition.table_configuration.source_metadata_column
-			},
-		},
-		"url": {},
+		"url":                    {},
 	},
 	"postgres_projects": {
 		"initial_branch_spec": {
