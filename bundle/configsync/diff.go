@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -153,12 +154,31 @@ func OpenDeploymentState(ctx context.Context, b *bundle.Bundle, engine engine.En
 	return deployBundle, nil
 }
 
+// isUnsupportedSubResource reports whether a plan resource key refers to a
+// permissions or grants sub-resource (e.g. "resources.jobs.foo.permissions").
+// The direct and terraform engines both emit these as their own plan keys; see
+// splitResourcePath in bundle/direct/bundle_plan.go.
+func isUnsupportedSubResource(resourceKey string) bool {
+	return strings.HasSuffix(resourceKey, ".permissions") || strings.HasSuffix(resourceKey, ".grants")
+}
+
 // ExtractChanges extracts the map of remote-vs-config changes from a deploy
 // plan. engine selects the LocalEdit comparison below.
 func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, error) {
 	changes := make(Changes)
 
 	for resourceKey, entry := range plan.Plan {
+		// permissions and grants are separate plan sub-resources keyed
+		// "resources.<type>.<name>.permissions" / ".grants". config-remote-sync
+		// cannot write them back to YAML: their fields (e.g. object_id) are
+		// server-populated and have no source location, and permissions injected
+		// at the bundle level have no per-resource YAML node at all, so resolving
+		// them fails the whole sync. Syncing permissions back is unsupported, so
+		// skip these sub-resources instead of hard-failing.
+		if isUnsupportedSubResource(resourceKey) {
+			continue
+		}
+
 		resourceChanges := make(ResourceChanges)
 
 		if entry.Changes != nil {
