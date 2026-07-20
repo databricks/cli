@@ -11,10 +11,12 @@ type faultRuleKey struct {
 	pattern string
 }
 
-// FaultRule describes a single injected fault: HTTP status, body, and remaining fire count.
+// FaultRule describes a single injected fault: HTTP status, body, an optional
+// pre-response delay, and remaining fire count.
 type FaultRule struct {
 	StatusCode int
 	Body       string
+	DelayMs    int
 	offset     int
 	times      int
 }
@@ -31,12 +33,13 @@ func NewFaultRules() *FaultRules {
 }
 
 // Set registers or replaces a fault rule for the given token and pattern.
-func (fr *FaultRules) Set(token, pattern string, statusCode int, body string, offset, times int) {
+func (fr *FaultRules) Set(token, pattern string, statusCode int, body string, delayMs, offset, times int) {
 	fr.mu.Lock()
 	defer fr.mu.Unlock()
 	fr.rules[faultRuleKey{token: token, pattern: pattern}] = &FaultRule{
 		StatusCode: statusCode,
 		Body:       body,
+		DelayMs:    delayMs,
 		offset:     offset,
 		times:      times,
 	}
@@ -90,13 +93,14 @@ func faultEndpointHandler(fr *FaultRules) HandlerFunc {
 			Pattern    string `json:"pattern"`
 			StatusCode int    `json:"status_code"`
 			Body       string `json:"body"`
+			DelayMs    int    `json:"delay_ms"`
 			Offset     int    `json:"offset"`
 			Times      int    `json:"times"`
 		}
 		if err := json.Unmarshal(req.Body, &body); err != nil {
 			return Response{StatusCode: 400, Body: map[string]string{"error": err.Error()}}
 		}
-		fr.Set(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times)
+		fr.Set(req.Token, body.Pattern, body.StatusCode, body.Body, body.DelayMs, body.Offset, body.Times)
 		return Response{StatusCode: 200}
 	}
 }

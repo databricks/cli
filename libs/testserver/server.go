@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/testserver/testsql"
@@ -372,7 +373,16 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 
 	var resp EncodedResponse
 
-	if rule := s.faults.Check(r.Method, r.URL.Path, token); rule != nil {
+	rule := s.faults.Check(r.Method, r.URL.Path, token)
+	if rule != nil && rule.DelayMs > 0 {
+		// Hold the request open. A delay-only rule (StatusCode == 0) then falls
+		// through to the real handler, simulating a slow-but-successful call; this
+		// is what widens the delete-before-put window so a concurrently running job
+		// can observe the transient not-found (see FaultRules).
+		time.Sleep(time.Duration(rule.DelayMs) * time.Millisecond)
+	}
+
+	if rule != nil && rule.StatusCode != 0 {
 		resp = EncodedResponse{
 			StatusCode: rule.StatusCode,
 			Body:       []byte(rule.Body),
