@@ -1,11 +1,13 @@
 package configsync
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/libs/log"
 )
 
 // ResolveResourceSelectors maps "<type>:<id>" selectors to their plan keys
@@ -21,11 +23,16 @@ import (
 // is also why selection is independent from `bundle deploy --select`, which
 // matches "type.name" keys.
 //
-// A selector that matches no deployed resource is an error: only deployed
-// resources have an id, so a selector matching nothing is a caller mistake.
+// A selector that matches no deployed resource is skipped, not an error: the
+// workspace UI batches every edited resource into one sync, and a resource that
+// was deleted remotely (or whose deploy state has drifted) has no remote change
+// to pull back into config. Failing the whole run on one stale selector would
+// drop the valid resources' edits too, which is why such workspaces saw every
+// sync fail. A malformed selector (missing "<type>:<id>" shape) is still an
+// error, because that is a caller mistake rather than drift.
 // Duplicate selectors are deduplicated; the returned keys preserve the order in
 // which their selectors first appear.
-func ResolveResourceSelectors(state *dstate.DeploymentState, selectors []string) ([]string, error) {
+func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState, selectors []string) ([]string, error) {
 	// Index deployed resources by "<type>:<id>". State keys have the form
 	// "resources.<type>.<name>"; indexing by the <type> component means a
 	// selector can only ever match a resource of that exact type, never an id
@@ -55,7 +62,8 @@ func ResolveResourceSelectors(state *dstate.DeploymentState, selectors []string)
 		}
 		key, ok := byTypeID[selector]
 		if !ok {
-			return nil, fmt.Errorf("no deployed %s resource with id %s", resourceType, id)
+			log.Debugf(ctx, "config-remote-sync: skipping selector %s:%s, no deployed resource with that id", resourceType, id)
+			continue
 		}
 		if !slices.Contains(keys, key) {
 			keys = append(keys, key)

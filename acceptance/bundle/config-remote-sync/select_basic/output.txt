@@ -37,21 +37,36 @@ Resource: resources.jobs.job_two
 
 
 
-=== An unknown resource id is rejected
->>> [CLI] bundle config-remote-sync --select-ids jobs:no-such-id-123
-Error: no deployed jobs resource with id no-such-id-123
+=== A stale selector is skipped, not fatal: job_two still syncs alongside it
+Detected changes in 1 resource(s):
 
-Exit code: 1
+Resource: resources.jobs.job_two
+  max_concurrent_runs: replace
 
-=== A selector without a type is rejected
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -16,5 +16,5 @@
+
+     job_two:
+-      max_concurrent_runs: 2
++      max_concurrent_runs: 10
+       tasks:
+         - task_key: main
+
+=== An unknown resource id alone is a no-op (skipped), not an error
+No changes detected.
+
+
+=== An id that exists under a different type matches nothing and is skipped too
+No changes detected.
+
+
+=== A selector without a type is still rejected
 >>> [CLI] bundle config-remote-sync --select-ids no-such-id-123
 Error: invalid --select-ids value "no-such-id-123", expected <type>:<id> (e.g. jobs:[NUMID])
-
-Exit code: 1
-
-=== An id that exists under a different type is rejected (no cross-type collision)
->>> [CLI] bundle config-remote-sync --select-ids pipelines:[JOB_ONE_ID]
-Error: no deployed pipelines resource with id [JOB_ONE_ID]
 
 Exit code: 1
 
