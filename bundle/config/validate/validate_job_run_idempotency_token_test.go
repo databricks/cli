@@ -37,6 +37,20 @@ func TestValidateJobRunIdempotencyTokenAllowsUnset(t *testing.T) {
 	require.Empty(t, diags)
 }
 
+func TestValidateJobRunIdempotencyTokenAllowsNilEntry(t *testing.T) {
+	// An empty `job_runs.<name>:` entry unmarshals to a nil pointer; the
+	// validator must skip it rather than panic dereferencing.
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				JobRuns: map[string]*resources.JobRun{"my_run": nil},
+			},
+		},
+	}
+	diags := ValidateJobRunIdempotencyToken().Apply(t.Context(), b)
+	require.Empty(t, diags)
+}
+
 func TestValidateJobRunIdempotencyTokenReportsAllSorted(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{

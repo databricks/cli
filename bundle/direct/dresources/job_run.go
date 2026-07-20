@@ -192,9 +192,9 @@ func parseRunID(id string) (int64, error) {
 }
 
 // idempotencyToken derives a stable token from the desired state so a retried
-// run-now dedupes to the existing run. Hashing the whole JobRunState (not just
-// RunNow) means fields we add later join dedup automatically. Token = hex
-// SHA-256 of the state JSON with idempotency_token cleared (64 chars, API max).
+// run-now dedupes to the existing run. Hashes the whole JobRunState so future
+// state fields join dedup automatically. Hex SHA-256 (64 chars, the Jobs API
+// max) of the state JSON with idempotency_token cleared.
 func idempotencyToken(state *JobRunState) (string, error) {
 	toHash := *state
 	toHash.IdempotencyToken = ""

@@ -27,7 +27,9 @@ func (v *validateJobRunIdempotencyToken) Apply(_ context.Context, b *bundle.Bund
 	// (SHA-256 of the RunNow request) so retries dedupe. A user-provided value
 	// would be overwritten, so reject it up front.
 	for name, jr := range b.Config.Resources.JobRuns {
-		if jr.IdempotencyToken == "" {
+		// An empty `job_runs.<name>:` entry unmarshals to a nil pointer
+		// (convert.ToTyped), so guard before dereferencing.
+		if jr == nil || jr.IdempotencyToken == "" {
 			continue
 		}
 		path := "resources.job_runs." + name + ".idempotency_token"
