@@ -1,0 +1,46 @@
+# THROWAWAY investigation harness -- NOT a CI test (disabled via parent test.toml).
+#
+# Behaviour 1: delete-before-put gap raced by a live job.
+#
+# Renaming a task file makes applyDiff DELETE the old remote path and PUT the new
+# one (libs/sync/diff.go addFilesWithRemoteNameChanged). Because the job is only
+# repointed after files.Upload (bundle/phases/deploy.go), a job that runs during
+# the gap sees a transient "file not found". This proves it as a real wall-clock
+# race by delaying the PUT and hammering the job while the window is open.
+#
+# Run it by hand to observe the failure:
+#   go test ./acceptance -run TestAccept/bundle/deploy/deploy-race-repro/gap \
+#     -update -tail -v
+
+cd app
+
+unset MSYS_NO_PATHCONV
+
+trace $CLI bundle deploy
+trace $CLI bundle run etl
+
+FILES_PATH=$($CLI bundle summary --output json | jq -r '.workspace.file_path')
+
+# Rename the task file: applyDiff DELETEs .../src/etl.py, then PUTs .../src/etl_v2.py.
+# Delay that PUT by 3s so the delete-before-put window stays open long enough for a
+# concurrently running job to fall into it.
+mv src/etl.py src/etl_v2.py
+update_file.py databricks.yml "etl.py" "etl_v2.py"
+fault.py "POST /api/2.0/workspace-files/import-file${FILES_PATH}/src/etl_v2.py" 0 0 1 3000
+
+# Start the slow deploy in the background, then hammer the job with runs while the
+# window is open. At least one run should observe the transient "file not found".
+$CLI bundle deploy &> LOG.deploy &
+DEPLOY_PID=$!
+
+for i in $(seq 1 20); do
+    echo ">>> run attempt $i" >> LOG.runs
+    $CLI bundle run etl &>> LOG.runs || echo "RUN $i FAILED (raced the deploy gap)" >> LOG.runs
+done
+
+wait $DEPLOY_PID
+
+echo "--- runs that raced the deploy (transient not-found) ---" >> LOG.summary
+grep -c "FAILED (raced the deploy gap)" LOG.runs >> LOG.summary || true
+
+trace $CLI bundle destroy --auto-approve &>> LOG.destroy

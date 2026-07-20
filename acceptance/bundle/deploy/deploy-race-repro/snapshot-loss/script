@@ -1,0 +1,34 @@
+# THROWAWAY investigation harness -- NOT a CI test (disabled via parent test.toml).
+#
+# Behaviour 2: snapshot-loss mass re-upload widening the window.
+#
+# A deploy from a runner with no local sync snapshot re-PUTs every file in one
+# deploy (libs/sync/snapshot.go loadOrNewSnapshot -> empty snapshot). Deleting
+# .databricks and delaying all uploads shows the whole files/ tree is in flight at
+# once, so the delete-before-put window (see ../gap) widens across every file
+# rather than just a single renamed one.
+#
+# Run it by hand to observe the failure:
+#   go test ./acceptance -run TestAccept/bundle/deploy/deploy-race-repro/snapshot-loss \
+#     -update -tail -v
+
+cd app
+
+unset MSYS_NO_PATHCONV
+
+trace $CLI bundle deploy
+trace $CLI bundle run etl
+
+FILES_PATH=$($CLI bundle summary --output json | jq -r '.workspace.file_path')
+
+# Drop the local snapshot so the next deploy re-uploads every file, and delay all
+# uploads so the whole files/ tree is in flight at once. A job running now can race
+# the mass re-upload.
+rm -rf .databricks
+fault.py "POST /api/2.0/workspace-files/import-file${FILES_PATH}/*" 0 0 100 1000
+$CLI bundle deploy &> LOG.deploy &
+DEPLOY_PID=$!
+$CLI bundle run etl &>> LOG.runs || echo "RUN raced the mass re-upload" >> LOG.summary
+wait $DEPLOY_PID
+
+trace $CLI bundle destroy --auto-approve &>> LOG.destroy

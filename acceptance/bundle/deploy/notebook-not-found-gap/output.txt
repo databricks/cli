@@ -1,0 +1,118 @@
+
+=== Deploy the bundle and confirm the job runs cleanly
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run etl
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+
+[TIMESTAMP] "etl" RUNNING
+[TIMESTAMP] "etl" TERMINATED SUCCESS
+etl task ran
+
+=== Rename the task file (remote-name change => DELETE old + PUT new)
+>>> mv src/etl.py src/etl_v2.py
+
+=== Re-deploy, but the PUT of the renamed file fails
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/files...
+Error: Fault injected by test. (500 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Fnotebook-gap%2Fdefault%2Ffiles%2Fsrc%2Fetl_v2.py?overwrite=true
+HTTP Status: 500 Internal Server Error
+API error_code: INJECTED
+API message: Fault injected by test.
+
+
+Exit code: 1
+
+>>> print_requests.py //src/etl //api/2.0/workspace/delete --sort
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/files/src/etl.py",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "print(\"etl task ran\")\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/files/src/etl_v2.py",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "print(\"etl task ran\")\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/files/src/etl.py"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/state/deploy.lock"
+  }
+}
+
+=== The job now fails: its file was deleted and never re-put
+>>> [CLI] bundle run etl
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+
+[TIMESTAMP] "etl" RUNNING
+[TIMESTAMP] "etl" TERMINATED FAILED python file not found in workspace: /Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/files/src/etl.py
+Error: run failed: python file not found in workspace: /Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/files/src/etl.py
+
+Exit code: 1
+
+=== Self-heal: a clean re-deploy re-puts the file and the run succeeds
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/notebook-gap/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run etl
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+
+[TIMESTAMP] "etl" RUNNING
+[TIMESTAMP] "etl" TERMINATED SUCCESS
+etl task ran
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.etl
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/notebook-gap/default
+
+Deleting files...
+Destroy complete!

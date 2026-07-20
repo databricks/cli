@@ -1,0 +1,58 @@
+# Reproduces a bundle-deployed job intermittently failing at task start because
+# the task file "does not exist", then self-healing on a re-deploy with no config
+# change.
+#
+# Root cause demonstrated here deterministically: libs/sync/watchdog.go
+# applyDiff() deletes remote objects BEFORE it puts (delete -> rmdir -> mkdir ->
+# put), and the job definition is updated in deployCore only AFTER files.Upload
+# (bundle/phases/deploy.go). A remote-name change -- a rename here, or a .py file
+# gaining/losing the "# Databricks notebook source" marker -- queues a DELETE of
+# the old remote path and a PUT of the new one (libs/sync/diff.go
+# addFilesWithRemoteNameChanged). If the PUT does not land while the job still
+# points at the old path, the task sees a genuine "file does not exist". We freeze
+# that window deterministically by faulting the PUT.
+#
+# The bundle lives in ./app so the acceptance harness files (script, output.txt,
+# out.requests.txt, ...) are not swept into the bundle sync root.
+
+cd app
+
+unset MSYS_NO_PATHCONV
+
+title "Deploy the bundle and confirm the job runs cleanly"
+trace $CLI bundle deploy
+trace $CLI bundle run etl
+rm -f out.requests.txt
+
+title "Rename the task file (remote-name change => DELETE old + PUT new)"
+trace mv src/etl.py src/etl_v2.py
+update_file.py databricks.yml "etl.py" "etl_v2.py"
+
+title "Re-deploy, but the PUT of the renamed file fails"
+# The old file is deleted first; the PUT is faulted, so files.Upload aborts BEFORE
+# deployCore updates the job. The job is left pointing at the deleted path.
+# Fault only the renamed file's exact upload path, so the deploy lock (which also
+# uses import-file, under /state/) is unaffected.
+FILES_PATH=$($CLI bundle summary --output json | jq -r '.workspace.file_path')
+fault.py "POST /api/2.0/workspace-files/import-file${FILES_PATH}/src/etl_v2.py" 500 0 1
+errcode trace $CLI bundle deploy
+trace print_requests.py //src/etl //api/2.0/workspace/delete --sort
+
+title "The job now fails: its file was deleted and never re-put"
+# The file "may not exist", even though the job config and permissions were never
+# changed.
+errcode trace $CLI bundle run etl
+
+title "Self-heal: a clean re-deploy re-puts the file and the run succeeds"
+# No config change and no permission change: a re-deploy re-puts the file and the
+# job succeeds again.
+trace $CLI bundle deploy
+trace $CLI bundle run etl
+
+trace $CLI bundle destroy --auto-approve
+
+# Drain the recorded requests from the self-heal and destroy steps into a
+# non-asserted sink so the trailing out.requests.txt (which carries run-to-run
+# ordering of state-file reads) is not compared.
+print_requests.py //api/2.0 --get &> LOG.requests
+rm -f out.requests.txt

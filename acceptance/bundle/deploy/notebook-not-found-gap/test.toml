@@ -1,0 +1,19 @@
+Badness = "bundle deploy is non-atomic: applyDiff deletes remote objects before it puts, and the job is repointed only in deployCore after files.Upload; a failed/slow PUT after the delete leaves a deployed job pointing at a missing file"
+Local = true
+Cloud = false
+RecordRequests = true
+
+# Telemetry carries timing fields that vary run-to-run; drop it from recordings.
+Env.DATABRICKS_CLI_DISABLE_TELEMETRY = "1"
+
+# The delete-before-put gap is in libs/sync (engine-independent); pin to one
+# engine so the recorded state-file requests (resources.json vs terraform.tfstate)
+# don't diverge between variants.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    ".databricks",
+    "app/.databricks",
+    "app/databricks.yml",
+    "app/src",
+]

@@ -1,0 +1,31 @@
+# THROWAWAY investigation harnesses -- intentionally disabled.
+#
+# Each child test drives a real wall-clock race (a backgrounded bundle run or
+# deploy against an in-flight deploy with a delayed upload), so its output is
+# non-deterministic and it must never run in CI. Run one by hand with -tail -v to
+# observe the behaviour; the committed test ../notebook-not-found-gap proves the
+# core mechanism deterministically.
+#
+# The children split the three DABs deployment behaviours from the investigation:
+#   gap/               delete-before-put gap raced by a live job
+#   snapshot-loss/     snapshot-loss mass re-upload widening the window
+#   permissions-reset/ permission ACL reset on the deployed folder after upload
+#
+# All observed output goes to LOG.* sinks (visible under -v, excluded from the
+# golden diff) so re-running never fails on timing noise.
+Local = false
+Cloud = false
+
+# Bug: bundle deploy is non-atomic (applyDiff deletes before it puts, job repointed
+# only after files.Upload), so a job running during a deploy can transiently fail
+# with "file not found" and self-heal on the next run.
+Badness = "bundle deploy mutates the live files/ tree non-atomically; a concurrent job run can observe a transient not-found"
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    ".databricks",
+    "app/.databricks",
+    "app/databricks.yml",
+    "app/src",
+]

@@ -1,0 +1,34 @@
+# THROWAWAY investigation harness -- NOT a CI test (disabled via parent test.toml).
+#
+# Behaviour 3: permission ACL reset on the deployed folder after upload.
+#
+# ApplyWorkspaceRootPermissions runs SetPermissions AFTER files.Upload
+# (bundle/phases/deploy.go), replacing the folder's direct ACL with exactly the
+# declared permissions. Recording the calls shows the run-as SP's access is
+# rewritten on every deploy, not merely added to -- so a deploy can transiently
+# narrow access rather than only widening it.
+#
+# Run it by hand to observe the recorded ACL writes:
+#   go test ./acceptance -run TestAccept/bundle/deploy/deploy-race-repro/permissions-reset \
+#     -update -tail -v
+
+cd app
+
+unset MSYS_NO_PATHCONV
+
+trace $CLI bundle deploy
+
+# Declare a permission for a service principal, then re-deploy.
+cat >> databricks.yml <<'YAML'
+
+permissions:
+  - level: CAN_MANAGE
+    service_principal_name: 11111111-2222-3333-4444-555555555555
+YAML
+rm -f out.requests.txt
+$CLI bundle deploy &> LOG.deploy
+# The PUT /api/2.0/permissions/directories/* calls are ApplyWorkspaceRootPermissions
+# replacing the folder ACL with exactly the declared permissions, on every deploy.
+print_requests.py //api/2.0/permissions &>> LOG.perms
+
+trace $CLI bundle destroy --auto-approve &>> LOG.destroy

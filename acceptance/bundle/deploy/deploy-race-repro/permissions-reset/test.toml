@@ -1,0 +1,2 @@
+# Needed for print_requests.py to capture the SetPermissions calls.
+RecordRequests = true
