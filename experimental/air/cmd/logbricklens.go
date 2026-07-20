@@ -38,7 +38,6 @@ type bricklensLogsResponse struct {
 }
 
 // bricklensLogsQuery is the request-field surface of the log endpoint.
-// Zero-valued optionals are omitted so the endpoint applies its own defaults.
 type bricklensLogsQuery struct {
 	// fromSeconds and toSeconds bound the query window in Unix epoch seconds.
 	fromSeconds int64
