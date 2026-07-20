@@ -1,6 +1,5 @@
-# Local-only (no Cloud): the scenario uses synthetic grantees (alice@, viewer@)
-# that need not be valid workspace principals, and the testserver reproduces the
-# permissions sub-resource + object_id faithfully.
+Cloud = true
+
 RecordRequests = false
 Ignore = [".databricks", "databricks.yml", "databricks.yml.backup"]
 

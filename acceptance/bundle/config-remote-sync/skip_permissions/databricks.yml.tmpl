@@ -6,7 +6,7 @@ bundle:
 # permissions sub-resource instead of failing to resolve it.
 permissions:
   - level: CAN_MANAGE
-    user_name: alice@example.com
+    user_name: ${workspace.current_user.userName}
 
 resources:
   jobs:

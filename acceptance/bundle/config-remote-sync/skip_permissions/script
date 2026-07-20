@@ -13,9 +13,9 @@ job_id="$(read_id.py my_job)"
 title "Add a permission remotely (a change on the permissions sub-resource)"
 echo
 # permissions set replaces the whole ACL, so keep the deploy identity as owner
-# and add a new grantee: this makes the permissions sub-resource show a change
-# on the next sync.
-$CLI permissions set jobs $job_id --json '{"access_control_list":[{"permission_level":"IS_OWNER","user_name":"'"$CURRENT_USER_NAME"'"},{"permission_level":"CAN_MANAGE","user_name":"alice@example.com"},{"permission_level":"CAN_VIEW","user_name":"viewer@example.com"}]}' > /dev/null
+# and add a grantee (the built-in "users" group) that is not in config: this
+# makes the permissions sub-resource show a change on the next sync.
+$CLI permissions set jobs $job_id --json '{"access_control_list":[{"permission_level":"IS_OWNER","user_name":"'"$CURRENT_USER_NAME"'"},{"permission_level":"CAN_VIEW","group_name":"users"}]}' > /dev/null
 
 title "Modify a regular job field remotely"
 echo
