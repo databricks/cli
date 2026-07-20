@@ -40,7 +40,7 @@ func bundleWithCodeSource(t *testing.T, dir, codeSourcePath string) *bundle.Bund
 							Tasks: []jobs.Task{
 								{
 									TaskKey:       "train",
-									AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp", CodeSourcePath: codeSourcePath},
+									AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp"},
 								},
 							},
 						},
@@ -50,6 +50,10 @@ func bundleWithCodeSource(t *testing.T, dir, codeSourcePath string) *bundle.Bund
 		},
 	}
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
+	// code_source_path is read via dyn, not the typed SDK field, so set it on the value.
+	bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
+		return dyn.Set(v, "resources.jobs.train.tasks[0].ai_runtime_task.code_source_path", dyn.V(codeSourcePath))
+	})
 	return b
 }
 
