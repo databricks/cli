@@ -10,7 +10,6 @@
 
 ### Bundles
 
-* Fix `bundle config-remote-sync` failing with "failed to resolve field changes" on resources that have permissions or grants; these sub-resources are not synced back to configuration and are now skipped instead of erroring the whole sync ([#XXXX](https://github.com/databricks/cli/pull/XXXX)).
 * direct: add basic version of job_runs resource (experimental) ([#5603](https://github.com/databricks/cli/pull/5603)).
 * Fix permissions added to a job or pipeline by a Python (PyDABs) mutator failing to deploy with "must have exactly one owner"; the deploying identity is now set as owner, matching resources whose permissions are declared in YAML ([#5821](https://github.com/databricks/cli/pull/5821)).
 * Remove duplicate enum values for jsonschema.json ([#5839](https://github.com/databricks/cli/pull/5839)).
