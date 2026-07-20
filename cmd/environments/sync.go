@@ -48,6 +48,7 @@ env-owned sections are refreshed, user-owned content is preserved).`,
 // addTargetFlags adds the shared target and mode flags to a command.
 func addTargetFlags(cmd *cobra.Command) {
 	cmd.Flags().String("cluster-id", "", "cluster ID to use as the compute target")
+	cmd.Flags().String("cluster-name", "", "cluster name to use as the compute target (resolved to an ID via the Clusters API)")
 	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. v4)")
 	cmd.Flags().String("job-id", "", "job ID to use as the compute target")
 	cmd.Flags().Bool("constraints-only", false, "apply the Python version and constraints without adding the databricks-connect dependency")
@@ -55,7 +56,7 @@ func addTargetFlags(cmd *cobra.Command) {
 	cmd.Flags().String("constraint-source-url", "", "URL for the constraint source (overrides "+envConstraintSource+")")
 	// Hide constraint-source-url from casual --help output; it is a power-user escape hatch.
 	_ = cmd.Flags().MarkHidden("constraint-source-url")
-	cmd.MarkFlagsMutuallyExclusive("cluster-id", "serverless-version", "job-id")
+	cmd.MarkFlagsMutuallyExclusive("cluster-id", "cluster-name", "serverless-version", "job-id")
 }
 
 // runPipeline builds and runs the setup-local Pipeline.
@@ -63,6 +64,7 @@ func runPipeline(cmd *cobra.Command) error {
 	ctx := cmd.Context()
 
 	cluster, _ := cmd.Flags().GetString("cluster-id")
+	clusterName, _ := cmd.Flags().GetString("cluster-name")
 	serverless, _ := cmd.Flags().GetString("serverless-version")
 	job, _ := cmd.Flags().GetString("job-id")
 	constraintsOnly, _ := cmd.Flags().GetBool("constraints-only")
@@ -70,9 +72,10 @@ func runPipeline(cmd *cobra.Command) error {
 	constraintSource, _ := cmd.Flags().GetString("constraint-source-url")
 
 	targetFlags := libslocalenv.TargetFlags{
-		Cluster:    cluster,
-		Serverless: serverless,
-		Job:        job,
+		Cluster:     cluster,
+		ClusterName: clusterName,
+		Serverless:  serverless,
+		Job:         job,
 	}
 	// ValidateTargetFlags is kept despite MarkFlagsMutuallyExclusive above:
 	// it also validates the library path (no Cobra equivalent) and guards
@@ -100,11 +103,11 @@ func runPipeline(cmd *cobra.Command) error {
 	cacheDir = filepath.Join(cacheDir, "databricks", "localenv")
 
 	// The bundle is only a fallback: ResolveTarget consults it solely when no
-	// explicit --cluster-id/--serverless-version/--job-id flag is set. Skip the bundle load
+	// explicit --cluster-id/--cluster-name/--serverless-version/--job-id flag is set. Skip the bundle load
 	// entirely when a flag is present — it would otherwise re-run TryConfigureBundle
 	// (a second full load) and re-print any bundle load-time diagnostics for nothing.
 	var bt libslocalenv.BundleTarget
-	if cluster == "" && serverless == "" && job == "" {
+	if cluster == "" && clusterName == "" && serverless == "" && job == "" {
 		bt = bundleTarget(cmd)
 	}
 

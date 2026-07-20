@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -21,6 +22,52 @@ func (c sdkCompute) GetClusterSparkVersion(ctx context.Context, clusterID string
 		return "", fmt.Errorf("get cluster %s: %w", clusterID, err)
 	}
 	return d.SparkVersion, nil
+}
+
+// GetClusterByName resolves a cluster name to its ID and Spark version.
+//
+// It intentionally does not use the SDK's GetByClusterName, which lists clusters
+// in every state and errors on any name collision: a terminated cluster sharing
+// a name with a live one would then block resolution for a name the user
+// reasonably considers unique. Instead we list only non-terminated clusters and
+// match by name. A name that is still ambiguous among live clusters, or matches
+// none, is a genuine error surfaced to the caller as an actionable E_RESOLVE.
+//
+// The clusters/list API omits clusters terminated more than 30 days ago, so a
+// name that only ever belonged to such a cluster resolves as "no active cluster
+// named"; this is acceptable since a long-terminated cluster is not a usable
+// target and the user can always pass --cluster-id.
+func (c sdkCompute) GetClusterByName(ctx context.Context, name string) (string, string, error) {
+	clusters, err := c.w.Clusters.ListAll(ctx, compute.ListClustersRequest{
+		FilterBy: &compute.ListClustersFilterBy{
+			// TERMINATING is excluded alongside TERMINATED: a cluster on its way
+			// down is not a usable target, and keeping it would reintroduce the
+			// stale-collision problem this filter exists to avoid.
+			ClusterStates: []compute.State{
+				compute.StatePending,
+				compute.StateRunning,
+				compute.StateRestarting,
+				compute.StateResizing,
+			},
+		},
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("list clusters to resolve name %q: %w", name, err)
+	}
+	var matches []compute.ClusterDetails
+	for _, cl := range clusters {
+		if cl.ClusterName == name {
+			matches = append(matches, cl)
+		}
+	}
+	switch len(matches) {
+	case 0:
+		return "", "", fmt.Errorf("no active cluster named %q", name)
+	case 1:
+		return matches[0].ClusterId, matches[0].SparkVersion, nil
+	default:
+		return "", "", fmt.Errorf("there are %d active clusters named %q; use --cluster-id to disambiguate", len(matches), name)
+	}
 }
 
 // GetJobSparkVersion inspects the job's configuration to determine compute type.

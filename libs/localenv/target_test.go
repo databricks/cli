@@ -12,10 +12,17 @@ import (
 type stubCompute struct {
 	clusterVersion string
 	clusterErr     error
+	byNameID       string
+	byNameVersion  string
+	byNameErr      error
 }
 
 func (s stubCompute) GetClusterSparkVersion(_ context.Context, _ string) (string, error) {
 	return s.clusterVersion, s.clusterErr
+}
+
+func (s stubCompute) GetClusterByName(_ context.Context, _ string) (string, string, error) {
+	return s.byNameID, s.byNameVersion, s.byNameErr
 }
 
 func (s stubCompute) GetJobSparkVersion(_ context.Context, _ string) (string, bool, string, error) {
@@ -48,6 +55,36 @@ func TestResolveClusterFlagError(t *testing.T) {
 	assert.Equal(t, ErrResolve, pe.Code)
 }
 
+func TestResolveClusterNameFlag(t *testing.T) {
+	// --cluster-name resolves to an ID via the Clusters API, then behaves like
+	// --cluster-id: source=cluster, the resolved ID is reported, and the env key
+	// derives from the resolved cluster's Spark version.
+	c := stubCompute{byNameID: "cid-123", byNameVersion: "15.4.x-scala2.12"}
+	ti, err := ResolveTarget(t.Context(), TargetFlags{ClusterName: "my-cluster"}, c, BundleTarget{})
+	require.NoError(t, err)
+	assert.Equal(t, "cluster", ti.Source)
+	assert.Equal(t, "cid-123", ti.ClusterID)
+	assert.Equal(t, "15.4.x-scala2.12", ti.SparkVersion)
+	assert.Equal(t, "dbr/15.4.x-scala2.12", ti.EnvKey)
+}
+
+func TestResolveClusterNameFlagError(t *testing.T) {
+	// An unknown or ambiguous name surfaces as E_RESOLVE.
+	c := stubCompute{byNameErr: errors.New("there are 2 instances of ClusterDetails named 'dup'")}
+	_, err := ResolveTarget(t.Context(), TargetFlags{ClusterName: "dup"}, c, BundleTarget{})
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrResolve, pe.Code)
+}
+
+func TestResolveClusterIdAndNameMutuallyExclusive(t *testing.T) {
+	// The library path rejects setting both --cluster-id and --cluster-name.
+	_, err := ResolveTarget(t.Context(), TargetFlags{Cluster: "abc", ClusterName: "xyz"}, stubCompute{}, BundleTarget{})
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrResolve, pe.Code)
+}
+
 func TestResolveBundleNothingSelected(t *testing.T) {
 	_, err := ResolveTarget(t.Context(), TargetFlags{}, stubCompute{}, BundleTarget{Selected: false})
 	var pe *PipelineError
@@ -73,6 +110,10 @@ type jobStubCompute struct {
 
 func (jobStubCompute) GetClusterSparkVersion(_ context.Context, _ string) (string, error) {
 	return "", nil
+}
+
+func (jobStubCompute) GetClusterByName(_ context.Context, _ string) (string, string, error) {
+	return "", "", nil
 }
 
 func (s jobStubCompute) GetJobSparkVersion(_ context.Context, _ string) (string, bool, string, error) {
