@@ -1,6 +1,9 @@
 package localenv
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // Command path components, defined once so a rename touches a single place
 // (spec §0 / invariant 8 / scenario 21). The verb is a subcommand of the
@@ -82,7 +85,8 @@ const (
 // PipelineError is a failure carrying a stable code, the phase at which it
 // occurred, and whether disk was mutated before the failure. It marshals to the
 // --json error object (spec §6.2). Code and FailurePhase are the stable
-// contract; Err holds the wrapped cause for errors.Is/As and is not serialized.
+// contract; Err holds the wrapped cause for errors.Is/As and is not serialized
+// directly (its text is folded into the "message" field — see MarshalJSON).
 type PipelineError struct {
 	Code         ErrorCode `json:"code"`
 	FailurePhase PhaseName `json:"failurePhase"`
@@ -100,6 +104,21 @@ func (e *PipelineError) Error() string {
 
 func (e *PipelineError) Unwrap() error {
 	return e.Err
+}
+
+// MarshalJSON serializes the full message (Error(), i.e. Msg plus any wrapped
+// cause) into the "message" field. Without this the --json error object would
+// carry only Msg and drop the cause (Err is json:"-"), so a JSON consumer would
+// get strictly less detail than the text output — e.g. "resolving cluster name"
+// without the "ambiguous"/"not found" reason. Text and JSON must agree.
+func (e *PipelineError) MarshalJSON() ([]byte, error) {
+	type alias PipelineError // avoid recursing into this method
+	return json.Marshal((*alias)(&PipelineError{
+		Code:         e.Code,
+		FailurePhase: e.FailurePhase,
+		Msg:          e.Error(),
+		DiskMutated:  e.DiskMutated,
+	}))
 }
 
 // NewError creates a PipelineError with a code and message. FailurePhase and

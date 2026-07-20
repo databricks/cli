@@ -98,13 +98,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// (a plain Cobra mutual-exclusion error would print no command JSON object,
 	// which the --output json consumer needs).
 	if err := ValidateTargetFlags(p.Flags); err != nil {
-		// Put the validation detail in Msg (which is serialized) and do not wrap
-		// err: PipelineError.Error() appends a non-nil Err, which would duplicate
-		// the detail in text output, and E_USAGE — not the raw error — is the
-		// stable contract callers match on. Without this the --output json
-		// consumer would see only "invalid compute target flags" (Err is
-		// json:"-") and lose which flags conflict.
-		return p.fail(PhasePreflight, false, NewError(ErrUsage, nil, "invalid compute target flags: %s", err))
+		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
 	}
 	// P0 supports only uv; any other detected manager is a clean, non-blaming exit.
 	if m := detectManager(p.ProjectDir); m != managerUv {
