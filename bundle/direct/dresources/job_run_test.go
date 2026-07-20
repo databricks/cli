@@ -3,6 +3,8 @@ package dresources
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,22 +13,22 @@ import (
 func TestIdempotencyTokenIsStableHex(t *testing.T) {
 	run := jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "prod"}}
 
-	got, err := idempotencyToken(run)
+	got, err := idempotencyToken(&JobRunState{RunNow: run})
 	require.NoError(t, err)
 
 	// hex SHA-256 is always 64 lowercase hex chars (the Jobs API maximum).
 	assert.Regexp(t, "^[0-9a-f]{64}$", got)
 
 	// Deterministic: the same config yields the same token, so a retry dedupes.
-	again, err := idempotencyToken(run)
+	again, err := idempotencyToken(&JobRunState{RunNow: run})
 	require.NoError(t, err)
 	assert.Equal(t, got, again)
 }
 
 func TestIdempotencyTokenIgnoresPresetToken(t *testing.T) {
-	a, err := idempotencyToken(jobs.RunNow{JobId: 123})
+	a, err := idempotencyToken(&JobRunState{RunNow: jobs.RunNow{JobId: 123}})
 	require.NoError(t, err)
-	b, err := idempotencyToken(jobs.RunNow{JobId: 123, IdempotencyToken: "user-supplied"})
+	b, err := idempotencyToken(&JobRunState{RunNow: jobs.RunNow{JobId: 123, IdempotencyToken: "user-supplied"}})
 	require.NoError(t, err)
 
 	// The token is cleared before hashing, so a preset value cannot change it.
@@ -34,13 +36,60 @@ func TestIdempotencyTokenIgnoresPresetToken(t *testing.T) {
 }
 
 func TestIdempotencyTokenChangesWithConfig(t *testing.T) {
-	dev, err := idempotencyToken(jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "dev"}})
+	dev, err := idempotencyToken(&JobRunState{RunNow: jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "dev"}}})
 	require.NoError(t, err)
-	prod, err := idempotencyToken(jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "prod"}})
+	prod, err := idempotencyToken(&JobRunState{RunNow: jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "prod"}}})
 	require.NoError(t, err)
-	otherJob, err := idempotencyToken(jobs.RunNow{JobId: 456})
+	otherJob, err := idempotencyToken(&JobRunState{RunNow: jobs.RunNow{JobId: 456}})
 	require.NoError(t, err)
 
 	assert.NotEqual(t, dev, prod)     // different params --> different token
 	assert.NotEqual(t, dev, otherJob) // different job_id --> different token
+}
+
+// jobRunClient returns a client whose GetRun always reports the given terminal
+// run state, so WaitAfterCreate can be exercised without a real run.
+func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClient {
+	t.Helper()
+	server := testserver.New(t)
+	// First registration wins, so this overrides the default runs/get handler.
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+		return jobs.Run{RunId: 123, JobId: 456, State: state}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+	return client
+}
+
+func TestJobRunWaitAfterCreateSurfacesFailedResult(t *testing.T) {
+	client := jobRunClient(t, &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateTerminated,
+		ResultState:    jobs.RunResultStateFailed,
+	})
+
+	r := (&ResourceJobRun{}).New(client)
+	remote, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
+
+	// A run that ends TERMINATED with a FAILED result is surfaced as readable
+	// state, not turned into a deploy failure.
+	require.NoError(t, err)
+	require.NotNil(t, remote.State)
+	assert.Equal(t, jobs.RunResultStateFailed, remote.State.ResultState)
+}
+
+func TestJobRunWaitAfterCreateFailsOnInternalError(t *testing.T) {
+	client := jobRunClient(t, &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateInternalError,
+	})
+
+	r := (&ResourceJobRun{}).New(client)
+	_, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
+
+	// INTERNAL_ERROR is the one terminal state that fails the deploy.
+	require.Error(t, err)
 }

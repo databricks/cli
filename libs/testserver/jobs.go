@@ -912,7 +912,23 @@ func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {
 			Body:       fmt.Sprintf("request parsing error: %s", err),
 		}
 	}
-	return MapDelete(s, s.JobRuns, request.RunId)
+
+	defer s.LockUnlock()()
+
+	if _, ok := s.JobRuns[request.RunId]; !ok {
+		return Response{StatusCode: 404}
+	}
+	delete(s.JobRuns, request.RunId)
+
+	// Drop the run's token mapping so a later run-now with the same token starts
+	// a fresh run instead of returning this deleted one (matters on recreate).
+	for token, runID := range s.JobRunsByToken {
+		if runID == request.RunId {
+			delete(s.JobRunsByToken, token)
+		}
+	}
+
+	return Response{}
 }
 
 func (s *FakeWorkspace) JobsGetRunOutput(req Request) Response {

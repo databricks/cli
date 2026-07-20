@@ -70,9 +70,8 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	}
 }
 
-// makeJobRunRemote maps the GetRun response into the RunNow-shaped remote: GET
-// nests the params under overriding_parameters and returns job_parameters as a
-// list, so both are flattened back into RunNow.
+// makeJobRunRemote maps GetRun into the RunNow-shaped remote, flattening
+// overriding_parameters and the job_parameters list back into RunNow.
 func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 	var overriding jobs.RunParameters
 	if run.OverridingParameters != nil {
@@ -114,8 +113,8 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 }
 
 // DoRead returns the run as GetRun reports it; a 404 lets the planner
-// re-trigger. Root ignore_remote_changes suppresses all remote drift, so a run
-// is recreated only on a local config change.
+// re-trigger. ignore_remote_changes suppresses drift, so a run is recreated
+// only on a local config change.
 func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, error) {
 	runID, err := parseRunID(id)
 	if err != nil {
@@ -137,17 +136,17 @@ func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
-	// Copy the request so the derived token is sent to the API but never
-	// persisted into state (state stays token-free, plans stay clean).
-	req := config.RunNow
-	token, err := idempotencyToken(req)
+	token, err := idempotencyToken(config)
 	if err != nil {
 		return "", nil, err
 	}
+	// Copy so the token reaches the API but never lands in state (keeps state
+	// token-free and plans clean).
+	req := config.RunNow
 	req.IdempotencyToken = token
 
-	// RunNow returns only the new run id, so we return a nil remote and let the
-	// framework read it back via DoRead.
+	// RunNow returns only the run id; return a nil remote and let the framework
+	// read it back via DoRead.
 	wait, err := r.client.Jobs.RunNow(ctx, req)
 	if err != nil {
 		return "", nil, err
@@ -160,9 +159,9 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	if err != nil {
 		return nil, err
 	}
-	// TERMINATED/SKIPPED succeed even on a FAILED/TIMEDOUT/CANCELED result_state:
-	// the outcome is surfaced as readable state, not a deploy failure. Only
-	// INTERNAL_ERROR fails the deploy.
+	// TERMINATED/SKIPPED succeed even with a FAILED/TIMEDOUT/CANCELED
+	// result_state (surfaced as state, not a deploy failure); only INTERNAL_ERROR
+	// fails the deploy.
 	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, jobRunTimeout, nil)
 	if err != nil {
 		return nil, err
@@ -173,10 +172,9 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 // DoUpdate is intentionally not implemented: a run can't be modified in place,
 // so any change recreates it (delete + a fresh RunNow).
 
-// DoDelete deletes the run via jobs/runs/delete, on both destroy and recreate.
-// WaitAfterCreate leaves a run terminal by the end of its deploy, so on recreate
-// the prior run is safe to delete; destroying a run still active from an
-// interrupted deploy is rejected by the API and surfaces to the user.
+// DoDelete deletes the run (on destroy and recreate). WaitAfterCreate leaves
+// runs terminal, so a recreate's prior run is safe to delete; destroying a run
+// still active from an interrupted deploy is rejected by the API and surfaces.
 func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *JobRunState) error {
 	runID, err := parseRunID(id)
 	if err != nil {
@@ -193,13 +191,14 @@ func parseRunID(id string) (int64, error) {
 	return result, nil
 }
 
-// idempotencyToken derives a stable token from the RunNow request so that a
-// retried run-now returns the existing run instead of creating a duplicate.
-// The token is the hex SHA-256 of the request's JSON with idempotency_token
-// cleared; hex SHA-256 is exactly 64 chars, the Jobs API maximum.
-func idempotencyToken(req jobs.RunNow) (string, error) {
-	req.IdempotencyToken = ""
-	canonical, err := json.Marshal(req)
+// idempotencyToken derives a stable token from the desired state so a retried
+// run-now dedupes to the existing run. Hashing the whole JobRunState (not just
+// RunNow) means fields we add later join dedup automatically. Token = hex
+// SHA-256 of the state JSON with idempotency_token cleared (64 chars, API max).
+func idempotencyToken(state *JobRunState) (string, error) {
+	toHash := *state
+	toHash.IdempotencyToken = ""
+	canonical, err := json.Marshal(toHash)
 	if err != nil {
 		return "", err
 	}

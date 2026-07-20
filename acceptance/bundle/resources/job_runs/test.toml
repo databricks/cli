@@ -3,9 +3,8 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 RecordRequests = true
 
-# idempotency_token is a SHA-256 of the RunNow request, and the fake assigns
-# job_id from a time-based counter, so the hash differs every run. Mask it so the
-# run-now request goldens stay stable.
+# idempotency_token is a SHA-256 that differs every run (job_id comes from a
+# time-based counter). Mask just that field so run-now goldens stay stable.
 [[Repls]]
-Old = '[0-9a-f]{64}'
-New = '[IDEMPOTENCY_TOKEN]'
+Old = '"idempotency_token": "[0-9a-f]{64}"'
+New = '"idempotency_token": "[IDEMPOTENCY_TOKEN]"'
