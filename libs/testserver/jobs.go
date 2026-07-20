@@ -867,18 +867,29 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	// Simulate cloud behavior: first poll returns RUNNING, next returns TERMINATED SUCCESS.
+	// Simulate cloud behavior: first poll returns RUNNING, next returns TERMINATED.
 	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
-		// Transition stored state to TERMINATED for the next poll.
+		// The per-task result states were already computed in JobsRunNow (a task
+		// whose file is missing is marked FAILED). Roll them up into the run-level
+		// result rather than forcing SUCCESS, so a failed task surfaces as a failed
+		// run on the next poll. Carry the failed task's error into the run-level
+		// state_message, mirroring how the cloud reports the failure reason.
+		resultState := jobs.RunResultStateSuccess
+		stateMessage := ""
+		for i := range run.Tasks {
+			if run.Tasks[i].State != nil && run.Tasks[i].State.ResultState == jobs.RunResultStateFailed {
+				resultState = jobs.RunResultStateFailed
+				stateMessage = s.JobRunOutputs[run.Tasks[i].RunId].Error
+				break
+			}
+		}
+
+		// Transition stored state to TERMINATED for the next poll, preserving the
+		// existing per-task states.
 		run.State = &jobs.RunState{
 			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateSuccess,
-		}
-		for i := range run.Tasks {
-			run.Tasks[i].State = &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateTerminated,
-				ResultState:    jobs.RunResultStateSuccess,
-			}
+			ResultState:    resultState,
+			StateMessage:   stateMessage,
 		}
 		s.JobRuns[runIdInt] = run
 
