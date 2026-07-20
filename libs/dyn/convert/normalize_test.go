@@ -860,6 +860,79 @@ func TestNormalizeAnchors(t *testing.T) {
 	}, vout.AsAny())
 }
 
+func TestNormalizeAnchorContainers(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+	}
+
+	anchor := func() dyn.Value {
+		return dyn.V(map[string]dyn.Value{"name": dyn.V("x")}).MarkAnchor()
+	}
+
+	tcases := []struct {
+		name     string
+		value    dyn.Value
+		wantWarn bool
+	}{
+		{
+			name:     "list of anchors",
+			value:    dyn.V([]dyn.Value{anchor(), anchor()}),
+			wantWarn: false,
+		},
+		{
+			name: "map of anchors",
+			value: dyn.V(map[string]dyn.Value{
+				"a": anchor(),
+				"b": anchor(),
+			}),
+			wantWarn: false,
+		},
+		{
+			name:     "nested list of anchors",
+			value:    dyn.V([]dyn.Value{dyn.V([]dyn.Value{anchor()})}),
+			wantWarn: false,
+		},
+		{
+			name:     "list with a non-anchor element",
+			value:    dyn.V([]dyn.Value{anchor(), dyn.V(map[string]dyn.Value{"name": dyn.V("x")})}),
+			wantWarn: true,
+		},
+		{
+			name:     "empty list",
+			value:    dyn.V([]dyn.Value{}),
+			wantWarn: true,
+		},
+		{
+			name:     "empty map",
+			value:    dyn.V(map[string]dyn.Value{}),
+			wantWarn: true,
+		},
+	}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			var typ Tmp
+			vin := dyn.V(map[string]dyn.Value{
+				"foo":     dyn.V("bar"),
+				"x-thing": tc.value,
+			})
+
+			vout, diags := Normalize(typ, vin)
+			if tc.wantWarn {
+				assert.Len(t, diags, 1)
+				assert.Equal(t, "unknown field: x-thing", diags[0].Summary)
+			} else {
+				assert.Empty(t, diags)
+			}
+
+			// The unknown field is never retained regardless of the warning.
+			assert.Equal(t, map[string]any{
+				"foo": "bar",
+			}, vout.AsAny())
+		})
+	}
+}
+
 func TestNormalizeAnyFromSlice(t *testing.T) {
 	var typ any
 	v1 := dyn.NewValue(1, []dyn.Location{{File: "file", Line: 1, Column: 1}})

@@ -1,0 +1,31 @@
+bundle:
+  name: test-bundle
+
+# This test verifies that anchors grouped under x-* keys as a list or a map do
+# not trigger "unknown field" warnings. The suppression recurses into containers
+# whose elements are all anchors.
+
+x-task-defaults: &task_defaults
+  max_retries: 3
+
+x-parameter-items:
+  - &p_root
+    name: root_path
+    default: ${workspace.root_path}
+  - &p_core_whl
+    name: core_whl
+    default: ${var.core_whl}
+
+x-parameter-map:
+  root: &p_root_map
+    name: root_path
+
+resources:
+  jobs:
+    my_job:
+      name: "test job with anchors"
+      tasks:
+        - task_key: "main"
+          <<: *task_defaults
+          notebook_task:
+            notebook_path: "/some/notebook"
