@@ -108,7 +108,7 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 		// The serverless environment version (e.g. "4") is recorded on the job's
 		// environment spec, unlike the bundle path where it is unavailable. Return
 		// it so ResolveTarget pins the matching serverless-vN instead of defaulting
-		// to v4. An empty version (older jobs) falls back to v4 in ResolveTarget.
+		// to v5. An empty version (older jobs) falls back to v5 in ResolveTarget.
 		version := environmentVersion(job.Settings.Environments[0])
 		// Tasks can reference any environment_key, so if the job's environments do
 		// not all share one version there is no single correct local environment
@@ -146,7 +146,7 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 //
 // The version can arrive in either of two fields. environment_version is the
 // current one; client is its deprecated predecessor ("Use environment_version
-// instead") and is still what some jobs pin. Reading both means the v4 fallback
+// instead") and is still what some jobs pin. Reading both means the v5 fallback
 // and the divergence guard observe whichever field actually carries the pin,
 // rather than treating a client-pinned job as unversioned. base_environment is
 // deliberately ignored: it is a path/ID, not a version.

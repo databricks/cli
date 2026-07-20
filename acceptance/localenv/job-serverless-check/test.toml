@@ -4,7 +4,7 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
 DATABRICKS_LOCALENV_CONSTRAINT_SOURCE = "$DATABRICKS_HOST"
 
 # A serverless job pins its environment_version on the environment spec, so the
-# target resolves to that serverless-vN (here v3) rather than defaulting to v4.
+# target resolves to that serverless-vN (here v3) rather than defaulting to v5.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/get"
 Response.Body = '''

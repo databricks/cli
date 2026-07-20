@@ -14,6 +14,14 @@ import (
 // by 3.10.6, so only the former bumps the minor.
 var clauseRe = regexp.MustCompile(`^(>=|<=|===|==|~=|!=|<|>)?\s*(\d+)\.(\d+)(\.\d+)?`)
 
+// defaultServerlessVersion is the serverless environment version used when the
+// source (a serverless job with no recorded version, or a bundle that only
+// records "serverless") does not pin one. It is a documented stand-in for the
+// latest LTS (spec §4.3 / §target-resolution); VS Code resolves the real version
+// itself and passes --serverless-version explicitly, so this fallback only
+// applies when the version is genuinely unknown.
+const defaultServerlessVersion = "v5"
+
 // NormalizeServerless returns the canonical "vN" spelling of a serverless
 // version accepting "4", "v4", or "V4".
 func NormalizeServerless(version string) string {
