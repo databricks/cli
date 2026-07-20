@@ -15,12 +15,13 @@ var (
 	errNoProjectTable  = errors.New("pyproject.toml has no [project] table to hold requires-python")
 )
 
-// managedMarkerStart and managedMarkerEnd bracket the region of pyproject.toml that
-// "databricks local-env python sync" owns. Everything between them is rewritten on each merge;
-// everything outside is preserved byte-for-byte.
-const (
-	managedMarkerStart = "# managed by databricks local-env python sync — do not edit"
-	managedMarkerEnd   = "# end managed by databricks local-env python sync"
+// managedMarkerStart and managedMarkerEnd bracket the region of pyproject.toml
+// that this command owns. Everything between them is rewritten on each merge;
+// everything outside is preserved byte-for-byte. They derive from CommandName so
+// a command rename stays a single-place change (spec §0 / invariant 8).
+var (
+	managedMarkerStart = "# managed by databricks " + CommandName + " — do not edit"
+	managedMarkerEnd   = "# end managed by databricks " + CommandName
 )
 
 // Region names reported back to the caller via MergeManaged's regions return value.

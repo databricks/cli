@@ -1,1 +1,1 @@
-trace $CLI local-env python sync --serverless v4 --constraints-only --check --output json
+trace $CLI environments setup-local --serverless v4 --constraints-only --check --output json

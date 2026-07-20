@@ -1,4 +1,4 @@
-package localenv
+package environments
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 // libslocalenv.RepoConstraintBaseURL (which reads its own repo env var).
 const envConstraintSource = "DATABRICKS_LOCALENV_CONSTRAINT_SOURCE"
 
-func newSyncCommand() *cobra.Command {
+func newSetupLocalCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   libslocalenv.CommandVerb,
 		Short: "Provision a local Python environment matched to a Databricks compute target",
@@ -29,6 +29,10 @@ databricks-connect version, and dependency constraints published for that key,
 then provisions a matched .venv with uv. A project with no pyproject.toml is
 initialized from scratch; an existing pyproject.toml is merged in place (its
 env-owned sections are refreshed, user-owned content is preserved).`,
+		// Hidden until the environment constraints repository is publicly
+		// available: the command is runnable for dogfooding but stays out of
+		// help and completion until it is unveiled.
+		Hidden: true,
 	}
 	// The target is selected via flags; reject stray positional args rather than
 	// silently ignoring them.
@@ -54,7 +58,7 @@ func addTargetFlags(cmd *cobra.Command) {
 	cmd.MarkFlagsMutuallyExclusive("cluster", "serverless", "job")
 }
 
-// runPipeline builds and runs the local-env Pipeline.
+// runPipeline builds and runs the setup-local Pipeline.
 func runPipeline(cmd *cobra.Command) error {
 	ctx := cmd.Context()
 

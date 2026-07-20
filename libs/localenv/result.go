@@ -3,14 +3,18 @@ package localenv
 import "fmt"
 
 // Command path components, defined once so a rename touches a single place
-// (spec §0 / invariant 8 / scenario 21). The cmd layer builds the Cobra
-// command tree from CommandGroup/CommandSubgroup/CommandVerb; the --json
-// "command" field uses CommandName. No other string re-spells the command path.
+// (spec §0 / invariant 8 / scenario 21). The verb is a subcommand of the
+// generated "environments" group; the --json "command" field uses CommandName.
+// No other string re-spells the command path.
+//
+// P0 is Python-only and takes no language selector: the verb is bare
+// "setup-local" (spec §naming). A language axis (setup-local python / scala) is
+// the preferred shape only if more languages are ever added, and nothing is
+// reserved for it here.
 const (
-	CommandGroup    = "local-env"
-	CommandSubgroup = "python"
-	CommandVerb     = "sync"
-	CommandName     = CommandGroup + " " + CommandSubgroup + " " + CommandVerb
+	CommandGroup = "environments"
+	CommandVerb  = "setup-local"
+	CommandName  = CommandGroup + " " + CommandVerb
 
 	// SchemaVersion is the version of the --json output contract (spec §6).
 	// Bump it on any breaking change to the JSON shape.
