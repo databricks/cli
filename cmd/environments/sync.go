@@ -56,7 +56,10 @@ func addTargetFlags(cmd *cobra.Command) {
 	cmd.Flags().String("constraint-source-url", "", "URL for the constraint source (overrides "+envConstraintSource+")")
 	// Hide constraint-source-url from casual --help output; it is a power-user escape hatch.
 	_ = cmd.Flags().MarkHidden("constraint-source-url")
-	cmd.MarkFlagsMutuallyExclusive("cluster-id", "cluster-name", "serverless-version", "job-id")
+	// The mutual exclusivity of the target flags is enforced in the pipeline's
+	// preflight (as E_USAGE) rather than via cmd.MarkFlagsMutuallyExclusive, so
+	// the conflict is reported through the phase/JSON contract the --output json
+	// consumer relies on, instead of a bare pre-RunE Cobra error.
 }
 
 // runPipeline builds and runs the setup-local Pipeline.
@@ -77,12 +80,9 @@ func runPipeline(cmd *cobra.Command) error {
 		Serverless:  serverless,
 		Job:         job,
 	}
-	// ValidateTargetFlags is kept despite MarkFlagsMutuallyExclusive above:
-	// it also validates the library path (no Cobra equivalent) and guards
-	// non-Cobra call paths such as tests that invoke runPipeline directly.
-	if err := libslocalenv.ValidateTargetFlags(targetFlags); err != nil {
-		return err
-	}
+	// Flag validation (including mutual exclusivity) happens in the pipeline's
+	// preflight, so a conflict is reported as E_USAGE through the phase/JSON
+	// contract rather than as a bare error here.
 
 	mode := libslocalenv.ModeDefault
 	if constraintsOnly {
