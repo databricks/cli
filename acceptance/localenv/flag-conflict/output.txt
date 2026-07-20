@@ -1,1 +1,1 @@
-Error: if any flags in the group [cluster-id serverless-version job-id] are set none of the others can be; [cluster-id serverless-version] were all set
+Error: if any flags in the group [cluster-id cluster-name serverless-version job-id] are set none of the others can be; [cluster-id serverless-version] were all set
