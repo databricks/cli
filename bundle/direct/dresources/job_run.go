@@ -15,9 +15,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// jobRunTimeout bounds how long WaitAfterCreate waits for a run to finish.
-// Matches the SDK's default RunNow waiter timeout.
-const jobRunTimeout = 20 * time.Minute
+// jobRunWaitTimeout bounds how long WaitAfterCreate polls GetRun for the run to
+// reach a terminal state. It is deliberately large (not the SDK's 20m default)
+// so a legitimately long run (schema migration, model training) doesn't fail the
+// deploy just because it outlived a fixed budget, while still guaranteeing an
+// unattended deploy (CI) can't hang forever on a run whose job has no server-side
+// timeout_seconds. Matches the budget `bundle run` already uses to wait on a job
+// run (see jobRunTimeout in bundle/run/job.go).
+const jobRunWaitTimeout = 24 * time.Hour
 
 // JobRunState is what we persist for a triggered run: the RunNow request.
 type JobRunState struct {
@@ -162,7 +167,7 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	// TERMINATED/SKIPPED succeed even with a FAILED/TIMEDOUT/CANCELED
 	// result_state (surfaced as state, not a deploy failure); only INTERNAL_ERROR
 	// fails the deploy.
-	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, jobRunTimeout, nil)
+	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, jobRunWaitTimeout, nil)
 	if err != nil {
 		return nil, err
 	}
