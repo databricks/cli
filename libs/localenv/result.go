@@ -64,22 +64,29 @@ const (
 // ErrorCode is a stable failure-class identifier surfaced in --json error.code
 // (spec §7). Values are compared via the ErrorCode constants, never by
 // string-matching messages, and are defined once here.
+//
+// This set is the source of truth for the spec's error-code table; each code is
+// annotated with the phase that emits it. Two codes from the spec are
+// intentionally not defined because the CLI never emits them: E_PYTHON_POLICY
+// (a policy-gated failure whose signal source does not yet exist) and E_AUTH
+// (the shared workspace-client preflight, MustWorkspaceClient, surfaces the
+// standard CLI auth error before a command JSON object is ever built).
 type ErrorCode string
 
 const (
-	ErrUsage              ErrorCode = "E_USAGE"
-	ErrNoTarget           ErrorCode = "E_NO_TARGET"
-	ErrManagerUnsupported ErrorCode = "E_MANAGER_UNSUPPORTED"
-	ErrUvMissing          ErrorCode = "E_UV_MISSING"
-	ErrNotWritable        ErrorCode = "E_NOT_WRITABLE"
-	ErrResolve            ErrorCode = "E_RESOLVE"
-	ErrEnvUnsupported     ErrorCode = "E_ENV_UNSUPPORTED"
-	ErrFetch              ErrorCode = "E_FETCH"
-	ErrWrite              ErrorCode = "E_WRITE"
-	ErrMerge              ErrorCode = "E_MERGE"
-	ErrPythonInstall      ErrorCode = "E_PYTHON_INSTALL"
-	ErrProvision          ErrorCode = "E_PROVISION"
-	ErrValidate           ErrorCode = "E_VALIDATE"
+	ErrUsage              ErrorCode = "E_USAGE"               // preflight: incompatible flags
+	ErrManagerUnsupported ErrorCode = "E_MANAGER_UNSUPPORTED" // preflight: manager is not uv
+	ErrNotWritable        ErrorCode = "E_NOT_WRITABLE"        // preflight: project dir not writable
+	ErrUvMissing          ErrorCode = "E_UV_MISSING"          // preflight: uv not found / install failed
+	ErrNoTarget           ErrorCode = "E_NO_TARGET"           // resolve: no target from any source
+	ErrResolve            ErrorCode = "E_RESOLVE"             // resolve: target read failed / ambiguous name
+	ErrEnvUnsupported     ErrorCode = "E_ENV_UNSUPPORTED"     // fetch: no published env key
+	ErrFetch              ErrorCode = "E_FETCH"               // fetch: repo unreachable, no usable cache
+	ErrWrite              ErrorCode = "E_WRITE"               // merge: greenfield write failed
+	ErrMerge              ErrorCode = "E_MERGE"               // merge: existing-project merge failed
+	ErrPythonInstall      ErrorCode = "E_PYTHON_INSTALL"      // provision: uv python install failed
+	ErrProvision          ErrorCode = "E_PROVISION"           // provision: uv sync failed
+	ErrValidate           ErrorCode = "E_VALIDATE"            // validate: post-provision version mismatch
 )
 
 // PipelineError is a failure carrying a stable code, the phase at which it
@@ -133,9 +140,10 @@ func NewError(code ErrorCode, err error, format string, args ...any) *PipelineEr
 }
 
 // TargetInfo is the resolved compute target (spec §6 "target"). Source records
-// which of the four precedence sources was used. SparkVersion is the raw cluster
-// runtime string the resolver read; it is folded into EnvKey (dbr/<SparkVersion>)
-// and is not part of the JSON contract, kept only as intermediate resolver state.
+// which precedence source was used ("cluster", "serverless", "job", or
+// "bundle"). SparkVersion is the raw cluster runtime string the resolver read;
+// it is folded into EnvKey (dbr/<SparkVersion>) and is not part of the JSON
+// contract, kept only as intermediate resolver state.
 type TargetInfo struct {
 	Source            string `json:"source"`
 	ClusterID         string `json:"clusterId,omitempty"`
