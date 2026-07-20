@@ -1,0 +1,29 @@
+
+=== deploy packages the local code source
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== the snapshot tarball is uploaded to the user's repo_snapshots directory
+/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/repo_snapshots/src/src_[SNAPSHOT].tar.gz
+
+=== code_source_path points at the uploaded archive (no /Workspace prefix)
+/Users/[USERNAME]/.air/repo_snapshots/src/src_[SNAPSHOT].tar.gz
+
+=== command_path is translated to its absolute synced workspace path
+/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/src/command.sh
+
+=== a requirements.yaml is written next to command_path
+/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/src/requirements.yaml
+
+=== re-deploying unchanged code is a cache hit: the tarball is not re-uploaded
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+tarball uploads on redeploy: 0
