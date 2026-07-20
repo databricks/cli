@@ -1,11 +1,11 @@
-# Computed volume_path was added after the previous release (#5550), so the
-# seed deploy with the previous CLI cannot resolve ${resources.volumes.*.volume_path}.
-# Covered by no_drift on direct.
+# Computed volume_path (#5550) is not in CLI_PREV, so the seed deploy cannot
+# resolve ${resources.volumes.*.volume_path}. Remove once #5550 has shipped
+# in two releases (CLI_PREV is the N-2 release). Covered by no_drift on direct.
 EnvMatrixExclude.no_volume_path_job_ref = ["INPUT_CONFIG=volume_path_job_ref.yml.tmpl"]
 
 # postgres_project.yml.tmpl sets enable_pg_native_login: false, which triggers a
 # state serialization bug on the previous CLI (fixed by #5782).
-# Broken on CLI_PREV=1.6.0; remove after the next release.
+# Remove once #5782 has shipped in two releases (CLI_PREV is the N-2 release).
 EnvMatrixExclude.no_postgres_project = ["INPUT_CONFIG=postgres_project.yml.tmpl"]
 
 # The 1000-task scale case is covered by no_drift. Running it here adds ~1.5 min

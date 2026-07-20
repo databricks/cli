@@ -323,7 +323,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		} else if UseVersion != "" {
 			version := UseVersion
 			if version == "latest" {
-				v, err := resolveLatestVersion(buildDir)
+				v, err := resolvePrevReleasedVersion(cwd)
 				require.NoError(t, err)
 				version = v
 			}
@@ -355,12 +355,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	repls.SetPath(execPath, "[CLI]")
 
 	if !inprocessMode {
-		// Download 0.293.0 and the latest released CLI concurrently: on a cold
-		// CI cache both downloads run in parallel; the file-based caches in
-		// DownloadCLI / resolveLatestVersion make warm runs a no-op either way.
+		prevVersion, err := resolvePrevReleasedVersion(cwd)
+		require.NoError(t, err)
+
+		// Download 0.293.0 and the N-2 released CLI concurrently: on a cold CI
+		// cache both downloads run in parallel; DownloadCLI's on-disk cache
+		// makes warm runs a no-op either way.
 		var (
-			cli293Path, cliPrevPath, prevVersion string
-			g                                    errgroup.Group
+			cli293Path, cliPrevPath string
+			g                       errgroup.Group
 		)
 		g.Go(func() error {
 			p, err := DownloadCLI(buildDir, "0.293.0")
@@ -368,12 +371,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			return err
 		})
 		g.Go(func() error {
-			v, err := resolveLatestVersion(buildDir)
-			if err != nil {
-				return err
-			}
-			prevVersion = v
-			p, err := DownloadCLI(buildDir, v)
+			p, err := DownloadCLI(buildDir, prevVersion)
 			cliPrevPath = p
 			return err
 		})
@@ -1333,45 +1331,43 @@ func CreateReleaseArtifact(t *testing.T, cwd, releasesDir, coverDir, osName, arc
 	t.Logf("Created %s %s release: %s", osName, arch, zipPath)
 }
 
-// resolveLatestVersion returns the latest released CLI version (e.g. "0.293.0"),
-// using a file-based cache in buildDir valid for 1 hour.
-func resolveLatestVersion(buildDir string) (string, error) {
-	cachePath := filepath.Join(buildDir, "latest_version.txt")
-	if info, err := os.Stat(cachePath); err == nil && time.Since(info.ModTime()) < time.Hour {
-		data, err := os.ReadFile(cachePath)
-		if err != nil {
-			return "", err
-		}
-		if version := strings.TrimSpace(string(data)); version != "" {
-			return version, nil
-		}
-	}
+// releaseHeaderRegexp matches "## Release vX.Y.Z" lines in CHANGELOG.md.
+var releaseHeaderRegexp = regexp.MustCompile(`^## Release v(\d+\.\d+\.\d+)`)
 
-	const url = "https://api.github.com/repos/databricks/cli/releases/latest"
-	resp, err := http.Get(url)
+// resolvePrevReleasedVersion returns the second-most-recent released CLI
+// version from the repo's CHANGELOG.md (i.e. N-2 rather than N-1).
+//
+// Why N-2 and not N-1: the release workflow lands the CHANGELOG bump on main
+// *before* the release tag is pushed, so between those two events the top
+// entry names a version whose GitHub release archive does not exist yet.
+// Tests that run in that window would 404. Skipping one entry back guarantees
+// we always resolve to a version that has published binaries.
+//
+// Reading from CHANGELOG.md avoids a network call to api.github.com (rate
+// limits, CI reachability) and pins the version to the tree at HEAD so every
+// runner sees the same CLI_PREV.
+func resolvePrevReleasedVersion(cwd string) (string, error) {
+	path := filepath.Join(cwd, "..", "CHANGELOG.md")
+	f, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to fetch %s: %s", url, resp.Status)
-	}
+	defer f.Close()
 
-	var release struct {
-		TagName string `json:"tag_name"`
+	var versions []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		if m := releaseHeaderRegexp.FindStringSubmatch(scanner.Text()); m != nil {
+			versions = append(versions, m[1])
+			if len(versions) == 2 {
+				return versions[1], nil
+			}
+		}
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+	if err := scanner.Err(); err != nil {
 		return "", err
 	}
-	version := strings.TrimPrefix(release.TagName, "v")
-	if version == "" {
-		return "", errors.New("empty tag_name in GitHub latest release response")
-	}
-
-	if err := os.WriteFile(cachePath, []byte(version), 0o644); err != nil {
-		return "", err
-	}
-	return version, nil
+	return "", fmt.Errorf("expected at least 2 release headers in %s, found %d", path, len(versions))
 }
 
 // DownloadCLI downloads a released CLI binary archive for the given version,
