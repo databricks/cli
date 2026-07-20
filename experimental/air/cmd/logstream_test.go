@@ -215,20 +215,37 @@ func TestEmitLogLineText(t *testing.T) {
 }
 
 func TestEmitNoLogs(t *testing.T) {
-	status := logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", stateMessage: "boom"}
+	tests := []struct {
+		name   string
+		status logRunStatus
+		want   string
+	}{
+		{
+			name:   "terminal",
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", stateMessage: "boom"},
+			want:   "No logs available for run 7. Run terminated in state FAILED: boom\n",
+		},
+		{
+			name:   "running",
+			status: logRunStatus{lifeCycleState: "RUNNING"},
+			want:   "No logs available yet for run 7, which is still in state RUNNING\n",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var text bytes.Buffer
+			emitNoLogs(&text, logRequest{runID: 7}, tc.status)
+			assert.Equal(t, tc.want, text.String())
 
-	var text bytes.Buffer
-	emitNoLogs(&text, logRequest{runID: 7}, status)
-	assert.Equal(t, "No logs available for run 7. Run terminated in state FAILED: boom\n", text.String())
-
-	var jsonBuf bytes.Buffer
-	emitNoLogs(&jsonBuf, logRequest{runID: 7, node: 1, jsonOutput: true}, status)
-	var ev logEvent
-	require.NoError(t, json.Unmarshal(jsonBuf.Bytes(), &ev))
-	assert.Equal(t, "ERROR", ev.Type)
-	assert.Equal(t, 1, ev.Node)
-	assert.Contains(t, ev.Line, "No logs available for run 7")
-	assert.Contains(t, ev.Line, "boom")
+			var jsonBuf bytes.Buffer
+			emitNoLogs(&jsonBuf, logRequest{runID: 7, node: 1, jsonOutput: true}, tc.status)
+			var ev logEvent
+			require.NoError(t, json.Unmarshal(jsonBuf.Bytes(), &ev))
+			assert.Equal(t, "ERROR", ev.Type)
+			assert.Equal(t, 1, ev.Node)
+			assert.Equal(t, strings.TrimRight(tc.want, "\n"), ev.Line)
+		})
+	}
 }
 
 func TestRequestPageRetriesThenFallsBack(t *testing.T) {
