@@ -659,13 +659,14 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 	}
 
 	// Try both with and without .py extension (notebooks are stored with .py but referenced without)
-	notebookData := s.files[notebookPath].Data
-	if len(notebookData) == 0 {
-		notebookData = s.files[notebookPath+".py"].Data
+	entry, ok := s.files[notebookPath]
+	if !ok {
+		entry, ok = s.files[notebookPath+".py"]
 	}
-	if len(notebookData) == 0 {
+	if !ok {
 		return "", fmt.Errorf("notebook not found in workspace: %s (also tried .py)", notebookPath)
 	}
+	notebookData := entry.Data
 
 	// Create a temporary Python environment for notebook execution
 	tmpDir, err := os.MkdirTemp("", "notebook-task-*")
@@ -748,10 +749,11 @@ func (s *FakeWorkspace) executeSparkPythonTask(task jobs.Task) (string, error) {
 		pythonPath = "/" + pythonPath
 	}
 
-	pythonData := s.files[pythonPath].Data
-	if len(pythonData) == 0 {
+	entry, ok := s.files[pythonPath]
+	if !ok {
 		return "", fmt.Errorf("python file not found in workspace: %s", pythonPath)
 	}
+	pythonData := entry.Data
 
 	env, cleanup, err := s.getOrCreateClusterEnv(task)
 	if err != nil {
