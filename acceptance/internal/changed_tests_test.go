@@ -179,6 +179,32 @@ func TestParseChangedTests(t *testing.T) {
 			want: map[string]ChangedTest{},
 		},
 		{
+			name: "deleted invariant config helper still re-enables its variant",
+			diff: "D\tacceptance/bundle/invariant/configs/job.yml.tmpl-init.sh",
+			want: map[string]ChangedTest{
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: []string{"INPUT_CONFIG=job.yml.tmpl"}},
+			},
+		},
+		{
+			name: "renamed invariant config re-enables the new variant only",
+			diff: "R096\tacceptance/bundle/invariant/configs/job.yml.tmpl\tacceptance/bundle/invariant/configs/task.yml.tmpl",
+			want: map[string]ChangedTest{
+				"bundle/invariant/no_drift":     {Added: false, VariantFilters: []string{"INPUT_CONFIG=task.yml.tmpl"}},
+				"bundle/invariant/migrate":      {Added: false, VariantFilters: []string{"INPUT_CONFIG=task.yml.tmpl"}},
+				"bundle/invariant/continue_293": {Added: false, VariantFilters: []string{"INPUT_CONFIG=task.yml.tmpl"}},
+			},
+		},
+		{
+			name: "renamed shared file re-enables descendants via its old path",
+			diff: "R100\tacceptance/bundle/resources/test.toml\tacceptance/bundle/resources/jobs/test.toml",
+			want: map[string]ChangedTest{
+				"bundle/resources":      {Added: false, VariantFilters: nil},
+				"bundle/resources/jobs": {Added: false, VariantFilters: nil},
+			},
+		},
+		{
 			name: "deleted config alongside a modified config keeps only the modified filter",
 			diff: "M\tacceptance/bundle/invariant/configs/job.yml.tmpl\nD\tacceptance/bundle/invariant/configs/job_with_permissions.yml.tmpl",
 			want: map[string]ChangedTest{

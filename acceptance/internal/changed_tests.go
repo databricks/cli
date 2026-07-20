@@ -61,12 +61,11 @@ func ChangedTests(baseRef, headRef string, testDirs map[string]bool) (map[string
 // of affected acceptance test dirs. It is split from ChangedTests so the mapping
 // logic can be unit-tested with literal diff strings, without a git repo.
 //
-// Each diff line is "<status>\t<path>" (or "<status>\t<old>\t<new>" for renames);
-// the last field is the current path. A changed invariant config
-// (acceptance/bundle/invariant/configs/*.yml.tmpl) maps to all invariant subdirs
-// with an INPUT_CONFIG= filter, so touching job.yml.tmpl re-enables all subdirs
-// but only for their job.yml.tmpl variants. A direct change to a subdir takes
-// precedence and re-enables all of its variants.
+// A rename record "R<score>\t<old>\t<new>" affects tests at both paths: the old
+// path's removal and the new path's modification can each touch a different test
+// or shared input. Each record is therefore expanded into one classification per
+// affected path (a rename into a deletion of the old path plus a modification of
+// the new) so a single classifier covers deletes, renames, and edits uniformly.
 func ParseChangedTests(diffOutput string, testDirs map[string]bool) map[string]ChangedTest {
 	result := map[string]ChangedTest{}
 
@@ -76,79 +75,94 @@ func ParseChangedTests(diffOutput string, testDirs map[string]bool) map[string]C
 			continue
 		}
 		status := fields[0]
-		path := fields[len(fields)-1]
-
-		// A changed invariant config re-enables all invariant subdirs with an
-		// INPUT_CONFIG filter, unless a subdir was already unlocked by a non-config change.
-		if strings.HasPrefix(path, invariantConfigsPrefix) {
-			// A deleted config has no variant left to run, so ignore it. Without
-			// this, a deletion would add an INPUT_CONFIG= filter matching nothing.
-			if status == "D" {
-				continue
-			}
-			configName := path[len(invariantConfigsPrefix):]
-			// Strip -init.sh / -cleanup.sh suffixes to get the base config name.
-			if i := strings.Index(configName, "-"); i > 0 && strings.HasSuffix(configName, ".sh") {
-				configName = configName[:i]
-			}
-			if strings.HasSuffix(configName, ".yml.tmpl") {
-				for dir := range testDirs {
-					if strings.HasPrefix(dir, invariantDirPrefix) {
-						existing, ok := result[dir]
-						if !ok || existing.VariantFilters != nil {
-							existing.VariantFilters = append(existing.VariantFilters, "INPUT_CONFIG="+configName)
-							result[dir] = existing
-						}
-					}
-				}
-			}
+		if strings.HasPrefix(status, "R") {
+			// A rename removes the old path and modifies content at the new one.
+			// The new path is "M", not "A": moving a script into a dir does not
+			// make that dir a brand-new test.
+			classifyPath("D", fields[1], testDirs, result)
+			classifyPath("M", fields[2], testDirs, result)
 			continue
 		}
-
-		// bin/ holds helper scripts placed on PATH for every test, so a change to
-		// any of them can affect any test: re-enable the whole suite.
-		if strings.HasPrefix(path, binPrefix) {
-			markSubtree("", testDirs, result)
-			continue
-		}
-
-		// A shared file (script.prepare/script.cleanup/test.toml) is concatenated
-		// or inherited into every test at or below its dir, so it re-enables that
-		// whole subtree. This runs before the single-dir mapping because such a
-		// file can live inside a test dir that also has nested test dirs, which
-		// the single-dir mapping would miss.
-		if sharedTestFile(path) {
-			markSubtree(containingDir(path), testDirs, result)
-			continue
-		}
-
-		dir := testDirForFile(path, testDirs)
-		if dir == "" {
-			// The file is not owned by any test dir. It is a shared input in a
-			// non-test dir (a sourced _script, a fixture read via $TESTDIR/..),
-			// so conservatively re-enable every test dir in its subtree. A stray
-			// file at the acceptance root (no subtree dir) affects nothing
-			// identifiable and is ignored.
-			if base := containingDir(path); base != "" {
-				markSubtree(base, testDirs, result)
-			}
-			continue
-		}
-		// A direct change re-enables all variants, so clear any config-scoped
-		// filter (nil VariantFilters = all variants). Added is sticky: once any
-		// line marks the dir new it stays new, since diff lines for the same dir
-		// arrive in arbitrary order. A script file with status A means the test
-		// dir is brand new; renames (R) land here as the destination path but are
-		// not "added".
-		ct := result[dir]
-		ct.VariantFilters = nil
-		if status == "A" && strings.HasSuffix(path, "/script") {
-			ct.Added = true
-		}
-		result[dir] = ct
+		classifyPath(status, fields[len(fields)-1], testDirs, result)
 	}
 
 	return result
+}
+
+// classifyPath records the test dirs affected by a single changed path with the
+// given git status (A/M/D). It handles, in precedence order: invariant configs,
+// bin/ helpers, shared inherited files, an owning test dir, and finally the
+// subtree of any other shared input in a non-test dir.
+func classifyPath(status, path string, testDirs map[string]bool, result map[string]ChangedTest) {
+	// A changed invariant config re-enables all invariant subdirs with an
+	// INPUT_CONFIG filter, unless a subdir was already unlocked by a non-config change.
+	if strings.HasPrefix(path, invariantConfigsPrefix) {
+		configName := path[len(invariantConfigsPrefix):]
+		// Strip -init.sh / -cleanup.sh suffixes to get the base config name.
+		if i := strings.Index(configName, "-"); i > 0 && strings.HasSuffix(configName, ".sh") {
+			configName = configName[:i]
+		}
+		if !strings.HasSuffix(configName, ".yml.tmpl") {
+			return
+		}
+		// A deleted config template has no variant left to run, so ignore it;
+		// otherwise it would add an INPUT_CONFIG= filter matching nothing. A
+		// deleted -init.sh/-cleanup.sh helper is not the template (configName was
+		// stripped above), so its variant still exists and is re-enabled.
+		if status == "D" && strings.HasSuffix(path, ".yml.tmpl") {
+			return
+		}
+		for dir := range testDirs {
+			if strings.HasPrefix(dir, invariantDirPrefix) {
+				existing, ok := result[dir]
+				if !ok || existing.VariantFilters != nil {
+					existing.VariantFilters = append(existing.VariantFilters, "INPUT_CONFIG="+configName)
+					result[dir] = existing
+				}
+			}
+		}
+		return
+	}
+
+	// bin/ holds helper scripts placed on PATH for every test, so a change to
+	// any of them can affect any test: re-enable the whole suite.
+	if strings.HasPrefix(path, binPrefix) {
+		markSubtree("", testDirs, result)
+		return
+	}
+
+	// A shared file (script.prepare/script.cleanup/test.toml) is concatenated or
+	// inherited into every test at or below its dir, so it re-enables that whole
+	// subtree. This runs before the single-dir mapping because such a file can
+	// live inside a test dir that also has nested test dirs, which the single-dir
+	// mapping would miss.
+	if sharedTestFile(path) {
+		markSubtree(containingDir(path), testDirs, result)
+		return
+	}
+
+	dir := testDirForFile(path, testDirs)
+	if dir == "" {
+		// The file is not owned by any test dir. It is a shared input in a
+		// non-test dir (a sourced _script, a fixture read via $TESTDIR/..), so
+		// conservatively re-enable every test dir in its subtree. A stray file at
+		// the acceptance root (no subtree dir) affects nothing identifiable and is
+		// ignored.
+		if base := containingDir(path); base != "" {
+			markSubtree(base, testDirs, result)
+		}
+		return
+	}
+	// A direct change re-enables all variants, so clear any config-scoped filter
+	// (nil VariantFilters = all variants). Added is sticky: once any path marks
+	// the dir new it stays new, since paths for the same dir arrive in arbitrary
+	// order. A script file with status A means the test dir is brand new.
+	ct := result[dir]
+	ct.VariantFilters = nil
+	if status == "A" && strings.HasSuffix(path, "/script") {
+		ct.Added = true
+	}
+	result[dir] = ct
 }
 
 // sharedTestFilenames are files that, when they live in an ancestor dir, affect
