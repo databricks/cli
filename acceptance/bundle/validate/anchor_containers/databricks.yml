@@ -9,16 +9,16 @@ task_defaults: &task_defaults
   max_retries: 3
 
 parameter_items:
-  - &p_root
-    name: root_path
-    default: ${workspace.root_path}
-  - &p_core_whl
-    name: core_whl
-    default: ${var.core_whl}
+  - &p_first
+    name: first
+    default: one
+  - &p_second
+    name: second
+    default: two
 
 parameter_map:
-  root: &p_root_map
-    name: root_path
+  entry: &p_map_entry
+    name: first
 
 resources:
   jobs:
