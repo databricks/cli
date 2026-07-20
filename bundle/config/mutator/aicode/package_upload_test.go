@@ -1,65 +1,43 @@
 package aicode
 
 import (
-	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// bundleWithCodeSource builds a bundle rooted at dir whose single AI Runtime task
-// points at codeSourcePath.
+// configWithCodeSource parses a minimal bundle config whose single AI Runtime task
+// points at codeSourcePath, as a dyn value. It reads YAML directly so the config
+// retains code_source_path regardless of whether the SDK's typed struct has it.
 //
 // The end-to-end package/upload/rewrite behavior (local dir -> tarball -> upload ->
 // rewritten code_source_path) runs the full mutator pipeline (sync file list,
 // workspace filer) and is covered by acceptance tests under
 // acceptance/bundle/ai_runtime_task. This unit test covers only the pure
 // config-collection seam that does not touch the pipeline.
-func bundleWithCodeSource(t *testing.T, dir, codeSourcePath string) *bundle.Bundle {
+func configWithCodeSource(t *testing.T, codeSourcePath string) dyn.Value {
 	t.Helper()
-	b := &bundle.Bundle{
-		BundleRootPath: dir,
-		SyncRootPath:   dir,
-		Config: config.Root{
-			Bundle: config.Bundle{Target: "default"},
-			Workspace: config.Workspace{
-				CurrentUser: &config.User{User: &iam.User{UserName: "me@databricks.com"}},
-			},
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"train": {
-						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
-								{
-									TaskKey:       "train",
-									AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp"},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
-	// code_source_path is read via dyn, not the typed SDK field, so set it on the value.
-	bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Set(v, "resources.jobs.train.tasks[0].ai_runtime_task.code_source_path", dyn.V(codeSourcePath))
-	})
-	return b
+	yml := `
+resources:
+  jobs:
+    train:
+      tasks:
+        - task_key: train
+          ai_runtime_task:
+            experiment: exp
+            code_source_path: ` + codeSourcePath + `
+`
+	v, err := yamlloader.LoadYAML("test.yml", strings.NewReader(yml))
+	require.NoError(t, err)
+	return v
 }
 
 func TestCollectLocalCodeSourcesFindsLocalPath(t *testing.T) {
-	b := bundleWithCodeSource(t, t.TempDir(), "./src")
-	sources, diags := collectLocalCodeSources(b)
+	sources, diags := collectLocalCodeSources(configWithCodeSource(t, "./src"))
 	require.Empty(t, diags)
 	require.Len(t, sources, 1)
 	assert.Equal(t, "./src", sources[0].value)
@@ -70,8 +48,7 @@ func TestCollectLocalCodeSourcesSkipsRemotePaths(t *testing.T) {
 		"/Workspace/Users/me/code.tar.gz",
 		"/Volumes/main/default/code/existing.tar.gz",
 	} {
-		b := bundleWithCodeSource(t, t.TempDir(), remote)
-		sources, diags := collectLocalCodeSources(b)
+		sources, diags := collectLocalCodeSources(configWithCodeSource(t, remote))
 		require.Empty(t, diags)
 		assert.Empty(t, sources, "remote code_source_path %q must not be collected", remote)
 	}

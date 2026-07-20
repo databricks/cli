@@ -60,7 +60,7 @@ func (m *packageAndUpload) Name() string {
 }
 
 func (m *packageAndUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	sources, diags := collectLocalCodeSources(b)
+	sources, diags := collectLocalCodeSources(b.Config.Value())
 	if diags.HasError() {
 		return diags
 	}
@@ -182,29 +182,28 @@ func userWorkspaceHome(b *bundle.Bundle) (string, error) {
 	return "/Workspace/Users/" + u.UserName, nil
 }
 
-// collectLocalCodeSources returns every AI Runtime task code_source_path that
-// points at a local directory. Already-remote values are skipped.
-func collectLocalCodeSources(b *bundle.Bundle) ([]codeSource, diag.Diagnostics) {
+// collectLocalCodeSources returns every AI Runtime task code_source_path in root
+// that points at a local directory. Already-remote values are skipped. It reads the
+// dyn value directly (read-only), so it does not depend on the typed SDK field.
+func collectLocalCodeSources(root dyn.Value) ([]codeSource, diag.Diagnostics) {
 	var sources []codeSource
 	var diags diag.Diagnostics
 
 	for _, pattern := range codeSourcePatterns {
-		err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-			return dyn.MapByPattern(root, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				value, ok := v.AsString()
-				if !ok {
-					return v, fmt.Errorf("expected string, got %s", v.Kind())
-				}
-				if !libraries.IsLocalPath(value) {
-					return v, nil
-				}
-				sources = append(sources, codeSource{
-					configPath: p,
-					location:   v.Location(),
-					value:      value,
-				})
+		_, err := dyn.MapByPattern(root, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			value, ok := v.AsString()
+			if !ok {
+				return v, fmt.Errorf("expected string, got %s", v.Kind())
+			}
+			if !libraries.IsLocalPath(value) {
 				return v, nil
+			}
+			sources = append(sources, codeSource{
+				configPath: p,
+				location:   v.Location(),
+				value:      value,
 			})
+			return v, nil
 		})
 		if err != nil {
 			diags = diags.Extend(diag.FromErr(err))
