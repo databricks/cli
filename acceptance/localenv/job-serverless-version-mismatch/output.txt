@@ -1,5 +1,5 @@
 preflight  ok  check
-resolve    error  resolving job 12345: job 12345 has serverless environments with differing versions; pass --serverless explicitly to disambiguate
+resolve    error  resolving job 12345: job 12345 has serverless environments with differing versions; pass --serverless-version explicitly to disambiguate
 fetch      pending
 merge      pending
 provision  pending

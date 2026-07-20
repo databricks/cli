@@ -1,1 +1,1 @@
-musterr $CLI environments setup-local --cluster test-cluster-id --check
+musterr $CLI environments setup-local --cluster-id test-cluster-id --dry-run

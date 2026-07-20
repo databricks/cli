@@ -1,1 +1,1 @@
-trace $CLI environments setup-local --job 12345 --check
+trace $CLI environments setup-local --job-id 12345 --dry-run
