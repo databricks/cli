@@ -62,7 +62,7 @@ func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState
 		}
 		key, ok := byTypeID[selector]
 		if !ok {
-			log.Debugf(ctx, "config-remote-sync: skipping selector %s:%s, no deployed resource with that id", resourceType, id)
+			log.Debugf(ctx, "config-remote-sync: skipping selector %q, no deployed resource with that id", selector)
 			continue
 		}
 		if !slices.Contains(keys, key) {
