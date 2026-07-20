@@ -104,6 +104,9 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 	}
 
 	if f.Serverless != "" {
+		if !ValidServerlessVersion(f.Serverless) {
+			return nil, NewError(ErrResolve, nil, "invalid --serverless-version %q: expected a version number like 5", f.Serverless)
+		}
 		return &TargetInfo{
 			Source:            "serverless",
 			ServerlessVersion: NormalizeServerless(f.Serverless),

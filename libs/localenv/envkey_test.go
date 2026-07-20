@@ -25,6 +25,15 @@ func TestDefaultServerlessVersionIsBareNumber(t *testing.T) {
 	assert.Equal(t, "serverless/serverless-v5", EnvKeyForServerless(defaultServerlessVersion))
 }
 
+func TestValidServerlessVersion(t *testing.T) {
+	for _, ok := range []string{"5", "4", "v5", "V5", "17", "0"} {
+		assert.True(t, ValidServerlessVersion(ok), "%q should be valid", ok)
+	}
+	for _, bad := range []string{"", "v", "vv5", "5x", "latest", " 5", "5 ", "v5.1", "-5"} {
+		assert.False(t, ValidServerlessVersion(bad), "%q should be invalid", bad)
+	}
+}
+
 func TestEnvKeyForSparkVersion(t *testing.T) {
 	assert.Equal(t, "dbr/15.4.x-scala2.12", EnvKeyForSparkVersion("15.4.x-scala2.12"))
 }
