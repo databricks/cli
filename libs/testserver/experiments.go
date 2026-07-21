@@ -71,6 +71,10 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		ArtifactLocation: experiment.ArtifactLocation,
 		Tags:             append(experiment.Tags, appendTags...),
 		LifecycleStage:   "active",
+		// TraceLocation is immutable and echoed back by the real GetExperiment.
+		// Dropping it here makes the direct-engine diff see local-present vs
+		// remote-absent and spuriously recreate the experiment.
+		TraceLocation: experiment.TraceLocation,
 	}
 
 	s.Experiments[experimentId] = ml.GetExperimentResponse{
