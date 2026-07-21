@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/databricks/cli/experimental/genie/agentstream"
+	"github.com/databricks/cli/libs/genie/agentstream"
 )
 
 // SSE event type constants.

@@ -1,4 +1,4 @@
-package geniecmd
+package genie
 
 import (
 	"context"
