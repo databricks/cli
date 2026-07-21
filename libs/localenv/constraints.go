@@ -271,6 +271,14 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 	if strings.TrimSpace(requiresPython) == "" {
 		return "", "", nil, errors.New("constraint artifact has no [project].requires-python")
 	}
+	// Reject a requires-python that is present but yields no installable floor
+	// (e.g. ">=3", "<3.13", "*") here, before the body is cached. This is the
+	// same check the pipeline applies later; running it in the pre-cache guard
+	// ensures an unusable 2xx body cannot overwrite a valid cached copy and
+	// break offline fallback, which is the guard's stated purpose.
+	if _, err = PythonMinorFromRequires(requiresPython); err != nil {
+		return "", "", nil, fmt.Errorf("constraint artifact has an unusable [project].requires-python: %w", err)
+	}
 
 	for _, entry := range p.DependencyGroups.Dev {
 		if isDatabricksConnectDep(entry) {

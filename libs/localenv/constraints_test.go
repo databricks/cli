@@ -220,3 +220,42 @@ func TestFetchConstraintsFallsBackToCache(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, c.FromCache)
 }
+
+func TestParseConstraintsRejectsUnusableRequiresPython(t *testing.T) {
+	// requires-python present but with no installable floor is not a usable
+	// artifact; it must be rejected before caching (not only later in the
+	// pipeline) so it cannot poison the cache.
+	for _, rp := range []string{">=3", "<3.13", "!=3.12", "*", ">3"} {
+		toml := "[project]\nrequires-python = \"" + rp + "\"\n"
+		_, _, _, err := parseConstraints([]byte(toml))
+		require.Error(t, err, "requires-python %q should be rejected", rp)
+		assert.Contains(t, err.Error(), "unusable")
+	}
+}
+
+func TestFetchConstraintsUnusableBodyDoesNotPoisonCache(t *testing.T) {
+	// A good artifact populates the cache; a later 2xx body that is valid TOML but
+	// carries an unusable requires-python must NOT overwrite the last-good copy,
+	// so an offline run still recovers via the cache. This is the guard's purpose.
+	cacheDir := t.TempDir()
+	good := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(sampleToml))
+	}))
+	defer good.Close()
+	_, err := FetchConstraints(t.Context(), good.URL, "serverless/serverless-v4", cacheDir, true)
+	require.NoError(t, err)
+
+	// The repo now publishes a TOML-valid but unusable body (no installable floor).
+	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("[project]\nrequires-python = \">=3\"\n"))
+	}))
+	defer bad.Close()
+	_, err = FetchConstraints(t.Context(), bad.URL, "serverless/serverless-v4", cacheDir, true)
+	require.Error(t, err)
+
+	// The cache still holds the last-good copy: an offline fetch recovers it.
+	c, err := FetchConstraints(t.Context(), "http://127.0.0.1:0", "serverless/serverless-v4", cacheDir, true)
+	require.NoError(t, err)
+	assert.True(t, c.FromCache)
+	assert.Equal(t, "==3.12.*", c.RequiresPython)
+}
