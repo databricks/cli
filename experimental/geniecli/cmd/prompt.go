@@ -93,16 +93,6 @@ func buildSystemPrompt(host, profile string) string {
 	return fmt.Sprintf(systemPromptTemplate, hostText, profileLine)
 }
 
-// developerInstructionsOverride returns the Codex `-c key=value` override that
-// injects the system prompt for this session only. Codex loads
-// developer_instructions as an additive developer-role message, so this primes
-// the agent without replacing its base instructions or writing any config file.
-func developerInstructionsOverride(host, profile string) string {
-	prompt := buildSystemPrompt(host, profile)
-	// Codex parses the value as TOML, so the string must be quoted and escaped.
-	return "developer_instructions=" + tomlQuote(prompt)
-}
-
 // tomlQuote renders s as a TOML basic string: wrapped in double quotes with
 // backslashes, double quotes, and newlines escaped.
 func tomlQuote(s string) string {

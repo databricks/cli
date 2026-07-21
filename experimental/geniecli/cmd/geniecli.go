@@ -16,6 +16,7 @@ import (
 // user-facing surface: the user only ever interacts with `genie-cli`.
 func New() *cobra.Command {
 	var noSystemPrompt bool
+	var harness string
 
 	cmd := &cobra.Command{
 		Use:    "genie-cli [-- AGENT_ARGS...]",
@@ -30,9 +31,12 @@ needed. Databricks coding skills are installed and kept up to date on every
 launch, Databricks MCP tools are registered, and the agent is primed with a
 system prompt so it works effectively against Databricks out of the box.
 
-Any arguments after "--" are forwarded to the underlying agent, e.g.:
+Use --harness to pick which coding agent runs (default codex; opencode is also
+primed with the Databricks system prompt). Any arguments after "--" are
+forwarded to the underlying agent, e.g.:
 
-  databricks experimental genie-cli -- --full-auto`,
+  databricks experimental genie-cli -- --full-auto
+  databricks experimental genie-cli --harness opencode`,
 		// The agent takes over the terminal, so no bundle is loaded.
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
@@ -51,17 +55,18 @@ Any arguments after "--" are forwarded to the underlying agent, e.g.:
 				return err
 			}
 
-			// Configure the agent against this workspace. This also installs the
+			// Configure the harness against this workspace. This also installs the
 			// agent binary and the Databricks CLI the runtime depends on, so it
 			// must run before the plugin step (which drives the agent's own CLI).
-			if err := configureAgent(ctx, ucodePath, cfg); err != nil {
+			if err := configureAgent(ctx, ucodePath, harness, cfg); err != nil {
 				return err
 			}
 
-			// Install the Databricks skills plugin for the agent, then refresh it.
+			// Install the Databricks skills plugin for the harness, then refresh
+			// it. No-op for harnesses without a headless plugin (e.g. opencode).
 			// Refresh failures (offline, GitHub unreachable) are non-fatal: a stale
 			// plugin still works, so we warn and launch anyway.
-			if err := ensureDatabricksPlugin(ctx); err != nil {
+			if err := ensureDatabricksPlugin(ctx, harness); err != nil {
 				return err
 			}
 			refreshDatabricksPlugin(ctx)
@@ -70,18 +75,22 @@ Any arguments after "--" are forwarded to the underlying agent, e.g.:
 			registerMCP(ctx, ucodePath)
 
 			// Prime the agent to operate as a Databricks CLI assistant, injected
-			// per-session only (no config file is written). Carries the resolved
+			// per-session only (no user config is written). Carries the resolved
 			// host and profile so the agent acts against this workspace.
-			var systemPrompt string
+			var inj injection
 			if !noSystemPrompt {
-				systemPrompt = developerInstructionsOverride(cfg.Host, cfg.Profile)
+				inj, err = buildInjection(ctx, harness, cfg.Host, cfg.Profile)
+				if err != nil {
+					return err
+				}
 			}
 
 			cmdio.LogString(ctx, "Starting the Databricks agent...")
-			return launchAgent(ctx, ucodePath, systemPrompt, args)
+			return launchAgent(ctx, ucodePath, harness, inj, args)
 		},
 	}
 
+	cmd.Flags().StringVar(&harness, "harness", defaultHarness, "Coding agent to run (e.g. codex, opencode)")
 	cmd.Flags().BoolVar(&noSystemPrompt, "no-system-prompt", false, "Do not prime the agent with the default Databricks system prompt")
 
 	return cmd

@@ -1,7 +1,6 @@
 package genieclicmd
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,16 +22,6 @@ func TestBuildSystemPromptWithoutProfile(t *testing.T) {
 	// and must not be told to pass a specific `--profile <name>`.
 	assert.Contains(t, got, "resolved from the environment")
 	assert.NotContains(t, got, `--profile "`)
-}
-
-func TestDeveloperInstructionsOverrideIsQuotedTOML(t *testing.T) {
-	got := developerInstructionsOverride("https://myworkspace.databricks.com", "prod")
-	assert.True(t, strings.HasPrefix(got, `developer_instructions="`))
-	assert.True(t, strings.HasSuffix(got, `"`))
-	// The multi-line prompt must be escaped to a single TOML basic string.
-	value := strings.TrimPrefix(got, "developer_instructions=")
-	assert.NotContains(t, value[1:len(value)-1], "\n")
-	assert.Contains(t, value, `\n`)
 }
 
 func TestTomlQuoteEscapes(t *testing.T) {

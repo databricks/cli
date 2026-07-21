@@ -13,30 +13,40 @@ import (
 
 func TestConfigureArgs(t *testing.T) {
 	tests := []struct {
-		name string
-		cfg  *config.Config
-		want []string
+		name    string
+		harness string
+		cfg     *config.Config
+		want    []string
 	}{
 		{
-			name: "pat profile uses --use-pat",
-			cfg:  &config.Config{Profile: "prod", AuthType: auth.AuthTypePat},
-			want: []string{"ucode", "configure", "--agents", "codex", "--skip-validate", "--skip-upgrade", "--profiles", "prod", "--use-pat"},
+			name:    "pat profile uses --use-pat",
+			harness: "codex",
+			cfg:     &config.Config{Profile: "prod", AuthType: auth.AuthTypePat},
+			want:    []string{"ucode", "configure", "--agents", "codex", "--skip-validate", "--skip-upgrade", "--profiles", "prod", "--use-pat"},
 		},
 		{
-			name: "oauth profile omits --use-pat",
-			cfg:  &config.Config{Profile: "prod", AuthType: "databricks-cli"},
-			want: []string{"ucode", "configure", "--agents", "codex", "--skip-validate", "--skip-upgrade", "--profiles", "prod"},
+			name:    "oauth profile omits --use-pat",
+			harness: "codex",
+			cfg:     &config.Config{Profile: "prod", AuthType: "databricks-cli"},
+			want:    []string{"ucode", "configure", "--agents", "codex", "--skip-validate", "--skip-upgrade", "--profiles", "prod"},
 		},
 		{
-			name: "host without profile falls back to --workspaces",
-			cfg:  &config.Config{Host: "https://myworkspace.databricks.com"},
-			want: []string{"ucode", "configure", "--agents", "codex", "--skip-validate", "--skip-upgrade", "--workspaces", "https://myworkspace.databricks.com"},
+			name:    "host without profile falls back to --workspaces",
+			harness: "codex",
+			cfg:     &config.Config{Host: "https://myworkspace.databricks.com"},
+			want:    []string{"ucode", "configure", "--agents", "codex", "--skip-validate", "--skip-upgrade", "--workspaces", "https://myworkspace.databricks.com"},
+		},
+		{
+			name:    "harness is forwarded to --agents",
+			harness: "opencode",
+			cfg:     &config.Config{Profile: "prod", AuthType: "databricks-cli"},
+			want:    []string{"ucode", "configure", "--agents", "opencode", "--skip-validate", "--skip-upgrade", "--profiles", "prod"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := configureArgs("ucode", tt.cfg)
+			got, err := configureArgs("ucode", tt.harness, tt.cfg)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
@@ -44,7 +54,7 @@ func TestConfigureArgs(t *testing.T) {
 }
 
 func TestConfigureArgsNoIdentity(t *testing.T) {
-	_, err := configureArgs("ucode", &config.Config{})
+	_, err := configureArgs("ucode", "codex", &config.Config{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "databricks auth login")
 }
@@ -105,25 +115,37 @@ func TestEnsureUcodeInstallsWhenMissing(t *testing.T) {
 
 func TestLaunchAgent(t *testing.T) {
 	tests := []struct {
-		name         string
-		systemPrompt string
-		userArgs     []string
-		want         []string
+		name     string
+		harness  string
+		inj      injection
+		userArgs []string
+		wantArgs []string
+		wantEnv  []string // env entries that must be present
 	}{
 		{
-			name: "no prompt, no args",
-			want: []string{"/usr/local/bin/ucode", "codex", "--skip-preflight"},
+			name:     "no prompt, no args",
+			harness:  "codex",
+			wantArgs: []string{"/usr/local/bin/ucode", "codex", "--skip-preflight"},
 		},
 		{
 			name:     "user args only",
+			harness:  "codex",
 			userArgs: []string{"--full-auto"},
-			want:     []string{"/usr/local/bin/ucode", "codex", "--skip-preflight", "--", "--full-auto"},
+			wantArgs: []string{"/usr/local/bin/ucode", "codex", "--skip-preflight", "--", "--full-auto"},
 		},
 		{
-			name:         "system prompt injected before user args",
-			systemPrompt: `developer_instructions="hi"`,
-			userArgs:     []string{"--full-auto"},
-			want:         []string{"/usr/local/bin/ucode", "codex", "--skip-preflight", "--", "-c", `developer_instructions="hi"`, "--full-auto"},
+			name:     "codex injection forwards -c before user args",
+			harness:  "codex",
+			inj:      injection{forwardArgs: []string{"-c", `developer_instructions="hi"`}},
+			userArgs: []string{"--full-auto"},
+			wantArgs: []string{"/usr/local/bin/ucode", "codex", "--skip-preflight", "--", "-c", `developer_instructions="hi"`, "--full-auto"},
+		},
+		{
+			name:     "opencode injection sets env, no forwarded args",
+			harness:  "opencode",
+			inj:      injection{env: []string{`OPENCODE_CONFIG_CONTENT={"instructions":["/x"]}`}},
+			wantArgs: []string{"/usr/local/bin/ucode", "opencode", "--skip-preflight"},
+			wantEnv:  []string{`OPENCODE_CONFIG_CONTENT={"instructions":["/x"]}`},
 		},
 	}
 
@@ -131,15 +153,18 @@ func TestLaunchAgent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			restore := launch
 			t.Cleanup(func() { launch = restore })
-			var gotArgs []string
+			var got execv.Options
 			launch = func(opts execv.Options) error {
-				gotArgs = opts.Args
+				got = opts
 				return nil
 			}
 
-			err := launchAgent(t.Context(), "/usr/local/bin/ucode", tt.systemPrompt, tt.userArgs)
+			err := launchAgent(t.Context(), "/usr/local/bin/ucode", tt.harness, tt.inj, tt.userArgs)
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, gotArgs)
+			assert.Equal(t, tt.wantArgs, got.Args)
+			for _, e := range tt.wantEnv {
+				assert.Contains(t, got.Env, e)
+			}
 		})
 	}
 }

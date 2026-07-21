@@ -18,16 +18,21 @@ const pluginScope = installer.ScopeGlobal
 // global CLI install maps to an agent's user-level scope.
 const nativeScope = "user"
 
-// ensureDatabricksPlugin installs the Databricks skills plugin for the agent if
-// the CLI has not already recorded installing it. Codex must already be on PATH
-// here (the configure step installs it) because the plugin installs through
-// Codex's own CLI. Codex exposes no plugin manifest the CLI can read back, so
-// prior installs are detected from the CLI's own install state rather than from
-// the agent (unlike Claude Code).
-func ensureDatabricksPlugin(ctx context.Context) error {
-	agent := agents.ByName(agentName)
-	if agent == nil {
-		return fmt.Errorf("unknown agent %q", agentName)
+// ensureDatabricksPlugin installs the Databricks skills plugin for the harness
+// if the CLI has not already recorded installing it. The harness binary must
+// already be on PATH here (the configure step installs it) because the plugin
+// installs through the agent's own CLI.
+//
+// It is a no-op for a harness that has no headless plugin (e.g. OpenCode, which
+// is skills-only) or that the aitools registry doesn't know: those harnesses
+// rely on the injected system prompt for Databricks priming instead. Codex
+// exposes no plugin manifest the CLI can read back, so prior installs are
+// detected from the CLI's own install state rather than from the agent (unlike
+// Claude Code).
+func ensureDatabricksPlugin(ctx context.Context, harness string) error {
+	agent := agents.ByName(harness)
+	if agent == nil || agent.Plugin == nil {
+		return nil
 	}
 
 	installed, err := pluginRecorded(ctx, agent.Name)

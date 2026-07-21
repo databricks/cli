@@ -27,11 +27,6 @@ const (
 	// https://github.com/databricks/ucode
 	ucodeInstallSpec = "git+https://github.com/databricks/ucode"
 
-	// agentName is the coding agent genie-cli drives. It matches the agent
-	// registry name in libs/aitools/agents so the Databricks plugin is installed
-	// for the same agent that gets launched.
-	agentName = "codex"
-
 	// mcpLocation is the Unity Catalog schema whose MCP services are registered
 	// for the agent. system.ai hosts the built-in Databricks MCP services.
 	mcpLocation = "system.ai"
@@ -76,10 +71,11 @@ func ensureUcode(ctx context.Context) (string, error) {
 }
 
 // configureArgs builds the launcher's non-interactive configure argv for the
-// resolved workspace config. The launcher needs an explicit workspace identity
-// or it prompts interactively, which would break the non-interactive setup.
-func configureArgs(ucodePath string, cfg *config.Config) ([]string, error) {
-	args := []string{ucodePath, "configure", "--agents", agentName, "--skip-validate", "--skip-upgrade"}
+// chosen harness and resolved workspace config. The launcher needs an explicit
+// workspace identity or it prompts interactively, which would break the
+// non-interactive setup.
+func configureArgs(ucodePath, harness string, cfg *config.Config) ([]string, error) {
+	args := []string{ucodePath, "configure", "--agents", harness, "--skip-validate", "--skip-upgrade"}
 
 	switch {
 	case cfg.Profile != "":
@@ -97,10 +93,10 @@ func configureArgs(ucodePath string, cfg *config.Config) ([]string, error) {
 	return args, nil
 }
 
-// configureAgent points the agent at this workspace's AI Gateway. This also
+// configureAgent points the harness at this workspace's AI Gateway. This also
 // installs the agent binary and the Databricks CLI the launcher relies on.
-func configureAgent(ctx context.Context, ucodePath string, cfg *config.Config) error {
-	args, err := configureArgs(ucodePath, cfg)
+func configureAgent(ctx context.Context, ucodePath, harness string, cfg *config.Config) error {
+	args, err := configureArgs(ucodePath, harness, cfg)
 	if err != nil {
 		return err
 	}
@@ -122,28 +118,24 @@ func registerMCP(ctx context.Context, ucodePath string) {
 	}
 }
 
-// launchAgent replaces the current process with the agent session.
+// launchAgent replaces the current process with the harness session.
 // --skip-preflight trusts the configure step we just ran and skips a redundant
-// auth + gateway re-validation. When systemPrompt is non-empty it is injected
-// for this session only via the agent's `-c developer_instructions=` override
-// (an additive developer-role message; no config file is written). Any userArgs
-// are forwarded to the underlying agent after ours.
-func launchAgent(ctx context.Context, ucodePath, systemPrompt string, userArgs []string) error {
+// auth + gateway re-validation. The system prompt is delivered per the harness's
+// injection (forwarded args and/or extra env); userArgs are forwarded to the
+// underlying agent after ours.
+func launchAgent(ctx context.Context, ucodePath, harness string, inj injection, userArgs []string) error {
 	// Everything after "--" is forwarded verbatim to the underlying agent.
-	var forwarded []string
-	if systemPrompt != "" {
-		forwarded = append(forwarded, "-c", systemPrompt)
-	}
+	forwarded := append([]string{}, inj.forwardArgs...)
 	forwarded = append(forwarded, userArgs...)
 
-	args := []string{ucodePath, agentName, "--skip-preflight"}
+	args := []string{ucodePath, harness, "--skip-preflight"}
 	if len(forwarded) > 0 {
 		args = append(args, "--")
 		args = append(args, forwarded...)
 	}
 	return launch(execv.Options{
 		Args: args,
-		Env:  envSlice(ctx),
+		Env:  append(envSlice(ctx), inj.env...),
 	})
 }
 
