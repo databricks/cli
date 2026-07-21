@@ -7,15 +7,8 @@ export BROWSER="browser.py"
 # Set custom config file location via env var
 export DATABRICKS_CONFIG_FILE="./home/custom.databrickscfg"
 
-# Create an existing custom config file with a DIFFERENT host.
-# Since --profile and --host conflict, the CLI should error.
-cat > "./home/custom.databrickscfg" <<EOF
-[custom-test]
-host = https://old-host.cloud.databricks.com
-auth_type = pat
-token = old-token-123
-EOF
-
+# home/custom.databrickscfg is a checked-in input: an existing custom config file
+# with a DIFFERENT host. Since --profile and --host conflict, the CLI should error.
 title "Initial custom config file (with old host)\n"
 cat "./home/custom.databrickscfg"
 

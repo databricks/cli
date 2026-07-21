@@ -30,10 +30,21 @@ class DeploymentSpec:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Workspace path of the bash script to execute on each node in this
-    deployment. The CLI uploads the user's script and populates this.
-    Customers calling the Jobs API directly should upload their script to
-    the workspace first and supply the resulting path here.
+    [Private Preview] Workspace path of the script to run on each node in this deployment.
+    Upload the script to this path and supply the path here. When the task
+    runs, the file at this path is run on each node; if it fails, the task
+    fails with its exit code.
+    
+    Example script contents:
+    
+    # Plain Python:
+    python train.py --epochs 10
+    
+    # Multi-GPU via accelerate:
+    accelerate launch train.py --config config.yaml
+    
+    # Distributed via torchrun:
+    torchrun --nproc_per_node=8 train.py
     """
 
     compute: VariableOr[ComputeSpec]
@@ -68,10 +79,21 @@ class DeploymentSpecDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Workspace path of the bash script to execute on each node in this
-    deployment. The CLI uploads the user's script and populates this.
-    Customers calling the Jobs API directly should upload their script to
-    the workspace first and supply the resulting path here.
+    [Private Preview] Workspace path of the script to run on each node in this deployment.
+    Upload the script to this path and supply the path here. When the task
+    runs, the file at this path is run on each node; if it fails, the task
+    fails with its exit code.
+    
+    Example script contents:
+    
+    # Plain Python:
+    python train.py --epochs 10
+    
+    # Multi-GPU via accelerate:
+    accelerate launch train.py --config config.yaml
+    
+    # Distributed via torchrun:
+    torchrun --nproc_per_node=8 train.py
     """
 
     compute: VariableOr[ComputeSpecParam]

@@ -12,8 +12,10 @@ trace print_requests.py //unity-catalog/permissions --sort
 grep -v 'TO_REMOVE' databricks.yml > updated.yml && mv updated.yml databricks.yml
 
 # Generate update plan: entry.RemoteState captures both principals as GrantsState.
+# remote_state.__embed__ principal order is non-deterministic (the backend, and the
+# testserver mirroring it, iterate a map), so sort it by principal for a stable golden.
 trace $CLI bundle plan -o json > tmp.plan.json
-jq '.plan["resources.schemas.myschema.grants"]' tmp.plan.json > out.plan.grants.json
+jq '.plan["resources.schemas.myschema.grants"] | .remote_state.__embed__ |= sort_by(.principal)' tmp.plan.json > out.plan.grants.json
 trace print_requests.py --get //unity-catalog/permissions --sort
 
 # Deploy from serialized plan (READPLAN=1) or without (READPLAN="").

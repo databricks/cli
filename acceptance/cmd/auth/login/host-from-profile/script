@@ -1,10 +1,7 @@
 sethome "./home"
 
-# Create an existing profile with a host
-cat > "./home/.databrickscfg" <<EOF
-[existing-profile]
-host = $DATABRICKS_HOST
-EOF
+# An existing profile with a host.
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
 title "Initial profile\n"
 cat "./home/.databrickscfg"

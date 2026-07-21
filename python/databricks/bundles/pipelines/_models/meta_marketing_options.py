@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.pipelines._models.meta_marketing_options_meta_marketing_custom_report_options import (
+    MetaMarketingOptionsMetaMarketingCustomReportOptions,
+    MetaMarketingOptionsMetaMarketingCustomReportOptionsParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -41,6 +45,17 @@ class MetaMarketingOptions:
     """
     [Beta] (Optional) Window in days to revisit data during sync to capture
     updated conversion data from the API, shared by prebuilt and custom reports.
+    """
+
+    custom_report_options: VariableOrOptional[
+        MetaMarketingOptionsMetaMarketingCustomReportOptions
+    ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Per-table custom report definition. When set, defines the shape of the insights
+    call for this table (level/fields/breakdowns/action_breakdowns/etc.). Supersedes the deprecated
+    flat report-shape fields above.
     """
 
     level: VariableOrOptional[str] = None
@@ -98,6 +113,17 @@ class MetaMarketingOptionsDict(TypedDict, total=False):
     """
     [Beta] (Optional) Window in days to revisit data during sync to capture
     updated conversion data from the API, shared by prebuilt and custom reports.
+    """
+
+    custom_report_options: VariableOrOptional[
+        MetaMarketingOptionsMetaMarketingCustomReportOptionsParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Per-table custom report definition. When set, defines the shape of the insights
+    call for this table (level/fields/breakdowns/action_breakdowns/etc.). Supersedes the deprecated
+    flat report-shape fields above.
     """
 
     level: VariableOrOptional[str]

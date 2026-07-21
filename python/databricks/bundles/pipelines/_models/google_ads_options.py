@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
+from databricks.bundles.pipelines._models.google_ads_custom_report_options import (
+    GoogleAdsCustomReportOptions,
+    GoogleAdsCustomReportOptionsParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -26,6 +30,16 @@ class GoogleAdsOptions:
     [Private Preview] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
     and access customer accounts under this manager account.
     Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
+    """
+
+    custom_report_options: VariableOrOptional[GoogleAdsCustomReportOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Custom report definition. When set, the table is treated as a
+    user-defined Google Ads custom report: the connector synthesizes a GAQL
+    query from the resource, fields, segments, and metrics specified here.
+    When unset, the table must match one of the connector's prebuilt sources.
     """
 
     lookback_window_days: VariableOrOptional[int] = None
@@ -63,6 +77,16 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
     [Private Preview] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
     and access customer accounts under this manager account.
     Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
+    """
+
+    custom_report_options: VariableOrOptional[GoogleAdsCustomReportOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Custom report definition. When set, the table is treated as a
+    user-defined Google Ads custom report: the connector synthesizes a GAQL
+    query from the resource, fields, segments, and metrics specified here.
+    When unset, the table must match one of the connector's prebuilt sources.
     """
 
     lookback_window_days: VariableOrOptional[int]

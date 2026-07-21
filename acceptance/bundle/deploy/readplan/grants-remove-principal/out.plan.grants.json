@@ -25,15 +25,15 @@
     "full_name": "main.myschema",
     "__embed__": [
       {
-        "principal": "[USERNAME]",
-        "privileges": [
-          "USE_SCHEMA"
-        ]
-      },
-      {
         "principal": "extra@example.test",
         "privileges": [
           "CREATE_TABLE"
+        ]
+      },
+      {
+        "principal": "[USERNAME]",
+        "privileges": [
+          "USE_SCHEMA"
         ]
       }
     ]
