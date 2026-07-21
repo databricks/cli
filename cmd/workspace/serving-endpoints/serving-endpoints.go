@@ -3,6 +3,7 @@
 package serving_endpoints
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -168,6 +169,7 @@ func newCreate() *cobra.Command {
 	// TODO: array: rate_limits
 	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
+	// TODO: complex arg: telemetry_config
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a new serving endpoint.`
@@ -186,7 +188,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -302,7 +304,7 @@ Create a new PT serving endpoint.`
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		wait, err := w.ServingEndpoints.CreateProvisionedThroughputEndpoint(ctx, createProvisionedThroughputEndpointReq)
@@ -1615,7 +1617,7 @@ Update config of a PT serving endpoint.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateProvisionedThroughputEndpointConfigReq.Name = args[0]
 

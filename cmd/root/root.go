@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -19,7 +21,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/cli/libs/versioncheck"
 	"github.com/spf13/cobra"
 )
 
@@ -80,13 +81,13 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withCommandExecIdInUserAgent(ctx)
 		ctx = withUpstreamInUserAgent(ctx)
 		ctx = withInteractiveModeInUserAgent(ctx)
+		ctx = installer.WithAiToolsInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
 
-		// Refresh the latest-version cache in the background (no-op when
-		// suppressed). The result is shown by [versioncheck.Notice] after the
-		// command completes, so this never blocks the command.
-		versioncheck.StartBackgroundRefresh(ctx, cmd)
+		// Recommend installing Databricks AI tooling to Claude Code when it is
+		// driving the CLI without the tooling installed (best-effort, stderr only).
+		agents.MaybeHint(ctx, cmd)
 		return nil
 	}
 
@@ -202,12 +203,6 @@ Stack Trace:
 	})
 	if telemetryErr != nil {
 		log.Infof(ctx, "telemetry upload failed: %s", telemetryErr)
-	}
-
-	// Print a "new version available" notice if one is due (no-op when
-	// suppressed, on error, or when nothing is cached yet).
-	if msg := versioncheck.Notice(cmd.Context(), cmd, err); msg != "" {
-		fmt.Fprintln(cmd.ErrOrStderr(), msg)
 	}
 
 	return err

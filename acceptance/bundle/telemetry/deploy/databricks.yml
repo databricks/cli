@@ -2,6 +2,15 @@ bundle:
   name: test-bundle
   uuid: 11111111-2222-3333-4444-555555555555
 
+# Restrict the upload to a fixed set of files under src/ so upload_file_count and
+# upload_file_sizes in the telemetry event are deterministic. Without this the sync
+# would also sweep up acceptance-harness files written during the run
+# (out.requests.txt, output.txt, ...), whose sizes vary. The src/ files span three
+# size buckets (small, ~1.4 KiB, ~6 KiB) so the histogram has multiple non-zero entries.
+sync:
+  paths:
+    - src
+
 resources:
   jobs:
     job_one:

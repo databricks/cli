@@ -22,6 +22,7 @@ func TestConvertVolume(t *testing.T) {
 			StorageLocation: "s3://bucket/path",
 			VolumeType:      "EXTERNAL",
 		},
+		VolumePath: "/Volumes/catalog/schema/name",
 		Grants: []catalog.PrivilegeAssignment{
 			{
 				Privileges: []catalog.Privilege{catalog.PrivilegeReadVolume},

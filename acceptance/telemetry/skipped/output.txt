@@ -1,6 +1,6 @@
 
 >>> [CLI] selftest send-telemetry --debug
-HH:MM:SS Info: start pid=PID version=[DEV_VERSION] args="[CLI], selftest, send-telemetry, --debug"
+HH:MM:SS Info: start pid=PID version=[CLI_VERSION] args="[CLI], selftest, send-telemetry, --debug"
 HH:MM:SS Debug: [Local Cache] using cache key: [SHA256_HASH] pid=PID
 HH:MM:SS Debug: [Local Cache] cache miss, computing pid=PID
 HH:MM:SS Debug: GET /.well-known/databricks-config

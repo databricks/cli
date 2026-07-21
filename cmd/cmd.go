@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/cmd/experimental"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
+	"github.com/databricks/cli/cmd/localenv"
 	"github.com/databricks/cli/cmd/pipelines"
 	"github.com/databricks/cli/cmd/quickstart"
 	"github.com/databricks/cli/cmd/root"
@@ -68,13 +69,6 @@ func New(ctx context.Context) *cobra.Command {
 	// Add workspace subcommands.
 	workspaceCommands := workspace.All()
 	for _, cmd := range workspaceCommands {
-		// The auto-generated `bundle` workspace service (DMS) shares its name
-		// with the DAB `bundle` command tree (cmd/bundle). Registering both
-		// here clobbers the DAB tree's help output. Skip the generated one;
-		// callers still have `databricks api ...` for the DMS endpoints.
-		if cmd.Name() == "bundle" {
-			continue
-		}
 		// Order the permissions subcommands after the main commands.
 		for _, sub := range cmd.Commands() {
 			// some commands override groups in overrides.go, leave them as-is
@@ -120,6 +114,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(cache.New())
 	cli.AddCommand(experimental.New())
 	cli.AddCommand(psql.New())
+	cli.AddCommand(localenv.New())
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))

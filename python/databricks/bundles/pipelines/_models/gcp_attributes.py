@@ -24,6 +24,10 @@ class GcpAttributes:
     """
 
     availability: VariableOrOptional[GcpAvailability] = None
+    """
+    This field determines whether the spark executors will be scheduled to run on preemptible
+    VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.
+    """
 
     boot_disk_size: VariableOrOptional[int] = None
     """
@@ -34,7 +38,7 @@ class GcpAttributes:
     """
     :meta private: [EXPERIMENTAL]
     
-    The confidential computing technology for this cluster's instances.
+    [Private Preview] The confidential computing technology for this cluster's instances.
     Currently only SEV_SNP is supported, and only on N2D instance types.
     When not set, no confidential computing is applied.
     """
@@ -95,6 +99,10 @@ class GcpAttributesDict(TypedDict, total=False):
     """"""
 
     availability: VariableOrOptional[GcpAvailabilityParam]
+    """
+    This field determines whether the spark executors will be scheduled to run on preemptible
+    VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.
+    """
 
     boot_disk_size: VariableOrOptional[int]
     """
@@ -105,7 +113,7 @@ class GcpAttributesDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    The confidential computing technology for this cluster's instances.
+    [Private Preview] The confidential computing technology for this cluster's instances.
     Currently only SEV_SNP is supported, and only on N2D instance types.
     When not set, no confidential computing is applied.
     """

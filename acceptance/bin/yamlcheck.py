@@ -3,9 +3,8 @@
 import os
 import subprocess
 import sys
-from pathlib import Path
 from difflib import unified_diff
-
+from pathlib import Path
 
 NAME = "yamlfmt"
 if sys.platform.startswith("win"):

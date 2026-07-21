@@ -166,6 +166,8 @@ func (g *genieSpace) saveConfiguration(ctx context.Context, b *bundle.Bundle, ge
 		return err
 	}
 
+	warnIfNotIncluded(ctx, b, resourcePath)
+
 	return nil
 }
 
@@ -440,10 +442,6 @@ bundle files automatically, useful during active Genie space development.`,
 	// Lookup flags.
 	cmd.Flags().StringVar(&g.existingID, "existing-id", "", `ID of the Genie space to generate configuration for`)
 	cmd.Flags().StringVar(&g.resource, "resource", "", `resource key of Genie space to watch for changes`)
-
-	// Alias lookup flag that includes the resource type name.
-	cmd.Flags().StringVar(&g.existingID, "existing-genie-space-id", "", `ID of the Genie space to generate configuration for`)
-	cmd.Flags().MarkHidden("existing-genie-space-id")
 
 	// Output flags.
 	cmd.Flags().StringVarP(&g.resourceDir, "resource-dir", "d", "resources", `directory to write the configuration to`)

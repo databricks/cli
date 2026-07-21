@@ -19,7 +19,7 @@ class FileFilter:
     """
     :meta private: [EXPERIMENTAL]
     
-    Include files with modification times occurring after the specified time.
+    [Private Preview] Include files with modification times occurring after the specified time.
     Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
     """
@@ -28,7 +28,7 @@ class FileFilter:
     """
     :meta private: [EXPERIMENTAL]
     
-    Include files with modification times occurring before the specified time.
+    [Private Preview] Include files with modification times occurring before the specified time.
     Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
     """
@@ -37,7 +37,7 @@ class FileFilter:
     """
     :meta private: [EXPERIMENTAL]
     
-    Include files with file names matching the pattern
+    [Private Preview] Include files with file names matching the pattern
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#path-glob-filter
     """
 
@@ -56,7 +56,7 @@ class FileFilterDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Include files with modification times occurring after the specified time.
+    [Private Preview] Include files with modification times occurring after the specified time.
     Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
     """
@@ -65,7 +65,7 @@ class FileFilterDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Include files with modification times occurring before the specified time.
+    [Private Preview] Include files with modification times occurring before the specified time.
     Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
     """
@@ -74,7 +74,7 @@ class FileFilterDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Include files with file names matching the pattern
+    [Private Preview] Include files with file names matching the pattern
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#path-glob-filter
     """
 

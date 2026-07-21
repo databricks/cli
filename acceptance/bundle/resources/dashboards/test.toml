@@ -11,11 +11,14 @@ RequiresWarehouse = true
 # Setting this environment variable prevents that conversion on windows.
 MSYS_NO_PATHCONV = "1"
 
-# Etag can be both negative and positive.
-[[Repls]]
-Old = "\"[-0-9]{8,}\""
-New = "[ETAG]"
+# Direct-engine eventual consistency: the first GET of a freshly created dashboard
+# returns 404, so reads right after deploy must be retried (retry.py). Skipped on
+# terraform, whose provider reads the dashboard back after create and fails on the 404.
+INJECT_STALE_ON_DIRECT = "1"
 
-[[Repls]]
-Old = "\"[0-9]{8,}\""
-New = "[ETAG]"
+# Widen retry.py's window well beyond its ~2s default (5 attempts x 500ms). retry.py's
+# loop is not scaled by TimeoutCIMultiplier (that only scales the overall test timeout),
+# and real dashboard rename/update eventual consistency on cloud regularly exceeds 2s,
+# which flaked these read-after-deploy checks. 20 attempts x 1000ms gives a ~20s window.
+RETRY_MAX_ATTEMPTS = "20"
+RETRY_INTERVAL_MS = "1000"

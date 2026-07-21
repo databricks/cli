@@ -83,6 +83,14 @@ func TestConvertChangeDesc(t *testing.T) {
 	}
 }
 
+func TestShouldSkipFieldDashboardEtag(t *testing.T) {
+	// etag is output-only: alwaysSkip must apply regardless of hasConfigValue,
+	// otherwise out-of-band etag drift is written back into the user's YAML.
+	path := "resources.dashboards.my_dashboard.etag"
+	assert.True(t, shouldSkipField(path, "some-etag", false))
+	assert.True(t, shouldSkipField(path, "some-etag", true))
+}
+
 func TestStripNamePrefix(t *testing.T) {
 	tests := []struct {
 		name   string

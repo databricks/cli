@@ -86,7 +86,14 @@ type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpecNewPipelineSpec struc
 	StorageSchema  string `json:"storage_schema,omitempty"`
 }
 
+type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpecTypeOverrides struct {
+	ColumnName string `json:"column_name"`
+	PgType     string `json:"pg_type"`
+	Size       int    `json:"size,omitempty"`
+}
+
 type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpec struct {
+	AcceleratedSync                bool                                                                   `json:"accelerated_sync,omitempty"`
 	CreateDatabaseObjectsIfMissing bool                                                                   `json:"create_database_objects_if_missing,omitempty"`
 	ExistingPipelineId             string                                                                 `json:"existing_pipeline_id,omitempty"`
 	NewPipelineSpec                *DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpecNewPipelineSpec `json:"new_pipeline_spec,omitempty"`
@@ -94,6 +101,7 @@ type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpec struct {
 	SchedulingPolicy               string                                                                 `json:"scheduling_policy,omitempty"`
 	SourceTableFullName            string                                                                 `json:"source_table_full_name,omitempty"`
 	TimeseriesKey                  string                                                                 `json:"timeseries_key,omitempty"`
+	TypeOverrides                  []DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpecTypeOverrides  `json:"type_overrides,omitempty"`
 }
 
 type DataSourceDatabaseSyncedDatabaseTablesSyncedTables struct {

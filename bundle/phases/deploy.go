@@ -3,18 +3,20 @@ package phases
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
+	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -36,12 +38,17 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
 	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
 	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
+	{group: "postgres_databases", message: deleteOrRecreatePostgresDatabaseMessage},
 	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
 	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
+
+	// Deletes of resources that are already gone remotely only clean up the state,
+	// so they don't count as destructive actions and need no approval.
+	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.Gone })
 
 	err := checkForPreventDestroy(b, actions)
 	if err != nil {
@@ -68,7 +75,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType, requestedEngine engine.EngineSetting) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
@@ -81,8 +88,8 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		state statemgmt.ExportedResourcesMap
 		err   error
 	)
-	if targetEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
+	if stateEngine.IsDirect() {
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
 		// Capture the finalized state for deploy telemetry. It carries each
 		// resource's state-size in bytes (from the WAL replay Finalize just
@@ -97,7 +104,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
-	statemgmt.PushResourcesState(ctx, b, targetEngine)
+	statemgmt.PushResourcesState(ctx, b, stateEngine)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -106,11 +113,20 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
-		statemgmt.UploadStateForYamlSync(targetEngine),
+		statemgmt.UploadStateForYamlSync(stateEngine),
 	)
 
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
+	}
+
+	// Once the deploy is complete, dry-run the migration to the direct engine
+	// and record the outcome in telemetry. If the user has opted in to the
+	// direct engine (via bundle.engine or DATABRICKS_BUNDLE_ENGINE) and the
+	// dry-run is clean, the migration is committed; otherwise nothing is
+	// written and the deploy is unaffected.
+	if !stateEngine.IsDirect() && !logdiag.HasError(ctx) {
+		statemgmt.MigrateToDirect(ctx, b, requestedEngine)
 	}
 }
 
@@ -126,7 +142,10 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 
 // The deploy phase deploys artifacts and resources.
 // If readPlanPath is provided, the plan is loaded from that file instead of being calculated.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan) {
+// stateEngine is the engine the resolved state file uses; requestedEngine is
+// what bundle.engine / DATABRICKS_BUNDLE_ENGINE asked for and may differ (used
+// only by the post-deploy migration check).
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, stateEngine engine.EngineType, requestedEngine engine.EngineSetting, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -146,13 +165,42 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	uploadLibraries(ctx, b, libs)
+	immutable := b.IsImmutableFolder()
+	if immutable && !stateEngine.IsDirect() {
+		logdiag.LogError(ctx, errors.New("experimental.immutable_folder is only supported with the direct deployment engine"))
+		return
+	}
+
+	if immutable {
+		// Upload all source files and built artifacts as a single immutable snapshot.
+		// snapshot.Upload() sets workspace.snapshot_path; the variable-resolution
+		// pass expands ${workspace.snapshot_path} placeholders written by translate_paths.
+		bundle.ApplySeqContext(ctx, b,
+			snapshot.Upload(),
+			mutator.ResolveVariableReferencesOnlyResources("workspace"),
+		)
+		if !logdiag.HasError(ctx) {
+			_, libDiags := libraries.ReplaceWithRemotePath(ctx, b)
+			for _, d := range libDiags {
+				logdiag.LogDiag(ctx, d)
+			}
+		}
+	} else {
+		uploadLibraries(ctx, b, libs)
+	}
+
 	if logdiag.HasError(ctx) {
 		return
 	}
 
+	if !immutable {
+		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
@@ -167,10 +215,17 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	planFromFile := plan != nil
 	if plan == nil {
 		// State is already open for read by process.go (for direct engine)
-		plan = RunPlan(ctx, b, engine)
+		plan = RunPlan(ctx, b, stateEngine)
 	}
 
-	if engine.IsDirect() {
+	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
+	// writes a WAL header that only deployCore's Finalize commits or discards;
+	// returning past it without finalizing leaves a header-only WAL behind.
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	if stateEngine.IsDirect() {
 		// Upgrade from read (opened by process.go) to write mode
 		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
 			logdiag.LogError(ctx, err)
@@ -187,6 +242,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
+	// InitForApply receives ctx and could log a diagnostic without returning an
+	// error, so re-check before deploying. (UpgradeToWrite above takes no ctx and
+	// thus cannot log, so the earlier check is enough to guard the WAL open.)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -197,7 +255,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 	if haveApproval {
-		deployCore(ctx, b, plan, engine)
+		deployCore(ctx, b, plan, stateEngine, requestedEngine)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 		return

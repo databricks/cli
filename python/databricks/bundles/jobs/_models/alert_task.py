@@ -19,23 +19,23 @@ class AlertTask:
 
     alert_id: VariableOrOptional[str] = None
     """
-    The alert_id is the canonical identifier of the alert.
+    [Public Preview] The alert_id is the canonical identifier of the alert.
     """
 
     subscribers: VariableOrList[AlertTaskSubscriber] = field(default_factory=list)
     """
-    The subscribers receive alert evaluation result notifications after the alert task is completed.
+    [Public Preview] The subscribers receive alert evaluation result notifications after the alert task is completed.
     The number of subscriptions is limited to 100.
     """
 
     warehouse_id: VariableOrOptional[str] = None
     """
-    The warehouse_id identifies the warehouse settings used by the alert task.
+    [Public Preview] The warehouse_id identifies the warehouse settings used by the alert task.
     """
 
     workspace_path: VariableOrOptional[str] = None
     """
-    The workspace_path is the path to the alert file in the workspace. The path:
+    [Public Preview] The workspace_path is the path to the alert file in the workspace. The path:
     * must start with "/Workspace"
     * must be a normalized path.
     User has to select only one of alert_id or workspace_path to identify the alert.
@@ -54,23 +54,23 @@ class AlertTaskDict(TypedDict, total=False):
 
     alert_id: VariableOrOptional[str]
     """
-    The alert_id is the canonical identifier of the alert.
+    [Public Preview] The alert_id is the canonical identifier of the alert.
     """
 
     subscribers: VariableOrList[AlertTaskSubscriberParam]
     """
-    The subscribers receive alert evaluation result notifications after the alert task is completed.
+    [Public Preview] The subscribers receive alert evaluation result notifications after the alert task is completed.
     The number of subscriptions is limited to 100.
     """
 
     warehouse_id: VariableOrOptional[str]
     """
-    The warehouse_id identifies the warehouse settings used by the alert task.
+    [Public Preview] The warehouse_id identifies the warehouse settings used by the alert task.
     """
 
     workspace_path: VariableOrOptional[str]
     """
-    The workspace_path is the path to the alert file in the workspace. The path:
+    [Public Preview] The workspace_path is the path to the alert file in the workspace. The path:
     * must start with "/Workspace"
     * must be a normalized path.
     User has to select only one of alert_id or workspace_path to identify the alert.

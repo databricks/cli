@@ -40,7 +40,6 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 ### Specialized Commands
 
 - `./task generate-schema` - Generate bundle JSON schema
-- `./task generate-docs` - Generate bundle documentation
 - `./task generate-cligen` - Regenerate CLI command stubs from the checked-in .codegen/cli.json
 - `./task generate-clijson` - Refresh .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo)
 - `./task generate` - Run all generators
@@ -128,6 +127,14 @@ parentPath = "/Workspace" + parentPath
 
 Where a panic is genuinely possible (e.g. `reflect.Type.Elem()` on a non-pointer, division by an empty slice's length), validate at the entry point and return an error.
 
+**RULE: Never copy a `config.Config` by value.** It embeds a `sync.Mutex`, so `go vet` copylocks fails and CI lint blocks it (govet runs with enable-all). Pass it by pointer, or mutate the resolved config in place (e.g. set `HTTPTimeoutSeconds` on it before `client.New`; there is no per-request option).
+
+**RULE: Open URLs through `libs/browser`, never `github.com/pkg/browser` directly.** `pkg/browser` ignores the `BROWSER` env var, so `BROWSER=none` and custom browser commands break. `browser.Open(ctx, url)` handles empty/none/custom in one path; branch on `browser.IsDisabled(ctx)` first if you need custom messaging. For a custom `BROWSER=<command>`, launch via `libs/exec`, not an inline `cmd /c` (that broke Windows OAuth URLs via `%...%` expansion).
+
+**RULE: For hand-written workspace-routed raw API calls (`client.Do` / `apiClient.Do`), set routing headers via `libs/auth.WorkspaceIDHeaders`.** It emits `X-Databricks-Workspace-Id` and suppresses the legacy `workspace_id = none` sentinel. Grepping only for old header names misses calls that never set any routing header but still need one.
+
+**RULE: To keep an intentionally-unreferenced exported function, mark it `//deadcode:allow <reason>` within 6 lines above the `func`.** CI runs `deadcode -test ./...`; a func reachable only from a `*_test.go` is not flagged, so unwiring a feature can leave a sibling entry point dead. (`gofmt` inserts a blank `//` line between the directive and the doc comment; that's expected and still detected.)
+
 # Error Handling
 
 **RULE: Wrap errors with context using `%w`.** Preserves the error chain so `errors.Is` and `errors.As` keep working upstream.
@@ -169,6 +176,8 @@ if err != nil && strings.Contains(err.Error(), "does not exist") {
 	return nil
 }
 ```
+
+**RULE: Error strings must not end with punctuation or a newline (golangci-lint ST1005).** Applies to `fmt.Errorf` / `errors.New`: when appending a multi-sentence hint to an error, drop the final period (mid-string periods and newlines are fine). Keep `Error()` methods unpunctuated at the end too, for consistency.
 
 # CLI UX and validation
 

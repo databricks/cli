@@ -19,14 +19,14 @@ class DbtPlatformTask:
     """
     :meta private: [EXPERIMENTAL]
     
-    The resource name of the UC connection that authenticates the dbt platform for this task
+    [Private Preview] The resource name of the UC connection that authenticates the dbt platform for this task
     """
 
     dbt_platform_job_id: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Id of the dbt platform job to be triggered. Specified as a string for maximum compatibility with clients.
+    [Private Preview] Id of the dbt platform job to be triggered. Specified as a string for maximum compatibility with clients.
     """
 
     @classmethod
@@ -44,14 +44,14 @@ class DbtPlatformTaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    The resource name of the UC connection that authenticates the dbt platform for this task
+    [Private Preview] The resource name of the UC connection that authenticates the dbt platform for this task
     """
 
     dbt_platform_job_id: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    Id of the dbt platform job to be triggered. Specified as a string for maximum compatibility with clients.
+    [Private Preview] Id of the dbt platform job to be triggered. Specified as a string for maximum compatibility with clients.
     """
 
 

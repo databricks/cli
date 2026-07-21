@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -33,10 +34,17 @@ import (
 const (
 	UserNameTokenPrefix         = "dbapi0"
 	ServicePrincipalTokenPrefix = "dbapi1"
-	UserID                      = "1000012345"
-	TestDefaultClusterId        = "0123-456789-cluster0"
-	TestDefaultWarehouseId      = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId   = "0123-456789-pool0"
+	// GuestServicePrincipalTokenPrefix marks an as-test-sp guest sharing another
+	// identity's workspace, kept distinct from a test whose primary identity is
+	// itself a service principal.
+	GuestServicePrincipalTokenPrefix = "dbapi2"
+	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
+	// consistency: the first GET after a create returns 404 (not yet visible).
+	EventualConsistencyTokenPrefix = "dbapi3"
+	UserID                         = "1000012345"
+	TestDefaultClusterId           = "0123-456789-cluster0"
+	TestDefaultWarehouseId         = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId      = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -47,6 +55,35 @@ var TestUser = iam.User{
 var TestUserSP = iam.User{
 	Id:       UserID,
 	UserName: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
+}
+
+// guestServicePrincipalDisplayName is reported on /Me for the as-test-sp guest,
+// matching the named SP used on cloud.
+const guestServicePrincipalDisplayName = "deco-test-spn"
+
+// isGuestToken reports whether a token is an as-test-sp guest. Job permission
+// checks apply only to guests; the primary identity is treated as an admin.
+func isGuestToken(token string) bool {
+	return strings.HasPrefix(token, GuestServicePrincipalTokenPrefix)
+}
+
+// userForToken returns the identity behind a token: any service-principal token
+// (primary or guest) is the SP, otherwise the user.
+func userForToken(token string) iam.User {
+	if strings.HasPrefix(token, ServicePrincipalTokenPrefix) || isGuestToken(token) {
+		return TestUserSP
+	}
+	return TestUser
+}
+
+// MeUser returns the /Me identity for a token. Only the guest SP carries a
+// display name, so single-identity SP tests are unaffected.
+func (s *FakeWorkspace) MeUser(token string) iam.User {
+	user := userForToken(token)
+	if isGuestToken(token) {
+		user.DisplayName = guestServicePrincipalDisplayName
+	}
+	return user
 }
 
 var (
@@ -139,7 +176,7 @@ type FakeWorkspace struct {
 	Schemas               map[string]catalog.SchemaInfo
 	Grants                map[string][]catalog.PrivilegeAssignment
 	Volumes               map[string]catalog.VolumeInfo
-	Dashboards            map[string]fakeDashboard
+	Dashboards            *EventualMap[string, *fakeDashboard]
 	PublishedDashboards   map[string]dashboards.PublishedDashboard
 	GenieSpaces           map[string]dashboards.GenieSpace
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
@@ -172,8 +209,10 @@ type FakeWorkspace struct {
 
 	PostgresProjects     map[string]postgres.Project
 	PostgresBranches     map[string]postgres.Branch
-	PostgresEndpoints    map[string]postgres.Endpoint
 	PostgresCatalogs     map[string]postgres.Catalog
+	PostgresDatabases    map[string]postgres.Database
+	PostgresEndpoints    map[string]postgres.Endpoint
+	PostgresRoles        map[string]postgres.Role
 	PostgresSyncedTables map[string]postgres.SyncedTable
 	PostgresOperations   map[string]postgres.Operation
 
@@ -270,6 +309,24 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				Path:       "/Users/" + TestUserSP.UserName,
 				ObjectId:   nextID(),
 			},
+			// The user home also exists under the /Workspace alias on real
+			// workspaces, so model it here too. Imports require the parent
+			// directory to exist (see WorkspaceFilesImportFile).
+			"/Workspace/Users": {
+				ObjectType: "DIRECTORY",
+				Path:       "/Workspace/Users",
+				ObjectId:   nextID(),
+			},
+			"/Workspace/Users/" + TestUser.UserName: {
+				ObjectType: "DIRECTORY",
+				Path:       "/Workspace/Users/" + TestUser.UserName,
+				ObjectId:   nextID(),
+			},
+			"/Workspace/Users/" + TestUserSP.UserName: {
+				ObjectType: "DIRECTORY",
+				Path:       "/Workspace/Users/" + TestUserSP.UserName,
+				ObjectId:   nextID(),
+			},
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
@@ -287,7 +344,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Schemas:             map[string]catalog.SchemaInfo{},
 		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
 		Volumes:             map[string]catalog.VolumeInfo{},
-		Dashboards:          map[string]fakeDashboard{},
+		Dashboards:          NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
 		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
 		GenieSpaces:         map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
@@ -311,8 +368,10 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SyncedDatabaseTables:      map[string]database.SyncedDatabaseTable{},
 		PostgresProjects:          map[string]postgres.Project{},
 		PostgresBranches:          map[string]postgres.Branch{},
-		PostgresEndpoints:         map[string]postgres.Endpoint{},
 		PostgresCatalogs:          map[string]postgres.Catalog{},
+		PostgresDatabases:         map[string]postgres.Database{},
+		PostgresEndpoints:         map[string]postgres.Endpoint{},
+		PostgresRoles:             map[string]postgres.Role{},
 		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},
@@ -323,9 +382,15 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		ModelRegistryModels:       map[string]ml.Model{},
 		ModelRegistryModelIDs:     map[string]string{},
 		Clusters: map[string]compute.ClusterDetails{
+			// A running dedicated single-user cluster: the shape `ssh connect --cluster`
+			// requires (ValidateClusterAccess rejects anything else), matching the cloud
+			// TEST_DEFAULT_CLUSTER_ID this stands in for.
 			TestDefaultClusterId: {
-				ClusterId:   TestDefaultClusterId,
-				ClusterName: "DEFAULT Test Cluster",
+				ClusterId:        TestDefaultClusterId,
+				ClusterName:      "DEFAULT Test Cluster",
+				State:            compute.StateRunning,
+				DataSecurityMode: compute.DataSecurityModeSingleUser,
+				SingleUserName:   TestUser.UserName,
 			},
 		},
 	}
@@ -339,39 +404,75 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
+func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 	defer s.LockUnlock()()
 
-	if dirInfo, ok := s.directories[path]; ok {
-		return Response{
-			Body: &dirInfo,
-		}
-	} else if entry, ok := s.files[path]; ok {
-		return Response{
-			Body: entry.Info,
-		}
-	} else if repoId, ok := s.repoIdByPath[path]; ok {
-		return Response{
-			Body: workspace.ObjectInfo{
-				ObjectType: "REPO",
-				Path:       path,
-				ObjectId:   repoId,
-			},
-		}
+	// The real API collapses duplicate slashes, so look up the cleaned path.
+	cleaned := path.Clean(requestPath)
+
+	var info workspace.ObjectInfo
+	if dirInfo, ok := s.directories[cleaned]; ok {
+		info = dirInfo
+	} else if entry, ok := s.files[cleaned]; ok {
+		info = entry.Info
+	} else if repoId, ok := s.repoIdByPath[cleaned]; ok {
+		info = workspace.ObjectInfo{ObjectType: "REPO", Path: cleaned, ObjectId: repoId}
 	} else {
+		// Match the real Workspace API wording, which echoes the requested path.
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": "Workspace path not found"},
+			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", requestPath)},
 		}
+	}
+
+	// A doubled leading slash ("//Workspace/...", which some tests use to avoid
+	// Windows path conversion) is sent to the backend verbatim, and it responds
+	// with the "/Workspace" mount stripped from the path. A normal single-slash
+	// "/Workspace/..." is preserved instead, so only strip the doubled form.
+	if strings.HasPrefix(requestPath, "//Workspace/") {
+		info.Path = strings.TrimPrefix(info.Path, "/Workspace")
+	}
+
+	return Response{Body: info}
+}
+
+func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
+	defer s.LockUnlock()()
+
+	var objects []workspace.ObjectInfo
+
+	for filePath, entry := range s.files {
+		if path.Dir(filePath) == listPath {
+			objects = append(objects, entry.Info)
+		}
+	}
+	for dirPath, dirInfo := range s.directories {
+		if dirPath != listPath && path.Dir(dirPath) == listPath {
+			objects = append(objects, dirInfo)
+		}
+	}
+
+	slices.SortFunc(objects, func(a, b workspace.ObjectInfo) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+
+	return Response{
+		Body: workspace.ListResponse{Objects: objects},
 	}
 }
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	defer s.LockUnlock()()
-	s.directories[request.Path] = workspace.ObjectInfo{
-		ObjectType: "DIRECTORY",
-		Path:       request.Path,
-		ObjectId:   nextID(),
+	// The real mkdirs API creates all intermediate directories ("mkdir -p"),
+	// so seed every ancestor up to the root.
+	for dir := request.Path; dir != "/" && dir != "" && dir != "."; dir = path.Dir(dir) {
+		if _, exists := s.directories[dir]; !exists {
+			s.directories[dir] = workspace.ObjectInfo{
+				ObjectType: "DIRECTORY",
+				Path:       dir,
+				ObjectId:   nextID(),
+			}
+		}
 	}
 }
 
@@ -407,6 +508,10 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 	defer s.LockUnlock()()
 
 	workspacePath := filePath
+
+	if resp, ok := s.requireParentDirectory(workspacePath); !ok {
+		return resp
+	}
 
 	if !overwrite {
 		if _, exists := s.files[workspacePath]; exists {
@@ -447,15 +552,61 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 		}
 	}
 
-	// Add all directories in the path to the directories map
-	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
-		if _, exists := s.directories[dir]; !exists {
-			s.directories[dir] = workspace.ObjectInfo{
-				ObjectType: "DIRECTORY",
-				Path:       dir,
-				ObjectId:   nextID(),
+	return Response{}
+}
+
+// requireParentDirectory returns a 404 response when objectPath's parent
+// directory does not exist. The real import API does not create missing parents;
+// callers get "mkdir -p" semantics only by first calling /workspace/mkdirs (see
+// WorkspaceFilesClient.Write, which mkdirs and retries on this 404). ok is false
+// when the returned response should be sent to the client. The caller must hold
+// the lock.
+func (s *FakeWorkspace) requireParentDirectory(objectPath string) (Response, bool) {
+	parent := path.Dir(objectPath)
+	if parent == "/" {
+		return Response{}, true
+	}
+	if _, exists := s.directories[parent]; !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The parent folder (%s) does not exist.", parent)},
+		}, false
+	}
+	return Response{}, true
+}
+
+// WorkspaceImportNotebook stores a notebook imported with the SOURCE format.
+// Unlike AUTO format, SOURCE keeps the path as-is (no extension stripping) and
+// the notebook language is provided explicitly rather than sniffed from a
+// "# Databricks notebook source" header.
+func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, language workspace.Language, overwrite bool) Response {
+	if !strings.HasPrefix(filePath, "/") {
+		filePath = "/" + filePath
+	}
+
+	defer s.LockUnlock()()
+
+	if resp, ok := s.requireParentDirectory(filePath); !ok {
+		return resp
+	}
+
+	if !overwrite {
+		if _, exists := s.files[filePath]; exists {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", filePath)},
 			}
 		}
+	}
+
+	s.files[filePath] = FileEntry{
+		Info: workspace.ObjectInfo{
+			ObjectType: "NOTEBOOK",
+			Path:       filePath,
+			Language:   language,
+			ObjectId:   nextID(),
+		},
+		Data: body,
 	}
 
 	return Response{}

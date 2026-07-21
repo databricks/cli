@@ -1,0 +1,66 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Create a plan while cluster is running: should show resize
+
+>>> [CLI] bundle plan -o json
+
+=== Terminate the cluster before applying the saved plan
+
+>>> [CLI] clusters get [CLUSTER_ID]
+{
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "num_workers": 2,
+  "state": "TERMINATED"
+}
+
+=== Apply saved plan: resize fails with INVALID_STATE, falls back to edit
+
+>>> [CLI] bundle deploy --plan plan.json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //clusters/resize //clusters/edit
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/resize",
+  "body": {
+    "cluster_id": "[CLUSTER_ID]",
+    "num_workers": 3
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/edit",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_id": "[CLUSTER_ID]",
+    "cluster_name": "test-cluster-[UNIQUE_NAME]",
+    "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
+    "num_workers": 3,
+    "spark_version": "13.3.x-snapshot-scala2.12"
+  }
+}
+
+=== Cluster should have new num_workers
+
+>>> [CLI] clusters get [CLUSTER_ID]
+{
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "num_workers": 3
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.test_cluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

@@ -19,7 +19,7 @@ class IngestionPipelineDefinitionWorkdayReportParameters:
     """
     :meta private: [EXPERIMENTAL]
     
-    Parameters for the Workday report. Each key represents the parameter name (e.g., "start_date", "end_date"),
+    [Private Preview] Parameters for the Workday report. Each key represents the parameter name (e.g., "start_date", "end_date"),
     and the corresponding value is a SQL-like expression used to compute the parameter value at runtime.
     Example:
     {
@@ -45,7 +45,7 @@ class IngestionPipelineDefinitionWorkdayReportParametersDict(TypedDict, total=Fa
     """
     :meta private: [EXPERIMENTAL]
     
-    Parameters for the Workday report. Each key represents the parameter name (e.g., "start_date", "end_date"),
+    [Private Preview] Parameters for the Workday report. Each key represents the parameter name (e.g., "start_date", "end_date"),
     and the corresponding value is a SQL-like expression used to compute the parameter value at runtime.
     Example:
     {

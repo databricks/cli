@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -14,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/run/progress"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -96,8 +99,9 @@ func (m *jobRunMonitor) onProgress(info *jobs.Run) {
 
 	// First time we see this run.
 	if m.prevState == nil {
-		log.Infof(m.ctx, "Run available at %s", info.RunPageUrl)
-		cmdio.Log(m.ctx, progress.NewJobRunUrlEvent(info.RunPageUrl))
+		runURL := runPageURL(m.ctx, info.RunPageUrl)
+		log.Infof(m.ctx, "Run available at %s", runURL)
+		cmdio.Log(m.ctx, progress.NewJobRunUrlEvent(runURL))
 	}
 
 	// No state change: do not log.
@@ -120,6 +124,47 @@ func (m *jobRunMonitor) onProgress(info *jobs.Run) {
 	}
 	cmdio.Log(m.ctx, event)
 	log.Info(m.ctx, event.String())
+}
+
+// runPageURL converts the legacy run URL returned by the Jobs API
+//
+//	https://<host>/?o=<id>#job/<jobID>/run/<runID>
+//
+// into the modern path form
+//
+//	https://<host>/jobs/<jobID>/runs/<runID>?o=<id>
+//
+// so that non-admin users permitted to view the run are not redirected to the
+// workspace homepage. See https://github.com/databricks/cli/issues/5142. The
+// workspace selector query param (o) is preserved as-is. The conversion is
+// cosmetic, so the original URL is returned on the rare chance the format is
+// unexpected.
+func runPageURL(ctx context.Context, raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		log.Debugf(ctx, "could not parse run URL %q: %v", raw, err)
+		return raw
+	}
+
+	jobID, runID, ok := parseLegacyRunFragment(u.Fragment)
+	if !ok {
+		log.Debugf(ctx, "unexpected run URL fragment %q", u.Fragment)
+		return raw
+	}
+
+	u.Fragment = ""
+	u.Path = "/" + workspaceurls.JobRunPath(jobID, runID)
+	return u.String()
+}
+
+// parseLegacyRunFragment extracts the job and run IDs from a legacy run URL
+// fragment of the form "job/<jobID>/run/<runID>".
+func parseLegacyRunFragment(fragment string) (jobID, runID string, ok bool) {
+	parts := strings.Split(fragment, "/")
+	if len(parts) != 4 || parts[0] != "job" || parts[2] != "run" || parts[1] == "" || parts[3] == "" {
+		return "", "", false
+	}
+	return parts[1], parts[3], true
 }
 
 func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {
@@ -160,7 +205,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		if err != nil {
 			return nil, err
 		}
-		cmdio.Log(ctx, progress.NewJobRunUrlEvent(details.RunPageUrl))
+		cmdio.Log(ctx, progress.NewJobRunUrlEvent(runPageURL(ctx, details.RunPageUrl)))
 		return nil, nil
 	}
 

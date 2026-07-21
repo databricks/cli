@@ -1,0 +1,3 @@
+# The ':' in the notebook name is a legal local filename on Linux/macOS, so the
+# notebook is exported. Windows diverges and is covered by ../windows.
+GOOS.windows = false

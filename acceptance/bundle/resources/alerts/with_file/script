@@ -19,8 +19,14 @@ trace $CLI alerts-v2 get-alert $alert_id | jq '{display_name, lifecycle_state, c
 alert_path=$($CLI bundle summary --output json | jq -r '.resources.alerts.myalert.parent_path')/myalert.dbalert.json
 title "assert that the uploaded alert file is the same as the local one"
 trace $CLI workspace export $alert_path > exported_alert.dbalert.json
-trace diff exported_alert.dbalert.json alert.dbalert.json --strip-trailing-cr
-rm exported_alert.dbalert.json
+# The backend re-serializes the alert file when materializing it in the workspace
+# (different key order, and numbers like 2.0 vs 2), so compare canonically with
+# sorted keys and normalized numbers rather than byte-for-byte.
+normalize_json() { jq -S 'walk(if type == "number" then . + 0 else . end)' "$1"; }
+normalize_json exported_alert.dbalert.json > exported_normalized.json
+normalize_json alert.dbalert.json > local_normalized.json
+trace diff local_normalized.json exported_normalized.json
+rm exported_alert.dbalert.json exported_normalized.json local_normalized.json
 
 trace $CLI alerts-v2 get-alert $alert_id | jq '{display_name, lifecycle_state}'
 

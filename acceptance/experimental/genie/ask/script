@@ -11,5 +11,5 @@ title "ask with --raw dumps raw SSE events"
 trace $CLI experimental genie ask "What are total sales by franchise?" --raw
 
 title "incompatible flags are rejected"
-errcode trace $CLI experimental genie ask "q" --raw --output json
-errcode trace $CLI experimental genie ask "q" --raw --include-sql
+musterr trace $CLI experimental genie ask "q" --raw --output json
+musterr trace $CLI experimental genie ask "q" --raw --include-sql

@@ -20,6 +20,10 @@ const (
 	ExtensionDesigner string = ".designer.ipynb"
 )
 
+// ObjectTypeDesignerFile is the workspace object type for Lakeflow Designer
+// notebooks. The SDK does not define a constant for it.
+const ObjectTypeDesignerFile workspace.ObjectType = "DESIGNER_FILE"
+
 // StripExtension returns the workspace path for a local notebook file.
 // Designer files keep their full ".designer.ipynb" suffix in the workspace;
 // other notebook types lose their extension on import.
@@ -28,6 +32,20 @@ func StripExtension(name string) string {
 		return name
 	}
 	return strings.TrimSuffix(name, path.Ext(name))
+}
+
+// FixedExportFormat returns the export format an object type must be downloaded
+// in when get-status reports none for it. Lakeflow Designer files (DESIGNER_FILE)
+// carry their full extension in the workspace path and round-trip as Jupyter
+// notebooks. The boolean is false for object types that report their own export
+// format (e.g. regular notebooks).
+func FixedExportFormat(objectType workspace.ObjectType) (workspace.ExportFormat, bool) {
+	switch objectType {
+	case ObjectTypeDesignerFile:
+		return workspace.ExportFormatJupyter, true
+	default:
+		return "", false
+	}
 }
 
 // Extensions lists all notebook file extensions.

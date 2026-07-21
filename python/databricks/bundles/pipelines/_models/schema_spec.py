@@ -23,32 +23,32 @@ class SchemaSpec:
 
     destination_catalog: VariableOr[str]
     """
-    Required. Destination catalog to store tables.
+    [Public Preview] Required. Destination catalog to store tables.
     """
 
     destination_schema: VariableOr[str]
     """
-    Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.
+    [Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.
     """
 
     source_schema: VariableOr[str]
     """
-    Required. Schema name in the source database.
+    [Public Preview] Required. Schema name in the source database.
     """
 
     connector_options: VariableOrOptional[ConnectorOptions] = None
     """
-    (Optional) Source Specific Connector Options
+    [Public Preview] (Optional) Source Specific Connector Options
     """
 
     source_catalog: VariableOrOptional[str] = None
     """
-    The source catalog name. Might be optional depending on the type of source.
+    [Public Preview] The source catalog name. Might be optional depending on the type of source.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfig] = None
     """
-    Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.
+    [Public Preview] Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.
     """
 
     @classmethod
@@ -64,32 +64,32 @@ class SchemaSpecDict(TypedDict, total=False):
 
     destination_catalog: VariableOr[str]
     """
-    Required. Destination catalog to store tables.
+    [Public Preview] Required. Destination catalog to store tables.
     """
 
     destination_schema: VariableOr[str]
     """
-    Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.
+    [Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.
     """
 
     source_schema: VariableOr[str]
     """
-    Required. Schema name in the source database.
+    [Public Preview] Required. Schema name in the source database.
     """
 
     connector_options: VariableOrOptional[ConnectorOptionsParam]
     """
-    (Optional) Source Specific Connector Options
+    [Public Preview] (Optional) Source Specific Connector Options
     """
 
     source_catalog: VariableOrOptional[str]
     """
-    The source catalog name. Might be optional depending on the type of source.
+    [Public Preview] The source catalog name. Might be optional depending on the type of source.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfigParam]
     """
-    Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.
+    [Public Preview] Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.
     """
 
 

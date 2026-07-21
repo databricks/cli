@@ -1,12 +1,8 @@
 
 === Test with invalid project name (contains uppercase letters)
->>> errcode [CLI] pipelines init --config-file ./invalid_input.json --output-dir invalid-output
+>>> musterr [CLI] pipelines init --config-file ./invalid_input.json --output-dir invalid-output
 Error: failed to load config from file ./invalid_input.json: invalid value for project_name: "InvalidProjectName". Name must consist of lower case letters, numbers, and underscores.
 
-Exit code: 1
-
 === Test with non-existent config file
->>> errcode [CLI] pipelines init --config-file ./nonexistent.json --output-dir invalid-output-2
+>>> musterr [CLI] pipelines init --config-file ./nonexistent.json --output-dir invalid-output-2
 Error: failed to load config from file ./nonexistent.json: open ./nonexistent.json: no such file or directory
-
-Exit code: 1

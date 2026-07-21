@@ -3,6 +3,7 @@
 package data_quality
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -218,7 +219,7 @@ Create a monitor.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'object_type', 'object_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'object_type', 'object_id' in your JSON input")
 			}
 			return nil
 		}
@@ -305,7 +306,7 @@ Create a refresh.
   the table.
 
   Arguments:
-    OBJECT_TYPE: The type of the monitored object. Can be one of the following: schemaor
+    OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
     OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
       table_id for table.
@@ -996,7 +997,7 @@ Update a monitor.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(3)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only OBJECT_TYPE, OBJECT_ID, UPDATE_MASK as positional arguments. Provide 'object_type', 'object_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only OBJECT_TYPE, OBJECT_ID, UPDATE_MASK as positional arguments. Provide 'object_type', 'object_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1096,7 +1097,7 @@ Update a refresh.
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
     REFRESH_ID: Unique id of the refresh operation.
     UPDATE_MASK: The field mask to specify which fields to update.
-    OBJECT_TYPE: The type of the monitored object. Can be one of the following: schemaor
+    OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
     OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
       table_id for table.
@@ -1121,7 +1122,7 @@ Update a refresh.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(4)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only OBJECT_TYPE, OBJECT_ID, REFRESH_ID, UPDATE_MASK as positional arguments. Provide 'object_type', 'object_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only OBJECT_TYPE, OBJECT_ID, REFRESH_ID, UPDATE_MASK as positional arguments. Provide 'object_type', 'object_id' in your JSON input")
 			}
 			return nil
 		}

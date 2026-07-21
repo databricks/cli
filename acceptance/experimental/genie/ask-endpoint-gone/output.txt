@@ -1,0 +1,4 @@
+
+=== a removed endpoint tells the user to update the CLI
+>>> [CLI] experimental genie ask What are total sales by franchise?
+Error: the Genie API is not available on this workspace: No API found for 'POST /data-rooms/tools/onechat/responses'; the endpoint may have moved since this CLI release: update the Databricks CLI to the latest version (run 'databricks version --check')

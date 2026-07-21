@@ -1,14 +1,5 @@
 
-=== Terraform state is present, env var mismatch warns but uses state engine
-
->>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
->>> print_requests.py //api/2.1/unity-catalog/schemas
-"databricks-tf-provider/1.117.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+=== Terraform state is present, empty env var uses state engine
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -16,8 +7,8 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --get //api/2.1/unity-catalog/schemas
-"databricks-tf-provider/1.117.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+>>> print_requests.py //api/2.1/unity-catalog/schemas
+"databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
 
 === Adding resources.json with lower serial does not change anything
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
@@ -66,7 +57,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py //api/2.1/unity-catalog/schemas
-"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
 
 >>> print_state.py
 3
@@ -85,8 +76,8 @@ Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py --get //api/2.1/unity-catalog/schemas
-"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
-"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
 
 >>> print_state.py
 3

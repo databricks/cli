@@ -8,17 +8,16 @@ Download integration logs artifacts for a given run id (--run RUNID) or commit (
 If neither --commit nor --run are passed, will use either current PR or HEAD.
 """
 
-import sys
-import os
-import subprocess
 import argparse
 import json
+import os
 import pprint
+import subprocess
+import sys
+import threading
 import time
 import urllib.request
-import threading
 from pathlib import Path
-
 
 CLI_REPO = "databricks/cli"
 DECO_REPO = os.environ.get("DECO_REPO") or os.environ.get("GITHUB_REPOSITORY")
@@ -53,7 +52,7 @@ def find_tables(lines):
     """
     tables = []
     start = None
-    for i, line in enumerate(lines + [""]):
+    for i, line in enumerate([*lines, ""]):
         if line.startswith("|"):
             if start is None:
                 start = i

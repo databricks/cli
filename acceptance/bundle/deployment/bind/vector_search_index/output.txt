@@ -5,7 +5,7 @@
   "endpoint_type": "STANDARD"
 }
 
->>> [CLI] vector-search-indexes create-index --json {"name":"main.default.test_vs_index_[UNIQUE_NAME]","endpoint_name":"test-vs-endpoint-[UNIQUE_NAME]","primary_key":"id","index_type":"DIRECT_ACCESS","direct_access_index_spec":{"schema_json":"{\"id\":\"integer\",\"vector\":\"array<float>\"}","embedding_vector_columns":[{"name":"vector","embedding_dimension":768}]}}
+>>> [CLI] vector-search-indexes create-index --json {"name":"main.default.test_vs_index_[UNIQUE_NAME]","endpoint_name":"test-vs-endpoint-[UNIQUE_NAME]","primary_key":"id","index_type":"DIRECT_ACCESS","direct_access_index_spec":{"schema_json":"{\"id\":\"int\",\"vector\":\"array<float>\"}","embedding_vector_columns":[{"name":"vector","embedding_dimension":768}]}}
 {
   "name": "main.default.test_vs_index_[UNIQUE_NAME]",
   "endpoint_name": "test-vs-endpoint-[UNIQUE_NAME]",

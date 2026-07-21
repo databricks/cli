@@ -80,13 +80,9 @@ func makePostgresProjectRemote(project *postgres.Project) *PostgresProjectRemote
 	if project.Spec != nil {
 		spec = *project.Spec
 	}
-	var projectID string
-	if project.Status != nil {
-		projectID = project.Status.ProjectId
-	}
 	return &PostgresProjectRemote{
 		ProjectSpec:         spec,
-		ProjectId:           projectID,
+		ProjectId:           project.ProjectId,
 		InitialEndpointSpec: project.InitialEndpointSpec,
 		Name:                project.Name,
 		Status:              project.Status,
@@ -111,9 +107,11 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
 			Spec:                &config.ProjectSpec,
+			InitialBranchSpec:   nil,
 			InitialEndpointSpec: nil,
 
 			// Output-only fields.
+			ProjectId:       "",
 			CreateTime:      nil,
 			DeleteTime:      nil,
 			Name:            "",
@@ -161,9 +159,11 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
 		Project: postgres.Project{
 			Spec:                &config.ProjectSpec,
+			InitialBranchSpec:   nil,
 			InitialEndpointSpec: nil,
 
 			// Output-only fields.
+			ProjectId:       "",
 			CreateTime:      nil,
 			DeleteTime:      nil,
 			Name:            "",

@@ -26,18 +26,22 @@ class GoogleDriveOptions:
     entity_type: VariableOrOptional[GoogleDriveOptionsGoogleDriveEntityType] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     file_ingestion_options: VariableOrOptional[FileIngestionOptions] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     url: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Google Drive URL.
+    [Private Preview] Google Drive URL.
     """
 
     @classmethod
@@ -54,18 +58,22 @@ class GoogleDriveOptionsDict(TypedDict, total=False):
     entity_type: VariableOrOptional[GoogleDriveOptionsGoogleDriveEntityTypeParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     file_ingestion_options: VariableOrOptional[FileIngestionOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     url: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    Google Drive URL.
+    [Private Preview] Google Drive URL.
     """
 
 

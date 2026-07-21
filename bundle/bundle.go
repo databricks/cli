@@ -116,6 +116,12 @@ type Bundle struct {
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
 
+	// includePatterns holds the raw (unexpanded) 'include' patterns from the root
+	// databricks.yml. ProcessRootIncludes overwrites Config.Include with the
+	// expanded list of loaded files, so this preserves the original patterns for
+	// IsFileIncluded. Set via SetIncludePatterns.
+	includePatterns []string
+
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
 
@@ -378,4 +384,9 @@ func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
 // StateFilenameConfigSnapshot returns (relative remote path, relative local path) for config snapshot state
 func (b *Bundle) StateFilenameConfigSnapshot(ctx context.Context) (string, string) {
 	return configSnapshotFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), configSnapshotFilename))
+}
+
+// IsImmutableFolder reports whether experimental.immutable_folder is enabled.
+func (b *Bundle) IsImmutableFolder() bool {
+	return b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder
 }

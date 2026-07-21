@@ -134,6 +134,7 @@ Warning: required field "schema_name" is not set
   "volumes": {
     "rname": {
       "grants": [],
+      "volume_path": "/Volumes///",
       "volume_type": "MANAGED"
     }
   }
@@ -198,6 +199,10 @@ app resource 'rname' should have either source_code_path or git_source field
 
 === resources.sql_warehouses.rname ===
 Warning: unknown field: grants
+  at resources.sql_warehouses.rname
+  in databricks.yml:7:7
+
+Error: sql_warehouse name is required
   at resources.sql_warehouses.rname
   in databricks.yml:7:7
 

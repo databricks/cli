@@ -1,0 +1,4 @@
+# `air run --dry-run` validates the config locally and makes no workspace calls,
+# so no engine matrix or server stubs are needed.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []

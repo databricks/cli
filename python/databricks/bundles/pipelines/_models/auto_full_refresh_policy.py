@@ -17,12 +17,12 @@ class AutoFullRefreshPolicy:
 
     enabled: VariableOr[bool]
     """
-    (Required, Mutable) Whether to enable auto full refresh or not.
+    [Public Preview] (Required, Mutable) Whether to enable auto full refresh or not.
     """
 
     min_interval_hours: VariableOrOptional[int] = None
     """
-    (Optional, Mutable) Specify the minimum interval in hours between the timestamp
+    [Public Preview] (Optional, Mutable) Specify the minimum interval in hours between the timestamp
     at which a table was last full refreshed and the current timestamp for triggering auto full
     If unspecified and autoFullRefresh is enabled then by default min_interval_hours is 24 hours.
     """
@@ -40,12 +40,12 @@ class AutoFullRefreshPolicyDict(TypedDict, total=False):
 
     enabled: VariableOr[bool]
     """
-    (Required, Mutable) Whether to enable auto full refresh or not.
+    [Public Preview] (Required, Mutable) Whether to enable auto full refresh or not.
     """
 
     min_interval_hours: VariableOrOptional[int]
     """
-    (Optional, Mutable) Specify the minimum interval in hours between the timestamp
+    [Public Preview] (Optional, Mutable) Specify the minimum interval in hours between the timestamp
     at which a table was last full refreshed and the current timestamp for triggering auto full
     If unspecified and autoFullRefresh is enabled then by default min_interval_hours is 24 hours.
     """

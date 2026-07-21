@@ -62,7 +62,6 @@ linters:
         no-stdlib-log:
           files:
             - "**"
-            - "!**/bundle/docsgen/**"
             - "!**/bundle/internal/schema/**"
             - "!**/bundle/internal/tf/codegen/**"
             - "!**/bundle/internal/validation/**"
