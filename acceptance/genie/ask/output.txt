@@ -1,6 +1,6 @@
 
 === ask renders the final answer and a chart
->>> [CLI] experimental genie ask What are total sales by franchise?
+>>> [CLI] genie ask What are total sales by franchise?
 Alpha leads with 1,250 total sales.
 
   Total by Franchise
@@ -11,7 +11,7 @@ Alpha leads with 1,250 total sales.
 
 
 === ask with --include-sql also shows the executed SQL
->>> [CLI] experimental genie ask What are total sales by franchise? --include-sql
+>>> [CLI] genie ask What are total sales by franchise? --include-sql
 
 SQL executed (Total by Franchise):
   SELECT franchise, SUM(total) AS total FROM sales GROUP BY franchise
@@ -25,7 +25,7 @@ Alpha leads with 1,250 total sales.
 
 
 === ask with --output json emits structured output
->>> [CLI] experimental genie ask What are total sales by franchise? --output json
+>>> [CLI] genie ask What are total sales by franchise? --output json
 {
   "status": "completed",
   "conversation_id": "conv_1",
@@ -41,7 +41,7 @@ Alpha leads with 1,250 total sales.
 }
 
 === ask with --raw dumps raw SSE events
->>> [CLI] experimental genie ask What are total sales by franchise? --raw
+>>> [CLI] genie ask What are total sales by franchise? --raw
 {"type":"response.output_item.added","output_index":0,"item":{"type":"reasoning","id":"r1","status":"in_progress"}}
 {"type":"response.output_item.added","output_index":1,"item":{"type":"message","id":"t1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Looking at the sales data...","annotations":[]}],"metadata":{"ui_type":"THOUGHT","source_internal_ids":["m1"]}}}
 {"type":"response.output_item.added","output_index":2,"item":{"type":"function_call","id":"f1","call_id":"c1","name":"execute_sql","arguments":""}}
@@ -52,8 +52,8 @@ Alpha leads with 1,250 total sales.
 {"type":"response.completed","response":{"id":"resp_1","status":"completed","conversation_id":"conv_1"}}
 
 === incompatible flags are rejected
->>> [CLI] experimental genie ask q --raw --output json
+>>> [CLI] genie ask q --raw --output json
 Error: --raw cannot be used with --output json
 
->>> [CLI] experimental genie ask q --raw --include-sql
+>>> [CLI] genie ask q --raw --include-sql
 Error: --include-sql cannot be used with --raw

@@ -7,8 +7,8 @@ import (
 	"io"
 	"maps"
 
-	"github.com/databricks/cli/experimental/genie/agentstream"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/genie/agentstream"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"

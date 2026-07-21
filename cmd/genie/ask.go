@@ -1,4 +1,4 @@
-package geniecmd
+package genie
 
 import (
 	"context"
@@ -10,15 +10,15 @@ import (
 	"syscall"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/genie"
-	"github.com/databricks/cli/experimental/genie/agentstream"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/genie"
+	"github.com/databricks/cli/libs/genie/agentstream"
 	"github.com/spf13/cobra"
 )
 
-func newAskCmd() *cobra.Command {
+func NewAskCmd() *cobra.Command {
 	var warehouseID string
 	var raw bool
 	var includeSQL bool
@@ -30,14 +30,14 @@ func newAskCmd() *cobra.Command {
 		Long: `Ask a data question and get an answer from Databricks Genie.
 
 Examples:
-  databricks experimental genie ask "What were total sales last month?"
-  databricks experimental genie ask "What tables exist?" --output json
-  databricks experimental genie ask "Revenue by region" --warehouse-id 1234567890abcdef
-  databricks experimental genie ask "What tables exist?" --raw
+  databricks genie ask "What were total sales last month?"
+  databricks genie ask "What tables exist?" --output json
+  databricks genie ask "Revenue by region" --warehouse-id 1234567890abcdef
+  databricks genie ask "What tables exist?" --raw
 
   # Continue a conversation across calls with a session id you choose:
-  databricks experimental genie ask -s sales "What were total sales by quarter?"
-  databricks experimental genie ask -s sales "Break that down by region"`,
+  databricks genie ask -s sales "What were total sales by quarter?"
+  databricks genie ask -s sales "Break that down by region"`,
 		Args: root.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
