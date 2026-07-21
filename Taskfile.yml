@@ -910,13 +910,14 @@ tasks:
       # locks because codegen never wants to change them), these locks legitimately
       # track the synced producer's deps, so rewrite only the proxy URL back to the
       # public registry and preserve any real dependency changes. Glob the lock
-      # files so a future genkit lock is scrubbed without editing this task.
+      # files so a future genkit lock is scrubbed without editing this task. The
+      # trailing slash is optional so both proxy URL forms are matched.
       # check-lockfiles is the backstop if this ever misses.
       - |
         if [ "$(uname)" = "Darwin" ]; then
-          sed -i '' 's|https://pypi-proxy.cloud.databricks.com/simple/|https://pypi.org/simple|g' internal/genkit/*.py.lock
+          sed -i '' 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
         else
-          sed -i 's|https://pypi-proxy.cloud.databricks.com/simple/|https://pypi.org/simple|g' internal/genkit/*.py.lock
+          sed -i 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
         fi
       - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
       - task: ws
