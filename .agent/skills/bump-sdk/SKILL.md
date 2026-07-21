@@ -32,7 +32,7 @@ Decide with the user whether to keep the tagging-producer drift or restore those
 **4. Regenerate everything downstream.**
 Run `./task generate-cligen` to regenerate the command stubs from the refreshed `.codegen/cli.json`.
 Run `./task generate-check` to regenerate the reproducible artifacts (schema, validation, direct-engine YAML, refschema, pydabs); a clean tree afterwards means zero drift.
-Regenerate the DABs<->TF field map separately with `go test ./bundle/terraform_dabs_map -update`, since the `./task` generators above don't cover it.
+Regenerate the DABs<->TF field map with `./task generate-schema-map`, which `generate-check` does not run.
 Run `go build ./...` and fix compile breakages before touching acceptance goldens.
 
 **5. Handle SDK breaking changes.**
@@ -74,7 +74,7 @@ Never reference the Terraform provider version in the changelog fragment or PR b
 Add it without `(#NNNN)` now; backfill the number after the PR exists, then run `./task links` to expand it into the full markdown link in place and commit the result.
 
 **10. Commit, push, PR.**
-Pushing to `databricks/cli` requires `gh auth switch --user pietern` first, because the default gh account lacks write access.
+If the push 403s, the active gh account lacks write access to `databricks/cli`; switch to one that has it with `gh auth switch`.
 Then follow the `pr-checklist` skill for the PR, and do not run `gh pr create` without the user's explicit permission.
 Commit body and PR description:
 
