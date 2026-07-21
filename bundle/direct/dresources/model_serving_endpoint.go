@@ -173,7 +173,7 @@ func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, id s
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
+func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, _ *PlanEntry) (*ModelServingEndpointRemote, error) {
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 

@@ -25,6 +25,23 @@
           "storage": "dbfs:/pipelines/newcustom"
         }
       },
+      "prior_state": {
+        "channel": "CURRENT",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "libraries": [
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+            }
+          }
+        ],
+        "name": "test-pipeline-[UNIQUE_NAME]",
+        "storage": "dbfs:/pipelines/custom"
+      },
       "remote_state": {
         "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",

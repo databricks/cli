@@ -32,7 +32,20 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   "plan_mode": "local",
   "plan": {
     "resources.jobs.bar": {
-      "action": "skip"
+      "action": "skip",
+      "prior_state": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "bar-[UNIQUE_NAME]",
+        "queue": {
+          "enabled": true
+        }
+      }
     },
     "resources.jobs.foo": {
       "depends_on": [
@@ -41,7 +54,28 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
           "label": "${resources.jobs.bar.id}"
         }
       ],
-      "action": "skip"
+      "action": "skip",
+      "prior_state": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "foo-[UNIQUE_NAME]",
+        "queue": {
+          "enabled": true
+        },
+        "tasks": [
+          {
+            "run_job_task": {
+              "job_id": [NUMID]
+            },
+            "task_key": "run_bar"
+          }
+        ]
+      }
     }
   }
 }

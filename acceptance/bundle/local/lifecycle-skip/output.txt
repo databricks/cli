@@ -1,0 +1,44 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> update_file.py databricks.yml started: false started: true
+
+>>> errcode [CLI] bundle deploy --plan-mode=local
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Cluster requests during 'bundle deploy --plan-mode=local' (should be empty):
+
+>>> print_requests.py //clusters
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Cluster requests during full-mode deploy that follows (Start expected):
+
+>>> print_requests.py //clusters
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/start",
+  "body": {
+    "cluster_id": "[UUID]"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.mycluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

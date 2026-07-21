@@ -1,0 +1,15 @@
+bundle:
+  name: grants-remove-$UNIQUE_NAME
+
+resources:
+  schemas:
+    myschema:
+      catalog_name: main
+      name: schema_grants_remove_$UNIQUE_NAME
+      grants:
+        - principal: account users
+          privileges:
+            - USE_SCHEMA
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - USE_SCHEMA

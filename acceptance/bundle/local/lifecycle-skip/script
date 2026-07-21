@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Full-mode deploy: cluster created and stopped per lifecycle.started=false.
+trace errcode $CLI bundle deploy
+rm -f out.requests.txt
+
+# Toggle to started=true; redeploy under --plan-mode=local.
+# In local mode entry.RemoteState is nil, so DoUpdate must skip the Start call
+# entirely and WaitAfterUpdate must skip its poll. Nothing else has changed, so
+# no /clusters requests should be issued at all.
+trace update_file.py databricks.yml "started: false" "started: true"
+trace errcode $CLI bundle deploy --plan-mode=local
+title "Cluster requests during 'bundle deploy --plan-mode=local' (should be empty):\n"
+trace print_requests.py //clusters
+
+# The next full-mode deploy applies the real transition.
+trace errcode $CLI bundle deploy
+title "Cluster requests during full-mode deploy that follows (Start expected):\n"
+trace print_requests.py //clusters

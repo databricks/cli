@@ -72,13 +72,15 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	// Eagerly parse plan entries loaded from JSON:
 	// - NewState.Value contains raw JSON bytes; parse into typed structs and cache.
 	// - RemoteState is decoded as map[string]interface{}; round-trip through the
-	//   adapter's StateType to recover the correct typed struct so that type
-	//   assertions in resource adapters (e.g. entry.RemoteState.(*GrantsState))
+	//   adapter's RemoteType to recover the correct typed struct so that type
+	//   assertions in resource adapters (e.g. entry.RemoteState.(*AppRemote))
 	//   work identically whether the plan came from a file or from memory.
+	// - PriorState is likewise round-tripped through the adapter's StateType.
 	for resourceKey, entry := range plan.Plan {
 		hasNewState := entry.NewState != nil && len(entry.NewState.Value) > 0
 		hasRemoteState := entry.RemoteState != nil
-		if !hasNewState && !hasRemoteState {
+		hasPriorState := entry.PriorState != nil
+		if !hasNewState && !hasRemoteState && !hasPriorState {
 			continue
 		}
 
@@ -96,22 +98,40 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 		}
 
 		if hasRemoteState {
-			data, err := json.Marshal(entry.RemoteState)
+			typed, err := reMaterialize(entry.RemoteState, adapter.RemoteType())
 			if err != nil {
-				return fmt.Errorf("re-serializing remote state for %s: %w", resourceKey, err)
-			}
-			// RemoteType() returns a pointer type (e.g. *AppRemote); Elem() gives
-			// the struct type so reflect.New produces a single pointer, not double.
-			typed := reflect.New(adapter.RemoteType().Elem()).Interface()
-			if err := json.Unmarshal(data, typed); err != nil {
 				return fmt.Errorf("loading remote state for %s: %w", resourceKey, err)
 			}
 			entry.RemoteState = typed
+		}
+
+		if hasPriorState {
+			typed, err := reMaterialize(entry.PriorState, adapter.StateType())
+			if err != nil {
+				return fmt.Errorf("loading prior state for %s: %w", resourceKey, err)
+			}
+			entry.PriorState = typed
 		}
 	}
 
 	b.Plan = plan
 	return nil
+}
+
+// reMaterialize round-trips a JSON-decoded map[string]interface{} through the
+// given typed pointer so subsequent type assertions on the value succeed.
+// ptrType must be a pointer type (e.g. *AppRemote); Elem() gives the struct
+// type so reflect.New produces a single pointer, not double.
+func reMaterialize(v any, ptrType reflect.Type) (any, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, fmt.Errorf("re-serializing: %w", err)
+	}
+	typed := reflect.New(ptrType.Elem()).Interface()
+	if err := json.Unmarshal(data, typed); err != nil {
+		return nil, err
+	}
+	return typed, nil
 }
 
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
@@ -252,26 +272,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		// PriorState is the last saved local state. It's the same value every
+		// consumer needs when they want "what did we think this looked like
+		// before this plan?" (drift classification, prior-grants removal,
+		// prior-etag reconciliation) — regardless of plan mode.
+		entry.PriorState = savedState
+
 		var action deployplan.ActionType
 		var remoteDiff []structdiff.Change
-		var remoteStateComparable any
 
-		if skipsRemoteReads {
-			// --plan-mode=local skips the remote read. Feed the saved state into
-			// drift classification as the "comparable remote": it is our last
-			// recorded snapshot of remote, so drift is computed purely from
-			// saved-state vs config. This also lets OverrideChangeDesc hooks
-			// (etag, endpoint_uuid) reconcile state-only fields against their
-			// saved value instead of nil, avoiding spurious drift.
-			//
-			// Do NOT write savedState to entry.RemoteState: that field is typed
-			// as the remote type at apply time (e.g. *AppRemote, *ClusterRemote)
-			// and apply-time consumers type-assert on it. savedState is the state
-			// type (e.g. *AppState), so writing it here would cause silent type
-			// assertion failures at apply time — for example, remoteIsStarted
-			// would return false regardless of the real remote lifecycle.
-			remoteStateComparable = savedState
-		} else {
+		if !skipsRemoteReads {
 			var remoteState any
 			remoteState, err = retryOnTransient(ctx, func() (any, error) {
 				return adapter.DoRead(ctx, dbentry.ID)
@@ -285,22 +295,32 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				}
 			}
 
-			// We have a choice whether to include remoteState or remoteStateComparable from below.
-			// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
+			// entry.RemoteState carries the raw remote (RemoteType). Apply-time
+			// consumers type-assert on it for remote-only fields (cluster.State,
+			// app.ComputeStatus). Left nil in --plan-mode=local — apply-time
+			// consumers must handle nil by skipping their remote-only paths.
 			entry.RemoteState = remoteState
+		}
 
-			if remoteState != nil {
-				remoteStateComparable, err = adapter.RemapState(remoteState)
-				if err != nil {
-					logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
-					return false
-				}
+		// remoteStateComparable is the state-shaped remote used for drift
+		// classification. In full mode it comes from RemapState(remoteRead); in
+		// local mode from savedState (via PriorState). RemoteOrPrior encapsulates
+		// this choice.
+		remoteStateComparable, err := entry.RemoteOrPrior(adapter)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+			return false
+		}
 
-				remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
-				if err != nil {
-					logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
-					return false
-				}
+		if remoteStateComparable != nil && !skipsRemoteReads {
+			// In full mode with a live remote, compare the remapped remote
+			// against the desired state to detect out-of-band drift. In local
+			// mode remoteStateComparable is savedState which by construction
+			// matches the local diff, so there is nothing extra to detect.
+			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
+				return false
 			}
 		}
 

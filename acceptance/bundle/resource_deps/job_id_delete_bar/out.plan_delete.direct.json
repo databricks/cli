@@ -44,6 +44,27 @@
           }
         }
       },
+      "prior_state": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "job foo",
+        "queue": {
+          "enabled": true
+        },
+        "tasks": [
+          {
+            "run_job_task": {
+              "job_id": [BAR_ID]
+            },
+            "task_key": "job_task"
+          }
+        ]
+      },
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][1],
         "creator_user_name": "[USERNAME]",

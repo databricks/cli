@@ -6,6 +6,10 @@
   "plan": {
     "resources.schemas.grants_schema": {
       "action": "skip",
+      "prior_state": {
+        "catalog_name": "main",
+        "name": "schema_grants_[UNIQUE_NAME]"
+      },
       "remote_state": {
         "browse_only": false,
         "catalog_name": "main",
@@ -25,6 +29,12 @@
         }
       ],
       "action": "skip",
+      "prior_state": {
+        "catalog_name": "main",
+        "name": "volume_name",
+        "schema_name": "schema_grants_[UNIQUE_NAME]",
+        "volume_type": "MANAGED"
+      },
       "remote_state": {
         "catalog_name": "main",
         "created_at": [UNIX_TIME_MILLIS][1],
@@ -66,6 +76,19 @@
             }
           ]
         }
+      },
+      "prior_state": {
+        "securable_type": "volume",
+        "full_name": "main.schema_grants_[UNIQUE_NAME].volume_name",
+        "__embed__": [
+          {
+            "principal": "deco-test-user@databricks.com",
+            "privileges": [
+              "READ_VOLUME",
+              "WRITE_VOLUME"
+            ]
+          }
+        ]
       },
       "remote_state": {
         "securable_type": "volume",

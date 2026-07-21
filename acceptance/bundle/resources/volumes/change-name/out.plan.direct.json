@@ -15,6 +15,13 @@
           "volume_type": "MANAGED"
         }
       },
+      "prior_state": {
+        "catalog_name": "main",
+        "comment": "COMMENT1",
+        "name": "myvolume",
+        "schema_name": "myschema",
+        "volume_type": "MANAGED"
+      },
       "remote_state": {
         "catalog_name": "main",
         "comment": "COMMENT1",

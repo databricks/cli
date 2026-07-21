@@ -93,6 +93,13 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 	}
 
 	// Carry forward model_id from existing state since UpdateModelResponse doesn't include it.
+	//
+	// ModelId lives only on MlflowModelRemote — the state type (*ml.CreateModelRequest)
+	// does not carry it — so entry.PriorState cannot substitute here. In
+	// --plan-mode=local, entry.RemoteState is nil and modelId falls to "". If a
+	// same-run dependent references ${resources.models.foo.model_id} it resolves
+	// to empty in that mode; this is the same limitation as any remote-only
+	// reference field. The next plan (full mode) will refresh via DoRead.
 	var modelId string
 	if old, ok := entry.RemoteState.(*MlflowModelRemote); ok {
 		modelId = old.ModelId

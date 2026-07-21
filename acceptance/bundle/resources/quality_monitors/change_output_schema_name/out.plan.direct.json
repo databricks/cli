@@ -15,6 +15,13 @@
           "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }
       },
+      "prior_state": {
+        "assets_dir": "/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]",
+        "output_schema_name": "main.qm_test_[UNIQUE_NAME]",
+        "snapshot": {},
+        "table_name": "main.qm_test_[UNIQUE_NAME].test_table",
+        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+      },
       "remote_state": {
         "assets_dir": "/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]",
         "dashboard_id": "(redacted)",

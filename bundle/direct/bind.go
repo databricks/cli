@@ -136,11 +136,22 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		// detection (dashboards and genie spaces). The etag is not provided by the
 		// user; it comes from remote. If we don't store it in state, we won't
 		// detect remote drift correctly and the next plan shows a bogus update.
-		if (strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.")) && entry != nil && entry.RemoteState != nil {
-			etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, "etag"))
-			if err == nil && etag != nil {
-				if etagStr, ok := etag.(string); ok && etagStr != "" {
-					_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr)
+		//
+		// Prefer RemoteState (fresh remote read, always populated here because
+		// bind runs in full mode). PriorState carries the same field for these
+		// resources (StateType == RemoteType), so it's a safe fallback if a
+		// future call path invokes bind without a fresh remote.
+		if strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.") {
+			priorOrRemote := entry.RemoteState
+			if priorOrRemote == nil {
+				priorOrRemote = entry.PriorState
+			}
+			if entry != nil && priorOrRemote != nil {
+				etag, err := structaccess.Get(priorOrRemote, structpath.NewStringKey(nil, "etag"))
+				if err == nil && etag != nil {
+					if etagStr, ok := etag.(string); ok && etagStr != "" {
+						_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr)
+					}
 				}
 			}
 		}

@@ -128,10 +128,42 @@ type PlanEntry struct {
 	// Gone is set on Delete entries when planning confirmed the resource no longer
 	// exists remotely. Applying such an entry only removes it from the state, without
 	// calling the delete API, and approval prompts do not list it as a deletion.
-	Gone        bool                     `json:"gone,omitempty"`
-	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
-	RemoteState any                      `json:"remote_state,omitempty"`
-	Changes     Changes                  `json:"changes,omitempty"`
+	Gone     bool                     `json:"gone,omitempty"`
+	NewState *structvar.StructVarJSON `json:"new_state,omitempty"`
+
+	// PriorState is the last saved local state — always StateType. Populated for
+	// every previously-deployed resource in every plan mode. Consumers that need
+	// state-shaped data (prior grants principals, prior etag) read this.
+	PriorState any `json:"prior_state,omitempty"`
+
+	// RemoteState is a freshly-read remote state — RemoteType. Nil when the plan
+	// was computed without reading remote (--plan-mode=local, unless a reference
+	// fetch happens to populate it). Consumers that need live-remote-only fields
+	// (cluster.State, app.ComputeStatus, model.ModelId) read this; the reasonable
+	// behavior on nil is to skip whatever depends on live status.
+	RemoteState any `json:"remote_state,omitempty"`
+
+	Changes Changes `json:"changes,omitempty"`
+}
+
+// RemapStater is the subset of dresources.Adapter that RemoteOrPrior needs.
+// Declared here to keep bundle/deployplan free of a dresources import.
+type RemapStater interface {
+	RemapState(remoteState any) (any, error)
+}
+
+// RemoteOrPrior returns state-shaped data suitable for consumers that don't
+// need remote-only fields. It prefers the freshly-remapped RemoteState when
+// available (full mode, or when a reference fetch populated it); otherwise it
+// falls back to PriorState (the last saved state).
+//
+// Returns (nil, nil) only when the resource was never deployed AND no remote
+// was read — i.e. a Create action.
+func (e *PlanEntry) RemoteOrPrior(adapter RemapStater) (any, error) {
+	if e.RemoteState != nil {
+		return adapter.RemapState(e.RemoteState)
+	}
+	return e.PriorState, nil
 }
 
 type DependsOnEntry struct {

@@ -39,6 +39,16 @@
           "spark_version": "13.3.x-snapshot-scala2.12"
         }
       },
+      "prior_state": {
+        "autotermination_minutes": 60,
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
+        "num_workers": 2,
+        "spark_conf": {
+          "spark.executor.memory": "2g"
+        },
+        "spark_version": "13.3.x-snapshot-scala2.12"
+      },
       "remote_state": {
         "autotermination_minutes": 60,
         "aws_attributes": {
@@ -111,6 +121,16 @@
           "spark_version": "13.3.x-snapshot-scala2.12"
         }
       },
+      "prior_state": {
+        "autotermination_minutes": 60,
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
+        "num_workers": 3,
+        "spark_conf": {
+          "spark.executor.memory": "2g"
+        },
+        "spark_version": "13.3.x-snapshot-scala2.12"
+      },
       "remote_state": {
         "autotermination_minutes": 60,
         "aws_attributes": {
@@ -182,6 +202,16 @@
           },
           "spark_version": "13.3.x-snapshot-scala2.12"
         }
+      },
+      "prior_state": {
+        "autotermination_minutes": 60,
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.executor.memory": "2g"
+        },
+        "spark_version": "13.3.x-snapshot-scala2.12"
       },
       "remote_state": {
         "autotermination_minutes": 60,

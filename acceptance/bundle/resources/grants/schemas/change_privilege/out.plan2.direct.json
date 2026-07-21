@@ -6,6 +6,10 @@
   "plan": {
     "resources.schemas.grants_schema": {
       "action": "skip",
+      "prior_state": {
+        "catalog_name": "main",
+        "name": "schema_grants_[UNIQUE_NAME]"
+      },
       "remote_state": {
         "browse_only": false,
         "catalog_name": "main",
@@ -39,6 +43,19 @@
             }
           ]
         }
+      },
+      "prior_state": {
+        "securable_type": "schema",
+        "full_name": "main.schema_grants_[UNIQUE_NAME]",
+        "__embed__": [
+          {
+            "principal": "deco-test-user@databricks.com",
+            "privileges": [
+              "CREATE_TABLE",
+              "USE_SCHEMA"
+            ]
+          }
+        ]
       },
       "remote_state": {
         "securable_type": "schema",

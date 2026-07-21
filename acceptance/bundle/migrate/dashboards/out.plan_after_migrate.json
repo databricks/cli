@@ -6,6 +6,15 @@
   "plan": {
     "resources.dashboards.dashboard1": {
       "action": "skip",
+      "prior_state": {
+        "display_name": "my dashboard",
+        "embed_credentials": true,
+        "etag": "[NUMID]",
+        "parent_path": "/Workspace/Users/[USERNAME]",
+        "published": true,
+        "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+        "warehouse_id": "123456"
+      },
       "remote_state": {
         "create_time": "[TIMESTAMP]",
         "dashboard_id": "[DASHBOARD1_ID]",

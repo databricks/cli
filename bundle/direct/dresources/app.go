@@ -196,6 +196,12 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 	}
 
+	// entry.RemoteState is nil in --plan-mode=local: we have no live status,
+	// so skip lifecycle management (don't Start, don't Stop, don't redeploy code).
+	if entry.RemoteState == nil {
+		return nil, nil
+	}
+
 	return nil, r.manageLifecycle(ctx, id, config, remoteIsStarted(entry))
 }
 

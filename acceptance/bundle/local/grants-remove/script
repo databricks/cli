@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Full-mode deploy: two principals granted.
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+# Remove one principal from config and redeploy under --plan-mode=local.
+# The removed principal must be revoked: removedGrantPrincipals reads from
+# entry.PriorState in local mode (entry.RemoteState is nil), so it computes
+# the removal set from the last saved state.
+trace update_file.py databricks.yml "principal: deco-test-user@databricks.com" "principal: deco-test-user@databricks.com  # removed"
+# Now drop the removed-principal block entirely by pruning the two lines below the marker.
+python3 -c "
+import re
+p = 'databricks.yml'
+s = open(p).read()
+s = re.sub(r'        - principal: deco-test-user@databricks.com  # removed\n          privileges:\n            - USE_SCHEMA\n', '', s)
+open(p, 'w').write(s)
+"
+
+trace $CLI bundle deploy --plan-mode=local
+title "Permissions requests during 'bundle deploy --plan-mode=local':\n"
+trace print_requests.py //permissions
