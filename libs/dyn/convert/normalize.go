@@ -89,8 +89,8 @@ func typeMismatch(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnost
 
 // isAnchorContainer reports whether v is a YAML anchor or a non-empty
 // sequence/map composed entirely of anchor containers. Anchors define reusable
-// blocks (commonly grouped under x-* keys as a list or map) and must not trigger
-// "unknown field" warnings, including when nested inside a container.
+// blocks and must not trigger "unknown field" warnings, including when nested
+// inside a container.
 func isAnchorContainer(v dyn.Value) bool {
 	if v.IsAnchor() {
 		return true

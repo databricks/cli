@@ -913,14 +913,14 @@ func TestNormalizeAnchorContainers(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var typ Tmp
 			vin := dyn.V(map[string]dyn.Value{
-				"foo":     dyn.V("bar"),
-				"x-thing": tc.value,
+				"foo":   dyn.V("bar"),
+				"thing": tc.value,
 			})
 
 			vout, diags := Normalize(typ, vin)
 			if tc.wantWarn {
 				assert.Len(t, diags, 1)
-				assert.Equal(t, "unknown field: x-thing", diags[0].Summary)
+				assert.Equal(t, "unknown field: thing", diags[0].Summary)
 			} else {
 				assert.Empty(t, diags)
 			}
