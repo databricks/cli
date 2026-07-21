@@ -31,16 +31,13 @@ func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, s
 	if snap.RemoteVolume != nil {
 		return snapshotResult{}, errors.New("code_source.snapshot.remote_volume is not yet supported")
 	}
-	if snap.Git != nil {
-		return snapshotResult{}, errors.New("code_source.snapshot.git is not yet supported on this path")
-	}
 
 	repoPath, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
 	if err != nil {
 		return snapshotResult{}, err
 	}
 
-	tarball, cleanup, err := buildSnapshotTarball(ctx, repoPath, snap.IncludePaths)
+	tarball, cleanup, err := buildSnapshotTarball(ctx, repoPath, snap.Git, snap.IncludePaths)
 	if err != nil {
 		return snapshotResult{}, err
 	}
@@ -49,10 +46,11 @@ func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, s
 	return uploadSnapshotViaDABs(ctx, w, tarball)
 }
 
-// buildSnapshotTarball writes a plain-tar snapshot of repoPath to a temp file named
+// buildSnapshotTarball writes a snapshot of repoPath to a temp file named
 // <dirName>.tar.gz (the basename becomes the uploaded filename), returning the path
-// and a cleanup func.
-func buildSnapshotTarball(ctx context.Context, repoPath string, includePaths []string) (string, func(), error) {
+// and a cleanup func. With a git ref it archives the resolved commit (git archive);
+// otherwise it plain-tars the working tree.
+func buildSnapshotTarball(ctx context.Context, repoPath string, ref *gitRef, includePaths []string) (string, func(), error) {
 	noop := func() {}
 	tmp, err := os.MkdirTemp("", "air-snapshot-*")
 	if err != nil {
@@ -61,7 +59,22 @@ func buildSnapshotTarball(ctx context.Context, repoPath string, includePaths []s
 	cleanup := func() { _ = os.RemoveAll(tmp) }
 
 	tarball := filepath.Join(tmp, filepath.Base(repoPath)+".tar.gz")
-	if err := createPlainTarball(ctx, repoPath, tarball, includePaths); err != nil {
+	dirName := filepath.Base(repoPath)
+
+	git := newGitRepo(repoPath)
+	plan, err := resolveSnapshotPlan(ctx, git, ref, includePaths)
+	if err != nil {
+		cleanup()
+		return "", noop, err
+	}
+
+	switch plan.mode {
+	case modeGitArchive:
+		err = createGitArchiveSnapshot(ctx, git, plan.commitSHA, tarball, dirName, includePaths)
+	default:
+		err = createPlainTarball(ctx, repoPath, tarball, includePaths)
+	}
+	if err != nil {
 		cleanup()
 		return "", noop, err
 	}

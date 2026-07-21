@@ -199,6 +199,47 @@ code_source:
 	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
 }
 
+// A git-pinned code_source is git-archived at the commit, uploaded via DABs' artifact
+// plumbing, and its remote code_source_path attached to the submitted task.
+func TestSubmitWorkloadWithGitPinnedCodeSource(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	var got jobs.SubmitRun
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	// A git repo committed at HEAD, referenced by commit so packaging is git_archive.
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "train.py", "print()")
+	sha := commitAll(t, repo, "init")
+
+	cfg := minimalConfig + `
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ` + repo + `
+    git:
+      commit: ` + sha + `
+`
+	cfgPath := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
+	require.NoError(t, err)
+
+	at := got.Tasks[0].AiRuntimeTask
+	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/.internal/")
+	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
+}
+
 func TestSubmitWorkloadGuards(t *testing.T) {
 	w := newFakeWorkspaceClient(t)
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)

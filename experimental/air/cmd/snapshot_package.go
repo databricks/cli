@@ -10,10 +10,28 @@ import (
 	"strings"
 )
 
-// Tar builder ported from cli/utils/snapshot.py. It shells out to `tar` for parity
-// and to reuse tar's symlink, gitignore, and AppleDouble handling. The tarball's
-// top-level dir name is load-bearing — the remote entry_script extracts to
-// /databricks/code_source/<dir> — so the `-C parent dir` form preserves it.
+// Tar builders ported from cli/utils/snapshot.py. Both shell out (git archive / tar)
+// for parity and to reuse git's/tar's symlink, gitignore, and AppleDouble handling.
+// The tarball's top-level dir name is load-bearing — the remote entry_script extracts
+// to /databricks/code_source/<dir> — so the --prefix / `-C parent dir` forms preserve it.
+
+// createGitArchiveSnapshot writes a gzipped tar of commitSHA to outputTarball via
+// `git archive`, with every entry prefixed by directoryName/. When includePaths is
+// set, only those paths are archived.
+func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outputTarball, directoryName string, includePaths []string) error {
+	args := []string{
+		"archive",
+		"--format=tar.gz",
+		"--prefix=" + directoryName + "/",
+		"-o", outputTarball,
+		commitSHA,
+	}
+	args = append(args, includePaths...)
+	if _, err := git.run(ctx, args...); err != nil {
+		return fmt.Errorf("failed to create git archive: %w", err)
+	}
+	return nil
+}
 
 // createPlainTarball writes a gzipped tar of repoPath's working tree to
 // outputTarball via `tar`. The archive preserves repoPath's directory name as the

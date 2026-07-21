@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,12 +37,44 @@ func tarballEntries(t *testing.T, path string) []string {
 	return names
 }
 
-// writeRepoFile writes a file at a dir-relative path, creating parent dirs.
-func writeRepoFile(t *testing.T, dir, rel, content string) {
-	t.Helper()
-	full := filepath.Join(dir, rel)
-	require.NoError(t, os.MkdirAll(filepath.Dir(full), 0o755))
-	require.NoError(t, os.WriteFile(full, []byte(content), 0o600))
+func TestCreateGitArchiveSnapshot(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	writeRepoFile(t, repo, "src/model.py", "print()")
+	sha := commitAll(t, repo, "init")
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	dirName := filepath.Base(repo)
+	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, nil))
+
+	entries := tarballEntries(t, out)
+	// Every real entry is prefixed with the directory name. git archive also emits a
+	// `pax_global_header` pseudo-entry (no prefix) that tar ignores on extraction.
+	assert.Contains(t, entries, dirName+"/a.txt")
+	assert.Contains(t, entries, dirName+"/src/model.py")
+	for _, e := range entries {
+		if e == "pax_global_header" {
+			continue
+		}
+		assert.True(t, strings.HasPrefix(e, dirName+"/"), "entry %q lacks prefix", e)
+	}
+}
+
+func TestCreateGitArchiveSnapshot_IncludePaths(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	writeRepoFile(t, repo, "src/model.py", "print()")
+	sha := commitAll(t, repo, "init")
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	dirName := filepath.Base(repo)
+	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, []string{"src"}))
+
+	entries := tarballEntries(t, out)
+	assert.Contains(t, entries, dirName+"/src/model.py")
+	assert.NotContains(t, entries, dirName+"/a.txt")
 }
 
 func TestCreatePlainTarball(t *testing.T) {
