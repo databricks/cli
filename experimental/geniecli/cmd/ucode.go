@@ -31,6 +31,10 @@ const (
 	// registry name in libs/aitools/agents so the Databricks plugin is installed
 	// for the same agent that gets launched.
 	agentName = "codex"
+
+	// mcpLocation is the Unity Catalog schema whose MCP services are registered
+	// for the agent. system.ai hosts the built-in Databricks MCP services.
+	mcpLocation = "system.ai"
 )
 
 // lookPath is a package-level seam so tests can resolve binaries without
@@ -106,11 +110,37 @@ func configureAgent(ctx context.Context, ucodePath string, cfg *config.Config) e
 	return nil
 }
 
-// launchAgent replaces the current process with the agent session. Extra args
-// are forwarded to the underlying agent. --skip-preflight trusts the configure
-// step we just ran and skips a redundant auth + gateway re-validation.
-func launchAgent(ctx context.Context, ucodePath string, extraArgs []string) error {
-	args := append([]string{ucodePath, agentName, "--skip-preflight"}, extraArgs...)
+// registerMCP registers the Databricks MCP services from the configured Unity
+// Catalog location for the agent, so the session has Databricks MCP tools. It
+// is best-effort: a workspace without MCP services in that schema (or an
+// unreachable one) should not block the agent, so failures are logged and
+// swallowed, matching the plugin-refresh policy.
+func registerMCP(ctx context.Context, ucodePath string) {
+	args := []string{ucodePath, "configure", "mcp", "--location", mcpLocation}
+	if err := process.Forwarded(ctx, args, os.Stdin, os.Stdout, os.Stderr); err != nil {
+		log.Warnf(ctx, "Skipping Databricks MCP setup: %v", err)
+	}
+}
+
+// launchAgent replaces the current process with the agent session.
+// --skip-preflight trusts the configure step we just ran and skips a redundant
+// auth + gateway re-validation. When systemPrompt is non-empty it is injected
+// for this session only via the agent's `-c developer_instructions=` override
+// (an additive developer-role message; no config file is written). Any userArgs
+// are forwarded to the underlying agent after ours.
+func launchAgent(ctx context.Context, ucodePath, systemPrompt string, userArgs []string) error {
+	// Everything after "--" is forwarded verbatim to the underlying agent.
+	var forwarded []string
+	if systemPrompt != "" {
+		forwarded = append(forwarded, "-c", systemPrompt)
+	}
+	forwarded = append(forwarded, userArgs...)
+
+	args := []string{ucodePath, agentName, "--skip-preflight"}
+	if len(forwarded) > 0 {
+		args = append(args, "--")
+		args = append(args, forwarded...)
+	}
 	return launch(execv.Options{
 		Args: args,
 		Env:  envSlice(ctx),

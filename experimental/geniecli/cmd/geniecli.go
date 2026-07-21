@@ -15,6 +15,8 @@ import (
 // The agent runtime is an implementation detail intentionally kept out of the
 // user-facing surface: the user only ever interacts with `genie-cli`.
 func New() *cobra.Command {
+	var noSystemPrompt bool
+
 	cmd := &cobra.Command{
 		Use:   "genie-cli [-- AGENT_ARGS...]",
 		Short: "Start an interactive AI coding agent configured for Databricks",
@@ -24,7 +26,8 @@ Databricks workspace.
 The agent authenticates through your Databricks workspace and routes model
 requests through the Databricks AI Gateway, so no separate model API keys are
 needed. Databricks coding skills are installed and kept up to date on every
-launch so the agent works effectively against Databricks.
+launch, Databricks MCP tools are registered, and the agent is primed with a
+system prompt so it works effectively against Databricks out of the box.
 
 Any arguments after "--" are forwarded to the underlying agent, e.g.:
 
@@ -62,10 +65,23 @@ Any arguments after "--" are forwarded to the underlying agent, e.g.:
 			}
 			refreshDatabricksPlugin(ctx)
 
+			// Register Databricks MCP tools for the session (best-effort).
+			registerMCP(ctx, ucodePath)
+
+			// Prime the agent to operate as a Databricks CLI assistant, injected
+			// per-session only (no config file is written). Carries the resolved
+			// host and profile so the agent acts against this workspace.
+			var systemPrompt string
+			if !noSystemPrompt {
+				systemPrompt = developerInstructionsOverride(cfg.Host, cfg.Profile)
+			}
+
 			cmdio.LogString(ctx, "Starting the Databricks agent...")
-			return launchAgent(ctx, ucodePath, args)
+			return launchAgent(ctx, ucodePath, systemPrompt, args)
 		},
 	}
+
+	cmd.Flags().BoolVar(&noSystemPrompt, "no-system-prompt", false, "Do not prime the agent with the default Databricks system prompt")
 
 	return cmd
 }

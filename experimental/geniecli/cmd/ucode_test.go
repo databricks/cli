@@ -103,16 +103,43 @@ func TestEnsureUcodeInstallsWhenMissing(t *testing.T) {
 	assert.Contains(t, stub.Commands()[0], "uv tool install")
 }
 
-func TestLaunchAgentPassesThroughArgs(t *testing.T) {
-	restore := launch
-	t.Cleanup(func() { launch = restore })
-	var gotArgs []string
-	launch = func(opts execv.Options) error {
-		gotArgs = opts.Args
-		return nil
+func TestLaunchAgent(t *testing.T) {
+	tests := []struct {
+		name         string
+		systemPrompt string
+		userArgs     []string
+		want         []string
+	}{
+		{
+			name: "no prompt, no args",
+			want: []string{"/usr/local/bin/ucode", "codex", "--skip-preflight"},
+		},
+		{
+			name:     "user args only",
+			userArgs: []string{"--full-auto"},
+			want:     []string{"/usr/local/bin/ucode", "codex", "--skip-preflight", "--", "--full-auto"},
+		},
+		{
+			name:         "system prompt injected before user args",
+			systemPrompt: `developer_instructions="hi"`,
+			userArgs:     []string{"--full-auto"},
+			want:         []string{"/usr/local/bin/ucode", "codex", "--skip-preflight", "--", "-c", `developer_instructions="hi"`, "--full-auto"},
+		},
 	}
 
-	err := launchAgent(t.Context(), "/usr/local/bin/ucode", []string{"--full-auto"})
-	require.NoError(t, err)
-	assert.Equal(t, []string{"/usr/local/bin/ucode", "codex", "--skip-preflight", "--full-auto"}, gotArgs)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			restore := launch
+			t.Cleanup(func() { launch = restore })
+			var gotArgs []string
+			launch = func(opts execv.Options) error {
+				gotArgs = opts.Args
+				return nil
+			}
+
+			err := launchAgent(t.Context(), "/usr/local/bin/ucode", tt.systemPrompt, tt.userArgs)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, gotArgs)
+		})
+	}
 }
