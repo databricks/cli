@@ -1,1 +1,1 @@
-* Bundle templates now scaffold an `AGENTS.md` (with a `CLAUDE.md` that includes it) pointing coding agents at Databricks AI Tools.
+Bundle templates now scaffold an `AGENTS.md` that points coding agents at Databricks AI Tools, alongside a one-line `CLAUDE.md` that includes it via `@AGENTS.md` ([#5996](https://github.com/databricks/cli/pull/5996)).
