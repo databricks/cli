@@ -1,6 +1,7 @@
 package localenv
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -338,6 +339,16 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "cannot stat backup %s", filepath.ToSlash(backup)))
 		}
 		p.res.BackupPath = filepath.ToSlash(backup)
+
+		// Skip the write when the merged output already matches what is on disk.
+		// On an idempotent re-run mergePlan reproduces the current file byte for
+		// byte, so rewriting it would only advance the mtime — spuriously
+		// invalidating file watchers and uv.lock freshness checks — without
+		// changing content. The backup above is untouched (the existing .bak is
+		// kept), so this leaves disk exactly as it was.
+		if current, readErr := os.ReadFile(pyproject); readErr == nil && bytes.Equal(current, mergedBytes) {
+			return nil
+		}
 	}
 
 	if err := os.WriteFile(pyproject, mergedBytes, 0o644); err != nil {
