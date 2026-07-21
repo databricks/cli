@@ -71,9 +71,7 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		ArtifactLocation: experiment.ArtifactLocation,
 		Tags:             append(experiment.Tags, appendTags...),
 		LifecycleStage:   "active",
-		// TraceLocation is immutable and echoed back by the real GetExperiment.
-		// Dropping it here makes the direct-engine diff see local-present vs
-		// remote-absent and spuriously recreate the experiment.
+		// Echo back like the real GetExperiment; omitting this immutable field triggers a spurious recreate.
 		TraceLocation: experiment.TraceLocation,
 	}
 
