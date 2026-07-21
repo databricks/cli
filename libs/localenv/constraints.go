@@ -47,7 +47,12 @@ func RepoConstraintBaseURL(ctx context.Context) string {
 	if repo == "" {
 		return ""
 	}
-	return "https://raw.githubusercontent.com/" + repo + "/main"
+	// The databricks/environments repo nests its language ecosystems under a
+	// top-level directory, so the Python artifacts live at python/<env key>/
+	// pyproject.toml (e.g. python/serverless/serverless-v5, python/dbr/<spark>),
+	// not at the repo root. Anchor the base URL at that python/ subtree so an
+	// env key of "serverless/serverless-v5" resolves to the real path.
+	return "https://raw.githubusercontent.com/" + repo + "/main/python"
 }
 
 // errEnvKeyNotFound is returned by fetchURL when the constraint artifact does
