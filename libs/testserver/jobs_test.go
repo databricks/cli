@@ -87,6 +87,54 @@ func TestJobsSubmit_RunReachesTerminalStateOnPoll(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, second.State.ResultState)
 }
 
+func createJob(t *testing.T, workspace *FakeWorkspace) int64 {
+	t.Helper()
+	body, err := json.Marshal(jobs.CreateJob{Name: "my-job"})
+	require.NoError(t, err)
+
+	response := workspace.JobsCreate(Request{Body: body})
+	require.Equal(t, 0, response.StatusCode)
+	return response.Body.(jobs.CreateResponse).JobId
+}
+
+func runNow(t *testing.T, workspace *FakeWorkspace, request jobs.RunNow) Response {
+	t.Helper()
+	body, err := json.Marshal(request)
+	require.NoError(t, err)
+	return workspace.JobsRunNow(Request{Body: body})
+}
+
+// The Jobs API does not free an idempotency_token when its run is deleted, so a
+// later reuse errors instead of starting a fresh run. This is exactly why
+// job_runs' DoDelete is a noop: deleting a run would tombstone the deterministic
+// token and break re-running the same config after destroy or a value flip-back.
+func TestJobsRunNow_IdempotencyTokenTombstonedAfterDelete(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	jobID := createJob(t, workspace)
+
+	const token = "stable-token"
+
+	first := runNow(t, workspace, jobs.RunNow{JobId: jobID, IdempotencyToken: token})
+	require.Equal(t, 0, first.StatusCode)
+	runID := first.Body.(jobs.RunNowResponse).RunId
+	require.NotZero(t, runID)
+
+	// A retry with the same token dedupes to the existing run (no duplicate).
+	second := runNow(t, workspace, jobs.RunNow{JobId: jobID, IdempotencyToken: token})
+	require.Equal(t, 0, second.StatusCode)
+	assert.Equal(t, runID, second.Body.(jobs.RunNowResponse).RunId)
+
+	body, err := json.Marshal(jobs.DeleteRun{RunId: runID})
+	require.NoError(t, err)
+	del := workspace.JobsDeleteRun(Request{Body: body})
+	require.Equal(t, 0, del.StatusCode)
+
+	// Reusing the tombstoned token now errors rather than starting a fresh run.
+	third := runNow(t, workspace, jobs.RunNow{JobId: jobID, IdempotencyToken: token})
+	assert.Equal(t, 400, third.StatusCode)
+	assert.Contains(t, third.Body.(string), "has been deleted")
+}
+
 func TestJobsSubmit_RejectsInvalidGitProvider(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 

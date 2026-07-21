@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -161,6 +163,7 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	if err != nil {
 		return nil, err
 	}
+	logRunPageURL(ctx, r.client, runID)
 	// TERMINATED/SKIPPED succeed even with a FAILED/TIMEDOUT/CANCELED
 	// result_state (surfaced as state, not a deploy failure); only INTERNAL_ERROR
 	// fails the deploy.
@@ -169,6 +172,31 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 		return nil, err
 	}
 	return makeJobRunRemote(run), nil
+}
+
+// logRunPageURL best-effort surfaces the run's UI link before WaitAfterCreate
+// blocks. The wait can legitimately last hours (jobRunWaitTimeout), so an
+// otherwise-silent deploy would look hung. A failure here is non-fatal: the URL
+// is only a progress aid, and the wait below reports any real error.
+func logRunPageURL(ctx context.Context, client *databricks.WorkspaceClient, runID int64) {
+	var req jobs.GetRunRequest
+	req.RunId = runID
+	run, err := client.Jobs.GetRun(ctx, req)
+	if err != nil {
+		log.Debugf(ctx, "job_run: could not fetch run page URL before waiting: %v", err)
+		return
+	}
+	if run.RunPageUrl == "" {
+		return
+	}
+	msg := "Waiting for job run to complete: " + run.RunPageUrl
+	// A deploy always has cmdIO installed (root command's PersistentPreRunE), but
+	// the direct-engine unit harness calls this without one, so guard the panic.
+	if cmdio.HasIO(ctx) {
+		cmdio.LogString(ctx, msg)
+	} else {
+		log.Debugf(ctx, "%s", msg)
+	}
 }
 
 // DoUpdate is intentionally not implemented: a run can't be modified in place,

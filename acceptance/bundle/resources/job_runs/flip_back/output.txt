@@ -1,0 +1,42 @@
+
+=== deploy with env=dev triggers the first run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-flip-back/default/files...
+Deploying resources...
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Updating deployment state...
+Deployment complete!
+
+=== flip env dev -> prod: the config changed, so a fresh, different run is triggered
+>>> update_file.py databricks.yml env: dev env: prod
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-flip-back/default/files...
+Deploying resources...
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Updating deployment state...
+Deployment complete!
+
+=== flip env prod -> dev: dedupes back to the original dev run, does not start a new one
+>>> update_file.py databricks.yml env: prod env: dev
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-flip-back/default/files...
+Deploying resources...
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Updating deployment state...
+Deployment complete!
+
+=== no run was ever deleted (destroy/recreate leave runs in place), and the dev run id was reused
+>>> print_requests.py --keep //jobs/runs/delete
+flip-back reused the original dev run ([NUMID]); prod had its own run ([NUMID])
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-flip-back/default
+
+Deleting files...
+Destroy complete!
