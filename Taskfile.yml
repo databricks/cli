@@ -310,11 +310,13 @@ tasks:
       - ./tools/check_deadcode.py
 
   check-uv-lock:
-    desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock
-    # pydabs-codegen reverts this proxy-URL churn after regenerating; this is a
+    desc: Fail if a Databricks PyPI proxy URL leaked into a uv lock
+    # pydabs-codegen reverts this proxy-URL churn after regenerating, and
+    # generate-clijson scrubs it from the genkit tagging locks; this is a
     # backstop against a proxy URL reaching a committed lock any other way.
+    # The genkit locks are named *.py.lock, so they need their own glob.
     cmds:
-      - "! git grep -lF databricks.com -- '*uv.lock'"
+      - "! git grep -lF databricks.com -- '*uv.lock' 'internal/genkit/*.py.lock'"
 
   checks:
     desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, uv.lock)
@@ -904,6 +906,19 @@ tasks:
           sed -i 's|tagging.py|internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
         fi
       - cp internal/genkit/tagging.py.lock internal/genkit/release_tagging.py.lock
+      # In an environment configured with the internal PyPI proxy, uv bakes the
+      # proxy URL into the resolved locks. Unlike pydabs (which blind-reverts its
+      # locks because codegen never wants to change them), these locks legitimately
+      # track the synced producer's deps, so rewrite only the proxy URL back to the
+      # public registry and preserve any real dependency changes. Glob the lock
+      # files so a future genkit lock is scrubbed without editing this task.
+      # check-uv-lock is the backstop if this ever misses.
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          sed -i '' 's|https://pypi-proxy.cloud.databricks.com/simple/|https://pypi.org/simple|g' internal/genkit/*.py.lock
+        else
+          sed -i 's|https://pypi-proxy.cloud.databricks.com/simple/|https://pypi.org/simple|g' internal/genkit/*.py.lock
+        fi
       - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
       - task: ws
 
