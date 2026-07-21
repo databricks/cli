@@ -70,7 +70,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
         "tasks": [
           {
             "run_job_task": {
-              "job_id": [NUMID]
+              "job_id": [BAR_ID]
             },
             "task_key": "run_bar"
           }
@@ -99,7 +99,7 @@ Deployment complete!
   "method": "GET",
   "path": "/api/2.2/jobs/get",
   "q": {
-    "job_id": "[NUMID]"
+    "job_id": "[BAR_ID]"
   }
 }
 

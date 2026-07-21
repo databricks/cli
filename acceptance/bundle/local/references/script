@@ -10,7 +10,7 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 rm -f out.requests.txt
 
-BAR_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.bar.id')
+BAR_ID=$(read_id.py bar)
 
 # A --plan-mode=local plan skips proactive remote reads but still resolves references.
 # foo references bar.creator_user_name, which is remote-only (absent from config),

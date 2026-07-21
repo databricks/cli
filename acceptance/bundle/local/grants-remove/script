@@ -10,19 +10,10 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 rm -f out.requests.txt
 
-# Remove one principal from config and redeploy under --plan-mode=local.
-# The removed principal must be revoked: removedGrantPrincipals reads from
-# entry.PriorState in local mode (entry.RemoteState is nil), so it computes
-# the removal set from the last saved state.
-trace update_file.py databricks.yml "principal: deco-test-user@databricks.com" "principal: deco-test-user@databricks.com  # removed"
-# Now drop the removed-principal block entirely by pruning the two lines below the marker.
-python3 -c "
-import re
-p = 'databricks.yml'
-s = open(p).read()
-s = re.sub(r'        - principal: deco-test-user@databricks.com  # removed\n          privileges:\n            - USE_SCHEMA\n', '', s)
-open(p, 'w').write(s)
-"
+# Remove the second principal by stripping lines marked "# TO_DELETE".
+# In local mode entry.RemoteState is nil, so removedGrantPrincipals reads
+# from entry.PriorState to compute the removal set from the last saved state.
+grep -v '# TO_DELETE' databricks.yml > databricks.yml.new && mv databricks.yml.new databricks.yml
 
 trace $CLI bundle deploy --plan-mode=local
 title "Permissions requests during 'bundle deploy --plan-mode=local':\n"

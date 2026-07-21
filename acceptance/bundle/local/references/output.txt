@@ -15,7 +15,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   "method": "GET",
   "path": "/api/2.2/jobs/get",
   "q": {
-    "job_id": "[NUMID]"
+    "job_id": "[BAR_ID]"
   }
 }
 
@@ -31,7 +31,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   "method": "GET",
   "path": "/api/2.2/jobs/get",
   "q": {
-    "job_id": "[NUMID]"
+    "job_id": "[BAR_ID]"
   }
 }
 

@@ -18,6 +18,12 @@
       "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
     }
   },
+  "prior_state": {
+    "database_id": "my-database",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "postgres_database": "renamed_db_name",
+    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+  },
   "remote_state": {
     "create_time": "[TIMESTAMP]",
     "database_id": "my-database",

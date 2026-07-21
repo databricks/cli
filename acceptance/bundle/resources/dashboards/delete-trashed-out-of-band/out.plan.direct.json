@@ -27,10 +27,9 @@
       },
       "changes": {
         "etag": {
-          "action": "skip",
+          "action": "update",
           "reason": "custom",
-          "old": "[ETAG]",
-          "remote": "[ETAG]"
+          "old": "[ETAG]"
         }
       }
     }

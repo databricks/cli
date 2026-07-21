@@ -303,13 +303,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		// remoteStateComparable is the state-shaped remote used for drift
-		// classification. In full mode it comes from RemapState(remoteRead); in
-		// local mode from savedState (via PriorState). RemoteOrPrior encapsulates
-		// this choice.
-		remoteStateComparable, err := entry.RemoteOrPrior(adapter)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
-			return false
+		// classification. In full mode it comes from RemapState(remoteRead) —
+		// or is nil when the resource is missing remotely (a truthful signal
+		// that upstream drift-classification code needs to treat as "no remote").
+		// In modes that skip the remote read, use savedState as the stand-in.
+		var remoteStateComparable any
+		if skipsRemoteReads {
+			remoteStateComparable = savedState
+		} else if entry.RemoteState != nil {
+			remoteStateComparable, err = adapter.RemapState(entry.RemoteState)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
 		}
 
 		if remoteStateComparable != nil && !skipsRemoteReads {
