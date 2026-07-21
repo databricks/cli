@@ -6,7 +6,7 @@ Ignore = [
 ]
 
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # Stable-only manifest (no repo_dir=experimental).
 [[Server]]

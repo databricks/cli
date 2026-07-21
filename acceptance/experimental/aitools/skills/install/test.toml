@@ -7,7 +7,7 @@ Ignore = [
 ]
 
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # Stable + experimental skills via repo_dir.
 [[Server]]

@@ -1,6 +1,6 @@
 # No bundle engine needed for this command.
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # A protocol change that renames item types (or moves the answer elsewhere)
 # leaves the stream syntactically valid but free of anything this build can
