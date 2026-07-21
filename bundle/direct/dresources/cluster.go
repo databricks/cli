@@ -18,6 +18,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+// clusterWaitTimeout bounds how long we poll for a cluster to reach its target
+// state (RUNNING/TERMINATED) after create, edit, or start/stop. Provisioning can
+// legitimately take longer than 15 minutes on capacity-constrained workspaces
+// (a cluster stays PENDING with "Finding instances for new nodes"), so we allow
+// 30 minutes before giving up. Terminal states still halt immediately.
+const clusterWaitTimeout = 30 * time.Minute
+
 // ClusterState is the state type for Cluster resources. It extends compute.ClusterSpec with
 // lifecycle settings and the cluster ID.
 // ClusterId is written to state by DoCreate/DoUpdate for informational purposes; it is not
@@ -166,8 +173,7 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 	if hasClusterChanges(entry) {
 		// Same retry as in TF provider logic
 		// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
-		timeout := 15 * time.Minute
-		_, err := retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
+		_, err := retries.Poll(ctx, clusterWaitTimeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
 			wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, &config.ClusterSpec))
 			if err == nil {
 				return wait, nil
@@ -212,11 +218,11 @@ func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, id string, config
 	}
 
 	if *config.Lifecycle.Started {
-		_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, 15*time.Minute, nil)
+		_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, clusterWaitTimeout, nil)
 		return nil, err
 	}
 
-	_, err := r.client.Clusters.WaitGetClusterTerminated(ctx, id, 15*time.Minute, nil)
+	_, err := r.client.Clusters.WaitGetClusterTerminated(ctx, id, clusterWaitTimeout, nil)
 	return nil, err
 }
 
@@ -224,7 +230,7 @@ func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, id string, config
 // When lifecycle.started=false, it then terminates the cluster.
 func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config *ClusterState) (*ClusterRemote, error) {
 	// Always wait for RUNNING first: clusters start in PENDING state and must be polled.
-	_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, 15*time.Minute, nil)
+	_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, clusterWaitTimeout, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +241,7 @@ func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config
 		if err != nil {
 			return nil, err
 		}
-		_, err = deleteWaiter.Get()
+		_, err = deleteWaiter.GetWithTimeout(clusterWaitTimeout)
 		return nil, err
 	}
 
