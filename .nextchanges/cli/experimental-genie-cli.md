@@ -1,0 +1,1 @@
+Added the experimental `databricks experimental genie-cli` command, which starts an interactive AI coding agent preconfigured for your Databricks workspace (routing model requests through the Databricks AI Gateway and preloading the Databricks skills plugin).
