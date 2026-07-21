@@ -1,4 +1,5 @@
 {
+{{- if eq .language "python"}}
     "jupyter.interactiveWindow.cellMarker.codeRegex": "^# COMMAND ----------|^# Databricks notebook source|^(#\\s*%%|#\\s*\\<codecell\\>|#\\s*In\\[\\d*?\\]|#\\s*In\\[ \\])",
     "jupyter.interactiveWindow.cellMarker.default": "# COMMAND ----------",
     "python.testing.pytestArgs": [
@@ -10,9 +11,11 @@
         ".pytest_cache": true,
         "dist": true,
     },
+{{- end}}
     "files.associations": {
         "**/.gitkeep": "markdown"
     },
+{{- if eq .language "python"}}
 
     // Pylance settings (VS Code)
     // Set typeCheckingMode to "basic" to enable type checking!
@@ -36,4 +39,5 @@
         "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.formatOnSave": true,
     },
+{{- end}}
 }

@@ -1,5 +1,8 @@
 {
     "recommendations": [
+{{- if eq .language "python"}}
+        "charliermarsh.ruff",
+{{- end}}
         "databricks.databricks",
         "redhat.vscode-yaml"
     ]
