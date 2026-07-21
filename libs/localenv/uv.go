@@ -93,9 +93,13 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor string) error {
 	return nil
 }
 
-// Provision runs `uv sync` inside projectDir to install project dependencies.
-func (m *uvManager) Provision(ctx context.Context, projectDir string) error {
-	args := append([]string{m.bin}, m.syncArgs()...)
+// Provision runs `uv sync` inside projectDir to install project dependencies,
+// pinning the interpreter to pyMinor. Without --python, `uv sync` selects the
+// newest installed interpreter satisfying requires-python (e.g. 3.13 for a
+// ">=3.12" floor), which then fails validation against the 3.12 target; pinning
+// the minor we just installed keeps the venv on the intended version.
+func (m *uvManager) Provision(ctx context.Context, projectDir, pyMinor string) error {
+	args := append([]string{m.bin}, m.syncArgs(pyMinor)...)
 	if err := m.runUv(ctx, args, projectDir); err != nil {
 		return uvFailure(ErrProvision, err, "uv sync")
 	}
@@ -180,9 +184,10 @@ func lineWithPrefix(out, prefix string) (string, bool) {
 	return "", false
 }
 
-// syncArgs returns the argument slice for `uv sync` (without the binary).
-func (m *uvManager) syncArgs() []string {
-	return []string{"sync"}
+// syncArgs returns the argument slice for `uv sync` (without the binary),
+// pinning the interpreter to pyMinor via --python.
+func (m *uvManager) syncArgs(pyMinor string) []string {
+	return []string{"sync", "--python", pyMinor}
 }
 
 // pythonInstallArgs returns the argument slice for `uv python install <minor>`.

@@ -37,7 +37,7 @@ func writePipConf(t *testing.T, conf string) context.Context {
 
 func TestUvArgs(t *testing.T) {
 	m := &uvManager{bin: "uv"}
-	assert.Equal(t, []string{"sync"}, m.syncArgs())
+	assert.Equal(t, []string{"sync", "--python", "3.12"}, m.syncArgs("3.12"))
 	assert.Equal(t, []string{"python", "install", "3.12"}, m.pythonInstallArgs("3.12"))
 	assert.Equal(t, []string{"pip", "install", "pip", "--python", "/p/.venv/bin/python"}, m.pipSeedArgs("/p/.venv/bin/python"))
 }
