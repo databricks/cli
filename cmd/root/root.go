@@ -82,6 +82,7 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withUpstreamInUserAgent(ctx)
 		ctx = withInteractiveModeInUserAgent(ctx)
 		ctx = installer.WithAiToolsInUserAgent(ctx)
+		ctx = installer.WithAiDevKitInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
 
