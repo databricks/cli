@@ -246,12 +246,10 @@ func hasAppChanges(entry *PlanEntry) bool {
 	return entry.Changes.HasChangeExcept("source_code_path", "config", "git_source", "lifecycle", "lifecycle.started")
 }
 
-// OverrideChangeDesc suppresses drift on the deploy-only fields (source_code_path,
-// config, git_source) when the app has no active deployment. DoRead reads these only
-// from the active deployment, which is absent before the first deploy and, for
-// non-scalable apps, cleared on stop. Without it the remote side is empty, so any
-// diff is spurious; the change applies on the next start (see manageLifecycle). Real
-// drift is still reported once a deployment exists.
+// OverrideChangeDesc skips drift on the deploy-only fields (source_code_path, config,
+// git_source) while the app has no active deployment. DoRead reads them only from the
+// active deployment, so before the first deploy (or once a stop clears it) the remote
+// side is empty and the diff is spurious; it applies on the next start (manageLifecycle).
 func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
 	// Prefix(1) so a nested diff (e.g. config.command) matches its top-level field.
 	switch path.Prefix(1).String() {

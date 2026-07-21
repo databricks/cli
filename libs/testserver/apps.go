@@ -186,10 +186,8 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 		State:   "UNAVAILABLE",
 		Message: appStatusUnavailableMessage,
 	}
-	// Non-scalable apps clear the active deployment on stop (pending is always
-	// cleared); only default_source_code_path is retained. The fixtures are all
-	// non-scalable, so clear unconditionally. Scalable apps retain it on stop, which
-	// this fake does not model.
+	// The backend clears both deployments on stop for the apps these fixtures use,
+	// so the deploy-only fields read back empty. Match that so drift tests are realistic.
 	app.ActiveDeployment = nil
 	app.PendingDeployment = nil
 	s.Apps[name] = app
