@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,56 +36,22 @@ func tarballEntries(t *testing.T, path string) []string {
 	return names
 }
 
-func TestCreateGitArchiveSnapshot(t *testing.T) {
-	ctx := t.Context()
-	repo := newTestRepo(t)
-	writeRepoFile(t, repo, "a.txt", "1")
-	writeRepoFile(t, repo, "src/model.py", "print()")
-	sha := commitAll(t, repo, "init")
-
-	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	dirName := filepath.Base(repo)
-	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, nil))
-
-	entries := tarballEntries(t, out)
-	// Every real entry is prefixed with the directory name; the tracked files are
-	// present. git archive also emits a `pax_global_header` pseudo-entry carrying
-	// the commit SHA — it has no prefix and tar ignores it on extraction.
-	assert.Contains(t, entries, dirName+"/a.txt")
-	assert.Contains(t, entries, dirName+"/src/model.py")
-	for _, e := range entries {
-		if e == "pax_global_header" {
-			continue
-		}
-		assert.True(t, strings.HasPrefix(e, dirName+"/"), "entry %q lacks prefix", e)
-	}
-}
-
-func TestCreateGitArchiveSnapshot_IncludePaths(t *testing.T) {
-	ctx := t.Context()
-	repo := newTestRepo(t)
-	writeRepoFile(t, repo, "a.txt", "1")
-	writeRepoFile(t, repo, "src/model.py", "print()")
-	sha := commitAll(t, repo, "init")
-
-	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	dirName := filepath.Base(repo)
-	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, []string{"src"}))
-
-	entries := tarballEntries(t, out)
-	assert.Contains(t, entries, dirName+"/src/model.py")
-	// a.txt is outside the include path, so it must not appear.
-	assert.NotContains(t, entries, dirName+"/a.txt")
+// writeRepoFile writes a file at a dir-relative path, creating parent dirs.
+func writeRepoFile(t *testing.T, dir, rel, content string) {
+	t.Helper()
+	full := filepath.Join(dir, rel)
+	require.NoError(t, os.MkdirAll(filepath.Dir(full), 0o755))
+	require.NoError(t, os.WriteFile(full, []byte(content), 0o600))
 }
 
 func TestCreatePlainTarball(t *testing.T) {
 	ctx := t.Context()
-	repo := newTestRepo(t)
+	repo := t.TempDir()
 	writeRepoFile(t, repo, "a.txt", "1")
 	writeRepoFile(t, repo, "src/model.py", "print()")
-	commitAll(t, repo, "init")
-	// Uncommitted file must be included in a plain tar.
 	writeRepoFile(t, repo, "dirty.txt", "wip")
+	// A .git dir must never be shipped.
+	writeRepoFile(t, repo, ".git/config", "x")
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	require.NoError(t, createPlainTarball(ctx, repo, out, nil))
@@ -103,7 +68,7 @@ func TestCreatePlainTarball(t *testing.T) {
 
 func TestCreatePlainTarball_HonorsGitignore(t *testing.T) {
 	ctx := t.Context()
-	repo := newTestRepo(t)
+	repo := t.TempDir()
 	writeRepoFile(t, repo, "keep.txt", "1")
 	writeRepoFile(t, repo, "junk.log", "noise")
 	writeRepoFile(t, repo, ".gitignore", "*.log\n")
@@ -119,7 +84,7 @@ func TestCreatePlainTarball_HonorsGitignore(t *testing.T) {
 
 func TestCreatePlainTarball_IncludePaths(t *testing.T) {
 	ctx := t.Context()
-	repo := newTestRepo(t)
+	repo := t.TempDir()
 	writeRepoFile(t, repo, "a.txt", "1")
 	writeRepoFile(t, repo, "src/model.py", "print()")
 

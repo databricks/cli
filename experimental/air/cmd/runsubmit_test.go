@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -156,8 +157,8 @@ func TestSubmitWorkload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu1xH100, AcceleratorCount: 1}, d.Compute)
 }
 
-// TestSubmitWorkloadWithCodeSource exercises the snapshot path end to end: a
-// git-pinned code_source is packaged, uploaded, and its paths attached to the task.
+// A working-tree code_source is packaged into a tarball, uploaded via DABs' artifact
+// plumbing, and its remote code_source_path attached to the submitted task.
 func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
@@ -172,32 +173,29 @@ func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
-	// A git repo committed at HEAD, referenced by commit so packaging is git_archive.
-	repo := newTestRepo(t)
+	// A plain working-tree directory: packaging is plain-tar.
+	repo := filepath.Join(t.TempDir(), "src")
 	writeRepoFile(t, repo, "train.py", "print()")
-	sha := commitAll(t, repo, "init")
 
 	cfg := minimalConfig + `
 code_source:
   type: snapshot
   snapshot:
     root_path: ` + repo + `
-    git:
-      commit: ` + sha + `
 `
 	cfgPath := writeConfigFile(t, "run.yaml", cfg)
 	loaded, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, loaded, cfgPath, "idem")
+	// The DABs upload path logs via cmdio; the real `air run` context carries it.
+	ctx := cmdio.MockDiscard(t.Context())
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
-	// The tarball path is under the user's repo_snapshots dir. git_state_path /
-	// git_diff_path are not asserted: the typed jobs.AiRuntimeTask has no such fields
-	// (see the TEMP note in buildSubmitPayload), so they aren't sent. The git_state
-	// sidecar file is still uploaded next to the tarball — covered by TestRunSnapshot.
-	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/"+filepath.Base(repo)+"/")
+	// The tarball is uploaded to the artifact .internal dir and code_source_path
+	// rewritten to it.
+	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/.internal/")
 	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
 }
 
