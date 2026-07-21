@@ -21,10 +21,8 @@ func createDashboard(t *testing.T, baseURL, parentPath string) int {
 	return resp.StatusCode
 }
 
-// Cloud rejects a parent_path outside a real workspace folder. The fake mirrors
-// that so a fuzzer value like "/etc/passwd" is a 400 rather than a stored path
-// that later shows up as spurious drift. Existence alone is not enough: even an
-// existing "/etc/passwd" directory is rejected because it isn't a workspace root.
+// A non-workspace parent_path is a 400, even when the directory exists: "/etc/passwd"
+// isn't under a workspace root, so it's rejected rather than stored as drift.
 func TestDashboardCreateRejectsInvalidParentPath(t *testing.T) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)

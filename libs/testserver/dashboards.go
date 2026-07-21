@@ -14,14 +14,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// workspaceRoots are the only top-level directories the real workspace
-// filesystem exposes. Cloud rejects a parent_path outside them.
+// workspaceRoots are the top-level directories the real workspace exposes.
 var workspaceRoots = []string{"/Users/", "/Repos/", "/Shared/"}
 
-// isValidWorkspaceParentPath reports whether p is a parent_path the real Lakeview
-// API would accept: an absolute, canonical path (no traversal or control
-// characters) rooted under a real workspace directory. A "/Workspace" mount
-// prefix is optional and ignored for the root check.
+// isValidWorkspaceParentPath reports whether p is a parent_path cloud accepts:
+// an absolute, canonical path (no traversal or control chars) under a workspace
+// root. The optional "/Workspace" mount prefix is ignored for the root check.
 func isValidWorkspaceParentPath(p string) bool {
 	if !strings.HasPrefix(p, "/") || p != path.Clean(p) {
 		return false
@@ -137,9 +135,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		dashboard.ParentPath = "/Users/" + s.CurrentUser().UserName
 	}
 
-	// Cloud rejects a parent_path that isn't a valid workspace folder (e.g. a
-	// traversal value like "/etc/passwd"). Mirror that instead of storing it
-	// verbatim, which otherwise surfaces as spurious drift after round-tripping.
+	// Reject non-workspace paths like cloud does; storing them verbatim surfaces as drift.
 	if !isValidWorkspaceParentPath(dashboard.ParentPath) {
 		return Response{
 			StatusCode: 400,
