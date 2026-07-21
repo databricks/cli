@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -38,7 +37,7 @@ func tryLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 
 func TestLoadNotExists(t *testing.T) {
 	b, err := Load(t.Context(), "/doesntexist")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+	assert.ErrorContains(t, err, "databricks.yml not found")
 	assert.Nil(t, b)
 }
 
@@ -110,7 +109,7 @@ func TestBundleMustLoadFailureWithEnv(t *testing.T) {
 	b, diags := mustLoad(t)
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
-	assert.Contains(t, diags[0].Summary, "invalid bundle root")
+	assert.Contains(t, diags[0].Summary, "Invalid bundle root")
 	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
@@ -119,7 +118,7 @@ func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
 	b, diags := mustLoad(t)
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
-	assert.Contains(t, diags[0].Summary, "unable to locate bundle root")
+	assert.Contains(t, diags[0].Summary, "Unable to locate the bundle root")
 	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
@@ -136,7 +135,7 @@ func TestBundleTryLoadFailureWithEnv(t *testing.T) {
 	b, diags := tryLoad(t)
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
-	assert.Contains(t, diags[0].Summary, "invalid bundle root")
+	assert.Contains(t, diags[0].Summary, "Invalid bundle root")
 	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
