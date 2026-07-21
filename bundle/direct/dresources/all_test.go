@@ -1063,7 +1063,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// job_runs, like permissions/grants, has a noop DoDelete: a run is an
+	// immutable historical record left in place, so DoRead still finds it.
+	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "job_runs"
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
 	if deleteIsNoop {

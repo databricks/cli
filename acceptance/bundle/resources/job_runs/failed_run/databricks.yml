@@ -1,0 +1,26 @@
+bundle:
+  name: job-runs-failed-run
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+    # Reads the run's result_state. The run finishes FAILED (see test.toml stub),
+    # but the deploy still completes and this job is created with the resolved tag.
+    downstream_job:
+      name: downstream-job
+      tags:
+        run_result: ${resources.job_runs.my_run.state.result_state}
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}

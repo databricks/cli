@@ -1,0 +1,20 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "initial deploy triggers the run"
+trace $CLI bundle deploy
+
+title "destroy removes the resource from state but leaves the run in place (no jobs/runs/delete)"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py --keep //jobs/runs/delete
+
+title "redeploy after destroy succeeds and triggers a fresh run"
+# Destroy never deleted the run, so its idempotency token is not tombstoned and
+# run-now cannot error on reuse. The bundle's job is recreated with a new id, so
+# the run config differs and a new run is triggered (rather than deduping to the
+# old one).
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now

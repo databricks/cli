@@ -89,12 +89,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
->>> print_requests.py //jobs/runs/delete
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/runs/delete",
-  "body": {
-    "run_id": [MY_RUN_ID]
-  }
-}

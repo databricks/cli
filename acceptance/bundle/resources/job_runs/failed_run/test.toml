@@ -1,0 +1,13 @@
+# Force my_run's GetRun to report a terminal FAILED result so we can assert a
+# failed run is surfaced (readable downstream), not turned into a deploy failure.
+# The first handler registered for a pattern wins, so this overrides the default
+# runs/get handler.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''{
+  "run_id": 1,
+  "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "FAILED"
+  }
+}'''

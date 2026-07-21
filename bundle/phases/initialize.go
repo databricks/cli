@@ -177,7 +177,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 
-		// Validate that idempotency_token is not set on job runs. It is computed automatically and must not be set by the user.
+		// job_runs' idempotency_token is computed automatically, so reject a user-set value.
 		validate.ValidateJobRunIdempotencyToken(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)

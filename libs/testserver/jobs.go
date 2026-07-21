@@ -349,11 +349,10 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	// The Jobs API treats run-now as idempotent: the same idempotency_token
-	// returns the run already created for it. Crucially, the token is not freed
-	// when its run is deleted: reusing it then returns an error rather than
-	// starting a fresh run ("If a run with the provided token is deleted, an
-	// error is returned" — https://docs.databricks.com/api/workspace/jobs/runnow).
+	// run-now is idempotent: the same token returns the existing run. The token
+	// is not freed when its run is deleted, so reusing it then errors instead of
+	// starting a fresh run.
+	// https://docs.databricks.com/api/workspace/jobs/runnow
 	if request.IdempotencyToken != "" {
 		if existing, ok := s.JobRunsByToken[request.IdempotencyToken]; ok {
 			if _, alive := s.JobRuns[existing]; alive {
@@ -929,10 +928,9 @@ func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {
 	}
 	delete(s.JobRuns, request.RunId)
 
-	// The token mapping is intentionally kept as a tombstone: the Jobs API does
-	// not free an idempotency_token when its run is deleted, so a later run-now
-	// reusing that token errors instead of starting a fresh run (see JobsRunNow).
-	// Dropping the mapping here would incorrectly let the deleted token succeed.
+	// Keep the token->run mapping as a tombstone: the Jobs API does not free an
+	// idempotency_token when its run is deleted, so a later reuse errors (see
+	// JobsRunNow) rather than starting a fresh run.
 
 	return Response{}
 }

@@ -1,0 +1,11 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "a run that finishes FAILED is surfaced, not fatal: the deploy still completes"
+trace $CLI bundle deploy
+
+title "the downstream job was created with the run's FAILED result_state (deploy did not abort)"
+trace print_requests.py //jobs/create

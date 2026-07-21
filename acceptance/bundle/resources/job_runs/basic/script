@@ -1,7 +1,8 @@
 cleanup() {
+    # destroy leaves the run in place (immutable historical record), so it makes
+    # no jobs/runs/delete call.
     trace $CLI bundle destroy --auto-approve
-    # destroy deletes the triggered run via jobs/runs/delete (also unlinks out.requests.txt)
-    trace print_requests.py //jobs/runs/delete
+    rm -f out.requests.txt
 }
 trap cleanup EXIT
 

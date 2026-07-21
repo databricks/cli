@@ -16,6 +16,8 @@ trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"]'
 trace $CLI bundle deploy
 trace $CLI bundle summary
 
-title "the config change deleted the previous run and triggered a second, different run"
+title "the config change triggered a second, different run; the previous run is left in place"
+# recreate leaves the old run untouched (no jobs/runs/delete) and fires a fresh
+# run-now with the new parameters.
 trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now

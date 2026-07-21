@@ -15,13 +15,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// jobRunWaitTimeout bounds how long WaitAfterCreate polls GetRun for the run to
-// reach a terminal state. It is deliberately large (not the SDK's 20m default)
-// so a legitimately long run (schema migration, model training) doesn't fail the
-// deploy just because it outlived a fixed budget, while still guaranteeing an
-// unattended deploy (CI) can't hang forever on a run whose job has no server-side
-// timeout_seconds. Matches the budget `bundle run` already uses to wait on a job
-// run (see jobRunTimeout in bundle/run/job.go).
+// jobRunWaitTimeout bounds how long WaitAfterCreate waits for a run to reach a
+// terminal state. Large on purpose so a long but legitimate run (migration,
+// training) doesn't fail the deploy, while an unattended (CI) deploy still can't
+// hang forever. Matches `bundle run`'s budget (jobRunTimeout in bundle/run/job.go).
 const jobRunWaitTimeout = 24 * time.Hour
 
 // JobRunState is what we persist for a triggered run: the RunNow request.
@@ -175,17 +172,14 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 }
 
 // DoUpdate is intentionally not implemented: a run can't be modified in place,
-// so any change recreates it (delete + a fresh RunNow).
+// so any change recreates it (a fresh RunNow; the prior run is left in place).
 
-// DoDelete deletes the run (on destroy and recreate). WaitAfterCreate leaves
-// runs terminal, so a recreate's prior run is safe to delete; destroying a run
-// still active from an interrupted deploy is rejected by the API and surfaces.
-func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *JobRunState) error {
-	runID, err := parseRunID(id)
-	if err != nil {
-		return err
-	}
-	return r.client.Jobs.DeleteRunByRunId(ctx, runID)
+// DoDelete is a noop: a run is an immutable historical record, so destroy and
+// recreate leave it in place. Dedup relies on the run id in state and the
+// idempotency_token, so deleting the run would only tombstone its token and
+// break re-running the same config.
+func (*ResourceJobRun) DoDelete(_ context.Context, _ string, _ *JobRunState) error {
+	return nil
 }
 
 func parseRunID(id string) (int64, error) {
@@ -197,9 +191,10 @@ func parseRunID(id string) (int64, error) {
 }
 
 // idempotencyToken derives a stable token from the desired state so a retried
-// run-now dedupes to the existing run. Hashes the whole JobRunState so future
-// state fields join dedup automatically. Hex SHA-256 (64 chars, the Jobs API
-// max) of the state JSON with idempotency_token cleared.
+// run-now dedupes to the existing run instead of starting a duplicate. Hashing
+// the whole JobRunState means future state fields (e.g. milestone-3 triggers)
+// join dedup automatically. Hex SHA-256 (64 chars, the Jobs API max), computed
+// with idempotency_token cleared.
 func idempotencyToken(state *JobRunState) (string, error) {
 	toHash := *state
 	toHash.IdempotencyToken = ""

@@ -105,15 +105,8 @@ Resources:
       Name: my-job
       URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
 
-=== the config change deleted the previous run and triggered a second, different run
+=== the config change triggered a second, different run; the previous run is left in place
 >>> print_requests.py --keep //jobs/runs/delete
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/runs/delete",
-  "body": {
-    "run_id": [NUMID]
-  }
-}
 
 >>> print_requests.py //jobs/run-now
 {
