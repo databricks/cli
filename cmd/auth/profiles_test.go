@@ -41,7 +41,7 @@ func TestProfiles(t *testing.T) {
 
 	// Load the profile
 	profile := &profileMetadata{Name: "profile1"}
-	profile.Load(ctx, configFile, true)
+	profile.Load(ctx, configFile, true, profileValidationTimeout)
 
 	// Check the profile
 	assert.Equal(t, "profile1", profile.Name)
@@ -72,7 +72,7 @@ func TestProfileLoadSkipValidateMakesNoRequests(t *testing.T) {
 	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
 
 	p := &profileMetadata{Name: "offline-profile", Host: server.URL}
-	p.Load(t.Context(), configFile, true)
+	p.Load(t.Context(), configFile, true, profileValidationTimeout)
 
 	assert.Zero(t, requests.Load(), "expected no network calls with skipValidate")
 	assert.Equal(t, server.URL, p.Host)
@@ -223,7 +223,7 @@ func TestProfileLoadSPOGConfigType(t *testing.T) {
 				Host:      tc.host,
 				AccountID: tc.accountID,
 			}
-			p.Load(t.Context(), configFile, false)
+			p.Load(t.Context(), configFile, false, profileValidationTimeout)
 
 			assert.Equal(t, tc.wantValid, p.Valid, "Valid mismatch")
 			assert.NotEmpty(t, p.Host, "Host should be set")
@@ -279,7 +279,7 @@ func TestProfileLoadNoDiscoveryStaysWorkspace(t *testing.T) {
 		Host:      server.URL,
 		AccountID: "some-acct",
 	}
-	p.Load(t.Context(), configFile, false)
+	p.Load(t.Context(), configFile, false, profileValidationTimeout)
 
 	assert.True(t, p.Valid, "should validate as workspace when discovery is unavailable")
 	assert.NotEmpty(t, p.Host)
@@ -289,18 +289,14 @@ func TestProfileLoadNoDiscoveryStaysWorkspace(t *testing.T) {
 // TestProfileLoadTimesOutOnUnresponsiveHost is a regression test for a hang:
 // the SDK retries transient network failures for ~5 minutes by default, so a
 // host that accepts the connection but never responds would stall the whole
-// `auth profiles` listing. profileValidationTimeout must bound the wait
+// `auth profiles` listing. The timeout passed to Load must bound the wait
 // (including the EnsureResolved metadata fetch, which runs on context.Background
 // and so is only reachable via HTTPTimeoutSeconds/RetryTimeoutSeconds).
 //
-// The timeout is shrunk to 2s here — kept >=1s because Load derives the SDK's
+// A 2s timeout is passed here — kept >=1s because Load derives the SDK's
 // integer-second budgets from it, and a sub-second value would floor to 0
 // (which the SDK reads as "use the default", defeating the test).
 func TestProfileLoadTimesOutOnUnresponsiveHost(t *testing.T) {
-	prev := profileValidationTimeout
-	profileValidationTimeout = 2 * time.Second
-	t.Cleanup(func() { profileValidationTimeout = prev })
-
 	// A server that hangs every request until the client gives up. Waiting on
 	// the request context (rather than a private channel) means the handler
 	// returns as soon as our timeout cancels the call, so server.Close doesn't
@@ -321,7 +317,7 @@ func TestProfileLoadTimesOutOnUnresponsiveHost(t *testing.T) {
 
 	p := &profileMetadata{Name: "hung", Host: server.URL}
 	start := time.Now()
-	p.Load(t.Context(), configFile, false)
+	p.Load(t.Context(), configFile, false, 2*time.Second)
 	elapsed := time.Since(start)
 
 	assert.False(t, p.Valid, "an unresponsive host must not validate")

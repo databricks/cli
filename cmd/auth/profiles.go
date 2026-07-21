@@ -26,8 +26,7 @@ import (
 // stall the whole listing. Without it a single such host blocks `auth profiles`
 // for the SDK's default retry budget (~5 minutes). Hosts that fail DNS are not
 // retriable and already fail fast, so this only bounds the retriable cases.
-// A var (not const) so tests can shrink it.
-var profileValidationTimeout = 10 * time.Second
+const profileValidationTimeout = 5 * time.Second
 
 type profileMetadata struct {
 	Name        string `json:"name"`
@@ -44,8 +43,8 @@ func (c *profileMetadata) IsEmpty() bool {
 	return c.Host == "" && c.AccountID == ""
 }
 
-func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipValidate bool) {
-	timeoutSeconds := int(profileValidationTimeout / time.Second)
+func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipValidate bool, timeout time.Duration) {
+	timeoutSeconds := int(timeout / time.Second)
 	cfg := &config.Config{
 		Loaders:           []config.Loader{config.ConfigFile},
 		ConfigFile:        configFilePath,
@@ -90,7 +89,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		log.Debugf(ctx, "Profile %q: overrode config type from %s to %s (SPOG host)", c.Name, cfg.ConfigType(), configType)
 	}
 
-	callCtx, cancel := context.WithTimeout(ctx, profileValidationTimeout)
+	callCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	switch configType {
@@ -169,7 +168,7 @@ func newProfilesCommand() *cobra.Command {
 			wg.Go(func() {
 				ctx := cmd.Context()
 				t := time.Now()
-				profile.Load(ctx, iniFile.Path(), skipValidate)
+				profile.Load(ctx, iniFile.Path(), skipValidate, profileValidationTimeout)
 				log.Debugf(ctx, "Profile %q took %s to load", profile.Name, time.Since(t))
 			})
 			profiles = append(profiles, profile)
