@@ -49,7 +49,7 @@ env-owned sections are refreshed, user-owned content is preserved).`,
 func addTargetFlags(cmd *cobra.Command) {
 	cmd.Flags().String("cluster-id", "", "cluster ID to use as the compute target")
 	cmd.Flags().String("cluster-name", "", "cluster name to use as the compute target (resolved to an ID via the Clusters API)")
-	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. v4)")
+	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. 5)")
 	cmd.Flags().String("job-id", "", "job ID to use as the compute target")
 	cmd.Flags().Bool("constraints-only", false, "apply the Python version and constraints without adding the databricks-connect dependency")
 	cmd.Flags().Bool("dry-run", false, "compute the plan without writing files or provisioning")

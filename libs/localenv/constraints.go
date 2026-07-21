@@ -184,7 +184,7 @@ func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string, wri
 	// fallback: the target resolved to an environment that isn't published.
 	if errors.Is(fetchErr, errEnvKeyNotFound) {
 		return nil, NewError(ErrEnvUnsupported, fetchErr,
-			"no published environment for %q. If this is a new runtime, try the latest LTS target (e.g. --serverless-version v4 or a supported --cluster-id DBR)", envKey)
+			"no published environment for %q. If this is a new runtime, try the latest LTS target (e.g. --serverless-version 5 or a supported --cluster-id DBR)", envKey)
 	}
 
 	// Network or HTTP failure: attempt to serve from cache.
