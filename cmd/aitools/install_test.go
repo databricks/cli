@@ -326,7 +326,7 @@ func TestInstallInteractivePickerAndConfirm(t *testing.T) {
 	origProceed := promptProceed
 	t.Cleanup(func() { promptProceed = origProceed })
 	proceedCalled := false
-	promptProceed = func(_ context.Context) (bool, error) {
+	promptProceed = func() (bool, error) {
 		proceedCalled = true
 		return true, nil
 	}

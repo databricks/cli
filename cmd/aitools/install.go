@@ -141,7 +141,7 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 			// In the interactive picker path, show a plan summary and confirm.
 			if !explicit && cmdio.IsPromptSupported(ctx) {
 				printPlanSummary(ctx, plan, scope)
-				proceed, err := promptProceed(ctx)
+				proceed, err := promptProceed()
 				if err != nil {
 					return err
 				}
@@ -248,7 +248,7 @@ func agentStateLabel(s agents.DisplayState) string {
 	}
 }
 
-func defaultPromptProceed(_ context.Context) (bool, error) {
+func defaultPromptProceed() (bool, error) {
 	proceed := true
 	err := huh.NewConfirm().
 		Title("Proceed?").
