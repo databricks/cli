@@ -94,8 +94,8 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor string) error {
 }
 
 // Provision runs `uv sync` inside projectDir to install project dependencies.
-func (m *uvManager) Provision(ctx context.Context, projectDir string) error {
-	args := append([]string{m.bin}, m.syncArgs()...)
+func (m *uvManager) Provision(ctx context.Context, projectDir, pythonMinor string) error {
+	args := append([]string{m.bin}, m.syncArgs(pythonMinor)...)
 	if err := m.runUv(ctx, args, projectDir); err != nil {
 		return uvFailure(ErrProvision, err, "uv sync")
 	}
@@ -180,9 +180,14 @@ func lineWithPrefix(out, prefix string) (string, bool) {
 	return "", false
 }
 
-// syncArgs returns the argument slice for `uv sync` (without the binary).
-func (m *uvManager) syncArgs() []string {
-	return []string{"sync"}
+// syncArgs returns the argument slice for `uv sync` (without the binary),
+// pinning the interpreter to the given Python minor. Without --python, uv
+// resolves the newest interpreter satisfying an open requires-python (e.g.
+// ">=3.12" picks 3.13 when installed), which then fails the validate phase's
+// exact-minor check against the version EnsurePython installed. Pinning makes
+// the provisioned venv deterministically use the target minor.
+func (m *uvManager) syncArgs(pythonMinor string) []string {
+	return []string{"sync", "--python", pythonMinor}
 }
 
 // pythonInstallArgs returns the argument slice for `uv python install <minor>`.

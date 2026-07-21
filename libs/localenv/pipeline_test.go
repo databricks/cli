@@ -19,7 +19,7 @@ type fakePM struct{ py, dbc string }
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
 func (fakePM) EnsurePython(context.Context, string) error      { return nil }
-func (fakePM) Provision(context.Context, string) error         { return nil }
+func (fakePM) Provision(context.Context, string, string) error { return nil }
 func (fakePM) PostProvision(context.Context, string) error     { return nil }
 func (f fakePM) Validate(context.Context, string) (string, string, error) {
 	return f.py, f.dbc, nil
@@ -39,7 +39,7 @@ func (noProvisionPM) EnsurePython(context.Context, string) error {
 	return errors.New("EnsurePython must not be called under --dry-run")
 }
 
-func (noProvisionPM) Provision(context.Context, string) error {
+func (noProvisionPM) Provision(context.Context, string, string) error {
 	return errors.New("Provision must not be called under --dry-run")
 }
 

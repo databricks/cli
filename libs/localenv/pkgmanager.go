@@ -15,8 +15,11 @@ type PackageManager interface {
 	// available via the package manager.
 	EnsurePython(ctx context.Context, minor string) error
 
-	// Provision installs the project dependencies inside projectDir.
-	Provision(ctx context.Context, projectDir string) error
+	// Provision installs the project dependencies inside projectDir, pinning the
+	// environment to the given Python minor version (e.g. "3.12") so the resolved
+	// interpreter is the one EnsurePython installed rather than a newer minor the
+	// dependency solver would otherwise pick.
+	Provision(ctx context.Context, projectDir, pythonMinor string) error
 
 	// PostProvision seeds pip into the virtual environment inside projectDir.
 	// This step is required because VS Code's ms-python.vscode-python-envs
