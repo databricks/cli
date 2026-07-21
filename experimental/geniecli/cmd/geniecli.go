@@ -18,8 +18,9 @@ func New() *cobra.Command {
 	var noSystemPrompt bool
 
 	cmd := &cobra.Command{
-		Use:   "genie-cli [-- AGENT_ARGS...]",
-		Short: "Start an interactive AI coding agent configured for Databricks",
+		Use:    "genie-cli [-- AGENT_ARGS...]",
+		Hidden: true,
+		Short:  "Start an interactive AI coding agent configured for Databricks",
 		Long: `Start an interactive AI coding agent that is preconfigured for your
 Databricks workspace.
 
