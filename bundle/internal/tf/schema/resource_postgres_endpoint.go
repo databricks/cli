@@ -34,8 +34,10 @@ type ResourcePostgresEndpointStatusGroup struct {
 }
 
 type ResourcePostgresEndpointStatusHosts struct {
-	Host         string `json:"host,omitempty"`
-	ReadOnlyHost string `json:"read_only_host,omitempty"`
+	Host                string `json:"host,omitempty"`
+	ReadOnlyHost        string `json:"read_only_host,omitempty"`
+	ReadOnlyPooledHost  string `json:"read_only_pooled_host,omitempty"`
+	ReadWritePooledHost string `json:"read_write_pooled_host,omitempty"`
 }
 
 type ResourcePostgresEndpointStatusSettings struct {
@@ -51,6 +53,7 @@ type ResourcePostgresEndpointStatus struct {
 	EndpointType           string                                  `json:"endpoint_type,omitempty"`
 	Group                  *ResourcePostgresEndpointStatusGroup    `json:"group,omitempty"`
 	Hosts                  *ResourcePostgresEndpointStatusHosts    `json:"hosts,omitempty"`
+	LastActiveTime         string                                  `json:"last_active_time,omitempty"`
 	PendingState           string                                  `json:"pending_state,omitempty"`
 	Settings               *ResourcePostgresEndpointStatusSettings `json:"settings,omitempty"`
 	SuspendTimeoutDuration string                                  `json:"suspend_timeout_duration,omitempty"`

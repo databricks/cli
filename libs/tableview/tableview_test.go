@@ -58,18 +58,18 @@ func TestFindMatchesEmptyQuery(t *testing.T) {
 }
 
 func TestHighlightSearchEmptyQuery(t *testing.T) {
-	result := highlightSearch("hello alice", "")
+	result := model{}.highlightSearch("hello alice", "")
 	assert.Equal(t, "hello alice", result)
 }
 
 func TestHighlightSearchWithMatch(t *testing.T) {
-	result := highlightSearch("hello alice", "alice")
+	result := model{}.highlightSearch("hello alice", "alice")
 	assert.Contains(t, result, "alice")
 	assert.Contains(t, result, "hello")
 }
 
 func TestHighlightSearchNoMatch(t *testing.T) {
-	result := highlightSearch("hello bob", "alice")
+	result := model{}.highlightSearch("hello bob", "alice")
 	assert.Equal(t, "hello bob", result)
 }
 

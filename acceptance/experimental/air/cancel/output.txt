@@ -1,0 +1,29 @@
+
+=== cancel by id (text)
+>>> [CLI] experimental air cancel 123
+Successfully requested cancellation for run 123
+
+=== cancel by id (json)
+>>> [CLI] experimental air cancel 123 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "cancelled": [
+      "123"
+    ]
+  }
+}
+
+=== cancel multiple ids
+>>> [CLI] experimental air cancel 123 456
+Successfully requested cancellation for run 123
+Successfully requested cancellation for run 456
+Successfully requested cancellation for 2 run(s).
+
+=== cancel --all
+>>> [CLI] experimental air cancel --all -y
+Searching active runs for [USERNAME] in [DATABRICKS_URL]...
+Successfully requested cancellation for run [NUMID]
+Successfully requested cancellation for run [NUMID]
+Successfully requested cancellation for 2 run(s).

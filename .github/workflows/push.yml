@@ -152,6 +152,13 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      # `task test` prints a lot of output that GitHub is slow to render, so
+      # surface just the failed test names on the job summary page (and in this
+      # step's log) for a quick read of what broke.
+      - name: Summarize failed tests
+        if: ${{ failure() }}
+        run: uv run tools/summarize_failed_tests.py test-output.json | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Check no files changed or appeared after running tests
         run: |
           # Register untracked files with intent-to-add so `git diff` reports them
@@ -261,6 +268,13 @@ jobs:
         uses: ./.github/actions/setup-build-environment
         with:
           cache-key: test-exp-ssh
+
+      # The ssh acceptance test drives a real sshd behind the tunnel; the runner
+      # ships only the client. Install it on Linux (the OS the test is gated to);
+      # elsewhere and in the general test job it skips via SKIP_TEST.
+      - name: Install OpenSSH server
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y openssh-server
 
       - name: Run tests
         run: |
@@ -454,7 +468,13 @@ jobs:
       checks: write
       contents: read
 
-    environment: "test-trigger-is"
+    # Use the environment only to gate its secrets; skip creating a deployment
+    # object so these runs don't post "deployed to test-trigger-is" items on the
+    # pull request timeline. See:
+    # https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments#using-environments-without-deployments
+    environment:
+      name: "test-trigger-is"
+      deployment: false
 
     steps:
       - name: Generate GitHub App Token (check runs)
@@ -529,7 +549,13 @@ jobs:
     permissions:
       contents: read
 
-    environment: "test-trigger-is"
+    # Use the environment only to gate its secrets; skip creating a deployment
+    # object so these runs don't post "deployed to test-trigger-is" items on the
+    # pull request timeline. See:
+    # https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments#using-environments-without-deployments
+    environment:
+      name: "test-trigger-is"
+      deployment: false
 
     steps:
       - name: Generate GitHub App Token

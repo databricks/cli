@@ -24,8 +24,8 @@ func TestModeString(t *testing.T) {
 
 func TestCommandName(t *testing.T) {
 	// The --json "command" field and all help text derive from these; the
-	// three-part path must join to the full command a user types.
-	assert.Equal(t, "local-env python sync", CommandName)
+	// path must join to the full command a user types.
+	assert.Equal(t, "environments setup-local", CommandName)
 }
 
 func TestNewResultEmitsEmptyArraysNotNull(t *testing.T) {

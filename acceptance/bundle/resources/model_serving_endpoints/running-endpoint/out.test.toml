@@ -4,4 +4,5 @@ CloudSlow = true
 RequiresUnityCatalog = true
 GOOSOnPR.darwin = false
 GOOSOnPR.windows = false
+CloudEnvs.gcp = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

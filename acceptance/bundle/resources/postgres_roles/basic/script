@@ -17,7 +17,7 @@ trace $CLI bundle deploy
 project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 branch_name="${project_name}/branches/main"
 role_name="${branch_name}/roles/test-role"
-trace $CLI postgres get-role "${role_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-role "${role_name}" | role_fields
 
 trace $CLI bundle summary
 
