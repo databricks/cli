@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Project guidance for AI agents lives in AGENTS.md (the cross-tool convention).
+Project guidance for AI agents lives in AGENTS.md.
 Claude Code loads it via the import below.
 
 @AGENTS.md
