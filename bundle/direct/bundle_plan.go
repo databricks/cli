@@ -272,11 +272,15 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		// PriorState is the last saved local state. It's the same value every
-		// consumer needs when they want "what did we think this looked like
-		// before this plan?" (drift classification, prior-grants removal,
-		// prior-etag reconciliation) — regardless of plan mode.
-		entry.PriorState = savedState
+		// PriorState is the last saved local state. It serves as the stand-in
+		// for remote when the planner does not read remote (--plan-mode=local):
+		// apply-time consumers like removedGrantPrincipals fall back to it when
+		// entry.RemoteState is nil. In full mode a resource that reaches Update
+		// action has RemoteState populated by construction, so PriorState is
+		// unused; we skip writing it to keep the plan JSON compact.
+		if skipsRemoteReads {
+			entry.PriorState = savedState
+		}
 
 		var action deployplan.ActionType
 		var remoteDiff []structdiff.Change

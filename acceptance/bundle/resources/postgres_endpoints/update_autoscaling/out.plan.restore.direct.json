@@ -16,14 +16,6 @@
       "suspend_timeout_duration": "300s"
     }
   },
-  "prior_state": {
-    "autoscaling_limit_max_cu": 4,
-    "autoscaling_limit_min_cu": 0.5,
-    "endpoint_id": "my-endpoint",
-    "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-    "suspend_timeout_duration": "300s"
-  },
   "changes": {
     "autoscaling_limit_max_cu": {
       "action": "update",

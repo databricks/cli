@@ -6,10 +6,6 @@
   "plan": {
     "resources.catalogs.grants_catalog": {
       "action": "skip",
-      "prior_state": {
-        "comment": "Test catalog for grants",
-        "name": "catalog_grants_[UNIQUE_NAME]"
-      },
       "remote_state": {
         "catalog_type": "MANAGED_CATALOG",
         "comment": "Test catalog for grants",
@@ -39,18 +35,6 @@
             }
           ]
         }
-      },
-      "prior_state": {
-        "full_name": "catalog_grants_[UNIQUE_NAME]",
-        "__embed__": [
-          {
-            "principal": "deco-test-user@databricks.com",
-            "privileges": [
-              "CREATE_SCHEMA",
-              "USE_CATALOG"
-            ]
-          }
-        ]
       },
       "remote_state": {
         "full_name": "catalog_grants_[UNIQUE_NAME]",

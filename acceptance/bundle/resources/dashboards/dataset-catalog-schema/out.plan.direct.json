@@ -6,17 +6,6 @@
   "plan": {
     "resources.dashboards.dashboard1": {
       "action": "skip",
-      "prior_state": {
-        "dataset_catalog": "main",
-        "dataset_schema": "default",
-        "display_name": "test bundle-deploy-dashboard-dataset [UUID]",
-        "embed_credentials": true,
-        "etag": "[ETAG]",
-        "parent_path": "/Workspace/Users/[USERNAME]",
-        "published": true,
-        "serialized_dashboard": "{\n  \"pages\": [\n    {\n      \"name\": \"test_page\",\n      \"displayName\": \"Test Page\",\n      \"pageType\": \"PAGE_TYPE_CANVAS\"\n    }\n  ],\n  \"datasets\": [\n    {\n      \"name\": \"bf8f76f4\",\n      \"displayName\": \"Test Dataset\",\n      \"queryLines\": [\n        \"SELECT 1\\n\"\n      ],\n      \"catalog\": \"foobar\",\n      \"schema\": \"foobar\"\n    }\n  ]\n}\n",
-        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
-      },
       "remote_state": {
         "create_time": "[TIMESTAMP]",
         "dashboard_id": "[DASHBOARD_ID]",

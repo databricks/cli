@@ -131,9 +131,12 @@ type PlanEntry struct {
 	Gone     bool                     `json:"gone,omitempty"`
 	NewState *structvar.StructVarJSON `json:"new_state,omitempty"`
 
-	// PriorState is the last saved local state — always StateType. Populated for
-	// every previously-deployed resource in every plan mode. Consumers that need
-	// state-shaped data (prior grants principals, prior etag) read this.
+	// PriorState is the last saved local state — always StateType. Populated only
+	// when the planner did not read remote (--plan-mode=local); it serves as the
+	// state-shaped stand-in that apply-time consumers (removedGrantPrincipals,
+	// bind's etag lookup) fall back to when RemoteState is nil. In full mode a
+	// resource reaching Update has RemoteState set by construction, so PriorState
+	// would be unused and is omitted to keep the plan JSON compact.
 	PriorState any `json:"prior_state,omitempty"`
 
 	// RemoteState is a freshly-read remote state — RemoteType. Nil when the plan

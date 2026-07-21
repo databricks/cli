@@ -6,15 +6,6 @@
   "plan": {
     "resources.pipelines.foo": {
       "action": "skip",
-      "prior_state": {
-        "channel": "CURRENT",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/permissions-test/default/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "name": "foo"
-      },
       "remote_state": {
         "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
@@ -66,23 +57,6 @@
             }
           ]
         }
-      },
-      "prior_state": {
-        "object_id": "/pipelines/[FOO_ID]",
-        "__embed__": [
-          {
-            "level": "CAN_VIEW",
-            "user_name": "viewer@example.com"
-          },
-          {
-            "level": "CAN_MANAGE",
-            "group_name": "data-team"
-          },
-          {
-            "level": "IS_OWNER",
-            "user_name": "[USERNAME]"
-          }
-        ]
       },
       "remote_state": {
         "object_id": "/pipelines/[FOO_ID]",

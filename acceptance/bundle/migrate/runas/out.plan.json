@@ -6,28 +6,6 @@
   "plan": {
     "resources.pipelines.foo": {
       "action": "skip",
-      "prior_state": {
-        "catalog": "main",
-        "channel": "CURRENT",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "libraries": [
-          {
-            "notebook": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files/sql"
-            }
-          }
-        ],
-        "name": "DABs Revenue Pipeline",
-        "run_as": {
-          "service_principal_name": "[UUID]"
-        },
-        "serverless": true,
-        "target": "team_eng_deco"
-      },
       "remote_state": {
         "catalog": "main",
         "channel": "CURRENT",
@@ -75,19 +53,6 @@
         }
       ],
       "action": "skip",
-      "prior_state": {
-        "object_id": "/pipelines/[UUID]",
-        "__embed__": [
-          {
-            "level": "CAN_VIEW",
-            "group_name": "users"
-          },
-          {
-            "level": "IS_OWNER",
-            "user_name": "[USERNAME]"
-          }
-        ]
-      },
       "remote_state": {
         "object_id": "/pipelines/[UUID]",
         "__embed__": [

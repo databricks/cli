@@ -16,15 +16,6 @@
           "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }
       },
-      "prior_state": {
-        "display_name": "test bundle-deploy-dashboard [UNIQUE_NAME]",
-        "embed_credentials": false,
-        "etag": "[ETAG]",
-        "parent_path": "/Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/resources",
-        "published": true,
-        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\"}]}",
-        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
-      },
       "remote_state": {
         "create_time": "[TIMESTAMP]",
         "dashboard_id": "[DASHBOARD1_ID]",

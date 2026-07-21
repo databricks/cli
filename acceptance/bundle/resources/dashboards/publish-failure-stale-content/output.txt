@@ -15,8 +15,6 @@ Deployment complete!
 }
 
 >>> [CLI] bundle plan -o json
-json.plan.resources.dashboards.dashboard1.prior_state.etag = "[ETAG_1]";
-json.plan.resources.dashboards.dashboard1.prior_state.published = true;
 json.plan.resources.dashboards.dashboard1.remote_state.etag = "[ETAG_1]";
 json.plan.resources.dashboards.dashboard1.remote_state.published = true;
 json.plan.resources.dashboards.dashboard1.changes.etag.action = "skip";
@@ -85,8 +83,6 @@ To overwrite the remote changes with your local version, use --force.
 The remote modifications will be lost.
 
 json.plan.resources.dashboards.dashboard1.new_state.value.published = true;
-json.plan.resources.dashboards.dashboard1.prior_state.etag = "[ETAG_1]";
-json.plan.resources.dashboards.dashboard1.prior_state.published = true;
 json.plan.resources.dashboards.dashboard1.remote_state.etag = "[ETAG_2]";
 json.plan.resources.dashboards.dashboard1.remote_state.published = true;
 json.plan.resources.dashboards.dashboard1.changes.etag.action = "update";

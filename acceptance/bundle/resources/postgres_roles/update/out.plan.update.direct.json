@@ -16,14 +16,6 @@
       "role_id": "test-role"
     }
   },
-  "prior_state": {
-    "attributes": {
-      "createdb": false
-    },
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-    "postgres_role": "app_role",
-    "role_id": "test-role"
-  },
   "remote_state": {
     "attributes": {
       "createdb": false

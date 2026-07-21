@@ -23,21 +23,6 @@
           "route_optimized": true
         }
       },
-      "prior_state": {
-        "config": {
-          "served_entities": [
-            {
-              "entity_name": "system.ai.llama_v3_2_1b_instruct",
-              "entity_version": "1",
-              "name": "llama",
-              "scale_to_zero_enabled": true,
-              "workload_size": "Small"
-            }
-          ]
-        },
-        "name": "[ORIGINAL_ENDPOINT_ID]",
-        "route_optimized": false
-      },
       "remote_state": {
         "endpoint_details": {
           "config": {

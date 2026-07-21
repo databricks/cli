@@ -6,28 +6,6 @@
   "plan": {
     "resources.jobs.job_with_permissions": {
       "action": "skip",
-      "prior_state": {
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/metadata.json"
-        },
-        "edit_mode": "UI_LOCKED",
-        "format": "MULTI_TASK",
-        "max_concurrent_runs": 1,
-        "name": "job with permissions",
-        "queue": {
-          "enabled": true
-        },
-        "tasks": [
-          {
-            "notebook_task": {
-              "notebook_path": "/Workspace/Users/user@example.com/notebook",
-              "source": "WORKSPACE"
-            },
-            "task_key": "main"
-          }
-        ]
-      },
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS],
         "creator_user_name": "[USERNAME]",
@@ -119,23 +97,6 @@
             }
           ]
         }
-      },
-      "prior_state": {
-        "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
-        "__embed__": [
-          {
-            "level": "CAN_VIEW",
-            "user_name": "viewer@example.com"
-          },
-          {
-            "level": "CAN_MANAGE",
-            "group_name": "data-team"
-          },
-          {
-            "level": "IS_OWNER",
-            "user_name": "[USERNAME]"
-          }
-        ]
       },
       "remote_state": {
         "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",

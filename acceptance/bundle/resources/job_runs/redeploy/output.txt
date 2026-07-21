@@ -57,12 +57,6 @@ Resources:
       }
     }
   },
-  "prior_state": {
-    "job_id": [MY_JOB_ID],
-    "job_parameters": {
-      "env": "dev"
-    }
-  },
   "remote_state": {
     "job_id": [MY_JOB_ID],
     "job_parameters": {

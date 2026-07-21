@@ -12,20 +12,6 @@
         }
       ],
       "action": "skip",
-      "prior_state": {
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-        },
-        "description": "depends on foo id [FOO_ID_2]",
-        "edit_mode": "UI_LOCKED",
-        "format": "MULTI_TASK",
-        "max_concurrent_runs": 1,
-        "name": "job bar",
-        "queue": {
-          "enabled": true
-        }
-      },
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][0],
         "creator_user_name": "[USERNAME]",
@@ -67,16 +53,6 @@
     },
     "resources.pipelines.foo": {
       "action": "skip",
-      "prior_state": {
-        "channel": "CURRENT",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "name": "pipeline foo",
-        "storage": "dbfs:/my-new-storage"
-      },
       "remote_state": {
         "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",

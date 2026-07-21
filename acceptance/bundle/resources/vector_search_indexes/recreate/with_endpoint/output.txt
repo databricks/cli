@@ -29,10 +29,6 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
           "name": "vs-endpoint-[UNIQUE_NAME]"
         }
       },
-      "prior_state": {
-        "endpoint_type": "STANDARD",
-        "name": "vs-endpoint-[UNIQUE_NAME]"
-      },
       "remote_state": {
         "creation_timestamp": [UNIX_TIME_MILLIS][0],
         "creator": "[USERNAME]",
@@ -65,22 +61,6 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
         }
       ],
       "action": "skip",
-      "prior_state": {
-        "direct_access_index_spec": {
-          "embedding_vector_columns": [
-            {
-              "embedding_dimension": 768,
-              "name": "vector"
-            }
-          ],
-          "schema_json": "{\"id\":\"integer\",\"vector\":\"array\u003cfloat\u003e\"}"
-        },
-        "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
-        "endpoint_uuid": "[UUID]",
-        "index_type": "DIRECT_ACCESS",
-        "name": "main.default.vs_index_[UNIQUE_NAME]",
-        "primary_key": "id"
-      },
       "remote_state": {
         "creator": "[USERNAME]",
         "direct_access_index_spec": {

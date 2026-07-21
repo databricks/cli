@@ -6,15 +6,6 @@
   "plan": {
     "resources.pipelines.foo1": {
       "action": "skip",
-      "prior_state": {
-        "channel": "CURRENT",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "name": "foo1 name"
-      },
       "remote_state": {
         "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
@@ -48,15 +39,6 @@
         }
       ],
       "action": "skip",
-      "prior_state": {
-        "channel": "CURRENT",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "name": "foo2 foo1.creator_user_name=[USERNAME]"
-      },
       "remote_state": {
         "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
@@ -90,15 +72,6 @@
         }
       ],
       "action": "skip",
-      "prior_state": {
-        "channel": "CURRENT",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "name": "foo3 foo2.state=IDLE"
-      },
       "remote_state": {
         "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
@@ -132,15 +105,6 @@
         }
       ],
       "action": "skip",
-      "prior_state": {
-        "channel": "CURRENT",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "name": "foo4 foo3.last_modified=[UNIX_TIME_MILLIS]"
-      },
       "remote_state": {
         "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",

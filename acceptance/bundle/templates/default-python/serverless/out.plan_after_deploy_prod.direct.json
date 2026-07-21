@@ -12,85 +12,6 @@
         }
       ],
       "action": "skip",
-      "prior_state": {
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/metadata.json"
-        },
-        "edit_mode": "UI_LOCKED",
-        "environments": [
-          {
-            "environment_key": "default",
-            "spec": {
-              "dependencies": [
-                "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/artifacts/.internal/my_default_python-0.0.1-py3-none-any.whl"
-              ],
-              "environment_version": "4"
-            }
-          }
-        ],
-        "format": "MULTI_TASK",
-        "max_concurrent_runs": 1,
-        "name": "sample_job",
-        "parameters": [
-          {
-            "default": "hive_metastore",
-            "name": "catalog"
-          },
-          {
-            "default": "prod",
-            "name": "schema"
-          }
-        ],
-        "queue": {
-          "enabled": true
-        },
-        "tasks": [
-          {
-            "notebook_task": {
-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/sample_notebook"
-            },
-            "task_key": "notebook_task"
-          },
-          {
-            "depends_on": [
-              {
-                "task_key": "notebook_task"
-              }
-            ],
-            "environment_key": "default",
-            "python_wheel_task": {
-              "entry_point": "main",
-              "package_name": "my_default_python",
-              "parameters": [
-                "--catalog",
-                "hive_metastore",
-                "--schema",
-                "prod"
-              ]
-            },
-            "task_key": "python_wheel_task"
-          },
-          {
-            "depends_on": [
-              {
-                "task_key": "notebook_task"
-              }
-            ],
-            "pipeline_task": {
-              "pipeline_id": "[UUID]"
-            },
-            "task_key": "refresh_pipeline"
-          }
-        ],
-        "trigger": {
-          "pause_status": "UNPAUSED",
-          "periodic": {
-            "interval": 1,
-            "unit": "DAYS"
-          }
-        }
-      },
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][0],
         "creator_user_name": "[USERNAME]",
@@ -263,15 +184,6 @@
         }
       ],
       "action": "skip",
-      "prior_state": {
-        "object_id": "/jobs/[NUMID]",
-        "__embed__": [
-          {
-            "level": "IS_OWNER",
-            "user_name": "[USERNAME]"
-          }
-        ]
-      },
       "remote_state": {
         "object_id": "/jobs/[NUMID]",
         "__embed__": [
@@ -284,31 +196,6 @@
     },
     "resources.pipelines.my_default_python_etl": {
       "action": "skip",
-      "prior_state": {
-        "catalog": "main",
-        "channel": "CURRENT",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "environment": {
-          "dependencies": [
-            "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files"
-          ]
-        },
-        "libraries": [
-          {
-            "glob": {
-              "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/my_default_python_etl/transformations/**"
-            }
-          }
-        ],
-        "name": "my_default_python_etl",
-        "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/my_default_python_etl",
-        "schema": "prod",
-        "serverless": true
-      },
       "remote_state": {
         "catalog": "main",
         "channel": "CURRENT",
@@ -350,15 +237,6 @@
         }
       ],
       "action": "skip",
-      "prior_state": {
-        "object_id": "/pipelines/[UUID]",
-        "__embed__": [
-          {
-            "level": "IS_OWNER",
-            "user_name": "[USERNAME]"
-          }
-        ]
-      },
       "remote_state": {
         "object_id": "/pipelines/[UUID]",
         "__embed__": [
