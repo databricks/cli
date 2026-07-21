@@ -12,6 +12,8 @@ func TestBuildSystemPromptWithProfile(t *testing.T) {
 	assert.Contains(t, got, "https://myworkspace.databricks.com")
 	assert.Contains(t, got, `--profile prod`)
 	assert.Contains(t, got, "Databricks CLI assistant")
+	// Data questions should route to hosted Genie.
+	assert.Contains(t, got, "databricks experimental genie ask")
 }
 
 func TestBuildSystemPromptWithoutProfile(t *testing.T) {
