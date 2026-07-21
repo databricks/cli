@@ -56,13 +56,19 @@ Resource: resources.jobs.job_two
        tasks:
          - task_key: main
 
-=== An unknown resource id alone is a no-op (skipped), not an error
-No changes detected.
+=== An unknown resource id alone is rejected (no match at all must not silently succeed)
 
+>>> [CLI] bundle config-remote-sync --select-ids jobs:no-such-id-123
+Error: no deployed jobs resource with id no-such-id-123
 
-=== An id that exists under a different type matches nothing and is skipped too
-No changes detected.
+Exit code: 1
 
+=== An id that exists under a different type matches nothing and is rejected too
+
+>>> [CLI] bundle config-remote-sync --select-ids pipelines:[JOB_ONE_ID]
+Error: no deployed pipelines resource with id [JOB_ONE_ID]
+
+Exit code: 1
 
 === A selector without a type is still rejected
 >>> [CLI] bundle config-remote-sync --select-ids no-such-id-123

@@ -45,13 +45,13 @@ $CLI bundle config-remote-sync --select-ids "jobs:no-such-id-123,jobs:$job_two_i
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
-title "An unknown resource id alone is a no-op (skipped), not an error"
+title "An unknown resource id alone is rejected (no match at all must not silently succeed)"
 echo
-$CLI bundle config-remote-sync --select-ids jobs:no-such-id-123
+errcode trace $CLI bundle config-remote-sync --select-ids jobs:no-such-id-123
 
-title "An id that exists under a different type matches nothing and is skipped too"
+title "An id that exists under a different type matches nothing and is rejected too"
 echo
-$CLI bundle config-remote-sync --select-ids "pipelines:$job_one_id"
+errcode trace $CLI bundle config-remote-sync --select-ids "pipelines:$job_one_id"
 
 title "A selector without a type is still rejected"
 errcode trace $CLI bundle config-remote-sync --select-ids no-such-id-123
