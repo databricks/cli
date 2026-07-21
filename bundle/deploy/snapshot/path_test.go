@@ -10,8 +10,10 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/libs/vfs"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +27,7 @@ func makeBundleWithFiles(t *testing.T, files map[string]string) *bundle.Bundle {
 		require.NoError(t, os.WriteFile(p, []byte(content), 0o644))
 	}
 	root := vfs.MustNew(dir)
-	return &bundle.Bundle{
+	b := &bundle.Bundle{
 		BundleRootPath: dir,
 		SyncRoot:       root,
 		// WorktreeRoot = SyncRoot is the fallback used by LoadGitDetails when
@@ -33,8 +35,15 @@ func makeBundleWithFiles(t *testing.T, files map[string]string) *bundle.Bundle {
 		WorktreeRoot: root,
 		Config: config.Root{
 			Bundle: config.Bundle{Target: "default"},
+			// The SyncDefaultPath mutator sets this to ["."] during initialize;
+			// set it here since these tests bypass the mutator pipeline. Empty
+			// sync paths select no files.
+			Sync:      config.Sync{Paths: []string{"."}},
+			Workspace: config.Workspace{CurrentUser: &config.User{}},
 		},
 	}
+	b.Config.Workspace.CurrentUser.User = &iam.User{UserName: "tester@example.com"}
+	return b
 }
 
 func TestBundleZipIsDeterministic(t *testing.T) {
@@ -129,4 +138,34 @@ func TestBundleZipDoNotStripNotebookExtensions(t *testing.T) {
 	names := zipEntryNames(t, zipContent)
 	assert.True(t, slices.Contains(names, "files/src/my_notebook.ipynb"), "notebook should keep its extension")
 	assert.True(t, slices.Contains(names, "files/src/script.py"), "regular Python file should keep its extension")
+}
+
+func TestBundleZipIncludesMetadataFile(t *testing.T) {
+	b := makeBundleWithFiles(t, map[string]string{"task.py": "x = 1"})
+
+	zipContent, _, err := snapshot.BundleZip(t.Context(), b)
+	require.NoError(t, err)
+
+	names := zipEntryNames(t, zipContent)
+	assert.True(t, slices.Contains(names, ".databricks/snapshot-metadata.json"), "zip must contain the snapshot metadata file")
+}
+
+func TestBundleZipChangesWithPermissions(t *testing.T) {
+	files := map[string]string{"task.py": "x = 1"}
+
+	bNoPerms := makeBundleWithFiles(t, files)
+
+	bWithPerms := makeBundleWithFiles(t, files)
+	bWithPerms.Config.Permissions = []resources.Permission{
+		{Level: "CAN_VIEW", GroupName: "data-team"},
+	}
+
+	zipNoPerms, _, err := snapshot.BundleZip(t.Context(), bNoPerms)
+	require.NoError(t, err)
+	zipWithPerms, _, err := snapshot.BundleZip(t.Context(), bWithPerms)
+	require.NoError(t, err)
+
+	assert.NotEqual(t, zipNoPerms, zipWithPerms, "adding top-level permissions must produce a different snapshot zip")
+	assert.NotEqual(t, snapshot.IDFromContent(zipNoPerms), snapshot.IDFromContent(zipWithPerms),
+		"snapshot IDs must differ when top-level permissions change")
 }

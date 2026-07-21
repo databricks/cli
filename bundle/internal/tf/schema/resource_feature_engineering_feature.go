@@ -29,8 +29,28 @@ type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionFirst struct {
 	Input string `json:"input"`
 }
 
+type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionFirstDistinct struct {
+	Input string `json:"input"`
+	N     int    `json:"n"`
+}
+
+type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionFirstN struct {
+	Input string `json:"input"`
+	N     int    `json:"n"`
+}
+
 type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionLast struct {
 	Input string `json:"input"`
+}
+
+type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionLastDistinct struct {
+	Input string `json:"input"`
+	N     int    `json:"n"`
+}
+
+type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionLastN struct {
+	Input string `json:"input"`
+	N     int    `json:"n"`
 }
 
 type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionMax struct {
@@ -58,6 +78,15 @@ type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowConti
 	WindowDuration string `json:"window_duration"`
 }
 
+type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowLifetime struct {
+	SlideDuration string `json:"slide_duration,omitempty"`
+}
+
+type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowLongRolling struct {
+	Delay          string `json:"delay,omitempty"`
+	WindowDuration string `json:"window_duration"`
+}
+
 type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowRolling struct {
 	Delay          string `json:"delay,omitempty"`
 	WindowDuration string `json:"window_duration"`
@@ -73,10 +102,12 @@ type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowTumbl
 }
 
 type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindow struct {
-	Continuous *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowContinuous `json:"continuous,omitempty"`
-	Rolling    *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowRolling    `json:"rolling,omitempty"`
-	Sliding    *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowSliding    `json:"sliding,omitempty"`
-	Tumbling   *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowTumbling   `json:"tumbling,omitempty"`
+	Continuous  *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowContinuous  `json:"continuous,omitempty"`
+	Lifetime    *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowLifetime    `json:"lifetime,omitempty"`
+	LongRolling *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowLongRolling `json:"long_rolling,omitempty"`
+	Rolling     *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowRolling     `json:"rolling,omitempty"`
+	Sliding     *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowSliding     `json:"sliding,omitempty"`
+	Tumbling    *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowTumbling    `json:"tumbling,omitempty"`
 }
 
 type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionVarPop struct {
@@ -93,7 +124,11 @@ type ResourceFeatureEngineeringFeatureFunctionAggregationFunction struct {
 	Avg                 *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionAvg                 `json:"avg,omitempty"`
 	CountFunction       *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionCountFunction       `json:"count_function,omitempty"`
 	First               *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionFirst               `json:"first,omitempty"`
+	FirstDistinct       *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionFirstDistinct       `json:"first_distinct,omitempty"`
+	FirstN              *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionFirstN              `json:"first_n,omitempty"`
 	Last                *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionLast                `json:"last,omitempty"`
+	LastDistinct        *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionLastDistinct        `json:"last_distinct,omitempty"`
+	LastN               *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionLastN               `json:"last_n,omitempty"`
 	Max                 *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionMax                 `json:"max,omitempty"`
 	Min                 *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionMin                 `json:"min,omitempty"`
 	StddevPop           *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionStddevPop           `json:"stddev_pop,omitempty"`
@@ -188,6 +223,15 @@ type ResourceFeatureEngineeringFeatureTimeWindowContinuous struct {
 	WindowDuration string `json:"window_duration"`
 }
 
+type ResourceFeatureEngineeringFeatureTimeWindowLifetime struct {
+	SlideDuration string `json:"slide_duration,omitempty"`
+}
+
+type ResourceFeatureEngineeringFeatureTimeWindowLongRolling struct {
+	Delay          string `json:"delay,omitempty"`
+	WindowDuration string `json:"window_duration"`
+}
+
 type ResourceFeatureEngineeringFeatureTimeWindowRolling struct {
 	Delay          string `json:"delay,omitempty"`
 	WindowDuration string `json:"window_duration"`
@@ -203,10 +247,12 @@ type ResourceFeatureEngineeringFeatureTimeWindowTumbling struct {
 }
 
 type ResourceFeatureEngineeringFeatureTimeWindow struct {
-	Continuous *ResourceFeatureEngineeringFeatureTimeWindowContinuous `json:"continuous,omitempty"`
-	Rolling    *ResourceFeatureEngineeringFeatureTimeWindowRolling    `json:"rolling,omitempty"`
-	Sliding    *ResourceFeatureEngineeringFeatureTimeWindowSliding    `json:"sliding,omitempty"`
-	Tumbling   *ResourceFeatureEngineeringFeatureTimeWindowTumbling   `json:"tumbling,omitempty"`
+	Continuous  *ResourceFeatureEngineeringFeatureTimeWindowContinuous  `json:"continuous,omitempty"`
+	Lifetime    *ResourceFeatureEngineeringFeatureTimeWindowLifetime    `json:"lifetime,omitempty"`
+	LongRolling *ResourceFeatureEngineeringFeatureTimeWindowLongRolling `json:"long_rolling,omitempty"`
+	Rolling     *ResourceFeatureEngineeringFeatureTimeWindowRolling     `json:"rolling,omitempty"`
+	Sliding     *ResourceFeatureEngineeringFeatureTimeWindowSliding     `json:"sliding,omitempty"`
+	Tumbling    *ResourceFeatureEngineeringFeatureTimeWindowTumbling    `json:"tumbling,omitempty"`
 }
 
 type ResourceFeatureEngineeringFeatureTimeseriesColumn struct {

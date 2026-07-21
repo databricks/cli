@@ -15,45 +15,33 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class JsonTransformerOptions:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     as_variant: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Parse the entire value as a single Variant column.
+    [Beta] Parse the entire value as a single Variant column.
     """
 
     schema: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Inline schema string for JSON parsing (Spark DDL format).
+    [Beta] Inline schema string for JSON parsing (Spark DDL format).
     """
 
     schema_evolution_mode: VariableOrOptional[
         FileIngestionOptionsSchemaEvolutionMode
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Schema evolution mode for schema inference.
+    [Beta] (Optional) Schema evolution mode for schema inference.
     """
 
     schema_file_path: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Path to a schema file (.ddl).
+    [Beta] Path to a schema file (.ddl).
     """
 
     schema_hints: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Schema hints as a comma-separated string of "column_name type" pairs.
+    [Beta] (Optional) Schema hints as a comma-separated string of "column_name type" pairs.
     """
 
     @classmethod
@@ -69,39 +57,29 @@ class JsonTransformerOptionsDict(TypedDict, total=False):
 
     as_variant: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Parse the entire value as a single Variant column.
+    [Beta] Parse the entire value as a single Variant column.
     """
 
     schema: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Inline schema string for JSON parsing (Spark DDL format).
+    [Beta] Inline schema string for JSON parsing (Spark DDL format).
     """
 
     schema_evolution_mode: VariableOrOptional[
         FileIngestionOptionsSchemaEvolutionModeParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Schema evolution mode for schema inference.
+    [Beta] (Optional) Schema evolution mode for schema inference.
     """
 
     schema_file_path: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Path to a schema file (.ddl).
+    [Beta] Path to a schema file (.ddl).
     """
 
     schema_hints: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Schema hints as a comma-separated string of "column_name type" pairs.
+    [Beta] (Optional) Schema hints as a comma-separated string of "column_name type" pairs.
     """
 
 

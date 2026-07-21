@@ -61,7 +61,7 @@ type Pipeline struct {
 // Result always carries the full canonical phase list: phases completed before a
 // failure are "ok", the failing phase is "error", and the rest are "pending".
 func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
-	log.Debugf(ctx, "local-env: mode=%s check=%v project=%s cacheDir=%s constraintBaseURL=%s flags=%+v",
+	log.Debugf(ctx, CommandName+": mode=%s check=%v project=%s cacheDir=%s constraintBaseURL=%s flags=%+v",
 		p.Mode,
 		p.Check,
 		filepath.ToSlash(p.ProjectDir),
@@ -90,17 +90,26 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 // run drives the phases and returns the first phase error. Result bookkeeping
 // (phase status, error object) is handled by fail / markOK.
 func (p *Pipeline) run(ctx context.Context) error {
-	// Phase: preflight — manager detection, writability, package-manager availability.
+	// Phase: preflight — flag validation, manager detection, writability,
+	// package-manager availability.
+	//
+	// Incompatible target flags are a usage error (E_USAGE), reported at preflight
+	// before any other work so the failure flows through the phase/JSON reporting
+	// (a plain Cobra mutual-exclusion error would print no command JSON object,
+	// which the --output json consumer needs).
+	if err := ValidateTargetFlags(p.Flags); err != nil {
+		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
+	}
 	// P0 supports only uv; any other detected manager is a clean, non-blaming exit.
 	if m := detectManager(p.ProjectDir); m != managerUv {
 		return p.fail(PhasePreflight, false, NewError(ErrManagerUnsupported, nil, "%s", managerGuidance(m)))
 	}
-	// Under --check the pipeline only reads and reports a plan, so it must not
+	// Under --dry-run the pipeline only reads and reports a plan, so it must not
 	// mutate anything at preflight. Two preflight steps can write:
 	//   - ensureWritable creates and removes a temp file (and would fail a
 	//     read-only project the user only wants to inspect);
 	//   - PackageManager.EnsureAvailable may install the manager (uv) if missing.
-	// Both exist to fail fast before real writes, which --check never performs, so
+	// Both exist to fail fast before real writes, which --dry-run never performs, so
 	// they are skipped in a dry run. Neither result is needed to compute the plan.
 	if p.Check {
 		p.markOK(PhasePreflight, "check")
@@ -191,7 +200,7 @@ func (p *Pipeline) resolve(ctx context.Context) (*TargetInfo, error) {
 }
 
 // fetch fetches constraints for the resolved target and records the fetch phase.
-// Under --check the cache is not populated, so a dry run performs no disk writes
+// Under --dry-run the cache is not populated, so a dry run performs no disk writes
 // (an existing cache is still read for offline fallback).
 func (p *Pipeline) fetch(ctx context.Context, target *TargetInfo) (*Constraints, error) {
 	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, target.EnvKey, p.CacheDir, !p.Check)
@@ -218,7 +227,7 @@ func (p *Pipeline) backupPath() string {
 
 // mergePlan computes the merged pyproject.toml bytes (without writing to disk),
 // decides greenfield vs. existing, and builds the Plan (populated only under
-// --check). dbcPin is the databricks-connect pin to inject, or "" in
+// --dry-run). dbcPin is the databricks-connect pin to inject, or "" in
 // constraints-only mode.
 func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin string) (merged []byte, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
@@ -267,7 +276,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		}
 	}
 
-	// Under --check, build the plan (with a diff) for reporting. A real run does
+	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
 	// not need the diff.
 	if p.Check {
 		oldStr := ""
