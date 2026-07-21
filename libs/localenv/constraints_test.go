@@ -18,9 +18,10 @@ func TestRepoConstraintBaseURL(t *testing.T) {
 	// can report the missing source at the fetch phase rather than aborting early.
 	assert.Empty(t, RepoConstraintBaseURL(t.Context()))
 
-	// The env var supplies the repo and is turned into a raw main-branch URL.
+	// The env var supplies the repo and is turned into a raw main-branch URL
+	// anchored at the python/ subtree where the Python artifacts live.
 	ctx := env.Set(t.Context(), EnvConstraintRepo, "databricks/environments")
-	assert.Equal(t, "https://raw.githubusercontent.com/databricks/environments/main", RepoConstraintBaseURL(ctx))
+	assert.Equal(t, "https://raw.githubusercontent.com/databricks/environments/main/python", RepoConstraintBaseURL(ctx))
 
 	// Whitespace-only is treated as unset.
 	ctx = env.Set(t.Context(), EnvConstraintRepo, "  ")
