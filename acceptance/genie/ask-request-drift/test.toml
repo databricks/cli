@@ -1,6 +1,5 @@
 # No bundle engine needed for this command.
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # Wire shape observed live when the backend cannot interpret the request body
 # (e.g. the expected request shape changed): a 500 INTERNAL_ERROR with an
