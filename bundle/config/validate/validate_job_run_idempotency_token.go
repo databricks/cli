@@ -23,9 +23,9 @@ func (v *validateJobRunIdempotencyToken) Name() string {
 func (v *validateJobRunIdempotencyToken) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// idempotency_token is computed automatically from the run configuration
-	// (SHA-256 of the RunNow request) so retries dedupe. A user-provided value
-	// would be overwritten, so reject it up front.
+	// The idempotency_token is derived automatically in DoCreate so a retried
+	// deploy reuses the existing run instead of triggering a duplicate. A value
+	// set here would have no effect, so reject it up front with a clear error.
 	for name, jr := range b.Config.Resources.JobRuns {
 		// An empty `job_runs.<name>:` entry unmarshals to a nil pointer
 		// (convert.ToTyped), so guard before dereferencing.
