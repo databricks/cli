@@ -186,6 +186,10 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 		State:   "UNAVAILABLE",
 		Message: appStatusUnavailableMessage,
 	}
+	// The backend clears both deployments on stop for the apps these fixtures use,
+	// so the deploy-only fields read back empty. Match that so drift tests are realistic.
+	app.ActiveDeployment = nil
+	app.PendingDeployment = nil
 	s.Apps[name] = app
 
 	return Response{Body: app}
