@@ -22,7 +22,7 @@ func RedactSensitiveFields(v any, redacted string) ([]byte, error) {
 
 // deepCloneRedact returns a deep copy of rv with sensitive string fields replaced.
 func deepCloneRedact(rv reflect.Value, redacted string) reflect.Value {
-	for rv.Kind() == reflect.Pointer {
+	if rv.Kind() == reflect.Pointer {
 		if rv.IsNil() {
 			return reflect.New(rv.Type().Elem())
 		}
