@@ -241,10 +241,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// signal because os.LookupEnv reports them as present.
 	// Keep this list in sync with listKnownAgents() in
 	// github.com/databricks/databricks-sdk-go/useragent/agent.go
-	// plus the AGENT and AI_AGENT generic fallbacks.
+	// plus the AGENT and AI_AGENT generic fallbacks and the CLI's own
+	// AIDEVKIT_HOME detection override.
 	for _, v := range []string{
 		"AGENT",
 		"AI_AGENT",
+		"AIDEVKIT_HOME",
 		"AMP_CURRENT_THREAD_ID",
 		"ANTIGRAVITY_AGENT",
 		"AUGMENT_AGENT",

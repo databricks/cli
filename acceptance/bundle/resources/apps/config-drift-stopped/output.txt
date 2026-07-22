@@ -1,0 +1,73 @@
+
+=== Deploy with started=true so the app has an active deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-stopped-[UNIQUE_NAME]/default/files...
+Deploying resources...
+✓ Deployment succeeded
+Updating deployment state...
+Deployment complete!
+
+=== Change config while running: drift is detected (active deployment present)
+>>> update_file.py databricks.yml original_value changed_value
+
+>>> [CLI] bundle plan -o json
+{
+  "config.env[0].value": {
+    "action": "update",
+    "old": "original_value",
+    "new": "changed_value",
+    "remote": "original_value"
+  }
+}
+
+=== Stop the app: the backend clears the active deployment
+>>> [CLI] apps stop [UNIQUE_NAME]
+"STOPPED"
+
+=== Same config change is now skipped: no active deployment to compare against
+>>> [CLI] bundle plan -o json
+{
+  "config": {
+    "action": "skip",
+    "reason": "no active deployment",
+    "old": {
+      "command": [
+        "python",
+        "app.py"
+      ],
+      "env": [
+        {
+          "name": "MY_VAR",
+          "value": "original_value"
+        }
+      ]
+    },
+    "new": {
+      "command": [
+        "python",
+        "app.py"
+      ],
+      "env": [
+        {
+          "name": "MY_VAR",
+          "value": "changed_value"
+        }
+      ]
+    }
+  },
+  "config.env[0].value": {
+    "action": "skip",
+    "reason": "no active deployment",
+    "old": "original_value",
+    "new": "changed_value"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/config-drift-stopped-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

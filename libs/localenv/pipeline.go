@@ -367,7 +367,7 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	if err := p.PM.EnsurePython(ctx, pyMinor); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrPythonInstall, "ensure python %s failed", pyMinor))
 	}
-	if err := p.PM.Provision(ctx, p.ProjectDir); err != nil {
+	if err := p.PM.Provision(ctx, p.ProjectDir, pyMinor); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}
 	if err := p.PM.PostProvision(ctx, p.ProjectDir); err != nil {
@@ -422,7 +422,11 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string)
 	}
 	p.markOK(PhaseValidate, detail)
 
-	p.res.VenvPath = filepath.ToSlash(filepath.Join(p.ProjectDir, venvDir))
+	// venvPath is reported relative to the project root (spec §6.1), not as an
+	// absolute path: the value names the ".venv" the command provisions inside
+	// ProjectDir, and the VS Code consumer already knows the project root (it
+	// sets the working directory when it shells out). venvDir is already ".venv".
+	p.res.VenvPath = venvDir
 	if p.res.Resolved != nil {
 		if defaultMode {
 			p.res.Resolved.DBConnectVersion = dbcVer

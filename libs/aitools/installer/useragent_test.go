@@ -67,3 +67,53 @@ func TestWithAiToolsInUserAgent(t *testing.T) {
 		})
 	}
 }
+
+// TestWithAiDevKitInUserAgent drives WithAiDevKitInUserAgent against a prepared
+// HOME containing (or lacking) an ai-dev-kit version marker and asserts the
+// resulting user-agent string.
+func TestWithAiDevKitInUserAgent(t *testing.T) {
+	tests := []struct {
+		name string
+		// marker, when set, is written to ~/.ai-dev-kit/version.
+		marker         string
+		wantContains   []string
+		wantNotContain []string
+	}{
+		{
+			name:           "not installed adds no pair",
+			wantNotContain: []string{"aidevkit/"},
+		},
+		{
+			name:         "version from the marker",
+			marker:       "1.2.3\n",
+			wantContains: []string{"aidevkit/1.2.3"},
+		},
+		{
+			name:         "installed but unversioned reports unknown",
+			marker:       "\n",
+			wantContains: []string{"aidevkit/unknown"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			t.Setenv("USERPROFILE", home)
+			// Fresh cwd so a project-scope marker never leaks from the package dir.
+			t.Chdir(t.TempDir())
+
+			if tc.marker != "" {
+				writeAiDevKitMarker(t, home, tc.marker)
+			}
+
+			ua := useragent.FromContext(WithAiDevKitInUserAgent(t.Context()))
+			for _, want := range tc.wantContains {
+				assert.Contains(t, ua, want)
+			}
+			for _, notWant := range tc.wantNotContain {
+				assert.NotContains(t, ua, notWant)
+			}
+		})
+	}
+}
