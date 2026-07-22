@@ -320,6 +320,15 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
 		b.RemoteStateCache.Store(resourceKey, remoteState)
 
+		// An active bind block guards its resource against recreation for as long as
+		// it is defined, not just during the first bind. Once the resource is in
+		// state, a config change that would recreate or re-ID it still surfaces as an
+		// error so the bind block behaves as a persistent guard (see handleBindPlan).
+		if _, bound := bindIDByKey[resourceKey]; bound && (action == deployplan.Recreate || action == deployplan.UpdateWithID) {
+			logdiag.LogError(ctx, buildBindConflictError("cannot bind "+resourceKey, action, entry.Changes, resourceKey))
+			return false
+		}
+
 		// Validate that resources without DoUpdate don't have update actions
 		if action == deployplan.Update && !adapter.HasDoUpdate() {
 			logdiag.LogError(ctx, fmt.Errorf("%s: resource does not support update action but plan produced update", errorPrefix))
