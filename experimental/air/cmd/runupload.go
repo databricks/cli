@@ -52,6 +52,30 @@ type requirementsDoc struct {
 	Dependencies []string `yaml:"dependencies"`
 }
 
+// readRequirementsDependencies reads the dependencies list out of a
+// requirements.yaml file, so file-form deps can be mirrored onto the serverless
+// environment's inline spec.dependencies. Returns an empty list when the file
+// declares no dependencies.
+func readRequirementsDependencies(reqPath string) ([]string, error) {
+	data, err := os.ReadFile(reqPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read requirements file %s: %w", reqPath, err)
+	}
+	var doc requirementsDoc
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("failed to parse requirements file %s: %w", reqPath, err)
+	}
+	for _, dep := range doc.Dependencies {
+		// A -r/--requirement include points at a second file that is never uploaded
+		// with the run, so it never installs on the node. Reject it rather than emit
+		// a dependency that silently fails at install time.
+		if fields := strings.Fields(dep); len(fields) > 0 && (fields[0] == "-r" || fields[0] == "--requirement") {
+			return nil, fmt.Errorf("requirements file dependency %q uses a requirements-file include (-r/--requirement), which is not supported; list the dependencies directly instead", dep)
+		}
+	}
+	return doc.Dependencies, nil
+}
+
 // buildArtifacts assembles the files to upload for a run: the merged config, the
 // inline command as a script, requirements (from a file or synthesized from
 // inline dependencies), and hyperparameters. configPath is the local YAML path.
