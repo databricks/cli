@@ -63,13 +63,23 @@ func (d *DeploymentUnit) Bind(ctx context.Context, db *dstate.DeploymentState, i
 }
 
 // BindAndUpdate binds an existing workspace resource and applies the configured
-// field changes to it. It defers to Update so the update goes through the same
-// DoUpdate retry and WaitAfterUpdate path as a normal update (async resources rely
-// on that hook).
+// field changes to it. It dispatches on the planned action so the change goes
+// through the same path a normal deploy would: Resize for running-cluster
+// worker/autoscale drift, Update otherwise. Recreate / UpdateWithID are rejected
+// at plan time, so only Update and Resize can reach here.
 func (d *DeploymentUnit) BindAndUpdate(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
-	err := d.Update(ctx, db, id, newState, planEntry)
-	if err != nil {
-		return err
+	action := getMaxAction(planEntry.Changes)
+	switch action {
+	case deployplan.Resize:
+		if err := d.Resize(ctx, db, id, newState, planEntry); err != nil {
+			return err
+		}
+	case deployplan.Update:
+		if err := d.Update(ctx, db, id, newState, planEntry); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("internal error: unexpected action %q during bind_and_update", action)
 	}
 
 	log.Infof(ctx, "Bound and updated %s id=%s", d.ResourceKey, id)
