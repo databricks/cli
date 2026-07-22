@@ -1,1 +1,0 @@
-`databricks bundle init` now reports an actionable error when given a template URL with an unsupported protocol (`http://`, `git://`, `ftp://`, `ftps://`) instead of failing with a confusing "not a bundle template" message ([#5902](https://github.com/databricks/cli/pull/5902)).

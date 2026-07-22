@@ -1,0 +1,5 @@
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+
+[[Repls]]
+Old = 'uv uv \S+(?: \([^)]+\))?'
+New = 'uv [UV_VERSION]'

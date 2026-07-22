@@ -289,9 +289,11 @@ Create a Tool.
   Creates a Tool under a Supervisor Agent. Specify one of "genie_space",
   "knowledge_assistant", "uc_function", "uc_connection", "app", "volume",
   "dashboard", "table", "vector_search_index", "catalog", "schema",
-  "supervisor_agent", "web_search", "skill" in the request body. The legacy
-  values "lakeview_dashboard" and "uc_table" are also accepted and remain
-  equivalent to "dashboard" and "table" respectively.
+  "supervisor_agent", "databricks_web_search", "skill" in the request body. The
+  legacy values "lakeview_dashboard", "uc_table", and "web_search" are also
+  accepted and remain equivalent to "dashboard", "table", and
+  "databricks_web_search" respectively. The "databricks_web_search" tool_type
+  maps to the web_search spec field.
 
   Arguments:
     PARENT: Parent resource where this tool will be created. Format:
@@ -301,9 +303,11 @@ Create a Tool.
     TOOL_TYPE: Tool type. Must be one of: "genie_space", "knowledge_assistant",
       "uc_function", "uc_connection", "uc_mcp", "app", "volume", "dashboard",
       "serving_endpoint", "table", "vector_search_index", "catalog", "schema",
-      "supervisor_agent", "web_search", "skill". The legacy values
-      "lakeview_dashboard" and "uc_table" are also accepted and remain
-      equivalent to "dashboard" and "table" respectively.`
+      "supervisor_agent", "databricks_web_search", "skill". The legacy values
+      "lakeview_dashboard", "uc_table", and "web_search" are also accepted and
+      remain equivalent to "dashboard", "table", and "databricks_web_search"
+      respectively. The "databricks_web_search" tool_type maps to the
+      web_search spec field.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1491,9 +1495,11 @@ Update a Tool.
     TOOL_TYPE: Tool type. Must be one of: "genie_space", "knowledge_assistant",
       "uc_function", "uc_connection", "uc_mcp", "app", "volume", "dashboard",
       "serving_endpoint", "table", "vector_search_index", "catalog", "schema",
-      "supervisor_agent", "web_search", "skill". The legacy values
-      "lakeview_dashboard" and "uc_table" are also accepted and remain
-      equivalent to "dashboard" and "table" respectively.`
+      "supervisor_agent", "databricks_web_search", "skill". The legacy values
+      "lakeview_dashboard", "uc_table", and "web_search" are also accepted and
+      remain equivalent to "dashboard", "table", and "databricks_web_search"
+      respectively. The "databricks_web_search" tool_type maps to the
+      web_search spec field.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

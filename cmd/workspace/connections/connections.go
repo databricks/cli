@@ -73,6 +73,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 	// TODO: complex arg: environment_settings
+	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `Parent schema for schema-level connections, in format "schemas/{catalog}.{schema}".`)
 	// TODO: map via StringToStringVar: properties
 	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `If the connection is read only.`)
 
@@ -288,6 +289,8 @@ func newList() *cobra.Command {
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
+
+	cmd.Flags().StringVar(&listReq.Parent, "parent", listReq.Parent, `Optional.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)

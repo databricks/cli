@@ -309,15 +309,16 @@ tasks:
     cmds:
       - ./tools/check_deadcode.py
 
-  check-uv-lock:
-    desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock
-    # pydabs-codegen reverts this proxy-URL churn after regenerating; this is a
+  check-lockfiles:
+    desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock or .py.lock
+    # pydabs-codegen reverts this proxy-URL churn after regenerating, and
+    # generate-clijson scrubs it from the genkit tagging locks; this is a
     # backstop against a proxy URL reaching a committed lock any other way.
     cmds:
-      - "! git grep -lF databricks.com -- '*uv.lock'"
+      - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, uv.lock)
+    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with whitespace/link scanners.
     cmds:
@@ -326,7 +327,7 @@ tasks:
       - task: links
       - task: deadcode
       - task: check-changelog
-      - task: check-uv-lock
+      - task: check-lockfiles
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
@@ -904,6 +905,20 @@ tasks:
           sed -i 's|tagging.py|internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
         fi
       - cp internal/genkit/tagging.py.lock internal/genkit/release_tagging.py.lock
+      # In an environment configured with the internal PyPI proxy, uv bakes the
+      # proxy URL into the resolved locks. Unlike pydabs (which blind-reverts its
+      # locks because codegen never wants to change them), these locks legitimately
+      # track the synced producer's deps, so rewrite only the proxy URL back to the
+      # public registry and preserve any real dependency changes. Glob the lock
+      # files so a future genkit lock is scrubbed without editing this task. The
+      # trailing slash is optional so both proxy URL forms are matched.
+      # check-lockfiles is the backstop if this ever misses.
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          sed -i '' 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
+        else
+          sed -i 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
+        fi
       - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
       - task: ws
 

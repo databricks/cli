@@ -22,18 +22,16 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "disaster-recovery",
-		Short: `*Public Preview* Manage disaster recovery configurations and execute failover operations.`,
-		Long: `This command is in Public Preview and may change without notice.
-
-Manage disaster recovery configurations and execute failover operations.`,
+		Use:     "disaster-recovery",
+		Short:   `Manage disaster recovery configurations and execute failover operations.`,
+		Long:    `Manage disaster recovery configurations and execute failover operations.`,
 		GroupID: "disasterrecovery",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateFailoverGroup())
@@ -78,10 +76,8 @@ func newCreateFailoverGroup() *cobra.Command {
 	// TODO: complex arg: unity_catalog_assets
 
 	cmd.Use = "create-failover-group PARENT FAILOVER_GROUP_ID REGIONS WORKSPACE_SETS INITIAL_PRIMARY_REGION"
-	cmd.Short = `*Public Preview* Create a Failover Group.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create a Failover Group.
+	cmd.Short = `Create a Failover Group.`
+	cmd.Long = `Create a Failover Group.
 
   Create a new failover group.
 
@@ -95,8 +91,8 @@ Create a Failover Group.
       primary region. Not returned in responses.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -189,10 +185,8 @@ func newCreateStableUrl() *cobra.Command {
 	cmd.Flags().StringVar(&createStableUrlReq.StableUrl.Name, "name", createStableUrlReq.StableUrl.Name, `Fully qualified resource name.`)
 
 	cmd.Use = "create-stable-url PARENT STABLE_URL_ID INITIAL_WORKSPACE_ID"
-	cmd.Short = `*Public Preview* Create a Stable URL.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create a Stable URL.
+	cmd.Short = `Create a Stable URL.`
+	cmd.Long = `Create a Stable URL.
 
   Create a new stable URL.
 
@@ -205,8 +199,8 @@ Create a Stable URL.
       responses.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -280,10 +274,8 @@ func newDeleteFailoverGroup() *cobra.Command {
 	cmd.Flags().StringVar(&deleteFailoverGroupReq.Etag, "etag", deleteFailoverGroupReq.Etag, `Opaque version string for optimistic locking.`)
 
 	cmd.Use = "delete-failover-group NAME"
-	cmd.Short = `*Public Preview* Delete a Failover Group.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Delete a Failover Group.
+	cmd.Short = `Delete a Failover Group.`
+	cmd.Long = `Delete a Failover Group.
 
   Delete a failover group.
 
@@ -292,8 +284,8 @@ Delete a Failover Group.
       accounts/{account_id}/failover-groups/{failover_group_id}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -341,10 +333,8 @@ func newDeleteStableUrl() *cobra.Command {
 	var deleteStableUrlReq disasterrecovery.DeleteStableUrlRequest
 
 	cmd.Use = "delete-stable-url NAME"
-	cmd.Short = `*Public Preview* Delete a Stable URL.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Delete a Stable URL.
+	cmd.Short = `Delete a Stable URL.`
+	cmd.Long = `Delete a Stable URL.
 
   Delete a stable URL.
 
@@ -353,8 +343,8 @@ Delete a Stable URL.
       accounts/{account_id}/stable-urls/{stable_url_id}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -407,10 +397,8 @@ func newFailoverFailoverGroup() *cobra.Command {
 	cmd.Flags().StringVar(&failoverFailoverGroupReq.Etag, "etag", failoverFailoverGroupReq.Etag, `Opaque version string for optimistic locking.`)
 
 	cmd.Use = "failover-failover-group NAME TARGET_PRIMARY_REGION FAILOVER_TYPE"
-	cmd.Short = `*Public Preview* Failover a Failover Group to a new primary region.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Failover a Failover Group to a new primary region.
+	cmd.Short = `Failover a Failover Group to a new primary region.`
+	cmd.Long = `Failover a Failover Group to a new primary region.
 
   Initiate a failover to a new primary region.
 
@@ -424,8 +412,8 @@ Failover a Failover Group to a new primary region.
       Supported values: [FORCED]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -503,10 +491,8 @@ func newGetFailoverGroup() *cobra.Command {
 	var getFailoverGroupReq disasterrecovery.GetFailoverGroupRequest
 
 	cmd.Use = "get-failover-group NAME"
-	cmd.Short = `*Public Preview* Get a Failover Group.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get a Failover Group.
+	cmd.Short = `Get a Failover Group.`
+	cmd.Long = `Get a Failover Group.
 
   Get a failover group.
 
@@ -515,8 +501,8 @@ Get a Failover Group.
       accounts/{account_id}/failover-groups/{failover_group_id}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -565,10 +551,8 @@ func newGetStableUrl() *cobra.Command {
 	var getStableUrlReq disasterrecovery.GetStableUrlRequest
 
 	cmd.Use = "get-stable-url NAME"
-	cmd.Short = `*Public Preview* Get a Stable URL.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get a Stable URL.
+	cmd.Short = `Get a Stable URL.`
+	cmd.Long = `Get a Stable URL.
 
   Get a stable URL.
 
@@ -577,8 +561,8 @@ Get a Stable URL.
       accounts/{account_id}/stable-urls/{stable_url_id}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -640,10 +624,8 @@ func newListFailoverGroups() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-failover-groups PARENT"
-	cmd.Short = `*Public Preview* List Failover Groups.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List Failover Groups.
+	cmd.Short = `List Failover Groups.`
+	cmd.Long = `List Failover Groups.
 
   List failover groups.
 
@@ -654,8 +636,8 @@ List Failover Groups.
     PARENT: The parent resource. Format: accounts/{account_id}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -720,10 +702,8 @@ func newListStableUrls() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-stable-urls PARENT"
-	cmd.Short = `*Public Preview* List Stable URLs.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List Stable URLs.
+	cmd.Short = `List Stable URLs.`
+	cmd.Long = `List Stable URLs.
 
   List stable URLs for an account.
 
@@ -731,8 +711,8 @@ List Stable URLs.
     PARENT: The parent resource. Format: accounts/{account_id}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -792,10 +772,8 @@ func newUpdateFailoverGroup() *cobra.Command {
 	// TODO: complex arg: unity_catalog_assets
 
 	cmd.Use = "update-failover-group NAME UPDATE_MASK REGIONS WORKSPACE_SETS INITIAL_PRIMARY_REGION"
-	cmd.Short = `*Public Preview* Update a Failover Group.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Update a Failover Group.
+	cmd.Short = `Update a Failover Group.`
+	cmd.Long = `Update a Failover Group.
 
   Update a failover group.
 
@@ -809,8 +787,8 @@ Update a Failover Group.
       primary region. Not returned in responses.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

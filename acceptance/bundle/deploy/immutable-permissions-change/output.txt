@@ -1,0 +1,52 @@
+
+=== Deploy without permissions
+>>> [CLI] bundle deploy
+Uploading immutable bundle snapshot...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+First snapshot path: /Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py
+
+=== Add permissions and redeploy
+>>> [CLI] bundle deploy
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:22:3
+
+Uploading immutable bundle snapshot...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py
+
+=== Verify snapshot path changed after permissions change
+OK: snapshot path changed as expected
+
+>>> [CLI] bundle destroy --auto-approve
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:22:3
+
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-perms-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

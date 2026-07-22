@@ -18,9 +18,10 @@ func TestRepoConstraintBaseURL(t *testing.T) {
 	// can report the missing source at the fetch phase rather than aborting early.
 	assert.Empty(t, RepoConstraintBaseURL(t.Context()))
 
-	// The env var supplies the repo and is turned into a raw main-branch URL.
+	// The env var supplies the repo and is turned into a raw main-branch URL
+	// anchored at the python/ subtree where the Python artifacts live.
 	ctx := env.Set(t.Context(), EnvConstraintRepo, "databricks/environments")
-	assert.Equal(t, "https://raw.githubusercontent.com/databricks/environments/main", RepoConstraintBaseURL(ctx))
+	assert.Equal(t, "https://raw.githubusercontent.com/databricks/environments/main/python", RepoConstraintBaseURL(ctx))
 
 	// Whitespace-only is treated as unset.
 	ctx = env.Set(t.Context(), EnvConstraintRepo, "  ")
@@ -125,7 +126,7 @@ func TestFetchConstraintsCreatesCacheDir(t *testing.T) {
 }
 
 func TestFetchConstraintsSkipsCacheWriteWhenDisabled(t *testing.T) {
-	// With writeCache=false (the --check dry-run path), a successful live fetch
+	// With writeCache=false (the --dry-run dry-run path), a successful live fetch
 	// must not write anything to cacheDir.
 	cacheDir := t.TempDir()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +139,7 @@ func TestFetchConstraintsSkipsCacheWriteWhenDisabled(t *testing.T) {
 	assert.False(t, c.FromCache)
 	entries, err := os.ReadDir(cacheDir)
 	require.NoError(t, err)
-	assert.Empty(t, entries, "no cache file should be written under --check")
+	assert.Empty(t, entries, "no cache file should be written under --dry-run")
 }
 
 func TestCacheFileNameInjective(t *testing.T) {

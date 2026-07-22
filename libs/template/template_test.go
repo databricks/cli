@@ -84,4 +84,5 @@ func TestTemplateGetDatabricksTemplate(t *testing.T) {
 
 	// Assert aliases work.
 	assert.Equal(t, MlopsStacks, GetDatabricksTemplate(TemplateName("mlops-stack")).name)
+	assert.Equal(t, DefaultMinimal, GetDatabricksTemplate(TemplateName("empty")).name)
 }
