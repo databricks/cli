@@ -26,9 +26,8 @@ NEXTCHANGES_SECTIONS_KEY = "nextchanges_sections"
 VERSION_FILE = "version"
 SEMVER_RE = re.compile(r"^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 
-# Non-fragment files allowed to sit alongside fragments at any depth.
-# Note that tagging workflow accepts README.md inside fragments, but we reject it here for clarity.
-SCAFFOLDING = ("README.md", ".gitkeep")
+ROOT_README = "README.md"
+SECTION_SCAFFOLDING = (".gitkeep",)
 
 
 def load_sections(root):
@@ -59,17 +58,19 @@ def find_problems(changelog_dir, sections):
         rel = path.relative_to(changelog_dir)
         name = path.name
 
-        # Root-level: only the version file and scaffolding belong here.
+        # Root-level: only the version file and root documentation belong here. This prevents
+        # someone accidentally putting a .md into .nextchanges thinking it would be picked up.
         if len(rel.parts) == 1:
-            if name != VERSION_FILE and name not in SCAFFOLDING:
+            if name != VERSION_FILE and name != ROOT_README:
                 problems.append((path, "unexpected file at .nextchanges root"))
             continue
 
         # Section-level: .nextchanges/<section>/<file>.
         if len(rel.parts) == 2 and rel.parts[0] in known_sections:
-            if name in SCAFFOLDING:
-                continue
             if not name.endswith(".md"):
+                # Only allow scaffolding files to exist
+                if name in SECTION_SCAFFOLDING:
+                    continue
                 problems.append((path, "unexpected file (fragments must be *.md)"))
             elif not path.read_text(encoding="utf-8").strip():
                 problems.append((path, "empty fragment"))
