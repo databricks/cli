@@ -1,0 +1,10 @@
+bundle:
+  name: app-git-source-no-deployment
+
+resources:
+  apps:
+    myapp:
+      name: test-app-git-source-no-deployment
+      description: my_app_description
+      git_source:
+        branch: main

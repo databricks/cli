@@ -47,7 +47,12 @@ func RepoConstraintBaseURL(ctx context.Context) string {
 	if repo == "" {
 		return ""
 	}
-	return "https://raw.githubusercontent.com/" + repo + "/main"
+	// The databricks/environments repo nests its language ecosystems under a
+	// top-level directory, so the Python artifacts live at python/<env key>/
+	// pyproject.toml (e.g. python/serverless/serverless-v5, python/dbr/<spark>),
+	// not at the repo root. Anchor the base URL at that python/ subtree so an
+	// env key of "serverless/serverless-v5" resolves to the real path.
+	return "https://raw.githubusercontent.com/" + repo + "/main/python"
 }
 
 // errEnvKeyNotFound is returned by fetchURL when the constraint artifact does
@@ -270,6 +275,14 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 	requiresPython = p.Project.RequiresPython
 	if strings.TrimSpace(requiresPython) == "" {
 		return "", "", nil, errors.New("constraint artifact has no [project].requires-python")
+	}
+	// Reject a requires-python that is present but yields no installable floor
+	// (e.g. ">=3", "<3.13", "*") here, before the body is cached. This is the
+	// same check the pipeline applies later; running it in the pre-cache guard
+	// ensures an unusable 2xx body cannot overwrite a valid cached copy and
+	// break offline fallback, which is the guard's stated purpose.
+	if _, err = PythonMinorFromRequires(requiresPython); err != nil {
+		return "", "", nil, fmt.Errorf("constraint artifact has an unusable [project].requires-python: %w", err)
 	}
 
 	for _, entry := range p.DependencyGroups.Dev {
