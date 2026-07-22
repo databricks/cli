@@ -42,6 +42,7 @@ import sys
 EXCLUDED_DIRS = [
     "libs/gorules/",  # Lint rule definitions loaded by golangci-lint's ruleguard
     "bundle/internal/tf/schema/",  # Generated from Terraform provider schema
+    "libs/tmp/",  # Temporary verbatim copy of the unpublished sdk-go/files/v2; keep upstream API intact
 ]
 
 ALLOW_COMMENT = "//deadcode:allow"

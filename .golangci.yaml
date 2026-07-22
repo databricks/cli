@@ -163,6 +163,11 @@ linters:
       default-signifies-exhaustive: true
   exclusions:
     generated: lax
+    # libs/tmp is a temporary verbatim copy of the unpublished sdk-go/files/v2
+    # module and its deps; keep it byte-for-byte with upstream rather than making
+    # it satisfy this repo's linters. Remove when the module is published.
+    paths:
+      - libs/tmp
     presets:
       - comments
       - common-false-positives
@@ -199,3 +204,8 @@ formatters:
       extra-rules: true
   exclusions:
     generated: lax
+    # See the note on linters.exclusions.paths above: libs/tmp is a temporary
+    # verbatim vendored copy and is intentionally not reformatted to this repo's
+    # style.
+    paths:
+      - libs/tmp

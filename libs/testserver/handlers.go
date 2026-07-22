@@ -219,6 +219,15 @@ func AddDefaultHandlers(server *Server) {
 
 		defer req.Workspace.LockUnlock()()
 
+		// The API rejects creating a directory where a file already exists; it is
+		// idempotent only over directories. Mirror that so callers observe the 409.
+		if _, isFile := req.Workspace.files[dirPath]; isFile {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": "The given path points to an existing file. This API does not support operations on files."},
+			}
+		}
+
 		// Create directory and all parent directories.
 		for dir := dirPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
 			if _, exists := req.Workspace.directories[dir]; !exists {

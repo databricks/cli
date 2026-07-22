@@ -18,10 +18,18 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Default number of concurrent file copy operations. This is a conservative
-// default that should be sufficient to fully utilize the available bandwidth
-// in most cases.
+// defaultConcurrency is the number of files copied in parallel. Each in-flight
+// file drives Files API requests (a single-shot PUT, or the multipart
+// control-plane calls), which allow only ~10 concurrent requests, so this stays
+// conservative regardless of whether multipart upload is enabled.
 const defaultConcurrency = 8
+
+// multipartUploadConcurrency is the cloud-transfer budget for large-file
+// (multipart) writes: a shared cap on concurrent part uploads, which go to cloud
+// storage rather than the rate-limited Files API and so can fan out wider than
+// the file-level copy concurrency. It is sized independently of --concurrency and
+// applies only to the Volumes target filer.
+const multipartUploadConcurrency = 64
 
 // errInvalidConcurrency is returned when the value of the concurrency
 // flag is invalid.
@@ -36,6 +44,11 @@ type copy struct {
 	targetFiler  filer.Filer
 	sourceScheme string
 	targetScheme string
+
+	// showProgress renders an upload progress bar. It is set only for a single
+	// large-file copy to a Volume, not for recursive copies (where many files
+	// would each fight for the spinner line).
+	showProgress bool
 
 	mu sync.Mutex // protect output from concurrent writes
 }
@@ -123,20 +136,31 @@ func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string) 
 	}
 	defer r.Close()
 
+	// For a single large-file copy, attach a progress callback to the context
+	// that the Files filer forwards to the upload engine, rendering an upload bar.
+	// The spinner is stopped before any event line is emitted so its final frame
+	// does not overwrite it.
+	closeProgress := func() {}
+	if c.showProgress {
+		fn, stop := newProgressFunc(ctx)
+		ctx = filer.WithUploadProgress(ctx, fn)
+		closeProgress = stop
+	}
+
+	var writeErr error
 	if c.overwrite {
-		err = c.targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
-		if err != nil {
-			return err
-		}
+		writeErr = c.targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
 	} else {
-		err = c.targetFiler.Write(ctx, targetPath, r)
-		// skip if file already exists
-		if err != nil && errors.Is(err, fs.ErrExist) {
-			return c.emitFileSkippedEvent(ctx, sourcePath, targetPath)
-		}
-		if err != nil {
-			return err
-		}
+		writeErr = c.targetFiler.Write(ctx, targetPath, r)
+	}
+	closeProgress()
+
+	// skip if file already exists
+	if !c.overwrite && writeErr != nil && errors.Is(writeErr, fs.ErrExist) {
+		return c.emitFileSkippedEvent(ctx, sourcePath, targetPath)
+	}
+	if writeErr != nil {
+		return writeErr
 	}
 	return c.emitFileCopiedEvent(ctx, sourcePath, targetPath)
 }
@@ -229,9 +253,20 @@ func newCpCommand() *cobra.Command {
 			return err
 		}
 
-		// Get target filer and target path without scheme
+		// The cloud-transfer budget for large-file (multipart) writes is sized
+		// independently of c.concurrency (the file-level copy parallelism, which
+		// stays at the Files-API-safe default). A large file's part uploads go to
+		// cloud storage rather than the rate-limited Files API, so they can fan out
+		// wider; the budget is shared across all files in a recursive copy and
+		// applies only to the Volumes target filer.
+		uploadConcurrency := c.concurrency
+		if filer.MultipartUploadEnabled(ctx) {
+			uploadConcurrency = multipartUploadConcurrency
+		}
+
+		// Get target filer and target path without scheme.
 		fullTargetPath := args[1]
-		targetFiler, targetPath, err := filerForPath(ctx, fullTargetPath)
+		targetFiler, targetPath, err := filerForUploadTarget(ctx, fullTargetPath, uploadConcurrency)
 		if err != nil {
 			return err
 		}
@@ -258,6 +293,10 @@ func newCpCommand() *cobra.Command {
 		if sourceInfo.IsDir() {
 			return c.cpDirToDir(ctx, sourcePath, targetPath)
 		}
+
+		// A single large file copied to a Volume goes through the multipart engine,
+		// which reports progress; render an upload bar for it.
+		c.showProgress = filer.MultipartUploadEnabled(ctx) && strings.HasPrefix(targetPath, "/Volumes/")
 
 		// If target path has a trailing separator, trim it and let case 2 handle it
 		if hasTrailingDirSeparator(fullTargetPath) {
