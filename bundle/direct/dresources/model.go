@@ -94,7 +94,7 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 
 	// UpdateModelResponse doesn't include model_id. Normally we carry it forward
 	// from entry.RemoteState (populated by the plan-time DoRead). In
-	// --plan-mode=local there was no plan-time read, so return nil here; the
+	// --planmode=offline there was no plan-time read, so return nil here; the
 	// engine's refreshRemoteState will then DoRead and populate the cache with
 	// the correct model_id for post-update reference resolution.
 	old, _ := entry.RemoteState.(*MlflowModelRemote)

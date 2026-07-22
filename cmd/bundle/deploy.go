@@ -44,8 +44,8 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	cmd.Flags().StringVar(&readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
 	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Deploy only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
-	cmd.Flags().StringVar(&planMode, "plan-mode", "", "How much of the remote state to consult when planning the deploy: full (default), local, offline.")
-	cmd.Flags().MarkHidden("plan-mode")
+	cmd.Flags().StringVar(&planMode, "planmode", "", "How much of the remote state to consult when planning the deploy: full (default) or offline.")
+	cmd.Flags().MarkHidden("planmode")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
 	cmd.Flags().MarkHidden("verbose")
 

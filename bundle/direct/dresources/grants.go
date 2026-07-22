@@ -167,9 +167,9 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removed
 // removedGrantPrincipals returns principals present in the prior remote/saved
 // state but absent from the desired assignments. Grants has StateType ==
 // RemoteType == *GrantsState, so RemoteState (fresh remote, full mode) and
-// PriorState (saved state, populated in every mode) are directly interchangeable:
+// PriorState (saved state, populated in offline mode) are directly interchangeable:
 // we prefer the fresh remote when we have it, and fall back to saved state.
-// This makes --plan-mode=local correctly remove principals that config no
+// This makes --planmode=offline correctly remove principals that config no
 // longer declares, using the last-recorded set as the removal baseline.
 func removedGrantPrincipals(desiredAssignments []catalog.PrivilegeAssignment, entry *PlanEntry) []string {
 	if entry == nil {

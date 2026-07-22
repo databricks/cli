@@ -35,8 +35,8 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Plan only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
-	cmd.Flags().StringVar(&planMode, "plan-mode", "", "How much of the remote state to consult during plan: full (default), local, offline.")
-	cmd.Flags().MarkHidden("plan-mode")
+	cmd.Flags().StringVar(&planMode, "planmode", "", "How much of the remote state to consult during plan: full (default) or offline.")
+	cmd.Flags().MarkHidden("planmode")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		mode, err := deployplan.ParsePlanMode(planMode)

@@ -3,7 +3,6 @@ package deployplan
 import (
 	"cmp"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -21,41 +20,29 @@ const currentPlanVersion = 2
 //
 //   - Full (default): the per-resource remote read runs; drift detection is
 //     complete.
-//   - Local: the per-resource remote read is skipped. Cross-resource references
-//     resolve from local state; a reference to a remote-only field on an
-//     otherwise-unchanged target fetches that one target on demand.
-//   - Offline: no remote reads at all during plan. References to changing
-//     targets stay unresolved; references to unchanged targets read from the
-//     saved local state. Deploy of an Offline plan is allowed — Offline is a
-//     plan-time property, not a deploy-time restriction.
+//   - Offline: no remote reads at all during plan. Drift classification runs
+//     against saved local state. Cross-resource references resolve from saved
+//     state: the dependent's own last-resolved value, or by looking up each
+//     `${...}` component in the target's saved state; otherwise the reference
+//     stays unresolved and is resolved after apply.
 type PlanMode string
 
 const (
 	PlanModeFull    PlanMode = ""
-	PlanModeLocal   PlanMode = "local"
 	PlanModeOffline PlanMode = "offline"
 )
 
-// SkipsRemoteReads reports whether the mode avoids the proactive per-resource
-// remote read. Local skips it (references still fetch on-demand). Offline is
-// reserved and rejected at flag-parse time until its semantics are wired up.
-func (m PlanMode) SkipsRemoteReads() bool {
-	return m == PlanModeLocal
-}
-
-// ParsePlanMode parses the value of the --plan-mode flag. An empty value is
-// PlanModeFull; "full" and "local" are accepted. "offline" is reserved but not
-// yet implemented and is rejected. Unknown values produce an actionable error.
+// ParsePlanMode parses the value of the --planmode flag. An empty value is
+// PlanModeFull; "full" and "offline" are accepted. Unknown values produce an
+// actionable error.
 func ParsePlanMode(s string) (PlanMode, error) {
 	switch s {
 	case "", "full":
 		return PlanModeFull, nil
-	case "local":
-		return PlanModeLocal, nil
 	case "offline":
-		return "", errors.New("--plan-mode=offline is not yet implemented")
+		return PlanModeOffline, nil
 	default:
-		return "", fmt.Errorf("invalid --plan-mode %q (want full or local)", s)
+		return "", fmt.Errorf("invalid --planmode %q (want full or offline)", s)
 	}
 }
 
@@ -132,7 +119,7 @@ type PlanEntry struct {
 	NewState *structvar.StructVarJSON `json:"new_state,omitempty"`
 
 	// PriorState is the last saved local state — always StateType. Populated only
-	// when the planner did not read remote (--plan-mode=local); it serves as the
+	// when the planner did not read remote (--planmode=offline); it serves as the
 	// state-shaped stand-in that apply-time consumers (removedGrantPrincipals,
 	// bind's etag lookup) fall back to when RemoteState is nil. In full mode a
 	// resource reaching Update has RemoteState set by construction, so PriorState
@@ -140,10 +127,10 @@ type PlanEntry struct {
 	PriorState any `json:"prior_state,omitempty"`
 
 	// RemoteState is a freshly-read remote state — RemoteType. Nil when the plan
-	// was computed without reading remote (--plan-mode=local, unless a reference
-	// fetch happens to populate it). Consumers that need live-remote-only fields
-	// (cluster.State, app.ComputeStatus, model.ModelId) read this; the reasonable
-	// behavior on nil is to skip whatever depends on live status.
+	// was computed without reading remote (--planmode=offline). Consumers that
+	// need live-remote-only fields (cluster.State, app.ComputeStatus, model.ModelId)
+	// read this; the reasonable behavior on nil is to skip whatever depends on
+	// live status.
 	RemoteState any `json:"remote_state,omitempty"`
 
 	Changes Changes `json:"changes,omitempty"`

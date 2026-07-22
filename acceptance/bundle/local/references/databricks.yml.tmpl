@@ -12,7 +12,7 @@ resources:
         - task_key: tag_owner
           notebook_task:
             # creator_user_name is a remote-only field: it exists in the remote
-            # schema but not in config. Under --local, bar's remote state is not
-            # fetched during planning, but resolving this reference forces a
-            # targeted fetch of bar on demand.
+            # schema but not in config. Under --planmode=offline, bar's remote
+            # state is never fetched; instead foo.notebook_path's last resolved
+            # value is carried forward from foo's saved state.
             notebook_path: /path/${resources.jobs.bar.creator_user_name}

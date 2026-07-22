@@ -178,7 +178,7 @@ func TestAppOverrideChangeDescActiveDeployment(t *testing.T) {
 
 	// The hook skips drift on the deploy-only fields (source_code_path, config,
 	// git_source) when the app has no active deployment. remote may be a typed
-	// nil (--plan-mode=local or resource missing remotely); the hook must treat
+	// nil (--planmode=offline or resource missing remotely); the hook must treat
 	// that as "no active deployment" without dereferencing.
 	tests := []struct {
 		name       string

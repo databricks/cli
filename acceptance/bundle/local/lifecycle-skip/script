@@ -10,13 +10,13 @@ trap cleanup EXIT
 trace errcode $CLI bundle deploy
 rm -f out.requests.txt
 
-# Toggle to started=true; redeploy under --plan-mode=local.
-# In local mode entry.RemoteState is nil, so DoUpdate must skip the Start call
+# Toggle to started=true; redeploy under --planmode=offline.
+# In offline mode entry.RemoteState is nil, so DoUpdate must skip the Start call
 # entirely and WaitAfterUpdate must skip its poll. Nothing else has changed, so
 # no /clusters requests should be issued at all.
 trace update_file.py databricks.yml "started: false" "started: true"
-trace errcode $CLI bundle deploy --plan-mode=local
-title "Cluster requests during 'bundle deploy --plan-mode=local' (should be empty):\n"
+trace errcode $CLI bundle deploy --planmode=offline
+title "Cluster requests during 'bundle deploy --planmode=offline' (should be empty):\n"
 trace print_requests.py //clusters
 
 # The next full-mode deploy applies the real transition.

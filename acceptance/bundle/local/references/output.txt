@@ -5,35 +5,21 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] bundle plan --plan-mode=local
+>>> [CLI] bundle plan --planmode=offline
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-=== Job reads during 'bundle plan --plan-mode=local':
+=== Job reads during 'bundle plan --planmode=offline':
 
 >>> print_requests.py --get //jobs/get
-{
-  "method": "GET",
-  "path": "/api/2.2/jobs/get",
-  "q": {
-    "job_id": "[BAR_ID]"
-  }
-}
 
-=== After out-of-band rename of bar: --plan-mode=local plan still shows no drift:
+=== After out-of-band rename of bar: --planmode=offline plan still shows no drift:
 
->>> [CLI] bundle plan --plan-mode=local
+>>> [CLI] bundle plan --planmode=offline
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-=== Job reads during --plan-mode=local plan after drift:
+=== Job reads during --planmode=offline plan after drift:
 
 >>> print_requests.py --get //jobs/get
-{
-  "method": "GET",
-  "path": "/api/2.2/jobs/get",
-  "q": {
-    "job_id": "[BAR_ID]"
-  }
-}
 
 === Normal plan detects the drift:
 

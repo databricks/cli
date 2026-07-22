@@ -163,7 +163,7 @@ type Bundle struct {
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
 
-	// PlanMode is the plan-computation mode selected via --plan-mode. Empty is
+	// PlanMode is the plan-computation mode selected via --planmode. Empty is
 	// the default (full remote-aware planning). See deployplan.PlanMode.
 	PlanMode deployplan.PlanMode
 

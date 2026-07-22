@@ -73,7 +73,7 @@ type IResource interface {
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
 	// entry is the plan entry being applied; implementations may inspect
-	// entry.RemoteState (nil in --plan-mode=local) to decide whether a wait
+	// entry.RemoteState (nil in --planmode=offline) to decide whether a wait
 	// that depends on live remote status should be skipped.
 	WaitAfterUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 

@@ -2,16 +2,16 @@ Ignore = [
     ".databricks",
 ]
 
-# Also run plan/deploy with --plan-mode=local (direct engine only; rejected on terraform).
-# Deploy issues the same mutating requests with or without --plan-mode=local — only the
+# Also run plan/deploy with --planmode=offline (direct engine only; rejected on terraform).
+# Deploy issues the same mutating requests with or without --planmode=offline — only the
 # remote reads (GETs, excluded from print_requests.py) differ — so the recorded
-# output is identical across variants. The " --plan-mode=local" token is stripped from the
+# output is identical across variants. The " --planmode=offline" token is stripped from the
 # command echo so the >>> lines match the non-plan-mode variant. Note: the JSON plan
-# (`bundle plan -o json`) keeps no --plan-mode=local: its remote_state would differ.
-EnvMatrix.PLANMODE = ["", "--plan-mode=local"]
-EnvMatrixExclude.no_local_on_terraform = ["PLANMODE=--plan-mode=local", "DATABRICKS_BUNDLE_ENGINE=terraform"]
+# (`bundle plan -o json`) keeps no --planmode=offline: its remote_state would differ.
+EnvMatrix.PLANMODE = ["", "--planmode=offline"]
+EnvMatrixExclude.no_local_on_terraform = ["PLANMODE=--planmode=offline", "DATABRICKS_BUNDLE_ENGINE=terraform"]
 EnvRepl.PLANMODE = false
 
 [[Repls]]
-Old = " --plan-mode=local"
+Old = " --planmode=offline"
 New = ""

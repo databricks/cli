@@ -196,7 +196,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 	}
 
-	// entry.RemoteState is nil in --plan-mode=local: we have no live status,
+	// entry.RemoteState is nil in --planmode=offline: we have no live status,
 	// so skip lifecycle management (don't Start, don't Stop, don't redeploy code).
 	if entry.RemoteState == nil {
 		return nil, nil
@@ -257,7 +257,7 @@ func hasAppChanges(entry *PlanEntry) bool {
 // active deployment, so before the first deploy (or once a stop clears it) the remote
 // side is empty and the diff is spurious; it applies on the next start (manageLifecycle).
 //
-// remote is nil in --plan-mode=local (no plan-time DoRead) and when the resource
+// remote is nil in --planmode=offline (no plan-time DoRead) and when the resource
 // does not exist remotely; treat that as "no active deployment" so the skip fires
 // on the same path without a nil deref.
 func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {

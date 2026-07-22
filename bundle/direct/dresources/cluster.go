@@ -196,7 +196,7 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 		return nil, nil
 	}
 
-	// entry.RemoteState is nil in --plan-mode=local: we have no live status,
+	// entry.RemoteState is nil in --planmode=offline: we have no live status,
 	// so skip lifecycle management. WaitAfterUpdate also skips its wait.
 	if entry.RemoteState == nil {
 		return nil, nil
@@ -219,7 +219,7 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 }
 
 // WaitAfterUpdate waits for the cluster to reach the desired lifecycle state after DoUpdate.
-// In --plan-mode=local, entry.RemoteState is nil and DoUpdate skipped the Start/Stop call
+// In --planmode=offline, entry.RemoteState is nil and DoUpdate skipped the Start/Stop call
 // (see manageLifecycle), so there's no lifecycle transition to wait for.
 func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
 	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
