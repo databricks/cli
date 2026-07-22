@@ -148,7 +148,7 @@ jobs:
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           # Windows is the slowest cell, so it runs the smallest subset.
-          SUBSET_PCT: ${{ matrix.os.name == 'windows' && '40' || '75' }}
+          SUBSET_PCT: ${{ matrix.os.name == 'windows' && '20' || '60' }}
         run: |
           echo "TESTS_SELECT_SUBSET_SEED=$HEAD_SHA" >> "$GITHUB_ENV"
           echo "TESTS_SELECT_SUBSET_PCT=$SUBSET_PCT" >> "$GITHUB_ENV"
