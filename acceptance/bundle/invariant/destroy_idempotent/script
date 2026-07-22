@@ -15,6 +15,11 @@ envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
 
 cp databricks.yml LOG.config
 
+# All configs use `test-bundle-$UNIQUE_NAME`; workspace root path follows the
+# default `~/.bundle/<name>/<target>` template with target=default.
+bundle_name=test-bundle-$UNIQUE_NAME
+ROOT_PATH=/Workspace/Users/$CURRENT_USER_NAME/.bundle/$bundle_name/default
+
 final_cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy_final
     cat LOG.destroy_final | contains.py '!panic' '!internal error' > /dev/null
@@ -27,9 +32,12 @@ final_cleanup() {
 
 trap final_cleanup EXIT
 
-# Initial deploy of the resources.
-$CLI bundle plan -o json > plan_initial.json 2>LOG.plan_initial.err
-cat LOG.plan_initial.err | contains.py '!panic' '!internal error' > /dev/null
+# Initial deploy of the resources. Only pre-plan when READPLAN=1 exercises the
+# saved-plan deploy path; otherwise `bundle deploy` plans on its own.
+if [[ -n "$READPLAN" ]]; then
+    $CLI bundle plan -o json > plan_initial.json 2>LOG.plan_initial.err
+    cat LOG.plan_initial.err | contains.py '!panic' '!internal error' > /dev/null
+fi
 
 trace $CLI bundle deploy $(readplanarg plan_initial.json) &> LOG.deploy_initial
 cat LOG.deploy_initial | contains.py '!panic' '!internal error' > /dev/null
@@ -40,11 +48,6 @@ echo INPUT_CONFIG_OK
 
 # Snapshot the deploy state before we destroy anything.
 cp -r .databricks .databricks.backup
-
-# Capture the deployed workspace root path so we can recreate it after destroy1.
-# Otherwise destroy2's "root path missing" check short-circuits before we exercise
-# the resource-deletion code path.
-ROOT_PATH=$($CLI bundle summary -o json | jq -r '.workspace.root_path')
 
 trace $CLI bundle destroy --auto-approve &> LOG.destroy1
 cat LOG.destroy1 | contains.py '!panic' '!internal error' > /dev/null
