@@ -356,7 +356,7 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	if err := p.PM.EnsurePython(ctx, pyMinor); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrPythonInstall, "ensure python %s failed", pyMinor))
 	}
-	if err := p.PM.Provision(ctx, p.ProjectDir); err != nil {
+	if err := p.PM.Provision(ctx, p.ProjectDir, pyMinor); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}
 	if err := p.PM.PostProvision(ctx, p.ProjectDir); err != nil {
