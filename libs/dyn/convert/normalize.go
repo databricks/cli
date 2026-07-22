@@ -285,7 +285,12 @@ func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path 
 
 	switch src.Kind() {
 	case dyn.KindString:
-		// Preserve sensitive strings: NewValue would strip the secretString wrapper.
+		// A sensitive string must be returned as-is: dyn.NewValue(MustString(), ...)
+		// would construct a plain string and strip the secretString wrapper. Type
+		// normalization (e.g. coercing a bool "true" to string) cannot apply to a
+		// sensitive value because its Kind is already KindString, so returning early
+		// here is correct. Updating the secret value is done via FromTyped, not
+		// Normalize: FromTyped re-wraps the new value as NewSensitiveValue.
 		if src.IsSensitive() {
 			return src, nil
 		}
