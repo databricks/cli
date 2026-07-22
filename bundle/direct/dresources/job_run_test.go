@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"sync/atomic"
 	"testing"
 
 	"github.com/databricks/cli/libs/testserver"
@@ -92,4 +93,41 @@ func TestJobRunWaitAfterCreateFailsOnInternalError(t *testing.T) {
 
 	// INTERNAL_ERROR is the one terminal state that fails the deploy.
 	require.Error(t, err)
+}
+
+// Reports RUNNING before TERMINATED, so this is the only test that exercises the
+// poll loop (the others stub an already-terminal state).
+func TestJobRunWaitAfterCreatePollsUntilTerminal(t *testing.T) {
+	server := testserver.New(t)
+
+	// logRunPageURL does one GET before the loop, so RUNNING must cover it plus
+	// the waiter's first poll.
+	var gets atomic.Int32
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+		if gets.Add(1) <= 2 {
+			return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateRunning,
+			}}
+		}
+		return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateSuccess,
+		}}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	r := (&ResourceJobRun{}).New(client)
+	remote, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
+	require.NoError(t, err)
+
+	// SUCCESS is only reachable by polling past the RUNNING reads.
+	require.NotNil(t, remote.State)
+	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
+	assert.GreaterOrEqual(t, gets.Load(), int32(2), "expected WaitAfterCreate to poll more than once")
 }

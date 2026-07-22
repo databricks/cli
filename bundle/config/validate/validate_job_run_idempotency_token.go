@@ -27,8 +27,8 @@ func (v *validateJobRunIdempotencyToken) Apply(_ context.Context, b *bundle.Bund
 	// deploy reuses the existing run instead of triggering a duplicate. A value
 	// set here would have no effect, so reject it up front with a clear error.
 	for name, jr := range b.Config.Resources.JobRuns {
-		// An empty `job_runs.<name>:` entry unmarshals to a nil pointer
-		// (convert.ToTyped), so guard before dereferencing.
+		// An empty `job_runs.<name>:` entry loads as a present key with a nil
+		// pointer value, so guard before dereferencing.
 		if jr == nil || jr.IdempotencyToken == "" {
 			continue
 		}
