@@ -617,6 +617,7 @@ resources:
       - field: enable_elastic_disk
       # Backend applies a default of 60 minutes when the field is omitted.
       - field: idle_instance_autotermination_minutes
+        values: [60]
 
   sql_warehouses:
     ignore_remote_changes:
