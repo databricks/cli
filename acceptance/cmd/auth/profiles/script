@@ -1,5 +1,9 @@
 sethome "./home"
 
 # home/.databrickscfg is a checked-in input with profiles including one with workspace_id.
+# auth profiles is a pure config listing: no validation, no network calls.
 title "Profiles with workspace_id (JSON output)\n"
-$CLI auth profiles --skip-validate --output json
+$CLI auth profiles --output json
+
+title "Profiles with workspace_id (table output)\n"
+$CLI auth profiles

@@ -18,7 +18,7 @@ The `databricks` CLI wraps the public Databricks REST API — there's a command 
 ## Step 1 — Authenticate
 
 ```bash
-databricks auth profiles                  # already set up? lists profiles + validity
+databricks auth profiles                  # already set up? lists configured profiles
 databricks auth login --profile <name>    # if not — opens login.databricks.com to pick a workspace
 ```
 
