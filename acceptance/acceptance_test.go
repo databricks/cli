@@ -443,23 +443,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	default:
 		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, skipLocalMode, SkipLocalAll, SkipLocalWithChanged)
 	}
+	skipLocalWithChanged := skipLocalMode == SkipLocalWithChanged
 
-	// Both SkipLocalWithChanged and the subset selector keep added/modified tests, so
-	// detect them at most once. The subset selector keeps them regardless of the
-	// percentage; SkipLocalWithChanged additionally uses changedTests below to restrict
-	// re-enabled invariant dirs to their changed variants.
-	var changed map[string][]string
-	if skipLocalMode == SkipLocalWithChanged || subset.enabled {
-		changed = selectChangedLocalTests(testDirsSet)
-	}
-	subset.changed = changed
-
-	// changedTests maps test dir to extra env filters to apply for that dir.
-	// nil value means all variants run; a non-nil slice restricts to matching variants.
+	// changedTests maps test dir to extra env filters for added/modified tests; nil
+	// filters means all variants of that dir changed. Both SkipLocalWithChanged and the
+	// subset selector keep these tests, so detect them at most once here.
 	var changedTests map[string][]string
-	if skipLocalMode == SkipLocalWithChanged {
-		changedTests = changed
+	if skipLocalWithChanged || subset.enabled {
+		changedTests = selectChangedLocalTests(testDirsSet)
 	}
+	subset.changed = changedTests
 
 	if singleTest != "" {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
@@ -569,10 +562,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if runParallel {
 							t.Parallel()
 						}
-						// For invariant dirs re-enabled by a specific config change,
-						// skip variants not matching that config.
-						if variantFilters := changedTests[dir]; variantFilters != nil {
-							checkEnvFilters(t, envset, variantFilters)
+						// Under SkipLocalWithChanged, an invariant dir re-enabled by a
+						// specific config change runs only its matching variants.
+						if skipLocalWithChanged {
+							if variantFilters := changedTests[dir]; variantFilters != nil {
+								checkEnvFilters(t, envset, variantFilters)
+							}
 						}
 						if reason := subset.skipReason(dir, envset); reason != "" {
 							t.Skip(reason)
