@@ -72,6 +72,9 @@ func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 		{commandScriptName, []byte(*cfg.Command)},
 	}
 
+	// The AI Runtime launcher always reads <func_dir>/requirements.yaml, so always
+	// upload one: the declared file, a synthesized one from inline dependencies, or
+	// an empty doc. Without it the task fails at launch.
 	switch reqPath, ok := cfg.requirementsFile(); {
 	case ok:
 		// Resolve a relative requirements path against the config's directory.
@@ -84,14 +87,15 @@ func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 		}
 		items = append(items, uploadItem{requirementsName, data})
 	default:
-		if deps, ok := cfg.inlineDependencies(); ok {
-			version, _ := cfg.runtimeVersion()
-			data, err := yaml.Marshal(requirementsDoc{Version: version, Dependencies: deps})
-			if err != nil {
-				return nil, fmt.Errorf("failed to synthesize requirements.yaml: %w", err)
-			}
-			items = append(items, uploadItem{requirementsName, data})
+		// deps is nil when no inline dependencies are set, which marshals to an
+		// empty dependency list.
+		deps, _ := cfg.inlineDependencies()
+		version, _ := cfg.runtimeVersion()
+		data, err := yaml.Marshal(requirementsDoc{Version: version, Dependencies: deps})
+		if err != nil {
+			return nil, fmt.Errorf("failed to synthesize requirements.yaml: %w", err)
 		}
+		items = append(items, uploadItem{requirementsName, data})
 	}
 
 	if len(cfg.Parameters) > 0 {

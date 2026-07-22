@@ -52,9 +52,11 @@ func TestBuildArtifacts_CommandAndConfig(t *testing.T) {
 
 	items, err := buildArtifacts(cfg, path)
 	require.NoError(t, err)
-	assert.Equal(t, []string{trainingConfigName, commandScriptName}, itemNames(items))
+	// requirements.yaml is always uploaded; with no dependencies it is an empty doc.
+	assert.Equal(t, []string{trainingConfigName, commandScriptName, requirementsName}, itemNames(items))
 	assert.Equal(t, minimalConfig, string(items[0].data))
 	assert.Equal(t, "python train.py", string(items[1].data))
+	assert.Equal(t, "dependencies: []\n", string(items[2].data))
 }
 
 func TestBuildArtifacts_InlineRequirementsAndParameters(t *testing.T) {
