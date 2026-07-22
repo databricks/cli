@@ -24,7 +24,7 @@ func RedactSensitiveFields(v any, redacted string) ([]byte, error) {
 func deepCloneRedact(rv reflect.Value, redacted string) reflect.Value {
 	if rv.Kind() == reflect.Pointer {
 		if rv.IsNil() {
-			return reflect.New(rv.Type().Elem())
+			return reflect.Zero(rv.Type())
 		}
 		inner := deepCloneRedact(rv.Elem(), redacted)
 		ptr := reflect.New(inner.Type())
