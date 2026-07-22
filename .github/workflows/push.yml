@@ -137,6 +137,22 @@ jobs:
         with:
           cache-key: test-${{ matrix.deployment }}
 
+      # On pull requests, run only a subset of acceptance subtests on the slower
+      # windows/macOS cells so neither lands on the critical path to merge. Linux
+      # runs the full suite, and so does push-to-main (full coverage on every OS).
+      # The percentages are fixed (not per-commit) and tuned to keep windows/macOS
+      # under the Linux wall-clock time. The seed is the head commit, so a re-run of
+      # the same commit repeats the subset while a new commit reshuffles it.
+      - name: Configure test subset
+        if: ${{ github.event_name == 'pull_request' && matrix.os.name != 'linux' }}
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Windows is the slowest cell, so it runs the smallest subset.
+          SUBSET_PCT: ${{ matrix.os.name == 'windows' && '40' || '75' }}
+        run: |
+          echo "TESTS_SELECT_SUBSET_SEED=$HEAD_SHA" >> "$GITHUB_ENV"
+          echo "TESTS_SELECT_SUBSET_PCT=$SUBSET_PCT" >> "$GITHUB_ENV"
+
       - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
