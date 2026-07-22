@@ -16,7 +16,7 @@ type VectorSearchEndpoint struct {
 	BaseResource
 	vectorsearch.CreateEndpoint
 
-	Permissions []VectorSearchEndpointPermission `json:"permissions,omitempty"`
+	Permissions []Permission `json:"permissions,omitempty"`
 }
 
 func (e *VectorSearchEndpoint) UnmarshalJSON(b []byte) error {
