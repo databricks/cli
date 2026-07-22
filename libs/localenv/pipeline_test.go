@@ -224,7 +224,10 @@ func TestPipelineProvisionsAndValidatesExisting(t *testing.T) {
 	require.NotNil(t, res.Resolved)
 	assert.Equal(t, "3.12", res.Resolved.PythonVersion)
 	assert.Equal(t, "17.2.0", res.Resolved.DBConnectVersion)
-	assert.Equal(t, ".venv", filepath.Base(res.VenvPath))
+	// venvPath is reported relative to the project root (spec §6.1), so it is
+	// exactly ".venv" — not an absolute path under the temp ProjectDir. Asserting
+	// the full value (not just filepath.Base) is what pins the relative contract.
+	assert.Equal(t, ".venv", res.VenvPath)
 	merged, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	assert.Contains(t, string(merged), `"databricks-connect~=17.2.0"`)
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
