@@ -74,8 +74,9 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	}
 }
 
-// makeJobRunRemote maps GetRun into the RunNow-shaped remote, flattening
-// overriding_parameters and the job_parameters list back into RunNow.
+// makeJobRunRemote maps the GetRun response into the RunNow-shaped remote: GET
+// nests the params under overriding_parameters and returns job_parameters as a
+// list, so both are flattened back into RunNow.
 func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 	var overriding jobs.RunParameters
 	if run.OverridingParameters != nil {
@@ -117,8 +118,8 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 }
 
 // DoRead returns the run as GetRun reports it; a 404 lets the planner
-// re-trigger. ignore_remote_changes suppresses drift, so a run is recreated
-// only on a local config change.
+// re-trigger. Root ignore_remote_changes suppresses all remote drift, so a run
+// is recreated only on a local config change.
 func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, error) {
 	runID, err := parseRunID(id)
 	if err != nil {
