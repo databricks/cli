@@ -109,8 +109,10 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 					}
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")
 					if action.ActionType.IsBind() {
+						// Print the full action string (not StringShort) so bind and
+						// bind_and_update are distinguishable in the text plan.
 						entry := plan.Plan[action.ResourceKey]
-						fmt.Fprintf(out, "%s %s (id: %s)\n", action.ActionType.StringShort(), key, entry.BindID)
+						fmt.Fprintf(out, "%s %s (id: %s)\n", action.ActionType, key, entry.BindID)
 					} else {
 						fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
 					}

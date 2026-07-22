@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle plan
-bind clusters.test_cluster (id: [CLUSTER_ID])
+bind_and_update clusters.test_cluster (id: [CLUSTER_ID])
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
 
