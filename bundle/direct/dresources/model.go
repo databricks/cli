@@ -92,17 +92,14 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 		return nil, errors.New("UpdateModel returned no registered_model")
 	}
 
-	// Carry forward model_id from existing state since UpdateModelResponse doesn't include it.
-	//
-	// ModelId lives only on MlflowModelRemote — the state type (*ml.CreateModelRequest)
-	// does not carry it — so entry.PriorState cannot substitute here. In
-	// --plan-mode=local, entry.RemoteState is nil and modelId falls to "". If a
-	// same-run dependent references ${resources.models.foo.model_id} it resolves
-	// to empty in that mode; this is the same limitation as any remote-only
-	// reference field. The next plan (full mode) will refresh via DoRead.
-	var modelId string
-	if old, ok := entry.RemoteState.(*MlflowModelRemote); ok {
-		modelId = old.ModelId
+	// UpdateModelResponse doesn't include model_id. Normally we carry it forward
+	// from entry.RemoteState (populated by the plan-time DoRead). In
+	// --plan-mode=local there was no plan-time read, so return nil here; the
+	// engine's refreshRemoteState will then DoRead and populate the cache with
+	// the correct model_id for post-update reference resolution.
+	old, _ := entry.RemoteState.(*MlflowModelRemote)
+	if old == nil {
+		return nil, nil
 	}
 
 	// Id and PermissionLevel are left empty because ml.Model (the UpdateModel
@@ -122,7 +119,7 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 			UserId:               response.RegisteredModel.UserId,
 			ForceSendFields:      utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "Id", "PermissionLevel"),
 		},
-		ModelId: modelId,
+		ModelId: old.ModelId,
 	}, nil
 }
 

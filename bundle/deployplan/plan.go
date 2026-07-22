@@ -149,26 +149,6 @@ type PlanEntry struct {
 	Changes Changes `json:"changes,omitempty"`
 }
 
-// RemapStater is the subset of dresources.Adapter that RemoteOrPrior needs.
-// Declared here to keep bundle/deployplan free of a dresources import.
-type RemapStater interface {
-	RemapState(remoteState any) (any, error)
-}
-
-// RemoteOrPrior returns state-shaped data suitable for consumers that don't
-// need remote-only fields. It prefers the freshly-remapped RemoteState when
-// available (full mode, or when a reference fetch populated it); otherwise it
-// falls back to PriorState (the last saved state).
-//
-// Returns (nil, nil) only when the resource was never deployed AND no remote
-// was read — i.e. a Create action.
-func (e *PlanEntry) RemoteOrPrior(adapter RemapStater) (any, error) {
-	if e.RemoteState != nil {
-		return adapter.RemapState(e.RemoteState)
-	}
-	return e.PriorState, nil
-}
-
 type DependsOnEntry struct {
 	Node  string `json:"node"`
 	Label string `json:"label,omitempty"`
