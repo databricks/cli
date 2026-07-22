@@ -27,6 +27,7 @@ VERSION_FILE = "version"
 SEMVER_RE = re.compile(r"^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 
 # Non-fragment files allowed to sit alongside fragments at any depth.
+# Note that tagging workflow accepts README.md inside fragments, but we reject it here for clarity.
 SCAFFOLDING = ("README.md", ".gitkeep")
 
 
