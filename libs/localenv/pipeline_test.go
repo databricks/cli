@@ -306,6 +306,44 @@ func TestPipelineExistingBacksUp(t *testing.T) {
 	assert.Equal(t, "pyproject.toml.bak", filepath.Base(res.BackupPath))
 }
 
+func TestPipelineReRunDoesNotRewriteUnchangedPyproject(t *testing.T) {
+	// An idempotent re-run reproduces the merged pyproject.toml byte for byte, so
+	// applyMerge must skip the write rather than advance the file's mtime (which
+	// would spuriously invalidate file watchers and uv.lock freshness checks).
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	newPipe := func() *Pipeline {
+		return &Pipeline{
+			Mode: ModeDefault, ProjectDir: dir,
+			ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+			Flags:   TargetFlags{Serverless: "v4"},
+			Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		}
+	}
+
+	pyproject := filepath.Join(dir, "pyproject.toml")
+	_, err := newPipe().Run(t.Context())
+	require.NoError(t, err)
+	firstContent, err := os.ReadFile(pyproject)
+	require.NoError(t, err)
+	firstInfo, err := os.Stat(pyproject)
+	require.NoError(t, err)
+
+	// A second run computes the same merged output; the file must be left as-is,
+	// content and mtime both unchanged.
+	_, err = newPipe().Run(t.Context())
+	require.NoError(t, err)
+	secondContent, err := os.ReadFile(pyproject)
+	require.NoError(t, err)
+	secondInfo, err := os.Stat(pyproject)
+	require.NoError(t, err)
+
+	assert.Equal(t, string(firstContent), string(secondContent), "content must be unchanged")
+	assert.Equal(t, firstInfo.ModTime(), secondInfo.ModTime(), "unchanged pyproject.toml must not be rewritten")
+}
+
 func TestCopyFilePreservesMode(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		// Windows does not honor Unix permission bits.
