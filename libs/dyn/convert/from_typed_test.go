@@ -974,7 +974,7 @@ func TestFromTypedSensitiveFieldEmpty(t *testing.T) {
 	token2 := nv2.Get("token")
 	if token2.Kind() == dyn.KindString {
 		assert.True(t, token2.IsSensitive(), "empty sensitive string should still be sensitive")
-		assert.Equal(t, "", token2.MustString())
+		assert.Empty(t, token2.MustString())
 	}
 	_ = token // non-pointer form may be KindNil, which is fine
 }
