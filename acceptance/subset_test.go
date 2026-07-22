@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 // TESTS_SELECT_SUBSET_PCT/SEED select a random subset of subtests to run, so a CI
@@ -19,6 +21,7 @@ const (
 
 	// SubsetSeedEnvVar seeds the selection. CI sets it to the HEAD commit hash, so
 	// a new commit reshuffles the subset while a retry of the same commit repeats it.
+	// If unset, a random seed is generated and logged so the run can be reproduced.
 	SubsetSeedEnvVar = "TESTS_SELECT_SUBSET_SEED"
 )
 
@@ -52,10 +55,17 @@ func newSubsetSelector(t *testing.T, overwrite, forcerun bool) subsetSelector {
 		t.Fatalf("Invalid %s=%q, expected an integer 0..100", SubsetPctEnvVar, raw)
 	}
 
+	seed := os.Getenv(SubsetSeedEnvVar)
+	if seed == "" {
+		// Reproduce this run's subset by re-running with the logged seed.
+		seed = uuid.NewString()
+		t.Logf("%s not set, using random seed %q", SubsetSeedEnvVar, seed)
+	}
+
 	return subsetSelector{
 		enabled: true,
 		pct:     pct,
-		seed:    os.Getenv(SubsetSeedEnvVar),
+		seed:    seed,
 	}
 }
 
