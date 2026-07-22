@@ -1,15 +1,7 @@
-# Set up .databrickscfg with two profiles for the same host:
-# one workspace profile and one account profile.
+# Substitute the actual host URL into the checked-in .databrickscfg (two profiles
+# for the same host: one workspace, one account) and databricks.yml.
 envsubst < .databrickscfg > out && mv out .databrickscfg
-
-# Write databricks.yml with the actual host URL.
-cat > databricks.yml << EOF
-bundle:
-  name: multi-profile-auto-select
-
-workspace:
-  host: $DATABRICKS_HOST
-EOF
+envsubst < databricks.yml > out && mv out databricks.yml
 
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 unset DATABRICKS_HOST

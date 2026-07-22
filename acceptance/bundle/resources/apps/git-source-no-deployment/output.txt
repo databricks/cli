@@ -1,0 +1,26 @@
+
+=== Deploy: app created with no_compute; git_source is not deployed until the app starts
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-no-deployment/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Plan is a no-op: git_source drift is skipped while the app has no active deployment
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== git_source is skipped with reason "no active deployment"
+>>> [CLI] bundle plan -o json
+{
+  "git_source": {
+    "action": "skip",
+    "reason": "no active deployment",
+    "old": {
+      "branch": "main"
+    },
+    "new": {
+      "branch": "main"
+    }
+  }
+}

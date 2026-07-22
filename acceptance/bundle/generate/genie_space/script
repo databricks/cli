@@ -1,4 +1,4 @@
-trace $CLI workspace mkdirs /Workspace/test-$UNIQUE_NAME
+trace $CLI workspace mkdirs /Workspace/Users/$CURRENT_USER_NAME/test-$UNIQUE_NAME
 
 # create a genie space to import
 envsubst < genie_space.json.tmpl > genie_space.json

@@ -38,6 +38,10 @@ func makeBundle(t *testing.T, nFiles int) *bundle.Bundle {
 		WorktreeRoot:   root,
 		Config: config.Root{
 			Bundle: config.Bundle{Target: "default"},
+			// The SyncDefaultPath mutator sets this to ["."] during initialize;
+			// set it here since these tests bypass the mutator pipeline. Empty
+			// sync paths select no files.
+			Sync: config.Sync{Paths: []string{"."}},
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					User: &iam.User{UserName: "test@example.test"},

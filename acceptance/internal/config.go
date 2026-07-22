@@ -257,6 +257,22 @@ func validateConfig(t *testing.T, config TestConfig, configPath string) {
 				"Output files must not be ignored.", configPath, pattern)
 		}
 	}
+
+	// Reject EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []. It runs the test once
+	// locally with the variable unset, but on CI (which splits work by
+	// filtering ENVFILTER=DATABRICKS_BUNDLE_ENGINE=<value>) the test has no
+	// engine tag, so checkEnvFilters lets it through on BOTH the direct and
+	// terraform runners, duplicating the run. Use ["direct"] to pin it to a
+	// single CI runner, and unset DATABRICKS_BUNDLE_ENGINE in the script if
+	// the test needs to exercise the default engine.
+	//
+	// selftests intentionally exercise the empty-list mechanic and are
+	// exempt.
+	if vals, ok := config.EnvMatrix["DATABRICKS_BUNDLE_ENGINE"]; ok && len(vals) == 0 && !strings.Contains(configPath, "selftest/") {
+		t.Fatalf("Invalid config %s: EnvMatrix.DATABRICKS_BUNDLE_ENGINE = [] "+
+			"runs on both direct and terraform CI runners. Use "+
+			`EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"] instead`, configPath)
+	}
 }
 
 func DoLoadConfig(t *testing.T, path string) TestConfig {
