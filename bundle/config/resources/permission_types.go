@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
 // Each resource defines its own permission type so that the JSON schema names them distinctly.
@@ -32,4 +33,5 @@ type (
 	ModelServingEndpointPermission PermissionT[serving.ServingEndpointPermissionLevel]
 	PipelinePermission             PermissionT[pipelines.PipelinePermissionLevel]
 	SqlWarehousePermission         PermissionT[sql.WarehousePermissionLevel]
+	VectorSearchEndpointPermission PermissionT[vectorsearch.VectorSearchEndpointPermissionLevel]
 )
