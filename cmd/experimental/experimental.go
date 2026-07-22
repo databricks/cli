@@ -4,6 +4,7 @@ import (
 	aircmd "github.com/databricks/cli/experimental/air/cmd"
 	aitoolscmd "github.com/databricks/cli/experimental/aitools/cmd"
 	postgrescmd "github.com/databricks/cli/experimental/postgres/cmd"
+	previewdatasetscmd "github.com/databricks/cli/experimental/previewdatasets/cmd"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +27,7 @@ development. They may change or be removed in future versions without notice.`,
 	cmd.AddCommand(aitoolscmd.NewAitoolsCmd())
 	cmd.AddCommand(newGenieCmd())
 	cmd.AddCommand(postgrescmd.New())
+	cmd.AddCommand(previewdatasetscmd.New())
 	cmd.AddCommand(newWorkspaceOpenCommand())
 
 	return cmd
