@@ -64,6 +64,13 @@ var EnumFields = map[string][]string{
 
 	"resources.genie_spaces.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 
+	"resources.instance_pools.*.aws_attributes.availability":                {"ON_DEMAND", "SPOT"},
+	"resources.instance_pools.*.azure_attributes.availability":              {"ON_DEMAND_AZURE", "SPOT_AZURE"},
+	"resources.instance_pools.*.disk_spec.disk_type.azure_disk_volume_type": {"PREMIUM_LRS", "STANDARD_LRS"},
+	"resources.instance_pools.*.disk_spec.disk_type.ebs_volume_type":        {"GENERAL_PURPOSE_SSD", "THROUGHPUT_OPTIMIZED_HDD"},
+	"resources.instance_pools.*.gcp_attributes.gcp_availability":            {"ON_DEMAND_GCP", "PREEMPTIBLE_GCP", "PREEMPTIBLE_WITH_FALLBACK_GCP"},
+	"resources.instance_pools.*.permissions[*].level":                       {"CAN_ATTACH_TO", "CAN_MANAGE"},
+
 	"resources.job_runs.*.performance_target": {"PERFORMANCE_OPTIMIZED", "STANDARD"},
 
 	"resources.jobs.*.continuous.pause_status":                                                             {"PAUSED", "UNPAUSED"},
