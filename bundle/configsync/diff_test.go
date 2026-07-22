@@ -273,6 +273,14 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 				"[0].privileges": {Action: deployplan.Update, New: nil, Remote: []any{"SELECT"}},
 			},
 		},
+		// A resource literally named "permissions" is a regular resource, not a
+		// permissions sub-resource, so its changes must be kept (structural
+		// classification via config.GetNodeAndType, not a suffix match).
+		"resources.jobs.permissions": {
+			Changes: deployplan.Changes{
+				"description": {Action: deployplan.Update, New: nil, Remote: "kept"},
+			},
+		},
 	}}
 
 	for _, eng := range []engine.EngineType{engine.EngineDirect, engine.EngineTerraform} {
@@ -288,6 +296,10 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 			job, hasJob := changes["resources.jobs.my_job"]
 			require.True(t, hasJob, "regular resource changes must be kept")
 			assert.Contains(t, job, "description")
+
+			namedPerms, hasNamedPerms := changes["resources.jobs.permissions"]
+			require.True(t, hasNamedPerms, "a resource named permissions must not be skipped")
+			assert.Contains(t, namedPerms, "description")
 		})
 	}
 }

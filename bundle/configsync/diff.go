@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -154,6 +155,20 @@ func OpenDeploymentState(ctx context.Context, b *bundle.Bundle, engine engine.En
 	return deployBundle, nil
 }
 
+// isPermissionsOrGrantsSubResource reports whether a plan resource key is a
+// permissions or grants sub-resource ("resources.<type>.<name>.permissions" /
+// ".grants"). It classifies the key structurally via config.GetNodeAndType,
+// which keys on the path component (index 3), so a resource literally named
+// "permissions" ("resources.jobs.permissions") is not misclassified.
+func isPermissionsOrGrantsSubResource(resourceKey string) bool {
+	path, err := dyn.NewPathFromString(resourceKey)
+	if err != nil {
+		return false
+	}
+	_, nodeType := config.GetNodeAndType(path)
+	return strings.HasSuffix(nodeType, ".permissions") || strings.HasSuffix(nodeType, ".grants")
+}
+
 // ExtractChanges extracts the map of remote-vs-config changes from a deploy
 // plan. engine selects the LocalEdit comparison below.
 func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, error) {
@@ -166,7 +181,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		// to YAML: their fields (e.g. object_id) are server-populated with no source
 		// location, and bundle-level permissions have no per-resource YAML node at all,
 		// so resolving them would fail the whole sync. Skip them instead.
-		if strings.HasSuffix(resourceKey, ".permissions") || strings.HasSuffix(resourceKey, ".grants") {
+		if isPermissionsOrGrantsSubResource(resourceKey) {
 			continue
 		}
 
