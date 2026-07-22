@@ -8,23 +8,6 @@ update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
 # Deploy to bind the resource into state
 trace $CLI bundle deploy --auto-approve
 
-# Try to destroy - should fail because bind blocks reference resources in state
-trace musterr $CLI bundle destroy --auto-approve
-
-# Remove bind block and destroy to clean up
-python3 << 'PYSCRIPT'
-import re
-with open('databricks.yml', 'r') as f:
-    content = f.read()
-
-# Remove the bind block from the target (everything from "bind:" until the next top-level key or EOF)
-content = re.sub(r'\n    bind:.*', '', content, flags=re.DOTALL)
-
-with open('databricks.yml', 'w') as f:
-    f.write(content)
-PYSCRIPT
-
-# Remove .databricks directory that might cache old config
-rm -rf .databricks
-
+# Destroy is allowed even with an active bind block: naming destroy explicitly
+# captures the intent to tear the deployment down.
 trace $CLI bundle destroy --auto-approve

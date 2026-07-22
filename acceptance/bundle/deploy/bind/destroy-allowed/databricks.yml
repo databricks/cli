@@ -1,5 +1,5 @@
 bundle:
-  name: test-bind-destroy-blocked
+  name: test-bind-destroy-allowed
 
 resources:
   jobs:
