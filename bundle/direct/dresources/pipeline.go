@@ -4,6 +4,9 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -221,6 +224,16 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, state *Pipel
 		// the query string. We specify `cascade` in ForceSendFields so the SDK send cascade=false explicitly
 		ForceSendFields: []string{"Cascade"},
 	})
+}
+
+// OverrideChangeDesc forces a state-only Update when cascade_on_destroy changes locally.
+// The field is a delete-time-only, client-side setting absent from PipelineRemote, so its
+// Remote value is always nil. We add this override to force a state-only update.
+func (*ResourcePipeline) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *PipelineRemote) error {
+	if path.String() == "cascade_on_destroy" && !structdiff.IsEqual(change.Old, change.New) {
+		change.Action = deployplan.Update
+	}
+	return nil
 }
 
 // Note, terraform provider either

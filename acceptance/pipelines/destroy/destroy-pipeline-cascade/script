@@ -15,6 +15,13 @@ update_file.py databricks.yml "cascade_on_destroy: true" "cascade_on_destroy: fa
 trace $CLI pipelines deploy
 trace print_requests.py //api/2.0/pipelines
 
-title "Destroy: approval message notes datasets are retained, and delete sends cascade=false"
+title "Unset cascade_on_destroy entirely: expect a state-only update that persists nil to state"
+update_file.py databricks.yml "      cascade_on_destroy: false
+" ""
+trace $CLI pipelines deploy
+# No pipeline API call is expected; the cascade-only change is persisted to state.
+trace print_requests.py //api/2.0/pipelines
+
+title "Destroy: cascade_on_destroy is unset in state, so the delete uses the backend default (no cascade param)"
 trace $CLI pipelines destroy --auto-approve
 trace print_requests.py //api/2.0/pipelines

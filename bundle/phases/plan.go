@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -49,16 +50,14 @@ func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action, engine
 		return true, nil
 	}
 
-	var holder struct {
-		CascadeOnDestroy *bool `json:"cascade_on_destroy"`
-	}
-	if err := json.Unmarshal(entry.State, &holder); err != nil {
+	var state dresources.PipelineState
+	if err := json.Unmarshal(entry.State, &state); err != nil {
 		return false, fmt.Errorf("parsing persisted state for %s: %w", action.ResourceKey, err)
 	}
-	if holder.CascadeOnDestroy == nil {
+	if state.CascadeOnDestroy == nil {
 		return true, nil
 	}
-	return *holder.CascadeOnDestroy, nil
+	return *state.CascadeOnDestroy, nil
 }
 
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.
