@@ -1,0 +1,19 @@
+
+>>> [CLI] bundle validate
+Error: invalid_keywords entry must not be empty
+  at resources.model_serving_endpoints.endpoint1.ai_gateway.guardrails.input.invalid_keywords[1]
+  in databricks.yml:14:17
+
+Error: invalid_keywords entry must not be empty
+  at resources.model_serving_endpoints.endpoint1.ai_gateway.guardrails.output.invalid_keywords[0]
+  in databricks.yml:18:17
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 2 errors
+
+Exit code: 1

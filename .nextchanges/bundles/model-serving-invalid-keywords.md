@@ -1,0 +1,1 @@
+* `bundle validate` now reports a clear error when a model serving endpoint's AI gateway `invalid_keywords` list contains an empty entry, instead of letting the Terraform provider panic during deploy.

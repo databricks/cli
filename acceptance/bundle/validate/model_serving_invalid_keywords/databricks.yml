@@ -1,0 +1,22 @@
+bundle:
+  name: test-bundle
+
+resources:
+  model_serving_endpoints:
+    endpoint1:
+      name: test-endpoint
+      ai_gateway:
+        guardrails:
+          input:
+            invalid_keywords:
+              - secret
+              # Empty entry crashes the Terraform provider during marshaling.
+              - ""
+          output:
+            invalid_keywords:
+              # Empty entry crashes the Terraform provider during marshaling.
+              - ""
+      config:
+        served_entities:
+          - entity_name: my-entity
+            entity_version: "2"

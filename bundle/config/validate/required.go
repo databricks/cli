@@ -174,6 +174,48 @@ func warnForMissingGrantPrincipals(ctx context.Context, b *bundle.Bundle) diag.D
 	return diags
 }
 
+// errorForEmptyGuardrailKeywords errors for any empty entry in a model serving
+// endpoint's AI gateway guardrail invalid_keywords list. An empty (or null) element
+// makes the Terraform provider panic while marshaling the config
+// ("invalid_keywords[<nil>] is not a string") before the API call is made, so no
+// endpoint is created. An empty keyword is also meaningless for keyword matching, so
+// reject it early with a clear location instead of leaking the provider crash.
+func errorForEmptyGuardrailKeywords(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
+	_, err := dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(
+			dyn.Key("resources"),
+			dyn.Key("model_serving_endpoints"),
+			dyn.AnyKey(),
+			dyn.Key("ai_gateway"),
+			dyn.Key("guardrails"),
+			dyn.AnyKey(),
+			dyn.Key("invalid_keywords"),
+			dyn.AnyIndex(),
+		),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			if isMissingOrEmptyString(v) {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "invalid_keywords entry must not be empty",
+					Locations: v.Locations(),
+					Paths:     []dyn.Path{slices.Clone(p)},
+				})
+			}
+			return v, nil
+		},
+	)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	sortDiagnostics(diags)
+
+	return diags
+}
+
 // isMissingOrEmptyString reports whether v is unset, null, or an empty string.
 func isMissingOrEmptyString(v dyn.Value) bool {
 	switch v.Kind() {
@@ -188,6 +230,7 @@ func isMissingOrEmptyString(v dyn.Value) bool {
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := errorForMissingFields(ctx, b)
+	diags = diags.Extend(errorForEmptyGuardrailKeywords(ctx, b))
 	if diags.HasError() {
 		return diags
 	}
