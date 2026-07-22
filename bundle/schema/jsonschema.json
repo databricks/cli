@@ -5868,6 +5868,10 @@
                       "description": "Availability type used for the spot nodes.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.InstancePoolAzureAttributesAvailability"
                     },
+                    "capacity_reservation_group": {
+                      "description": "[Public Preview] The Azure capacity reservation group resource ID to use for launching VMs in this pool.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nNOTE: Omitting this field will clear any existing configured capacity reservation group on the pool.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
+                      "$ref": "#/$defs/string"
+                    },
                     "spot_bid_max_price": {
                       "description": "With variable pricing, you have option to set a max price, in US dollars (USD)\nFor example, the value 2 would be a max price of $2.00 USD per hour.\nIf you set the max price to be -1, the VM won't be evicted based on price.\nThe price for the VM will be the current price for spot or the price for a standard VM,\nwhich ever is less, as long as there is capacity and quota available.",
                       "$ref": "#/$defs/float64"

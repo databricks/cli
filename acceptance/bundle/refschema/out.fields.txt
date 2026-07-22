@@ -768,6 +768,7 @@ resources.instance_pools.*.aws_attributes.spot_bid_price_percent	int	ALL
 resources.instance_pools.*.aws_attributes.zone_id	string	ALL
 resources.instance_pools.*.azure_attributes	*compute.InstancePoolAzureAttributes	ALL
 resources.instance_pools.*.azure_attributes.availability	compute.InstancePoolAzureAttributesAvailability	ALL
+resources.instance_pools.*.azure_attributes.capacity_reservation_group	string	ALL
 resources.instance_pools.*.azure_attributes.spot_bid_max_price	float64	ALL
 resources.instance_pools.*.custom_tags	map[string]string	ALL
 resources.instance_pools.*.custom_tags.*	string	ALL
