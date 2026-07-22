@@ -314,7 +314,7 @@ class Generator:
     def gen_scalar(self, schema, name):
         t = schema.get("type")
         if t == "boolean":
-            # destroy_recreate invariant requires destroy to succeed.
+            # The invariant cleanup traps destroy the bundle, which must succeed.
             if name == "prevent_destroy":
                 return False
             return self.rng.choice([True, False])
