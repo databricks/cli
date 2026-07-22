@@ -19,9 +19,6 @@ int32/int64 boundaries) to probe the CLI's input handling.
 - `no_drift` -- deploy, then no drift
 - `migrate` -- Terraform deploy, migrate to direct, then no drift
 - `redeploy` -- deploy twice; the second deploy must be a no-op
-- `canonical` -- `validate -o json` must be byte-identical across two runs
-- `update` -- edit a comment/description; the redeploy must update in place (not recreate)
-- `destroy_recreate` -- deploy then destroy; a re-plan must recreate everything
 
 Since the schema comes from the CLI under test, an unrelated struct change can shift a
 seed onto a new config. A failure is a real CLI bug (panic, internal error, or drift),

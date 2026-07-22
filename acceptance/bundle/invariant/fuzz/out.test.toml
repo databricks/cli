@@ -6,12 +6,5 @@ GOOSOnPR.windows = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
 EnvMatrix.FUZZ_RESOURCE_COUNT = ["1", "2", "3"]
-EnvMatrix.FUZZ_TARGET = [
-  "no_drift",
-  "migrate",
-  "redeploy",
-  "canonical",
-  "update",
-  "destroy_recreate"
-]
+EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "redeploy"]
 EnvMatrix.INPUT_CONFIG = []

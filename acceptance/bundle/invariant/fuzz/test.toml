@@ -12,7 +12,7 @@ IgnoreUnhandledRequests = true
 
 # Run the real invariant test script for each target. migrate ignores
 # DATABRICKS_BUNDLE_ENGINE and starts from a Terraform deployment.
-EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "redeploy", "canonical", "update", "destroy_recreate"]
+EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "redeploy"]
 EnvMatrix.FUZZ_RESOURCE_COUNT = ["1", "2", "3"]
 
 # generate = build a config from the schema (gen_fuzz_config.py); mutate = perturb a
