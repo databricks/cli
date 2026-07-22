@@ -1,0 +1,57 @@
+
+=== table output
+
+>>> [CLI] experimental preview-datasets main.default.people
+id  name
+--  -----
+1   alice
+2   bob
+
+2 rows
+
+=== json output
+
+>>> [CLI] experimental preview-datasets main.default.people --output json
+[
+  {
+    "id": "1",
+    "name": "alice"
+  },
+  {
+    "id": "2",
+    "name": "bob"
+  }
+]
+
+=== invalid table name
+
+>>> [CLI] experimental preview-datasets people
+Error: invalid table name "people": expected catalog.schema.table or schema.table
+
+=== wire SQL pins quoting and default limit
+
+>>> print_requests.py //api/2.0/sql/statements
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/statements",
+  "body": {
+    "disposition": "INLINE",
+    "format": "JSON_ARRAY",
+    "on_wait_timeout": "CONTINUE",
+    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 100",
+    "wait_timeout": "10s",
+    "warehouse_id": "wh-test"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/statements",
+  "body": {
+    "disposition": "INLINE",
+    "format": "JSON_ARRAY",
+    "on_wait_timeout": "CONTINUE",
+    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 100",
+    "wait_timeout": "10s",
+    "warehouse_id": "wh-test"
+  }
+}
