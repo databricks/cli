@@ -137,6 +137,11 @@ APP_SOURCE_CODE_PATH = "./app"
 # existence/extension check a bare token would fail.
 NOTEBOOK_PATH = "/Shared/notebook"
 
+# parent_path is a workspace folder; a dangerous value is rejected by the backend and, on
+# read, the CLI re-adds the /Workspace prefix, so a mismatch plans a spurious recreate. Pin
+# it to a valid folder so the fuzzer exercises deploy instead.
+PARENT_PATH = "/Workspace/Shared"
+
 # Fields declared as string in the schema but parsed as google.protobuf.Duration at
 # config load (e.g. suspend_timeout_duration, ttl); a bare token fails to parse.
 DURATION_VALUE = "3600s"
@@ -339,6 +344,8 @@ class Generator:
             return NOTEBOOK_PATH
         if name == "source_code_path":
             return APP_SOURCE_CODE_PATH
+        if name == "parent_path":
+            return PARENT_PATH
         if name == "file_path":
             return FILE_PATH_BY_RESOURCE.get(self.rtype, self.token())
         if name.endswith("_duration") or name == "ttl":
