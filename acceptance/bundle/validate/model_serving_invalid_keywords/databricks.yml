@@ -6,15 +6,14 @@ resources:
     endpoint1:
       name: test-endpoint
       ai_gateway:
+        # Empty invalid_keywords entries crash the Terraform provider on deploy.
         guardrails:
           input:
             invalid_keywords:
               - secret
-              # Empty entry crashes the Terraform provider during marshaling.
               - ""
           output:
             invalid_keywords:
-              # Empty entry crashes the Terraform provider during marshaling.
               - ""
       config:
         served_entities:

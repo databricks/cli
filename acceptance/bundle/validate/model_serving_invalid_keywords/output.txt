@@ -6,7 +6,7 @@ Error: invalid_keywords entry must not be empty
 
 Error: invalid_keywords entry must not be empty
   at resources.model_serving_endpoints.endpoint1.ai_gateway.guardrails.output.invalid_keywords[0]
-  in databricks.yml:18:17
+  in databricks.yml:17:17
 
 Name: test-bundle
 Target: default

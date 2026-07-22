@@ -174,12 +174,9 @@ func warnForMissingGrantPrincipals(ctx context.Context, b *bundle.Bundle) diag.D
 	return diags
 }
 
-// errorForEmptyGuardrailKeywords errors for any empty entry in a model serving
-// endpoint's AI gateway guardrail invalid_keywords list. An empty (or null) element
-// makes the Terraform provider panic while marshaling the config
-// ("invalid_keywords[<nil>] is not a string") before the API call is made, so no
-// endpoint is created. An empty keyword is also meaningless for keyword matching, so
-// reject it early with a clear location instead of leaking the provider crash.
+// errorForEmptyGuardrailKeywords errors for empty entries in a model serving guardrail
+// invalid_keywords list. An empty (or null) entry makes the Terraform provider panic
+// ("invalid_keywords[<nil>] is not a string") while marshaling, before the API call.
 func errorForEmptyGuardrailKeywords(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
