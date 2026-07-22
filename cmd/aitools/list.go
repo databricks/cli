@@ -75,16 +75,29 @@ type listOutput struct {
 	Agents  []agentEntry            `json:"agents,omitempty"`
 }
 
-// agentEntry reports per-agent plugin state for `list`. It mirrors skillEntry:
-// Installed maps scope -> the plugin recorded in that scope, so a stale scoped
-// install stays visible next to an up-to-date one. Managed says whether the CLI
-// installs and tracks the plugin. Up-to-date-ness is derived by comparing each
-// Installed version against the top-level release, exactly as the skills view
-// does, so there is no precomputed cross-scope status to keep in sync.
+// agentEntry reports per-agent state for `list`. The JSON output carries an
+// entry for every supported agent in the registry so the VSCode extension can
+// render the full set, not just the ones with a recorded install; the text view
+// keeps its original "Plugin installs:" section (managed agents with a recorded
+// install only), so the extra fields here are additive to the JSON contract.
+//
+// Detected is the CLI's own presence verdict for the agent (Agent.IsPreselected):
+// it folds the cheap binary-on-PATH and config-dir-on-disk signals through the
+// agent-type-specific rules the install picker uses, so JSON consumers get the
+// same answer the CLI would act on without re-implementing that logic. Managed
+// says whether the CLI can install and track a databricks plugin for the agent.
+//
+// Installed maps CLI scope -> the plugin the CLI recorded in that scope, so a
+// stale scoped install stays visible next to an up-to-date one, and
+// up-to-date-ness is derived by comparing each version against the top-level
+// release exactly as the skills view does. It is always present (empty when
+// nothing is recorded), matching the skills shape.
 type agentEntry struct {
-	Name      string                `json:"name"`
-	Managed   bool                  `json:"managed"`
-	Installed map[string]pluginInfo `json:"installed,omitempty"`
+	Name        string                `json:"name"`
+	DisplayName string                `json:"display_name"`
+	Managed     bool                  `json:"managed"`
+	Detected    bool                  `json:"detected"`
+	Installed   map[string]pluginInfo `json:"installed"`
 }
 
 // pluginInfo is the per-scope plugin record surfaced in list output.
@@ -194,32 +207,38 @@ func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
 	if projectState != nil {
 		states[installer.ScopeProject] = projectState
 	}
-	out.Agents = buildAgentEntries(states)
+	out.Agents = buildAgentEntries(ctx, states)
 
 	return out, nil
 }
 
-// buildAgentEntries reports per-agent plugin state: each plugin agent with a
-// recorded install (its version per scope). states maps scope -> install state
-// and must contain only non-nil states; the caller filters scopes it did not
-// load. Status across scopes is left for the renderer (and JSON consumers) to
-// derive from the per-scope versions, so no cross-scope record is merged away here.
-func buildAgentEntries(states map[string]*installer.InstallState) []agentEntry {
-	var entries []agentEntry
+// buildAgentEntries reports state for every supported agent in the registry:
+// detection (binary on PATH and config dir on disk), whether the CLI can manage
+// a databricks plugin for it, and the per-scope install recorded by the CLI.
+// states maps CLI scope -> install state and must contain only non-nil states;
+// the caller filters scopes it did not load. Status across scopes is left for
+// the renderer (and JSON consumers) to derive from the per-scope versions, so no
+// cross-scope record is merged away here.
+func buildAgentEntries(ctx context.Context, states map[string]*installer.InstallState) []agentEntry {
+	entries := make([]agentEntry, 0, len(agents.Registry))
 	for _, a := range agents.Registry {
-		if a.Plugin == nil {
-			continue
+		entry := agentEntry{
+			Name:        a.Name,
+			DisplayName: a.DisplayName,
+			Managed:     a.Plugin != nil,
+			Detected:    a.IsPreselected(ctx),
 		}
 
-		installed := map[string]pluginInfo{}
+		// Always emit an installed map, empty when nothing is recorded, so the
+		// JSON shape matches skillEntry ("installed": {}) rather than omitting it.
+		entry.Installed = map[string]pluginInfo{}
 		for scope, st := range states {
 			if rec, ok := st.Plugins[a.Name]; ok {
-				installed[scope] = pluginInfo{Version: rec.Version, NativeScope: rec.Scope}
+				entry.Installed[scope] = pluginInfo{Version: rec.Version, NativeScope: rec.Scope}
 			}
 		}
-		if len(installed) > 0 {
-			entries = append(entries, agentEntry{Name: a.Name, Managed: true, Installed: installed})
-		}
+
+		entries = append(entries, entry)
 	}
 	return entries
 }
@@ -266,13 +285,23 @@ func renderListText(ctx context.Context, out listOutput, scope string) {
 		}
 	}
 
-	if len(out.Agents) > 0 {
+	// The text view keeps its original "Plugin installs:" section: only managed
+	// agents with a recorded install are shown here. The richer per-agent
+	// detection state (every registry agent) is JSON-only, for the extension.
+	var pluginInstalls []agentEntry
+	for _, a := range out.Agents {
+		if a.Managed && len(a.Installed) > 0 {
+			pluginInstalls = append(pluginInstalls, a)
+		}
+	}
+
+	if len(pluginInstalls) > 0 {
 		cmdio.LogString(ctx, "Plugin installs:")
 		cmdio.LogString(ctx, "")
 		var ab strings.Builder
 		atw := tabwriter.NewWriter(&ab, 0, 4, 2, ' ', 0)
 		fmt.Fprintln(atw, "  AGENT\tSTATUS")
-		for _, a := range out.Agents {
+		for _, a := range pluginInstalls {
 			fmt.Fprintf(atw, "  %s\t%s\n", agentDisplayName(a.Name), agentStatusLabel(a, out.Release))
 		}
 		atw.Flush()
