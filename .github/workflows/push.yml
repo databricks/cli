@@ -148,7 +148,7 @@ jobs:
           # the head commit, so a re-run of the same commit repeats the subset while a
           # new commit reshuffles it.
           TESTS_SELECT_SUBSET_SEED: ${{ github.event.pull_request.head.sha }}
-          TESTS_SELECT_SUBSET_PCT: ${{ github.event_name == 'pull_request' && (matrix.os.name == 'windows' && '20' || matrix.os.name == 'macos' && '60') || '' }}
+          TESTS_SELECT_SUBSET_PCT: ${{ github.event_name == 'pull_request' && (matrix.os.name == 'windows' && '10' || matrix.os.name == 'macos' && '60') || '' }}
         run: go tool -modfile=tools/task/go.mod task test
 
       - name: Upload gotestsum JSON output

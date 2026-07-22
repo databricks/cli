@@ -436,18 +436,30 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	}
 
 	skipLocalMode := os.Getenv(SkipLocalEnvVar)
-	// changedTests maps test dir to extra env filters to apply for that dir.
-	// nil value means all variants run; a non-nil slice restricts to matching variants.
-	var changedTests map[string][]string
+	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun)
+
 	switch skipLocalMode {
-	case "", SkipLocalAll:
-	case SkipLocalWithChanged:
-		changedTests = selectChangedLocalTests(testDirsSet)
+	case "", SkipLocalAll, SkipLocalWithChanged:
 	default:
 		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, skipLocalMode, SkipLocalAll, SkipLocalWithChanged)
 	}
 
-	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun, testDirsSet)
+	// Both SkipLocalWithChanged and the subset selector keep added/modified tests, so
+	// detect them at most once. The subset selector keeps them regardless of the
+	// percentage; SkipLocalWithChanged additionally uses changedTests below to restrict
+	// re-enabled invariant dirs to their changed variants.
+	var changed map[string][]string
+	if skipLocalMode == SkipLocalWithChanged || subset.enabled {
+		changed = selectChangedLocalTests(testDirsSet)
+	}
+	subset.changed = changed
+
+	// changedTests maps test dir to extra env filters to apply for that dir.
+	// nil value means all variants run; a non-nil slice restricts to matching variants.
+	var changedTests map[string][]string
+	if skipLocalMode == SkipLocalWithChanged {
+		changedTests = changed
+	}
 
 	if singleTest != "" {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {

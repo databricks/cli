@@ -25,8 +25,8 @@ const (
 // subsetSelector decides, per subtest, whether it runs under TESTS_SELECT_SUBSET_PCT.
 // A subtest runs if it is an added/modified test on this branch (always kept, reusing
 // the same change detection as SkipLocalWithChanged), or if its seeded hash falls
-// under the percentage. Added/modified tests thus count against the percentage only in
-// the sense that they occupy the run; they are never dropped by it.
+// under the percentage. The decision is independent per subtest, so added/modified
+// tests run on top of the hash-selected subset rather than displacing anything.
 type subsetSelector struct {
 	enabled bool
 	pct     int
@@ -39,9 +39,9 @@ type subsetSelector struct {
 
 // newSubsetSelector reads the subset env vars. Subsetting is disabled in update mode
 // and under -forcerun so that every output is regenerated and forced runs are honored.
-// When enabled, added/modified tests are detected once (reusing the change detection
-// behind SkipLocalWithChanged) so they are always kept.
-func newSubsetSelector(t *testing.T, overwrite, forcerun bool, testDirs map[string]bool) subsetSelector {
+// The caller assigns .changed (the added/modified tests to always keep) so that the
+// change detection is shared with SkipLocalWithChanged and runs at most once.
+func newSubsetSelector(t *testing.T, overwrite, forcerun bool) subsetSelector {
 	raw := os.Getenv(SubsetPctEnvVar)
 	if raw == "" || overwrite || forcerun {
 		return subsetSelector{}
@@ -56,7 +56,6 @@ func newSubsetSelector(t *testing.T, overwrite, forcerun bool, testDirs map[stri
 		enabled: true,
 		pct:     pct,
 		seed:    os.Getenv(SubsetSeedEnvVar),
-		changed: selectChangedLocalTests(testDirs),
 	}
 }
 
