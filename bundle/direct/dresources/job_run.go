@@ -16,10 +16,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// jobRunWaitTimeout bounds how long WaitAfterCreate waits for a run to reach a
-// terminal state. Large on purpose so a long but legitimate run (migration,
-// training) doesn't fail the deploy, while an unattended (CI) deploy still can't
-// hang forever. Matches `bundle run`'s budget (jobRunTimeout in bundle/run/job.go).
+// jobRunWaitTimeout caps how long WaitAfterCreate waits for a terminal state:
+// large enough for a legitimate long run, but bounded so a CI deploy can't hang
+// forever. Matches `bundle run` (jobRunTimeout in bundle/run/job.go).
 const jobRunWaitTimeout = 24 * time.Hour
 
 // JobRunState is what we persist for a triggered run: the RunNow request.
@@ -144,8 +143,7 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 	if err != nil {
 		return "", nil, err
 	}
-	// Copy so the token reaches the API but never lands in state (keeps state
-	// token-free and plans clean).
+	// Set the token on a copy so it reaches the API but never lands in state.
 	req := config.RunNow
 	req.IdempotencyToken = token
 
@@ -163,19 +161,16 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	if err != nil {
 		return nil, err
 	}
-	// The wait polls GetRun; surface the run's UI link on the first poll that
-	// reports one so an otherwise-silent wait (up to jobRunWaitTimeout) doesn't
-	// look hung. TERMINATED/SKIPPED succeed even with a FAILED/TIMEDOUT/CANCELED
-	// result_state (surfaced as state, not a deploy failure); only INTERNAL_ERROR
-	// fails the deploy.
+	// Log the run's UI link on the first poll: the wait can last up to
+	// jobRunWaitTimeout, so a silent deploy would look hung. TERMINATED/SKIPPED
+	// pass even with a FAILED result_state; only INTERNAL_ERROR fails the deploy.
 	logged := false
 	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, jobRunWaitTimeout, func(run *jobs.Run) {
 		if logged || run.RunPageUrl == "" {
 			return
 		}
 		logged = true
-		// A deploy always has cmdIO installed (root command's PersistentPreRunE),
-		// but the direct-engine unit harness calls this without one, so guard the panic.
+		// The direct-engine unit harness runs without cmdIO, so guard LogString.
 		if cmdio.HasIO(ctx) {
 			cmdio.LogString(ctx, "Waiting for job run to complete: "+run.RunPageUrl)
 		}
@@ -189,9 +184,8 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 // DoUpdate is intentionally not implemented: a run can't be modified in place,
 // so any change recreates it (a fresh RunNow; the prior run is left in place).
 
-// DoDelete is a noop: a run is an immutable historical record, so destroy and
-// recreate leave it in place. Dedup relies on the run id in state and the
-// idempotency_token, so deleting the run would only tombstone its token and
+// DoDelete is a noop: a run is immutable history, so destroy/recreate leave it
+// in place. Deleting would tombstone its idempotency_token (see JobsRunNow) and
 // break re-running the same config.
 func (*ResourceJobRun) DoDelete(_ context.Context, _ string, _ *JobRunState) error {
 	return nil
@@ -205,9 +199,9 @@ func parseRunID(id string) (int64, error) {
 	return result, nil
 }
 
-// idempotencyToken derives a stable token from the desired state so a retried
-// run-now dedupes to the existing run instead of starting a duplicate.
-// Hex SHA-256 (64 chars, the Jobs API max), computed with idempotency_token cleared.
+// idempotencyToken hashes the desired state into a stable token so a retried
+// run-now dedupes to the existing run instead of duplicating it. Hex SHA-256
+// (64 chars, the Jobs API max), computed with idempotency_token cleared.
 func idempotencyToken(state *JobRunState) (string, error) {
 	toHash := *state
 	toHash.IdempotencyToken = ""
