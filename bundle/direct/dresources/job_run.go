@@ -145,9 +145,11 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 	return makeJobRunRemote(run), nil
 }
 
-// RemapState extracts the embedded RunNow as the state used for diffing.
+// RemapState extracts the embedded RunNow as the state used for diffing. Rerun
+// is always "" here (bundle-only, never in remote); root ignore_remote_changes
+// suppresses the drift against the user's value in state.
 func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
-	return &JobRunState{RunNow: remote.RunNow}
+	return &JobRunState{RunNow: remote.RunNow, Rerun: remote.Rerun}
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
