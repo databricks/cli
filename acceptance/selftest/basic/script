@@ -36,3 +36,6 @@ trace $CLI --version
 touch ignored_file.txt
 mkdir ignored_dir
 touch ignored_dir/hello.txt
+
+printf "\n=== TEMP: intentional divergence to verify change detection selects this test\n"
+echo "this line is not in output.txt and must fail the golden comparison"
