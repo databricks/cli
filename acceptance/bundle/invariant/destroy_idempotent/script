@@ -59,7 +59,10 @@ mv .databricks.backup .databricks
 
 # Recreate the workspace root path deleted by destroy1 so destroy2 proceeds
 # past the "no active deployment" check and actually re-runs resource deletions.
-$CLI workspace mkdirs "$ROOT_PATH" &> LOG.mkdirs
+# MSYS_NO_PATHCONV=1 stops Git Bash on Windows from rewriting the leading-slash
+# workspace path into C:/Program Files/Git/...; it is scoped to this command so
+# the Python helpers (which need their own paths converted) are unaffected.
+MSYS_NO_PATHCONV=1 $CLI workspace mkdirs "$ROOT_PATH" &> LOG.mkdirs
 cat LOG.mkdirs | contains.py '!panic' '!internal error' > /dev/null
 
 trace $CLI bundle destroy --auto-approve &> LOG.destroy2
