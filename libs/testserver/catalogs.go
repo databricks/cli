@@ -30,21 +30,15 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		StorageRoot:  createRequest.StorageRoot,
 		ProviderName: createRequest.ProviderName,
 		ShareName:    createRequest.ShareName,
-		// Round-trip these so a re-read matches the deployed config: connection_name is
-		// recreate_on_changes (immutable), so dropping it re-planned as a perpetual
-		// recreate, and managed_encryption_settings showed as drift.
-		ConnectionName:            createRequest.ConnectionName,
-		ManagedEncryptionSettings: createRequest.ManagedEncryptionSettings,
-		CustomMaxRetentionHours:   createRequest.CustomMaxRetentionHours,
-		Options:                   createRequest.Options,
-		Properties:                createRequest.Properties,
-		FullName:                  createRequest.Name,
-		CreatedAt:                 nowMilli(),
-		CreatedBy:                 s.CurrentUser().UserName,
-		UpdatedBy:                 s.CurrentUser().UserName,
-		MetastoreId:               nextUUID(),
-		Owner:                     s.CurrentUser().UserName,
-		CatalogType:               catalog.CatalogTypeManagedCatalog,
+		Options:      createRequest.Options,
+		Properties:   createRequest.Properties,
+		FullName:     createRequest.Name,
+		CreatedAt:    nowMilli(),
+		CreatedBy:    s.CurrentUser().UserName,
+		UpdatedBy:    s.CurrentUser().UserName,
+		MetastoreId:  nextUUID(),
+		Owner:        s.CurrentUser().UserName,
+		CatalogType:  catalog.CatalogTypeManagedCatalog,
 	}
 	catalogInfo.UpdatedAt = catalogInfo.CreatedAt
 	if catalogInfo.Properties == nil && createRequest.Name == catalogNameManagedDefaults {
