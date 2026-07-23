@@ -55,7 +55,11 @@ def mutate_base(seed):
     with open(path) as f:
         rendered = substitute_variables(f.read())
     config = load_yaml(rendered)
-    return to_yaml(mutate(config, seed))
+    # The schema lets mutate inject valid optional fields, not just perturb existing ones.
+    with open(os.environ["FUZZ_SCHEMA"]) as f:
+        schema = json.load(f)
+    unique = f"{os.environ['UNIQUE_NAME']}-{seed}"
+    return to_yaml(mutate(config, seed, schema=schema, unique=unique))
 
 
 def main():
