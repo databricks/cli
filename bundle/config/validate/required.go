@@ -144,10 +144,13 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	return diags
 }
 
-// warnForMissingGrantPrincipals warns for any grant that is missing a principal.
+// errorForMissingGrantPrincipals errors for any grant that is missing a principal.
 // grants[*].principal is optional in the SDK (json:"principal,omitempty") but the
-// backend requires it. Grants exist on every securable, so match any resource type.
-func warnForMissingGrantPrincipals(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+// backend rejects a grant without one (400 INVALID_PARAMETER_VALUE). On the direct
+// engine the securable is created before grants are applied, so letting the deploy
+// start leaves a partially-applied deployment; fail validation instead. Grants exist
+// on every securable, so match any resource type.
+func errorForMissingGrantPrincipals(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	_, err := dyn.MapByPattern(
@@ -156,7 +159,7 @@ func warnForMissingGrantPrincipals(ctx context.Context, b *bundle.Bundle) diag.D
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			if isMissingOrEmptyString(v.Get("principal")) {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Warning,
+					Severity:  diag.Error,
 					Summary:   "grant principal is required",
 					Locations: v.Locations(),
 					Paths:     []dyn.Path{slices.Clone(p)},
@@ -188,10 +191,10 @@ func isMissingOrEmptyString(v dyn.Value) bool {
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := errorForMissingFields(ctx, b)
+	diags = diags.Extend(errorForMissingGrantPrincipals(ctx, b))
 	if diags.HasError() {
 		return diags
 	}
 	diags = diags.Extend(warnForMissingFields(ctx, b))
-	diags = diags.Extend(warnForMissingGrantPrincipals(ctx, b))
 	return diags
 }
