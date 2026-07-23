@@ -140,6 +140,15 @@ jobs:
       - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
+          # On pull requests, run only a subset of acceptance subtests on the slower
+          # windows/macOS cells so neither lands on the critical path to merge. An
+          # empty percentage disables subsetting, so Linux PRs and push-to-main run
+          # the full suite (full coverage on every OS). The percentages are fixed and
+          # tuned to keep windows/macOS under the Linux wall-clock time. The seed is
+          # the head commit, so a re-run of the same commit repeats the subset while a
+          # new commit reshuffles it.
+          TESTS_SELECT_SUBSET_SEED: ${{ github.event.pull_request.head.sha }}
+          TESTS_SELECT_SUBSET_PCT: ${{ github.event_name == 'pull_request' && (matrix.os.name == 'windows' && '10' || matrix.os.name == 'macos' && '60') || '' }}
         run: go tool -modfile=tools/task/go.mod task test
 
       - name: Upload gotestsum JSON output

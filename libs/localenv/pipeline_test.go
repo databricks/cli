@@ -19,7 +19,7 @@ type fakePM struct{ py, dbc string }
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
 func (fakePM) EnsurePython(context.Context, string) error      { return nil }
-func (fakePM) Provision(context.Context, string) error         { return nil }
+func (fakePM) Provision(context.Context, string, string) error { return nil }
 func (fakePM) PostProvision(context.Context, string) error     { return nil }
 func (f fakePM) Validate(context.Context, string) (string, string, error) {
 	return f.py, f.dbc, nil
@@ -39,7 +39,7 @@ func (noProvisionPM) EnsurePython(context.Context, string) error {
 	return errors.New("EnsurePython must not be called under --dry-run")
 }
 
-func (noProvisionPM) Provision(context.Context, string) error {
+func (noProvisionPM) Provision(context.Context, string, string) error {
 	return errors.New("Provision must not be called under --dry-run")
 }
 
@@ -224,7 +224,10 @@ func TestPipelineProvisionsAndValidatesExisting(t *testing.T) {
 	require.NotNil(t, res.Resolved)
 	assert.Equal(t, "3.12", res.Resolved.PythonVersion)
 	assert.Equal(t, "17.2.0", res.Resolved.DBConnectVersion)
-	assert.Equal(t, ".venv", filepath.Base(res.VenvPath))
+	// venvPath is reported relative to the project root (spec §6.1), so it is
+	// exactly ".venv" — not an absolute path under the temp ProjectDir. Asserting
+	// the full value (not just filepath.Base) is what pins the relative contract.
+	assert.Equal(t, ".venv", res.VenvPath)
 	merged, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	assert.Contains(t, string(merged), `"databricks-connect~=17.2.0"`)
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
@@ -301,6 +304,44 @@ func TestPipelineExistingBacksUp(t *testing.T) {
 	assert.True(t, res.OK)
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 	assert.Equal(t, "pyproject.toml.bak", filepath.Base(res.BackupPath))
+}
+
+func TestPipelineReRunDoesNotRewriteUnchangedPyproject(t *testing.T) {
+	// An idempotent re-run reproduces the merged pyproject.toml byte for byte, so
+	// applyMerge must skip the write rather than advance the file's mtime (which
+	// would spuriously invalidate file watchers and uv.lock freshness checks).
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	newPipe := func() *Pipeline {
+		return &Pipeline{
+			Mode: ModeDefault, ProjectDir: dir,
+			ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+			Flags:   TargetFlags{Serverless: "v4"},
+			Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		}
+	}
+
+	pyproject := filepath.Join(dir, "pyproject.toml")
+	_, err := newPipe().Run(t.Context())
+	require.NoError(t, err)
+	firstContent, err := os.ReadFile(pyproject)
+	require.NoError(t, err)
+	firstInfo, err := os.Stat(pyproject)
+	require.NoError(t, err)
+
+	// A second run computes the same merged output; the file must be left as-is,
+	// content and mtime both unchanged.
+	_, err = newPipe().Run(t.Context())
+	require.NoError(t, err)
+	secondContent, err := os.ReadFile(pyproject)
+	require.NoError(t, err)
+	secondInfo, err := os.Stat(pyproject)
+	require.NoError(t, err)
+
+	assert.Equal(t, string(firstContent), string(secondContent), "content must be unchanged")
+	assert.Equal(t, firstInfo.ModTime(), secondInfo.ModTime(), "unchanged pyproject.toml must not be rewritten")
 }
 
 func TestCopyFilePreservesMode(t *testing.T) {

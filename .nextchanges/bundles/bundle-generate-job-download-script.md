@@ -1,1 +1,0 @@
-* `bundle generate job` can now download workspace files referenced by `spark_python_task`, rewriting them to a relative path like it already does for notebooks. This is opt-in via the `--download-spark-python-files` flag ([#5799](https://github.com/databricks/cli/pull/5799)).

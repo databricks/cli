@@ -25,7 +25,7 @@ func kindOf(v any) Kind {
 		return KindMap
 	case []Value:
 		return KindSequence
-	case string:
+	case string, secretString:
 		return KindString
 	case bool:
 		return KindBool
