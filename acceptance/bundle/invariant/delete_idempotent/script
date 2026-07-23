@@ -74,7 +74,10 @@ mv .databricks.backup .databricks
 # AlwaysPull=true would treat remote as newer and overwrite our restored local
 # state; nuking it leaves local as the sole state source, so the next plan
 # genuinely re-issues deletes for resources the server has already removed.
-$CLI workspace delete --recursive "$STATE_PATH" &> LOG.wipe_remote_state
+# MSYS_NO_PATHCONV=1 stops Git Bash on Windows from rewriting the leading-slash
+# workspace path into C:/Program Files/Git/...; it is scoped to this command so
+# the Python helpers (which need their own paths converted) are unaffected.
+MSYS_NO_PATHCONV=1 $CLI workspace delete --recursive "$STATE_PATH" &> LOG.wipe_remote_state
 cat LOG.wipe_remote_state | contains.py '!panic' '!internal error' > /dev/null
 
 if [[ -n "$READPLAN" ]]; then
