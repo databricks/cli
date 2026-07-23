@@ -177,6 +177,7 @@ func newCreateDeployment() *cobra.Command {
 	cmd.Flags().Var(&createDeploymentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: git_info
+	cmd.Flags().StringVar(&createDeploymentReq.Deployment.InitialParentPath, "initial-parent-path", createDeploymentReq.Deployment.InitialParentPath, `The workspace path of the folder where the deployment is initially created.`)
 	// TODO: complex arg: workspace_info
 
 	cmd.Use = "create-deployment DEPLOYMENT_ID"

@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  instance_pools:
+    foo:
+      instance_pool_name: test-instance-pool-$UNIQUE_NAME
+      node_type_id: $NODE_TYPE_ID
+      permissions:
+        - level: CAN_ATTACH_TO
+          group_name: users

@@ -72,7 +72,7 @@ func BackupRemoteTerraformState(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	backupPath := remotePath + ".backup"
-	err = f.Write(ctx, backupPath, reader)
+	err = f.Write(ctx, backupPath, reader, filer.OverwriteIfExists)
 	if err != nil {
 		log.Warnf(ctx, "backing up terraform state: could not write %s: %s", backupPath, err)
 		return

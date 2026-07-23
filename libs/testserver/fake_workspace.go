@@ -185,6 +185,7 @@ type FakeWorkspace struct {
 	ModelRegistryModels   map[string]ml.Model
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
 	Clusters              map[string]compute.ClusterDetails
+	InstancePools         map[string]compute.GetInstancePool
 	Catalogs              map[string]catalog.CatalogInfo
 	ExternalLocations     map[string]catalog.ExternalLocationInfo
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
@@ -393,6 +394,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				SingleUserName:   TestUser.UserName,
 			},
 		},
+		InstancePools: map[string]compute.GetInstancePool{},
 	}
 }
 

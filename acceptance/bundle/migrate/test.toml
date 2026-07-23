@@ -3,12 +3,7 @@ RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 Ignore = [".databricks"]
 
-# All tests explicitly set DATABRICKS_BUNDLE_ENGINE, so there is no need for matrix testing
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
-
-# These tests exercise platform-independent bundle logic (state and config
-# migration) and behave identically on every OS, so on pull requests they run on
-# Linux only to keep the windows/macOS CI jobs fast. They still run on every OS on
-# push to main.
-GOOSOnPR.windows = false
-GOOSOnPR.darwin = false
+# Each test's script sets DATABRICKS_BUNDLE_ENGINE inline; pin the outer
+# matrix to ["direct"] so CI's engine filter includes these tests without
+# also running the same script twice per engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

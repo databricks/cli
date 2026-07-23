@@ -343,9 +343,6 @@ resources:
         reason: output_only
       - field: updated_by
         reason: output_only
-      # Backend-computed; the user never sets it. Not annotated output_only in the spec.
-      - field: browse_only
-        reason: output_only
       # Aliases are managed on model versions through a separate API, and DoRead
       # passes IncludeAliases=false, so GET never echoes them back. Without this a
       # config that sets aliases reports a perpetual update (remote stays empty).
@@ -597,6 +594,30 @@ resources:
     # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
     # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""
     #- field: data_security_mode
+
+  instance_pools:
+    # Field behaviors follow the TF provider tags cross-referenced with the edit API (compute.EditInstancePool):
+    # https://github.com/databricks/terraform-provider-databricks/blob/main/pools/resource_instance_pool.go
+    ignore_remote_changes:
+      # Backend fills cloud defaults the user omits; treated as managed like clusters above.
+      - field: aws_attributes
+        reason: managed
+      - field: azure_attributes
+        reason: managed
+      - field: gcp_attributes
+        reason: managed
+    recreate_on_changes:
+      # force_new and not accepted by /instance-pools/edit.
+      - field: disk_spec
+      - field: node_type_flexibility
+      - field: preloaded_spark_versions
+      - field: preloaded_docker_images
+    backend_defaults:
+      # Defaults to true server-side.
+      - field: enable_elastic_disk
+      # Backend applies a default of 60 minutes when the field is omitted.
+      - field: idle_instance_autotermination_minutes
+        values: [60]
 
   sql_warehouses:
     ignore_remote_changes:

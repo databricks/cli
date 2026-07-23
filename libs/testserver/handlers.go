@@ -55,6 +55,12 @@ func AddDefaultHandlers(server *Server) {
 			},
 		}
 	})
+	server.Handle("POST", "/api/2.0/instance-pools/create", func(req Request) any { return req.Workspace.InstancePoolsCreate(req) })
+	server.Handle("POST", "/api/2.0/instance-pools/edit", func(req Request) any { return req.Workspace.InstancePoolsEdit(req) })
+	server.Handle("POST", "/api/2.0/instance-pools/delete", func(req Request) any { return req.Workspace.InstancePoolsDelete(req) })
+	server.Handle("GET", "/api/2.0/instance-pools/get", func(req Request) any {
+		return req.Workspace.InstancePoolsGet(req, req.URL.Query().Get("instance_pool_id"))
+	})
 
 	server.Handle("GET", "/api/2.1/clusters/list", func(req Request) any {
 		return compute.ListClustersResponse{
@@ -464,7 +470,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Apps, req.Vars["name"])
+		return req.Workspace.AppsGet(req.Vars["name"])
 	})
 
 	server.Handle("POST", "/api/2.0/apps", func(req Request) any {
@@ -476,7 +482,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/apps/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Apps, req.Vars["name"])
+		return req.Workspace.AppsDelete(req.Vars["name"])
 	})
 
 	// Schemas:
@@ -743,15 +749,18 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SecretsList(req)
 	})
 
-	// SSH tunnel server behind the driver proxy: /metadata returns the remote
-	// login user, /logs is a best-effort error tail fetched on failure.
+	// SSH tunnel server behind the driver proxy: /metadata returns the remote login
+	// user, /logs is a best-effort error tail, /ssh hijacks the connection for a
+	// websocket (so it's raw, not a JSON response).
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
-		return Response{Body: sshTunnelRemoteUser}
+		return Response{Body: sshTunnelRemoteUser()}
 	})
 
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/logs", func(req Request) any {
 		return Response{Body: ""}
 	})
+
+	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
 
 	// Secrets ACLs:
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {

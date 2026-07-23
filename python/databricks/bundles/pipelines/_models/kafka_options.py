@@ -19,9 +19,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class KafkaOptions:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     client_config: VariableOrDict[str] = field(default_factory=dict)
     """
@@ -34,9 +32,7 @@ class KafkaOptions:
 
     key_transformer: VariableOrOptional[Transformer] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Transformer for the message key.
+    [Beta] (Optional) Transformer for the message key.
     If not specified, the key is left as raw bytes.
     """
 
@@ -49,33 +45,25 @@ class KafkaOptions:
 
     starting_offset: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Where to begin reading when no checkpoint exists.
+    [Beta] (Optional) Where to begin reading when no checkpoint exists.
     Valid values: "latest" and "earliest". Defaults to "latest".
     """
 
     topic_pattern: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Java regex pattern to subscribe to matching topics.
+    [Beta] Java regex pattern to subscribe to matching topics.
     Only one of topics or topic_pattern must be specified.
     """
 
     topics: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Topics to subscribe to.
+    [Beta] Topics to subscribe to.
     Only one of topics or topic_pattern must be specified.
     """
 
     value_transformer: VariableOrOptional[Transformer] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Transformer for the message value.
+    [Beta] (Optional) Transformer for the message value.
     If not specified, the value is left as raw bytes.
     """
 
@@ -101,9 +89,7 @@ class KafkaOptionsDict(TypedDict, total=False):
 
     key_transformer: VariableOrOptional[TransformerParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Transformer for the message key.
+    [Beta] (Optional) Transformer for the message key.
     If not specified, the key is left as raw bytes.
     """
 
@@ -116,33 +102,25 @@ class KafkaOptionsDict(TypedDict, total=False):
 
     starting_offset: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Where to begin reading when no checkpoint exists.
+    [Beta] (Optional) Where to begin reading when no checkpoint exists.
     Valid values: "latest" and "earliest". Defaults to "latest".
     """
 
     topic_pattern: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Java regex pattern to subscribe to matching topics.
+    [Beta] Java regex pattern to subscribe to matching topics.
     Only one of topics or topic_pattern must be specified.
     """
 
     topics: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Topics to subscribe to.
+    [Beta] Topics to subscribe to.
     Only one of topics or topic_pattern must be specified.
     """
 
     value_transformer: VariableOrOptional[TransformerParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Transformer for the message value.
+    [Beta] (Optional) Transformer for the message value.
     If not specified, the value is left as raw bytes.
     """
 

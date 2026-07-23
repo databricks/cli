@@ -1,3 +1,6 @@
-Local = false
+Local = true
 Cloud = true
+RequiresUnityCatalog = true
+
+# Overrides RecordRequests = true set by the artifacts parent test.toml.
 RecordRequests = false

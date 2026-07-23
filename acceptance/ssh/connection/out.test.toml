@@ -1,4 +1,7 @@
 Local = true
 Cloud = false
 RequiresCluster = true
+GOOS.darwin = false
+GOOS.linux = true
+GOOS.windows = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

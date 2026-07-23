@@ -14,8 +14,30 @@ import (
 // by 3.10.6, so only the former bumps the minor.
 var clauseRe = regexp.MustCompile(`^(>=|<=|===|==|~=|!=|<|>)?\s*(\d+)\.(\d+)(\.\d+)?`)
 
+// defaultServerlessVersion is the serverless environment version used when the
+// source (a serverless job with no recorded version, or a bundle that only
+// records "serverless") does not pin one. It is a documented stand-in for the
+// latest LTS (spec §4.3 / §target-resolution); VS Code resolves the real version
+// itself and passes --serverless-version explicitly, so this fallback only
+// applies when the version is genuinely unknown.
+const defaultServerlessVersion = "5"
+
+// serverlessVersionRe matches an accepted --serverless-version input: a bare
+// number ("5", the documented form) or a "v"-prefixed one ("v5"/"V5").
+var serverlessVersionRe = regexp.MustCompile(`^[vV]?[0-9]+$`)
+
+// ValidServerlessVersion reports whether s is an accepted serverless version
+// input. It is validated at resolve time so a malformed value (e.g. "vv5", "v",
+// " 5") fails fast with an actionable error rather than resolving to a bogus
+// env key that only 404s two phases later at fetch.
+func ValidServerlessVersion(s string) bool {
+	return serverlessVersionRe.MatchString(s)
+}
+
 // NormalizeServerless returns the canonical "vN" spelling of a serverless
-// version accepting "4", "v4", or "V4".
+// version. The documented input is a bare number ("5"), but a "v"-prefixed form
+// ("v5"/"V5") is also accepted; both map to the "serverless-vN" env key.
+// Callers should validate with ValidServerlessVersion first.
 func NormalizeServerless(version string) string {
 	return "v" + strings.TrimPrefix(strings.ToLower(version), "v")
 }

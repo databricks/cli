@@ -15,7 +15,7 @@ title "Deploy bundle with catalog"
 trace $CLI bundle deploy
 
 title "Assert the catalog is created"
-trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment, properties}"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment, properties}" | normalize_uc_payload.py
 
 title "Update catalog comment"
 update_file.py databricks.yml "This catalog was created from DABs" "Updated comment from DABs"
