@@ -15,8 +15,8 @@ Ignore = [".databricks.backup"]
 #   updated less than 20 minutes ago. Please wait before trying again.
 #   (400 BAD_REQUEST)
 #
-# Reproduces 100% on aws-prod-ucws / azure-prod-ucws / gcp-prod-ucws and
-# locally with the DELETING transition modeled in libs/testserver/apps.go.
+# Reproduces 100% on all clouds and locally with the DELETING transition
+# modeled in libs/testserver/apps.go.
 # Re-enable once app delete becomes idempotent (either WaitAfterDelete polls to
 # terminal, or the plan/apply layer treats DELETING as effectively-Gone).
 EnvMatrixExclude.no_app = ["INPUT_CONFIG=app.yml.tmpl"]
