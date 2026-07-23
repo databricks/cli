@@ -1,0 +1,76 @@
+
+=== auto: cached image is reused
+>>> [CLI] experimental air register-image my-image:latest
+Image already registered and available: a1b2c3d4e5f6a7b8...
+
+To use this image in your training config:
+  environment:
+    docker_image:
+      url: my-image:latest
+
+=== auto: cached image is reused (json)
+>>> [CLI] experimental air register-image my-image:latest -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "docker_image_url": "my-image:latest",
+    "manifest_sha256": "a1b2c3d4e5f6a7b8oldoldoldold",
+    "status": "AVAILABLE",
+    "image_updated": false,
+    "cached": true
+  }
+}
+
+=== latest: re-checks the source registry and reports an updated digest
+>>> [CLI] experimental air register-image my-image:latest --tag-policy latest -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "docker_image_url": "my-image:latest",
+    "manifest_sha256": "f9e8d7c6b5a4f3e2newnewnewnew",
+    "status": "AVAILABLE",
+    "image_updated": true,
+    "cached": false
+  }
+}
+
+=== empty image url
+>>> [CLI] experimental air register-image    
+Error: IMAGE_URL cannot be empty
+
+Exit code: 1
+
+=== scope without key
+>>> [CLI] experimental air register-image my-image:latest --scope s
+Error: both --scope and --key must be provided together
+
+Exit code: 1
+
+=== interactive-authenticate with scope
+>>> [CLI] experimental air register-image my-image:latest -i --scope s --key k
+Error: --interactive-authenticate cannot be used with --scope/--key
+
+Exit code: 1
+
+=== invalid tag policy (json)
+>>> [CLI] experimental air register-image my-image:latest --tag-policy bogus -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "invalid image tag policy \"bogus\": valid options are auto, latest",
+    "retryable": false
+  }
+}
+
+Exit code: 1
+
+=== interactive-authenticate not yet supported
+>>> [CLI] experimental air register-image my-image:latest -i
+Error: --interactive-authenticate is not yet supported
+
+Exit code: 1

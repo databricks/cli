@@ -1,0 +1,23 @@
+title "auto: cached image is reused"
+trace $CLI experimental air register-image my-image:latest
+
+title "auto: cached image is reused (json)"
+trace $CLI experimental air register-image my-image:latest -o json
+
+title "latest: re-checks the source registry and reports an updated digest"
+trace $CLI experimental air register-image my-image:latest --tag-policy latest -o json
+
+title "empty image url"
+errcode trace $CLI experimental air register-image "   "
+
+title "scope without key"
+errcode trace $CLI experimental air register-image my-image:latest --scope s
+
+title "interactive-authenticate with scope"
+errcode trace $CLI experimental air register-image my-image:latest -i --scope s --key k
+
+title "invalid tag policy (json)"
+errcode trace $CLI experimental air register-image my-image:latest --tag-policy bogus -o json
+
+title "interactive-authenticate not yet supported"
+errcode trace $CLI experimental air register-image my-image:latest -i
