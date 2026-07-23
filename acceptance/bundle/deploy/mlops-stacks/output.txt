@@ -82,9 +82,12 @@ Warning: unknown field: description
   in resources/ml-artifacts-resource.yml:28:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created experiments.experiment
+created jobs.batch_inference_job
+created jobs.model_training_job
+created registered_models.model
+
+Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle summary --var catalog_name=main -o json
 Warning: expected a string value, found null
