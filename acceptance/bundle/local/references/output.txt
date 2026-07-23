@@ -5,29 +5,25 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] bundle plan --planmode=offline
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
-=== Job reads during 'bundle plan --planmode=offline':
-
->>> print_requests.py --get //jobs/get
-
-=== After out-of-band rename of bar: --planmode=offline plan still shows no drift:
+=== Offline plan resolves bar.id from saved state, no drift:
 
 >>> [CLI] bundle plan --planmode=offline
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-=== Job reads during --planmode=offline plan after drift:
+=== Job reads during offline plan (should be empty):
 
 >>> print_requests.py --get //jobs/get
 
-=== Normal plan detects the drift:
+=== Offline plan detects changed literal prefix (/v1 -> /v2):
 
->>> [CLI] bundle plan
-update jobs.bar
+>>> [CLI] bundle plan --planmode=offline
 update jobs.foo
 
-Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+=== Job reads during offline plan after prefix change (should be empty):
+
+>>> print_requests.py --get //jobs/get
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

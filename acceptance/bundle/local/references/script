@@ -6,34 +6,24 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Deploy so that bar's ID and creator_user_name are recorded in the local state.
+# Deploy so that bar's ID is recorded in the local state and foo.notebook_path
+# resolves to /v1/<bar-id>.
 trace $CLI bundle deploy
 rm -f out.requests.txt
 
-BAR_ID=$(read_id.py bar)
-
-# A --planmode=offline plan skips remote reads entirely. foo.tasks[0].notebook_path
-# references bar.creator_user_name, a remote-only field. Offline resolution carries
-# forward foo.notebook_path's last resolved value from foo's saved state (Method A,
-# source-side), so no GET is issued and the reference resolves successfully.
+# A --planmode=offline plan skips remote reads. foo.notebook_path references
+# bar.id, which is in bar's saved state, so the reference resolves offline and
+# the plan shows no drift.
+title "Offline plan resolves bar.id from saved state, no drift:\n"
 trace $CLI bundle plan --planmode=offline
-title "Job reads during 'bundle plan --planmode=offline':\n"
+title "Job reads during offline plan (should be empty):\n"
 trace print_requests.py --get //jobs/get
 
-# Rename bar out-of-band (simulates remote drift).
-edit_resource.py jobs $BAR_ID <<'EOF'
-r["name"] = r["name"] + "-drifted"
-EOF
-rm -f out.requests.txt
-
-# --planmode=offline plan still reports no drift: it compares config against saved local
-# state and never reads the remote, so the out-of-band rename is invisible.
-title "After out-of-band rename of bar: --planmode=offline plan still shows no drift:\n"
+# Change only the literal prefix of the template (/v1 -> /v2). The reference is
+# unchanged. Offline resolution interpolates the *current* template, so it detects
+# the new prefix and plans an update — without reading remote.
+update_file.py databricks.yml "/v1/\${resources.jobs.bar.id}" "/v2/\${resources.jobs.bar.id}"
+title "Offline plan detects changed literal prefix (/v1 -> /v2):\n"
 trace $CLI bundle plan --planmode=offline
-title "Job reads during --planmode=offline plan after drift:\n"
+title "Job reads during offline plan after prefix change (should be empty):\n"
 trace print_requests.py --get //jobs/get
-
-# Normal plan reads remote and detects the drift.
-title "Normal plan detects the drift:\n"
-trace $CLI bundle plan
-rm -f out.requests.txt

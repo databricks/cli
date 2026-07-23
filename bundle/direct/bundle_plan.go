@@ -366,7 +366,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		// Note, remoteState may be updated post-deploy, so whether it can be used for
 		// variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy.
-		// In --local mode the store is skipped so remoteStateForRef fetches on demand (it keys off cache absence).
+		// In offline mode there is no remote read, so nothing is cached; reference
+		// resolution falls back to the target's saved state (see savedStateField).
 		if !offline {
 			b.RemoteStateCache.Store(resourceKey, entry.RemoteState)
 		}
@@ -383,20 +384,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 	if logdiag.HasError(ctx) {
 		return nil, errors.New("planning failed")
-	}
-
-	// In --local the main loop skips each resource's remote read, but reference
-	// resolution may still have fetched some targets on demand (remoteStateForRef
-	// stores them in RemoteStateCache). Surface those reads in the plan. This runs
-	// after the parallel walk so the write to entry.RemoteState is single-threaded:
-	// during the walk a target is fetched from a dependent's goroutine under the
-	// target's read lock, where writing its entry would race with sibling dependents.
-	if offline {
-		for key, entry := range plan.Plan {
-			if remoteState, ok := b.RemoteStateCache.Load(key); ok {
-				entry.RemoteState = remoteState
-			}
-		}
 	}
 
 	for _, entry := range plan.Plan {
@@ -862,10 +849,7 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.
 		if canReadRemoteCache {
-			remoteState, ok, err := b.remoteStateForRef(ctx, targetResourceKey, adapter)
-			if err != nil {
-				return nil, err
-			}
+			remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 			if ok {
 				return structaccess.Get(remoteState, fieldPath)
 			}
@@ -889,10 +873,7 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 	}
 
 	if canReadRemoteCache {
-		remoteState, ok, err := b.remoteStateForRef(ctx, targetResourceKey, adapter)
-		if err != nil {
-			return nil, err
-		}
+		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 		if ok {
 			return structaccess.Get(remoteState, fieldPath)
 		}
@@ -927,69 +908,12 @@ func (b *DeploymentBundle) savedStateField(targetResourceKey string, adapter *dr
 	return value, nil
 }
 
-// resolveReferencesFromSavedState is the offline-mode source-side pass over
-// sv.Refs: for each field with an unresolved reference, look up the field's
-// prior value in the resource's own saved state. When present, write it into
-// sv.Value and drop the entry from sv.Refs so the per-reference loop skips it.
-// The template's individual ${...} components do not need to be evaluated
-// because the source-side value already reflects the last resolution.
-func (b *DeploymentBundle) resolveReferencesFromSavedState(ctx context.Context, resourceKey string, sv *structvar.StructVar) {
-	dbentry, ok := b.StateDB.GetResourceEntry(resourceKey)
-	if !ok || len(dbentry.State) == 0 {
-		return
-	}
-	adapter, err := b.getAdapterForKey(resourceKey)
-	if err != nil {
-		return
-	}
-	savedState, err := parseState(adapter.StateType(), dbentry.State)
-	if err != nil {
-		log.Debugf(ctx, "offline: parsing saved state for %q failed: %v", resourceKey, err)
-		return
-	}
-	for fieldPathStr := range sv.Refs {
-		fieldPath, err := structpath.ParsePath(fieldPathStr)
-		if err != nil {
-			continue
-		}
-		value, err := structaccess.Get(savedState, fieldPath)
-		if err != nil || value == nil {
-			continue
-		}
-		if err := structaccess.Set(sv.Value, fieldPath, value); err != nil {
-			log.Debugf(ctx, "offline: setting %s.%s from saved state failed: %v", resourceKey, fieldPathStr, err)
-			continue
-		}
-		delete(sv.Refs, fieldPathStr)
-	}
-}
-
-// remoteStateForRef returns the remote state of a referenced target resource
-// for reference resolution. The state was cached when the target was processed
-// (targets precede their dependents in DAG order). A cache miss returns
-// (nil, false, nil) and the caller surfaces its own internal error or falls
-// back to the offline saved-state lookup path.
-func (b *DeploymentBundle) remoteStateForRef(_ context.Context, targetResourceKey string, _ *dresources.Adapter) (any, bool, error) {
-	if remoteState, ok := b.RemoteStateCache.Load(targetResourceKey); ok {
-		return remoteState, true, nil
-	}
-	return nil, false, nil
-}
-
 // resolveReferences processes all references in entry.NewState.Refs.
 func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isPreDeploy bool) bool {
 	sv, ok := b.StateCache.Load(resourceKey)
 	if !ok {
 		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no cache entry found for %q", errorPrefix, resourceKey))
 		return false
-	}
-
-	// In offline mode, prefer to carry the last resolved value of each source
-	// field from the source's own saved state. That avoids depending on the
-	// target's remote-only fields being present in state and matches the
-	// migrate command's Method A resolution.
-	if isPreDeploy && b.Plan.Mode == deployplan.PlanModeOffline {
-		b.resolveReferencesFromSavedState(ctx, resourceKey, sv)
 	}
 
 	var resolved bool

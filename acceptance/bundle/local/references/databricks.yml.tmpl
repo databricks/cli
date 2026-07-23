@@ -9,10 +9,10 @@ resources:
     foo:
       name: foo-$UNIQUE_NAME
       tasks:
-        - task_key: tag_owner
+        - task_key: run_bar
           notebook_task:
-            # creator_user_name is a remote-only field: it exists in the remote
-            # schema but not in config. Under --planmode=offline, bar's remote
-            # state is never fetched; instead foo.notebook_path's last resolved
-            # value is carried forward from foo's saved state.
-            notebook_path: /path/${resources.jobs.bar.creator_user_name}
+            # References bar.id, which is recorded in bar's saved state. Under
+            # --planmode=offline the id resolves from saved state (no remote read)
+            # and the *current* template is interpolated, so changing the literal
+            # prefix below is detected offline.
+            notebook_path: /v1/${resources.jobs.bar.id}
