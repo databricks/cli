@@ -6,7 +6,7 @@ resources:
     my_catalog:
       name: my_catalog
       grants:
-        # Missing principal: rejected (the backend requires one).
+        # Missing principal: rejected.
         - privileges:
             - ALL_PRIVILEGES
   schemas:

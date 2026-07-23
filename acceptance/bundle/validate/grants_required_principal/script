@@ -1,8 +1,6 @@
 errcode trace $CLI bundle validate
 
-# Deploy must abort at validation, so no securable is created and no grant is
-# applied: without this, the direct engine creates the securable and only then
-# fails the grants PATCH, leaving a partially-applied deployment.
+# Deploy must abort at validation: no securable is created, so no partial deploy.
 errcode trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 

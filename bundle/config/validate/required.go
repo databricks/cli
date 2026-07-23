@@ -144,12 +144,10 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	return diags
 }
 
-// errorForMissingGrantPrincipals errors for any grant that is missing a principal.
-// grants[*].principal is optional in the SDK (json:"principal,omitempty") but the
-// backend rejects a grant without one (400 INVALID_PARAMETER_VALUE). On the direct
-// engine the securable is created before grants are applied, so letting the deploy
-// start leaves a partially-applied deployment; fail validation instead. Grants exist
-// on every securable, so match any resource type.
+// errorForMissingGrantPrincipals errors for any grant missing a principal.
+// principal is optional in the SDK but rejected by the backend; erroring here
+// avoids a partial deploy where the securable is created before grants fail.
+// Grants exist on every securable, so match any resource type.
 func errorForMissingGrantPrincipals(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
