@@ -4,8 +4,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "a run that finishes FAILED is surfaced, not fatal: the deploy still completes"
+# The run finishes FAILED, so the deploy aborts here; downstream_job depends on
+# my_run and is reported as "dependency failed" rather than being created.
+title "a run that finishes FAILED fails the deploy"
 trace $CLI bundle deploy
-
-title "the downstream job was created with the run's FAILED result_state (deploy did not abort)"
-trace print_requests.py //jobs/create

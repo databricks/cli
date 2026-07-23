@@ -3,12 +3,12 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-distinct-runs/default/files...
 Deploying resources...
-Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[MY_RUN_A_ID]
-Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[MY_RUN_B_ID]
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 Updating deployment state...
 Deployment complete!
 
-=== two run-now requests were made
+=== two run-now requests were made; each resource stored its own run id
 >>> print_requests.py //jobs/run-now
 {
   "method": "POST",
@@ -26,11 +26,6 @@ Deployment complete!
     "job_id": [NUMID]
   }
 }
-
-=== each resource stored its own run id
->>> read_id.py my_run_a
-
->>> read_id.py my_run_b
 run ids differ: identical config did not collapse onto one run
 
 >>> [CLI] bundle destroy --auto-approve

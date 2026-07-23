@@ -4,19 +4,24 @@ cleanup() {
 }
 trap cleanup EXIT
 
+STATE=.databricks/bundle/default/resources.json
+run_id() {
+    jq -r ".state[\"resources.job_runs.$1\"].__id__" "$STATE"
+}
+
 title "deploy triggers a separate run for each resource"
 trace $CLI bundle deploy
+a=$(run_id my_run_a)
+b=$(run_id my_run_b)
 
-# Tokens are masked in the golden output; the distinct run ids below are the
-# real proof they differ, since the fake server dedupes by token.
-title "two run-now requests were made"
+# Both run-now bodies are identical (same job_id, masked token), so their order in
+# the recording doesn't matter. Comparing ids via state rather than printing them
+# leaves the parallel "Waiting..." lines above as generic [NUMID], keeping the
+# golden order-independent.
+title "two run-now requests were made; each resource stored its own run id"
 trace print_requests.py //jobs/run-now
-
-title "each resource stored its own run id"
-a=$(trace read_id.py my_run_a)
-b=$(trace read_id.py my_run_b)
 if [ "$a" != "$b" ]; then
     echo "run ids differ: identical config did not collapse onto one run"
 else
-    echo "run ids equal ($a): the two resources deduped onto a single run"
+    echo "run ids equal: the two resources deduped onto a single run"
 fi

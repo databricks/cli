@@ -81,20 +81,44 @@ func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClien
 	return client
 }
 
-func TestJobRunWaitAfterCreateSurfacesFailedResult(t *testing.T) {
+func TestJobRunWaitAfterCreateFailsOnFailedResult(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateTerminated,
 		ResultState:    jobs.RunResultStateFailed,
+		StateMessage:   "task failed",
+	})
+
+	r := (&ResourceJobRun{}).New(client)
+	_, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
+
+	// Only SUCCESS completes the deploy; a FAILED result fails it.
+	require.ErrorContains(t, err, "did not succeed: FAILED: task failed")
+}
+
+func TestJobRunWaitAfterCreateFailsOnSkipped(t *testing.T) {
+	// A skipped run has no result_state, so the lifecycle state is reported.
+	client := jobRunClient(t, &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateSkipped,
+	})
+
+	r := (&ResourceJobRun{}).New(client)
+	_, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
+
+	require.ErrorContains(t, err, "did not succeed: SKIPPED")
+}
+
+func TestJobRunWaitAfterCreateSucceeds(t *testing.T) {
+	client := jobRunClient(t, &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateTerminated,
+		ResultState:    jobs.RunResultStateSuccess,
 	})
 
 	r := (&ResourceJobRun{}).New(client)
 	remote, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
 
-	// A run that ends TERMINATED with a FAILED result is surfaced as readable
-	// state, not turned into a deploy failure.
 	require.NoError(t, err)
 	require.NotNil(t, remote.State)
-	assert.Equal(t, jobs.RunResultStateFailed, remote.State.ResultState)
+	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
 }
 
 func TestJobRunWaitAfterCreateFailsOnInternalError(t *testing.T) {

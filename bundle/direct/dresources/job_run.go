@@ -162,8 +162,7 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 		return nil, err
 	}
 	// Log the run's UI link on the first poll: the wait can last up to
-	// jobRunWaitTimeout, so a silent deploy would look hung. TERMINATED/SKIPPED
-	// pass even with a FAILED result_state; only INTERNAL_ERROR fails the deploy.
+	// jobRunWaitTimeout, so a silent deploy would look hung.
 	logged := false
 	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, jobRunWaitTimeout, func(run *jobs.Run) {
 		if logged || run.RunPageUrl == "" {
@@ -177,6 +176,20 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	})
 	if err != nil {
 		return nil, err
+	}
+	// Only a SUCCESS result completes the deploy; every other terminal outcome
+	// (FAILED, TIMEDOUT, CANCELED, SUCCESS_WITH_FAILURES, SKIPPED, ...) fails it.
+	// The waiter already errored out on INTERNAL_ERROR and timeout above.
+	if run.State.ResultState != jobs.RunResultStateSuccess {
+		outcome := string(run.State.ResultState)
+		if outcome == "" {
+			// A skipped run has no result_state; report the lifecycle state.
+			outcome = string(run.State.LifeCycleState)
+		}
+		if run.State.StateMessage != "" {
+			return nil, fmt.Errorf("job run %d did not succeed: %s: %s", runID, outcome, run.State.StateMessage)
+		}
+		return nil, fmt.Errorf("job run %d did not succeed: %s", runID, outcome)
 	}
 	return makeJobRunRemote(run), nil
 }

@@ -1,74 +1,22 @@
 
-=== a run that finishes FAILED is surfaced, not fatal: the deploy still completes
+=== a run that finishes FAILED fails the deploy
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/files...
 Deploying resources...
-Updating deployment state...
-Deployment complete!
+Error: cannot create resources.job_runs.my_run: waiting after creating id=[NUMID]: job run [NUMID] did not succeed: FAILED
 
-=== the downstream job was created with the run's FAILED result_state (deploy did not abort)
->>> print_requests.py //jobs/create
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "my-job",
-    "queue": {
-      "enabled": true
-    },
-    "tasks": [
-      {
-        "notebook_task": {
-          "notebook_path": "/Workspace/test"
-        },
-        "task_key": "main"
-      }
-    ]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "downstream-job",
-    "queue": {
-      "enabled": true
-    },
-    "tags": {
-      "run_result": "FAILED"
-    },
-    "tasks": [
-      {
-        "notebook_task": {
-          "notebook_path": "/Workspace/test"
-        },
-        "task_key": "main"
-      }
-    ]
-  }
-}
+Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
+
+Updating deployment state...
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.job_runs.my_run
-  delete resources.jobs.downstream_job
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default
 
 Deleting files...
 Destroy complete!
+
+Exit code: 1

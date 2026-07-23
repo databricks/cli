@@ -10,8 +10,8 @@ resources:
           notebook_task:
             notebook_path: /Workspace/test
 
-    # Reads the run's result_state. The run finishes FAILED (see test.toml stub),
-    # but the deploy still completes and this job is created with the resolved tag.
+    # Depends on my_run's result_state. The run finishes FAILED (see test.toml
+    # stub), so the deploy aborts at the run and this job is never created.
     downstream_job:
       name: downstream-job
       tags:
