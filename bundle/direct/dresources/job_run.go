@@ -16,8 +16,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// jobRunWaitTimeout caps how long WaitAfterCreate waits for a terminal state:
-// large enough for a legitimate long run, but bounded so a CI deploy can't hang
+// jobRunWaitTimeout caps how long waitForRun blocks for a terminal state: large
+// enough for a legitimate long run, but bounded so a CI deploy can't hang
 // forever. Matches `bundle run` (jobRunTimeout in bundle/run/job.go).
 const jobRunWaitTimeout = 24 * time.Hour
 
@@ -152,12 +152,10 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 		return "", nil, err
 	}
 
-	// Wait for the run to finish here rather than in a separate WaitAfterCreate:
-	// the framework persists state only after DoCreate returns, so a deploy
-	// interrupted mid-wait saves nothing and the next deploy re-triggers RunNow.
-	// The idempotency_token makes that re-trigger rejoin the same run, so the wait
-	// is re-established instead of skipped. Persisting the run before the wait
-	// would let the planner see the run as up-to-date and skip the wait on resume.
+	// Wait here, not in WaitAfterCreate: state is persisted only after DoCreate
+	// returns, so a deploy interrupted mid-wait saves nothing and re-triggers
+	// RunNow, which the idempotency_token rejoins to the same run. Waiting after
+	// the run is persisted would instead let the planner skip the wait on resume.
 	remote, err := r.waitForRun(ctx, wait.RunId)
 	if err != nil {
 		return "", nil, err
@@ -185,9 +183,9 @@ func (r *ResourceJobRun) waitForRun(ctx context.Context, runID int64) (*JobRunRe
 	if err != nil {
 		return nil, err
 	}
-	// Only a SUCCESS result completes the deploy; every other terminal outcome
-	// (FAILED, TIMEDOUT, CANCELED, SUCCESS_WITH_FAILURES, SKIPPED, ...) fails it.
-	// The waiter already errored out on INTERNAL_ERROR and timeout above.
+	// Every non-SUCCESS terminal outcome (FAILED, TIMEDOUT, CANCELED,
+	// SUCCESS_WITH_FAILURES, SKIPPED, ...) fails the deploy; the waiter already
+	// errored on INTERNAL_ERROR and timeout above.
 	if run.State.ResultState != jobs.RunResultStateSuccess {
 		outcome := string(run.State.ResultState)
 		if outcome == "" {
