@@ -52,7 +52,7 @@ Warning: required field "package_name" is not set
   "variables": {
     "workspace_root": {
       "default": "/Users/[USERNAME]",
-      "description": "root directory in the Databricks workspace to store the asset bundle and associated artifacts",
+      "description": "root directory in the Databricks workspace to store the Declarative Automation Bundle and associated artifacts",
       "value": "/Users/[USERNAME]"
     }
   },

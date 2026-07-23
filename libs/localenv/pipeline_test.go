@@ -19,36 +19,36 @@ type fakePM struct{ py, dbc string }
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
 func (fakePM) EnsurePython(context.Context, string) error      { return nil }
-func (fakePM) Provision(context.Context, string) error         { return nil }
+func (fakePM) Provision(context.Context, string, string) error { return nil }
 func (fakePM) PostProvision(context.Context, string) error     { return nil }
 func (f fakePM) Validate(context.Context, string) (string, string, error) {
 	return f.py, f.dbc, nil
 }
 
 // noProvisionPM fails any method that could touch the machine (install the
-// manager, install Python, sync, seed pip, validate). It asserts that --check
+// manager, install Python, sync, seed pip, validate). It asserts that --dry-run
 // never reaches those write-side operations.
 type noProvisionPM struct{}
 
 func (noProvisionPM) Name() string { return "noprov" }
 func (noProvisionPM) EnsureAvailable(context.Context) (string, error) {
-	return "", errors.New("EnsureAvailable must not be called under --check")
+	return "", errors.New("EnsureAvailable must not be called under --dry-run")
 }
 
 func (noProvisionPM) EnsurePython(context.Context, string) error {
-	return errors.New("EnsurePython must not be called under --check")
+	return errors.New("EnsurePython must not be called under --dry-run")
 }
 
-func (noProvisionPM) Provision(context.Context, string) error {
-	return errors.New("Provision must not be called under --check")
+func (noProvisionPM) Provision(context.Context, string, string) error {
+	return errors.New("Provision must not be called under --dry-run")
 }
 
 func (noProvisionPM) PostProvision(context.Context, string) error {
-	return errors.New("PostProvision must not be called under --check")
+	return errors.New("PostProvision must not be called under --dry-run")
 }
 
 func (noProvisionPM) Validate(context.Context, string) (string, string, error) {
-	return "", "", errors.New("Validate must not be called under --check")
+	return "", "", errors.New("Validate must not be called under --dry-run")
 }
 
 // uvMissingPM fails EnsureAvailable, simulating a machine where the package
@@ -78,15 +78,35 @@ func newTestServer(t *testing.T) *httptest.Server {
 	}))
 }
 
+func TestPipelineRejectsConflictingTargetFlagsAtPreflight(t *testing.T) {
+	// Incompatible target flags are a usage error surfaced as E_USAGE at
+	// preflight, before any manager/writability/fetch work.
+	dir := writeProject(t)
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Cluster: "abc", Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrUsage, pe.Code)
+	assert.Equal(t, PhasePreflight, pe.FailurePhase)
+	assert.False(t, pe.DiskMutated)
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrUsage, res.Error.Code)
+}
+
 func TestPipelineCheckMutatesNothing(t *testing.T) {
 	dir := writeProject(t)
 	before, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	cacheDir := t.TempDir()
 	srv := newTestServer(t)
 	defer srv.Close()
 
 	p := &Pipeline{
 		Mode: ModeDefault, Check: true, ProjectDir: dir,
-		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		ConstraintBaseURL: srv.URL, CacheDir: cacheDir,
 		Flags:   TargetFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
@@ -98,11 +118,16 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	assert.Contains(t, res.Plan.Diff, "==3.12.*")
 	after, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	assert.Equal(t, string(before), string(after)) // unchanged
+
+	// --dry-run must not populate the constraint cache either (no disk writes).
+	entries, err := os.ReadDir(cacheDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }
 
 func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {
 	// On a re-run where the .bak already exists and the live file already equals
-	// the merged output, --check must report a plan a real run would perform: no
+	// the merged output, --dry-run must report a plan a real run would perform: no
 	// backup (the .bak is kept, not rewritten) and an empty diff (nothing changes).
 	dir := writeProject(t)
 	srv := newTestServer(t)
@@ -122,16 +147,16 @@ func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {
 	require.NoError(t, err)
 	require.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 
-	// Now --check on the already-synced project.
+	// Now --dry-run on the already-synced project.
 	res, err := newPipe(true).Run(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, res.Plan)
-	assert.Empty(t, res.Plan.WouldBackup, "a re-run keeps the existing .bak, so --check must not claim a backup")
+	assert.Empty(t, res.Plan.WouldBackup, "a re-run keeps the existing .bak, so --dry-run must not claim a backup")
 	assert.Empty(t, res.Plan.Diff, "the live file already equals the merged output; the diff must be empty")
 }
 
 func TestPipelineCheckDoesNotProvision(t *testing.T) {
-	// --check must not call any PackageManager method that could mutate the
+	// --dry-run must not call any PackageManager method that could mutate the
 	// machine (EnsureAvailable may install uv). noProvisionPM errors on all of
 	// them; the dry run must still succeed and produce a plan.
 	dir := writeProject(t)
@@ -158,7 +183,7 @@ func TestPipelineCheckWorksOnReadOnlyDir(t *testing.T) {
 	srv := newTestServer(t)
 	defer srv.Close()
 
-	// Make the project dir read-only: --check must still compute the plan without
+	// Make the project dir read-only: --dry-run must still compute the plan without
 	// a writability probe (which would both mutate disk and fail here).
 	require.NoError(t, os.Chmod(dir, 0o555))
 	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
@@ -199,7 +224,10 @@ func TestPipelineProvisionsAndValidatesExisting(t *testing.T) {
 	require.NotNil(t, res.Resolved)
 	assert.Equal(t, "3.12", res.Resolved.PythonVersion)
 	assert.Equal(t, "17.2.0", res.Resolved.DBConnectVersion)
-	assert.Equal(t, ".venv", filepath.Base(res.VenvPath))
+	// venvPath is reported relative to the project root (spec §6.1), so it is
+	// exactly ".venv" — not an absolute path under the temp ProjectDir. Asserting
+	// the full value (not just filepath.Base) is what pins the relative contract.
+	assert.Equal(t, ".venv", res.VenvPath)
 	merged, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	assert.Contains(t, string(merged), `"databricks-connect~=17.2.0"`)
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
@@ -227,6 +255,39 @@ func TestPipelineGreenfieldCreatesNewPyproject(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 }
 
+func TestProjectName(t *testing.T) {
+	// "." / "" / root resolve to the real directory name, not an invalid literal;
+	// non-alphanumeric runs collapse to "-"; unusable input falls back to a default.
+	cwd, err := filepath.Abs(".")
+	require.NoError(t, err)
+	assert.Equal(t, sanitizeProjectName(filepath.Base(cwd)), projectName("."))
+	assert.Equal(t, sanitizeProjectName(filepath.Base(cwd)), projectName(""))
+	assert.Equal(t, "my-proj", projectName("/tmp/my proj"))
+	assert.Equal(t, "my-proj", projectName("/tmp/.my.proj."))
+	assert.Equal(t, defaultProjectName, sanitizeProjectName("."))
+	assert.Equal(t, defaultProjectName, sanitizeProjectName("///"))
+}
+
+func TestPipelineGreenfieldFromDotDirRendersValidName(t *testing.T) {
+	// Running greenfield with ProjectDir="." must not render name = ".".
+	dir := t.TempDir()
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.Greenfield)
+	data, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	assert.NotContains(t, string(data), `name = "."`)
+	assert.Contains(t, string(data), `name = "`+sanitizeProjectName(filepath.Base(dir))+`"`)
+}
+
 func TestPipelineExistingBacksUp(t *testing.T) {
 	dir := writeProject(t)
 	srv := newTestServer(t)
@@ -243,6 +304,44 @@ func TestPipelineExistingBacksUp(t *testing.T) {
 	assert.True(t, res.OK)
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 	assert.Equal(t, "pyproject.toml.bak", filepath.Base(res.BackupPath))
+}
+
+func TestPipelineReRunDoesNotRewriteUnchangedPyproject(t *testing.T) {
+	// An idempotent re-run reproduces the merged pyproject.toml byte for byte, so
+	// applyMerge must skip the write rather than advance the file's mtime (which
+	// would spuriously invalidate file watchers and uv.lock freshness checks).
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	newPipe := func() *Pipeline {
+		return &Pipeline{
+			Mode: ModeDefault, ProjectDir: dir,
+			ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+			Flags:   TargetFlags{Serverless: "v4"},
+			Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		}
+	}
+
+	pyproject := filepath.Join(dir, "pyproject.toml")
+	_, err := newPipe().Run(t.Context())
+	require.NoError(t, err)
+	firstContent, err := os.ReadFile(pyproject)
+	require.NoError(t, err)
+	firstInfo, err := os.Stat(pyproject)
+	require.NoError(t, err)
+
+	// A second run computes the same merged output; the file must be left as-is,
+	// content and mtime both unchanged.
+	_, err = newPipe().Run(t.Context())
+	require.NoError(t, err)
+	secondContent, err := os.ReadFile(pyproject)
+	require.NoError(t, err)
+	secondInfo, err := os.Stat(pyproject)
+	require.NoError(t, err)
+
+	assert.Equal(t, string(firstContent), string(secondContent), "content must be unchanged")
+	assert.Equal(t, firstInfo.ModTime(), secondInfo.ModTime(), "unchanged pyproject.toml must not be rewritten")
 }
 
 func TestCopyFilePreservesMode(t *testing.T) {

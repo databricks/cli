@@ -4,8 +4,6 @@ from typing import Literal
 
 class FileIngestionOptionsSchemaEvolutionMode(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work
     """
 

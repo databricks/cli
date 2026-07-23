@@ -20,23 +20,17 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class Transformer:
     """
-    :meta private: [EXPERIMENTAL]
-
     Specifies how to transform binary data into structured data.
     """
 
     format: VariableOrOptional[TransformerFormat] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Required: the wire format of the data.
+    [Beta] Required: the wire format of the data.
     """
 
     json_options: VariableOrOptional[JsonTransformerOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview]
+    [Beta]
     """
 
     @classmethod
@@ -52,16 +46,12 @@ class TransformerDict(TypedDict, total=False):
 
     format: VariableOrOptional[TransformerFormatParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Required: the wire format of the data.
+    [Beta] Required: the wire format of the data.
     """
 
     json_options: VariableOrOptional[JsonTransformerOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview]
+    [Beta]
     """
 
 

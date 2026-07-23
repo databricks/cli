@@ -71,6 +71,9 @@ __all__ = [
     "GoogleAdsConfig",
     "GoogleAdsConfigDict",
     "GoogleAdsConfigParam",
+    "GoogleAdsCustomReportOptions",
+    "GoogleAdsCustomReportOptionsDict",
+    "GoogleAdsCustomReportOptionsParam",
     "GoogleAdsOptions",
     "GoogleAdsOptionsDict",
     "GoogleAdsOptionsParam",
@@ -120,6 +123,9 @@ __all__ = [
     "MavenLibraryParam",
     "MetaMarketingOptions",
     "MetaMarketingOptionsDict",
+    "MetaMarketingOptionsMetaMarketingCustomReportOptions",
+    "MetaMarketingOptionsMetaMarketingCustomReportOptionsDict",
+    "MetaMarketingOptionsMetaMarketingCustomReportOptionsParam",
     "MetaMarketingOptionsParam",
     "NotebookLibrary",
     "NotebookLibraryDict",
@@ -208,6 +214,13 @@ __all__ = [
     "TikTokAdsOptions",
     "TikTokAdsOptionsDict",
     "TikTokAdsOptionsParam",
+    "TikTokAdsOptionsTikTokAdsCustomReportOptions",
+    "TikTokAdsOptionsTikTokAdsCustomReportOptionsDict",
+    "TikTokAdsOptionsTikTokAdsCustomReportOptionsParam",
+    "TikTokAdsOptionsTikTokDataLevel",
+    "TikTokAdsOptionsTikTokDataLevelParam",
+    "TikTokAdsOptionsTikTokReportType",
+    "TikTokAdsOptionsTikTokReportTypeParam",
     "Transformer",
     "TransformerDict",
     "TransformerFormat",
@@ -348,6 +361,11 @@ from databricks.bundles.pipelines._models.google_ads_config import (
     GoogleAdsConfigDict,
     GoogleAdsConfigParam,
 )
+from databricks.bundles.pipelines._models.google_ads_custom_report_options import (
+    GoogleAdsCustomReportOptions,
+    GoogleAdsCustomReportOptionsDict,
+    GoogleAdsCustomReportOptionsParam,
+)
 from databricks.bundles.pipelines._models.google_ads_options import (
     GoogleAdsOptions,
     GoogleAdsOptionsDict,
@@ -431,6 +449,11 @@ from databricks.bundles.pipelines._models.meta_marketing_options import (
     MetaMarketingOptions,
     MetaMarketingOptionsDict,
     MetaMarketingOptionsParam,
+)
+from databricks.bundles.pipelines._models.meta_marketing_options_meta_marketing_custom_report_options import (
+    MetaMarketingOptionsMetaMarketingCustomReportOptions,
+    MetaMarketingOptionsMetaMarketingCustomReportOptionsDict,
+    MetaMarketingOptionsMetaMarketingCustomReportOptionsParam,
 )
 from databricks.bundles.pipelines._models.notebook_library import (
     NotebookLibrary,
@@ -576,6 +599,19 @@ from databricks.bundles.pipelines._models.tik_tok_ads_options import (
     TikTokAdsOptions,
     TikTokAdsOptionsDict,
     TikTokAdsOptionsParam,
+)
+from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_ads_custom_report_options import (
+    TikTokAdsOptionsTikTokAdsCustomReportOptions,
+    TikTokAdsOptionsTikTokAdsCustomReportOptionsDict,
+    TikTokAdsOptionsTikTokAdsCustomReportOptionsParam,
+)
+from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_data_level import (
+    TikTokAdsOptionsTikTokDataLevel,
+    TikTokAdsOptionsTikTokDataLevelParam,
+)
+from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_report_type import (
+    TikTokAdsOptionsTikTokReportType,
+    TikTokAdsOptionsTikTokReportTypeParam,
 )
 from databricks.bundles.pipelines._models.transformer import (
     Transformer,

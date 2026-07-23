@@ -272,6 +272,14 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 		return directoryNotEmptyError{absPath}
 	}
 
+	// On GCS-backed storage a directory created implicitly is just a key prefix
+	// with no standalone object, so it disappears when its last child is
+	// deleted. The delete API then returns 404 for that already-vanished
+	// directory; treat it as a not-found error so recursive delete can consider
+	// its goal satisfied.
+	if apierr.IsMissing(err) {
+		return noSuchDirectoryError{absPath}
+	}
 	return err
 }
 
@@ -331,6 +339,12 @@ func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {
 	// fs.WalkDir walks the directories in lexicographical order.
 	for _, dir := range slices.Backward(dirsToDelete) {
 		err := w.deleteDirectory(ctx, dir)
+		// A directory may have already vanished after its last child was
+		// deleted (see deleteDirectory for the GCS implicit-directory quirk).
+		// The delete's goal is already satisfied, so tolerate it.
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
 		if err != nil {
 			return err
 		}

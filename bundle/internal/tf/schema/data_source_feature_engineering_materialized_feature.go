@@ -24,7 +24,8 @@ type DataSourceFeatureEngineeringMaterializedFeatureProviderConfig struct {
 }
 
 type DataSourceFeatureEngineeringMaterializedFeatureStreamingMode struct {
-	Mode string `json:"mode,omitempty"`
+	FreshnessTarget string `json:"freshness_target,omitempty"`
+	Mode            string `json:"mode,omitempty"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeatureTableTrigger struct{}

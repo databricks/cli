@@ -614,10 +614,17 @@ type ResourceJobRunJobTask struct {
 	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
+type ResourceJobScheduleSqlCondition struct {
+	SqlQueryId  string `json:"sql_query_id"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
+	WarehouseId string `json:"warehouse_id"`
+}
+
 type ResourceJobSchedule struct {
-	PauseStatus          string `json:"pause_status,omitempty"`
-	QuartzCronExpression string `json:"quartz_cron_expression"`
-	TimezoneId           string `json:"timezone_id"`
+	PauseStatus          string                           `json:"pause_status,omitempty"`
+	QuartzCronExpression string                           `json:"quartz_cron_expression"`
+	TimezoneId           string                           `json:"timezone_id"`
+	SqlCondition         *ResourceJobScheduleSqlCondition `json:"sql_condition,omitempty"`
 }
 
 type ResourceJobSparkJarTask struct {
@@ -648,7 +655,6 @@ type ResourceJobTaskAiRuntimeTaskDeployments struct {
 }
 
 type ResourceJobTaskAiRuntimeTask struct {
-	CodeSourcePath            string                                    `json:"code_source_path,omitempty"`
 	Experiment                string                                    `json:"experiment"`
 	MlflowExperimentDirectory string                                    `json:"mlflow_experiment_directory,omitempty"`
 	MlflowRun                 string                                    `json:"mlflow_run,omitempty"`
@@ -748,7 +754,6 @@ type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments struct {
 }
 
 type ResourceJobTaskForEachTaskTaskAiRuntimeTask struct {
-	CodeSourcePath            string                                                   `json:"code_source_path,omitempty"`
 	Experiment                string                                                   `json:"experiment"`
 	MlflowExperimentDirectory string                                                   `json:"mlflow_experiment_directory,omitempty"`
 	MlflowRun                 string                                                   `json:"mlflow_run,omitempty"`
@@ -1851,6 +1856,12 @@ type ResourceJobTriggerPeriodic struct {
 	Unit     string `json:"unit"`
 }
 
+type ResourceJobTriggerSqlCondition struct {
+	SqlQueryId  string `json:"sql_query_id"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
+	WarehouseId string `json:"warehouse_id"`
+}
+
 type ResourceJobTriggerTableUpdate struct {
 	Condition                     string   `json:"condition,omitempty"`
 	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
@@ -1859,11 +1870,12 @@ type ResourceJobTriggerTableUpdate struct {
 }
 
 type ResourceJobTrigger struct {
-	PauseStatus string                         `json:"pause_status,omitempty"`
-	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
-	Model       *ResourceJobTriggerModel       `json:"model,omitempty"`
-	Periodic    *ResourceJobTriggerPeriodic    `json:"periodic,omitempty"`
-	TableUpdate *ResourceJobTriggerTableUpdate `json:"table_update,omitempty"`
+	PauseStatus  string                          `json:"pause_status,omitempty"`
+	FileArrival  *ResourceJobTriggerFileArrival  `json:"file_arrival,omitempty"`
+	Model        *ResourceJobTriggerModel        `json:"model,omitempty"`
+	Periodic     *ResourceJobTriggerPeriodic     `json:"periodic,omitempty"`
+	SqlCondition *ResourceJobTriggerSqlCondition `json:"sql_condition,omitempty"`
+	TableUpdate  *ResourceJobTriggerTableUpdate  `json:"table_update,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded struct {
@@ -1907,6 +1919,7 @@ type ResourceJob struct {
 	MaxRetries             int                              `json:"max_retries,omitempty"`
 	MinRetryIntervalMillis int                              `json:"min_retry_interval_millis,omitempty"`
 	Name                   string                           `json:"name,omitempty"`
+	ParentPath             string                           `json:"parent_path,omitempty"`
 	PerformanceTarget      string                           `json:"performance_target,omitempty"`
 	RetryOnTimeout         bool                             `json:"retry_on_timeout,omitempty"`
 	Tags                   map[string]string                `json:"tags,omitempty"`

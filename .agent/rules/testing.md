@@ -97,8 +97,6 @@ If the only reason for divergence is a server-side default that one engine sets 
 
 **RULE: If a test's `out.test.toml` is still in the older `[EnvMatrix]` block format, a regen rewrites it to the inline form and the post-test `git diff --exit-code` check fails** ("out.test.toml files that are out of date"). Regenerate just those files with `go test ./acceptance -run "^TestAccept$" -only-out-test-toml`, then commit.
 
-**RULE: Be aware of `GOOSOnPR` when adding or editing an acceptance test — an inherited opt-out may be skipping it on windows/macOS PR runs.** By default every test runs everywhere. For speed, some directories set `GOOSOnPR.windows = false` / `GOOSOnPR.darwin = false` in `test.toml`, which recursively opts their tests out of windows/macOS PR runs (they still run on Linux for PRs and on every OS on push to main). Check the resolved value in `out.test.toml`. This is right for the platform-independent majority, but if your test genuinely depends on the OS — path separators, `.exe`, CRLF, symlinks, file locking, process/signal semantics, venv layout (`Scripts` vs `bin`), wheel build — and it sits under such a directory, override the inherited skip with `GOOSOnPR.windows = true` / `GOOSOnPR.darwin = true`, or a Windows/macOS-only regression can merge unseen. `MSYS_NO_PATHCONV`, a leading `//`, or a CRLF-normalizing `sed` are portability scaffolding (they make output OS-identical), not evidence of OS-specific behavior. See `GOOSOnPR` in `acceptance/internal/config.go`.
-
 ### Reference
 
 - Tests live in `acceptance/` with a nested directory structure.
@@ -185,6 +183,28 @@ trace print_requests
 ```
 
 **RULE: Route noisy or non-deterministic command output to `LOG.<name>` instead of `output.txt` or `/dev/null`.** `LOG.*` files are visible under `go test -v` but excluded from the diff — see `acceptance/selftest/log/`. Use `&> LOG.<name>` to capture both streams (then `contains.py` to assert invariants like `'!panic' '!internal error'`), or `2>>LOG.<name>` for cleanup-step stderr you'd otherwise drop to `/dev/null`.
+
+**RULE: When a test prints an API GET/read response into `output.txt`, project it to an allow-list of the fields the test asserts — never dump the full payload or strip a deny-list of volatile fields with `jq 'del(...)'`.** The backend keeps adding response fields, and cloud tests run against the real API, so a full payload (or a `del` that only removes today's volatile fields) breaks the golden every time the response grows — even for fields the test does not care about. Instead define a `<resource>_fields()` helper in the resource directory's `script.prepare` that `jq`-selects the fields you assert, and pipe the response through it. Precedent: `acceptance/bundle/resources/postgres_*/script.prepare`.
+
+GOOD:
+
+```bash
+# in script.prepare
+branch_fields() {
+    jq '{branch_id, name, parent, status: (.status | {branch_id, default, is_protected})}'
+}
+# in script
+trace $CLI postgres get-branch "$name" | branch_fields
+```
+
+BAD:
+
+```bash
+trace $CLI postgres get-branch "$name" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-branch "$name"   # full payload straight into output.txt
+```
+
+For a field that appears on some responses but not others (e.g. a provenance field absent on a default resource), append `| with_entries(select(.value != null))` to the projected object so the optional field is dropped rather than emitted as `null`.
 
 ### Test server
 

@@ -1,6 +1,7 @@
 package localenv
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -61,7 +62,7 @@ type Pipeline struct {
 // Result always carries the full canonical phase list: phases completed before a
 // failure are "ok", the failing phase is "error", and the rest are "pending".
 func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
-	log.Debugf(ctx, "local-env: mode=%s check=%v project=%s cacheDir=%s constraintBaseURL=%s flags=%+v",
+	log.Debugf(ctx, CommandName+": mode=%s check=%v project=%s cacheDir=%s constraintBaseURL=%s flags=%+v",
 		p.Mode,
 		p.Check,
 		filepath.ToSlash(p.ProjectDir),
@@ -90,17 +91,26 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 // run drives the phases and returns the first phase error. Result bookkeeping
 // (phase status, error object) is handled by fail / markOK.
 func (p *Pipeline) run(ctx context.Context) error {
-	// Phase: preflight — manager detection, writability, package-manager availability.
+	// Phase: preflight — flag validation, manager detection, writability,
+	// package-manager availability.
+	//
+	// Incompatible target flags are a usage error (E_USAGE), reported at preflight
+	// before any other work so the failure flows through the phase/JSON reporting
+	// (a plain Cobra mutual-exclusion error would print no command JSON object,
+	// which the --output json consumer needs).
+	if err := ValidateTargetFlags(p.Flags); err != nil {
+		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
+	}
 	// P0 supports only uv; any other detected manager is a clean, non-blaming exit.
 	if m := detectManager(p.ProjectDir); m != managerUv {
 		return p.fail(PhasePreflight, false, NewError(ErrManagerUnsupported, nil, "%s", managerGuidance(m)))
 	}
-	// Under --check the pipeline only reads and reports a plan, so it must not
+	// Under --dry-run the pipeline only reads and reports a plan, so it must not
 	// mutate anything at preflight. Two preflight steps can write:
 	//   - ensureWritable creates and removes a temp file (and would fail a
 	//     read-only project the user only wants to inspect);
 	//   - PackageManager.EnsureAvailable may install the manager (uv) if missing.
-	// Both exist to fail fast before real writes, which --check never performs, so
+	// Both exist to fail fast before real writes, which --dry-run never performs, so
 	// they are skipped in a dry run. Neither result is needed to compute the plan.
 	if p.Check {
 		p.markOK(PhasePreflight, "check")
@@ -191,8 +201,10 @@ func (p *Pipeline) resolve(ctx context.Context) (*TargetInfo, error) {
 }
 
 // fetch fetches constraints for the resolved target and records the fetch phase.
+// Under --dry-run the cache is not populated, so a dry run performs no disk writes
+// (an existing cache is still read for offline fallback).
 func (p *Pipeline) fetch(ctx context.Context, target *TargetInfo) (*Constraints, error) {
-	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, target.EnvKey, p.CacheDir)
+	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, target.EnvKey, p.CacheDir, !p.Check)
 	if err != nil {
 		// FetchConstraints classifies the cause: E_ENV_UNSUPPORTED for a missing
 		// key (404) versus E_FETCH for transport failure with no cache. Both are
@@ -216,7 +228,7 @@ func (p *Pipeline) backupPath() string {
 
 // mergePlan computes the merged pyproject.toml bytes (without writing to disk),
 // decides greenfield vs. existing, and builds the Plan (populated only under
-// --check). dbcPin is the databricks-connect pin to inject, or "" in
+// --dry-run). dbcPin is the databricks-connect pin to inject, or "" in
 // constraints-only mode.
 func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin string) (merged []byte, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
@@ -253,8 +265,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	if greenfield {
 		// No existing pyproject.toml — render a fresh one. The project name comes
 		// from the directory name as a reasonable default.
-		projectName := filepath.Base(p.ProjectDir)
-		merged = RenderFreshPyproject(projectName, effective)
+		merged = RenderFreshPyproject(projectName(p.ProjectDir), effective)
 		changedRegions = []string{regionRequiresPython, regionToolUv}
 		if dbcPin != "" {
 			changedRegions = append(changedRegions, regionDatabricksConnect)
@@ -266,7 +277,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		}
 	}
 
-	// Under --check, build the plan (with a diff) for reporting. A real run does
+	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
 	// not need the diff.
 	if p.Check {
 		oldStr := ""
@@ -328,6 +339,16 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "cannot stat backup %s", filepath.ToSlash(backup)))
 		}
 		p.res.BackupPath = filepath.ToSlash(backup)
+
+		// Skip the write when the merged output already matches what is on disk.
+		// On an idempotent re-run mergePlan reproduces the current file byte for
+		// byte, so rewriting it would only advance the mtime — spuriously
+		// invalidating file watchers and uv.lock freshness checks — without
+		// changing content. The backup above is untouched (the existing .bak is
+		// kept), so this leaves disk exactly as it was.
+		if current, readErr := os.ReadFile(pyproject); readErr == nil && bytes.Equal(current, mergedBytes) {
+			return nil
+		}
 	}
 
 	if err := os.WriteFile(pyproject, mergedBytes, 0o644); err != nil {
@@ -346,7 +367,7 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	if err := p.PM.EnsurePython(ctx, pyMinor); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrPythonInstall, "ensure python %s failed", pyMinor))
 	}
-	if err := p.PM.Provision(ctx, p.ProjectDir); err != nil {
+	if err := p.PM.Provision(ctx, p.ProjectDir, pyMinor); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}
 	if err := p.PM.PostProvision(ctx, p.ProjectDir); err != nil {
@@ -401,7 +422,11 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string)
 	}
 	p.markOK(PhaseValidate, detail)
 
-	p.res.VenvPath = filepath.ToSlash(filepath.Join(p.ProjectDir, venvDir))
+	// venvPath is reported relative to the project root (spec §6.1), not as an
+	// absolute path: the value names the ".venv" the command provisions inside
+	// ProjectDir, and the VS Code consumer already knows the project root (it
+	// sets the working directory when it shells out). venvDir is already ".venv".
+	p.res.VenvPath = venvDir
 	if p.res.Resolved != nil {
 		if defaultMode {
 			p.res.Resolved.DBConnectVersion = dbcVer
@@ -514,6 +539,51 @@ func isAllDigits(s string) bool {
 		}
 	}
 	return true
+}
+
+// defaultProjectName is used for a fresh pyproject.toml when the project
+// directory yields no usable PEP 508 name (e.g. filesystem root).
+const defaultProjectName = "app"
+
+// projectName derives a PEP 508-valid project name from the project directory.
+// filepath.Base(".") / ("") is "." and Base("/") is "/", none of which are valid
+// [project].name values, so uv sync would reject the rendered file. Resolve to an
+// absolute path first so "." picks up the real directory name, then sanitize to a
+// valid identifier, falling back to defaultProjectName when nothing usable remains.
+func projectName(dir string) string {
+	base := filepath.Base(dir)
+	if base == "." || base == string(filepath.Separator) || base == "" {
+		if abs, err := filepath.Abs(dir); err == nil {
+			base = filepath.Base(abs)
+		}
+	}
+	return sanitizeProjectName(base)
+}
+
+// sanitizeProjectName maps an arbitrary directory name to a valid PEP 508 name:
+// runs of non-alphanumeric characters collapse to a single "-", and leading and
+// trailing separators are trimmed (a PEP 508 name must start and end with an
+// alphanumeric). Returns defaultProjectName when nothing usable remains.
+func sanitizeProjectName(name string) string {
+	var b strings.Builder
+	prevDash := false
+	for _, r := range name {
+		switch {
+		case (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9'):
+			b.WriteRune(r)
+			prevDash = false
+		default:
+			if b.Len() > 0 && !prevDash {
+				b.WriteByte('-')
+				prevDash = true
+			}
+		}
+	}
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		return defaultProjectName
+	}
+	return out
 }
 
 // copyFile copies src to dst, creating or overwriting dst. dst is created with

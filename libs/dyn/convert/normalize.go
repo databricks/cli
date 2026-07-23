@@ -87,6 +87,36 @@ func typeMismatch(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnost
 	}
 }
 
+// isAnchorContainer reports whether v is a YAML anchor or a non-empty
+// sequence/map composed entirely of anchor containers. Anchors define reusable
+// blocks and must not trigger "unknown field" warnings, including when nested
+// inside a container.
+func isAnchorContainer(v dyn.Value) bool {
+	if v.IsAnchor() {
+		return true
+	}
+
+	var elements []dyn.Value
+	switch v.Kind() {
+	case dyn.KindSequence:
+		elements = v.MustSequence()
+	case dyn.KindMap:
+		elements = v.MustMap().Values()
+	default:
+		return false
+	}
+
+	if len(elements) == 0 {
+		return false
+	}
+	for _, e := range elements {
+		if !isAnchorContainer(e) {
+			return false
+		}
+	}
+	return true
+}
+
 func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen []reflect.Type, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -101,7 +131,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			fieldName := pk.MustString()
 			index, ok := info.Fields[fieldName]
 			if !ok {
-				if !pv.IsAnchor() {
+				if !isAnchorContainer(pv) {
 					// Special case: provide a more helpful message for "valueFrom" vs "value_from"
 					if fieldName == "valueFrom" {
 						if _, hasValueFrom := info.Fields["value_from"]; hasValueFrom {
@@ -285,6 +315,15 @@ func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path 
 
 	switch src.Kind() {
 	case dyn.KindString:
+		// A sensitive string must be returned as-is: dyn.NewValue(MustString(), ...)
+		// would construct a plain string and strip the secretString wrapper. Type
+		// normalization (e.g. coercing a bool "true" to string) cannot apply to a
+		// sensitive value because its Kind is already KindString, so returning early
+		// here is correct. Updating the secret value is done via FromTyped, not
+		// Normalize: FromTyped re-wraps the new value as NewSensitiveValue.
+		if src.IsSensitive() {
+			return src, nil
+		}
 		return dyn.NewValue(src.MustString(), src.Locations()), nil
 	case dyn.KindBool:
 		return dyn.NewValue(strconv.FormatBool(src.MustBool()), src.Locations()), nil

@@ -18,7 +18,6 @@ var FileNames = ConfigFileNames{
 
 func (c ConfigFileNames) FindInPath(path string) (string, error) {
 	result := ""
-	var firstErr error
 
 	for _, file := range c {
 		filePath := filepath.Join(path, file)
@@ -28,15 +27,11 @@ func (c ConfigFileNames) FindInPath(path string) (string, error) {
 				return "", fmt.Errorf("multiple bundle root configuration files found in %s", path)
 			}
 			result = filePath
-		} else {
-			if firstErr == nil {
-				firstErr = err
-			}
 		}
 	}
 
 	if result == "" {
-		return "", firstErr
+		return "", fmt.Errorf("%s not found", c[0])
 	}
 
 	return result, nil

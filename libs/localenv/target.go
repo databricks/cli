@@ -10,6 +10,10 @@ import (
 type ComputeClient interface {
 	// GetClusterSparkVersion returns the Spark version string for a cluster.
 	GetClusterSparkVersion(ctx context.Context, clusterID string) (string, error)
+	// GetClusterByName resolves a cluster name to its ID and Spark version. It
+	// errors when the name is unknown or ambiguous (more than one cluster shares
+	// the name), so the caller can surface an actionable E_RESOLVE.
+	GetClusterByName(ctx context.Context, name string) (clusterID, sparkVersion string, err error)
 	// GetJobSparkVersion returns either a Spark version (isServerless=false) or a
 	// serverless marker (isServerless=true) for a job, plus a recorded version string.
 	GetJobSparkVersion(ctx context.Context, jobID string) (sparkVersion string, isServerless bool, version string, err error)
@@ -17,9 +21,10 @@ type ComputeClient interface {
 
 // TargetFlags holds the mutually-exclusive compute target flags from the CLI.
 type TargetFlags struct {
-	Cluster    string
-	Serverless string
-	Job        string
+	Cluster     string
+	ClusterName string
+	Serverless  string
+	Job         string
 }
 
 // BundleTarget is the three-state result of reading the bundle's configured
@@ -32,20 +37,23 @@ type BundleTarget struct {
 
 // noTargetMessage is the actionable message shown when no target is selected,
 // matching spec §2.3.
-const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster / --serverless / --job"
+const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --cluster-name / --serverless-version / --job-id"
 
-// ValidateTargetFlags returns an error if more than one of the three flags is set.
+// ValidateTargetFlags returns an error if more than one of the target flags is set.
 // Cobra marks them mutually exclusive too; this guards the library path.
 func ValidateTargetFlags(f TargetFlags) error {
 	var set []string
 	if f.Cluster != "" {
-		set = append(set, "--cluster")
+		set = append(set, "--cluster-id")
+	}
+	if f.ClusterName != "" {
+		set = append(set, "--cluster-name")
 	}
 	if f.Serverless != "" {
-		set = append(set, "--serverless")
+		set = append(set, "--serverless-version")
 	}
 	if f.Job != "" {
-		set = append(set, "--job")
+		set = append(set, "--job-id")
 	}
 	if len(set) > 1 {
 		return fmt.Errorf("flags %s are mutually exclusive; specify at most one", strings.Join(set, " and "))
@@ -54,7 +62,7 @@ func ValidateTargetFlags(f TargetFlags) error {
 }
 
 // ResolveTarget resolves the compute target using ordered precedence:
-// --cluster flag → --serverless flag → --job flag → bundle target.
+// --cluster-id → --cluster-name → --serverless-version → --job-id → bundle target.
 // PythonVersion is left empty; it is filled later from constraint data.
 //
 // Incompatible flags are rejected up front: without this a library caller that
@@ -79,7 +87,26 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 		}, nil
 	}
 
+	if f.ClusterName != "" {
+		// Resolve the name to an ID via the Clusters API; from there it is
+		// identical to --cluster-id. An unknown or ambiguous name (two clusters
+		// sharing it) yields an actionable E_RESOLVE.
+		id, v, err := c.GetClusterByName(ctx, f.ClusterName)
+		if err != nil {
+			return nil, NewError(ErrResolve, err, "resolving cluster name %q", f.ClusterName)
+		}
+		return &TargetInfo{
+			Source:       "cluster",
+			ClusterID:    id,
+			SparkVersion: v,
+			EnvKey:       EnvKeyForSparkVersion(v),
+		}, nil
+	}
+
 	if f.Serverless != "" {
+		if !ValidServerlessVersion(f.Serverless) {
+			return nil, NewError(ErrResolve, nil, "invalid --serverless-version %q: expected a version number like 5", f.Serverless)
+		}
 		return &TargetInfo{
 			Source:            "serverless",
 			ServerlessVersion: NormalizeServerless(f.Serverless),
@@ -93,12 +120,12 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 			return nil, NewError(ErrResolve, err, "resolving job %s", f.Job)
 		}
 		if isServerless {
-			// Default to v4 when the job is serverless; the serverless env version
-			// is not recorded in the bundle/project (documented stand-in from the
-			// original script, spec §4.3).
+			// Use the job's recorded serverless environment version when present;
+			// fall back to the default when the job did not pin one (documented
+			// stand-in, spec §4.3).
 			v := version
 			if v == "" {
-				v = "v4"
+				v = defaultServerlessVersion
 			}
 			return &TargetInfo{
 				Source:            "job",
@@ -121,12 +148,12 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 	}
 
 	if bt.Serverless {
-		// Default to serverless-v4: the serverless env version is not recorded
-		// in the bundle/project (documented stand-in from the original script).
+		// The bundle records that the target is serverless but not which version,
+		// so use the default stand-in (spec §4.3).
 		return &TargetInfo{
 			Source:            "bundle",
-			ServerlessVersion: "v4",
-			EnvKey:            EnvKeyForServerless("v4"),
+			ServerlessVersion: NormalizeServerless(defaultServerlessVersion),
+			EnvKey:            EnvKeyForServerless(defaultServerlessVersion),
 		}, nil
 	}
 

@@ -1,5 +1,50 @@
 # Version changelog
 
+## Release v1.9.0 (2026-07-22)
+
+### CLI
+
+ * `databricks auth profiles` no longer stalls on an unreachable workspace and instead fails validation after 5 seconds per host ([#5928](https://github.com/databricks/cli/pull/5928)).
+ * Fixed `databricks fs rm -r` failing on UC Volumes backed by GCS when a directory becomes empty during recursive deletion ([#5958](https://github.com/databricks/cli/pull/5958)).
+ * You can now ask questions about your data directly from the CLI with `databricks genie ask "..."`. Genie answers natural-language questions ("what were total sales last month?", "which tables are in the sales catalog?"), runs the query inside Databricks, and renders the answer in the terminal. This promotes the former `databricks experimental genie ask` command; the experimental alias still works but is deprecated and will be removed in a future release ([#6010](https://github.com/databricks/cli/pull/6010)).
+
+### Bundles
+
+ * `bundle validate` now reports a clear error when a `sql_warehouse` is missing a `name` (including whitespace-only names), and a warning when a grant is missing a `principal` ([#5818](https://github.com/databricks/cli/pull/5818)).
+ * Bundle templates now scaffold an `AGENTS.md` that points coding agents at Databricks AI Tools, alongside a minimal `CLAUDE.md` that includes it via `@AGENTS.md` ([#5996](https://github.com/databricks/cli/pull/5996)).
+ * `bundle generate job` can now download workspace files referenced by `spark_python_task`, rewriting them to a relative path like it already does for notebooks. This is opt-in via the `--download-spark-python-files` flag ([#5799](https://github.com/databricks/cli/pull/5799)).
+ * Simplified the `default-minimal` bundle template and added an alias `databricks bundle init empty` ([#5899](https://github.com/databricks/cli/pull/5899)).
+ * Add support for the `instance_pools` resource type in Declarative Automation Bundles. Instance pools are only supported in direct deployment mode.
+ * Do not emit "unknown field" warnings for YAML anchors grouped in a list or map, matching the existing suppression for standalone anchors ([#5975](https://github.com/databricks/cli/pull/5975)).
+ * Provide an actionable error message if databricks.yml is missing or DATABRICKS_BUNDLE_ROOT is invalid ([#5953](https://github.com/databricks/cli/pull/5953)).
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.154.0 to v0.160.0 ([#5982](https://github.com/databricks/cli/pull/5982)).
+ * Bump Terraform provider from v1.121.0 to v1.122.0 ([#5977](https://github.com/databricks/cli/pull/5977)).
+
+
+## Release v1.8.0 (2026-07-15)
+
+### Notable Changes
+
+ * Auto-migrate a bundle from terraform to the direct engine when `bundle.engine` is `"direct"` (or `DATABRICKS_BUNDLE_ENGINE=direct`) and the post-deploy dry-run migration is clean; a warning is emitted if the dry-run surfaces errors or warnings so the automatic migration is skipped.
+
+### CLI
+
+ * experimental `ssh connect`: bare `python`/`pip` in an interactive session now resolve to the environment interpreter (`$DATABRICKS_VIRTUAL_ENV`) instead of the system or cluster-libraries interpreter, so packages installed in the environment are importable without extra setup. The interactive shell is now non-login (`bash -i`) and the server seeds a `~/.bashrc` snippet that re-prepends the environment's bin directory to `PATH` ([#5888](https://github.com/databricks/cli/pull/5888)).
+ * When Claude Code runs the CLI without the Databricks AI tooling installed, the CLI now prints a one-line recommendation on stderr to run `databricks aitools install`. The recommendation is shown at most once per hour per Claude session, and never for human callers or `aitools` commands.
+ * Fixed `databricks auth describe` misattributing a profile selected via `DATABRICKS_CONFIG_PROFILE` as `(from bundle)` when run inside a bundle root ([#5904](https://github.com/databricks/cli/pull/5904)).
+
+### Bundles
+
+ * `bundle generate` now warns when the generated configuration file is not matched by any pattern in the `include` section of `databricks.yml` ([#5868](https://github.com/databricks/cli/pull/5868)).
+ * direct: Match UC Auto Upgrade managed property defaults with a wildcard pattern instead of enumerating each key ([#5877](https://github.com/databricks/cli/pull/5877)).
+ * Recognize `ssh://` template URLs in `databricks bundle init` ([#5891](https://github.com/databricks/cli/pull/5891)).
+ * `databricks bundle init` now reports an actionable error when given a template URL with an unsupported protocol (`http://`, `git://`, `ftp://`, `ftps://`) instead of failing with a confusing "not a bundle template" message ([#5902](https://github.com/databricks/cli/pull/5902)).
+ * Added an `env:` section to `scripts.<name>` for declaring environment variables that may reference `${bundle.*}`, `${workspace.*}`, and `${var.*}` ([#4179](https://github.com/databricks/cli/issues/4179), [#5299](https://github.com/databricks/cli/pull/5299)).
+
+
 ## Release v1.7.0 (2026-07-09)
 
 ### CLI
