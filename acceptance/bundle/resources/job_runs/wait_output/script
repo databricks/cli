@@ -8,8 +8,8 @@ title "deploy waits for the run to finish, then the downstream job reads its res
 trace $CLI bundle deploy
 
 title "the downstream job was created with the run's result_state resolved into its tag"
-# A concrete SUCCESS tag proves the run finished and WaitAfterCreate published
-# its output before the downstream job was created.
+# A concrete SUCCESS tag proves the run finished and DoCreate published its
+# output before the downstream job was created.
 trace print_requests.py //jobs/create
 
 title "redeploy is a no-op: the resolved result_state tag is stable, not perpetual drift"

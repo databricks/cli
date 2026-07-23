@@ -1,0 +1,19 @@
+bundle:
+  name: job-runs-rerun
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
+      # rerun is folded into the computed idempotency_token but never sent to the
+      # API. Bumping its value is the supported way to force a fresh run of an
+      # otherwise-unchanged config.
+      rerun: v1

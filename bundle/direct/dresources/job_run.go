@@ -16,14 +16,18 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// jobRunWaitTimeout caps how long waitForRun blocks for a terminal state: large
-// enough for a legitimate long run, but bounded so a CI deploy can't hang
-// forever. Matches `bundle run` (jobRunTimeout in bundle/run/job.go).
+// jobRunWaitTimeout bounds the wait so a deploy can't hang forever. Matches
+// `bundle run` (jobRunTimeout in bundle/run/job.go).
 const jobRunWaitTimeout = 24 * time.Hour
 
 // JobRunState is what we persist for a triggered run: the RunNow request.
 type JobRunState struct {
 	jobs.RunNow
+
+	// Rerun is a user token folded into the idempotency token (see
+	// idempotencyToken); changing it recreates the run. Not a RunNow field, so
+	// never sent to the API.
+	Rerun string `json:"rerun,omitempty"`
 }
 
 func (s *JobRunState) UnmarshalJSON(b []byte) error {
@@ -38,6 +42,11 @@ func (s JobRunState) MarshalJSON() ([]byte, error) {
 // (see TestRemoteSuperset), plus the run's output-only fields for a faithful view.
 type JobRunRemote struct {
 	jobs.RunNow
+
+	// Rerun keeps RemoteType a superset of StateType (TestRemoteSuperset). GetRun
+	// never returns it, so makeJobRunRemote zeroes it and root
+	// ignore_remote_changes hides the drift.
+	Rerun string `json:"rerun,omitempty"`
 
 	RunId      int64          `json:"run_id,omitempty"`
 	RunName    string         `json:"run_name,omitempty"`
@@ -69,6 +78,7 @@ func (*ResourceJobRun) New(client *databricks.WorkspaceClient) *ResourceJobRun {
 func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	return &JobRunState{
 		RunNow: input.RunNow,
+		Rerun:  input.Rerun,
 	}
 }
 
@@ -107,6 +117,8 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 			Queue:             nil,
 			ForceSendFields:   nil,
 		},
+		// Bundle-only field GetRun never reports; see the field's doc comment.
+		Rerun:      "",
 		RunId:      run.RunId,
 		RunName:    run.RunName,
 		State:      run.State,
@@ -152,10 +164,10 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 		return "", nil, err
 	}
 
-	// Wait here, not in WaitAfterCreate: state is persisted only after DoCreate
-	// returns, so a deploy interrupted mid-wait saves nothing and re-triggers
-	// RunNow, which the idempotency_token rejoins to the same run. Waiting after
-	// the run is persisted would instead let the planner skip the wait on resume.
+	// Wait here, not in WaitAfterCreate: state persists only after DoCreate
+	// returns, so an interrupted wait saves nothing and re-triggers RunNow, which
+	// the idempotency_token rejoins to the same run. Waiting after state is saved
+	// would let the planner skip the wait on resume.
 	remote, err := r.waitForRun(ctx, wait.RunId)
 	if err != nil {
 		return "", nil, err
@@ -218,10 +230,10 @@ func parseRunID(id string) (int64, error) {
 	return result, nil
 }
 
-// idempotencyToken hashes the run's identity (resource key) plus its config into
-// a stable token. The resource key makes two resources with identical config
-// produce distinct tokens (so both run); the config makes a change re-trigger; a
-// retry with neither changed reuses the run. Hex SHA-256 (64 chars, Jobs API max).
+// idempotencyToken hashes the resource key plus config into a stable token: the
+// key keeps identical configs distinct (both run), any config change (including
+// the user-set rerun field) re-triggers, and an unchanged retry reuses the run.
+// Hex SHA-256 (64 chars, Jobs API max).
 func idempotencyToken(ctx context.Context, state *JobRunState) (string, error) {
 	toHash := *state
 	toHash.IdempotencyToken = ""

@@ -975,6 +975,9 @@ resources:
         "python_named_params":
           "description": |-
             PLACEHOLDER
+        "rerun":
+          "description": |-
+            An arbitrary token that forces a new run when its value changes. Leave it unset for normal deploys; change it to re-run the same job configuration or to retry a run that finished unsuccessfully.
     "jobs":
       "description": |-
         The job definitions for the bundle, where each key is the name of the job.

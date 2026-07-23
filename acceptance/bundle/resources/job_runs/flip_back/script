@@ -18,10 +18,9 @@ trace update_file.py databricks.yml "env: dev" "env: prod"
 trace $CLI bundle deploy
 prod=$(run_id)
 
-# The dev->prod recreate left the original dev run in place (delete is a noop),
-# so its idempotency token is still live. Flipping back to dev re-issues run-now
-# with that same token, which dedupes to the original dev run instead of starting
-# a new one. This is a direct consequence of the noop delete + content-hash token.
+# The dev->prod recreate left the original dev run in place (noop delete), so its
+# token is still live. Flipping back to dev re-issues run-now with that token and
+# dedupes onto the original dev run instead of starting a new one.
 title "flip env prod -> dev: dedupes back to the original dev run, does not start a new one"
 trace update_file.py databricks.yml "env: prod" "env: dev"
 trace $CLI bundle deploy

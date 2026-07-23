@@ -1,0 +1,58 @@
+
+=== deploy triggers the first run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-rerun/default/files...
+Deploying resources...
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Updating deployment state...
+Deployment complete!
+
+=== redeploy with identical config is a no-op: the run is reused, no new run-now
+>>> [CLI] bundle plan -o json
+"skip"
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-rerun/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== bump rerun v1 -> v2: the config changed, so a fresh, different run is triggered
+>>> update_file.py databricks.yml rerun: v1 rerun: v2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-rerun/default/files...
+Deploying resources...
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Updating deployment state...
+Deployment complete!
+
+=== run-now was issued exactly twice (initial + bump); rerun itself is never sent to the API
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[IDEMPOTENCY_TOKEN]",
+    "job_id": [NUMID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[IDEMPOTENCY_TOKEN]",
+    "job_id": [NUMID]
+  }
+}
+identical config reused run [NUMID]; bumping rerun triggered a new run [NUMID]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-rerun/default
+
+Deleting files...
+Destroy complete!

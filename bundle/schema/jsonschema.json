@@ -1232,6 +1232,10 @@
                         "description": "The queue settings of the run.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.QueueSettings"
                       },
+                      "rerun": {
+                        "description": "An arbitrary token that forces a new run when its value changes. Leave it unset for normal deploys; change it to re-run the same job configuration or to retry a run that finished unsuccessfully.",
+                        "$ref": "#/$defs/string"
+                      },
                       "spark_submit_params": {
                         "description": "[Private Preview] A list of parameters for jobs with spark submit task, for example `\"spark_submit_params\": [\"--class\", \"org.apache.spark.examples.SparkPi\"]`.\nThe parameters are passed to spark-submit script as command-line parameters. If specified upon `run-now`, it would overwrite the\nparameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
                         "$ref": "#/$defs/slice/string",

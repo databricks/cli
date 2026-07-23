@@ -51,6 +51,21 @@ func TestIdempotencyTokenChangesWithConfig(t *testing.T) {
 	assert.NotEqual(t, dev, otherJob) // different job_id --> different token
 }
 
+func TestIdempotencyTokenChangesWithRerun(t *testing.T) {
+	ctx := t.Context()
+	run := jobs.RunNow{JobId: 123}
+
+	base, err := idempotencyToken(ctx, &JobRunState{RunNow: run})
+	require.NoError(t, err)
+	bumped, err := idempotencyToken(ctx, &JobRunState{RunNow: run, Rerun: "v2"})
+	require.NoError(t, err)
+	bumpedAgain, err := idempotencyToken(ctx, &JobRunState{RunNow: run, Rerun: "v2"})
+	require.NoError(t, err)
+
+	assert.NotEqual(t, base, bumped)     // bumping rerun forces a new run
+	assert.Equal(t, bumped, bumpedAgain) // the same rerun value stays stable
+}
+
 func TestIdempotencyTokenChangesWithResourceIdentity(t *testing.T) {
 	run := jobs.RunNow{JobId: 123}
 	a, err := idempotencyToken(WithResourceIdentity(t.Context(), "resources.job_runs.a"), &JobRunState{RunNow: run})
@@ -138,8 +153,9 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	server := testserver.New(t)
 
-	// logRunPageURL does one GET before the loop, so RUNNING must cover it plus
-	// the waiter's first poll.
+	// waitForRun's progress callback fires on every poll (there is no separate
+	// GET before the loop), so returning RUNNING for the first two polls just
+	// makes the waiter iterate more than once before it sees TERMINATED.
 	var gets atomic.Int32
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
 		if gets.Add(1) <= 2 {

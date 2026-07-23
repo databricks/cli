@@ -1,1 +1,1 @@
-direct: the experimental `job_runs` resource now waits for the run to finish (printing the run page URL while it waits), exposes its output fields (e.g. `${resources.job_runs.<name>.state.result_state}`), and dedupes runs on deploy retries.
+direct: the experimental `job_runs` resource now waits for the run to finish (printing the run page URL while it waits), exposes its output fields (e.g. `${resources.job_runs.<name>.state.result_state}`), and dedupes runs on deploy retries. Set the new `rerun` field to force a fresh run of an otherwise-unchanged config.
