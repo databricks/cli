@@ -1,0 +1,1 @@
+* `bundle deploy` now lists the per-resource actions it took and a summary line (e.g. `Deploy: 1 created, 0 changed, 1 deleted, 3 unchanged.`), mirroring `bundle plan`, and `bundle destroy` prints a matching `Destroy: N deleted.` line. Pass `--quiet`/`-q` to print only the summary line. ([#5720](https://github.com/databricks/cli/pull/5720))
