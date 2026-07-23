@@ -1,0 +1,19 @@
+bundle:
+  name: job-runs-distinct-runs
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  # Two runs with byte-identical config. Each is a distinct resource, so each
+  # must get its own run rather than deduping onto a shared idempotency token.
+  job_runs:
+    my_run_a:
+      job_id: ${resources.jobs.my_job.id}
+    my_run_b:
+      job_id: ${resources.jobs.my_job.id}

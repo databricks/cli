@@ -1,0 +1,45 @@
+
+=== deploy triggers a separate run for each resource
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-distinct-runs/default/files...
+Deploying resources...
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[MY_RUN_A_ID]
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[MY_RUN_B_ID]
+Updating deployment state...
+Deployment complete!
+
+=== two run-now requests were made
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[IDEMPOTENCY_TOKEN]",
+    "job_id": [NUMID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[IDEMPOTENCY_TOKEN]",
+    "job_id": [NUMID]
+  }
+}
+
+=== each resource stored its own run id
+>>> read_id.py my_run_a
+
+>>> read_id.py my_run_b
+run ids differ: identical config did not collapse onto one run
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run_a
+  delete resources.job_runs.my_run_b
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-distinct-runs/default
+
+Deleting files...
+Destroy complete!

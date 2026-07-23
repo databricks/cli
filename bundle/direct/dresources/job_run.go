@@ -139,7 +139,7 @@ func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
-	token, err := idempotencyToken(config)
+	token, err := idempotencyToken(ctx, config)
 	if err != nil {
 		return "", nil, err
 	}
@@ -199,16 +199,20 @@ func parseRunID(id string) (int64, error) {
 	return result, nil
 }
 
-// idempotencyToken hashes the desired state into a stable token so a retried
-// run-now dedupes to the existing run instead of duplicating it. Hex SHA-256
-// (64 chars, the Jobs API max), computed with idempotency_token cleared.
-func idempotencyToken(state *JobRunState) (string, error) {
+// idempotencyToken hashes the run's identity (resource key) plus its config into
+// a stable token. The resource key makes two resources with identical config
+// produce distinct tokens (so both run); the config makes a change re-trigger; a
+// retry with neither changed reuses the run. Hex SHA-256 (64 chars, Jobs API max).
+func idempotencyToken(ctx context.Context, state *JobRunState) (string, error) {
 	toHash := *state
 	toHash.IdempotencyToken = ""
 	canonical, err := json.Marshal(toHash)
 	if err != nil {
 		return "", err
 	}
-	sum := sha256.Sum256(canonical)
-	return hex.EncodeToString(sum[:]), nil
+	h := sha256.New()
+	h.Write([]byte(ResourceIdentity(ctx)))
+	h.Write([]byte{0}) // separator so key‖config can't collide via a shifted boundary
+	h.Write(canonical)
+	return hex.EncodeToString(h.Sum(nil)), nil
 }

@@ -27,6 +27,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {
 	ctx = log.WithPrefix(ctx, "deploying "+d.ResourceKey)
+	ctx = dresources.WithResourceIdentity(ctx, d.ResourceKey)
 	if actionType == deployplan.Create {
 		return d.Create(ctx, db, newState)
 	}

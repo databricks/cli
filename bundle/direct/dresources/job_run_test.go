@@ -12,24 +12,26 @@ import (
 )
 
 func TestIdempotencyTokenIsStableHex(t *testing.T) {
+	ctx := t.Context()
 	run := jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "prod"}}
 
-	got, err := idempotencyToken(&JobRunState{RunNow: run})
+	got, err := idempotencyToken(ctx, &JobRunState{RunNow: run})
 	require.NoError(t, err)
 
 	// hex SHA-256 is always 64 lowercase hex chars (the Jobs API maximum).
 	assert.Regexp(t, "^[0-9a-f]{64}$", got)
 
 	// Deterministic: the same config yields the same token, so a retry dedupes.
-	again, err := idempotencyToken(&JobRunState{RunNow: run})
+	again, err := idempotencyToken(ctx, &JobRunState{RunNow: run})
 	require.NoError(t, err)
 	assert.Equal(t, got, again)
 }
 
 func TestIdempotencyTokenIgnoresPresetToken(t *testing.T) {
-	a, err := idempotencyToken(&JobRunState{RunNow: jobs.RunNow{JobId: 123}})
+	ctx := t.Context()
+	a, err := idempotencyToken(ctx, &JobRunState{RunNow: jobs.RunNow{JobId: 123}})
 	require.NoError(t, err)
-	b, err := idempotencyToken(&JobRunState{RunNow: jobs.RunNow{JobId: 123, IdempotencyToken: "user-supplied"}})
+	b, err := idempotencyToken(ctx, &JobRunState{RunNow: jobs.RunNow{JobId: 123, IdempotencyToken: "user-supplied"}})
 	require.NoError(t, err)
 
 	// The token is cleared before hashing, so a preset value cannot change it.
@@ -37,15 +39,27 @@ func TestIdempotencyTokenIgnoresPresetToken(t *testing.T) {
 }
 
 func TestIdempotencyTokenChangesWithConfig(t *testing.T) {
-	dev, err := idempotencyToken(&JobRunState{RunNow: jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "dev"}}})
+	ctx := t.Context()
+	dev, err := idempotencyToken(ctx, &JobRunState{RunNow: jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "dev"}}})
 	require.NoError(t, err)
-	prod, err := idempotencyToken(&JobRunState{RunNow: jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "prod"}}})
+	prod, err := idempotencyToken(ctx, &JobRunState{RunNow: jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "prod"}}})
 	require.NoError(t, err)
-	otherJob, err := idempotencyToken(&JobRunState{RunNow: jobs.RunNow{JobId: 456}})
+	otherJob, err := idempotencyToken(ctx, &JobRunState{RunNow: jobs.RunNow{JobId: 456}})
 	require.NoError(t, err)
 
 	assert.NotEqual(t, dev, prod)     // different params --> different token
 	assert.NotEqual(t, dev, otherJob) // different job_id --> different token
+}
+
+func TestIdempotencyTokenChangesWithResourceIdentity(t *testing.T) {
+	run := jobs.RunNow{JobId: 123}
+	a, err := idempotencyToken(WithResourceIdentity(t.Context(), "resources.job_runs.a"), &JobRunState{RunNow: run})
+	require.NoError(t, err)
+	b, err := idempotencyToken(WithResourceIdentity(t.Context(), "resources.job_runs.b"), &JobRunState{RunNow: run})
+	require.NoError(t, err)
+
+	// Identical config under different resource keys must not collapse onto one run.
+	assert.NotEqual(t, a, b)
 }
 
 // jobRunClient returns a client whose GetRun always reports the given terminal
