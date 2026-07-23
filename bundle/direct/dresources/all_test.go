@@ -1079,9 +1079,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
 	// A GET on the DELETING app returns the app, not 404 -- the testserver
-	// mirrors that in libs/testserver/apps.go. The CLI does not yet special-case
-	// this transient state (see acceptance/bundle/invariant/{delete,destroy}
-	// _idempotent tests for the resulting idempotency gap).
+	// mirrors that in libs/testserver/apps.go. DoRead therefore still succeeds
+	// here; the planner treats this transient state as gone via ResourceApp.IsGone
+	// so delete/destroy stay idempotent (acceptance/bundle/invariant/{delete,destroy}_idempotent).
 	deleteLeavesDeleting := group == "apps"
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
