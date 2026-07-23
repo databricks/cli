@@ -961,6 +961,19 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			if err != nil {
 				return nil, err
 			}
+			// An empty grants list with no state entry is a no-op: there is nothing
+			// to create and, unlike a non-empty-to-empty edit, no principals to revoke.
+			// Terraform never writes a databricks_grants resource for an empty list, so
+			// after "bundle deployment migrate" there is no state entry to match against;
+			// emitting a plan node here would show a spurious "create" and contradict
+			// migrate's promise of no actions planned. When a state entry does exist
+			// (grants were deployed and are now being emptied), keep the node so the
+			// revoke is still planned.
+			if gs, ok := inputConfigStructVar.Value.(*dresources.GrantsState); ok && len(gs.EmbeddedSlice) == 0 {
+				if _, hasState := db.State[node]; !hasState {
+					continue
+				}
+			}
 			inputConfig = inputConfigStructVar.Value
 			baseRefs = inputConfigStructVar.Refs
 		}
