@@ -54,9 +54,6 @@ func GenerateMaterializedConfig(config *TestConfig) string {
 	for _, k := range slices.Sorted(maps.Keys(config.GOOS)) {
 		fmt.Fprintf(&buf, "GOOS.%s = %v\n", k, config.GOOS[k])
 	}
-	for _, k := range slices.Sorted(maps.Keys(config.GOOSOnPR)) {
-		fmt.Fprintf(&buf, "GOOSOnPR.%s = %v\n", k, config.GOOSOnPR[k])
-	}
 	for _, k := range slices.Sorted(maps.Keys(config.CloudEnvs)) {
 		fmt.Fprintf(&buf, "CloudEnvs.%s = %v\n", k, config.CloudEnvs[k])
 	}
