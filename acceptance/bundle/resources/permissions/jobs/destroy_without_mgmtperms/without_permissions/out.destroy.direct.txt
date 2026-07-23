@@ -7,5 +7,4 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Warn: destroying resources.jobs.foo: Ignoring permission error when deleting resources.jobs.foo id=[NUMID]: User [TEST_SP_APPLICATION_ID] does not have Admin or Owner permissions on job [NUMID]
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.
