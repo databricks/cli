@@ -122,6 +122,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 			v, err = dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 				var permissions []resources.Permission
 				pv, err := dyn.Get(v, "permissions")
+				present := err == nil
 				// If the permissions field is not found, we set to an empty array
 				if err != nil {
 					pv = dyn.V([]dyn.Value{})
@@ -140,7 +141,11 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 					levelsMap[key],
 				)...)
 
-				if len(permissions) == 0 {
+				// Collapse to nil only when the block was absent, leaving the
+				// resource unmanaged. An explicit `permissions: []` must survive as
+				// an empty sequence so FixPermissions adds the default IS_OWNER,
+				// matching both a non-empty list and Terraform.
+				if len(permissions) == 0 && !present {
 					permissions = nil
 				}
 

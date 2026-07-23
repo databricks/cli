@@ -1,0 +1,1 @@
+An explicit `permissions: []` on a resource is now managed like a non-empty list: the current user is added as the default owner (`IS_OWNER`), matching Terraform. Previously an empty list was treated as if the block were absent.

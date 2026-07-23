@@ -78,7 +78,18 @@
           "label": "${resources.jobs.job_with_permissions.id}"
         }
       ],
-      "action": "delete",
+      "action": "update",
+      "new_state": {
+        "value": {
+          "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+          "__embed__": [
+            {
+              "level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        }
+      },
       "remote_state": {
         "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
         "__embed__": [
@@ -95,6 +106,30 @@
             "user_name": "[USERNAME]"
           }
         ]
+      },
+      "changes": {
+        "[group_name='data-team']": {
+          "action": "update",
+          "old": {
+            "level": "CAN_MANAGE",
+            "group_name": "data-team"
+          },
+          "remote": {
+            "level": "CAN_MANAGE",
+            "group_name": "data-team"
+          }
+        },
+        "[user_name='viewer@example.com']": {
+          "action": "update",
+          "old": {
+            "level": "CAN_VIEW",
+            "user_name": "viewer@example.com"
+          },
+          "remote": {
+            "level": "CAN_VIEW",
+            "user_name": "viewer@example.com"
+          }
+        }
       }
     }
   }

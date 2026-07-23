@@ -28,6 +28,29 @@
           ]
         }
       }
+    },
+    "resources.jobs.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.foo",
+          "label": "${resources.jobs.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "",
+          "__embed__": [
+            {
+              "level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/jobs/${resources.jobs.foo.id}"
+        }
+      }
     }
   }
 }
