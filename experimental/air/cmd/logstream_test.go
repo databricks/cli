@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -330,4 +331,14 @@ func TestSeenSetEviction(t *testing.T) {
 	s.add(3, "c")
 	assert.True(t, s.has(3, "c"))
 	assert.False(t, s.has(3, "d"))
+}
+
+func TestSleepOrCancel(t *testing.T) {
+	// Returns nil once the duration elapses.
+	require.NoError(t, sleepOrCancel(t.Context(), time.Millisecond))
+
+	// Returns the context error promptly when cancelled.
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	require.ErrorIs(t, sleepOrCancel(ctx, time.Hour), context.Canceled)
 }

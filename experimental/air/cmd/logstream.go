@@ -201,9 +201,16 @@ func (st *bricklensStreamer) run() (bool, error) {
 				if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 					return false, err
 				}
+				// A cancelled context (Ctrl-C) is not a transient blip: stop
+				// promptly instead of retrying forever.
+				if st.ctx.Err() != nil {
+					return false, st.ctx.Err()
+				}
 				// A transient status blip should not abort a live stream.
 				log.Debugf(st.ctx, "air logs: failed to refresh run status: %v", err)
-				time.Sleep(retryCheckInterval)
+				if err := sleepOrCancel(st.ctx, retryCheckInterval); err != nil {
+					return false, err
+				}
 				continue
 			}
 			st.status = status
@@ -234,7 +241,22 @@ func (st *bricklensStreamer) run() (bool, error) {
 		}
 
 		firstIteration = false
-		time.Sleep(retryCheckInterval)
+		if err := sleepOrCancel(st.ctx, retryCheckInterval); err != nil {
+			return false, err
+		}
+	}
+}
+
+// sleepOrCancel waits for d, or returns early with the context error if the
+// context is cancelled (e.g. Ctrl-C) so the poll loop exits promptly.
+func sleepOrCancel(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
 }
 
@@ -367,7 +389,9 @@ func (st *bricklensStreamer) requestPage(pageToken string, toSec int64, pageSize
 			return nil, errBricklensFeatureDisabled
 		}
 		log.Debugf(st.ctx, "air logs: bricklens transient failure (%d/%d): %v", transientFailures, maxTransientFailures, err)
-		time.Sleep(retryCheckInterval)
+		if err := sleepOrCancel(st.ctx, retryCheckInterval); err != nil {
+			return nil, err
+		}
 	}
 }
 

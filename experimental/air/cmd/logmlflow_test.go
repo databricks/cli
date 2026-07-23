@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -74,4 +75,40 @@ func TestDiscoverAttemptPrefix(t *testing.T) {
 	got, err = discoverAttemptPrefix(t.Context(), newTestWorkspaceClient(t, newFmt.URL), "run1", 0)
 	require.NoError(t, err)
 	assert.True(t, got)
+}
+
+// noMLflowServer serves a run with no resolvable MLflow run id, so the fallback
+// finds no logs.
+func noMLflowServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{"run_id": 5, "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"}, "tasks": [{"run_id": 456}]}`))
+		case "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestMLflowFallbackNoLogsReflectsRunOutcome(t *testing.T) {
+	srv := noMLflowServer(t)
+	w := newTestWorkspaceClient(t, srv.URL)
+
+	// A SUCCESS run with no logs still reports success (exit 0), matching the
+	// Bricklens path, rather than failing just because no logs exist.
+	success, err := mlflowLogFallback(t.Context(), w, &bytes.Buffer{},
+		logRequest{runID: 5}, logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS"})
+	require.NoError(t, err)
+	assert.True(t, success)
+
+	// A FAILED run with no logs reports failure (exit 1).
+	success, err = mlflowLogFallback(t.Context(), w, &bytes.Buffer{},
+		logRequest{runID: 5}, logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED"})
+	require.NoError(t, err)
+	assert.False(t, success)
 }

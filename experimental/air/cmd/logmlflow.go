@@ -47,7 +47,7 @@ func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out i
 	}
 	if mlflowRunID == "" || logDir == "" {
 		emitNoLogs(out, req, status)
-		return false, nil
+		return status.succeeded(), nil
 	}
 
 	chunks, err := listLogChunks(ctx, w, mlflowRunID, logDir)
@@ -70,7 +70,7 @@ func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out i
 	}
 	if len(lines) == 0 {
 		emitNoLogs(out, req, status)
-		return false, nil
+		return status.succeeded(), nil
 	}
 
 	if len(lines) > target {

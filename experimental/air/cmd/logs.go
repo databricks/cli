@@ -79,6 +79,10 @@ func newLogsCommand() *cobra.Command {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				fmt.Errorf("invalid --minutes %d: must be positive", minutes))
 		}
+		if node < 0 {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				fmt.Errorf("invalid --node %d: must not be negative", node))
+		}
 
 		runID, err := strconv.ParseInt(args[0], 10, 64)
 		if err != nil || runID <= 0 {

@@ -22,5 +22,8 @@ errcode trace $CLI experimental air logs 123 --lines 100 --minutes 30 -o json
 title "invalid run id"
 errcode trace $CLI experimental air logs notanumber
 
+title "negative node"
+errcode trace $CLI experimental air logs 123 --node -1
+
 title "--download-to not implemented"
 errcode trace $CLI experimental air logs 123 --download-to /tmp/out
