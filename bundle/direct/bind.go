@@ -141,12 +141,12 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		// bind runs in full mode). PriorState carries the same field for these
 		// resources (StateType == RemoteType), so it's a safe fallback if a
 		// future call path invokes bind without a fresh remote.
-		if strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.") {
+		if entry != nil && (strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.")) {
 			priorOrRemote := entry.RemoteState
 			if priorOrRemote == nil {
 				priorOrRemote = entry.PriorState
 			}
-			if entry != nil && priorOrRemote != nil {
+			if priorOrRemote != nil {
 				etag, err := structaccess.Get(priorOrRemote, structpath.NewStringKey(nil, "etag"))
 				if err == nil && etag != nil {
 					if etagStr, ok := etag.(string); ok && etagStr != "" {
