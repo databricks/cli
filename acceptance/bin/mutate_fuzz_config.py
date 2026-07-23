@@ -1,33 +1,46 @@
 #!/usr/bin/env python3
 """
-Mutate a known-good bundle config by deleting and perturbing random fields.
+Mutate a known-good bundle config by deleting, perturbing, and adding random fields.
 
 Complements gen_fuzz_config.py (generate-from-scratch via schema walk): instead of
 building a config from the schema, this starts from a curated invariant config that
-already deploys and applies a few seeded mutations (delete a field, replace a scalar
-with a fuzz token, a boundary/dangerous value, or an empty container). It exercises the
-CLI's handling of perturbed-but-realistic input, and reaches a much higher deploy rate
-than the schema walk, since the base already resolves.
+already deploys and applies a few seeded mutations. It exercises the CLI's handling of
+perturbed-but-realistic input, and reaches a much higher deploy rate than the schema
+walk, since the base already resolves.
+
+Two kinds of mutation, chosen per step:
+
+- destructive (always): delete a field, or replace it with a fuzz token, a
+  boundary/dangerous value, or an empty container. Probes the reject/no-panic path.
+- additive (only with a schema): inject a valid optional field the base omits, valued by
+  the schema generator. Destructive ops stay within the base's field set, so they only
+  find reject/panic bugs; adding a valid optional field to a still-deploying config is
+  what reaches reconcile/drift bugs (the field space the schema walk explores).
 
 Reads the base databricks.yml (already envsubst-rendered) from stdin, writes the mutated
-config to stdout. --seed makes the mutation reproducible.
+config to stdout. --seed makes the mutation reproducible; --schema enables the additive op.
 
 The invariant harness only asserts no-panic on fuzzed configs (SKIP_DRIFT_CHECK), so a
 mutation that makes the config invalid is fine: the CLI must reject it cleanly, not crash.
 """
 
 import argparse
+import json
 import os
 import random
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, to_yaml
+from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, Generator, resource_types, to_yaml
 
 # Same near-range-end and dangerous-character probes the schema-walk generator injects into
 # free-form scalars; here we drop them onto any field (see mutate_once).
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
+
+# Chance a step injects a field rather than perturbing one. Biased high: injection is the
+# path to drift bugs, and destructive coverage is already dense (1-3 steps per seed).
+ADD_PROB = 0.6
 
 
 def tokenize(text):
@@ -155,8 +168,83 @@ def mutate_once(rng, roots):
         container[key] = rng.choice([{}, [], None])
 
 
-def mutate(config, seed):
+def resource_element(gen, type_schema):
+    # The instance schema is the map's object-branch additionalProperties (as gen_resource).
+    map_schema = gen.resolve(type_schema)
+    obj = next(b for b in map_schema["oneOf"] if b.get("type") == "object")
+    return obj["additionalProperties"]
+
+
+def collect_insertions(gen, node, schema, rtype, out):
+    # Record every writable optional field absent from an existing object, walking the node
+    # alongside its schema so nested objects (not just the top level) are candidates too.
+    schema = gen.resolve(schema)
+    if not isinstance(schema, dict):
+        return
+
+    branches = schema.get("oneOf") or schema.get("anyOf")
+    if branches:
+        # Pick the branch matching the node we actually have, not a random one.
+        picked = None
+        for branch in branches:
+            resolved = gen.resolve(branch)
+            if isinstance(node, dict) and (
+                resolved.get("type") == "object" or "properties" in resolved or gen.is_map(resolved)
+            ):
+                picked = resolved
+                break
+            if isinstance(node, list) and resolved.get("type") == "array":
+                picked = resolved
+                break
+        if picked is None:
+            return
+        schema = picked
+
+    if isinstance(node, dict):
+        props = schema.get("properties", {})
+        for name, prop_schema in props.items():
+            if name not in node and not gen.should_skip_property(name, prop_schema):
+                out.append((node, name, prop_schema, rtype))
+        for key, value in node.items():
+            if key in props and isinstance(value, (dict, list)):
+                collect_insertions(gen, value, props[key], rtype, out)
+        if gen.is_map(schema):
+            for value in node.values():
+                if isinstance(value, (dict, list)):
+                    collect_insertions(gen, value, schema["additionalProperties"], rtype, out)
+    elif isinstance(node, list):
+        items = schema.get("items")
+        if items:
+            for value in node:
+                if isinstance(value, (dict, list)):
+                    collect_insertions(gen, value, items, rtype, out)
+
+
+def add_field(gen, rng, config):
+    # Inject one valid optional field, absent from the base, into a random insertion point.
+    types = resource_types(gen.root, gen)
+    points = []
+    for rtype, instances in config.get("resources", {}).items():
+        if rtype not in types or not isinstance(instances, dict):
+            continue
+        element = resource_element(gen, types[rtype])
+        for instance in instances.values():
+            if isinstance(instance, dict):
+                gen.rtype = rtype
+                collect_insertions(gen, instance, element, rtype, points)
+    if not points:
+        return
+    node, name, prop_schema, rtype = rng.choice(points)
+    # rtype drives grants/permissions/typed-string generation (see gen_scalar/gen_grants).
+    gen.rtype = rtype
+    value = gen.gen(prop_schema, 1, name)
+    if value is not None:
+        node[name] = value
+
+
+def mutate(config, seed, schema=None, unique="fuzz"):
     rng = random.Random(seed)
+    gen = Generator(schema, rng, unique) if schema is not None else None
 
     # Mutate only inside resource instances: keep bundle/name and the
     # resources.<type>.<key> skeleton so there is always something to deploy, while
@@ -167,7 +255,12 @@ def mutate(config, seed):
             roots.extend(v for v in instances.values() if isinstance(v, (dict, list)))
 
     for _ in range(rng.randint(1, 3)):
-        mutate_once(rng, roots)
+        # gen is None short-circuits before rng is touched, so the no-schema path keeps its
+        # exact RNG stream (and committed selftest output) unchanged.
+        if gen is not None and rng.random() < ADD_PROB:
+            add_field(gen, rng, config)
+        else:
+            mutate_once(rng, roots)
 
     return config
 
@@ -175,13 +268,20 @@ def mutate(config, seed):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, required=True, help="RNG seed (for reproducibility)")
+    parser.add_argument("--schema", help="Path to bundle JSON schema; enables valid-optional-field injection")
+    parser.add_argument("--unique", default="fuzz", help="Unique suffix for injected field values")
     args = parser.parse_args()
 
     config = load_yaml(sys.stdin.read())
     if not isinstance(config, dict):
         sys.exit("mutate_fuzz_config: base config did not parse to a mapping")
 
-    sys.stdout.write(to_yaml(mutate(config, args.seed)))
+    schema = None
+    if args.schema:
+        with open(args.schema) as f:
+            schema = json.load(f)
+
+    sys.stdout.write(to_yaml(mutate(config, args.seed, schema=schema, unique=args.unique)))
 
 
 if __name__ == "__main__":

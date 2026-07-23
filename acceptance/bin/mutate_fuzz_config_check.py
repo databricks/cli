@@ -12,6 +12,7 @@ It also prints a few mutated configs so an accidental change to the algorithm sh
 as an output diff.
 """
 
+import json
 import os
 import sys
 
@@ -19,14 +20,23 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from envsubst import substitute_variables
 from fuzz_gen_config import MUTATE_BASES
+from gen_fuzz_config import SKIP_PROPERTY_NAMES
 from mutate_fuzz_config import load_yaml, mutate, to_yaml
 
 CONFIGS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bundle", "invariant", "configs")
+SCHEMA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "bundle", "schema", "jsonschema.json")
 
 
 def render(name):
     with open(os.path.join(CONFIGS, name + ".yml.tmpl")) as f:
         return substitute_variables(f.read())
+
+
+def instance(config):
+    # The curated bases are single-resource; return that one resource instance.
+    (instances,) = config["resources"].values()
+    (value,) = instances.values()
+    return value
 
 
 def main():
@@ -57,6 +67,34 @@ def main():
     for seed in range(3):
         sys.stdout.write(f"=== volume seed={seed} ===\n")
         sys.stdout.write(to_yaml(mutate(load_yaml(render("volume")), seed)))
+
+    # Assert-only (no stdout) so this golden doesn't churn as the schema grows. The
+    # registered_model base sets none of its optional fields, so any added field is injected.
+    with open(SCHEMA) as f:
+        schema = json.load(f)
+
+    for seed in range(5):
+        a = to_yaml(mutate(load_yaml(render("registered_model")), seed, schema=schema, unique="check"))
+        b = to_yaml(mutate(load_yaml(render("registered_model")), seed, schema=schema, unique="check"))
+        if a != b:
+            sys.stderr.write(f"seed {seed}: schema-aware mutation is not deterministic\n")
+            failed = True
+
+    base_fields = set(instance(load_yaml(render("registered_model"))))
+    injected = False
+    for seed in range(30):
+        fields = set(instance(mutate(load_yaml(render("registered_model")), seed, schema=schema, unique="check")))
+        added = fields - base_fields
+        if added:
+            injected = True
+        # Injecting an output-only field (SKIP_PROPERTY_NAMES) would manufacture false drift.
+        leaked = SKIP_PROPERTY_NAMES & added
+        if leaked:
+            sys.stderr.write(f"seed {seed}: injected output-only field(s): {sorted(leaked)}\n")
+            failed = True
+    if not injected:
+        sys.stderr.write("schema-aware mutation never injected an optional field\n")
+        failed = True
 
     if failed:
         sys.exit(1)
