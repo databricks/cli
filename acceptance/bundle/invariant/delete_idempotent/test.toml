@@ -4,7 +4,7 @@ EnvMatrix.READPLAN = ["", "1"]
 # references the (now-gone) resources; may linger if the test fails mid-run.
 Ignore = [".databricks.backup"]
 
-# apps DoDelete is fire-and-forget (bundle/direct/dresources/app.go): after the
+# Badness: apps DoDelete is fire-and-forget (bundle/direct/dresources/app.go): after the
 # first DELETE the app sits in ComputeState=DELETING for up to ~20 minutes, and
 # a second DELETE against it returns 400 rather than 404. The CLI's plan/apply
 # does not special-case this transient state -- DoRead sees DELETING (not 404),
