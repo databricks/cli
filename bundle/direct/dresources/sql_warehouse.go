@@ -168,13 +168,25 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 		return nil, nil
 	}
 
-	// entry.RemoteState is nil in --planmode=offline: we have no live status,
-	// so skip lifecycle management. WaitAfterUpdate also skips its wait.
+	desiredStarted := *config.Lifecycle.Started
+
 	if entry.RemoteState == nil {
-		return nil, nil
+		// --planmode=offline: no live status. Fire the transition only when
+		// lifecycle.started changed in the config, and tolerate INVALID_STATE in
+		// case the warehouse is already in the desired state. An Edit above
+		// restarts the warehouse, but its waiter already left it RUNNING, so a
+		// separate Start is unnecessary here.
+		if !offlineLifecycleTransition(entry) {
+			return nil, nil
+		}
+		if desiredStarted {
+			_, err := r.client.Warehouses.Start(ctx, sql.StartRequest{Id: id})
+			return nil, tolerateLifecycleRace(ctx, "sql_warehouses."+id, err)
+		}
+		_, err := r.client.Warehouses.Stop(ctx, sql.StopRequest{Id: id})
+		return nil, tolerateLifecycleRace(ctx, "sql_warehouses."+id, err)
 	}
 
-	desiredStarted := *config.Lifecycle.Started
 	alreadyRunning := remoteWarehouseIsRunning(entry)
 	if edited {
 		// Edit restarts the warehouse: its long-running op waits for RUNNING
@@ -196,14 +208,14 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 }
 
 // WaitAfterUpdate waits for the warehouse to reach the desired lifecycle state after DoUpdate.
-// In --planmode=offline, entry.RemoteState is nil and DoUpdate skipped the Start/Stop call,
-// so there's no lifecycle transition to wait for.
 func (r *ResourceSqlWarehouse) WaitAfterUpdate(ctx context.Context, id string, config *SqlWarehouseState, entry *PlanEntry) (*SqlWarehouseRemote, error) {
 	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
 		return nil, nil
 	}
 
-	if entry.RemoteState == nil {
+	// In --planmode=offline DoUpdate only fires a transition when lifecycle.started
+	// changed; if it did not, there is nothing to wait for.
+	if entry.RemoteState == nil && !offlineLifecycleTransition(entry) {
 		return nil, nil
 	}
 
