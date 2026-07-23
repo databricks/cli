@@ -908,6 +908,47 @@ func (b *DeploymentBundle) savedStateField(targetResourceKey string, adapter *dr
 	return value, nil
 }
 
+// resolveRefsFromOwnState is the offline-mode fallback for references that
+// per-reference interpolation could not resolve (typically a reference to a
+// remote-only target field, absent from the target's saved state). For each
+// still-unresolved field it looks up the field's own last-resolved value in
+// this resource's saved state, writes it into sv.Value, and drops the entry
+// from sv.Refs. Returns whether any field was resolved. Callers run this only
+// after interpolation, so a changed literal template is never overwritten.
+func (b *DeploymentBundle) resolveRefsFromOwnState(ctx context.Context, resourceKey string, sv *structvar.StructVar) bool {
+	dbentry, ok := b.StateDB.GetResourceEntry(resourceKey)
+	if !ok || len(dbentry.State) == 0 {
+		return false
+	}
+	adapter, err := b.getAdapterForKey(resourceKey)
+	if err != nil {
+		return false
+	}
+	savedState, err := parseState(adapter.StateType(), dbentry.State)
+	if err != nil {
+		log.Debugf(ctx, "offline: parsing saved state for %q failed: %v", resourceKey, err)
+		return false
+	}
+	resolved := false
+	for fieldPathStr := range sv.Refs {
+		fieldPath, err := structpath.ParsePath(fieldPathStr)
+		if err != nil {
+			continue
+		}
+		value, err := structaccess.Get(savedState, fieldPath)
+		if err != nil || value == nil {
+			continue
+		}
+		if err := structaccess.Set(sv.Value, fieldPath, value); err != nil {
+			log.Debugf(ctx, "offline: setting %s.%s from saved state failed: %v", resourceKey, fieldPathStr, err)
+			continue
+		}
+		delete(sv.Refs, fieldPathStr)
+		resolved = true
+	}
+	return resolved
+}
+
 // resolveReferences processes all references in entry.NewState.Refs.
 func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isPreDeploy bool) bool {
 	sv, ok := b.StateCache.Load(resourceKey)
@@ -965,6 +1006,19 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 				logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s with value of %q: %w", errorPrefix, fieldPathStr, ref, err))
 				return false
 			}
+			resolved = true
+		}
+	}
+
+	// In offline mode, per-reference interpolation above cannot resolve a
+	// reference to a remote-only target field (e.g. object_id references the
+	// parent's endpoint_id, which is not stored in the parent's state). For any
+	// field still unresolved, fall back to the field's own last-resolved value
+	// from this resource's saved state. Interpolation runs first so that a
+	// changed literal template (e.g. /v1/${id} -> /v2/${id}) is honored; this
+	// only fills fields interpolation left behind.
+	if isPreDeploy && b.Plan.Mode == deployplan.PlanModeOffline && len(sv.Refs) > 0 {
+		if b.resolveRefsFromOwnState(ctx, resourceKey, sv) {
 			resolved = true
 		}
 	}
