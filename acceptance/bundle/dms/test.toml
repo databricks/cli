@@ -1,0 +1,13 @@
+Local = true
+Cloud = false
+
+# Deployment Metadata Service (DMS) recording is only meaningful in the direct
+# engine, where the deployment ID is stored in and read from the direct-engine
+# state.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+RecordRequests = true
+
+Ignore = [
+    '.databricks',
+]

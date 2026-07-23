@@ -88,6 +88,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
+			// Record the delete with DMS. State is nil: the resource is gone.
+			if err := b.recordOperation(ctx, resourceKey, action, "", nil); err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				return false
+			}
 			return true
 		}
 
@@ -113,6 +118,14 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				return false
+			}
+
+			// Record the operation with DMS. The resource ID and applied config
+			// (sv.Value) come from the write just performed; GetResourceID reads
+			// the ID assigned by Deploy.
+			if err := b.recordOperation(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), sv.Value); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}

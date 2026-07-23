@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/spf13/cobra"
 )
 
@@ -211,7 +212,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+
+			// When the bundle records deployment history, the deployment metadata
+			// service owns resource state, so hand Open its client to overlay DMS
+			// state on top of the local identity (lineage/serial/deployment ID).
+			// Reads open the state write-disabled, so no lineage is minted here.
+			var dmsClient bundledeployments.BundleDeploymentsInterface
+			if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
+				dmsClient = b.WorkspaceClient(ctx).BundleDeployments
+			}
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsClient); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}

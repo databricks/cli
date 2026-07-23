@@ -1,0 +1,10 @@
+bundle:
+  name: dms-record
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    foo:
+      name: foo
