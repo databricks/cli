@@ -3,6 +3,7 @@ package aircmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"slices"
@@ -11,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -157,13 +159,19 @@ func (req logRequest) toSeconds(status logRunStatus) int64 {
 // completion. It returns whether the run finished with SUCCESS;
 // errBricklensFeatureDisabled means the caller should fall back to MLflow.
 func streamBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+	// Build the API client once and reuse it for every page fetch in the loop.
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return false, fmt.Errorf("failed to create API client: %w", err)
+	}
 	st := &bricklensStreamer{
-		ctx:    ctx,
-		w:      w,
-		out:    out,
-		req:    req,
-		status: status,
-		seen:   newSeenSet(seenRecordsCap),
+		ctx:       ctx,
+		w:         w,
+		apiClient: apiClient,
+		out:       out,
+		req:       req,
+		status:    status,
+		seen:      newSeenSet(seenRecordsCap),
 	}
 	return st.run()
 }
@@ -171,11 +179,12 @@ func streamBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, out
 // bricklensStreamer holds the poll-loop state: the from-second cursor, the
 // highest emitted timestamp, and the dedup set.
 type bricklensStreamer struct {
-	ctx    context.Context
-	w      *databricks.WorkspaceClient
-	out    io.Writer
-	req    logRequest
-	status logRunStatus
+	ctx       context.Context
+	w         *databricks.WorkspaceClient
+	apiClient *client.DatabricksClient
+	out       io.Writer
+	req       logRequest
+	status    logRunStatus
 
 	fromSec      int64
 	lastNano     int64
@@ -371,7 +380,7 @@ func (st *bricklensStreamer) requestPage(pageToken string, toSec int64, pageSize
 
 	transientFailures := 0
 	for {
-		resp, err := getBricklensLogs(st.ctx, st.w, st.req.runID, q)
+		resp, err := getBricklensLogs(st.ctx, st.apiClient, st.req.runID, q)
 		if err == nil {
 			return resp, nil
 		}

@@ -5,12 +5,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path"
 	"regexp"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -28,6 +30,16 @@ var chunkFilePattern = regexp.MustCompile(`^logs-(\d+)\.chunk\.txt$`)
 // attempt-prefixed layout nests these under logs/attempt_<n>/, so a bare
 // logs/node_<n> only appears in the old layout.
 var oldFormatNodeDir = regexp.MustCompile(`^logs/node_\d+$`)
+
+// artifactDownloadClient fetches pre-signed artifact URLs with connect and
+// response-header timeouts, so a stalled storage backend can't hang the command.
+// Mirrors the Python CLI's (10s connect, 60s read) bounds.
+var artifactDownloadClient = &http.Client{
+	Transport: &http.Transport{
+		DialContext:           (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
+		ResponseHeaderTimeout: 60 * time.Second,
+	},
+}
 
 // mlflowLogFallback prints a run's logs from MLflow artifacts, the fallback when
 // Bricklens can't serve them. It resolves the MLflow run id, discovers the
@@ -264,7 +276,7 @@ func downloadArtifact(ctx context.Context, w *databricks.WorkspaceClient, mlflow
 		req.Header.Set(h.Name, h.Value)
 	}
 
-	httpResp, err := http.DefaultClient.Do(req)
+	httpResp, err := artifactDownloadClient.Do(req)
 	if err != nil {
 		return "", err
 	}

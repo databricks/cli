@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -175,12 +176,16 @@ func TestDrainPagesDedupAndOrdering(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	var buf bytes.Buffer
+	w := newTestWorkspaceClient(t, srv.URL)
+	apiClient, err := client.New(w.Config)
+	require.NoError(t, err)
 	st := &bricklensStreamer{
-		ctx:  t.Context(),
-		w:    newTestWorkspaceClient(t, srv.URL),
-		out:  &buf,
-		req:  logRequest{runID: 1, node: 0, attempt: -1},
-		seen: newSeenSet(seenRecordsCap),
+		ctx:       t.Context(),
+		w:         w,
+		apiClient: apiClient,
+		out:       &buf,
+		req:       logRequest{runID: 1, node: 0, attempt: -1},
+		seen:      newSeenSet(seenRecordsCap),
 	}
 	require.NoError(t, st.drainPages(0))
 	require.Equal(t, 2, page)
@@ -268,13 +273,17 @@ func TestRequestPageRetriesThenFallsBack(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
+	w := newTestWorkspaceClient(t, srv.URL)
+	apiClient, err := client.New(w.Config)
+	require.NoError(t, err)
 	st := &bricklensStreamer{
-		ctx:  t.Context(),
-		w:    newTestWorkspaceClient(t, srv.URL),
-		req:  logRequest{runID: 1, node: 0, attempt: -1},
-		seen: newSeenSet(seenRecordsCap),
+		ctx:       t.Context(),
+		w:         w,
+		apiClient: apiClient,
+		req:       logRequest{runID: 1, node: 0, attempt: -1},
+		seen:      newSeenSet(seenRecordsCap),
 	}
-	_, err := st.requestPage("", 0, 0, true)
+	_, err = st.requestPage("", 0, 0, true)
 	// Persistent transient failures fall back to MLflow after the retry budget.
 	require.ErrorIs(t, err, errBricklensFeatureDisabled)
 	assert.Equal(t, maxTransientFailures, calls)
@@ -301,11 +310,15 @@ func TestRequestPageRetriesThenSucceeds(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
+	wc := newTestWorkspaceClient(t, srv.URL)
+	apiClient, err := client.New(wc.Config)
+	require.NoError(t, err)
 	st := &bricklensStreamer{
-		ctx:  t.Context(),
-		w:    newTestWorkspaceClient(t, srv.URL),
-		req:  logRequest{runID: 1, node: 0, attempt: -1},
-		seen: newSeenSet(seenRecordsCap),
+		ctx:       t.Context(),
+		w:         wc,
+		apiClient: apiClient,
+		req:       logRequest{runID: 1, node: 0, attempt: -1},
+		seen:      newSeenSet(seenRecordsCap),
 	}
 	resp, err := st.requestPage("", 0, 0, true)
 	require.NoError(t, err)

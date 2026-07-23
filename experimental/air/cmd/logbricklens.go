@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 )
 
@@ -52,14 +51,10 @@ type bricklensLogsQuery struct {
 	ascending bool
 }
 
-// getBricklensLogs fetches one page of logs. It returns the raw error so the
-// caller can classify it via classifyLogError.
-func getBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, runID int64, q bricklensLogsQuery) (*bricklensLogsResponse, error) {
-	apiClient, err := client.New(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create API client: %w", err)
-	}
-
+// getBricklensLogs fetches one page of logs. The API client is built once by the
+// caller and reused across the poll loop. It returns the raw error so the caller
+// can classify it via classifyLogError.
+func getBricklensLogs(ctx context.Context, apiClient *client.DatabricksClient, runID int64, q bricklensLogsQuery) (*bricklensLogsResponse, error) {
 	query := map[string]any{
 		// Always sent: the tail path relies on an explicit false for newest-first.
 		"ascending": strconv.FormatBool(q.ascending),
