@@ -1088,9 +1088,15 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	switch {
 	case deleteIsNoop:
 		require.NoError(t, err)
+		// The resource genuinely still exists, so it must not report as gone.
+		assert.False(t, adapter.IsGone(remoteAfterDelete))
 	case deleteLeavesDeleting:
 		require.NoError(t, err)
 		require.NotNil(t, remoteAfterDelete)
+		// IsGone lets the planner short-circuit the second delete on this
+		// transient DELETING state; this is what keeps the delete/destroy
+		// invariant tests idempotent, so assert the contract directly.
+		assert.True(t, adapter.IsGone(remoteAfterDelete))
 	default:
 		require.Error(t, err)
 		require.Nil(t, remoteAfterDelete)
