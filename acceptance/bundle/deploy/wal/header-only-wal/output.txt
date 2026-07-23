@@ -2,7 +2,6 @@
 === First deploy (killed before recording the job, leaves a header-only WAL)
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
 [PROCESS_KILLED]
 
 Exit code: [KILLED]
@@ -13,7 +12,6 @@ Exit code: [KILLED]
 === Second deploy (killed again, leaves another header-only WAL)
 >>> errcode [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
 [PROCESS_KILLED]
 
 Exit code: [KILLED]
@@ -24,9 +22,9 @@ Exit code: [KILLED]
 === Third deploy (must recover and succeed, not blocked by the leftover WAL)
 >>> errcode [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.test_job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> errcode assert_not_exists.py .databricks/bundle/default/resources.json.wal
 

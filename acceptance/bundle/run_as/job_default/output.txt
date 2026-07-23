@@ -2,12 +2,9 @@
 === Deploy with run_as
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
-Deploying resources...
 created jobs.job_with_run_as
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
-Updating deployment state...
-Deployment complete!
 
 >>> print_requests.py //jobs
 {
@@ -57,12 +54,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
-Deploying resources...
 updated jobs.job_with_run_as
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
-Updating deployment state...
-Deployment complete!
 
 >>> print_requests.py //jobs
 {
@@ -110,5 +104,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

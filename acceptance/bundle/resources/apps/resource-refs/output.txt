@@ -1,9 +1,11 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/resource-refs/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created apps.data_app
+created jobs.example_job
+created schemas.example
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle run data_app
 ✓ Getting the status of the app data-app

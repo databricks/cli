@@ -2,9 +2,10 @@
 === Initial deployment with STANDARD endpoint_type
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-with-endpoint-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created vector_search_endpoints.my_endpoint
+created vector_search_indexes.my_index
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Change endpoint_type (recreates endpoint; index recreate cascade is not yet implemented)
 >>> update_file.py databricks.yml endpoint_type: STANDARD endpoint_type: STORAGE_OPTIMIZED
@@ -108,9 +109,9 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-with-endpoint-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+recreated vector_search_endpoints.my_endpoint
+
+Deploy: 1 created, 0 changed, 1 deleted, 1 unchanged.
 
 >>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
 {
@@ -139,9 +140,9 @@ This action will result in the deletion or recreation of the following Vector Se
 Recreating a Delta Sync index re-runs the full embedding pipeline; recreating a Direct Access
 index drops all upserted vectors. Both can be expensive to rebuild:
   recreate resources.vector_search_indexes.my_index
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+recreated vector_search_indexes.my_index
+
+Deploy: 1 created, 0 changed, 1 deleted, 1 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -155,5 +156,4 @@ For Direct Access indexes, all upserted vectors are permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-with-endpoint-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

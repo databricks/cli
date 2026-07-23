@@ -10,9 +10,11 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-purge-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created postgres_branches.hard_delete
+created postgres_branches.soft_delete
+created postgres_projects.my_project
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/test-pg-branch-hard-[UNIQUE_NAME]
 {

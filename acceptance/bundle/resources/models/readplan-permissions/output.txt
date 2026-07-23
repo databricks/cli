@@ -2,9 +2,10 @@
 === Initial deploy: model created with permissions
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created models.mymodel
+created models.mymodel.permissions
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //permissions/registered-models
 {
@@ -29,9 +30,10 @@ Deployment complete!
 }
 
 === Remove manager permission and description, deploy from planUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated models.mymodel
+updated models.mymodel.permissions
+
+Deploy: 0 created, 2 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //permissions/registered-models
 {
@@ -57,5 +59,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.
