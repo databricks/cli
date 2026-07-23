@@ -1,283 +1,515 @@
-github.com/databricks/cli/bundle/config.Artifact:
-  "build":
-    "description": |-
-      An optional set of build commands to run locally before deployment.
-  "dynamic_version":
-    "description": |-
-      Whether to patch the wheel version dynamically based on the timestamp of the whl file. If this is set to `true`, new code can be deployed without having to update the version in `setup.py` or `pyproject.toml`. This setting is only valid when `type` is set to `whl`. See [\_](/dev-tools/bundles/settings.md#bundle-syntax-mappings-artifacts).
-  "executable":
-    "description": |-
-      The executable type. Valid values are `bash`, `sh`, and `cmd`.
-  "files":
-    "description": |-
-      The relative or absolute path to the built artifact files.
-  "path":
-    "description": |-
-      The local path of the directory for the artifact.
-  "type":
-    "description": |-
-      Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
-    "markdown_description": |-
-      Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
-github.com/databricks/cli/bundle/config.ArtifactFile:
-  "source":
-    "description": |-
-      Required. The artifact source file.
-github.com/databricks/cli/bundle/config.Bundle:
-  "cluster_id":
-    "description": |-
-      The ID of a cluster to use to run the bundle.
-    "markdown_description": |-
-      The ID of a cluster to use to run the bundle. See [\_](/dev-tools/bundles/settings.md#cluster_id).
-  "compute_id":
-    "description": |-
-      Deprecated. The ID of the compute to use to run the bundle.
-  "databricks_cli_version":
-    "description": |-
-      The Databricks CLI version to use for the bundle.
-    "markdown_description": |-
-      The Databricks CLI version to use for the bundle. See [\_](/dev-tools/bundles/settings.md#databricks_cli_version).
-  "deployment":
-    "description": |-
-      The definition of the bundle deployment
-    "markdown_description": |-
-      The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
-  "engine":
-    "description": |-
-      The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "terraform".
-  "git":
-    "description": |-
-      The Git version control details that are associated with your bundle.
-    "markdown_description": |-
-      The Git version control details that are associated with your bundle. For supported attributes see [\_](/dev-tools/bundles/settings.md#git).
-  "name":
-    "description": |-
-      The name of the bundle.
-  "uuid":
-    "description": |-
-      Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
-github.com/databricks/cli/bundle/config.Deployment:
-  "fail_on_active_runs":
-    "description": |-
-      Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
-  "lock":
-    "description": |-
-      The deployment lock attributes.
-github.com/databricks/cli/bundle/config.Experimental:
-  "pydabs":
-    "description": |-
-      The PyDABs configuration.
-    "deprecation_message": |-
-      Deprecated: please use python instead
-  "python":
-    "description": |-
-      Configures loading of Python code defined with 'databricks-bundles' package.
-  "python_wheel_wrapper":
-    "description": |-
-      Whether to use a Python wheel wrapper.
-  "record_deployment_history":
-    "description": |-
-      Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
-  "scripts":
-    "description": |-
-      The commands to run.
-  "skip_artifact_cleanup":
-    "description": |-
-      Determines whether to skip cleaning up the .internal folder
-  "skip_name_prefix_for_schema":
-    "description": |-
-      Skip adding the prefix that is either set in `presets.name_prefix` or computed when `mode: development`
-      is set, to the names of UC schemas defined in the bundle.
-  "use_legacy_run_as":
-    "description": |-
-      Whether to use the legacy run_as behavior.
-github.com/databricks/cli/bundle/config.Git:
-  "branch":
-    "description": |-
-      The Git branch name.
-    "markdown_description": |-
-      The Git branch name. See [\_](/dev-tools/bundles/settings.md#git).
-  "origin_url":
-    "description": |-
-      The origin URL of the repository.
-    "markdown_description": |-
-      The origin URL of the repository. See [\_](/dev-tools/bundles/settings.md#git).
-github.com/databricks/cli/bundle/config.Lock:
-  "enabled":
-    "description": |-
-      Whether this lock is enabled.
-  "force":
-    "description": |-
-      Whether to force this lock if it is enabled.
-github.com/databricks/cli/bundle/config.Presets:
-  "artifacts_dynamic_version":
-    "description": |-
-      Whether to enable dynamic_version on all artifacts.
-  "jobs_max_concurrent_runs":
-    "description": |-
-      The maximum concurrent runs for a job.
-  "name_prefix":
-    "description": |-
-      The prefix for job runs of the bundle.
-  "pipelines_development":
-    "description": |-
-      Whether pipeline deployments should be locked in development mode.
-  "source_linked_deployment":
-    "description": |-
-      Whether to link the deployment to the bundle source.
-  "tags":
-    "description": |-
-      The tags for the bundle deployment.
-  "trigger_pause_status":
-    "description": |-
-      A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.
-github.com/databricks/cli/bundle/config.PyDABs:
-  "enabled":
-    "description": |-
-      Whether or not PyDABs (Private Preview) is enabled
-  "import":
-    "description": |-
-      The PyDABs project to import to discover resources, resource generator and mutators
-  "venv_path":
-    "description": |-
-      The Python virtual environment path
-github.com/databricks/cli/bundle/config.Python:
-  "mutators":
-    "description": |-
-      Mutators contains a list of fully qualified function paths to mutator functions.
+# This file contains the documentation the CLI owns for the bundle
+# configuration JSON schema: docs for fields that do not exist in the upstream
+# API spec (.codegen/cli.json), and overrides of upstream docs. Documentation
+# for everything else is inherited from cli.json at generation time and must
+# not be duplicated here.
+#
+# The structure mirrors the bundle configuration tree. The "$type" and
+# "$fields" keys are structural; every other key is a config field name.
+#   - A node documents one field: its inline keys (description,
+#     markdown_description, ...) apply to the field itself.
+#   - "$type" documents the type the field's value resolves to — for map and
+#     sequence fields, each entry. These docs are shared by every occurrence
+#     of the type; enum values also live here.
+#   - "$fields" holds the nodes of that type's fields (map and sequence levels
+#     are unwrapped implicitly).
+#   - Each type is expanded exactly once, at its first occurrence; fields of
+#     types that occur again later (for example everything under "targets")
+#     are documented at that first occurrence.
+#   - "description: PLACEHOLDER" marks fields that have no documentation yet.
+#
+# Running "task generate-schema" keeps this file in sync with the
+# configuration structure: it adds placeholders for new undocumented fields
+# and drops entries for fields that no longer exist.
+artifacts:
+  "description": |-
+    Defines the attributes to build an artifact
+  "markdown_description": |-
+    Defines the attributes to build artifacts, where each key is the name of the artifact, and the value is a Map that defines the artifact build settings. For information about the `artifacts` mapping, see [\_](/dev-tools/bundles/settings.md#artifacts).
 
-      Example: ["my_project.mutators:add_default_cluster"]
-  "resources":
-    "description": |-
-      Resources contains a list of fully qualified function paths to load resources
-      defined in Python code.
+    Artifact settings defined in the top level of the bundle configuration can be overridden in the `targets` mapping. See [\_](/dev-tools/bundles/artifact-overrides.md).
+  "markdown_examples": |-
+    ```yaml
+    artifacts:
+      default:
+        type: whl
+        build: poetry build
+        path: .
+    ```
+  "$fields":
+    "build":
+      "description": |-
+        An optional set of build commands to run locally before deployment.
+    "dynamic_version":
+      "description": |-
+        Whether to patch the wheel version dynamically based on the timestamp of the whl file. If this is set to `true`, new code can be deployed without having to update the version in `setup.py` or `pyproject.toml`. This setting is only valid when `type` is set to `whl`. See [\_](/dev-tools/bundles/settings.md#bundle-syntax-mappings-artifacts).
+    "executable":
+      "description": |-
+        The executable type. Valid values are `bash`, `sh`, and `cmd`.
+    "files":
+      "description": |-
+        The relative or absolute path to the built artifact files.
+      "$fields":
+        "source":
+          "description": |-
+            Required. The artifact source file.
+    "path":
+      "description": |-
+        The local path of the directory for the artifact.
+    "type":
+      "description": |-
+        Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
+      "markdown_description": |-
+        Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
+bundle:
+  "description": |-
+    The bundle attributes when deploying to this target.
+  "markdown_description": |-
+    The bundle attributes when deploying to this target,
+  "$fields":
+    "cluster_id":
+      "description": |-
+        The ID of a cluster to use to run the bundle.
+      "markdown_description": |-
+        The ID of a cluster to use to run the bundle. See [\_](/dev-tools/bundles/settings.md#cluster_id).
+    "compute_id":
+      "description": |-
+        Deprecated. The ID of the compute to use to run the bundle.
+    "databricks_cli_version":
+      "description": |-
+        The Databricks CLI version to use for the bundle.
+      "markdown_description": |-
+        The Databricks CLI version to use for the bundle. See [\_](/dev-tools/bundles/settings.md#databricks_cli_version).
+    "deployment":
+      "description": |-
+        The definition of the bundle deployment
+      "markdown_description": |-
+        The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
+      "$fields":
+        "fail_on_active_runs":
+          "description": |-
+            Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
+        "lock":
+          "description": |-
+            The deployment lock attributes.
+          "$fields":
+            "enabled":
+              "description": |-
+                Whether this lock is enabled.
+            "force":
+              "description": |-
+                Whether to force this lock if it is enabled.
+    "engine":
+      "description": |-
+        The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "terraform".
+      "$type":
+        "enum":
+          - |-
+            terraform
+          - |-
+            direct
+    "git":
+      "description": |-
+        The Git version control details that are associated with your bundle.
+      "markdown_description": |-
+        The Git version control details that are associated with your bundle. For supported attributes see [\_](/dev-tools/bundles/settings.md#git).
+      "$fields":
+        "branch":
+          "description": |-
+            The Git branch name.
+          "markdown_description": |-
+            The Git branch name. See [\_](/dev-tools/bundles/settings.md#git).
+        "origin_url":
+          "description": |-
+            The origin URL of the repository.
+          "markdown_description": |-
+            The origin URL of the repository. See [\_](/dev-tools/bundles/settings.md#git).
+    "name":
+      "description": |-
+        The name of the bundle.
+    "uuid":
+      "description": |-
+        Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
+environments:
+  "description": |-
+    PLACEHOLDER
+  "deprecation_message": |-
+    Deprecated: please use targets instead
+experimental:
+  "description": |-
+    Defines attributes for experimental features.
+  "$fields":
+    "immutable_folder":
+      "description": |-
+        Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.
+    "pydabs":
+      "description": |-
+        The PyDABs configuration.
+      "deprecation_message": |-
+        Deprecated: please use python instead
+      "$fields":
+        "enabled":
+          "description": |-
+            Whether or not PyDABs (Private Preview) is enabled
+    "python":
+      "description": |-
+        Configures loading of Python code defined with 'databricks-bundles' package.
+      "$fields":
+        "mutators":
+          "description": |-
+            Mutators contains a list of fully qualified function paths to mutator functions.
 
-      Example: ["my_project.resources:load_resources"]
-  "venv_path":
-    "description": |-
-      VEnvPath is path to the virtual environment.
+            Example: ["my_project.mutators:add_default_cluster"]
+        "resources":
+          "description": |-
+            Resources contains a list of fully qualified function paths to load resources
+            defined in Python code.
 
-      If enabled, Python code will execute within this environment. If disabled,
-      it defaults to using the Python interpreter available in the current shell.
-github.com/databricks/cli/bundle/config.Resources:
-  "alerts":
-    "description": |-
-      PLACEHOLDER
-  "apps":
-    "description": |-
-      The app resource defines a Databricks app.
-    "markdown_description": |-
-      The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
-  "catalogs":
-    "description": |-
-      PLACEHOLDER
-  "clusters":
-    "description": |-
-      The cluster definitions for the bundle, where each key is the name of a cluster.
-    "markdown_description": |-
-      The cluster definitions for the bundle, where each key is the name of a cluster. See [\_](/dev-tools/bundles/resources.md#clusters).
-  "dashboards":
-    "description": |-
-      The dashboard definitions for the bundle, where each key is the name of the dashboard.
-    "markdown_description": |-
-      The dashboard definitions for the bundle, where each key is the name of the dashboard. See [\_](/dev-tools/bundles/resources.md#dashboards).
-  "database_catalogs":
-    "description": |-
-      PLACEHOLDER
-  "database_instances":
-    "description": |-
-      PLACEHOLDER
-  "experiments":
-    "description": |-
-      The experiment definitions for the bundle, where each key is the name of the experiment.
-    "markdown_description": |-
-      The experiment definitions for the bundle, where each key is the name of the experiment. See [\_](/dev-tools/bundles/resources.md#experiments).
-  "external_locations":
-    "description": |-
-      PLACEHOLDER
-  "genie_spaces":
-    "description": |-
-      PLACEHOLDER
-  "jobs":
-    "description": |-
-      The job definitions for the bundle, where each key is the name of the job.
-    "markdown_description": |-
-      The job definitions for the bundle, where each key is the name of the job. See [\_](/dev-tools/bundles/resources.md#jobs).
-  "model_serving_endpoints":
-    "description": |-
-      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
-    "markdown_description": |-
-      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [\_](/dev-tools/bundles/resources.md#model_serving_endpoints).
-  "models":
-    "description": |-
-      The model definitions for the bundle, where each key is the name of the model.
-    "markdown_description": |-
-      The model definitions for the bundle, where each key is the name of the model. See [\_](/dev-tools/bundles/resources.md#models).
-  "pipelines":
-    "description": |-
-      The pipeline definitions for the bundle, where each key is the name of the pipeline.
-    "markdown_description": |-
-      The pipeline definitions for the bundle, where each key is the name of the pipeline. See [\_](/dev-tools/bundles/resources.md#pipelines).
-  "postgres_branches":
-    "description": |-
-      PLACEHOLDER
-  "postgres_catalogs":
-    "description": |-
-      The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.
-  "postgres_endpoints":
-    "description": |-
-      PLACEHOLDER
-  "postgres_projects":
-    "description": |-
-      PLACEHOLDER
-  "postgres_synced_tables":
-    "description": |-
-      The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
-  "quality_monitors":
-    "description": |-
-      The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
-    "markdown_description": |-
-      The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [\_](/dev-tools/bundles/resources.md#quality_monitors).
-  "registered_models":
-    "description": |-
-      The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model.
-    "markdown_description": |-
-      The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model. See [\_](/dev-tools/bundles/resources.md#registered_models)
-  "schemas":
-    "description": |-
-      The schema definitions for the bundle, where each key is the name of the schema.
-    "markdown_description": |-
-      The schema definitions for the bundle, where each key is the name of the schema. See [\_](/dev-tools/bundles/resources.md#schemas).
-  "secret_scopes":
-    "description": |-
-      The secret scope definitions for the bundle, where each key is the name of the secret scope.
-    "markdown_description": |-
-      The secret scope definitions for the bundle, where each key is the name of the secret scope. See [\_](/dev-tools/bundles/resources.md#secret_scopes).
-  "sql_warehouses":
-    "description": |-
-      The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
-    "markdown_description": |-
-      The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
-  "synced_database_tables":
-    "description": |-
-      PLACEHOLDER
-  "vector_search_endpoints":
-    "description": |-
-      PLACEHOLDER
-  "vector_search_indexes":
-    "description": |-
-      PLACEHOLDER
-  "volumes":
-    "description": |-
-      The volume definitions for the bundle, where each key is the name of the volume.
-    "markdown_description": |-
-      The volume definitions for the bundle, where each key is the name of the volume. See [\_](/dev-tools/bundles/resources.md#volumes).
-github.com/databricks/cli/bundle/config.Root:
-  "artifacts":
-    "description": |-
-      Defines the attributes to build an artifact
-    "markdown_description": |-
-      Defines the attributes to build artifacts, where each key is the name of the artifact, and the value is a Map that defines the artifact build settings. For information about the `artifacts` mapping, see [\_](/dev-tools/bundles/settings.md#artifacts).
+            Example: ["my_project.resources:load_resources"]
+        "venv_path":
+          "description": |-
+            VEnvPath is path to the virtual environment.
+
+            If enabled, Python code will execute within this environment. If disabled,
+            it defaults to using the Python interpreter available in the current shell.
+    "python_wheel_wrapper":
+      "description": |-
+        Whether to use a Python wheel wrapper.
+    "record_deployment_history":
+      "description": |-
+        Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
+    "scripts":
+      "description": |-
+        The commands to run.
+    "skip_artifact_cleanup":
+      "description": |-
+        Determines whether to skip cleaning up the .internal folder
+    "skip_name_prefix_for_schema":
+      "description": |-
+        Skip adding the prefix that is either set in `presets.name_prefix` or computed when `mode: development`
+        is set, to the names of UC schemas defined in the bundle.
+    "use_legacy_run_as":
+      "description": |-
+        Whether to use the legacy run_as behavior.
+include:
+  "description": |-
+    Specifies a list of path globs that contain configuration files to include within the bundle.
+  "markdown_description": |-
+    Specifies a list of path globs that contain configuration files to include within the bundle. See [\_](/dev-tools/bundles/settings.md#include).
+permissions:
+  "description": |-
+    Defines a permission for a specific entity.
+  "markdown_description": |-
+    A Sequence that defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle, where each item in the sequence is a permission for a specific entity.
+
+    See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "markdown_examples": |-
+    ```yaml
+    permissions:
+      - level: CAN_VIEW
+        group_name: test-group
+      - level: CAN_MANAGE
+        user_name: someone@example.com
+      - level: CAN_RUN
+        service_principal_name: 123456-abcdef
+    ```
+presets:
+  "description": |-
+    Defines bundle deployment presets.
+  "markdown_description": |-
+    Defines bundle deployment presets. See [\_](/dev-tools/bundles/deployment-modes.md#presets).
+python:
+  "description": |-
+    PLACEHOLDER
+resources:
+  "description": |-
+    A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
+  "markdown_description": |-
+    A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Declarative Automation Bundles supported resources, and resource definition reference, see [\_](/dev-tools/bundles/resources.md).
+
+    ```yaml
+    resources:
+      <resource-type>:
+        <resource-name>:
+          <resource-field-name>: <resource-field-value>
+    ```
+  "$fields":
+    "alerts":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "evaluation":
+          "description": |-
+            PLACEHOLDER
+          "$fields":
+            "notification":
+              "$fields":
+                "subscriptions":
+                  "description": |-
+                    PLACEHOLDER
+                  "$fields":
+                    "destination_id":
+                      "description": |-
+                        PLACEHOLDER
+                    "user_email":
+                      "description": |-
+                        PLACEHOLDER
+            "source":
+              "$fields":
+                "display":
+                  "description": |-
+                    PLACEHOLDER
+                "name":
+                  "description": |-
+                    PLACEHOLDER
+            "threshold":
+              "$fields":
+                "column":
+                  "description": |-
+                    PLACEHOLDER
+                "value":
+                  "description": |-
+                    PLACEHOLDER
+                  "$fields":
+                    "bool_value":
+                      "description": |-
+                        PLACEHOLDER
+                    "double_value":
+                      "description": |-
+                        PLACEHOLDER
+                    "string_value":
+                      "description": |-
+                        PLACEHOLDER
+        "file_path":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "permissions":
+          "description": |-
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
+        "schedule":
+          "description": |-
+            PLACEHOLDER
+    "apps":
+      "description": |-
+        The app resource defines a Databricks app.
+      "markdown_description": |-
+        The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
+      "$fields":
+        "app_status":
+          "description": |-
+            PLACEHOLDER
+        "budget_policy_id":
+          "description": |-
+            PLACEHOLDER
+        "compute_size":
+          "description": |-
+            PLACEHOLDER
+        "compute_status":
+          "description": |-
+            PLACEHOLDER
+        "config":
+          "description": |-
+            PLACEHOLDER
+          "$fields":
+            "command":
+              "description": |-
+                PLACEHOLDER
+            "env":
+              "description": |-
+                PLACEHOLDER
+              "$fields":
+                "name":
+                  "description": |-
+                    PLACEHOLDER
+                "value":
+                  "description": |-
+                    PLACEHOLDER
+                "value_from":
+                  "description": |-
+                    PLACEHOLDER
+        "effective_budget_policy_id":
+          "description": |-
+            PLACEHOLDER
+        "effective_usage_policy_id":
+          "description": |-
+            PLACEHOLDER
+        "git_source":
+          "description": |-
+            Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
+            to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
+            The source_code_path within git_source specifies the relative path to the app code within the repository.
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "oauth2_app_client_id":
+          "description": |-
+            PLACEHOLDER
+        "oauth2_app_integration_id":
+          "description": |-
+            PLACEHOLDER
+        "permissions":
+          "description": |-
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
+          "$fields":
+            "group_name":
+              "description": |-
+                The name of the group granted the permission level.
+            "level":
+              "description": |-
+                The permission level to apply. The allowed levels depend on the resource type.
+            "service_principal_name":
+              "description": |-
+                The name of the service principal granted the permission level.
+            "user_name":
+              "description": |-
+                The name of the user granted the permission level.
+        "resources":
+          "$fields":
+            "app":
+              "description": |-
+                PLACEHOLDER
+              "$fields":
+                "name":
+                  "description": |-
+                    PLACEHOLDER
+                "permission":
+                  "description": |-
+                    PLACEHOLDER
+            "database":
+              "description": |-
+                PLACEHOLDER
+              "$fields":
+                "database_name":
+                  "description": |-
+                    PLACEHOLDER
+                "instance_name":
+                  "description": |-
+                    PLACEHOLDER
+                "permission":
+                  "description": |-
+                    PLACEHOLDER
+            "experiment":
+              "description": |-
+                PLACEHOLDER
+              "$fields":
+                "experiment_id":
+                  "description": |-
+                    PLACEHOLDER
+                "permission":
+                  "description": |-
+                    PLACEHOLDER
+            "genie_space":
+              "description": |-
+                PLACEHOLDER
+              "$fields":
+                "name":
+                  "description": |-
+                    PLACEHOLDER
+                "permission":
+                  "description": |-
+                    PLACEHOLDER
+                "space_id":
+                  "description": |-
+                    PLACEHOLDER
+            "job":
+              "description": |-
+                PLACEHOLDER
+            "postgres":
+              "description": |-
+                PLACEHOLDER
+              "$fields":
+                "branch":
+                  "description": |-
+                    PLACEHOLDER
+                "database":
+                  "description": |-
+                    PLACEHOLDER
+                "permission":
+                  "description": |-
+                    PLACEHOLDER
+            "secret":
+              "description": |-
+                PLACEHOLDER
+            "serving_endpoint":
+              "description": |-
+                PLACEHOLDER
+            "sql_warehouse":
+              "description": |-
+                PLACEHOLDER
+            "uc_securable":
+              "description": |-
+                PLACEHOLDER
+              "$fields":
+                "permission":
+                  "description": |-
+                    PLACEHOLDER
+                "securable_full_name":
+                  "description": |-
+                    PLACEHOLDER
+                "securable_type":
+                  "description": |-
+                    PLACEHOLDER
+        "service_principal_client_id":
+          "description": |-
+            PLACEHOLDER
+        "service_principal_id":
+          "description": |-
+            PLACEHOLDER
+        "service_principal_name":
+          "description": |-
+            PLACEHOLDER
+        "source_code_path":
+          "description": |-
+            PLACEHOLDER
+        "telemetry_export_destinations":
+          "description": |-
+            PLACEHOLDER
+        "usage_policy_id":
+          "description": |-
+            PLACEHOLDER
+        "user_api_scopes":
+          "description": |-
+            PLACEHOLDER
+    "catalogs":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "grants":
+          "description": |-
+            The Unity Catalog privileges to grant to principals on this securable.
+          "markdown_description": |-
+            A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
 
             See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
           "markdown_examples": |-
@@ -357,30 +589,40 @@ github.com/databricks/cli/bundle/config.Root:
           "markdown_description": |-
             A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
-      See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
-    "markdown_examples": |-
-      ```yaml
-      permissions:
-        - level: CAN_VIEW
-          group_name: test-group
-        - level: CAN_MANAGE
-          user_name: someone@example.com
-        - level: CAN_RUN
-          service_principal_name: 123456-abcdef
-      ```
-  "presets":
-    "description": |-
-      Defines bundle deployment presets.
-    "markdown_description": |-
-      Defines bundle deployment presets. See [\_](/dev-tools/bundles/deployment-modes.md#presets).
-  "python":
-    "description": |-
-      PLACEHOLDER
-  "resources":
-    "description": |-
-      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
-    "markdown_description": |-
-      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Declarative Automation Bundles supported resources, and resource definition reference, see [\_](/dev-tools/bundles/resources.md).
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
+          "$fields":
+            "group_name":
+              "description": |-
+                The name of the group granted the permission level.
+            "level":
+              "description": |-
+                The permission level to apply. The allowed levels depend on the resource type.
+            "service_principal_name":
+              "description": |-
+                The name of the service principal granted the permission level.
+            "user_name":
+              "description": |-
+                The name of the user granted the permission level.
+    "dashboards":
+      "description": |-
+        The dashboard definitions for the bundle, where each key is the name of the dashboard.
+      "markdown_description": |-
+        The dashboard definitions for the bundle, where each key is the name of the dashboard. See [\_](/dev-tools/bundles/resources.md#dashboards).
+      "$type":
+        "markdown_description": |-
+          The dashboard resource allows you to manage [AI/BI dashboards](/api/workspace/lakeview/create) in a bundle. For information about AI/BI dashboards, see [_](/dashboards/index.md).
+        "markdown_examples": |-
+          The following example includes and deploys the sample __NYC Taxi Trip Analysis__ dashboard to the Databricks workspace.
 
           ``` yaml
           resources:
@@ -670,6 +912,59 @@ github.com/databricks/cli/bundle/config.Root:
         "warehouse_id":
           "description": |-
             ID of the SQL warehouse used to run queries for this Genie space.
+    "instance_pools":
+      "description": |-
+        The instance pool definitions for the bundle, where each key is the name of the instance pool.
+      "markdown_description": |-
+        The instance pool definitions for the bundle, where each key is the name of the instance pool. See [\_](/dev-tools/bundles/resources.md#instance_pools).
+      "$type":
+        "markdown_description": |-
+          The instance pool resource defines an [instance pool](/api/workspace/instancepools/create), a set of idle, ready-to-use cloud instances that reduce cluster start and auto-scaling times.
+        "markdown_examples": |-
+          The following example creates an instance pool named `my_instance_pool`:
+
+          ```yaml
+          resources:
+            instance_pools:
+              my_instance_pool:
+                instance_pool_name: my_instance_pool
+                node_type_id: i3.xlarge
+                min_idle_instances: 2
+                max_capacity: 10
+                idle_instance_autotermination_minutes: 60
+          ```
+      "$fields":
+        "disk_spec":
+          "$fields":
+            "disk_iops":
+              "description": |-
+                The number of IOPS to provision for each attached disk.
+            "disk_throughput":
+              "description": |-
+                The disk throughput to provision for each attached disk, in MB per second.
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "permissions":
+          "description": |-
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "$fields":
+            "group_name":
+              "description": |-
+                The name of the group granted the permission level.
+            "level":
+              "description": |-
+                The permission level to apply. The allowed levels depend on the resource type.
+            "service_principal_name":
+              "description": |-
+                The name of the service principal granted the permission level.
+            "user_name":
+              "description": |-
+                The name of the user granted the permission level.
     "job_runs":
       "description": |-
         The job run definitions for the bundle, where each key is the name of the job run. Each job run triggers a run of an existing job as part of bundle deployment.
@@ -1120,6 +1415,9 @@ github.com/databricks/cli/bundle/config.Root:
         "parent":
           "description": |-
             PLACEHOLDER
+        "purge_on_delete":
+          "description": |-
+            PLACEHOLDER
         "replace_existing":
           "description": |-
             PLACEHOLDER
@@ -1170,6 +1468,9 @@ github.com/databricks/cli/bundle/config.Root:
         "postgres_database":
           "description": |-
             PLACEHOLDER
+        "replace_existing":
+          "description": |-
+            When true, take over an existing database with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a database that already exists on the branch under bundle management. Only takes effect when the database is created.
         "role":
           "description": |-
             PLACEHOLDER
@@ -1302,6 +1603,9 @@ github.com/databricks/cli/bundle/config.Root:
         "postgres_role":
           "description": |-
             The name of the Postgres role. Required when creating the role.
+        "replace_existing":
+          "description": |-
+            When true, take over an existing role with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a role that already exists on the branch (for example, one inherited from the parent branch) under bundle management. Only takes effect when the role is created.
         "role_id":
           "description": |-
             The user-specified role ID; becomes the final component of the role's resource name. Must be 4-63 characters, lowercase letters, numbers, and hyphens (RFC 1123).
@@ -1772,6 +2076,9 @@ scripts:
     "content":
       "description": |-
         PLACEHOLDER
+    "env":
+      "description": |-
+        A map of environment variables to export when running the script. Values may reference `${bundle.*}`, `${workspace.*}`, and `${var.*}` and are resolved before the script runs; reference them from `content` with `$NAME`.
 sync:
   "description": |-
     The files and file paths to include or exclude in the bundle.
@@ -1884,24 +2191,118 @@ variables:
       Defines a custom variable for the bundle.
     "markdown_description": |-
       Defines a custom variable for the bundle. See [\_](/dev-tools/bundles/settings.md#variables).
-  "default":
-    "description": |-
-      The default value for the variable.
-  "description":
-    "description": |-
-      The description of the variable
-  "lookup":
-    "description": |-
-      The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
-    "markdown_description": |-
-      The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
-  "type":
-    "description": |-
-      The type of the variable.
-github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs:
-  "service_principal_name":
-    "description": |-
-      The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
-  "user_name":
-    "description": |-
-      The email of an active workspace user. Non-admin users can only set this field to their own email.
+  "$fields":
+    "default":
+      "description": |-
+        The default value for the variable.
+    "description":
+      "description": |-
+        The description of the variable
+    "lookup":
+      "description": |-
+        The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+      "markdown_description": |-
+        The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
+      "$fields":
+        "alert":
+          "description": |-
+            The name of the alert for which to retrieve an ID.
+        "cluster":
+          "description": |-
+            The name of the cluster for which to retrieve an ID.
+        "cluster_policy":
+          "description": |-
+            The name of the cluster_policy for which to retrieve an ID.
+        "dashboard":
+          "description": |-
+            The name of the dashboard for which to retrieve an ID.
+        "instance_pool":
+          "description": |-
+            The name of the instance_pool for which to retrieve an ID.
+        "job":
+          "description": |-
+            The name of the job for which to retrieve an ID.
+        "metastore":
+          "description": |-
+            The name of the metastore for which to retrieve an ID.
+        "notification_destination":
+          "description": |-
+            The name of the notification_destination for which to retrieve an ID.
+        "pipeline":
+          "description": |-
+            The name of the pipeline for which to retrieve an ID.
+        "query":
+          "description": |-
+            The name of the query for which to retrieve an ID.
+        "service_principal":
+          "description": |-
+            The name of the service_principal for which to retrieve an ID.
+        "warehouse":
+          "description": |-
+            The name of the warehouse for which to retrieve an ID.
+    "type":
+      "description": |-
+        The type of the variable.
+workspace:
+  "description": |-
+    Defines the Databricks workspace for the bundle.
+  "markdown_description": |-
+    Defines the Databricks workspace for the bundle. See [\_](/dev-tools/bundles/settings.md#workspace).
+  "$fields":
+    "account_id":
+      "description": |-
+        The Databricks account ID.
+    "artifact_path":
+      "description": |-
+        The artifact path to use within the workspace for both deployments and job runs
+    "auth_type":
+      "description": |-
+        The authentication type.
+    "azure_client_id":
+      "description": |-
+        The Azure client ID
+    "azure_environment":
+      "description": |-
+        The Azure environment
+    "azure_login_app_id":
+      "description": |-
+        The Azure login app ID
+    "azure_tenant_id":
+      "description": |-
+        The Azure tenant ID
+    "azure_use_msi":
+      "description": |-
+        Whether to use MSI for Azure
+    "azure_workspace_resource_id":
+      "description": |-
+        The Azure workspace resource ID
+    "client_id":
+      "description": |-
+        The client ID for the workspace
+    "experimental_is_unified_host":
+      "description": |-
+        Deprecated: no-op. Unified hosts are now detected automatically from /.well-known/databricks-config. Retained for schema compatibility with existing databricks.yml files.
+    "file_path":
+      "description": |-
+        The file path to use within the workspace for both deployments and job runs
+    "google_service_account":
+      "description": |-
+        The Google service account name
+    "host":
+      "description": |-
+        The Databricks workspace host URL
+    "profile":
+      "description": |-
+        The Databricks workspace profile name
+    "resource_path":
+      "description": |-
+        The workspace resource path
+    "root_path":
+      "description": |-
+        The Databricks workspace root path
+    "state_path":
+      "description": |-
+        The workspace state path
+    "workspace_id":
+      "description": |-
+        The Databricks workspace ID

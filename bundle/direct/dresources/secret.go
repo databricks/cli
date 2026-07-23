@@ -43,20 +43,16 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
 		MetastoreId:     "",
 		UpdateTime:      nil,
 		UpdatedBy:       "",
-		ForceSendFields: nil,
+		ForceSendFields: utils.FilterFields[catalog.Secret](nil),
 	}
 }
 
 func (*ResourceSecret) RemapState(remote *catalog.Secret) *catalog.Secret {
-	// Do not store the actual secret value in state for security reasons.
-	// The API does not return the plaintext value in GetSecret responses (only metadata),
-	// and we should not persist secrets in the deployment state file.
-	// We store an empty value and rely on update_time changes to detect drift.
 	return &catalog.Secret{
 		CatalogName:     remote.CatalogName,
 		SchemaName:      remote.SchemaName,
 		Name:            remote.Name,
-		Value:           "", // Never store actual secret value in state
+		Value:           remote.EffectiveValue,
 		Comment:         remote.Comment,
 		Owner:           remote.Owner,
 		ExpireTime:      remote.ExpireTime,
@@ -87,6 +83,7 @@ func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (s
 	if err != nil || response == nil {
 		return "", nil, err
 	}
+	state.Value = ""
 	return response.FullName, response, nil
 }
 
@@ -104,6 +101,7 @@ func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog
 	if err != nil {
 		return nil, err
 	}
+	state.Value = ""
 	return response, nil
 }
 

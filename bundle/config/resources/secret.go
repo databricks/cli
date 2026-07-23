@@ -29,7 +29,7 @@ type Secret struct {
 	// The secret value to store. This field must be a variable reference (e.g., ${var.my_secret})
 	// to prevent leaking secrets in configuration files. Plain text values are not allowed.
 	// The maximum size is 60 KiB (pre-encryption).
-	Value string `json:"value"`
+	Value string `json:"value" bundle:"sensitive"`
 
 	// User-provided free-form text description of the secret.
 	Comment string `json:"comment,omitempty"`
