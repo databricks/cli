@@ -22,7 +22,23 @@ const (
 	// headerLines is the number of non-data lines at the top (header + separator).
 	// These are rendered above the viewport so they stay visible while data scrolls.
 	headerLines = 2
+	// maxCellWidth bounds each cell so a single very large value cannot inflate a
+	// column to the point of degrading rendering and scrolling.
+	maxCellWidth = 256
 )
+
+// truncateCell shortens s to maxCellWidth, marking truncation with an ellipsis.
+func truncateCell(s string) string {
+	const ellipsis = "..."
+	if len(s) <= maxCellWidth {
+		return s
+	}
+	r := []rune(s)
+	if len(r) <= maxCellWidth {
+		return s
+	}
+	return string(r[:maxCellWidth-len(ellipsis)]) + ellipsis
+}
 
 // Run displays tabular data in an interactive browser.
 // Writes to w (typically stdout). Blocks until user quits.
@@ -52,35 +68,37 @@ func renderTableLines(columns []string, rows [][]string) []string {
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
 
-	// Header.
-	fmt.Fprintln(tw, strings.Join(columns, "\t"))
-
-	// Separator: compute widths from header + data for dash line.
-	widths := make([]int, len(columns))
+	// Header and data cells are truncated once so widths and emitted values agree.
+	header := make([]string, len(columns))
 	for i, col := range columns {
-		widths[i] = len(col)
+		header[i] = truncateCell(col)
 	}
-	for _, row := range rows {
+	fmt.Fprintln(tw, strings.Join(header, "\t"))
+
+	cells := make([][]string, len(rows))
+	widths := make([]int, len(columns))
+	for i := range columns {
+		widths[i] = len(header[i])
+	}
+	for r, row := range rows {
+		vals := make([]string, len(columns))
 		for i := range columns {
 			if i < len(row) {
-				widths[i] = max(widths[i], len(row[i]))
+				vals[i] = truncateCell(row[i])
+				widths[i] = max(widths[i], len(vals[i]))
 			}
 		}
+		cells[r] = vals
 	}
+
+	// Separator dash line, sized to the truncated column widths.
 	seps := make([]string, len(columns))
 	for i, w := range widths {
 		seps[i] = strings.Repeat("─", w)
 	}
 	fmt.Fprintln(tw, strings.Join(seps, "\t"))
 
-	// Data rows.
-	for _, row := range rows {
-		vals := make([]string, len(columns))
-		for i := range columns {
-			if i < len(row) {
-				vals[i] = row[i]
-			}
-		}
+	for _, vals := range cells {
 		fmt.Fprintln(tw, strings.Join(vals, "\t"))
 	}
 
