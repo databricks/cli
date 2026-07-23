@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/files...
 Deploying resources...
-Error: cannot create resources.job_runs.my_run: waiting after creating id=[NUMID]: job run [NUMID] did not succeed: FAILED
+Error: cannot create resources.job_runs.my_run: job run [NUMID] did not succeed: FAILED
 
 Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
 
@@ -11,7 +11,6 @@ Updating deployment state...
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.job_runs.my_run
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default

@@ -63,7 +63,7 @@ func TestIdempotencyTokenChangesWithResourceIdentity(t *testing.T) {
 }
 
 // jobRunClient returns a client whose GetRun always reports the given terminal
-// run state, so WaitAfterCreate can be exercised without a real run.
+// run state, so waitForRun can be exercised without a real run.
 func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClient {
 	t.Helper()
 	server := testserver.New(t)
@@ -81,7 +81,7 @@ func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClien
 	return client
 }
 
-func TestJobRunWaitAfterCreateFailsOnFailedResult(t *testing.T) {
+func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateTerminated,
 		ResultState:    jobs.RunResultStateFailed,
@@ -89,45 +89,45 @@ func TestJobRunWaitAfterCreateFailsOnFailedResult(t *testing.T) {
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	_, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
+	_, err := r.waitForRun(t.Context(), 123)
 
 	// Only SUCCESS completes the deploy; a FAILED result fails it.
 	require.ErrorContains(t, err, "did not succeed: FAILED: task failed")
 }
 
-func TestJobRunWaitAfterCreateFailsOnSkipped(t *testing.T) {
+func TestJobRunWaitFailsOnSkipped(t *testing.T) {
 	// A skipped run has no result_state, so the lifecycle state is reported.
 	client := jobRunClient(t, &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateSkipped,
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	_, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
+	_, err := r.waitForRun(t.Context(), 123)
 
 	require.ErrorContains(t, err, "did not succeed: SKIPPED")
 }
 
-func TestJobRunWaitAfterCreateSucceeds(t *testing.T) {
+func TestJobRunWaitSucceeds(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateTerminated,
 		ResultState:    jobs.RunResultStateSuccess,
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	remote, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
+	remote, err := r.waitForRun(t.Context(), 123)
 
 	require.NoError(t, err)
 	require.NotNil(t, remote.State)
 	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
 }
 
-func TestJobRunWaitAfterCreateFailsOnInternalError(t *testing.T) {
+func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateInternalError,
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	_, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
+	_, err := r.waitForRun(t.Context(), 123)
 
 	// INTERNAL_ERROR is the one terminal state that fails the deploy.
 	require.Error(t, err)
@@ -135,7 +135,7 @@ func TestJobRunWaitAfterCreateFailsOnInternalError(t *testing.T) {
 
 // Reports RUNNING before TERMINATED, so this is the only test that exercises the
 // poll loop (the others stub an already-terminal state).
-func TestJobRunWaitAfterCreatePollsUntilTerminal(t *testing.T) {
+func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	server := testserver.New(t)
 
 	// logRunPageURL does one GET before the loop, so RUNNING must cover it plus
@@ -161,11 +161,11 @@ func TestJobRunWaitAfterCreatePollsUntilTerminal(t *testing.T) {
 	require.NoError(t, err)
 
 	r := (&ResourceJobRun{}).New(client)
-	remote, err := r.WaitAfterCreate(t.Context(), "123", &JobRunState{})
+	remote, err := r.waitForRun(t.Context(), 123)
 	require.NoError(t, err)
 
 	// SUCCESS is only reachable by polling past the RUNNING reads.
 	require.NotNil(t, remote.State)
 	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
-	assert.GreaterOrEqual(t, gets.Load(), int32(2), "expected WaitAfterCreate to poll more than once")
+	assert.GreaterOrEqual(t, gets.Load(), int32(2), "expected waitForRun to poll more than once")
 }

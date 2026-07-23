@@ -147,20 +147,28 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 	req := config.RunNow
 	req.IdempotencyToken = token
 
-	// RunNow returns only the run id; return a nil remote and let the framework
-	// read it back via DoRead.
 	wait, err := r.client.Jobs.RunNow(ctx, req)
 	if err != nil {
 		return "", nil, err
 	}
-	return strconv.FormatInt(wait.RunId, 10), nil, nil
+
+	// Wait for the run to finish here rather than in a separate WaitAfterCreate:
+	// the framework persists state only after DoCreate returns, so a deploy
+	// interrupted mid-wait saves nothing and the next deploy re-triggers RunNow.
+	// The idempotency_token makes that re-trigger rejoin the same run, so the wait
+	// is re-established instead of skipped. Persisting the run before the wait
+	// would let the planner see the run as up-to-date and skip the wait on resume.
+	remote, err := r.waitForRun(ctx, wait.RunId)
+	if err != nil {
+		return "", nil, err
+	}
+	return strconv.FormatInt(wait.RunId, 10), remote, nil
 }
 
-func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobRunState) (*JobRunRemote, error) {
-	runID, err := parseRunID(id)
-	if err != nil {
-		return nil, err
-	}
+// waitForRun blocks until the run reaches a terminal state and returns its
+// remote view. Only SUCCESS completes the deploy; any other terminal outcome is
+// an error.
+func (r *ResourceJobRun) waitForRun(ctx context.Context, runID int64) (*JobRunRemote, error) {
 	// Log the run's UI link on the first poll: the wait can last up to
 	// jobRunWaitTimeout, so a silent deploy would look hung.
 	logged := false
