@@ -278,6 +278,8 @@ func (p *Plan) FilterToSelected(selected []string) {
 			delete(p.Plan, key)
 		}
 	}
+
+	p.NotSelected = before - len(p.Plan)
 }
 
 // enqueueReachable marks key as reachable and appends it to queue, if key exists
@@ -290,8 +292,6 @@ func (p *Plan) enqueueReachable(reachable map[string]struct{}, queue *[]string, 
 		reachable[key] = struct{}{}
 		*queue = append(*queue, key)
 	}
-
-	p.NotSelected = before - len(p.Plan)
 }
 
 type lockmap struct {
