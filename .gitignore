@@ -67,13 +67,6 @@ dist/
 # Per-module golangci-lint TMPDIR (configured in Taskfile.yml)
 /.tmp/
 
-# Local fuzz driver scratch (see .fuzztmp/run_fuzz.sh)
-.fuzztmp/
-
-# Fuzz coverage output and harness-downloaded terraform (task test-fuzz-cover
-# sets CLI_GOCOVERDIR=build/cover-fuzz, resolved against the repo root)
-/build/
-
 # Go workspace file
 go.work
 go.work.sum
