@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structwalk"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/google/uuid"
 )
@@ -253,7 +254,11 @@ type (
 // (lineage, serial, and deployment ID) always comes from the file, since that
 // is what the write path increments and carries forward. A nil dmsClient keeps
 // the behavior file-only.
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsClient bundledeployments.BundleDeploymentsInterface) error {
+//
+// dmsCfg accompanies dmsClient (both come from the same workspace client) and
+// is used only for a temporary raw read of last_successful_version_id; see the
+// TODO in deploymentHasSuccessfulVersion.
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsClient bundledeployments.BundleDeploymentsInterface, dmsCfg *sdkconfig.Config) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -302,7 +307,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	}
 
 	if dmsClient != nil && db.Data.DeploymentID != "" {
-		if err := db.overlayDMSState(ctx, dmsClient); err != nil {
+		if err := db.overlayDMSState(ctx, dmsClient, dmsCfg); err != nil {
 			return err
 		}
 	}

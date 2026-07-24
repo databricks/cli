@@ -20,6 +20,12 @@ type dmsDeployment struct {
 	// resources is the latest resource state per resource key, updated as
 	// operations are recorded.
 	resources map[string]bundledeployments.Resource
+	// lastSuccessfulVersionID is the highest version that completed
+	// successfully. The server advances last_successful_version_id only on
+	// success (unlike last_version_id), and the read path treats a non-empty
+	// value as "DMS owns the state". Tracked separately because the SDK
+	// Deployment struct does not yet carry the field (still stage:DEVELOPMENT).
+	lastSuccessfulVersionID string
 }
 
 func (s *FakeWorkspace) CreateDeployment(req Request) Response {
@@ -54,7 +60,18 @@ func (s *FakeWorkspace) GetDeployment(deploymentID string) Response {
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
-	return Response{Body: d.deployment}
+
+	// The SDK Deployment struct does not yet carry last_successful_version_id
+	// (still stage:DEVELOPMENT, so stripped from generation), but the read path
+	// reads it off the raw JSON. Serve it as an extra field alongside the typed
+	// deployment so the overlay behaves as it will against the real server.
+	return Response{Body: struct {
+		bundledeployments.Deployment
+		LastSuccessfulVersionID string `json:"last_successful_version_id,omitempty"`
+	}{
+		Deployment:              d.deployment,
+		LastSuccessfulVersionID: d.lastSuccessfulVersionID,
+	}}
 }
 
 func (s *FakeWorkspace) DeleteDeployment(deploymentID string) Response {
@@ -117,6 +134,9 @@ func (s *FakeWorkspace) CompleteVersion(req Request, deploymentID, versionID str
 
 	v.Status = bundledeployments.VersionStatusVersionStatusCompleted
 	v.CompletionReason = completeReq.CompletionReason
+	if completeReq.CompletionReason == bundledeployments.VersionCompleteVersionCompleteSuccess {
+		d.lastSuccessfulVersionID = versionID
+	}
 	return Response{Body: *v}
 }
 
@@ -158,29 +178,6 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 		}
 	}
 	return Response{Body: op}
-}
-
-func (s *FakeWorkspace) ListVersions(deploymentID string) Response {
-	defer s.LockUnlock()()
-
-	d, ok := s.dmsDeployments[deploymentID]
-	if !ok {
-		return dmsNotFound("deployment " + deploymentID)
-	}
-
-	// The API returns versions newest-first (descending version_id).
-	ids := make([]int64, 0, len(d.versions))
-	for id := range d.versions {
-		n, _ := strconv.ParseInt(id, 10, 64)
-		ids = append(ids, n)
-	}
-	slices.SortFunc(ids, func(a, b int64) int { return int(b - a) })
-
-	versions := make([]bundledeployments.Version, 0, len(ids))
-	for _, id := range ids {
-		versions = append(versions, *d.versions[strconv.FormatInt(id, 10)])
-	}
-	return Response{Body: bundledeployments.ListVersionsResponse{Versions: versions}}
 }
 
 func (s *FakeWorkspace) ListResources(deploymentID string) Response {

@@ -276,9 +276,6 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("DELETE", "/api/2.0/bundle/deployments/{deployment_id}", func(req Request) any {
 		return req.Workspace.DeleteDeployment(req.Vars["deployment_id"])
 	})
-	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/versions", func(req Request) any {
-		return req.Workspace.ListVersions(req.Vars["deployment_id"])
-	})
 	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions", func(req Request) any {
 		return req.Workspace.CreateVersion(req, req.Vars["deployment_id"])
 	})
