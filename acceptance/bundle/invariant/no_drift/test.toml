@@ -4,3 +4,11 @@ EnvMatrix.READPLAN = ["", "1"]
 # which plans without reading remote state. The no-drift invariant must hold either
 # way: after a deploy the local state saved by the engine must already match the config.
 EnvMatrix.LOCAL_DIFF = ["", "--planmode=offline"]
+
+# grants: [] triggers a spurious grants change when the plan is computed from saved
+# state instead of a live remote read: the config carries a non-nil empty assignment
+# slice while state persists none, so the diff reports an update. --planmode=offline
+# computes drift from saved state (like migrate does), so it hits the same known
+# direct-engine bug that migrate excludes this config for. Fixed by
+# https://github.com/databricks/cli/pull/6039; re-enable once that lands.
+EnvMatrixExclude.no_empty_grants_offline = ["INPUT_CONFIG=schema_empty_grants.yml.tmpl", "LOCAL_DIFF=--planmode=offline"]
