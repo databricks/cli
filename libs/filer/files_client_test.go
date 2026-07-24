@@ -10,8 +10,8 @@ import (
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
-	files "github.com/databricks/cli/libs/tmp/files/v2"
 	"github.com/databricks/databricks-sdk-go"
+	files "github.com/databricks/sdk-go/files/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

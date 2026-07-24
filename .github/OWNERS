@@ -39,7 +39,6 @@
 /cmd/sync/                  team:platform
 /libs/filer/                team:platform
 /libs/sync/                 team:platform
-/libs/tmp/                   team:platform
 
 # Core CLI infrastructure
 /cmd/root/                  team:platform

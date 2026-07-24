@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/databricks/cli/libs/cmdio"
-	files "github.com/databricks/cli/libs/tmp/files/v2"
+	files "github.com/databricks/sdk-go/files/v2"
 )
 
 // renderThrottle caps how often the interactive bar is redrawn so a fast upload

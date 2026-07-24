@@ -13,17 +13,16 @@ import (
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
-	files "github.com/databricks/cli/libs/tmp/files/v2"
-	"github.com/databricks/cli/libs/tmp/options/client"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
+	files "github.com/databricks/sdk-go/files/v2"
+	"github.com/databricks/sdk-go/options/client"
 	"golang.org/x/sync/errgroup"
 )
 
 // cloudResponseHeaderTimeout bounds the wait for a cloud storage response header
-// on a large-file part transfer. It matches the files/v2 engine's own default;
-// see the transfer-client note in libs/tmp/files/v2.
+// on a large-file part transfer. It matches the files/v2 engine's own default.
 const cloudResponseHeaderTimeout = 60 * time.Second
 
 // httpStatus returns the HTTP status code of err if it is (or wraps) an
@@ -204,10 +203,9 @@ func newTransferClient(n int) *http.Client {
 	return &http.Client{Transport: transport}
 }
 
-// newFilesAPIClient builds the vendored files/v2 client from the CLI's already
-// resolved config, reusing its auth instead of re-reading a profile. cfg is
-// passed by pointer because config.Config embeds a sync.Mutex and must not be
-// copied.
+// newFilesAPIClient builds the files/v2 client from the CLI's already resolved
+// config, reusing its auth instead of re-reading a profile. cfg is passed by
+// pointer because config.Config embeds a sync.Mutex and must not be copied.
 func newFilesAPIClient(ctx context.Context, cfg *config.Config) (*files.Client, error) {
 	copts := []client.Option{
 		client.WithHost(cfg.Host),
