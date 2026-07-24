@@ -1,0 +1,49 @@
+
+=== initial deploy triggers the run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-recreate-gone/default/files...
+Deploying resources...
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Updating deployment state...
+Deployment complete!
+
+=== delete the run out-of-band, tombstoning its idempotency token
+>>> [CLI] jobs delete-run [NUMID]
+
+=== redeploy re-triggers a fresh run instead of replaying the tombstoned token
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-recreate-gone/default/files...
+Deploying resources...
+Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Updating deployment state...
+Deployment complete!
+
+=== run-now was issued twice and produced a new run id
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[IDEMPOTENCY_TOKEN]",
+    "job_id": [NUMID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[IDEMPOTENCY_TOKEN]",
+    "job_id": [NUMID]
+  }
+}
+re-created a fresh run after the original was deleted
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-recreate-gone/default
+
+Deleting files...
+Destroy complete!

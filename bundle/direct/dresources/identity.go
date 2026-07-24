@@ -17,3 +17,18 @@ func ResourceIdentity(ctx context.Context) string {
 	key, _ := ctx.Value(resourceIdentityKey{}).(string)
 	return key
 }
+
+type priorResourceIDKey struct{}
+
+// WithPriorResourceID records the id of a resource whose remote copy has
+// vanished, letting a re-create derive a fresh identity (e.g. a job run's
+// idempotency token) rather than reuse the gone one, which may be tombstoned.
+func WithPriorResourceID(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, priorResourceIDKey{}, id)
+}
+
+// PriorResourceID returns the id set by WithPriorResourceID, or "" if unset.
+func PriorResourceID(ctx context.Context) string {
+	id, _ := ctx.Value(priorResourceIDKey{}).(string)
+	return id
+}

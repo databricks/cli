@@ -235,7 +235,9 @@ func parseRunID(id string) (int64, error) {
 // idempotencyToken hashes the resource key plus config into a stable token: the
 // key keeps identical configs distinct (both run), any config change (including
 // the user-set rerun field) re-triggers, and an unchanged retry reuses the run.
-// Hex SHA-256 (64 chars, Jobs API max).
+// A prior run id (set only when the previous run vanished) rotates the token so
+// a re-create avoids the deleted run's tombstoned token. Hex SHA-256 (64 chars,
+// Jobs API max).
 func idempotencyToken(ctx context.Context, state *JobRunState) (string, error) {
 	toHash := *state
 	toHash.IdempotencyToken = ""
@@ -246,6 +248,12 @@ func idempotencyToken(ctx context.Context, state *JobRunState) (string, error) {
 	h := sha256.New()
 	h.Write([]byte(ResourceIdentity(ctx)))
 	h.Write([]byte{0}) // separator so key‖config can't collide via a shifted boundary
+	// Rotate the token when re-creating a vanished run, so RunNow starts fresh
+	// instead of hitting the deleted run's tombstoned token.
+	if priorID := PriorResourceID(ctx); priorID != "" {
+		h.Write([]byte(priorID))
+		h.Write([]byte{0})
+	}
 	h.Write(canonical)
 	return hex.EncodeToString(h.Sum(nil)), nil
 }

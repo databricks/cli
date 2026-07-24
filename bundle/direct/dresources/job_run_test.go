@@ -66,6 +66,22 @@ func TestIdempotencyTokenChangesWithRerun(t *testing.T) {
 	assert.Equal(t, bumped, bumpedAgain) // the same rerun value stays stable
 }
 
+func TestIdempotencyTokenRotatesWithPriorResourceID(t *testing.T) {
+	run := jobs.RunNow{JobId: 123}
+
+	base, err := idempotencyToken(t.Context(), &JobRunState{RunNow: run})
+	require.NoError(t, err)
+	rotated, err := idempotencyToken(WithPriorResourceID(t.Context(), "555"), &JobRunState{RunNow: run})
+	require.NoError(t, err)
+	rotatedAgain, err := idempotencyToken(WithPriorResourceID(t.Context(), "555"), &JobRunState{RunNow: run})
+	require.NoError(t, err)
+
+	// Re-creating a vanished run rotates the token off the tombstoned one...
+	assert.NotEqual(t, base, rotated)
+	// ...but stays deterministic so a retry dedupes onto the fresh run.
+	assert.Equal(t, rotated, rotatedAgain)
+}
+
 func TestIdempotencyTokenChangesWithResourceIdentity(t *testing.T) {
 	run := jobs.RunNow{JobId: 123}
 	a, err := idempotencyToken(WithResourceIdentity(t.Context(), "resources.job_runs.a"), &JobRunState{RunNow: run})

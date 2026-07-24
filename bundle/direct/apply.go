@@ -29,6 +29,12 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	ctx = log.WithPrefix(ctx, "deploying "+d.ResourceKey)
 	ctx = dresources.WithResourceIdentity(ctx, d.ResourceKey)
 	if actionType == deployplan.Create {
+		// A leftover state id on a create means the remote vanished (recreate
+		// downgraded to create). Pass it down so a job run rotates its token off
+		// the deleted run's tombstoned one.
+		if priorID := db.GetResourceID(d.ResourceKey); priorID != "" {
+			ctx = dresources.WithPriorResourceID(ctx, priorID)
+		}
 		return d.Create(ctx, db, newState)
 	}
 

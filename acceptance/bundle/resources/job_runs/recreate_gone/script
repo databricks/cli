@@ -1,0 +1,33 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+STATE=.databricks/bundle/default/resources.json
+run_id() {
+    jq -r '.state["resources.job_runs.my_run"].__id__' "$STATE"
+}
+
+title "initial deploy triggers the run"
+trace $CLI bundle deploy
+before=$(run_id)
+
+title "delete the run out-of-band, tombstoning its idempotency token"
+# Simulates the workspace garbage-collecting run history: the run now 404s and
+# its token can no longer be reused (the Jobs API errors on a deleted token).
+trace $CLI jobs delete-run "$before"
+
+title "redeploy re-triggers a fresh run instead of replaying the tombstoned token"
+# The planner sees the run gone and re-creates it; the token is rotated with the
+# prior run id, so RunNow starts a new run rather than erroring on the tombstone.
+trace $CLI bundle deploy
+after=$(run_id)
+
+title "run-now was issued twice and produced a new run id"
+trace print_requests.py //jobs/run-now
+if [ "$before" != "$after" ]; then
+    echo "re-created a fresh run after the original was deleted"
+else
+    echo "unexpected: run id did not change ($before)"
+fi
