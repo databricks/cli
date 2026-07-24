@@ -3,25 +3,34 @@
 >>> [CLI] experimental air logs 123
 step 1
 step 2
+CUDA out of memory
 
 === logs (json)
 >>> [CLI] experimental air logs 123 -o json
 {"type":"LOG","ts":"[TIMESTAMP]","node":0,"line":"step 1"}
 {"type":"LOG","ts":"[TIMESTAMP]","node":0,"line":"step 2"}
+{"type":"ALERT","ts":"[TIMESTAMP]","node":0,"line":"CUDA out of memory"}
+{"type":"LOG","ts":"[TIMESTAMP]","node":0,"line":"CUDA out of memory"}
 
 === logs with --minutes
 >>> [CLI] experimental air logs 123 --minutes 30
 step 1
 step 2
+CUDA out of memory
 
 === logs with --lines
 >>> [CLI] experimental air logs 123 --lines 1
-step 2
+CUDA out of memory
+
+=== logs with --lines 0 prints nothing
+>>> [CLI] experimental air logs 123 --lines 0
+No logs available for run 123. Run terminated in state SUCCESS
 
 === logs from a specific retry
 >>> [CLI] experimental air logs 123 --retry 0
 step 1
 step 2
+CUDA out of memory
 
 === logs --lines and --minutes are mutually exclusive
 >>> [CLI] experimental air logs 123 --lines 100 --minutes 30

@@ -10,6 +10,9 @@ trace $CLI experimental air logs 123 --minutes 30
 title "logs with --lines"
 trace $CLI experimental air logs 123 --lines 1
 
+title "logs with --lines 0 prints nothing"
+trace $CLI experimental air logs 123 --lines 0
+
 title "logs from a specific retry"
 trace $CLI experimental air logs 123 --retry 0
 

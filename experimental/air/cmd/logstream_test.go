@@ -148,8 +148,10 @@ func TestLogRequestToSeconds(t *testing.T) {
 }
 
 func TestLogRequestTailTarget(t *testing.T) {
-	assert.Equal(t, defaultCompletedRunTailLines, logRequest{}.tailTarget())
+	// Negative (unset) uses the default cap; explicit values are literal.
+	assert.Equal(t, defaultCompletedRunTailLines, logRequest{tailLines: -1}.tailTarget())
 	assert.Equal(t, 42, logRequest{tailLines: 42}.tailTarget())
+	assert.Equal(t, 0, logRequest{tailLines: 0}.tailTarget())
 }
 
 func TestDrainPagesDedupAndOrdering(t *testing.T) {
@@ -218,6 +220,50 @@ func TestEmitLogLineText(t *testing.T) {
 	var buf bytes.Buffer
 	emitLogLine(&buf, logRequest{node: 0}, "hello")
 	assert.Equal(t, "hello\n", buf.String())
+}
+
+func TestEmitLogLineJSONFatalEmitsAlert(t *testing.T) {
+	var buf bytes.Buffer
+	emitLogLine(&buf, logRequest{node: 1, jsonOutput: true}, "CUDA out of memory")
+
+	// A fatal line emits an ALERT event before its LOG event.
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	require.Len(t, lines, 2)
+
+	var alert, logEv logEvent
+	require.NoError(t, json.Unmarshal([]byte(lines[0]), &alert))
+	require.NoError(t, json.Unmarshal([]byte(lines[1]), &logEv))
+	assert.Equal(t, "ALERT", alert.Type)
+	assert.Equal(t, "LOG", logEv.Type)
+	assert.Equal(t, "CUDA out of memory", alert.Line)
+
+	// Text mode never emits ALERT events.
+	var text bytes.Buffer
+	emitLogLine(&text, logRequest{node: 1}, "CUDA out of memory")
+	assert.Equal(t, "CUDA out of memory\n", text.String())
+}
+
+func TestMatchFatalPattern(t *testing.T) {
+	fatal := []string{
+		"CUDA out of memory",
+		"cuda OUT OF memory",
+		"Watchdog caught collective operation timeout",
+		"Killed",
+		"ERROR: Script failed with exit code 1 after 42s",
+		"bash: foo: command not found",
+	}
+	for _, l := range fatal {
+		assert.True(t, matchFatalPattern(l), l)
+	}
+
+	notFatal := []string{
+		"epoch 3 loss 0.5",
+		"ERROR: Script failed with exit code 0 after 42s",
+		"just a normal line",
+	}
+	for _, l := range notFatal {
+		assert.False(t, matchFatalPattern(l), l)
+	}
 }
 
 func TestEmitNoLogs(t *testing.T) {

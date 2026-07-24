@@ -23,6 +23,7 @@ Response.Body = '''
 Pattern = "GET /api/2.0/ai-training/workflows/by-run-id/123/logs"
 Response.Body = '''
 {"log_records": [
+  {"time_unix_nano": 1700000003000000000, "body": "CUDA out of memory", "node_index": 0},
   {"time_unix_nano": 1700000002000000000, "body": "step 2", "node_index": 0},
   {"time_unix_nano": 1700000001000000000, "body": "step 1", "node_index": 0}
 ]}

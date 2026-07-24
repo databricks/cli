@@ -71,13 +71,18 @@ func printLogEvent(out io.Writer, eventType string, node int, line string) {
 	fmt.Fprintln(out, string(b))
 }
 
-// emitLogLine writes one log line: a JSONL LOG event under --json, else raw.
+// emitLogLine writes one log line: raw in text mode, or a JSONL LOG event under
+// --json. In --json mode a line matching a fatal-failure pattern also emits an
+// ALERT event first, giving an agent an immediate actionable signal.
 func emitLogLine(out io.Writer, req logRequest, body string) {
-	if req.jsonOutput {
-		printLogEvent(out, "LOG", req.node, body)
+	if !req.jsonOutput {
+		fmt.Fprintln(out, body)
 		return
 	}
-	fmt.Fprintln(out, body)
+	if matchFatalPattern(body) {
+		printLogEvent(out, "ALERT", req.node, body)
+	}
+	printLogEvent(out, "LOG", req.node, body)
 }
 
 // emitNoLogs reports that a run produced no logs. A terminal run gets its

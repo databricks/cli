@@ -137,7 +137,7 @@ func TestLogsCompletedRunTail(t *testing.T) {
 	cmd.SetOut(&buf)
 
 	// Drive runLogs directly (bypassing PreRunE auth wiring) with a resolved request.
-	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 0, attempt: -1})
+	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 0, attempt: -1, tailLines: -1})
 	require.NoError(t, err)
 
 	// Records print oldest-first regardless of the newest-first fetch order.
@@ -196,7 +196,7 @@ func TestLogsFallsBackToMLflow(t *testing.T) {
 	// Bricklens is gated off, so fetchLogs routes to the MLflow fallback, which
 	// resolves the MLflow run, lists the chunk, downloads it via the pre-signed
 	// URL, and prints its lines.
-	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 0, attempt: -1})
+	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 0, attempt: -1, tailLines: -1})
 	require.NoError(t, err)
 	assert.Equal(t, "line one\nline two\n", buf.String())
 }
@@ -242,7 +242,7 @@ func TestLogsPastRetryOfActiveRunIsStatic(t *testing.T) {
 	// logs render once instead of following the run (which would never terminate).
 	// The run has no SUCCESS result yet, so it still exits non-zero via
 	// ErrAlreadyPrinted; the logs are printed regardless.
-	err := runLogs(ctx, cmd, logRequest{runID: 9, node: 0, attempt: 0})
+	err := runLogs(ctx, cmd, logRequest{runID: 9, node: 0, attempt: 0, tailLines: -1})
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, "retry 0 log\n", buf.String())
 

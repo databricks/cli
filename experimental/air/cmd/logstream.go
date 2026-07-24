@@ -46,7 +46,8 @@ type logRequest struct {
 	attempt int
 	// windowMinutes, when > 0, restricts the fetch to the last N minutes.
 	windowMinutes int
-	// tailLines, when > 0, keeps only the last N lines of a completed run.
+	// tailLines caps a completed run's output to the last N lines. Negative means
+	// --lines was unset (use the default cap); 0 prints nothing.
 	tailLines int
 	// staticView renders a one-shot tail instead of following the run. Set for a
 	// past retry of an active run: that attempt's logs are immutable, so streaming
@@ -281,12 +282,14 @@ func (st *bricklensStreamer) drainStatic(toSec int64) (bool, error) {
 	return st.status.succeeded(), nil
 }
 
-// tailTarget is the number of lines a tail keeps: --lines, else the default cap.
+// tailTarget is the number of lines a tail keeps. A negative tailLines means
+// --lines was unset, so use the default cap; 0 or more is taken literally (an
+// explicit --lines 0 prints nothing).
 func (req logRequest) tailTarget() int {
-	if req.tailLines > 0 {
-		return req.tailLines
+	if req.tailLines < 0 {
+		return defaultCompletedRunTailLines
 	}
-	return defaultCompletedRunTailLines
+	return req.tailLines
 }
 
 // drainTail emits the most-recent `target` records oldest-first. Bricklens

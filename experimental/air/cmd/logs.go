@@ -90,12 +90,19 @@ func newLogsCommand() *cobra.Command {
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
 		}
 
+		// -1 signals "unset" (use the default cap); an explicit --lines 0 stays 0
+		// and prints nothing.
+		tailLines := -1
+		if cmd.Flags().Changed("lines") {
+			tailLines = lines
+		}
+
 		return runLogs(ctx, cmd, logRequest{
 			runID:         runID,
 			node:          node,
 			attempt:       retry,
 			windowMinutes: minutes,
-			tailLines:     lines,
+			tailLines:     tailLines,
 			jsonOutput:    root.OutputType(cmd) == flags.OutputJSON,
 		})
 	}
