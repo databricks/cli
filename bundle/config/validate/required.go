@@ -144,12 +144,11 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	return diags
 }
 
-// errorForInvalidGrants errors for grants that the backend rejects or that never
-// converge. principal and privileges are optional in the SDK: a missing principal
-// is rejected by the backend, and an empty privileges list never converges because
-// the backend drops principals with no privileges, so the desired grant is created
-// again on every plan. Erroring here avoids a partial deploy where the securable is
-// created before grants fail. Grants exist on every securable, so match any resource type.
+// errorForInvalidGrants errors for grants the backend rejects or that never converge:
+// a missing principal is rejected, and an empty privileges list re-plans forever because
+// the backend drops principals with no privileges. Erroring here (rather than warning)
+// avoids a partial deploy where the securable is created before the grants call fails.
+// Grants exist on every securable, so match any resource type.
 func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 

@@ -1,7 +1,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-# The backend drops principals with no privileges, so a grant with an empty
-# privileges list never converges and re-plans forever. Reject it at validation.
+# Empty privileges never converge (the backend drops principals with none), so reject early.
 musterr trace $CLI bundle validate
 
 # Deploy must abort at validation: no securable is created, so no partial deploy.
