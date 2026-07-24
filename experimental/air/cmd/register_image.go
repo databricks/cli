@@ -10,6 +10,9 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
@@ -103,9 +106,28 @@ configuration (run ` + "`docker login`" + ` first); there are no credential flag
 
 		timeout := time.Duration(timeoutMinutes) * time.Minute
 
-		updated, sha, err := resolveImage(ctx, c, dockerImageURL, timeout)
+		// Discover credentials from the local Docker config and store them in a
+		// per-user secret for the registration call. A quota failure surfaces; any
+		// other discovery failure leaves creds empty and falls through to the
+		// public-image path.
+		scope, key, err := discoverCredentials(ctx, w, c, dockerImageURL)
 		if err != nil {
-			return renderError(ctx, cmd, "REGISTRATION_FAILED", "TRANSIENT", true, err)
+			return renderError(ctx, cmd, "REGISTRATION_FAILED", "PERMANENT", false, err)
+		}
+
+		updated, sha, err := resolveImage(ctx, c, dockerImageURL, scope, key, timeout)
+		if err != nil {
+			// Auto-discovered credentials may be stale (e.g. a revoked PAT from an
+			// old `docker login`). Retry anonymously so a public image isn't
+			// blocked by bad local creds.
+			if scope != "" && isAuthError(err) {
+				log.Warnf(ctx, "stored Docker credentials were rejected (%v); retrying without credentials in case the image is public", err)
+				updated, sha, err = resolveImage(ctx, c, dockerImageURL, "", "", timeout)
+			}
+			if err != nil {
+				return renderError(ctx, cmd, "REGISTRATION_FAILED", "TRANSIENT", true,
+					registrationError(dockerImageURL, err))
+			}
 		}
 
 		return renderRegisterResult(ctx, cmd, dockerImageURL,
@@ -121,17 +143,66 @@ configuration (run ` + "`docker login`" + ` first); there are no credential flag
 	return cmd
 }
 
+// discoverCredentials resolves registry credentials from the local Docker config
+// and stores them in a per-user secret, returning the (scope, key) reference for
+// registration. It first probes whether the image is public: if so, no
+// credentials are stored (avoiding a throwaway secret). Returns empty scope/key
+// when the image is public or no local credentials exist. A secret-scope quota
+// error is returned; all other discovery failures are swallowed so registration
+// falls through to the public-image path.
+func discoverCredentials(ctx context.Context, w *databricks.WorkspaceClient, c *imageClient, dockerImageURL string) (scope, key string, err error) {
+	// Resolve local creds once (a cheap file read, or one credential-helper call),
+	// so the no-`docker login` case pays for nothing and helpers aren't invoked
+	// twice.
+	username, password, ok := readDockerCredentials(ctx, dockerImageURL)
+	if !ok {
+		return "", "", nil
+	}
+
+	if public := c.checkImageAccess(ctx, dockerImageURL); public != nil && *public {
+		log.Infof(ctx, "image is publicly accessible; skipping local Docker credentials")
+		return "", "", nil
+	}
+
+	scope, key, ok, err = storeDockerCredentials(ctx, w, username, password)
+	if err != nil {
+		return "", "", err
+	}
+	if !ok {
+		return "", "", nil
+	}
+	log.Infof(ctx, "using Docker credentials from local config (stored as %s/%s)", scope, key)
+	return scope, key, nil
+}
+
+// isAuthError reports whether err is an authentication or permission failure,
+// used to decide whether stale auto-discovered credentials warrant an anonymous
+// retry. Unlike the Python CLI's substring match on "401"/"403", this keys off
+// the SDK's typed sentinels.
+func isAuthError(err error) bool {
+	return errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied)
+}
+
+// registrationError wraps an auth failure with actionable `docker login`
+// guidance, since local credentials are the only credential path.
+func registrationError(dockerImageURL string, err error) error {
+	if !isAuthError(err) {
+		return err
+	}
+	return fmt.Errorf("image %q was not found or requires credentials: run `docker login` for its registry, then retry: %w", dockerImageURL, err)
+}
+
 // resolveImage always re-registers the image and waits for it to become
 // AVAILABLE, returning whether the stored digest changed and the final digest.
 // CreateImage is idempotent. The prior registration is fetched only to detect a
 // digest change; its status is not consulted.
-func resolveImage(ctx context.Context, c *imageClient, dockerImageURL string, timeout time.Duration) (updated bool, sha string, err error) {
+func resolveImage(ctx context.Context, c *imageClient, dockerImageURL, scope, key string, timeout time.Duration) (updated bool, sha string, err error) {
 	existing, err := c.getImage(ctx, dockerImageURL)
 	if err != nil {
 		return false, "", err
 	}
 
-	reg, err := createAndWait(ctx, c, dockerImageURL, timeout)
+	reg, err := createAndWait(ctx, c, dockerImageURL, scope, key, timeout)
 	if err != nil {
 		return false, "", err
 	}
@@ -154,10 +225,8 @@ func resolveImage(ctx context.Context, c *imageClient, dockerImageURL string, ti
 }
 
 // createAndWait registers the image and polls until it becomes AVAILABLE.
-// Credentials are omitted; private-image support is added with local Docker
-// credential discovery in a later phase.
-func createAndWait(ctx context.Context, c *imageClient, dockerImageURL string, timeout time.Duration) (*imageRegistration, error) {
-	reg, err := c.createImage(ctx, dockerImageURL, "", "")
+func createAndWait(ctx context.Context, c *imageClient, dockerImageURL, scope, key string, timeout time.Duration) (*imageRegistration, error) {
+	reg, err := c.createImage(ctx, dockerImageURL, scope, key)
 	if err != nil {
 		return nil, err
 	}

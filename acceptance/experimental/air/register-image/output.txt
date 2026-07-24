@@ -82,3 +82,24 @@ Global Flags:
 
 
 Exit code: 1
+
+=== private image: credentials are discovered from the local Docker config
+>>> DOCKER_CONFIG=[TESTROOT]/experimental/air/register-image/dockercfg [CLI] experimental air register-image nvcr.io/org/img:1.0
+Image registered: f9e8d7c6b5a4f3e2...
+
+To use this image in your training config:
+  environment:
+    docker_image:
+      url: nvcr.io/org/img:1.0
+
+=== the registration POST carries the auto-stored credential reference
+>>> print_requests.py //api/2.0/ai-compute-manager/images ^//api/2.0/secrets
+{
+  "method": "POST",
+  "path": "/api/2.0/ai-compute-manager/images",
+  "body": {
+    "credentials_key": "dockerio-bob-local",
+    "credentials_scope": "docker-credentials-[USERNAME]",
+    "docker_image_url": "nvcr.io/org/img:1.0"
+  }
+}
