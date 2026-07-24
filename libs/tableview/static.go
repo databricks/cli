@@ -1,7 +1,6 @@
-// Package tableprint renders static, terminal-width-aware text tables.
-// It fits columns to the available width, drops trailing columns,
-// truncates wide cells, and works identically with an interactive terminal or a pipe.
-package tableprint
+// This file is the static, terminal-width-aware rendering path, used for
+// non-interactive output; the interactive browser lives in tableview.go.
+package tableview
 
 import (
 	"context"
@@ -24,7 +23,7 @@ const (
 // writes table (with an "N rows" footer).
 // if table is too wide trailing columns are dropped with a "(showing M of N columns)" note.
 // cells are truncated to maxColumnWidth.
-func Render(ctx context.Context, out io.Writer, columns []string, rows [][]string, width int) error {
+func RenderStaticWithTruncation(ctx context.Context, out io.Writer, columns []string, rows [][]string, width int) error {
 	if len(columns) == 0 {
 		return nil
 	}

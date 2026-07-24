@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/cli/libs/tableprint"
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
@@ -94,7 +94,7 @@ func render(ctx context.Context, cmd *cobra.Command, columns []string, rows [][]
 		if len(columns) == 0 {
 			return nil
 		}
-		return tableprint.Render(ctx, out, columns, rows, tableprint.DetectWidth(out))
+		return tableview.RenderStaticWithTruncation(ctx, out, columns, rows, tableview.DetectWidth(out))
 	default:
 		return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 	}
