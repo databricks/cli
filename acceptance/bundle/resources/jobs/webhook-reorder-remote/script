@@ -1,0 +1,19 @@
+trace $CLI bundle plan
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+trace $CLI bundle plan | contains.py "0 to add, 0 to change, 0 to delete"
+
+title "Remote returns webhook destinations in a different order\n"
+edit_resource.py jobs "$job_id" <<EOF
+s = r["webhook_notifications"]["on_success"]
+s[:] = [s[0], s[2], s[1]]
+t = r["tasks"][0]["webhook_notifications"]["on_start"]
+t[:] = [t[1], t[0]]
+EOF
+
+# The reordered remote must not produce a phantom diff: on_* lists are diffed by id.
+trace $CLI bundle plan
+$CLI bundle plan -o json | jq '.plan."resources.jobs.my_job".changes' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace print_requests.py //jobs
