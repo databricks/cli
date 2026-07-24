@@ -17,16 +17,21 @@ type StateLifecycle struct {
 	Started *bool `json:"started,omitempty"`
 }
 
-// pathLifecycleStarted is the change path of the synthetic lifecycle.started field.
-var pathLifecycleStarted = structpath.MustParsePath("lifecycle.started")
+// pathLifecycle is the change path of the synthetic lifecycle field. We match on
+// the parent (not lifecycle.started) because structdiff records a nil->non-nil
+// StateLifecycle pointer as a single change at "lifecycle", not "lifecycle.started"
+// (see diffValues nil-pointer handling). HasChange("lifecycle") matches both the
+// parent change and a nested "lifecycle.started" change; StateLifecycle has only
+// the Started field, so there is nothing else under lifecycle to over-trigger on.
+var pathLifecycle = structpath.MustParsePath("lifecycle")
 
 // offlineLifecycleTransition reports whether an offline (--planmode=offline)
 // DoUpdate should fire a lifecycle Start/Stop. Offline has no live remote status
 // to compare against, so the decision is driven purely by the local diff: fire
-// only when lifecycle.started actually changed. This keeps offline from issuing
-// a spurious transition (and from saving a lifecycle value it never applied).
+// only when the lifecycle changed. This keeps offline from issuing a spurious
+// transition (and from saving a lifecycle value it never applied).
 func offlineLifecycleTransition(entry *PlanEntry) bool {
-	return entry.Changes.HasChange(pathLifecycleStarted)
+	return entry.Changes.HasChange(pathLifecycle)
 }
 
 // isLifecycleRaceErr reports whether err is the backend's "already in that
