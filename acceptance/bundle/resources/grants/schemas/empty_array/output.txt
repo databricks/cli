@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle validate
+Error: grant privileges is required
+  at resources.schemas.grants_schema.grants[0]
+  in databricks.yml:10:11
+
+Name: schema-grants-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default
+
+Found 1 error
+
+>>> [CLI] bundle deploy
+Error: grant privileges is required
+  at resources.schemas.grants_schema.grants[0]
+  in databricks.yml:10:11
+
+
+>>> print_requests.py //unity-catalog
