@@ -18,11 +18,11 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 >>> print_requests.py --get --sort //bundle ^//workspace-files ^//import-file
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]"
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]/resources",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources",
   "q": {
     "page_size": "1000"
   },
@@ -30,7 +30,7 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]/resources",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources",
   "q": {
     "page_size": "1000"
   },
@@ -39,17 +39,15 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
-  "q": {
-    "deployment_id": "[UUID]"
-  },
   "body": {
     "display_name": "add-resources-test",
-    "target_name": "default"
+    "target_name": "default",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "1"
   },
@@ -67,7 +65,7 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "2"
   },
@@ -85,15 +83,15 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
-    "name": "deployments/[UUID]/versions/1",
+    "name": "deployments/[NUMID]/versions/1",
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/operations",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
   "q": {
     "resource_key": "jobs.job_a"
   },
@@ -102,7 +100,7 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
     "state": {
       "deployment": {
-        "deployment_id": "[UUID]",
+        "deployment_id": "[NUMID]",
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default/state/metadata.json",
         "version_id": "1"
@@ -121,15 +119,15 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/2/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
   "body": {
-    "name": "deployments/[UUID]/versions/2",
+    "name": "deployments/[NUMID]/versions/2",
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/2/operations",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations",
   "q": {
     "resource_key": "jobs.job_b"
   },
@@ -138,7 +136,7 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
     "state": {
       "deployment": {
-        "deployment_id": "[UUID]",
+        "deployment_id": "[NUMID]",
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default/state/metadata.json",
         "version_id": "2"

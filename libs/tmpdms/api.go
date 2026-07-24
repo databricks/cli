@@ -32,8 +32,7 @@ func NewDeploymentMetadataAPI(w *databricks.WorkspaceClient) (*DeploymentMetadat
 func (a *DeploymentMetadataAPI) CreateDeployment(ctx context.Context, request CreateDeploymentRequest) (*Deployment, error) {
 	var resp Deployment
 	path := basePath + "/deployments"
-	query := map[string]any{"deployment_id": request.DeploymentID}
-	err := a.api.Do(ctx, http.MethodPost, path, nil, query, request.Deployment, &resp)
+	err := a.api.Do(ctx, http.MethodPost, path, nil, nil, request.Deployment, &resp)
 	if err != nil {
 		return nil, err
 	}

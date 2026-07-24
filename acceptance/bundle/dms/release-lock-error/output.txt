@@ -9,17 +9,15 @@ Warn: Failed to release deployment lock: simulated complete version failure
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
-  "q": {
-    "deployment_id": "[UUID]"
-  },
   "body": {
     "display_name": "dms-release-lock-error",
-    "target_name": "fail-complete"
+    "target_name": "fail-complete",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-release-lock-error/fail-complete"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "1"
   },
@@ -37,7 +35,7 @@ Warn: Failed to release deployment lock: simulated complete version failure
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/operations",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
   "q": {
     "resource_key": "jobs.test_job"
   },
@@ -46,7 +44,7 @@ Warn: Failed to release deployment lock: simulated complete version failure
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
     "state": {
       "deployment": {
-        "deployment_id": "[UUID]",
+        "deployment_id": "[NUMID]",
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-release-lock-error/fail-complete/state/metadata.json",
         "version_id": "1"
@@ -65,9 +63,9 @@ Warn: Failed to release deployment lock: simulated complete version failure
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
-    "name": "deployments/[UUID]/versions/1",
+    "name": "deployments/[NUMID]/versions/1",
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }

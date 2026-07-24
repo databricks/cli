@@ -14,17 +14,15 @@ API message: Invalid job configuration.
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
-  "q": {
-    "deployment_id": "[UUID]"
-  },
   "body": {
     "display_name": "metadata-service-error-test",
-    "target_name": "default"
+    "target_name": "default",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/metadata-service-error-test/default"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "1"
   },
@@ -42,7 +40,7 @@ API message: Invalid job configuration.
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/operations",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
   "q": {
     "resource_key": "jobs.test_job"
   },
@@ -51,7 +49,7 @@ API message: Invalid job configuration.
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
     "state": {
       "deployment": {
-        "deployment_id": "[UUID]",
+        "deployment_id": "[NUMID]",
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/metadata-service-error-test/default/state/metadata.json",
         "version_id": "1"
@@ -70,9 +68,9 @@ API message: Invalid job configuration.
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
-    "name": "deployments/[UUID]/versions/1",
+    "name": "deployments/[NUMID]/versions/1",
     "completion_reason": "VERSION_COMPLETE_FAILURE"
   }
 }

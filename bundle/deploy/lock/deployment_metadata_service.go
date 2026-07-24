@@ -23,7 +23,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/tmpdms"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/google/uuid"
 )
 
 const defaultHeartbeatInterval = 30 * time.Second
@@ -116,16 +115,20 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 	}
 
 	if isNew {
-		// Fresh deployment: create the record and start at version 1.
-		_, createErr := svc.CreateDeployment(ctx, tmpdms.CreateDeploymentRequest{
-			DeploymentID: deploymentID,
+		// Fresh deployment: let the service assign the ID, then start at version 1.
+		deployment, createErr := svc.CreateDeployment(ctx, tmpdms.CreateDeploymentRequest{
 			Deployment: &tmpdms.Deployment{
-				DisplayName: b.Config.Bundle.Name,
-				TargetName:  b.Config.Bundle.Target,
+				DisplayName:       b.Config.Bundle.Name,
+				TargetName:        b.Config.Bundle.Target,
+				InitialParentPath: b.Config.Workspace.RootPath,
 			},
 		})
 		if createErr != nil {
 			return "", "", fmt.Errorf("failed to create deployment: %w", createErr)
+		}
+		deploymentID, err = deploymentIDFromName(deployment.Name)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to create deployment: %w", err)
 		}
 		// Write the deployment ID to workspace only after the server-side
 		// record is created. This avoids leaving a dangling ID if creation fails.
@@ -178,11 +181,10 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 }
 
 // resolveDeploymentID reads the deployment ID from managed_service.json in the
-// workspace state directory. If the file doesn't exist or has no deployment ID,
-// a new UUID is generated. The boolean return indicates whether this is a fresh
-// deployment (true) or an existing one (false). For fresh deployments, the
-// caller is responsible for writing the deployment ID to workspace after the
-// server-side deployment record is created successfully.
+// workspace state directory. The boolean return indicates whether this is a
+// fresh deployment (true) or an existing one (false). For fresh deployments,
+// the service assigns the ID and the caller writes it to the workspace after
+// the server-side deployment record is created successfully.
 func resolveDeploymentID(ctx context.Context, b *bundle.Bundle) (string, bool, error) {
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
@@ -208,8 +210,15 @@ func resolveDeploymentID(ctx context.Context, b *bundle.Bundle) (string, bool, e
 		return "", false, fmt.Errorf("failed to read %s: %w", statemgmt.ManagedServiceFileName, readErr)
 	}
 
-	// Fresh deployment: generate a new ID but don't write yet.
-	return uuid.New().String(), true, nil
+	return "", true, nil
+}
+
+func deploymentIDFromName(name string) (string, error) {
+	deploymentID, ok := strings.CutPrefix(name, "deployments/")
+	if !ok || deploymentID == "" || strings.Contains(deploymentID, "/") {
+		return "", fmt.Errorf("create response has invalid deployment name %q", name)
+	}
+	return deploymentID, nil
 }
 
 // writeDeploymentID writes the deployment ID to managed_service.json in the

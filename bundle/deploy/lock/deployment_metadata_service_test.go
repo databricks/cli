@@ -75,6 +75,32 @@ func TestDeploymentMode(t *testing.T) {
 	}
 }
 
+func TestDeploymentIDFromName(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected string
+		valid    bool
+	}{
+		{name: "deployments/123", expected: "123", valid: true},
+		{name: "", valid: false},
+		{name: "deployments/", valid: false},
+		{name: "123", valid: false},
+		{name: "deployments/123/versions/1", valid: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deploymentID, err := deploymentIDFromName(tt.name)
+			if !tt.valid {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, deploymentID)
+		})
+	}
+}
+
 func TestWorkspaceInfo(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{

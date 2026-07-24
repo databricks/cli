@@ -102,16 +102,17 @@ const (
 // Resource types (proto message equivalents).
 
 type Deployment struct {
-	Name          string           `json:"name,omitempty"`
-	DisplayName   string           `json:"display_name,omitempty"`
-	TargetName    string           `json:"target_name,omitempty"`
-	Status        DeploymentStatus `json:"status,omitempty"`
-	LastVersionID string           `json:"last_version_id,omitempty"`
-	CreatedBy     string           `json:"created_by,omitempty"`
-	CreateTime    *time.Time       `json:"create_time,omitempty"`
-	UpdateTime    *time.Time       `json:"update_time,omitempty"`
-	DestroyTime   *time.Time       `json:"destroy_time,omitempty"`
-	DestroyedBy   string           `json:"destroyed_by,omitempty"`
+	Name              string           `json:"name,omitempty"`
+	DisplayName       string           `json:"display_name,omitempty"`
+	TargetName        string           `json:"target_name,omitempty"`
+	Status            DeploymentStatus `json:"status,omitempty"`
+	LastVersionID     string           `json:"last_version_id,omitempty"`
+	CreatedBy         string           `json:"created_by,omitempty"`
+	CreateTime        *time.Time       `json:"create_time,omitempty"`
+	UpdateTime        *time.Time       `json:"update_time,omitempty"`
+	DestroyTime       *time.Time       `json:"destroy_time,omitempty"`
+	DestroyedBy       string           `json:"destroyed_by,omitempty"`
+	InitialParentPath string           `json:"initial_parent_path,omitempty"`
 }
 
 type Version struct {
@@ -176,8 +177,7 @@ type Resource struct {
 // Request types.
 
 type CreateDeploymentRequest struct {
-	DeploymentID string      `json:"deployment_id"`
-	Deployment   *Deployment `json:"deployment"`
+	Deployment *Deployment `json:"deployment"`
 }
 
 type GetDeploymentRequest struct {

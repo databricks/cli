@@ -16,7 +16,7 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/plan-summary-test/default
 Deployment:
-  ID:      [UUID]
+  ID:      [NUMID]
   Version: 1
 Resources:
   Jobs:
@@ -26,7 +26,7 @@ Resources:
 
 >>> [CLI] bundle summary -o json
 {
-  "deployment_id": "[UUID]",
+  "deployment_id": "[NUMID]",
   "version_id": "1"
 }
 
@@ -34,17 +34,15 @@ Resources:
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
-  "q": {
-    "deployment_id": "[UUID]"
-  },
   "body": {
     "display_name": "plan-summary-test",
-    "target_name": "default"
+    "target_name": "default",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/plan-summary-test/default"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "1"
   },
@@ -62,7 +60,7 @@ Resources:
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/operations",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
   "q": {
     "resource_key": "jobs.test_job"
   },
@@ -71,7 +69,7 @@ Resources:
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
     "state": {
       "deployment": {
-        "deployment_id": "[UUID]",
+        "deployment_id": "[NUMID]",
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/plan-summary-test/default/state/metadata.json",
         "version_id": "1"
@@ -90,15 +88,15 @@ Resources:
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
-    "name": "deployments/[UUID]/versions/1",
+    "name": "deployments/[NUMID]/versions/1",
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]/resources",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources",
   "q": {
     "page_size": "1000"
   },
@@ -106,7 +104,7 @@ Resources:
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]/resources",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources",
   "q": {
     "page_size": "1000"
   },
@@ -114,11 +112,11 @@ Resources:
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]"
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]/resources",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources",
   "q": {
     "page_size": "1000"
   },
@@ -126,5 +124,5 @@ Resources:
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]"
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
 }

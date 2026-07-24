@@ -47,12 +47,10 @@ const lockDuration = 2 * time.Minute
 func (s *FakeWorkspace) DeploymentMetadataCreateDeployment(req Request) Response {
 	defer s.LockUnlock()()
 
-	// deployment_id is a query parameter, not in the body.
-	deploymentID := req.URL.Query().Get("deployment_id")
-	if deploymentID == "" {
+	if req.URL.Query().Has("deployment_id") {
 		return Response{
 			StatusCode: http.StatusBadRequest,
-			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "deployment_id is required"},
+			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "deployment_id is assigned by the service"},
 		}
 	}
 
@@ -66,14 +64,15 @@ func (s *FakeWorkspace) DeploymentMetadataCreateDeployment(req Request) Response
 			}
 		}
 	}
-
-	state := s.deploymentMetadata
-	if _, exists := state.deployments[deploymentID]; exists {
+	if bodyDeployment.InitialParentPath == "" {
 		return Response{
-			StatusCode: http.StatusConflict,
-			Body:       map[string]string{"error_code": "ALREADY_EXISTS", "message": fmt.Sprintf("deployment %s already exists", deploymentID)},
+			StatusCode: http.StatusBadRequest,
+			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "initial_parent_path is required"},
 		}
 	}
+
+	state := s.deploymentMetadata
+	deploymentID := strconv.FormatInt(nextID(), 10)
 
 	now := time.Now().UTC()
 	deployment := tmpdms.Deployment{
