@@ -19,8 +19,13 @@ type configCredentials struct {
 
 // Name reports the resolved auth mechanism (e.g. "pat", "oauth-m2m"), which the
 // files/v2 client folds into its User-Agent. The CLI resolves auth when it
-// builds the workspace client, so AuthType is set before the filer is created.
+// builds the workspace client, so AuthType is normally set before the filer is
+// created; fall back to "unk" when it is empty because the files/v2 client
+// rejects an empty auth name with an "invalid value" error at construction.
 func (c configCredentials) Name() string {
+	if c.cfg.AuthType == "" {
+		return "unk"
+	}
 	return c.cfg.AuthType
 }
 
