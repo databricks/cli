@@ -112,6 +112,17 @@ func TestNormalizeAssignments(t *testing.T) {
 				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeAllPrivileges}},
 			},
 		},
+		{
+			// Distinct spellings collide only after normalization, so dedupe
+			// here; MergeGrants deduplicates the raw config strings earlier.
+			name: "deduplicates privileges that collide after normalization",
+			input: []catalog.PrivilegeAssignment{
+				{Principal: "alice", Privileges: []catalog.Privilege{"USE SCHEMA", "use_schema", "USE_SCHEMA"}},
+			},
+			expected: []catalog.PrivilegeAssignment{
+				{Principal: "alice", Privileges: []catalog.Privilege{"USE_SCHEMA"}},
+			},
+		},
 	}
 
 	for _, tt := range tests {

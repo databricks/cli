@@ -251,6 +251,12 @@ func normalizeAssignments(assignments []catalog.PrivilegeAssignment) {
 			continue
 		}
 		slices.Sort(assignments[i].Privileges)
+		// Dedupe here rather than relying on MergeGrants: it deduplicates the raw
+		// config strings before normalization, so distinct spellings of the same
+		// privilege (e.g. "use schema" and "USE_SCHEMA") only collide once
+		// normalized. Without this the config side keeps a duplicate the backend
+		// read side never returns, causing perpetual drift.
+		assignments[i].Privileges = slices.Compact(assignments[i].Privileges)
 	}
 }
 
