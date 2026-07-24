@@ -439,15 +439,15 @@ func claudeAlreadyDisabled(err error) bool {
 	return strings.Contains(strings.ToLower(stderrOf(err)), "already disabled")
 }
 
-// marketplaceMissing reports whether a step failed because the marketplace is
-// unknown to the agent CLI (the user removed it), as opposed to an auth or
-// network failure. The agent CLIs expose no error code for this, so we match the
-// stderr the way claudeAlreadyDisabled does; callers use it only to decide
-// whether re-adding the marketplace is worth attempting, never as the final
-// verdict (the retried install is).
+// marketplaceMissing reports whether an install failed because the plugin's
+// marketplace is missing or stale, as opposed to an auth or network failure. The
+// agent CLIs expose no error code for this, so we match the stderr the way
+// claudeAlreadyDisabled does. Claude reports this as `Plugin "<id>" not found in
+// marketplace "<name>"`. Callers use it only to decide whether re-adding the
+// marketplace is worth attempting, never as the final verdict (the retried
+// install is).
 func marketplaceMissing(err error) bool {
-	s := strings.ToLower(stderrOf(err))
-	return strings.Contains(s, "not found in marketplace") || strings.Contains(s, "marketplace not found")
+	return strings.Contains(strings.ToLower(stderrOf(err)), "not found in marketplace")
 }
 
 // builtinMarketplaceRepairable reports whether a failed refresh or install is the
