@@ -1235,6 +1235,7 @@ func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isRec
 			AutoStartCluster:  opts.AutoStartCluster,
 			ServerStartTimeMs: serverStartTimeMs,
 			IsSuccess:         isSuccess,
+			HasUsagePolicy:    opts.UsagePolicyID != "",
 		},
 	})
 }

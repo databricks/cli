@@ -44,4 +44,8 @@ type SshTunnelEvent struct {
 
 	// Whether the connection was successful.
 	IsSuccess bool `json:"is_success,omitempty"`
+
+	// Whether a serverless usage policy was set via --usage-policy-id.
+	// Only the presence is recorded, not the policy ID itself.
+	HasUsagePolicy bool `json:"has_usage_policy,omitempty"`
 }
