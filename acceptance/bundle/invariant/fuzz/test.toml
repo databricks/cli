@@ -1,8 +1,7 @@
-# Schema fuzzing (see script). Unlike the curated invariant tests, the fuzzer
-# generates its own configs, so drop the inherited INPUT_CONFIG matrix.
+# The fuzzer generates its own configs, so drop the inherited INPUT_CONFIG matrix.
 EnvMatrix.INPUT_CONFIG = []
 
-# Raise the inherited 10m cap so the nightly FUZZ_TIME_BUDGET (script) has room, plus the
+# Raise the inherited 10m cap so the nightly FUZZ_TIME_BUDGET (script) has room plus the
 # final seed's tail. The committed run (5 seeds, no drift) finishes in seconds regardless.
 Timeout = '20m'
 
@@ -10,15 +9,10 @@ Timeout = '20m'
 # coverage gap, so return 501 (config rejected) instead of failing the whole run.
 IgnoreUnhandledRequests = true
 
-# Run the real invariant test script for each target. migrate ignores
-# DATABRICKS_BUNDLE_ENGINE and starts from a Terraform deployment.
-#
-# There is no redeploy target: no_drift's post-deploy plan already dry-runs what a redeploy
-# would apply, so it catches the same field-level non-idempotency without the cost of a
-# second deploy; the only surface redeploy adds (plan/apply divergence) never surfaced a bug
-# across the nightly runs.
+# Run each target's real invariant script. No redeploy target: no_drift's post-deploy plan
+# already dry-runs a redeploy, and the only surface a real redeploy adds (plan/apply
+# divergence) never surfaced a bug in nightly runs.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate"]
 
-# generate = build a config from the schema (gen_fuzz_config.py); mutate = perturb a
-# curated invariant config (mutate_fuzz_config.py). Dispatched by fuzz_gen_config.py.
+# generate = build from the schema; mutate = perturb a curated config. See emit_fuzz_config.py.
 EnvMatrix.FUZZ_MODE = ["generate", "mutate"]

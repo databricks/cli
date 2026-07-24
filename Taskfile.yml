@@ -735,14 +735,12 @@ tasks:
 
   test-fuzz:
     desc: Run schema fuzz invariant tests (random configs, direct engine)
-    # No `sources:` fingerprint: the window depends on FUZZ_* env vars Task can't
-    # see, so always run rather than no-op a repro or shifted nightly window.
+    # No `sources:` fingerprint: the window depends on FUZZ_* env vars Task can't see.
     cmds:
       - |
-        # Wider window than the committed run, with drift checking on; a repro can
-        # narrow it via FUZZ_SEED_START/COUNT. Slow variants can't finish 200 seeds inside
-        # the per-variant Timeout, but the fuzz script's default FUZZ_TIME_BUDGET stops each
-        # variant cleanly (as many seeds as fit, then pass) rather than being force-killed.
+        # Wider window than the committed run, with drift on; a repro narrows it via
+        # FUZZ_SEED_START/COUNT. FUZZ_TIME_BUDGET stops each variant cleanly if 200 seeds
+        # don't fit the Timeout, rather than letting it be force-killed.
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-200}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
         {{.GO_TOOL}} gotestsum \
@@ -758,10 +756,9 @@ tasks:
       - rm -fr ./acceptance/build/cover-fuzz/ ./acceptance/build/cover-fuzz-merged/
       - mkdir -p ./acceptance/build/cover-fuzz-merged/
       - |
-        # CLI_GOCOVERDIR makes the harness build a -cover CLI and set GOCOVERDIR per run,
-        # so every fuzzed `bundle` invocation drops counter files we can aggregate. Drift
-        # off (no FUZZ_CHECK_DRIFT) so the run exercises the full deploy/plan path for as
-        # many seeds as possible instead of stopping on the first fake-server drift.
+        # CLI_GOCOVERDIR makes the harness build a -cover CLI and set GOCOVERDIR per run, so
+        # every fuzzed `bundle` invocation drops aggregatable counter files. Drift off so the
+        # run exercises the full deploy/plan path instead of stopping on the first drift.
         export CLI_GOCOVERDIR=build/cover-fuzz
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-100}"
         export FUZZ_TIME_BUDGET="${FUZZ_TIME_BUDGET:-900}"

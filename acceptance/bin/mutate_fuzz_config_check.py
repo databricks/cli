@@ -3,13 +3,11 @@
 Contract check for mutate_fuzz_config's minimal YAML loader and mutation engine
 (the harness diffs stdout; a non-zero exit marks a violation on stderr):
 
-- The loader round-trips every curated base config: load -> to_yaml -> load is a
-  fixed point, so a base template the loader can't represent is caught here rather
-  than as a confusing fuzz failure.
+- The loader round-trips every curated base: load -> to_yaml -> load is a fixed point, so
+  a base the loader can't represent is caught here, not as a confusing fuzz failure.
 - Mutation is deterministic for a fixed seed (reproducible repros).
 
-It also prints a few mutated configs so an accidental change to the algorithm shows up
-as an output diff.
+It also prints a few mutated configs so an algorithm change shows up as an output diff.
 """
 
 import json
@@ -19,7 +17,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from envsubst import substitute_variables
-from fuzz_gen_config import MUTATE_BASES
+from emit_fuzz_config import MUTATE_BASES
 from gen_fuzz_config import SKIP_PROPERTY_NAMES
 from mutate_fuzz_config import load_yaml, mutate, to_yaml
 
@@ -51,7 +49,7 @@ def main():
             sys.stderr.write(f"{name}: base did not parse to a config with resources\n")
             failed = True
             continue
-        # load -> emit -> load must be a fixed point.
+        # load -> emit -> load is a fixed point.
         if load_yaml(to_yaml(parsed)) != parsed:
             sys.stderr.write(f"{name}: loader is not a round-trip fixed point\n")
             failed = True
@@ -68,8 +66,8 @@ def main():
         sys.stdout.write(f"=== volume seed={seed} ===\n")
         sys.stdout.write(to_yaml(mutate(load_yaml(render("volume")), seed)))
 
-    # Assert-only (no stdout) so this golden doesn't churn as the schema grows. The
-    # registered_model base sets none of its optional fields, so any added field is injected.
+    # Assert-only (no stdout) so this doesn't churn as the schema grows. The registered_model
+    # base sets no optional fields, so any added field must have been injected.
     with open(SCHEMA) as f:
         schema = json.load(f)
 
@@ -87,7 +85,7 @@ def main():
         added = fields - base_fields
         if added:
             injected = True
-        # Injecting an output-only field (SKIP_PROPERTY_NAMES) would manufacture false drift.
+        # Injecting an output-only field would manufacture false drift.
         leaked = SKIP_PROPERTY_NAMES & added
         if leaked:
             sys.stderr.write(f"seed {seed}: injected output-only field(s): {sorted(leaked)}\n")

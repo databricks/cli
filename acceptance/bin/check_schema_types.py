@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Assert every `type` in the bundle schema is one gen_fuzz_config.py can generate, so a new
-libs/jsonschema.Type fails loudly here instead of being silently skipped by the fuzz loop.
+libs/jsonschema.Type fails loudly here instead of being silently skipped by the fuzzer.
 """
 
 import argparse

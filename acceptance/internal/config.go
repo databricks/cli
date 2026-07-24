@@ -85,8 +85,7 @@ type TestConfig struct {
 	Proxy *bool
 
 	// Return 501 for a request with no handler instead of failing the test. The fuzzer
-	// emits resource types the testserver may not model; a missing handler is a gap, not
-	// a bug.
+	// emits resource types the testserver may not model; a missing handler is a gap, not a bug.
 	IgnoreUnhandledRequests *bool
 
 	// List of request headers to include when recording requests.
