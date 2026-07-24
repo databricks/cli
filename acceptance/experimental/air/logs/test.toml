@@ -1,0 +1,30 @@
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# A completed run: Bricklens serves its logs via the tail drain.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "start_time": 1700000000000,
+  "end_time": 1700000012000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "tasks": [{"task_key": "train", "run_id": 456, "attempt_number": 0}]
+}
+'''
+
+# Bricklens log records, returned newest-first (as the tail fetch requests);
+# printed oldest-first.
+[[Server]]
+Pattern = "GET /api/2.0/ai-training/workflows/by-run-id/123/logs"
+Response.Body = '''
+{"log_records": [
+  {"time_unix_nano": 1700000003000000000, "body": "CUDA out of memory", "node_index": 0},
+  {"time_unix_nano": 1700000002000000000, "body": "step 2", "node_index": 0},
+  {"time_unix_nano": 1700000001000000000, "body": "step 1", "node_index": 0}
+]}
+'''
