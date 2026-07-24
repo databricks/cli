@@ -1,5 +1,5 @@
 preflight  ok  check
-resolve    error  resolving job 12345: job 12345 has both serverless environments and job clusters; pass --cluster-id or --serverless-version explicitly to disambiguate
+resolve    error  resolving job task 12345.nope: job 12345 has no task "nope" (available: ingest)
 fetch      pending
 merge      pending
 provision  pending
