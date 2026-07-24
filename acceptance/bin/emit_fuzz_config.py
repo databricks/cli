@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
 Emit a fuzz databricks.yml on stdout for the current seed, picking the strategy from
-FUZZ_MODE so the invariant target scripts don't each duplicate the branch:
+FUZZ_MODE so the invariant scripts don't each duplicate the branch:
 
-  generate (default) - build a config from scratch by walking `bundle schema`
-                       (gen_fuzz_config.py).
-  mutate             - start from a curated invariant config and perturb it
-                       (mutate_fuzz_config.py).
+  generate (default) - build from scratch by walking `bundle schema` (gen_fuzz_config.py).
+  mutate             - perturb a curated invariant config (mutate_fuzz_config.py).
 
-Reads its inputs from the environment the invariant scripts already export: FUZZ_SEED,
-FUZZ_SCHEMA, UNIQUE_NAME, FUZZ_RESOURCES, TESTDIR.
+Reads its inputs from the environment the invariant scripts export: FUZZ_SEED, FUZZ_SCHEMA,
+UNIQUE_NAME, FUZZ_RESOURCES, TESTDIR.
 """
 
 import json
@@ -22,9 +20,9 @@ from envsubst import substitute_variables
 from gen_fuzz_config import gen_config, to_yaml
 from mutate_fuzz_config import load_yaml, mutate
 
-# Curated single-resource configs that deploy standalone against the fake server (only
-# $UNIQUE_NAME, no init script). All are also in the invariant INPUT_CONFIG matrix, so
-# they stay deploy-verified. The seed selects one; mutate_fuzz_config perturbs it.
+# Curated single-resource configs that deploy standalone (only $UNIQUE_NAME, no init
+# script). All are in the invariant INPUT_CONFIG matrix, so they stay deploy-verified.
+# The seed selects one; mutate_fuzz_config perturbs it.
 MUTATE_BASES = [
     "catalog",
     "external_location",
@@ -69,7 +67,7 @@ def main():
     elif mode == "mutate":
         sys.stdout.write(mutate_base(seed))
     else:
-        sys.exit(f"fuzz_gen_config: unknown FUZZ_MODE {mode!r}")
+        sys.exit(f"emit_fuzz_config: unknown FUZZ_MODE {mode!r}")
 
 
 if __name__ == "__main__":

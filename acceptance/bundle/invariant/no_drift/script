@@ -1,50 +1,14 @@
 # Invariant to test: no drift after deploy
 # Additional checks: no internal errors / panics in validate/plan/deploy
 
-if [ -n "${FUZZ_SEED:-}" ]; then
-    fuzz_gen_config.py > databricks.yml 2>LOG.gen.err
-    cat LOG.gen.err | contains.py '!Traceback' > /dev/null
-    cp databricks.yml LOG.config
-else
-    # Copy data files to test directory
-    cp -r "$TESTDIR/../data/." . &> LOG.cp
+source "$TESTDIR/../prologue.sh"
 
-    # Run init script if present
-    INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
-    if [ -f "$INIT_SCRIPT" ]; then
-        source "$INIT_SCRIPT" &> LOG.init
-    fi
-
-    envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
-
-    cp databricks.yml LOG.config
-fi
-
-# Fuzz-only: give random configs an isolated validate panic check before deploy. Curated
-# configs skip it -- deploy runs the same validate pipeline, so it would only be redundant.
-# Output is redirected rather than recorded because a fuzzed config may produce warnings.
+# Fuzz-only validate panic check before deploy. Curated configs skip it -- deploy runs the
+# same validate pipeline. Output is redirected, not recorded, as a fuzzed config may warn.
 if [ -n "${FUZZ_SEED:-}" ]; then
     trace $CLI bundle validate &> LOG.validate
     cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
 fi
-
-cleanup() {
-    # A rejected fuzz config deployed nothing; destroying nothing hits unstubbed URLs.
-    if [ -z "${deployed:-}" ]; then
-        return
-    fi
-
-    trace $CLI bundle destroy --auto-approve &> LOG.destroy
-    cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
-
-    # Run cleanup script if present
-    CLEANUP_SCRIPT="$TESTDIR/../configs/${INPUT_CONFIG:-}-cleanup.sh"
-    if [ -f "$CLEANUP_SCRIPT" ]; then
-        source "$CLEANUP_SCRIPT" &> LOG.cleanup
-    fi
-}
-
-trap cleanup EXIT
 
 # Only compute a plan up front when the READPLAN variant actually consumes it via --plan.
 # Without READPLAN, deploy computes its own plan internally, so a separate `bundle plan`
@@ -54,26 +18,11 @@ if [[ -n "$READPLAN" ]]; then
     cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
 fi
 
-# Disable set -e only around deploy so a failed deploy doesn't abort before we capture
-# its code: the panic check below must run even on failure (a panicking-but-rejected
-# config is a bug, not a rejection), and only then do we exit with the deploy's code.
-set +e
-trace $CLI bundle deploy $(readplanarg plan.json) &> LOG.deploy
-deploy_rc=$?
-set -e
-cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
-if [ "$deploy_rc" -ne 0 ]; then
-    exit "$deploy_rc"
-fi
-deployed=1
+invariant_deploy $CLI bundle deploy $(readplanarg plan.json)
 
-# Special message to fuzzer that generated config was fine.
-# Any failures after this point will be considered as "bug detected" by fuzzer.
-echo INPUT_CONFIG_OK
-
-# A fuzzed config can deploy yet legitimately differ from the fake server, so the
-# fuzzer sets SKIP_DRIFT_CHECK to swap the exact no-drift check for the weaker but
-# fidelity-independent plan-determinism oracle; curated configs check full drift.
+# A fuzzed config can deploy yet legitimately differ from the fake server, so the fuzzer
+# sets SKIP_DRIFT_CHECK to swap the exact no-drift check for the fidelity-independent
+# plan-determinism oracle; curated configs check full drift.
 if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
     # JSON plan asserts every action is "skip" -- a strict superset of the text
     # renderer's "Plan: 0 to add, 0 to change, 0 to delete" summary.
@@ -81,16 +30,12 @@ if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
     cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
     verify_no_drift.py LOG.planjson
 else
-    # Fuzz mode: the exact no-drift check false-positives because the fake server does
-    # not round-trip every field, and "no destructive re-plan" is no better -- for an
-    # unchanged config any recreate is just a local-vs-remote representation mismatch on
-    # an immutable field (fake-server fidelity), not real churn. So assert the one
-    # invariant that is independent of server fidelity: planning is deterministic. Two
-    # consecutive plans of the same deployed state must be byte-identical; a diff means
-    # nondeterministic planning/serialization (unstable map order, per-run randomness), a
-    # real bug. Only compare when both plans succeed: a plan that fails on an unstubbed
-    # read is a coverage gap, not a bug, and its partial output can differ run-to-run, so
-    # diffing it would false-positive. Capture each plan's code under set +e for the guard.
+    # Fuzz mode: the exact no-drift check false-positives (the fake server doesn't round-trip
+    # every field), so assert the one server-fidelity-independent invariant: planning is
+    # deterministic. Two consecutive plans of the same state must be byte-identical; a diff
+    # means nondeterministic planning/serialization, a real bug. Compare only when both
+    # plans succeed -- a plan that fails on an unstubbed read is a gap and can differ run to
+    # run. Capture each plan's code under set +e for the guard.
     set +e
     $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err
     plan1_rc=$?
@@ -100,6 +45,7 @@ else
     cat LOG.plan1.err | contains.py '!panic:' '!internal error' > /dev/null
     cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
     if [ "$plan1_rc" -eq 0 ] && [ "$plan2_rc" -eq 0 ]; then
+        # diff exits non-zero on any difference; under set -e that fails the seed as a bug.
         diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
     fi
 fi

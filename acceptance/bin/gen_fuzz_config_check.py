@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Contract check for gen_fuzz_config.to_yaml: every scalar is on its own line as
-`key: <json>`. mutate_fuzz_config.py's line-based loader relies on this. Prints each
-case's YAML (diffed by the harness) and exits non-zero on a violation.
+`key: <json>`, which mutate_fuzz_config's line-based loader relies on. Prints each case's
+YAML (diffed by the harness) and exits non-zero on a violation.
 """
 
 import json
@@ -52,8 +52,7 @@ def main():
                 sys.stderr.write(f"contract violation: not `key: <json>`: {line!r}\n")
                 failed = True
 
-    # Generate mode emits DANGEROUS_STRINGS into free-form fields; each must still
-    # serialize to a single `key: <json>` line so the line-based loader can parse it.
+    # Each DANGEROUS_STRINGS probe must still serialize to a single `key: <json>` line.
     for i, val in enumerate(DANGEROUS_STRINGS):
         line = to_yaml({"description": val}).rstrip("\n")
         if "\n" in line or not SCALAR.fullmatch(line):

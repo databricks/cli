@@ -1,25 +1,20 @@
-# Invariant fuzzing: generate a random config per seed and run the real invariant test
-# script (no_drift/script or migrate/script). Rejection vs bug: those scripts print
-# INPUT_CONFIG_OK once a config deploys, so a non-zero result before the marker is a
-# rejection; a panic anywhere, or a failure after it, is a bug.
-#
+# Invariant fuzzing: generate a random config per seed and run the real invariant script
+# (no_drift/migrate). Those print INPUT_CONFIG_OK once a config deploys, so a non-zero
+# result before the marker is a rejection; a panic anywhere, or a failure after it, is a bug.
 # Drift checking is opt-in (FUZZ_CHECK_DRIFT): a random config can deploy yet legitimately
 # differ from the fake server, so the committed run asserts only no-panic.
 
 START="${FUZZ_SEED_START:-0}"
 COUNT="${FUZZ_SEED_COUNT:-5}"
 
-# Per-seed cap: a seed past this generous budget is stuck, not slow, so SIGQUIT (Go dumps
-# goroutines for triage) then SIGKILL and flag a hang. Needs GNU timeout; else uncapped.
+# Per-seed cap: a seed past this budget is stuck, not slow, so SIGQUIT (for Go's goroutine
+# dump) then SIGKILL and flag a hang. Needs GNU timeout; else uncapped.
 SEED_TIMEOUT="${FUZZ_SEED_TIMEOUT:-180}"
 
-# Overall budget (seconds): stop starting new seeds past it and exit cleanly, so a
-# slow-but-progressing variant (the mutate/deploy combos never finish a large seed window)
-# is not force-killed at the per-script Timeout and read as a failure. Defaults on rather
-# than opt-in so a direct `go test` run truncates cleanly too, not just `task test-fuzz`.
-# 900s leaves margin under the 20m Timeout in test.toml for the last-started seed (capped at
-# SEED_TIMEOUT) plus teardown; keep it comfortably below Timeout - SEED_TIMEOUT. Set
-# FUZZ_TIME_BUDGET=0 to disable the cap (e.g. a completionist run with a raised Timeout).
+# Overall budget (seconds): stop starting new seeds past it and exit cleanly, so a slow-but-
+# progressing variant isn't force-killed at the per-script Timeout and read as a failure.
+# On by default so a direct `go test` truncates cleanly too. 900s leaves margin under the
+# 20m test.toml Timeout for the last seed plus teardown. Set FUZZ_TIME_BUDGET=0 to disable.
 BUDGET="${FUZZ_TIME_BUDGET:-900}"
 
 if [ -z "${FUZZ_CHECK_DRIFT:-}" ]; then
@@ -36,19 +31,18 @@ cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
 # Fail loud on a schema type the generator can't produce (the loop below would hide it).
 check_schema_types.py --schema schema.json
 
-# One seed's worth of work, factored out so it can run either directly or under `timeout`.
+# One seed's worth of work, factored out so it can run directly or under `timeout`.
 seed_body() {
     cd "$1"
-    # The generator points file_path/source_code_path fields at these fixtures
-    # (see gen_fuzz_config.py *_BY_RESOURCE), so make them resolvable from the
-    # bundle root, matching how the curated invariant scripts stage data/.
+    # Stage the fixtures the generator's file_path/source_code_path fields point at, as the
+    # curated scripts do.
     cp -r "$TESTDIR/../data/." .
     export FUZZ_SEED="$2"
     export FUZZ_SCHEMA="../schema.json"
     source "$TESTDIR/../${FUZZ_TARGET:-no_drift}/script"
 }
 
-# timeout spawns a fresh bash without our shell functions, so export them (and seed_body).
+# timeout spawns a fresh bash without our functions, so export them (and seed_body).
 export -f $(compgen -A function)
 
 # Run one seed, capped at SEED_TIMEOUT when `timeout` is available.
@@ -63,15 +57,15 @@ run_seed() {
     fi
 }
 
-# One machine-readable line per seed so a run is tallyable without grepping logs. A file,
-# not stdout, so the committed run's empty-output assertion holds.
+# One machine-readable line per seed, tallyable without grepping logs. To a file, not
+# stdout, so the committed run's empty-output assertion holds.
 record() {
     echo "$1 seed=$2 target=${FUZZ_TARGET:-no_drift} mode=${FUZZ_MODE:-generate}" >> LOG.summary
 }
 
 for ((offset = 0; offset < COUNT; offset++)); do
     # Stop before the per-test timeout kills us mid-seed; a clean stop, not a failure, so
-    # log to a file rather than the compared stdout/stderr. BUDGET=0 disables the cap.
+    # log to a file. BUDGET=0 disables the cap.
     if [ "$BUDGET" != "0" ] && [ "$SECONDS" -ge "$BUDGET" ]; then
         echo "fuzz: stopping after $offset/$COUNT seeds; hit FUZZ_TIME_BUDGET=${BUDGET}s" > LOG.budget
         break
@@ -88,10 +82,8 @@ for ((offset = 0; offset < COUNT; offset++)); do
 
     if [ "$rc" -eq 0 ]; then
         record deployed "$seed"
-        # Optional generator-independent regression corpus: persist configs that actually
-        # deployed, so runs accumulate known-good inputs that stay valid (and replayable)
-        # even after the generator changes. Unset by default, so the committed run and its
-        # empty-output assertion are unaffected.
+        # Optional corpus: persist configs that deployed, so runs accumulate known-good,
+        # replayable inputs that survive generator changes. Unset by default.
         if [ -n "${FUZZ_CORPUS_DIR:-}" ]; then
             mkdir -p "$FUZZ_CORPUS_DIR"
             cp "$dir/databricks.yml" "$FUZZ_CORPUS_DIR/${FUZZ_MODE:-generate}-${FUZZ_TARGET:-no_drift}-seed${seed}.yml"
@@ -100,7 +92,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
     fi
 
     # timeout exits 124 (137 if the SIGKILL backstop fired): the seed hung. Report a hang,
-    # distinct from a drift bug; any goroutine dump is preserved in the seed's LOG.*.
+    # distinct from a drift bug; any goroutine dump is in the seed's LOG.*.
     if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
         record hang "$seed"
         echo "fuzz: seed $seed hung (>${SEED_TIMEOUT}s), reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_SEED_TIMEOUT=0 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} task test-fuzz" >&2
@@ -126,8 +118,8 @@ for ((offset = 0; offset < COUNT; offset++)); do
         exit 1
     fi
 
-    # A 501 "No stub found" is a testserver coverage gap (see IgnoreUnhandledRequests);
-    # anything else before INPUT_CONFIG_OK is a genuine config rejection.
+    # A 501 "No stub found" is a testserver coverage gap; anything else before
+    # INPUT_CONFIG_OK is a genuine config rejection.
     if grep -qs "No stub found for pattern" "$dir"/LOG.*; then
         record gap "$seed"
     else
@@ -135,8 +127,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
     fi
 done
 
-# Per-variant tally for at-a-glance triage. Reached only on a clean run; a bug/hang exits
-# above with the per-seed lines already recorded.
+# Per-variant tally for triage. Reached only on a clean run; a bug/hang exits above.
 if [ -f LOG.summary ]; then
     # Snapshot the counts before appending the header, else awk would also count it.
     totals=$(awk '{print $1}' LOG.summary | sort | uniq -c)

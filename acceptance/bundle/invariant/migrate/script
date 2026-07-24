@@ -3,57 +3,9 @@
 
 unset DATABRICKS_BUNDLE_ENGINE
 
-if [ -n "${FUZZ_SEED:-}" ]; then
-    fuzz_gen_config.py > databricks.yml 2>LOG.gen.err
-    cat LOG.gen.err | contains.py '!Traceback' > /dev/null
-    cp databricks.yml LOG.config
-else
-    # Copy data files to test directory
-    cp -r "$TESTDIR/../data/." . &> LOG.cp
+source "$TESTDIR/../prologue.sh"
 
-    # Run init script if present
-    INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
-    if [ -f "$INIT_SCRIPT" ]; then
-        source "$INIT_SCRIPT" &> LOG.init
-    fi
-
-    envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
-
-    cp databricks.yml LOG.config
-fi
-
-cleanup() {
-    # A rejected fuzz config deployed nothing; destroying nothing hits unstubbed URLs.
-    if [ -z "${deployed:-}" ]; then
-        return
-    fi
-
-    trace $CLI bundle destroy --auto-approve &> LOG.destroy
-    cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
-
-    # Run cleanup script if present
-    CLEANUP_SCRIPT="$TESTDIR/../configs/${INPUT_CONFIG:-}-cleanup.sh"
-    if [ -f "$CLEANUP_SCRIPT" ]; then
-        source "$CLEANUP_SCRIPT" &> LOG.cleanup
-    fi
-}
-
-trap cleanup EXIT
-
-# Disable set -e only around deploy so a failed deploy doesn't abort before we capture
-# its code: the panic check below must run even on failure (a panicking-but-rejected
-# config is a bug, not a rejection), and only then do we exit with the deploy's code.
-set +e
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy &> LOG.deploy
-deploy_rc=$?
-set -e
-cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
-if [ "$deploy_rc" -ne 0 ]; then
-    exit "$deploy_rc"
-fi
-deployed=1
-
-echo INPUT_CONFIG_OK
+invariant_deploy DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 MIGRATE_ARGS=""
 # The terraform provider sorts depends_on entries alphabetically by task_key on Read
