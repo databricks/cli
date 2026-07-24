@@ -913,9 +913,15 @@ func (b *DeploymentBundle) savedStateField(targetResourceKey string, adapter *dr
 // remote-only target field, absent from the target's saved state). For each
 // still-unresolved field it looks up the field's own last-resolved value in
 // this resource's saved state, writes it into sv.Value, and drops the entry
-// from sv.Refs. Returns whether any field was resolved. Callers run this only
-// after interpolation, so a changed literal template is never overwritten.
-func (b *DeploymentBundle) resolveRefsFromOwnState(ctx context.Context, resourceKey string, sv *structvar.StructVar) bool {
+// from sv.Refs. Returns whether any field was resolved.
+//
+// originalRefs holds each field's ref string before interpolation ran. A field
+// is only eligible for the whole-field fallback if interpolation left its ref
+// completely untouched (current ref == original). If interpolation partially
+// resolved the field (e.g. resolved ${id} but not a remote-only ${x} in the
+// same value, or the literal template changed), its ref string differs, and
+// overwriting sv.Value with the old saved value would discard that work.
+func (b *DeploymentBundle) resolveRefsFromOwnState(ctx context.Context, resourceKey string, sv *structvar.StructVar, originalRefs map[string]string) bool {
 	dbentry, ok := b.StateDB.GetResourceEntry(resourceKey)
 	if !ok || len(dbentry.State) == 0 {
 		return false
@@ -930,7 +936,12 @@ func (b *DeploymentBundle) resolveRefsFromOwnState(ctx context.Context, resource
 		return false
 	}
 	resolved := false
-	for fieldPathStr := range sv.Refs {
+	for fieldPathStr, refString := range sv.Refs {
+		// Skip fields interpolation touched: only fall back for fields whose
+		// ref is still the original, untouched template.
+		if originalRefs[fieldPathStr] != refString {
+			continue
+		}
 		fieldPath, err := structpath.ParsePath(fieldPathStr)
 		if err != nil {
 			continue
@@ -955,6 +966,14 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 	if !ok {
 		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no cache entry found for %q", errorPrefix, resourceKey))
 		return false
+	}
+
+	// Snapshot the original ref strings before interpolation so the offline
+	// own-state fallback below can tell which fields interpolation left
+	// completely untouched (see resolveRefsFromOwnState).
+	var originalRefs map[string]string
+	if isPreDeploy && b.Plan.Mode == deployplan.PlanModeOffline {
+		originalRefs = maps.Clone(sv.Refs)
 	}
 
 	var resolved bool
@@ -1018,7 +1037,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 	// changed literal template (e.g. /v1/${id} -> /v2/${id}) is honored; this
 	// only fills fields interpolation left behind.
 	if isPreDeploy && b.Plan.Mode == deployplan.PlanModeOffline && len(sv.Refs) > 0 {
-		if b.resolveRefsFromOwnState(ctx, resourceKey, sv) {
+		if b.resolveRefsFromOwnState(ctx, resourceKey, sv, originalRefs) {
 			resolved = true
 		}
 	}
