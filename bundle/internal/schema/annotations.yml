@@ -975,9 +975,12 @@ resources:
         "python_named_params":
           "description": |-
             PLACEHOLDER
-        "rerun":
+        "rerun_token":
           "description": |-
             An arbitrary token that forces a new run when its value changes. Leave it unset for normal deploys; change it to re-run the same job configuration or to retry a run that finished unsuccessfully.
+        "wait":
+          "description": |-
+            Whether the deploy waits for the run to finish. Defaults to true, which waits for completion and fails the deploy if the run does not succeed. Set to false to trigger the run and continue without waiting for its outcome.
     "jobs":
       "description": |-
         The job definitions for the bundle, where each key is the name of the job.

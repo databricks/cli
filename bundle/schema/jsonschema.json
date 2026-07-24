@@ -1232,7 +1232,7 @@
                         "description": "The queue settings of the run.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.QueueSettings"
                       },
-                      "rerun": {
+                      "rerun_token": {
                         "description": "An arbitrary token that forces a new run when its value changes. Leave it unset for normal deploys; change it to re-run the same job configuration or to retry a run that finished unsuccessfully.",
                         "$ref": "#/$defs/string"
                       },
@@ -1251,6 +1251,10 @@
                         "deprecationMessage": "This field is deprecated",
                         "doNotSuggest": true,
                         "deprecated": true
+                      },
+                      "wait": {
+                        "description": "Whether the deploy waits for the run to finish. Defaults to true, which waits for completion and fails the deploy if the run does not succeed. Set to false to trigger the run and continue without waiting for its outcome.",
+                        "$ref": "#/$defs/bool"
                       }
                     },
                     "additionalProperties": false,

@@ -34,7 +34,9 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
 Deploying resources...
-Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[MY_JOB_ID]/run/[MY_RUN_ID]
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[MY_JOB_ID]/run/[MY_RUN_ID]
+[TIMESTAMP] "my-job" RUNNING
+[TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 

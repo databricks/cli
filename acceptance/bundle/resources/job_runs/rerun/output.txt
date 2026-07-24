@@ -3,7 +3,9 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-rerun/default/files...
 Deploying resources...
-Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+[TIMESTAMP] "my-job" RUNNING
+[TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 
@@ -17,17 +19,19 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== bump rerun v1 -> v2: the config changed, so a fresh, different run is triggered
->>> update_file.py databricks.yml rerun: v1 rerun: v2
+=== bump rerun_token v1 -> v2: the config changed, so a fresh, different run is triggered
+>>> update_file.py databricks.yml rerun_token: v1 rerun_token: v2
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-rerun/default/files...
 Deploying resources...
-Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+[TIMESTAMP] "my-job" RUNNING
+[TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 
-=== run-now was issued exactly twice (initial + bump); rerun itself is never sent to the API
+=== run-now was issued exactly twice (initial + bump); rerun_token itself is never sent to the API
 >>> print_requests.py //jobs/run-now
 {
   "method": "POST",
@@ -45,7 +49,7 @@ Deployment complete!
     "job_id": [NUMID]
   }
 }
-identical config reused run [NUMID]; bumping rerun triggered a new run [NUMID]
+identical config reused run [NUMID]; bumping rerun_token triggered a new run [NUMID]
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

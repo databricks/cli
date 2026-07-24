@@ -20,10 +20,14 @@ type JobRun struct {
 	BaseResource
 	jobs.RunNow
 
-	// Rerun forces a new run when its value changes; it is folded into the
-	// computed idempotency_token but never sent to the API. Leave it unset for
-	// normal deploys; bump it to re-run identical config or retry a failed run.
-	Rerun string `json:"rerun,omitempty"`
+	// RerunToken forces a new run when its value changes; it feeds the computed
+	// idempotency_token but is never sent to the API. Leave it unset for normal
+	// deploys; bump it to re-run identical config or retry a failed run.
+	RerunToken string `json:"rerun_token,omitempty"`
+
+	// Wait, when false, triggers the run without blocking the deploy on its
+	// outcome. Defaults to true (wait for completion, fail on non-success).
+	Wait *bool `json:"wait,omitempty"`
 
 	// ResolvedJobID holds the run's job_id loaded from state, used only to build
 	// the run URL. Keeping it separate from RunNow.JobId (a ${resources.jobs.*.id}

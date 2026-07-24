@@ -14,22 +14,22 @@ trace $CLI bundle deploy
 first=$(run_id)
 
 title "redeploy with identical config is a no-op: the run is reused, no new run-now"
-# rerun is unchanged, so the token is unchanged and the planner skips the run.
+# rerun_token is unchanged, so the token is unchanged and the planner skips the run.
 trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"].action // "none"'
 trace $CLI bundle deploy
 same=$(run_id)
 
-title "bump rerun v1 -> v2: the config changed, so a fresh, different run is triggered"
-trace update_file.py databricks.yml "rerun: v1" "rerun: v2"
+title "bump rerun_token v1 -> v2: the config changed, so a fresh, different run is triggered"
+trace update_file.py databricks.yml "rerun_token: v1" "rerun_token: v2"
 trace $CLI bundle deploy
 bumped=$(run_id)
 
-title "run-now was issued exactly twice (initial + bump); rerun itself is never sent to the API"
+title "run-now was issued exactly twice (initial + bump); rerun_token itself is never sent to the API"
 # Two run-now calls total; the identical-config redeploy in between added none.
-# Neither body carries `rerun` -- it only feeds the masked idempotency_token.
+# Neither body carries `rerun_token` -- it only feeds the masked idempotency_token.
 trace print_requests.py //jobs/run-now
 if [ "$first" = "$same" ] && [ "$first" != "$bumped" ]; then
-    echo "identical config reused run $first; bumping rerun triggered a new run $bumped"
+    echo "identical config reused run $first; bumping rerun_token triggered a new run $bumped"
 else
     echo "unexpected run ids: first=$first same=$same bumped=$bumped"
 fi

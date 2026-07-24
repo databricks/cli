@@ -1,0 +1,46 @@
+
+=== wait: false triggers the run and returns without waiting: no run URL / progress lines
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-wait-false/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== the run-now request was made and its id is stored in state
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[IDEMPOTENCY_TOKEN]",
+    "job_id": [NUMID]
+  }
+}
+
+>>> read_id.py my_run
+[MY_RUN_ID]
+
+=== flipping wait false -> true is a deploy-time toggle, not a config change, so no re-trigger
+>>> update_file.py databricks.yml wait: false wait: true
+
+>>> [CLI] bundle plan -o json
+"skip"
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-wait-false/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== the wait-flip redeploy issued no further run-now request
+>>> print_requests.py //jobs/run-now
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-wait-false/default
+
+Deleting files...
+Destroy complete!

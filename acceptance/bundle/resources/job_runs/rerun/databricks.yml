@@ -13,7 +13,7 @@ resources:
   job_runs:
     my_run:
       job_id: ${resources.jobs.my_job.id}
-      # rerun is folded into the computed idempotency_token but never sent to the
-      # API. Bumping its value is the supported way to force a fresh run of an
-      # otherwise-unchanged config.
-      rerun: v1
+      # rerun_token is folded into the computed idempotency_token but never sent
+      # to the API. Bumping its value is the supported way to force a fresh run
+      # of an otherwise-unchanged config.
+      rerun_token: v1

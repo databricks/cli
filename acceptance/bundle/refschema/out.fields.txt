@@ -861,7 +861,7 @@ resources.job_runs.*.python_params	[]string	ALL
 resources.job_runs.*.python_params[*]	string	ALL
 resources.job_runs.*.queue	*jobs.QueueSettings	ALL
 resources.job_runs.*.queue.enabled	bool	ALL
-resources.job_runs.*.rerun	string	ALL
+resources.job_runs.*.rerun_token	string	ALL
 resources.job_runs.*.resolved_job_id	int64	INPUT
 resources.job_runs.*.run_id	int64	REMOTE
 resources.job_runs.*.run_name	string	REMOTE
@@ -878,6 +878,7 @@ resources.job_runs.*.state.result_state	jobs.RunResultState	REMOTE
 resources.job_runs.*.state.state_message	string	REMOTE
 resources.job_runs.*.state.user_cancelled_or_timedout	bool	REMOTE
 resources.job_runs.*.url	string	INPUT
+resources.job_runs.*.wait	*bool	ALL
 resources.jobs.*.budget_policy_id	string	ALL
 resources.jobs.*.continuous	*jobs.Continuous	ALL
 resources.jobs.*.continuous.pause_status	jobs.PauseStatus	ALL

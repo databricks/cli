@@ -1,0 +1,19 @@
+bundle:
+  name: job-runs-wait-false
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
+      # wait: false triggers the run but does not block the deploy on its
+      # outcome, so no run URL / progress lines are printed and a non-success
+      # result never fails the deploy.
+      wait: false

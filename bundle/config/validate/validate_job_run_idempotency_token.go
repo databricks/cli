@@ -24,7 +24,7 @@ func (v *validateJobRunIdempotencyToken) Apply(_ context.Context, b *bundle.Bund
 	var diags diag.Diagnostics
 
 	// idempotency_token is computed in DoCreate, so a user value has no effect.
-	// Reject it and point at the supported knob (`rerun`) for forcing a run.
+	// Reject it and point at the supported knob (`rerun_token`) for forcing a run.
 	for name, jr := range b.Config.Resources.JobRuns {
 		// An empty `job_runs.<name>:` entry loads as a present key with a nil
 		// pointer value, so guard before dereferencing.
@@ -34,7 +34,7 @@ func (v *validateJobRunIdempotencyToken) Apply(_ context.Context, b *bundle.Bund
 		path := "resources.job_runs." + name + ".idempotency_token"
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
-			Summary:   "idempotency_token is computed automatically and must not be set in bundle configuration; set `rerun` to force a new run",
+			Summary:   "idempotency_token is computed automatically and must not be set in bundle configuration; set `rerun_token` to force a new run",
 			Paths:     []dyn.Path{dyn.MustPathFromString(path)},
 			Locations: b.Config.GetLocations(path),
 		})

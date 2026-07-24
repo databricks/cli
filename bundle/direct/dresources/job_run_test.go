@@ -51,19 +51,33 @@ func TestIdempotencyTokenChangesWithConfig(t *testing.T) {
 	assert.NotEqual(t, dev, otherJob) // different job_id --> different token
 }
 
-func TestIdempotencyTokenChangesWithRerun(t *testing.T) {
+func TestIdempotencyTokenChangesWithRerunToken(t *testing.T) {
 	ctx := t.Context()
 	run := jobs.RunNow{JobId: 123}
 
 	base, err := idempotencyToken(ctx, &JobRunState{RunNow: run})
 	require.NoError(t, err)
-	bumped, err := idempotencyToken(ctx, &JobRunState{RunNow: run, Rerun: "v2"})
+	bumped, err := idempotencyToken(ctx, &JobRunState{RunNow: run, RerunToken: "v2"})
 	require.NoError(t, err)
-	bumpedAgain, err := idempotencyToken(ctx, &JobRunState{RunNow: run, Rerun: "v2"})
+	bumpedAgain, err := idempotencyToken(ctx, &JobRunState{RunNow: run, RerunToken: "v2"})
 	require.NoError(t, err)
 
-	assert.NotEqual(t, base, bumped)     // bumping rerun forces a new run
-	assert.Equal(t, bumped, bumpedAgain) // the same rerun value stays stable
+	assert.NotEqual(t, base, bumped)     // bumping rerun_token forces a new run
+	assert.Equal(t, bumped, bumpedAgain) // the same rerun_token value stays stable
+}
+
+func TestIdempotencyTokenIgnoresWait(t *testing.T) {
+	ctx := t.Context()
+	run := jobs.RunNow{JobId: 123}
+	wait := false
+
+	base, err := idempotencyToken(ctx, &JobRunState{RunNow: run})
+	require.NoError(t, err)
+	noWait, err := idempotencyToken(ctx, &JobRunState{RunNow: run, Wait: &wait})
+	require.NoError(t, err)
+
+	// wait is a deploy-time toggle, not run identity, so it must not change the token.
+	assert.Equal(t, base, noWait)
 }
 
 func TestIdempotencyTokenRotatesWithPriorResourceID(t *testing.T) {

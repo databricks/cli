@@ -3,7 +3,9 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-job-parameters/default/files...
 Deploying resources...
-Waiting for job run to complete: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+[TIMESTAMP] "my-job" RUNNING
+[TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 

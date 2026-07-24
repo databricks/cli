@@ -28,7 +28,7 @@ func TestValidateJobRunIdempotencyTokenRejectsUserValue(t *testing.T) {
 	diags := ValidateJobRunIdempotencyToken().Apply(t.Context(), jobRunBundle("x"))
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Error, diags[0].Severity)
-	assert.Equal(t, "idempotency_token is computed automatically and must not be set in bundle configuration; set `rerun` to force a new run", diags[0].Summary)
+	assert.Equal(t, "idempotency_token is computed automatically and must not be set in bundle configuration; set `rerun_token` to force a new run", diags[0].Summary)
 	assert.Equal(t, "resources.job_runs.my_run.idempotency_token", diags[0].Paths[0].String())
 }
 

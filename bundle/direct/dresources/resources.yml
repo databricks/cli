@@ -146,6 +146,11 @@ resources:
       - reason: immutable
     recreate_on_changes:
       - reason: immutable
+    ignore_local_changes:
+      # wait is a deploy-time toggle, not run config; flipping it must not
+      # re-trigger the run (checked before recreate_on_changes).
+      - field: wait
+        reason: deploy_option
 
   pipelines:
     recreate_on_changes:

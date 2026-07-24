@@ -3,7 +3,8 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/files...
 Deploying resources...
-Error: cannot create resources.job_runs.my_run: job run [NUMID] did not succeed: FAILED
+[TIMESTAMP] "" TERMINATED FAILED
+Error: cannot create resources.job_runs.my_run: job run [NUMID] did not succeed: FAILED; bump rerun_token to start a fresh run
 
 Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
 
