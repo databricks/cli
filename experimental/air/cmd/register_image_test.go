@@ -54,7 +54,7 @@ func imageServer(t *testing.T, postBody string, getBodies ...string) string {
 
 func TestResolveImageFreshRegistration(t *testing.T) {
 	url := imageServer(t, `{"image":{"state":"AVAILABLE","manifest_sha256":"newsha"}}`, "")
-	updated, sha, err := resolveImage(t.Context(), newTestImageClient(t, url), "ubuntu", "", "", time.Second)
+	updated, sha, err := resolveImage(t.Context(), newTestImageClient(t, url), "ubuntu", time.Second)
 	require.NoError(t, err)
 	assert.True(t, updated)
 	assert.Equal(t, "newsha", sha)
@@ -63,7 +63,7 @@ func TestResolveImageFreshRegistration(t *testing.T) {
 func TestResolveImageDigestUnchanged(t *testing.T) {
 	body := `{"state":"AVAILABLE","manifest_sha256":"samesha"}`
 	url := imageServer(t, `{"image":`+body+`}`, body)
-	updated, sha, err := resolveImage(t.Context(), newTestImageClient(t, url), "ubuntu", "", "", time.Second)
+	updated, sha, err := resolveImage(t.Context(), newTestImageClient(t, url), "ubuntu", time.Second)
 	require.NoError(t, err)
 	assert.False(t, updated)
 	assert.Equal(t, "samesha", sha)
@@ -75,7 +75,7 @@ func TestResolveImageDigestChanged(t *testing.T) {
 	url := imageServer(t, `{"image":{"state":"AVAILABLE","manifest_sha256":"newsha"}}`,
 		`{"state":"AVAILABLE","manifest_sha256":"oldsha"}`,
 		`{"state":"AVAILABLE","manifest_sha256":"newsha"}`)
-	updated, sha, err := resolveImage(t.Context(), newTestImageClient(t, url), "ubuntu", "", "", time.Second)
+	updated, sha, err := resolveImage(t.Context(), newTestImageClient(t, url), "ubuntu", time.Second)
 	require.NoError(t, err)
 	assert.True(t, updated)
 	assert.Equal(t, "newsha", sha)

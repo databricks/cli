@@ -10,17 +10,11 @@ trace $CLI experimental air register-image my-image:latest --tag-policy latest -
 title "empty image url"
 errcode trace $CLI experimental air register-image "   "
 
-title "scope without key"
-errcode trace $CLI experimental air register-image my-image:latest --scope s
-
-title "interactive-authenticate with scope"
-errcode trace $CLI experimental air register-image my-image:latest -i --scope s --key k
-
 title "tag-policy auto is rejected"
 errcode trace $CLI experimental air register-image my-image:latest --tag-policy auto
 
 title "invalid tag policy (json)"
 errcode trace $CLI experimental air register-image my-image:latest --tag-policy bogus -o json
 
-title "interactive-authenticate not yet supported"
-errcode trace $CLI experimental air register-image my-image:latest -i
+title "removed credential flags are unknown"
+errcode trace $CLI experimental air register-image my-image:latest --scope s --key k

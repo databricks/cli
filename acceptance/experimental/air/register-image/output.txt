@@ -42,18 +42,6 @@ Error: IMAGE_URL cannot be empty
 
 Exit code: 1
 
-=== scope without key
->>> [CLI] experimental air register-image my-image:latest --scope s
-Error: both --scope and --key must be provided together
-
-Exit code: 1
-
-=== interactive-authenticate with scope
->>> [CLI] experimental air register-image my-image:latest -i --scope s --key k
-Error: --interactive-authenticate cannot be used with --scope/--key
-
-Exit code: 1
-
 === tag-policy auto is rejected
 >>> [CLI] experimental air register-image my-image:latest --tag-policy auto
 Error: --tag-policy auto is no longer supported: auto mode was removed and registration now always checks the source registry for the latest digest; omit the flag or use --tag-policy latest
@@ -75,8 +63,22 @@ Exit code: 1
 
 Exit code: 1
 
-=== interactive-authenticate not yet supported
->>> [CLI] experimental air register-image my-image:latest -i
-Error: --interactive-authenticate is not yet supported
+=== removed credential flags are unknown
+>>> [CLI] experimental air register-image my-image:latest --scope s --key k
+Error: unknown flag: --scope
+
+Usage:
+  databricks experimental air register-image IMAGE_URL [flags]
+
+Flags:
+  -h, --help                  help for register-image
+      --timeout-minutes int   Timeout to wait for the image to become available (default 60)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
 
 Exit code: 1

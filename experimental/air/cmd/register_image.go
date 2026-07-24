@@ -44,22 +44,20 @@ type registerImageResult struct {
 
 func newRegisterImageCommand() *cobra.Command {
 	var (
-		scope           string
-		key             string
-		interactiveAuth bool
-		tagPolicy       string
-		timeoutMinutes  int
+		tagPolicy      string
+		timeoutMinutes int
 	)
 
 	cmd := &cobra.Command{
 		Use:   "register-image IMAGE_URL",
 		Args:  root.ExactArgs(1),
 		Short: "Mirror a Docker image into the workspace registry",
+		Long: `Mirror a Docker image into the workspace registry.
+
+Credentials for private images are discovered from your local Docker
+configuration (run ` + "`docker login`" + ` first); there are no credential flags.`,
 	}
 
-	cmd.Flags().StringVar(&scope, "scope", "", "Databricks secret scope holding registry credentials")
-	cmd.Flags().StringVar(&key, "key", "", "Databricks secret key holding registry credentials")
-	cmd.Flags().BoolVarP(&interactiveAuth, "interactive-authenticate", "i", false, "Prompt for registry credentials and store them as a secret")
 	// Registration always re-checks the source registry for the latest digest.
 	// --tag-policy is kept only for backward compatibility (accepts "latest").
 	cmd.Flags().StringVar(&tagPolicy, "tag-policy", "", "Deprecated and ignored; registration always checks the source registry for the latest digest")
@@ -89,22 +87,6 @@ func newRegisterImageCommand() *cobra.Command {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 		}
 
-		if (scope != "") != (key != "") {
-			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("both --scope and --key must be provided together"))
-		}
-		if interactiveAuth && (scope != "" || key != "") {
-			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("--interactive-authenticate cannot be used with --scope/--key"))
-		}
-
-		// Interactive credential setup and local Docker credential discovery are
-		// not ported yet; reject rather than silently ignore the flag.
-		if interactiveAuth {
-			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("--interactive-authenticate is not yet supported"))
-		}
-
 		w := cmdctx.WorkspaceClient(ctx)
 
 		// Validate authentication against the workspace before registering
@@ -121,12 +103,12 @@ func newRegisterImageCommand() *cobra.Command {
 
 		timeout := time.Duration(timeoutMinutes) * time.Minute
 
-		updated, sha, err := resolveImage(ctx, c, dockerImageURL, scope, key, timeout)
+		updated, sha, err := resolveImage(ctx, c, dockerImageURL, timeout)
 		if err != nil {
 			return renderError(ctx, cmd, "REGISTRATION_FAILED", "TRANSIENT", true, err)
 		}
 
-		return renderRegisterResult(ctx, cmd, dockerImageURL, scope, key,
+		return renderRegisterResult(ctx, cmd, dockerImageURL,
 			registerImageResult{
 				DockerImageURL: dockerImageURL,
 				ManifestSHA256: sha,
@@ -143,13 +125,13 @@ func newRegisterImageCommand() *cobra.Command {
 // AVAILABLE, returning whether the stored digest changed and the final digest.
 // CreateImage is idempotent. The prior registration is fetched only to detect a
 // digest change; its status is not consulted.
-func resolveImage(ctx context.Context, c *imageClient, dockerImageURL, scope, key string, timeout time.Duration) (updated bool, sha string, err error) {
+func resolveImage(ctx context.Context, c *imageClient, dockerImageURL string, timeout time.Duration) (updated bool, sha string, err error) {
 	existing, err := c.getImage(ctx, dockerImageURL)
 	if err != nil {
 		return false, "", err
 	}
 
-	reg, err := createAndWait(ctx, c, dockerImageURL, scope, key, timeout)
+	reg, err := createAndWait(ctx, c, dockerImageURL, timeout)
 	if err != nil {
 		return false, "", err
 	}
@@ -172,8 +154,10 @@ func resolveImage(ctx context.Context, c *imageClient, dockerImageURL, scope, ke
 }
 
 // createAndWait registers the image and polls until it becomes AVAILABLE.
-func createAndWait(ctx context.Context, c *imageClient, dockerImageURL, scope, key string, timeout time.Duration) (*imageRegistration, error) {
-	reg, err := c.createImage(ctx, dockerImageURL, scope, key)
+// Credentials are omitted; private-image support is added with local Docker
+// credential discovery in a later phase.
+func createAndWait(ctx context.Context, c *imageClient, dockerImageURL string, timeout time.Duration) (*imageRegistration, error) {
+	reg, err := c.createImage(ctx, dockerImageURL, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +169,7 @@ func createAndWait(ctx context.Context, c *imageClient, dockerImageURL, scope, k
 
 // renderRegisterResult prints the result as a JSON envelope or human-readable
 // text, matching the Python CLI's output.
-func renderRegisterResult(ctx context.Context, cmd *cobra.Command, dockerImageURL, scope, key string, result registerImageResult) error {
+func renderRegisterResult(ctx context.Context, cmd *cobra.Command, dockerImageURL string, result registerImageResult) error {
 	if root.OutputType(cmd) != flags.OutputText {
 		return renderEnvelope(ctx, result)
 	}
@@ -206,11 +190,6 @@ func renderRegisterResult(ctx context.Context, cmd *cobra.Command, dockerImageUR
 	fmt.Fprintln(out, "  environment:")
 	fmt.Fprintln(out, "    docker_image:")
 	fmt.Fprintf(out, "      url: %s\n", dockerImageURL)
-
-	if scope != "" {
-		fmt.Fprintln(out, "\nTo reuse these credentials:")
-		fmt.Fprintf(out, "  air register-image %s --scope %s --key %s\n", dockerImageURL, scope, key)
-	}
 	return nil
 }
 
