@@ -9,6 +9,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -191,6 +192,12 @@ type bricklensStreamer struct {
 	lastNano     int64
 	firstLogSeen bool
 	seen         *seenSet
+	// onFirstLog, when set, is called once just before the first log line is
+	// emitted — used to stop the "waiting for run to start" spinner before any
+	// log byte reaches stdout.
+	onFirstLog func()
+	// updateSpinner, when set, refreshes the waiting-spinner text each poll.
+	updateSpinner func(string)
 }
 
 func (st *bricklensStreamer) run() (bool, error) {
@@ -201,6 +208,17 @@ func (st *bricklensStreamer) run() (bool, error) {
 	// following the still-active run, which would poll forever.
 	if st.req.staticView {
 		return st.drainStatic(st.req.toSeconds(st.status))
+	}
+
+	// Show a "waiting for run to start" spinner on stderr while the run has not
+	// yet produced logs, so a provisioning run doesn't look hung. Suppressed in
+	// --json mode and auto-degraded to nothing on a non-interactive terminal.
+	// The first emitted log line stops it via onFirstLog (before any stdout write).
+	if !st.req.jsonOutput {
+		sp := cmdio.NewSpinner(st.ctx)
+		defer sp.Close()
+		st.onFirstLog = sp.Close
+		st.updateSpinner = sp.Update
 	}
 
 	firstIteration := true
@@ -229,6 +247,11 @@ func (st *bricklensStreamer) run() (bool, error) {
 		terminal := st.status.terminal()
 		toSec := st.req.toSeconds(st.status)
 
+		// While waiting on a still-active run with no logs yet, refresh the spinner.
+		if !terminal && !st.firstLogSeen && st.updateSpinner != nil {
+			st.updateSpinner(fmt.Sprintf("Waiting for run to start (node %d)...", st.req.node))
+		}
+
 		// A run already terminal on the first iteration renders as a tail (most
 		// recent N lines). An active run streams everything with dedup, so a run
 		// that terminates while we watch doesn't re-print the boundary second.
@@ -244,6 +267,10 @@ func (st *bricklensStreamer) run() (bool, error) {
 
 		if terminal {
 			if !st.firstLogSeen {
+				// Stop the spinner before the no-logs line so frames don't smear.
+				if st.onFirstLog != nil {
+					st.onFirstLog()
+				}
 				st.emitNoLogs()
 			}
 			log.Infof(st.ctx, "air logs: run %d finished in state %s", st.req.runID, st.status.displayState())
@@ -408,8 +435,12 @@ func (st *bricklensStreamer) requestPage(pageToken string, toSec int64, pageSize
 }
 
 // emit writes one log line and latches firstLogSeen so an empty terminal run can
-// report "no logs".
+// report "no logs". The first line stops the waiting spinner before any byte
+// reaches stdout.
 func (st *bricklensStreamer) emit(body string) {
+	if !st.firstLogSeen && st.onFirstLog != nil {
+		st.onFirstLog()
+	}
 	st.firstLogSeen = true
 	emitLogLine(st.out, st.req, body)
 }
