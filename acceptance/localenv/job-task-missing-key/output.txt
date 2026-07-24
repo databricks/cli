@@ -1,5 +1,5 @@
 preflight  ok  check
-resolve    error  resolving job 12345: job 12345 has serverless environments with differing versions; pass --serverless-version explicitly to disambiguate
+resolve    error  specify a job task: job 12345 has multiple tasks; specify one: --job-task 12345.<task-key> (available: ingest, transform)
 fetch      pending
 merge      pending
 provision  pending

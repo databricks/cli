@@ -3,17 +3,21 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 [Env]
 DATABRICKS_LOCALENV_CONSTRAINT_SOURCE = "$DATABRICKS_HOST"
 
-# A classic task carries its own new_cluster, so --job-task <id>.<task-key>
-# resolves to that cluster's DBR-derived environment key.
+# A classic task references a shared job cluster by job_cluster_key (rather than
+# an inline new_cluster), so --job-task resolves the version from the job's
+# job_clusters entry.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/get"
 Response.Body = '''
 {
   "job_id": 12345,
   "settings": {
-    "name": "classic-job",
+    "name": "jobcluster-job",
     "tasks": [
-      {"task_key": "ingest", "new_cluster": {"spark_version": "15.4.x-scala2.12", "num_workers": 1}}
+      {"task_key": "ingest", "job_cluster_key": "shared"}
+    ],
+    "job_clusters": [
+      {"job_cluster_key": "shared", "new_cluster": {"spark_version": "15.4.x-scala2.12", "num_workers": 1}}
     ]
   }
 }
