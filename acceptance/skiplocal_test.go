@@ -67,16 +67,14 @@ func selectChangedLocalTests(t *testing.T, testDirs map[string]bool) map[string]
 	out, err := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
 	if err != nil {
 		// A failed diff (most commonly a missing origin/main in a shallow CI
-		// checkout) disables change detection, so newly added tests fall back to
-		// the seeded subset and may not run. Log loudly but continue: failing the
-		// test here breaks integration runs whose checkout has no origin/main. The
-		// push.yml PR cells fetch full history so origin/main resolves there.
+		// checkout) must not be silently treated as "nothing changed": that
+		// disables change detection and lets newly added tests skip. Fail loudly.
+		// Every caller (push.yml PR cells, integration runs) now fetches origin/main.
 		stderr := ""
 		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			stderr = strings.TrimSpace(string(exitErr.Stderr))
 		}
-		t.Logf("WARNING: change detection disabled: git diff --merge-base origin/main failed: %v\n%s", err, stderr)
-		return nil
+		t.Fatalf("git diff --merge-base origin/main failed: %v\n%s", err, stderr)
 	}
 	diff := strings.TrimSpace(string(out))
 
