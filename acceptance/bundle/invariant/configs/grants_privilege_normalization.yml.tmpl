@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  schemas:
+    foo:
+      catalog_name: main
+      name: test-schema-grantnorm-$UNIQUE_NAME
+      grants:
+        # UC normalizes privileges (uppercases, converts spaces to underscores)
+        # and does not guarantee their order on readback. The direct engine must
+        # apply the same normalization so a deploy of non-canonical privileges
+        # does not report perpetual drift.
+        - principal: account users
+          privileges:
+            - use_schema
+            - CREATE TABLE
+            - APPLY_TAG

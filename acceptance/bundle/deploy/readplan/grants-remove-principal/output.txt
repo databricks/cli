@@ -13,21 +13,15 @@ Deployment complete!
     "changes": [
       {
         "add": [
-          "USE_SCHEMA"
+          "CREATE_TABLE"
         ],
-        "principal": "[USERNAME]",
-        "remove": [
-          "ALL_PRIVILEGES"
-        ]
+        "principal": "extra@example.test"
       },
       {
         "add": [
-          "CREATE_TABLE"
+          "USE_SCHEMA"
         ],
-        "principal": "extra@example.test",
-        "remove": [
-          "ALL_PRIVILEGES"
-        ]
+        "principal": "[USERNAME]"
       }
     ]
   }
@@ -52,18 +46,9 @@ Deployment complete!
   "body": {
     "changes": [
       {
-        "add": [
-          "USE_SCHEMA"
-        ],
-        "principal": "[USERNAME]",
-        "remove": [
-          "ALL_PRIVILEGES"
-        ]
-      },
-      {
         "principal": "extra@example.test",
         "remove": [
-          "ALL_PRIVILEGES"
+          "CREATE_TABLE"
         ]
       }
     ]

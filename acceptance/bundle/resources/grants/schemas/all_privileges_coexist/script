@@ -1,0 +1,28 @@
+SCHEMA_FULL_NAME=main.schema_all_priv_coexist_$UNIQUE_NAME
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+# Out of band, grant a concrete privilege in addition to the ALL_PRIVILEGES that
+# the config declares for the same principal. This reproduces issue #6030: the
+# backend then reports both ALL_PRIVILEGES and the concrete privilege, and the
+# deploy must revoke the concrete privilege to converge.
+envsubst < update.json > update.resolved.json
+trace $CLI grants update schema "$SCHEMA_FULL_NAME" --json @update.resolved.json > /dev/null
+
+# The plan detects the extra privilege and applies the revocation on deploy.
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+# The plan now converges to a no-op instead of reporting a perpetual update.
+trace $CLI bundle plan
+
+# Only ALL_PRIVILEGES remains for the principal.
+trace $CLI grants get schema "$SCHEMA_FULL_NAME" | gron.py --noindex | sort_lines.py --repl

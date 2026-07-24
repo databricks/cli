@@ -5,12 +5,11 @@
     "changes": [
       {
         "add": [
-          "MANAGE",
-          "READ_VOLUME"
+          "MANAGE"
         ],
         "principal": "deco-test-user@databricks.com",
         "remove": [
-          "ALL_PRIVILEGES"
+          "WRITE_VOLUME"
         ]
       }
     ]

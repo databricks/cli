@@ -5,7 +5,7 @@ trace $CLI bundle deploy
 trace print_requests.py //permissions > out.deploy1.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 # Since we're sending different requests between terraform and direct, assert that the end result is the same:
-trace $CLI grants get volume main.schema_grants_$UNIQUE_NAME.volume_name | jq --sort-keys
+trace $CLI grants get volume main.schema_grants_$UNIQUE_NAME.volume_name | jq --sort-keys '(.privilege_assignments[].privileges) |= sort'
 
 update_file.py databricks.yml WRITE_VOLUME MANAGE
 
@@ -14,7 +14,7 @@ trace $CLI bundle plan -o json | normalize_uc_payload.py effective_predictive_op
 trace $CLI bundle deploy
 trace print_requests.py //permissions > out.deploy2.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace $CLI grants get volume main.schema_grants_$UNIQUE_NAME.volume_name | jq --sort-keys
+trace $CLI grants get volume main.schema_grants_$UNIQUE_NAME.volume_name | jq --sort-keys '(.privilege_assignments[].privileges) |= sort'
 
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //permissions > out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json

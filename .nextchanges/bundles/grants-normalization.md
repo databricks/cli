@@ -1,0 +1,1 @@
+Fixed spurious `update` on catalog/schema/volume grants (direct engine): grants with `ALL_PRIVILEGES` now converge when the backend also reports concrete privileges, and privilege names are normalized to match the case and ordering Unity Catalog returns ([#6030](https://github.com/databricks/cli/issues/6030)).
