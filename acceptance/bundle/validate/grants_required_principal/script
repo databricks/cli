@@ -1,1 +1,7 @@
-trace $CLI bundle validate
+musterr trace $CLI bundle validate
+
+# Deploy must abort at validation: no securable is created, so no partial deploy.
+musterr trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+
+rm -f out.requests.txt
