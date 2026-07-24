@@ -17,8 +17,11 @@ type configCredentials struct {
 	cfg *config.Config
 }
 
+// Name reports the resolved auth mechanism (e.g. "pat", "oauth-m2m"), which the
+// files/v2 client folds into its User-Agent. The CLI resolves auth when it
+// builds the workspace client, so AuthType is set before the filer is created.
 func (c configCredentials) Name() string {
-	return "databricks-cli"
+	return c.cfg.AuthType
 }
 
 func (c configCredentials) AuthHeaders(ctx context.Context) ([]sdkauth.Header, error) {
