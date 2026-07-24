@@ -29,10 +29,8 @@ func webhooks(ids ...string) []jobs.Webhook {
 	return result
 }
 
-// TestJobWebhookNotificationsOrderInsensitive verifies that webhook notification
-// lists are diffed by id, so a permutation returned by the Jobs API does not
-// produce a phantom diff. Without KeyedSlices this list is compared positionally
-// and never converges.
+// TestJobWebhookNotificationsOrderInsensitive verifies that a webhook list
+// reordered by the Jobs API produces no diff, but a changed set still does.
 func TestJobWebhookNotificationsOrderInsensitive(t *testing.T) {
 	keys := (&ResourceJob{}).KeyedSlices()
 

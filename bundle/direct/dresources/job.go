@@ -79,10 +79,8 @@ func getWebhookKey(x jobs.Webhook) (string, string) {
 	return "id", x.Id
 }
 
-// webhookNotificationEvents are the on_* fields of jobs.WebhookNotifications,
-// each a []jobs.Webhook. The Jobs API treats these lists as unordered sets and
-// may return them in a different order than submitted, so they must be diffed
-// by id rather than by index to avoid a never-converging phantom diff.
+// The Jobs API returns webhook_notifications.on_* in an arbitrary order, so
+// diff them by id to avoid a phantom diff that never converges.
 var webhookNotificationEvents = []string{
 	"on_start",
 	"on_success",
@@ -91,8 +89,7 @@ var webhookNotificationEvents = []string{
 	"on_streaming_backlog_exceeded",
 }
 
-// webhookNotificationParents are the paths that hold a jobs.WebhookNotifications:
-// at the job level, on each task, and on the nested for_each task.
+// webhook_notifications appears at the job, task, and for_each task levels.
 var webhookNotificationParents = []string{
 	"webhook_notifications",
 	"tasks[*].webhook_notifications",
