@@ -3,11 +3,9 @@
 Generate a random bundle config from the bundle JSON schema.
 
 Walks `databricks bundle schema` (resolving $ref, picking concrete oneOf/anyOf
-branches) and emits one or more random resources as databricks.yml, seeded by --seed.
-With --resource-count > 1 it also links resources with ${resources.*} references (each
-resource referencing an earlier one) so the interpolation and deploy-ordering machinery is
-exercised. Free-form scalars are occasionally replaced with dangerous / near-range-end
-values (DANGEROUS_STRINGS, DANGEROUS_INTS) to probe the CLI's input handling. Feeds the
+branches) and emits one random resource as databricks.yml, seeded by --seed. Free-form
+scalars are occasionally replaced with dangerous / near-range-end values
+(DANGEROUS_STRINGS, DANGEROUS_INTS) to probe the CLI's input handling. Feeds the
 invariant tests; the harness filters out configs the CLI rejects, so output may be
 structurally-random but sometimes invalid.
 """
@@ -375,7 +373,7 @@ def resource_types(schema, gen):
     return obj["properties"]
 
 
-def gen_resource(schema, gen, types, candidates, seed, unique, index):
+def gen_resource(schema, gen, types, candidates, seed, unique):
     rtype = gen.rng.choice(sorted(candidates))
 
     # Each resource type is a map ref; the element schema is the object branch's
@@ -384,77 +382,14 @@ def gen_resource(schema, gen, types, candidates, seed, unique, index):
     obj = next(b for b in map_schema["oneOf"] if b.get("type") == "object")
     element = obj["additionalProperties"]
 
-    # The first resource keeps the bare key/name so a seed produces the same first
-    # resource regardless of --resource-count; later resources are index-suffixed to
-    # stay unique within the config.
-    if index == 0:
-        key = f"fuzz_{rtype}_{seed}"
-        gen.unique = unique
-    else:
-        key = f"fuzz_{rtype}_{seed}_{index}"
-        gen.unique = f"{unique}-{index}"
+    key = f"fuzz_{rtype}_{seed}"
+    gen.unique = unique
     gen.rtype = rtype
     instance = gen.gen(element, 0)
-    return rtype, key, instance, gen.resolve(element)
+    return rtype, key, instance
 
 
-def object_properties(gen, schema):
-    # The resource element is oneOf[object, ${...} string]; return the object
-    # branch's properties, matching the branch gen() picks to build the instance.
-    schema = gen.resolve(schema)
-    if "properties" in schema:
-        return schema["properties"]
-    for key in ("oneOf", "anyOf"):
-        for branch in schema.get(key, []):
-            resolved = gen.resolve(branch)
-            if "properties" in resolved:
-                return resolved["properties"]
-    return {}
-
-
-def cross_ref_field(gen, element):
-    # A free-text scalar safe to overwrite with a reference; both names cover most
-    # resource types (jobs use "description", UC resources use "comment").
-    props = object_properties(gen, element)
-    for field in ("description", "comment"):
-        if field in props:
-            return field
-    return None
-
-
-def target_ref_field(instance):
-    # Reference the target's identity field: a string, so the type stays compatible
-    # with the description/comment field it lands in, and an input (not an output like
-    # ".id") so it resolves for every resource type and converges without drift.
-    # Output-field references are covered by the curated cross-ref configs.
-    for field in ("name", "display_name"):
-        if isinstance(instance.get(field), str):
-            return field
-    return None
-
-
-def inject_cross_ref(gen, records):
-    # Link resources so deploy has to order them and resolve the references. A
-    # record may only reference an earlier one, so the reference graph stays
-    # acyclic: deploy must topologically order resources, and a cycle can't be
-    # ordered (the config would be rejected instead of exercising the invariant).
-    if len(records) < 2:
-        return
-    for i, source in enumerate(records):
-        if not source["ref_field"]:
-            continue
-        targets = [t for t in records[:i] if target_ref_field(t["instance"])]
-        if not targets:
-            continue
-        target = gen.rng.choice(targets)
-        field = target_ref_field(target["instance"])
-        source["instance"][source["ref_field"]] = f"${{resources.{target['rtype']}.{target['key']}.{field}}}"
-
-
-def gen_config(schema, seed, unique, allowed, resource_count=1):
-    if resource_count < 1:
-        sys.exit(f"gen_fuzz_config: --resource-count must be >= 1, got {resource_count}")
-
+def gen_config(schema, seed, unique, allowed):
     gen = Generator(schema, random.Random(seed), unique)
 
     types = resource_types(schema, gen)
@@ -462,20 +397,11 @@ def gen_config(schema, seed, unique, allowed, resource_count=1):
     if not candidates:
         sys.exit(f"no resource types to generate from (allowed={sorted(allowed)})")
 
-    records = []
-    for index in range(resource_count):
-        rtype, key, instance, element = gen_resource(schema, gen, types, candidates, seed, unique, index)
-        records.append({"rtype": rtype, "key": key, "instance": instance, "ref_field": cross_ref_field(gen, element)})
-
-    inject_cross_ref(gen, records)
-
-    resources = {}
-    for record in records:
-        resources.setdefault(record["rtype"], {})[record["key"]] = record["instance"]
+    rtype, key, instance = gen_resource(schema, gen, types, candidates, seed, unique)
 
     return {
         "bundle": {"name": f"fuzz-{unique}"},
-        "resources": resources,
+        "resources": {rtype: {key: instance}},
     }
 
 
@@ -528,19 +454,13 @@ def main():
         default="",
         help="Comma-separated allow-list of resource types (default: all)",
     )
-    parser.add_argument(
-        "--resource-count",
-        type=int,
-        default=1,
-        help="Number of resources to emit (default: 1)",
-    )
     args = parser.parse_args()
 
     with open(args.schema) as f:
         schema = json.load(f)
 
     allowed = {r.strip() for r in args.resources.split(",") if r.strip()}
-    config = gen_config(schema, args.seed, args.unique, allowed, args.resource_count)
+    config = gen_config(schema, args.seed, args.unique, allowed)
     sys.stdout.write(to_yaml(config))
 
 
