@@ -17,22 +17,18 @@ import (
 // imagePollInterval is how often waitForImageReady polls for a status change.
 const imagePollInterval = 5 * time.Second
 
-// imagePolicy is the image resolution policy: reuse a cached image or always
-// re-check the source registry for a newer digest.
-type imagePolicy string
-
-const (
-	imagePolicyAuto   imagePolicy = "auto"
-	imagePolicyLatest imagePolicy = "latest"
-)
-
-// parseImagePolicy resolves a --tag-policy string to an imagePolicy.
-func parseImagePolicy(value string) (imagePolicy, error) {
-	switch p := imagePolicy(strings.ToLower(strings.TrimSpace(value))); p {
-	case imagePolicyAuto, imagePolicyLatest:
-		return p, nil
+// validateTagPolicy checks the deprecated --tag-policy value. Registration
+// always re-checks the source registry, so "latest" and the empty default are
+// no-ops. "auto" is rejected rather than silently remapped: it used to reuse a
+// cached image, so honoring it as always-re-check would be a hidden change.
+func validateTagPolicy(value string) error {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "latest":
+		return nil
+	case "auto":
+		return errors.New("--tag-policy auto is no longer supported: auto mode was removed and registration now always checks the source registry for the latest digest; omit the flag or use --tag-policy latest")
 	default:
-		return "", fmt.Errorf("invalid image tag policy %q: valid options are auto, latest", value)
+		return fmt.Errorf("invalid image tag policy %q: the only supported value is latest", value)
 	}
 }
 
@@ -64,7 +60,10 @@ func newRegisterImageCommand() *cobra.Command {
 	cmd.Flags().StringVar(&scope, "scope", "", "Databricks secret scope holding registry credentials")
 	cmd.Flags().StringVar(&key, "key", "", "Databricks secret key holding registry credentials")
 	cmd.Flags().BoolVarP(&interactiveAuth, "interactive-authenticate", "i", false, "Prompt for registry credentials and store them as a secret")
-	cmd.Flags().StringVar(&tagPolicy, "tag-policy", "auto", "Image resolution policy: auto or latest")
+	// Registration always re-checks the source registry for the latest digest.
+	// --tag-policy is kept only for backward compatibility (accepts "latest").
+	cmd.Flags().StringVar(&tagPolicy, "tag-policy", "", "Deprecated and ignored; registration always checks the source registry for the latest digest")
+	_ = cmd.Flags().MarkHidden("tag-policy")
 	cmd.Flags().IntVar(&timeoutMinutes, "timeout-minutes", 60, "Timeout to wait for the image to become available")
 
 	// Resolve and authenticate the workspace client up front so an auth failure
@@ -86,8 +85,7 @@ func newRegisterImageCommand() *cobra.Command {
 				errors.New("IMAGE_URL cannot be empty"))
 		}
 
-		policy, err := parseImagePolicy(tagPolicy)
-		if err != nil {
+		if err := validateTagPolicy(tagPolicy); err != nil {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 		}
 
@@ -123,7 +121,7 @@ func newRegisterImageCommand() *cobra.Command {
 
 		timeout := time.Duration(timeoutMinutes) * time.Minute
 
-		updated, sha, err := resolveImage(ctx, c, dockerImageURL, policy, scope, key, timeout)
+		updated, sha, err := resolveImage(ctx, c, dockerImageURL, scope, key, timeout)
 		if err != nil {
 			return renderError(ctx, cmd, "REGISTRATION_FAILED", "TRANSIENT", true, err)
 		}
@@ -141,52 +139,39 @@ func newRegisterImageCommand() *cobra.Command {
 	return cmd
 }
 
-// resolveImage registers an image according to policy and waits for it to
-// become AVAILABLE, returning whether the stored image changed and its final
-// manifest digest. It flattens the Python ImagePolicyHandler: an existing
-// AVAILABLE image is reused under AUTO, while LATEST (or a non-AVAILABLE status)
-// re-registers to pick up a newer digest. CreateImage is idempotent.
-func resolveImage(ctx context.Context, c *imageClient, dockerImageURL string, policy imagePolicy, scope, key string, timeout time.Duration) (updated bool, sha string, err error) {
+// resolveImage always re-registers the image and waits for it to become
+// AVAILABLE, returning whether the stored digest changed and the final digest.
+// CreateImage is idempotent. The prior registration is fetched only to detect a
+// digest change; its status is not consulted.
+func resolveImage(ctx context.Context, c *imageClient, dockerImageURL, scope, key string, timeout time.Duration) (updated bool, sha string, err error) {
 	existing, err := c.getImage(ctx, dockerImageURL)
 	if err != nil {
 		return false, "", err
-	}
-
-	if existing != nil {
-		// Reuse the cached image unless it isn't AVAILABLE or LATEST forces a
-		// re-check against the source registry.
-		if existing.Status == imageStatusAvailable && policy != imagePolicyLatest {
-			return false, existing.ManifestSHA256, nil
-		}
-
-		cachedSHA := existing.ManifestSHA256
-		reg, err := createAndWait(ctx, c, dockerImageURL, scope, key, timeout)
-		if err != nil {
-			return false, "", err
-		}
-		newSHA := reg.ManifestSHA256
-		shaChanged := cachedSHA != "" && newSHA != "" && cachedSHA != newSHA
-		if newSHA == "" {
-			newSHA = cachedSHA
-		}
-		// A FAILED image that now succeeds counts as updated even if the digest
-		// is unchanged (or was never recorded).
-		return shaChanged || existing.Status == imageStatusFailed, newSHA, nil
 	}
 
 	reg, err := createAndWait(ctx, c, dockerImageURL, scope, key, timeout)
 	if err != nil {
 		return false, "", err
 	}
-	// Re-read to ensure the digest is populated after the background upload.
+
+	newSHA := reg.ManifestSHA256
+	// Re-read to pick up a digest populated by the background upload.
 	if final, err := c.getImage(ctx, dockerImageURL); err == nil && final != nil && final.ManifestSHA256 != "" {
-		return true, final.ManifestSHA256, nil
+		newSHA = final.ManifestSHA256
 	}
-	return true, reg.ManifestSHA256, nil
+
+	// A first-time registration, or a changed digest, counts as updated.
+	if existing == nil {
+		return true, newSHA, nil
+	}
+	cachedSHA := existing.ManifestSHA256
+	if newSHA == "" {
+		newSHA = cachedSHA
+	}
+	return cachedSHA != "" && newSHA != "" && cachedSHA != newSHA, newSHA, nil
 }
 
-// createAndWait registers the image and, if it isn't immediately AVAILABLE,
-// polls until it becomes ready.
+// createAndWait registers the image and polls until it becomes AVAILABLE.
 func createAndWait(ctx context.Context, c *imageClient, dockerImageURL, scope, key string, timeout time.Duration) (*imageRegistration, error) {
 	reg, err := c.createImage(ctx, dockerImageURL, scope, key)
 	if err != nil {
@@ -211,13 +196,10 @@ func renderRegisterResult(ctx context.Context, cmd *cobra.Command, dockerImageUR
 		sha = shortManifestSHA(result.ManifestSHA256)
 	}
 
-	switch {
-	case result.Cached && !result.ImageUpdated && scope == "":
-		fmt.Fprintf(out, "Image already registered and available: %s\n", sha)
-	case result.ImageUpdated:
+	if result.ImageUpdated {
 		fmt.Fprintf(out, "Image registered: %s\n", sha)
-	default:
-		fmt.Fprintf(out, "Using cached image: %s\n", sha)
+	} else {
+		fmt.Fprintf(out, "Image already up to date: %s\n", sha)
 	}
 
 	fmt.Fprintln(out, "\nTo use this image in your training config:")

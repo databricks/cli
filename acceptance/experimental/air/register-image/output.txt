@@ -1,28 +1,28 @@
 
-=== auto: cached image is reused
+=== re-registers and reports an updated digest
 >>> [CLI] experimental air register-image my-image:latest
-Image already registered and available: a1b2c3d4e5f6a7b8...
+Image registered: f9e8d7c6b5a4f3e2...
 
 To use this image in your training config:
   environment:
     docker_image:
       url: my-image:latest
 
-=== auto: cached image is reused (json)
+=== re-registers and reports an updated digest (json)
 >>> [CLI] experimental air register-image my-image:latest -o json
 {
   "v": 1,
   "ts": "[TIMESTAMP]",
   "data": {
     "docker_image_url": "my-image:latest",
-    "manifest_sha256": "a1b2c3d4e5f6a7b8oldoldoldold",
+    "manifest_sha256": "f9e8d7c6b5a4f3e2newnewnewnew",
     "status": "AVAILABLE",
-    "image_updated": false,
-    "cached": true
+    "image_updated": true,
+    "cached": false
   }
 }
 
-=== latest: re-checks the source registry and reports an updated digest
+=== tag-policy latest is accepted for backward compatibility
 >>> [CLI] experimental air register-image my-image:latest --tag-policy latest -o json
 {
   "v": 1,
@@ -54,6 +54,12 @@ Error: --interactive-authenticate cannot be used with --scope/--key
 
 Exit code: 1
 
+=== tag-policy auto is rejected
+>>> [CLI] experimental air register-image my-image:latest --tag-policy auto
+Error: --tag-policy auto is no longer supported: auto mode was removed and registration now always checks the source registry for the latest digest; omit the flag or use --tag-policy latest
+
+Exit code: 1
+
 === invalid tag policy (json)
 >>> [CLI] experimental air register-image my-image:latest --tag-policy bogus -o json
 {
@@ -62,7 +68,7 @@ Exit code: 1
   "error": {
     "code": "INVALID_ARGS",
     "kind": "PERMANENT",
-    "message": "invalid image tag policy \"bogus\": valid options are auto, latest",
+    "message": "invalid image tag policy \"bogus\": the only supported value is latest",
     "retryable": false
   }
 }

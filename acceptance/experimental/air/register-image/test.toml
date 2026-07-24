@@ -4,17 +4,16 @@
 Pattern = "HEAD /"
 Response.Body = ''
 
-# GET :get reports the currently-registered image as AVAILABLE with an older
-# digest. Under `auto` this drives the cached fast-path; under `latest` it is the
-# "before" digest compared against the freshly registered one.
+# The image is not yet registered, so :get returns NOT_FOUND. Registration then
+# always re-registers via POST regardless of any prior state.
 [[Server]]
 Pattern = "GET /api/2.0/ai-compute-manager/images:get"
+Response.StatusCode = 404
 Response.Body = '''
-{"docker_image_url": "docker.io/library/my-image:latest", "state": "AVAILABLE", "manifest_sha256": "a1b2c3d4e5f6a7b8oldoldoldold"}
+{"error_code": "NOT_FOUND", "message": "image not registered"}
 '''
 
-# POST re-registers the image and returns a newer digest, so `latest` sees the
-# image as updated.
+# POST registers the image and returns its digest.
 [[Server]]
 Pattern = "POST /api/2.0/ai-compute-manager/images"
 Response.Body = '''
