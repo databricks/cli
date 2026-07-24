@@ -104,12 +104,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		logdiag.LogError(ctx, err)
 	}
 
-	// Report what was deployed only on success, so the summary reflects the plan
-	// that was actually applied (a partial failure returns below before this).
-	if !logdiag.HasError(ctx) {
-		logDeploySummary(ctx, b, plan)
-	}
-
 	// Even if deployment failed, there might be updates in states that we need to upload
 	statemgmt.PushResourcesState(ctx, b, stateEngine)
 	if logdiag.HasError(ctx) {
@@ -122,6 +116,13 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		metadata.Upload(),
 		statemgmt.UploadStateForYamlSync(stateEngine),
 	)
+
+	// Report what was deployed, mirroring "bundle plan". Printed only on success
+	// and after state/metadata have been uploaded, so a state-push failure is not
+	// masked by a success summary.
+	if !logdiag.HasError(ctx) {
+		logDeploySummary(ctx, b, plan)
+	}
 
 	// Once the deploy is complete, dry-run the migration to the direct engine
 	// and record the outcome in telemetry. If the user has opted in to the
@@ -154,7 +155,10 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 
 	counts := plan.CountActions()
 	summary := fmt.Sprintf("Deploy: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
-	if len(b.Select) > 0 {
+	// Gate on the plan's own NotSelected (not b.Select) so the suffix survives a
+	// deploy from a --plan file, where --select was applied at plan time and
+	// b.Select is empty here. NotSelected is only ever set by FilterToSelected.
+	if plan.NotSelected > 0 {
 		summary += fmt.Sprintf(", %d not selected", plan.NotSelected)
 	}
 	cmdio.LogString(ctx, summary+".")
