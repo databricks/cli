@@ -20,10 +20,13 @@ else
     cp databricks.yml LOG.config
 fi
 
-# We redirect output rather than record it because some configs that are being tested may produce warnings
-trace $CLI bundle validate &> LOG.validate
-
-cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
+# Fuzz-only: give random configs an isolated validate panic check before deploy. Curated
+# configs skip it -- deploy runs the same validate pipeline, so it would only be redundant.
+# Output is redirected rather than recorded because a fuzzed config may produce warnings.
+if [ -n "${FUZZ_SEED:-}" ]; then
+    trace $CLI bundle validate &> LOG.validate
+    cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
+fi
 
 cleanup() {
     # A rejected fuzz config deployed nothing; destroying nothing hits unstubbed URLs.
@@ -51,8 +54,13 @@ if [[ -n "$READPLAN" ]]; then
     cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
 fi
 
+# Disable set -e only around deploy so a failed deploy doesn't abort before we capture
+# its code: the panic check below must run even on failure (a panicking-but-rejected
+# config is a bug, not a rejection), and only then do we exit with the deploy's code.
+set +e
 trace $CLI bundle deploy $(readplanarg plan.json) &> LOG.deploy
 deploy_rc=$?
+set -e
 cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
 if [ "$deploy_rc" -ne 0 ]; then
     exit "$deploy_rc"
@@ -80,11 +88,18 @@ else
     # invariant that is independent of server fidelity: planning is deterministic. Two
     # consecutive plans of the same deployed state must be byte-identical; a diff means
     # nondeterministic planning/serialization (unstable map order, per-run randomness), a
-    # real bug. `|| true`: a plan that fails on an unstubbed read is a coverage gap, not a
-    # bug -- both plans are then empty and the diff trivially passes.
-    $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err || true
+    # real bug. Only compare when both plans succeed: a plan that fails on an unstubbed
+    # read is a coverage gap, not a bug, and its partial output can differ run-to-run, so
+    # diffing it would false-positive. Capture each plan's code under set +e for the guard.
+    set +e
+    $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err
+    plan1_rc=$?
+    $CLI bundle plan -o json > LOG.plan2.json 2>LOG.plan2.err
+    plan2_rc=$?
+    set -e
     cat LOG.plan1.err | contains.py '!panic:' '!internal error' > /dev/null
-    $CLI bundle plan -o json > LOG.plan2.json 2>LOG.plan2.err || true
     cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
-    diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
+    if [ "$plan1_rc" -eq 0 ] && [ "$plan2_rc" -eq 0 ]; then
+        diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
+    fi
 fi

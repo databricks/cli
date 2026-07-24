@@ -40,8 +40,13 @@ cleanup() {
 
 trap cleanup EXIT
 
+# Disable set -e only around deploy so a failed deploy doesn't abort before we capture
+# its code: the panic check below must run even on failure (a panicking-but-rejected
+# config is a bug, not a rejection), and only then do we exit with the deploy's code.
+set +e
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy &> LOG.deploy
 deploy_rc=$?
+set -e
 cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
 if [ "$deploy_rc" -ne 0 ]; then
     exit "$deploy_rc"

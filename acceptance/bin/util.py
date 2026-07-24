@@ -34,8 +34,9 @@ def run(cmd):
 
 
 def load_plan(path):
-    # Empty or invalid output means `bundle plan` failed; exit cleanly (no traceback)
-    # so the fuzzer treats it as a rejected config, not a bug. Returns (data, raw).
+    # Empty or invalid output means `bundle plan` failed; exit cleanly with the reason
+    # (no traceback) rather than raising, so the failure reads as a plain message.
+    # Returns (data, raw).
     with open(path) as fobj:
         raw = fobj.read()
     if not raw.strip():
