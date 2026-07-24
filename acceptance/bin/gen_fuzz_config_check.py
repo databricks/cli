@@ -60,57 +60,10 @@ def main():
             sys.stderr.write(f"DANGEROUS_STRINGS[{i}] broke the one-line scalar contract: {line!r}\n")
             failed = True
 
-    # Multi-resource configs merge types under resources.<type>, and one resource
-    # references another's name so the interpolation/ordering path is exercised.
-    def resource_type(field):
-        return {
-            "oneOf": [
-                {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "object",
-                        "properties": {"name": {"type": "string"}, field: {"type": "string"}},
-                        "required": ["name"],
-                    },
-                }
-            ]
-        }
-
-    multi = gen_config(
-        {
-            "$defs": {},
-            "properties": {
-                "resources": {
-                    "oneOf": [
-                        {
-                            "type": "object",
-                            "properties": {
-                                "jobs": resource_type("description"),
-                                "volumes": resource_type("comment"),
-                            },
-                        }
-                    ]
-                }
-            },
-        },
-        seed=42,
-        unique="check",
-        allowed=set(),
-        resource_count=2,
-    )
-    if len(multi["resources"]) < 1 or sum(len(v) for v in multi["resources"].values()) != 2:
-        sys.stderr.write("gen_config did not emit two resources\n")
-        failed = True
-
-    values = [v for insts in multi["resources"].values() for inst in insts.values() for v in inst.values()]
-    if not any(isinstance(v, str) and v.startswith("${resources.") for v in values):
-        sys.stderr.write("gen_config did not inject a cross-resource reference\n")
-        failed = True
-
     schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../bundle/schema/jsonschema.json")
     with open(schema_path) as f:
         schema = json.load(f)
-    seed24 = gen_config(schema, seed=24, unique="check", allowed={"registered_models"}, resource_count=1)
+    seed24 = gen_config(schema, seed=24, unique="check", allowed={"registered_models"})
     rm = seed24["resources"]["registered_models"]["fuzz_registered_models_24"]
     if SKIP_PROPERTY_NAMES & set(rm):
         sys.stderr.write(

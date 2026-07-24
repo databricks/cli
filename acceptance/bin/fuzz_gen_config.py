@@ -9,7 +9,7 @@ FUZZ_MODE so the invariant target scripts don't each duplicate the branch:
                        (mutate_fuzz_config.py).
 
 Reads its inputs from the environment the invariant scripts already export: FUZZ_SEED,
-FUZZ_SCHEMA, UNIQUE_NAME, FUZZ_RESOURCES, FUZZ_RESOURCE_COUNT, TESTDIR.
+FUZZ_SCHEMA, UNIQUE_NAME, FUZZ_RESOURCES, TESTDIR.
 """
 
 import json
@@ -45,8 +45,7 @@ def generate(seed):
         schema = json.load(f)
     allowed = {r.strip() for r in os.environ.get("FUZZ_RESOURCES", "").split(",") if r.strip()}
     unique = f"{os.environ['UNIQUE_NAME']}-{seed}"
-    count = int(os.environ.get("FUZZ_RESOURCE_COUNT", "1"))
-    return to_yaml(gen_config(schema, seed, unique, allowed, count))
+    return to_yaml(gen_config(schema, seed, unique, allowed))
 
 
 def mutate_base(seed):

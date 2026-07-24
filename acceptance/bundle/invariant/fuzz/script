@@ -66,7 +66,7 @@ run_seed() {
 # One machine-readable line per seed so a run is tallyable without grepping logs. A file,
 # not stdout, so the committed run's empty-output assertion holds.
 record() {
-    echo "$1 seed=$2 target=${FUZZ_TARGET:-no_drift} mode=${FUZZ_MODE:-generate} count=${FUZZ_RESOURCE_COUNT:-1}" >> LOG.summary
+    echo "$1 seed=$2 target=${FUZZ_TARGET:-no_drift} mode=${FUZZ_MODE:-generate}" >> LOG.summary
 }
 
 for ((offset = 0; offset < COUNT; offset++)); do
@@ -94,7 +94,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
         # empty-output assertion are unaffected.
         if [ -n "${FUZZ_CORPUS_DIR:-}" ]; then
             mkdir -p "$FUZZ_CORPUS_DIR"
-            cp "$dir/databricks.yml" "$FUZZ_CORPUS_DIR/${FUZZ_MODE:-generate}-${FUZZ_TARGET:-no_drift}-count${FUZZ_RESOURCE_COUNT:-1}-seed${seed}.yml"
+            cp "$dir/databricks.yml" "$FUZZ_CORPUS_DIR/${FUZZ_MODE:-generate}-${FUZZ_TARGET:-no_drift}-seed${seed}.yml"
         fi
         continue
     fi
@@ -103,7 +103,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
     # distinct from a drift bug; any goroutine dump is preserved in the seed's LOG.*.
     if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
         record hang "$seed"
-        echo "fuzz: seed $seed hung (>${SEED_TIMEOUT}s), reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_SEED_TIMEOUT=0 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} FUZZ_RESOURCE_COUNT=${FUZZ_RESOURCE_COUNT:-1} task test-fuzz" >&2
+        echo "fuzz: seed $seed hung (>${SEED_TIMEOUT}s), reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_SEED_TIMEOUT=0 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} task test-fuzz" >&2
         exit 1
     fi
 
@@ -122,7 +122,7 @@ for ((offset = 0; offset < COUNT; offset++)); do
 
     if [ -n "$bug" ]; then
         record bug "$seed"
-        echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} FUZZ_RESOURCE_COUNT=${FUZZ_RESOURCE_COUNT:-1} task test-fuzz" >&2
+        echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} task test-fuzz" >&2
         exit 1
     fi
 

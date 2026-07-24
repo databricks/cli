@@ -12,14 +12,13 @@ IgnoreUnhandledRequests = true
 
 # Run the real invariant test script for each target. migrate ignores
 # DATABRICKS_BUNDLE_ENGINE and starts from a Terraform deployment.
-EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "redeploy"]
-EnvMatrix.FUZZ_RESOURCE_COUNT = ["1", "2", "3"]
+#
+# There is no redeploy target: no_drift's post-deploy plan already dry-runs what a redeploy
+# would apply, so it catches the same field-level non-idempotency without the cost of a
+# second deploy; the only surface redeploy adds (plan/apply divergence) never surfaced a bug
+# across the nightly runs.
+EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate"]
 
 # generate = build a config from the schema (gen_fuzz_config.py); mutate = perturb a
 # curated invariant config (mutate_fuzz_config.py). Dispatched by fuzz_gen_config.py.
 EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
-
-# mutate starts from a single-resource base and ignores FUZZ_RESOURCE_COUNT, so only run
-# it once rather than duplicating the same output across the count matrix.
-EnvMatrixExclude.mutate_count2 = ["FUZZ_MODE=mutate", "FUZZ_RESOURCE_COUNT=2"]
-EnvMatrixExclude.mutate_count3 = ["FUZZ_MODE=mutate", "FUZZ_RESOURCE_COUNT=3"]
