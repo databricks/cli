@@ -75,8 +75,32 @@ func getDependsOnTaskKey(x jobs.TaskDependency) (string, string) {
 	return "task_key", x.TaskKey
 }
 
+func getWebhookKey(x jobs.Webhook) (string, string) {
+	return "id", x.Id
+}
+
+// webhookNotificationEvents are the on_* fields of jobs.WebhookNotifications,
+// each a []jobs.Webhook. The Jobs API treats these lists as unordered sets and
+// may return them in a different order than submitted, so they must be diffed
+// by id rather than by index to avoid a never-converging phantom diff.
+var webhookNotificationEvents = []string{
+	"on_start",
+	"on_success",
+	"on_failure",
+	"on_duration_warning_threshold_exceeded",
+	"on_streaming_backlog_exceeded",
+}
+
+// webhookNotificationParents are the paths that hold a jobs.WebhookNotifications:
+// at the job level, on each task, and on the nested for_each task.
+var webhookNotificationParents = []string{
+	"webhook_notifications",
+	"tasks[*].webhook_notifications",
+	"tasks[*].for_each_task.task.webhook_notifications",
+}
+
 func (*ResourceJob) KeyedSlices() map[string]any {
-	return map[string]any{
+	result := map[string]any{
 		"tasks":                                  getTaskKey,
 		"parameters":                             getParameterName,
 		"job_clusters":                           getJobClusterKey,
@@ -84,6 +108,12 @@ func (*ResourceJob) KeyedSlices() map[string]any {
 		"tasks[*].depends_on":                    getDependsOnTaskKey,
 		"tasks[*].for_each_task.task.depends_on": getDependsOnTaskKey,
 	}
+	for _, parent := range webhookNotificationParents {
+		for _, event := range webhookNotificationEvents {
+			result[parent+"."+event] = getWebhookKey
+		}
+	}
+	return result
 }
 
 func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error) {
