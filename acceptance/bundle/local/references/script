@@ -22,7 +22,9 @@ trace print_requests.py --get //jobs/get
 # Change only the literal prefix of the template (/v1 -> /v2). The reference is
 # unchanged. Offline resolution interpolates the *current* template, so it detects
 # the new prefix and plans an update — without reading remote.
-update_file.py databricks.yml "/v1/\${resources.jobs.bar.id}" "/v2/\${resources.jobs.bar.id}"
+# MSYS_NO_PATHCONV=1 stops Git Bash on Windows from rewriting the leading-slash
+# "/v1/..." / "/v2/..." arguments into "C:/Program Files/Git/v1/...".
+MSYS_NO_PATHCONV=1 update_file.py databricks.yml "/v1/\${resources.jobs.bar.id}" "/v2/\${resources.jobs.bar.id}"
 title "Offline plan detects changed literal prefix (/v1 -> /v2):\n"
 trace $CLI bundle plan --planmode=offline
 title "Job reads during offline plan after prefix change (should be empty):\n"
