@@ -328,12 +328,17 @@ func recoverBuiltinMarketplace(ctx context.Context, bin string, agent *agents.Ag
 		return PluginRecord{}, false
 	}
 
+	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, fmt.Sprintf(
-		"%s could not install the databricks plugin from the %q marketplace:\n  %s",
-		agent.DisplayName, agent.Plugin.Marketplace, stderrOf(installErr)))
-	proceed, err := cmdio.AskYesOrNo(ctx, fmt.Sprintf(
-		"The marketplace may be missing or out of date. Add and refresh it (%s plugin marketplace add %s) and retry?",
-		agent.Binary, agent.Plugin.BuiltinAddSource))
+		"%s could not install the databricks plugin from the %q marketplace:",
+		agent.DisplayName, agent.Plugin.Marketplace))
+	cmdio.LogString(ctx, "  "+stderrOf(installErr))
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, fmt.Sprintf("The %q marketplace may be missing or out of date. Add and refresh it with:", agent.Plugin.Marketplace))
+	cmdio.LogString(ctx, fmt.Sprintf("  %s plugin marketplace add %s", agent.Binary, agent.Plugin.BuiltinAddSource))
+	cmdio.LogString(ctx, fmt.Sprintf("  %s plugin marketplace update %s", agent.Binary, agent.Plugin.Marketplace))
+	cmdio.LogString(ctx, "")
+	proceed, err := cmdio.AskYesOrNo(ctx, "Run these and retry the install?")
 	if err != nil || !proceed {
 		return PluginRecord{}, false
 	}
