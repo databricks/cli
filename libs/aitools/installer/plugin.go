@@ -357,7 +357,8 @@ func recoverBuiltinMarketplace(ctx context.Context, bin string, agent *agents.Ag
 	}, true
 }
 
-// repairCommands returns the re-add and refresh commands shared by the recovery prompt and the BlockedError, so the two can't drift apart.
+// repairCommands returns the re-add and refresh commands shared by the recovery
+// prompt and the non-interactive BlockedError, so the two can't drift apart.
 func repairCommands(agent *agents.Agent) []string {
 	return []string{
 		fmt.Sprintf("%s plugin marketplace add %s", agent.Binary, agent.Plugin.BuiltinAddSource),
