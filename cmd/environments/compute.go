@@ -82,8 +82,10 @@ func (c sdkCompute) GetClusterByName(ctx context.Context, name string) (string, 
 //
 // A serverless task binds an environment_key to one of the job's environments;
 // its version is read directly from that environment's spec (no fallback). A
-// classic task carries its own new_cluster (or an existing_cluster_id, resolved
-// via the Clusters API).
+// classic task resolves from its new_cluster, its job_cluster_key (a shared
+// job_clusters entry), or its existing_cluster_id (via the Clusters API). A
+// for_each_task is unwrapped to its nested task, whose compute is resolved the
+// same way.
 func (c sdkCompute) JobTaskEnvironment(ctx context.Context, jobID, taskKey string) (sparkVersion string, isServerless bool, version string, err error) {
 	id, err := strconv.ParseInt(jobID, 10, 64)
 	if err != nil {
@@ -120,10 +122,25 @@ func (c sdkCompute) JobTaskEnvironment(ctx context.Context, jobID, taskKey strin
 		return "", false, "", fmt.Errorf("job %s has no task %q (available: %s)", jobID, taskKey, strings.Join(taskKeys, ", "))
 	}
 
+	// A for_each_task wraps the real per-iteration task: its compute
+	// (environment_key / new_cluster / existing_cluster_id / job_cluster_key)
+	// lives on the nested task, not the outer one. Resolve against that.
+	if task.ForEachTask != nil {
+		task = &task.ForEachTask.Task
+	}
+
+	return c.resolveTaskCompute(ctx, job.Settings, task, jobID, taskKey)
+}
+
+// resolveTaskCompute resolves one task's compute to an environment. It reads the
+// serverless environment version directly (no fallback) or the classic cluster's
+// Spark version, consulting the job-level environments and job_clusters the task
+// references by key.
+func (c sdkCompute) resolveTaskCompute(ctx context.Context, settings *jobs.JobSettings, task *jobs.Task, jobID, taskKey string) (sparkVersion string, isServerless bool, version string, err error) {
 	// Serverless task: it references one of the job's environments by key; the
 	// version lives on that environment's spec and is used directly.
 	if task.EnvironmentKey != "" {
-		for _, e := range job.Settings.Environments {
+		for _, e := range settings.Environments {
 			if e.EnvironmentKey == task.EnvironmentKey {
 				v := environmentVersion(e)
 				if v == "" {
@@ -138,6 +155,20 @@ func (c sdkCompute) JobTaskEnvironment(ctx context.Context, jobID, taskKey strin
 	// Classic task with an inline cluster spec.
 	if task.NewCluster != nil && task.NewCluster.SparkVersion != "" {
 		return task.NewCluster.SparkVersion, false, task.NewCluster.SparkVersion, nil
+	}
+
+	// Classic task referencing a shared job cluster by key: read that cluster's
+	// Spark version from the job's job_clusters (the common classic-task shape).
+	if task.JobClusterKey != "" {
+		for _, jc := range settings.JobClusters {
+			if jc.JobClusterKey == task.JobClusterKey {
+				if jc.NewCluster.SparkVersion == "" {
+					return "", false, "", fmt.Errorf("task %q of job %s uses job cluster %q, which has no spark_version", taskKey, jobID, task.JobClusterKey)
+				}
+				return jc.NewCluster.SparkVersion, false, jc.NewCluster.SparkVersion, nil
+			}
+		}
+		return "", false, "", fmt.Errorf("task %q of job %s references job cluster %q, which the job does not define", taskKey, jobID, task.JobClusterKey)
 	}
 
 	// Classic task pinned to an existing cluster: resolve its Spark version.
