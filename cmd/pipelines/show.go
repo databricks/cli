@@ -1,4 +1,4 @@
-package previewdatasetscmd
+package pipelines
 
 import (
 	"context"
@@ -17,19 +17,17 @@ import (
 
 const defaultLimit = 100
 
-func New() *cobra.Command {
+func showCommand() *cobra.Command {
 	var warehouseID string
 	var limit int
 
 	cmd := &cobra.Command{
-		Use:   "preview-datasets TABLE",
+		Use:   "show TABLE",
 		Short: "Preview a table's columns and sample rows",
 		Long: `Preview a table's columns and sample rows on a SQL warehouse.
 
 TABLE is a fully-qualified name: catalog.schema.table (Unity Catalog) or
-schema.table (legacy Hive metastore).
-
-Experimental and may change in future versions.`,
+schema.table (legacy Hive metastore).`,
 		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
