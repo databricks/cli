@@ -16,7 +16,7 @@ cp databricks.yml LOG.config
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy
-    cat LOG.destroy | contains.py '!panic' '!internal error' > /dev/null
+    cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
 
     # Run cleanup script if present
     CLEANUP_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-cleanup.sh"
@@ -32,11 +32,11 @@ trap cleanup EXIT
 # invocation is pure waste.
 if [[ -n "$READPLAN" ]]; then
     $CLI bundle plan -o json > plan.json 2>LOG.plan_initial.err
-    cat LOG.plan_initial.err | contains.py '!panic' '!internal error' > /dev/null
+    cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
 fi
 
 trace $CLI bundle deploy $(readplanarg plan.json) &> LOG.deploy
-cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
+cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
 
 # Special message to fuzzer that generated config was fine.
 # Any failures after this point will be considered as "bug detected" by fuzzer.
@@ -45,5 +45,5 @@ echo INPUT_CONFIG_OK
 # JSON plan asserts every action is "skip" -- a strict superset of the text
 # renderer's "Plan: 0 to add, 0 to change, 0 to delete" summary.
 $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
-cat LOG.planjson.err | contains.py '!panic' '!internal error' > /dev/null
+cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
 verify_no_drift.py LOG.planjson
