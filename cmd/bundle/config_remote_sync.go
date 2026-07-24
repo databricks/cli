@@ -104,7 +104,7 @@ Examples:
 					// Filter after planning, never before: the plan must cover every
 					// resource so ${resources.*} references resolve; only the emitted
 					// changes are restricted to the selected resources.
-					selected, err := configsync.ResolveResourceSelectors(&deployBundle.StateDB, selectIDs)
+					selected, err := configsync.ResolveResourceSelectors(ctx, &deployBundle.StateDB, selectIDs)
 					if err != nil {
 						return err
 					}

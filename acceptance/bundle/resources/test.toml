@@ -1,8 +1,1 @@
 RecordRequests = true
-
-# These tests exercise platform-independent bundle logic (resource CRUD, diffing,
-# permissions) and behave identically on every OS, so on pull requests they run on
-# Linux only to keep the windows/macOS CI jobs fast. They still run on every OS on
-# push to main. Individual OS-sensitive tests below re-enable themselves.
-GOOSOnPR.windows = false
-GOOSOnPR.darwin = false

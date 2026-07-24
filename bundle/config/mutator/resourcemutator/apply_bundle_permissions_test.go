@@ -89,6 +89,10 @@ func TestApplyBundlePermissions(t *testing.T) {
 					"vs_1": {},
 					"vs_2": {},
 				},
+				InstancePools: map[string]*resources.InstancePool{
+					"instance_pool_1": {},
+					"instance_pool_2": {},
+				},
 			},
 		},
 	}
@@ -157,6 +161,10 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Len(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.Permission{Level: "CAN_USE", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.InstancePools["instance_pool_1"].Permissions, 2)
+	require.Contains(t, b.Config.Resources.InstancePools["instance_pool_1"].Permissions, resources.InstancePoolPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.InstancePools["instance_pool_1"].Permissions, resources.InstancePoolPermission{Level: "CAN_ATTACH_TO", GroupName: "TestGroup"})
 }
 
 func TestWarningOnOverlapPermission(t *testing.T) {

@@ -67,6 +67,9 @@ var RequiredFields = map[string][]string{
 
 	"resources.genie_spaces.*.permissions[*]": {"level"},
 
+	"resources.instance_pools.*":                {"instance_pool_name", "node_type_id"},
+	"resources.instance_pools.*.permissions[*]": {"level"},
+
 	"resources.job_runs.*":       {"job_id"},
 	"resources.job_runs.*.queue": {"enabled"},
 

@@ -11,5 +11,6 @@ trace $CLI bundle deploy --auto-approve
 trace print_requests.py //unity
 
 trace musterr $CLI schemas get main.myschema
-trace $CLI schemas get newmain.myschema
+# updated_at/updated_by reflect UC's post-create system write that populates managed defaults, so on managed-defaults clouds they show a system principal rather than the creator; drop them (the managed properties map is pruned automatically).
+trace $CLI schemas get newmain.myschema | normalize_uc_payload.py updated_at updated_by
 rm out.requests.txt
