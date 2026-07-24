@@ -16,8 +16,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from envsubst import substitute_variables
 from emit_fuzz_config import MUTATE_BASES
+from envsubst import substitute_variables
 from gen_fuzz_config import SKIP_PROPERTY_NAMES
 from mutate_fuzz_config import load_yaml, mutate, to_yaml
 
