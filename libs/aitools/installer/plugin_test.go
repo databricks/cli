@@ -98,14 +98,7 @@ func TestInstallPluginForAgentBuiltinMarketplace(t *testing.T) {
 
 	// An agent whose plugin lives in a built-in marketplace (empty Source) like
 	// Claude's claude-plugins-official: install from it, never register it.
-	agent := &agents.Agent{
-		Name:        agents.NameClaudeCode,
-		DisplayName: "Claude Code",
-		Binary:      "claude",
-		Plugin:      &agents.PluginSpec{Marketplace: "claude-plugins-official", ID: "databricks", Source: ""},
-	}
-
-	rec, err := InstallPluginForAgent(ctx, agent, "user", "main")
+	rec, err := InstallPluginForAgent(ctx, builtinMarketplaceAgent(), "user", "main")
 	require.NoError(t, err)
 	assert.Equal(t, "claude-plugins-official", rec.Marketplace)
 	assert.False(t, rec.InstalledMarketplace, "a built-in marketplace is never registered by us")

@@ -107,15 +107,9 @@ func recordedInstallTarget(agent *agents.Agent, rec PluginRecord) string {
 	return plugin + "@" + marketplace
 }
 
-// marketplaceAddArgs builds the `plugin marketplace add <source>` argv (sans binary).
-func marketplaceAddArgs(spec *agents.PluginSpec) []string {
-	return []string{"plugin", "marketplace", "add", spec.Source}
-}
-
-// marketplaceAddSourceArgs builds `plugin marketplace add <source>` for an
-// explicit source (used to re-add a built-in marketplace during recovery, where
-// the source is BuiltinAddSource rather than the empty PluginSpec.Source).
-func marketplaceAddSourceArgs(source string) []string {
+// marketplaceAddArgs builds the `plugin marketplace add <source>` argv (sans
+// binary). Routine registration passes spec.Source; recovery passes BuiltinAddSource.
+func marketplaceAddArgs(source string) []string {
 	return []string{"plugin", "marketplace", "add", source}
 }
 
@@ -261,7 +255,7 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 	installedMarketplace := false
 	if agent.Plugin.Source != "" {
 		alreadyPresent := marketplaceRegistered(ctx, bin, agent.Plugin.Marketplace)
-		_, addErr := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceAddArgs(agent.Plugin)))
+		_, addErr := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceAddArgs(agent.Plugin.Source)))
 		installedMarketplace = addErr == nil && !alreadyPresent
 	}
 	if args := marketplaceUpdateArgs(agent); args != nil {
@@ -329,14 +323,11 @@ func recoverBuiltinMarketplace(ctx context.Context, bin string, agent *agents.Ag
 	}
 
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, fmt.Sprintf(
-		"%s could not install the databricks plugin from the %q marketplace:",
-		agent.DisplayName, agent.Plugin.Marketplace))
+	cmdio.LogString(ctx, fmt.Sprintf("%s could not install the databricks plugin from the %q marketplace:", agent.DisplayName, agent.Plugin.Marketplace))
 	cmdio.LogString(ctx, "  "+stderrOf(installErr))
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, fmt.Sprintf("The %q marketplace may be missing or out of date. Add and refresh it with:", agent.Plugin.Marketplace))
-	cmdio.LogString(ctx, fmt.Sprintf("  %s plugin marketplace add %s", agent.Binary, agent.Plugin.BuiltinAddSource))
-	cmdio.LogString(ctx, fmt.Sprintf("  %s plugin marketplace update %s", agent.Binary, agent.Plugin.Marketplace))
+	cmdio.LogString(ctx, "  "+strings.Join(repairCommands(agent), "\n  "))
 	cmdio.LogString(ctx, "")
 	proceed, err := cmdio.AskYesOrNo(ctx, "Run these and retry the install?")
 	if err != nil || !proceed {
@@ -346,7 +337,7 @@ func recoverBuiltinMarketplace(ctx context.Context, bin string, agent *agents.Ag
 	// Re-add (fixes a removed marketplace) then refresh (fixes a stale copy). Each
 	// step may harmlessly fail (e.g. add when it is already present), so we only
 	// log at debug level and let the retried install be the real verdict.
-	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceAddSourceArgs(agent.Plugin.BuiltinAddSource))); err != nil {
+	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceAddArgs(agent.Plugin.BuiltinAddSource))); err != nil {
 		log.Debugf(ctx, "re-adding the %s marketplace failed (it may already be present): %v", agent.Plugin.Marketplace, stderrOf(err))
 	}
 	if args := marketplaceUpdateArgs(agent); args != nil {
@@ -366,6 +357,14 @@ func recoverBuiltinMarketplace(ctx context.Context, bin string, agent *agents.Ag
 	}, true
 }
 
+// repairCommands returns the re-add and refresh commands shared by the recovery prompt and the BlockedError, so the two can't drift apart.
+func repairCommands(agent *agents.Agent) []string {
+	return []string{
+		fmt.Sprintf("%s plugin marketplace add %s", agent.Binary, agent.Plugin.BuiltinAddSource),
+		fmt.Sprintf("%s plugin marketplace update %s", agent.Binary, agent.Plugin.Marketplace),
+	}
+}
+
 // builtinMarketplaceError wraps a built-in-marketplace install failure with the
 // exact commands that repair it, so a user who wasn't prompted (non-interactive)
 // or whose automatic retry failed knows the issue and the fix.
@@ -374,11 +373,10 @@ func builtinMarketplaceError(agent *agents.Agent, installErr error) error {
 		Agent:  agent.Name,
 		Reason: ReasonInstallFailed,
 		Detail: fmt.Sprintf(
-			"%s\n\nThe %q marketplace is missing or out of date. Fix it with:\n  %s plugin marketplace add %s\n  %s plugin marketplace update %s\nthen re-run the install.",
+			"%s\n\nThe %q marketplace is missing or out of date. Fix it with:\n  %s\nthen re-run the install.",
 			stderrOf(installErr),
 			agent.Plugin.Marketplace,
-			agent.Binary, agent.Plugin.BuiltinAddSource,
-			agent.Binary, agent.Plugin.Marketplace),
+			strings.Join(repairCommands(agent), "\n  ")),
 	}
 }
 
