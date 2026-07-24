@@ -1,4 +1,4 @@
-package tableprint
+package tableview
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 func renderString(t *testing.T, columns []string, rows [][]string, width int) string {
 	t.Helper()
 	var buf bytes.Buffer
-	require.NoError(t, Render(cmdio.MockDiscard(t.Context()), &buf, columns, rows, width))
+	require.NoError(t, RenderStaticWithTruncation(cmdio.MockDiscard(t.Context()), &buf, columns, rows, width))
 	return buf.String()
 }
 
