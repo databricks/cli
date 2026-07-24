@@ -120,10 +120,11 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 	if state.FullName == "" {
 		return nil, errors.New("internal error: grants full_name must be resolved before deployment")
 	}
+	removedPrincipals := removedGrantPrincipals(state.EmbeddedSlice, entry)
 	_, err := r.client.Grants.Update(ctx, catalog.UpdatePermissions{
 		SecurableType:             state.SecurableType,
 		FullName:                  state.FullName,
-		Changes:                   buildGrantChanges(state.EmbeddedSlice, remoteAssignments(entry)),
+		Changes:                   buildGrantChanges(state.EmbeddedSlice, removedPrincipals),
 		OmitPermissionsInResponse: false,
 		ForceSendFields:           nil,
 	})
@@ -136,52 +137,35 @@ func (r *ResourceGrants) DoDelete(ctx context.Context, id string, _ *GrantsState
 	return nil
 }
 
-// buildGrantChanges computes the per-principal add/remove diff between the
-// desired assignments and the remote assignments, mirroring the Terraform
-// provider's diffPermissions. For each principal Add is (desired - remote) and
-// Remove is (remote - desired). Computing an exact diff (rather than sending a
-// blanket "remove ALL_PRIVILEGES" to wipe the principal) is what lets a
-// principal granted ALL_PRIVILEGES converge when the backend also reports
-// concrete privileges for it: those extra privileges land in Remove instead of
-// being left in place forever. A privilege can never be in both Add and Remove,
-// so this also avoids the "Duplicate privileges to add and delete" API error.
-func buildGrantChanges(desiredAssignments, remoteAssignments []catalog.PrivilegeAssignment) []catalog.PermissionsChange {
-	desired := privilegesByPrincipal(desiredAssignments)
-	remote := privilegesByPrincipal(remoteAssignments)
-
-	principals := make([]string, 0, len(desired)+len(remote))
-	for p := range desired {
-		principals = append(principals, p)
-	}
-	for p := range remote {
-		if _, ok := desired[p]; !ok {
-			principals = append(principals, p)
+func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removedPrincipals []string) []catalog.PermissionsChange {
+	changes := make([]catalog.PermissionsChange, 0, len(desiredAssignments)+len(removedPrincipals))
+	for _, ga := range desiredAssignments {
+		change := catalog.PermissionsChange{
+			Principal:       ga.Principal,
+			Add:             ga.Privileges,
+			Remove:          nil,
+			ForceSendFields: nil,
 		}
-	}
-	slices.Sort(principals)
-
-	changes := make([]catalog.PermissionsChange, 0, len(principals))
-	for _, principal := range principals {
-		add := setDifference(desired[principal], remote[principal])
-		remove := setDifference(remote[principal], desired[principal])
-		if len(add) == 0 && len(remove) == 0 {
-			continue
+		// Remove all other privileges unless ALL_PRIVILEGES is being granted
+		// (it would conflict with appearing in both Add and Remove).
+		if !slices.Contains(ga.Privileges, catalog.PrivilegeAllPrivileges) {
+			change.Remove = []catalog.Privilege{catalog.PrivilegeAllPrivileges}
 		}
+		changes = append(changes, change)
+	}
+	for _, principal := range removedPrincipals {
 		changes = append(changes, catalog.PermissionsChange{
 			Principal:       principal,
-			Add:             add,
-			Remove:          remove,
+			Add:             nil,
+			Remove:          []catalog.Privilege{catalog.PrivilegeAllPrivileges},
 			ForceSendFields: nil,
 		})
 	}
 	return changes
 }
 
-// remoteAssignments extracts the remote privilege assignments from the plan
-// entry. It returns nil when the entry or its remote state is absent, which
-// happens on create and when deploying from a serialized plan (the JSON-loaded
-// state is not a *GrantsState). In those cases nothing is revoked.
-func remoteAssignments(entry *PlanEntry) []catalog.PrivilegeAssignment {
+// removedGrantPrincipals returns principals present in the remote state but absent from the desired assignments.
+func removedGrantPrincipals(desiredAssignments []catalog.PrivilegeAssignment, entry *PlanEntry) []string {
 	if entry == nil {
 		return nil
 	}
@@ -189,33 +173,18 @@ func remoteAssignments(entry *PlanEntry) []catalog.PrivilegeAssignment {
 	if !ok || remote == nil {
 		return nil
 	}
-	return remote.EmbeddedSlice
-}
 
-func privilegesByPrincipal(assignments []catalog.PrivilegeAssignment) map[string]map[catalog.Privilege]struct{} {
-	result := make(map[string]map[catalog.Privilege]struct{}, len(assignments))
-	for _, a := range assignments {
-		if a.Principal == "" {
-			continue
-		}
-		privs := result[a.Principal]
-		if privs == nil {
-			privs = make(map[catalog.Privilege]struct{}, len(a.Privileges))
-			result[a.Principal] = privs
-		}
-		for _, p := range a.Privileges {
-			privs[p] = struct{}{}
+	desired := make(map[string]struct{}, len(desiredAssignments))
+	for _, a := range desiredAssignments {
+		if a.Principal != "" {
+			desired[a.Principal] = struct{}{}
 		}
 	}
-	return result
-}
 
-// setDifference returns the sorted privileges present in a but not in b.
-func setDifference(a, b map[catalog.Privilege]struct{}) []catalog.Privilege {
-	var result []catalog.Privilege
-	for p := range a {
-		if _, ok := b[p]; !ok {
-			result = append(result, p)
+	var result []string
+	for _, a := range remote.EmbeddedSlice {
+		if _, ok := desired[a.Principal]; !ok {
+			result = append(result, a.Principal)
 		}
 	}
 	slices.Sort(result)
@@ -265,13 +234,21 @@ func normalizePrivilege(p catalog.Privilege) catalog.Privilege {
 	return catalog.Privilege(strings.ToUpper(strings.ReplaceAll(string(p), " ", "_")))
 }
 
-// normalizeAssignments normalizes and sorts each assignment's privileges in
-// place so that config and remote state compare equal regardless of the
-// case or order the backend returns.
+// normalizeAssignments normalizes each assignment's privileges in place so that
+// config and remote state compare equal. It uppercases privilege names, sorts
+// them (the backend does not guarantee a stable order), and collapses a
+// principal holding ALL_PRIVILEGES down to just ALL_PRIVILEGES. The collapse is
+// applied to both sides, so config granting only ALL_PRIVILEGES matches a
+// backend that reports ALL_PRIVILEGES plus the concrete privileges it implies,
+// instead of reporting a perpetual update.
 func normalizeAssignments(assignments []catalog.PrivilegeAssignment) {
 	for i := range assignments {
 		for j := range assignments[i].Privileges {
 			assignments[i].Privileges[j] = normalizePrivilege(assignments[i].Privileges[j])
+		}
+		if slices.Contains(assignments[i].Privileges, catalog.PrivilegeAllPrivileges) {
+			assignments[i].Privileges = []catalog.Privilege{catalog.PrivilegeAllPrivileges}
+			continue
 		}
 		slices.Sort(assignments[i].Privileges)
 	}

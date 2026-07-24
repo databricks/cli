@@ -8,7 +8,10 @@
           "CREATE_SCHEMA",
           "USE_CATALOG"
         ],
-        "principal": "deco-test-user@databricks.com"
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
       }
     ]
   }

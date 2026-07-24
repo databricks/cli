@@ -5,11 +5,12 @@
     "changes": [
       {
         "add": [
+          "USE_CATALOG",
           "USE_SCHEMA"
         ],
         "principal": "deco-test-user@databricks.com",
         "remove": [
-          "CREATE_SCHEMA"
+          "ALL_PRIVILEGES"
         ]
       }
     ]
