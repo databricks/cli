@@ -1,7 +1,7 @@
 
 === table output
 
->>> [CLI] experimental preview-datasets main.default.people
+>>> [CLI] pipelines show main.default.people
 id  name
 --  -----
 1   alice
@@ -11,7 +11,7 @@ id  name
 
 === json output
 
->>> [CLI] experimental preview-datasets main.default.people --output json
+>>> [CLI] pipelines show main.default.people --output json
 [
   {
     "id": "1",
@@ -25,7 +25,7 @@ id  name
 
 === invalid table name
 
->>> [CLI] experimental preview-datasets people
+>>> [CLI] pipelines show people
 Error: invalid table name "people": expected catalog.schema.table or schema.table
 
 === wire SQL pins quoting and default limit

@@ -1,4 +1,4 @@
-package previewdatasetscmd
+package pipelines
 
 import (
 	"fmt"
