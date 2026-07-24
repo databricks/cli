@@ -754,11 +754,17 @@ func shellSingleQuote(s string) string {
 // buildRemoteShellArgs returns the ssh arguments that follow the hostname.
 //
 // For the interactive case (no remote command given), it forces PTY allocation
-// and launches a login bash, because the default login shell on Databricks
-// compute images is /bin/sh. If bash is unavailable it falls back to $SHELL or
-// /bin/sh so the connection never breaks. When wsHome is set, the shell first
-// changes into the user's workspace home folder; if that directory is missing
-// the cd is ignored and the shell still launches from $HOME.
+// and launches an interactive, non-login bash. bash is invoked explicitly because
+// the default shell on Databricks compute images is /bin/sh; if bash is unavailable
+// it falls back to $SHELL or /bin/sh so the connection never breaks. A login shell
+// (-l) would re-source /etc/profile, which rebuilds PATH from scratch and drops the
+// environment's bin directory that sshd forwards via SetEnv, so bare `python`/`pip`
+// would resolve to the system interpreter instead of $DATABRICKS_VIRTUAL_ENV. Using
+// -i avoids that reset; the server's ~/.bashrc snippet (see seedEnvActivation) then
+// re-prepends the environment bin after /etc/bash.bashrc runs, so bare `python`/`pip`
+// resolve to the environment interpreter. When wsHome is set, the shell first changes
+// into the user's workspace home folder; if that directory is missing the cd is
+// ignored and the shell still launches from $HOME.
 //
 // For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
 // the user's command is returned verbatim so behavior is unchanged.
@@ -770,7 +776,7 @@ func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 	if len(opts.AdditionalArgs) > 0 {
 		return opts.AdditionalArgs
 	}
-	cmd := `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`
+	cmd := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
 	if wsHome != "" {
 		cmd = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + cmd
 	}

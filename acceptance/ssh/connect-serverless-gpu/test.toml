@@ -1,8 +1,24 @@
-Local = false
+Local = true
 Cloud = false
 
 # Serverless GPU is only available in newer environments
 RequiresUnityCatalog = true
+
+# Assert the serverless GPU bootstrap job the CLI submits on a local run.
+RecordRequests = true
+
+# Local runs stage stand-in release archives here; not part of the golden output.
+Ignore = [
+  "releases",
+]
+
+# Linux-only: the local run drives a real sshd, reliable only there (and where
+# task test-exp-ssh provisions it). Absent GOOS keys default to enabled, so the
+# other OSes must be disabled explicitly.
+[GOOS]
+  linux = true
+  darwin = false
+  windows = false
 
 # Serverless GPU is not available in GCP yet
 [CloudEnvs]

@@ -102,6 +102,7 @@
             "notebook_task": [],
             "notification_settings": [],
             "parameter": [],
+            "parent_path": null,
             "performance_target": null,
             "pipeline_task": [],
             "provider_config": [

@@ -18,9 +18,10 @@ func TestRepoConstraintBaseURL(t *testing.T) {
 	// can report the missing source at the fetch phase rather than aborting early.
 	assert.Empty(t, RepoConstraintBaseURL(t.Context()))
 
-	// The env var supplies the repo and is turned into a raw main-branch URL.
+	// The env var supplies the repo and is turned into a raw main-branch URL
+	// anchored at the python/ subtree where the Python artifacts live.
 	ctx := env.Set(t.Context(), EnvConstraintRepo, "databricks/environments")
-	assert.Equal(t, "https://raw.githubusercontent.com/databricks/environments/main", RepoConstraintBaseURL(ctx))
+	assert.Equal(t, "https://raw.githubusercontent.com/databricks/environments/main/python", RepoConstraintBaseURL(ctx))
 
 	// Whitespace-only is treated as unset.
 	ctx = env.Set(t.Context(), EnvConstraintRepo, "  ")
@@ -30,7 +31,7 @@ func TestRepoConstraintBaseURL(t *testing.T) {
 func TestFetchConstraintsNoSourceConfigured(t *testing.T) {
 	// An empty base URL means no constraint host is configured; it must classify as
 	// E_FETCH (surfaced at the fetch phase) and name the env var to set.
-	_, err := FetchConstraints(t.Context(), "", "serverless/serverless-v4", t.TempDir())
+	_, err := FetchConstraints(t.Context(), "", "serverless/serverless-v4", t.TempDir(), true)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrFetch, pe.Code)
@@ -116,12 +117,29 @@ func TestFetchConstraintsCreatesCacheDir(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", cacheDir)
+	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", cacheDir, true)
 	require.NoError(t, err)
 	// The cache file was written into the freshly created directory.
 	written, err := os.ReadFile(filepath.Join(cacheDir, cacheFileName("serverless/serverless-v4")))
 	require.NoError(t, err)
 	assert.Equal(t, sampleToml, string(written))
+}
+
+func TestFetchConstraintsSkipsCacheWriteWhenDisabled(t *testing.T) {
+	// With writeCache=false (the --dry-run dry-run path), a successful live fetch
+	// must not write anything to cacheDir.
+	cacheDir := t.TempDir()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(sampleToml))
+	}))
+	defer srv.Close()
+
+	c, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", cacheDir, false)
+	require.NoError(t, err)
+	assert.False(t, c.FromCache)
+	entries, err := os.ReadDir(cacheDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "no cache file should be written under --dry-run")
 }
 
 func TestCacheFileNameInjective(t *testing.T) {
@@ -140,7 +158,7 @@ func TestFetchConstraintsHTTP(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", t.TempDir())
+	c, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", t.TempDir(), true)
 	require.NoError(t, err)
 	assert.False(t, c.FromCache)
 	assert.Equal(t, "databricks-connect~=17.2.0", c.DatabricksConnect)
@@ -155,7 +173,7 @@ func TestFetchConstraintsEnvKeyNotFound(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := FetchConstraints(t.Context(), srv.URL, "dbr/99.9.x-scala2.12", t.TempDir())
+	_, err := FetchConstraints(t.Context(), srv.URL, "dbr/99.9.x-scala2.12", t.TempDir(), true)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrEnvUnsupported, pe.Code)
@@ -167,7 +185,7 @@ func TestFetchConstraintsTransportFailureNoCache(t *testing.T) {
 	url := down.URL
 	down.Close()
 
-	_, err := FetchConstraints(t.Context(), url, "serverless/serverless-v4", t.TempDir())
+	_, err := FetchConstraints(t.Context(), url, "serverless/serverless-v4", t.TempDir(), true)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrFetch, pe.Code)
@@ -182,7 +200,7 @@ func TestFetchConstraintsRejectsOversizedBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", t.TempDir())
+	_, err := FetchConstraints(t.Context(), srv.URL, "serverless/serverless-v4", t.TempDir(), true)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrFetch, pe.Code)
@@ -194,12 +212,51 @@ func TestFetchConstraintsFallsBackToCache(t *testing.T) {
 	good := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(sampleToml))
 	}))
-	_, err := FetchConstraints(t.Context(), good.URL, "serverless/serverless-v4", cacheDir)
+	_, err := FetchConstraints(t.Context(), good.URL, "serverless/serverless-v4", cacheDir, true)
 	require.NoError(t, err)
 	good.Close()
 
 	// Now the server is down; fetch must serve the cache.
-	c, err := FetchConstraints(t.Context(), good.URL, "serverless/serverless-v4", cacheDir)
+	c, err := FetchConstraints(t.Context(), good.URL, "serverless/serverless-v4", cacheDir, true)
 	require.NoError(t, err)
 	assert.True(t, c.FromCache)
+}
+
+func TestParseConstraintsRejectsUnusableRequiresPython(t *testing.T) {
+	// requires-python present but with no installable floor is not a usable
+	// artifact; it must be rejected before caching (not only later in the
+	// pipeline) so it cannot poison the cache.
+	for _, rp := range []string{">=3", "<3.13", "!=3.12", "*", ">3"} {
+		toml := "[project]\nrequires-python = \"" + rp + "\"\n"
+		_, _, _, err := parseConstraints([]byte(toml))
+		require.Error(t, err, "requires-python %q should be rejected", rp)
+		assert.Contains(t, err.Error(), "unusable")
+	}
+}
+
+func TestFetchConstraintsUnusableBodyDoesNotPoisonCache(t *testing.T) {
+	// A good artifact populates the cache; a later 2xx body that is valid TOML but
+	// carries an unusable requires-python must NOT overwrite the last-good copy,
+	// so an offline run still recovers via the cache. This is the guard's purpose.
+	cacheDir := t.TempDir()
+	good := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(sampleToml))
+	}))
+	defer good.Close()
+	_, err := FetchConstraints(t.Context(), good.URL, "serverless/serverless-v4", cacheDir, true)
+	require.NoError(t, err)
+
+	// The repo now publishes a TOML-valid but unusable body (no installable floor).
+	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("[project]\nrequires-python = \">=3\"\n"))
+	}))
+	defer bad.Close()
+	_, err = FetchConstraints(t.Context(), bad.URL, "serverless/serverless-v4", cacheDir, true)
+	require.Error(t, err)
+
+	// The cache still holds the last-good copy: an offline fetch recovers it.
+	c, err := FetchConstraints(t.Context(), "http://127.0.0.1:0", "serverless/serverless-v4", cacheDir, true)
+	require.NoError(t, err)
+	assert.True(t, c.FromCache)
+	assert.Equal(t, "==3.12.*", c.RequiresPython)
 }

@@ -109,6 +109,7 @@ type Resources struct {
 	PolicyInfo                                   map[string]any `json:"databricks_policy_info,omitempty"`
 	PostgresBranch                               map[string]any `json:"databricks_postgres_branch,omitempty"`
 	PostgresCatalog                              map[string]any `json:"databricks_postgres_catalog,omitempty"`
+	PostgresCdfConfig                            map[string]any `json:"databricks_postgres_cdf_config,omitempty"`
 	PostgresDataApi                              map[string]any `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                             map[string]any `json:"databricks_postgres_database,omitempty"`
 	PostgresEndpoint                             map[string]any `json:"databricks_postgres_endpoint,omitempty"`
@@ -273,6 +274,7 @@ func NewResources() *Resources {
 		PolicyInfo:                                  make(map[string]any),
 		PostgresBranch:                              make(map[string]any),
 		PostgresCatalog:                             make(map[string]any),
+		PostgresCdfConfig:                           make(map[string]any),
 		PostgresDataApi:                             make(map[string]any),
 		PostgresDatabase:                            make(map[string]any),
 		PostgresEndpoint:                            make(map[string]any),

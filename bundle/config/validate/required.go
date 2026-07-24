@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/internal/validation/generated"
@@ -68,7 +69,14 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.FromErr(err)
 	}
 
-	// Sort diagnostics to make them deterministic
+	sortDiagnostics(diags)
+
+	return diags
+}
+
+// sortDiagnostics orders diagnostics deterministically, since they are collected
+// by walking maps with random iteration order.
+func sortDiagnostics(diags diag.Diagnostics) {
 	slices.SortFunc(diags, func(a, b diag.Diagnostic) int {
 		// First sort by summary
 		if n := cmp.Compare(a.Summary, b.Summary); n != 0 {
@@ -78,8 +86,6 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		// Finally sort by locations as a tie breaker if summaries are the same.
 		return cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations))
 	})
-
-	return diags
 }
 
 // Bespoke code to error for fields that are not marked as required in the Go SDK / OpenAPI spec.
@@ -119,11 +125,71 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		})
 	}
 
+	// sql_warehouses.name is optional in the SDK (json:"name,omitempty") but required
+	// by the backend, which rejects whitespace-only names (name.trim.nonEmpty).
+	for key, warehouse := range b.Config.Resources.SqlWarehouses {
+		if strings.TrimSpace(warehouse.Name) == "" {
+			path := "resources.sql_warehouses." + key
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "sql_warehouse name is required",
+				Locations: b.Config.GetLocations(path),
+				Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+			})
+		}
+	}
+
+	sortDiagnostics(diags)
+
 	return diags
+}
+
+// errorForMissingGrantPrincipals errors for any grant missing a principal.
+// principal is optional in the SDK but rejected by the backend; erroring here
+// avoids a partial deploy where the securable is created before grants fail.
+// Grants exist on every securable, so match any resource type.
+func errorForMissingGrantPrincipals(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
+	_, err := dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants"), dyn.AnyIndex()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			if isMissingOrEmptyString(v.Get("principal")) {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "grant principal is required",
+					Locations: v.Locations(),
+					Paths:     []dyn.Path{slices.Clone(p)},
+				})
+			}
+			return v, nil
+		},
+	)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	sortDiagnostics(diags)
+
+	return diags
+}
+
+// isMissingOrEmptyString reports whether v is unset, null, or an empty string.
+func isMissingOrEmptyString(v dyn.Value) bool {
+	switch v.Kind() {
+	case dyn.KindInvalid, dyn.KindNil:
+		return true
+	case dyn.KindString:
+		return v.MustString() == ""
+	default:
+		return false
+	}
 }
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := errorForMissingFields(ctx, b)
+	diags = diags.Extend(errorForMissingGrantPrincipals(ctx, b))
 	if diags.HasError() {
 		return diags
 	}

@@ -38,6 +38,7 @@ var SupportedResources = map[string]any{
 	"quality_monitors":        (*ResourceQualityMonitor)(nil),
 	"vector_search_endpoints": (*ResourceVectorSearchEndpoint)(nil),
 	"vector_search_indexes":   (*ResourceVectorSearchIndex)(nil),
+	"instance_pools":          (*ResourceInstancePool)(nil),
 
 	// Permissions
 	"jobs.permissions":                    (*ResourcePermissions)(nil),
@@ -55,6 +56,7 @@ var SupportedResources = map[string]any{
 	"dashboards.permissions":              (*ResourcePermissions)(nil),
 	"genie_spaces.permissions":            (*ResourcePermissions)(nil),
 	"vector_search_endpoints.permissions": (*ResourcePermissions)(nil),
+	"instance_pools.permissions":          (*ResourcePermissions)(nil),
 
 	// Grants
 	"catalogs.grants":              (*ResourceGrants)(nil),

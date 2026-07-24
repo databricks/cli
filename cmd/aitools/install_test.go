@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -238,7 +239,7 @@ func TestInstallSkillsOnlyAllAgents(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills-only"})
@@ -253,7 +254,7 @@ func TestInstallSkillsOnlySpecificSkills(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills-only", "--skills", "databricks,databricks-apps"})
@@ -267,7 +268,7 @@ func TestInstallSkillsOnlyExperimental(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills-only", "--experimental"})
@@ -288,7 +289,7 @@ func TestInstallPluginFirstDefault(t *testing.T) {
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	cmd := NewInstallCmd()
-	cmd.SetContext(ctx)
+	cmd.SetContext(telemetry.WithNewLogger(ctx))
 
 	require.NoError(t, cmd.Execute())
 	require.Len(t, *plugins, 1)
@@ -321,23 +322,27 @@ func TestInstallInteractivePickerAndConfirm(t *testing.T) {
 		return nil, nil
 	}
 
+	// The confirm is a huh widget that reads the real terminal, so drive it via
+	// the override rather than piped stdin; assert it was consulted.
+	origProceed := promptProceed
+	t.Cleanup(func() { promptProceed = origProceed })
+	proceedCalled := false
+	promptProceed = func() (bool, error) {
+		proceedCalled = true
+		return true, nil
+	}
+
 	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	defer test.Done()
 	go drainReader(test.Stdout)
 	go drainReader(test.Stderr)
 
 	cmd := NewInstallCmd()
-	cmd.SetContext(ctx)
+	cmd.SetContext(telemetry.WithNewLogger(ctx))
 
-	errc := make(chan error, 1)
-	go func() { errc <- cmd.RunE(cmd, nil) }()
-
-	_, err := test.Stdin.WriteString("y\n")
-	require.NoError(t, err)
-	require.NoError(t, test.Stdin.Flush())
-
-	require.NoError(t, <-errc)
+	require.NoError(t, cmd.RunE(cmd, nil))
 	assert.True(t, pickerCalled)
+	assert.True(t, proceedCalled)
 	require.Len(t, *plugins, 1)
 	assert.Equal(t, agents.NameClaudeCode, (*plugins)[0].agent)
 }
@@ -350,7 +355,7 @@ func TestInstallExplicitAgentWorksUndetected(t *testing.T) {
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	plugins := setupPluginMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--agents", "codex"})
@@ -463,7 +468,7 @@ func TestInstallScopeFlag(t *testing.T) {
 			setupTestAgents(t)
 			calls := setupInstallMock(t)
 
-			ctx := cmdio.MockDiscard(t.Context())
+			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 			cmd := NewInstallCmd()
 			cmd.SetContext(ctx)
 			cmd.SetArgs(tt.args)
@@ -503,7 +508,7 @@ func TestInstallNoFlagNonInteractiveUsesGlobal(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	ctx := cmdio.MockDiscard(t.Context())
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills-only"})

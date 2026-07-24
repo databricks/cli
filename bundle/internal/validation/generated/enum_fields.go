@@ -64,6 +64,13 @@ var EnumFields = map[string][]string{
 
 	"resources.genie_spaces.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 
+	"resources.instance_pools.*.aws_attributes.availability":                {"ON_DEMAND", "SPOT"},
+	"resources.instance_pools.*.azure_attributes.availability":              {"ON_DEMAND_AZURE", "SPOT_AZURE"},
+	"resources.instance_pools.*.disk_spec.disk_type.azure_disk_volume_type": {"PREMIUM_LRS", "STANDARD_LRS"},
+	"resources.instance_pools.*.disk_spec.disk_type.ebs_volume_type":        {"GENERAL_PURPOSE_SSD", "THROUGHPUT_OPTIMIZED_HDD"},
+	"resources.instance_pools.*.gcp_attributes.gcp_availability":            {"ON_DEMAND_GCP", "PREEMPTIBLE_GCP", "PREEMPTIBLE_WITH_FALLBACK_GCP"},
+	"resources.instance_pools.*.permissions[*].level":                       {"CAN_ATTACH_TO", "CAN_MANAGE"},
+
 	"resources.job_runs.*.performance_target": {"PERFORMANCE_OPTIMIZED", "STANDARD"},
 
 	"resources.jobs.*.continuous.pause_status":                                                             {"PAUSED", "UNPAUSED"},
@@ -133,7 +140,7 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.tasks[*].sql_task.file.source":                                                       {"GIT", "WORKSPACE"},
 	"resources.jobs.*.trigger.model.condition":                                                             {"MODEL_ALIAS_SET", "MODEL_CREATED", "MODEL_VERSION_READY"},
 	"resources.jobs.*.trigger.pause_status":                                                                {"PAUSED", "UNPAUSED"},
-	"resources.jobs.*.trigger.periodic.unit":                                                               {"DAYS", "HOURS", "WEEKS"},
+	"resources.jobs.*.trigger.periodic.unit":                                                               {"DAYS", "HOURS", "MINUTES", "WEEKS"},
 	"resources.jobs.*.trigger.sql_condition.trigger_mode":                                                  {"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"},
 	"resources.jobs.*.trigger.table_update.condition":                                                      {"ALL_UPDATED", "ANY_UPDATED"},
 
@@ -173,6 +180,8 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.entity_type":                                     {"FILE", "FILE_METADATA", "LIST", "PERMISSION"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.file_ingestion_options.format":                   {"AVRO", "BINARYFILE", "CSV", "EXCEL", "JSON", "ORC", "PARQUET", "XML"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.file_ingestion_options.schema_evolution_mode":    {"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.tiktok_ads_options.custom_report_options.data_level":                {"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.tiktok_ads_options.custom_report_options.report_type":               {"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.tiktok_ads_options.data_level":                                      {"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.tiktok_ads_options.report_type":                                     {"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type":                                                         {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
@@ -188,6 +197,8 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.entity_type":                                      {"FILE", "FILE_METADATA", "LIST", "PERMISSION"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.file_ingestion_options.format":                    {"AVRO", "BINARYFILE", "CSV", "EXCEL", "JSON", "ORC", "PARQUET", "XML"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.file_ingestion_options.schema_evolution_mode":     {"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.custom_report_options.data_level":                 {"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.custom_report_options.report_type":                {"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.data_level":                                       {"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.report_type":                                      {"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type":                                                          {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
