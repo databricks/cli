@@ -164,11 +164,3 @@ func TestMapUploadError(t *testing.T) {
 		t.Errorf("mapUploadError(other) = %v, want it unchanged", got)
 	}
 }
-
-func TestWithUploadConcurrency(t *testing.T) {
-	var cfg filesClientConfig
-	WithUploadConcurrency(64)(&cfg)
-	if cfg.uploadConcurrency != 64 {
-		t.Errorf("uploadConcurrency = %d, want 64", cfg.uploadConcurrency)
-	}
-}

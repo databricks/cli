@@ -101,9 +101,10 @@ func (e filesApiDirEntry) Info() (fs.FileInfo, error) {
 	return e.i, nil
 }
 
-// defaultUploadConcurrency bounds large-file (multipart) transfers for a filer
-// created without an explicit concurrency. fs cp overrides it from --concurrency.
-const defaultUploadConcurrency = 64
+// uploadConcurrency bounds the concurrent part uploads of a large-file
+// (multipart) write. Parts go to cloud storage rather than the rate-limited
+// Files API, so this can fan out wider than the file-level copy parallelism.
+const uploadConcurrency = 64
 
 // multipartUploadEnvVar gates whether large Volumes writes are split into parts
 // by the files/v2 upload engine. The engine is new, so multipart is off by
@@ -153,25 +154,7 @@ type FilesClient struct {
 	transferClient *http.Client
 }
 
-type filesClientConfig struct {
-	uploadConcurrency int
-}
-
-// FilesClientOption configures a [FilesClient].
-type FilesClientOption func(*filesClientConfig)
-
-// WithUploadConcurrency sizes the shared limiter and transfer-client connection
-// pool used for large-file (multipart) writes on the filer.
-func WithUploadConcurrency(n int) FilesClientOption {
-	return func(c *filesClientConfig) { c.uploadConcurrency = n }
-}
-
-func NewFilesClient(ctx context.Context, w *databricks.WorkspaceClient, root string, opts ...FilesClientOption) (Filer, error) {
-	cfg := filesClientConfig{uploadConcurrency: defaultUploadConcurrency}
-	for _, o := range opts {
-		o(&cfg)
-	}
-
+func NewFilesClient(ctx context.Context, w *databricks.WorkspaceClient, root string) (Filer, error) {
 	c, err := newFilesAPIClient(ctx, w.Config)
 	if err != nil {
 		return nil, err
@@ -182,8 +165,8 @@ func NewFilesClient(ctx context.Context, w *databricks.WorkspaceClient, root str
 
 		root: NewWorkspaceRootPath(root),
 
-		limiter:        files.NewLimiter(cfg.uploadConcurrency),
-		transferClient: newTransferClient(cfg.uploadConcurrency),
+		limiter:        files.NewLimiter(uploadConcurrency),
+		transferClient: newTransferClient(uploadConcurrency),
 	}, nil
 }
 
@@ -510,10 +493,10 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 
 		entries = append(entries, filesApiDirEntry{
 			i: filesApiFileInfo{
-				absPath:      derefString(entry.Path),
-				isDir:        derefBool(entry.IsDirectory),
-				fileSize:     int64(derefInt(entry.FileSize)),
-				lastModified: int64(derefInt(entry.LastModified)),
+				absPath:      value(entry.Path),
+				isDir:        value(entry.IsDirectory),
+				fileSize:     int64(value(entry.FileSize)),
+				lastModified: int64(value(entry.LastModified)),
 			},
 		})
 	}
@@ -554,7 +537,7 @@ func (w *FilesClient) statFile(ctx context.Context, name string) (fs.FileInfo, e
 		return filesApiFileInfo{
 			absPath:  absPath,
 			isDir:    false,
-			fileSize: derefInt64(resp.ContentLength),
+			fileSize: value(resp.ContentLength),
 		}, nil
 	}
 
@@ -606,30 +589,11 @@ func (w *FilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error
 	return w.statFile(ctx, name)
 }
 
-func derefString(s *string) string {
-	if s == nil {
-		return ""
+// value returns *p, or the zero value of T when p is nil.
+func value[T any](p *T) T {
+	if p == nil {
+		var zero T
+		return zero
 	}
-	return *s
-}
-
-func derefBool(b *bool) bool {
-	if b == nil {
-		return false
-	}
-	return *b
-}
-
-func derefInt(i *int) int {
-	if i == nil {
-		return 0
-	}
-	return *i
-}
-
-func derefInt64(i *int64) int64 {
-	if i == nil {
-		return 0
-	}
-	return *i
+	return *p
 }

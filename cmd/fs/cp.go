@@ -24,13 +24,6 @@ import (
 // conservative regardless of whether multipart upload is enabled.
 const defaultConcurrency = 8
 
-// multipartUploadConcurrency is the cloud-transfer budget for large-file
-// (multipart) writes: a shared cap on concurrent part uploads, which go to cloud
-// storage rather than the rate-limited Files API and so can fan out wider than
-// the file-level copy concurrency. It is sized independently of --concurrency and
-// applies only to the Volumes target filer.
-const multipartUploadConcurrency = 64
-
 // errInvalidConcurrency is returned when the value of the concurrency
 // flag is invalid.
 var errInvalidConcurrency = errors.New("--concurrency must be at least 1")
@@ -253,20 +246,9 @@ func newCpCommand() *cobra.Command {
 			return err
 		}
 
-		// The cloud-transfer budget for large-file (multipart) writes is sized
-		// independently of c.concurrency (the file-level copy parallelism, which
-		// stays at the Files-API-safe default). A large file's part uploads go to
-		// cloud storage rather than the rate-limited Files API, so they can fan out
-		// wider; the budget is shared across all files in a recursive copy and
-		// applies only to the Volumes target filer.
-		uploadConcurrency := c.concurrency
-		if filer.MultipartUploadEnabled(ctx) {
-			uploadConcurrency = multipartUploadConcurrency
-		}
-
 		// Get target filer and target path without scheme.
 		fullTargetPath := args[1]
-		targetFiler, targetPath, err := filerForUploadTarget(ctx, fullTargetPath, uploadConcurrency)
+		targetFiler, targetPath, err := filerForPath(ctx, fullTargetPath)
 		if err != nil {
 			return err
 		}
