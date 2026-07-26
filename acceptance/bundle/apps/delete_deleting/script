@@ -5,7 +5,10 @@
 # interrupted destroy), apply must still succeed instead of failing with the
 # backend's "Cannot delete app ... not terminal with state DELETING" 400.
 
-envsubst < databricks.yml.tmpl > databricks.yml
+# databricks.yml is assembled from a shared header plus a resources fragment, so
+# the delete config below reuses the exact same bundle/workspace stanza.
+envsubst < databricks_header.yml.tmpl > databricks.yml
+envsubst < databricks_resources.yml.tmpl >> databricks.yml
 
 cleanup() {
   trace $CLI bundle destroy --auto-approve &> LOG.destroy
@@ -17,15 +20,9 @@ trace $CLI bundle deploy &> LOG.deploy
 cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
 
 # Save a delete plan while the app is still ACTIVE, so the plan records Gone=false.
-cat > databricks.yml <<EOF
-bundle:
-  name: app-delete-deleting-$UNIQUE_NAME
-
-workspace:
-  root_path: "~/.bundle/app-delete-deleting-$UNIQUE_NAME"
-
-resources: {}
-EOF
+# Same header, empty resources -> the app is removed from config.
+envsubst < databricks_header.yml.tmpl > databricks.yml
+echo "resources: {}" >> databricks.yml
 
 trace $CLI bundle plan -o json > plan_delete.json 2>LOG.plan_delete.err
 cat LOG.plan_delete.err | contains.py '!panic' '!internal error' > /dev/null
