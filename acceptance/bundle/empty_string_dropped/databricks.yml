@@ -1,0 +1,36 @@
+bundle:
+  name: test-bundle
+
+resources:
+  clusters:
+    my_cluster:
+      num_workers: 1
+      # Every optional string field on ClusterSpec set to "". Fields that make
+      # terraform error at plan time (so no create request is recorded) are
+      # commented out with the reason; direct-engine behavior for them is
+      # observed elsewhere, not here.
+      cluster_name: ""
+      spark_version: ""
+      node_type_id: ""
+      policy_id: ""
+      single_user_name: ""
+      data_security_mode: ""
+      kind: ""
+      # runtime_engine: ""          # terraform: hard enum error ("" not in [PHOTON STANDARD])
+      # instance_pool_id: ""        # terraform: ConflictsWith node_type_id / driver_node_type_id
+      # driver_instance_pool_id: "" # terraform: ConflictsWith driver_node_type_id
+      # driver_node_type_id: ""     # terraform: ConflictsWith driver_instance_pool_id / instance_pool_id
+
+  jobs:
+    my_job:
+      # Top-level optional string fields on JobSettings set to "".
+      name: ""
+      description: ""
+      budget_policy_id: ""
+      # edit_mode: ""          # terraform: enum error
+      # format: ""             # terraform: enum error
+      # performance_target: "" # terraform: enum error
+
+targets:
+  tf:
+  direct:

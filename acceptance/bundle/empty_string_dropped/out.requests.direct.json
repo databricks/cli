@@ -1,0 +1,34 @@
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/create",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_name": "",
+    "data_security_mode": "",
+    "kind": "",
+    "node_type_id": "",
+    "num_workers": 1,
+    "policy_id": "",
+    "single_user_name": "",
+    "spark_version": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "budget_policy_id": "",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
+    },
+    "description": "",
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
