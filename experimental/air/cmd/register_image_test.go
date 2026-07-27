@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -24,10 +26,14 @@ func TestClassifyRegistrationError(t *testing.T) {
 		{"auth", apierr.ErrUnauthenticated, "PERMANENT", false},
 		{"permission", apierr.ErrPermissionDenied, "PERMANENT", false},
 		{"not found", apierr.ErrNotFound, "PERMANENT", false},
+		{"bad request", apierr.ErrBadRequest, "PERMANENT", false},
+		{"conflict", apierr.ErrResourceConflict, "PERMANENT", false},
 		{"canceled", context.Canceled, "PERMANENT", false},
 		{"upload failed", fmt.Errorf("%w: boom", errImageUploadFailed), "PERMANENT", false},
-		{"timeout", errors.New("image did not become AVAILABLE within 1m0s"), "TRANSIENT", true},
-		{"unknown api error", errors.New("500 internal"), "TRANSIENT", true},
+		{"unknown error", errors.New("something odd"), "PERMANENT", false},
+		{"wait timeout", fmt.Errorf("%w within 1m0s", errImageWaitTimeout), "TRANSIENT", true},
+		{"rate limited", apierr.ErrTooManyRequests, "TRANSIENT", true},
+		{"server error", apierr.ErrInternalError, "TRANSIENT", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -107,4 +113,51 @@ func TestResolveImageDigestChanged(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, updated)
 	assert.Equal(t, "newsha", sha)
+}
+
+// credRejectingImageServer 401s a POST that carries credentials and returns
+// AVAILABLE for an anonymous POST, so a test can exercise the stale-credential
+// anonymous retry.
+func credRejectingImageServer(t *testing.T, credentialedPOSTs *int) string {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case imagesAPIPath + ":get":
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error_code":"NOT_FOUND","message":"not registered"}`))
+		case imagesAPIPath:
+			body, _ := io.ReadAll(r.Body)
+			if strings.Contains(string(body), "credentials_scope") {
+				*credentialedPOSTs++
+				w.WriteHeader(http.StatusForbidden)
+				_, _ = w.Write([]byte(`{"error_code":"PERMISSION_DENIED","message":"denied"}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"image":{"state":"AVAILABLE","manifest_sha256":"pubsha"}}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv.URL
+}
+
+func TestRegisterWithCredentialFallbackRetriesAnonymously(t *testing.T) {
+	var credentialedPOSTs int
+	url := credRejectingImageServer(t, &credentialedPOSTs)
+	updated, sha, err := registerWithCredentialFallback(t.Context(), newTestImageClient(t, url), "nvcr.io/org/img:1.0", "scope", "key", time.Second)
+	require.NoError(t, err)
+	assert.True(t, updated)
+	assert.Equal(t, "pubsha", sha)
+	assert.Equal(t, 1, credentialedPOSTs, "should try once with creds, then retry anonymously")
+}
+
+func TestRegisterWithCredentialFallbackNoRetryWithoutCreds(t *testing.T) {
+	// Without credentials there is nothing stale to fall back from, so an auth
+	// failure surfaces directly.
+	var credentialedPOSTs int
+	url := credRejectingImageServer(t, &credentialedPOSTs)
+	_, _, err := registerWithCredentialFallback(t.Context(), newTestImageClient(t, url), "nvcr.io/org/img:1.0", "", "", time.Second)
+	require.NoError(t, err) // anonymous POST succeeds on this server
+	assert.Equal(t, 0, credentialedPOSTs)
 }

@@ -115,20 +115,11 @@ configuration (run ` + "`docker login`" + ` first); there are no credential flag
 			return renderError(ctx, cmd, "REGISTRATION_FAILED", "PERMANENT", false, err)
 		}
 
-		updated, sha, err := resolveImage(ctx, c, dockerImageURL, scope, key, timeout)
+		updated, sha, err := registerWithCredentialFallback(ctx, c, dockerImageURL, scope, key, timeout)
 		if err != nil {
-			// Auto-discovered credentials may be stale (e.g. a revoked PAT from an
-			// old `docker login`). Retry anonymously so a public image isn't
-			// blocked by bad local creds.
-			if scope != "" && isAuthError(err) {
-				log.Warnf(ctx, "stored Docker credentials were rejected (%v); retrying without credentials in case the image is public", err)
-				updated, sha, err = resolveImage(ctx, c, dockerImageURL, "", "", timeout)
-			}
-			if err != nil {
-				kind, retryable := classifyRegistrationError(err)
-				return renderError(ctx, cmd, "REGISTRATION_FAILED", kind, retryable,
-					registrationError(dockerImageURL, err))
-			}
+			kind, retryable := classifyRegistrationError(err)
+			return renderError(ctx, cmd, "REGISTRATION_FAILED", kind, retryable,
+				registrationError(dockerImageURL, err))
 		}
 
 		return renderRegisterResult(ctx, cmd, dockerImageURL,
@@ -189,23 +180,21 @@ func isAuthError(err error) bool {
 }
 
 // classifyRegistrationError maps a registration failure to the error envelope's
-// kind and retryable flag. Auth, not-found, cancellation, and a terminal FAILED
-// upload are permanent — retrying without user action won't help; a poll timeout
-// or transient API error is retryable.
+// kind and retryable flag. Only errors we can positively identify as transient
+// (rate limits, server-side blips, a poll timeout) are retryable; auth,
+// not-found, bad-request, conflict, a terminal FAILED upload, and any
+// unclassified error default to permanent, so a consumer never retries a request
+// that can't succeed.
 func classifyRegistrationError(err error) (kind string, retryable bool) {
 	switch {
-	case errors.Is(err, context.Canceled):
-		return "PERMANENT", false
-	case isAuthError(err):
-		return "PERMANENT", false
-	case errors.Is(err, apierr.ErrNotFound):
-		return "PERMANENT", false
-	case errors.Is(err, errImageUploadFailed):
-		return "PERMANENT", false
-	default:
-		// Poll timeout (deadline exceeded) and unclassified API errors: a later
-		// run may succeed.
+	case errors.Is(err, errImageWaitTimeout),
+		errors.Is(err, apierr.ErrTooManyRequests),
+		errors.Is(err, apierr.ErrTemporarilyUnavailable),
+		errors.Is(err, apierr.ErrInternalError),
+		errors.Is(err, apierr.ErrDeadlineExceeded):
 		return "TRANSIENT", true
+	default:
+		return "PERMANENT", false
 	}
 }
 
@@ -216,6 +205,19 @@ func registrationError(dockerImageURL string, err error) error {
 		return err
 	}
 	return fmt.Errorf("image %q was not found or requires credentials: run `docker login` for its registry, then retry: %w", dockerImageURL, err)
+}
+
+// registerWithCredentialFallback registers the image and, if the stored
+// credentials are rejected as an auth failure, retries once anonymously so a
+// public image isn't blocked by stale local creds (e.g. a revoked PAT from an
+// old `docker login`). The retry only fires when credentials were supplied.
+func registerWithCredentialFallback(ctx context.Context, c *imageClient, dockerImageURL, scope, key string, timeout time.Duration) (updated bool, sha string, err error) {
+	updated, sha, err = resolveImage(ctx, c, dockerImageURL, scope, key, timeout)
+	if err != nil && scope != "" && isAuthError(err) {
+		log.Warnf(ctx, "stored Docker credentials were rejected (%v); retrying without credentials in case the image is public", err)
+		return resolveImage(ctx, c, dockerImageURL, "", "", timeout)
+	}
+	return updated, sha, err
 }
 
 // resolveImage always re-registers the image and waits for it to become

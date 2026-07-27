@@ -33,6 +33,10 @@ const (
 // it as permanent rather than a retryable transient error.
 var errImageUploadFailed = errors.New("image upload failed")
 
+// errImageWaitTimeout marks the poll giving up before the image became
+// AVAILABLE. A later run may find it ready, so callers classify it as transient.
+var errImageWaitTimeout = errors.New("image did not become AVAILABLE")
+
 // imageRegistration is a registered image with its status and metadata.
 type imageRegistration struct {
 	DockerImageURL string      `json:"docker_image_url"`
@@ -196,7 +200,7 @@ func (c *imageClient) waitForImageReady(ctx context.Context, dockerImageURL stri
 		}
 
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("image did not become AVAILABLE within %s", timeout)
+			return nil, fmt.Errorf("%w within %s", errImageWaitTimeout, timeout)
 		}
 		select {
 		case <-ctx.Done():
