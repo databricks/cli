@@ -14,7 +14,7 @@ import (
 func renderString(t *testing.T, columns []string, rows [][]string, width int) string {
 	t.Helper()
 	var buf bytes.Buffer
-	require.NoError(t, RenderStaticWithTruncation(cmdio.MockDiscard(t.Context()), &buf, columns, rows, width))
+	require.NoError(t, RenderStatic(cmdio.MockDiscard(t.Context()), &buf, columns, rows, StaticOptions{Width: width, TruncateCells: true}))
 	return buf.String()
 }
 
@@ -137,4 +137,29 @@ func TestTruncateToWidth(t *testing.T) {
 
 func TestDetectWidthNonFile(t *testing.T) {
 	assert.Equal(t, 0, DetectWidth(&bytes.Buffer{}))
+}
+
+func renderNoTruncate(t *testing.T, columns []string, rows [][]string) string {
+	t.Helper()
+	var buf bytes.Buffer
+	require.NoError(t, RenderStatic(cmdio.MockDiscard(t.Context()), &buf, columns, rows, StaticOptions{Width: 0, TruncateCells: false}))
+	return buf.String()
+}
+
+func TestRenderNoTruncateKeepsFullValue(t *testing.T) {
+	long := strings.Repeat("x", maxColumnWidth+10)
+	out := renderNoTruncate(t, []string{"c"}, [][]string{{long}})
+	assert.Contains(t, out, long)
+	assert.NotContains(t, out, ellipsis)
+}
+
+func TestRenderNoTruncateCapsSeparatorOnly(t *testing.T) {
+	long := strings.Repeat("x", 45)
+	out := renderNoTruncate(t, []string{"a", "b"}, [][]string{{long, "B"}})
+	assert.Equal(t, "a"+strings.Repeat(" ", 44)+"  b\n"+strings.Repeat("-", maxColumnWidth)+strings.Repeat(" ", 5)+"  -\n"+long+"  B\n\n1 rows\n", out)
+}
+
+func TestRenderNoTruncateZeroColumns(t *testing.T) {
+	out := renderNoTruncate(t, nil, [][]string{{"a"}, {"b"}})
+	assert.Equal(t, "\n\n\n\n\n2 rows\n", out)
 }

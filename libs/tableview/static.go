@@ -20,26 +20,35 @@ const (
 	separatorChar  = "-"
 )
 
-// writes table (with an "N rows" footer).
-// if table is too wide trailing columns are dropped with a "(showing M of N columns)" note.
-// cells are truncated to maxColumnWidth.
-func RenderStaticWithTruncation(ctx context.Context, out io.Writer, columns []string, rows [][]string, width int) error {
-	if len(columns) == 0 {
+// StaticOptions configures RenderStatic. Width is the terminal column budget
+// (0 means unlimited, so no columns are dropped). TruncateCells caps each cell
+// at maxColumnWidth with an ellipsis; when false, cells are emitted in full and
+// only the separator dash count is capped.
+type StaticOptions struct {
+	Width         int
+	TruncateCells bool
+}
+
+// RenderStatic writes columns and rows as an aligned text table with an
+// "N rows" footer. When opts.Width is positive and the table is wider, trailing
+// columns are dropped in favor of a "(showing M of N columns)" note.
+func RenderStatic(ctx context.Context, out io.Writer, columns []string, rows [][]string, opts StaticOptions) error {
+	if len(columns) == 0 && opts.TruncateCells {
 		return nil
 	}
 	n := len(columns)
 
 	colWidth := make([]int, n)
 	for i, col := range columns {
-		colWidth[i] = min(cmdio.Width(col), maxColumnWidth)
+		colWidth[i] = cellWidth(col, opts.TruncateCells)
 	}
 	for _, row := range rows {
 		for i := 0; i < n && i < len(row); i++ {
-			colWidth[i] = max(colWidth[i], min(cmdio.Width(row[i]), maxColumnWidth))
+			colWidth[i] = max(colWidth[i], cellWidth(row[i], opts.TruncateCells))
 		}
 	}
 
-	shown, cropped := fitColumns(colWidth, width)
+	shown, cropped := fitColumns(colWidth, opts.Width)
 
 	widths := append([]int(nil), colWidth[:shown]...)
 	if cropped {
@@ -48,7 +57,7 @@ func RenderStaticWithTruncation(ctx context.Context, out io.Writer, columns []st
 
 	header := make([]string, 0, len(widths))
 	for i := range shown {
-		header = append(header, truncateToWidth(columns[i], colWidth[i]))
+		header = append(header, renderCell(columns[i], colWidth[i], opts.TruncateCells))
 	}
 	if cropped {
 		header = append(header, cmdio.Faint(ctx, ellipsis))
@@ -57,7 +66,7 @@ func RenderStaticWithTruncation(ctx context.Context, out io.Writer, columns []st
 
 	sep := make([]string, len(widths))
 	for i, w := range widths {
-		sep[i] = strings.Repeat(separatorChar, w)
+		sep[i] = strings.Repeat(separatorChar, min(w, maxColumnWidth))
 	}
 	emitRow(out, sep, widths)
 
@@ -66,7 +75,7 @@ func RenderStaticWithTruncation(ctx context.Context, out io.Writer, columns []st
 		for i := range shown {
 			cell := ""
 			if i < len(row) {
-				cell = truncateToWidth(row[i], colWidth[i])
+				cell = renderCell(row[i], colWidth[i], opts.TruncateCells)
 			}
 			cells = append(cells, cell)
 		}
@@ -82,6 +91,23 @@ func RenderStaticWithTruncation(ctx context.Context, out io.Writer, columns []st
 	}
 	fmt.Fprintf(out, "%d rows\n", len(rows))
 	return nil
+}
+
+// cellWidth returns the column-width contribution of s: capped at maxColumnWidth
+// when truncating, otherwise its full display width.
+func cellWidth(s string, truncate bool) int {
+	if truncate {
+		return min(cmdio.Width(s), maxColumnWidth)
+	}
+	return cmdio.Width(s)
+}
+
+// renderCell returns s truncated to width when truncating, otherwise s unchanged.
+func renderCell(s string, width int, truncate bool) string {
+	if truncate {
+		return truncateToWidth(s, width)
+	}
+	return s
 }
 
 // emitRow writes one table line. Every cell but the last is padded to its

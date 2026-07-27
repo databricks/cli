@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sqlexec"
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
@@ -189,7 +190,7 @@ multi-query mode, the same parameter set is applied to every statement.`,
 			case queryOutputModeJSON:
 				return renderJSON(cmd.OutOrStdout(), columns, rows)
 			case queryOutputModeStaticTable:
-				return renderStaticTable(cmd.OutOrStdout(), columns, rows)
+				return tableview.RenderStatic(ctx, cmd.OutOrStdout(), columns, rows, tableview.StaticOptions{Width: 0, TruncateCells: false})
 			default:
 				return renderInteractiveTable(ctx, cmd.OutOrStdout(), columns, rows)
 			}

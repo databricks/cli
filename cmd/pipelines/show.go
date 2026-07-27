@@ -104,7 +104,7 @@ func render(ctx context.Context, cmd *cobra.Command, columns []string, rows [][]
 		if len(columns) == 0 {
 			return nil
 		}
-		return tableview.RenderStaticWithTruncation(ctx, out, columns, rows, tableview.DetectWidth(out))
+		return tableview.RenderStatic(ctx, out, columns, rows, tableview.StaticOptions{Width: tableview.DetectWidth(out), TruncateCells: true})
 	default:
 		return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 	}
