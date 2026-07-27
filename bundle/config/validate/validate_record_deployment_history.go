@@ -30,13 +30,13 @@ func (v *validateRecordDeploymentHistory) Name() string {
 // silently overlaid by an empty DMS resource set, and the next deploy would try to
 // create resources that already exist. The direct state upgrade has to land before
 // this flag can be exposed; until then it errors, and
-// DATABRICKS_BUNDLE_ENABLE_RECORD_DEPLOYMENT_HISTORY lifts the error for the CLI's own
-// tests and for DMS development.
+// DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY force allows it for the CLI's
+// own tests and for DMS development.
 func (v *validateRecordDeploymentHistory) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Experimental == nil || !b.Config.Experimental.RecordDeploymentHistory {
 		return nil
 	}
-	if env.EnableRecordDeploymentHistory(ctx) {
+	if env.ForceAllowRecordDeploymentHistory(ctx) {
 		return nil
 	}
 	return diag.Diagnostics{{

@@ -178,7 +178,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.ValidateDeploymentFields(),
 
 		// Reads (typed): b.Config.Experimental.RecordDeploymentHistory
-		// Reads (env): DATABRICKS_BUNDLE_ENABLE_RECORD_DEPLOYMENT_HISTORY (non-empty value lifts the error)
+		// Reads (env): DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY (non-empty value force allows it)
 		// Rejects experimental.record_deployment_history until the direct state upgrade lands.
 		validate.ValidateRecordDeploymentHistory(),
 

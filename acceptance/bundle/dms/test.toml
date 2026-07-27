@@ -14,6 +14,6 @@ Ignore = [
 
 # experimental.record_deployment_history is rejected until the direct engine has a
 # state upgrade path (see validate.ValidateRecordDeploymentHistory). These tests
-# exercise the feature itself, so they opt in through the same escape hatch DMS
-# development uses. bundle/dms/not-supported covers the rejection.
-Env.DATABRICKS_BUNDLE_ENABLE_RECORD_DEPLOYMENT_HISTORY = "1"
+# exercise the feature itself, so they force allow it the same way DMS development
+# does. bundle/dms/not-supported covers the rejection.
+Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = "1"
