@@ -22,8 +22,8 @@ func jobRunsBundle(runs map[string]*resources.JobRun) *bundle.Bundle {
 func TestValidateJobRunsAllowsValidConfig(t *testing.T) {
 	wait := false
 	b := jobRunsBundle(map[string]*resources.JobRun{
-		// An empty `job_runs.<name>:` entry unmarshals to a nil pointer; the
-		// validator must skip it rather than panic dereferencing.
+		// An empty `job_runs.<name>:` entry unmarshals to a nil pointer, which the
+		// validator skips.
 		"empty":   nil,
 		"minimal": {RunNow: jobs.RunNow{JobId: 1}},
 		"tuned":   {RunNow: jobs.RunNow{JobId: 2}, RerunToken: "v2", WaitForCompletion: &wait, Timeout: "90m"},

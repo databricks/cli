@@ -147,8 +147,8 @@ resources:
     recreate_on_changes:
       - reason: immutable
     ignore_local_changes:
-      # Deploy-time knobs, not run config; changing them must not re-trigger the
-      # run (ignore_local_changes is checked before recreate_on_changes).
+      # Deploy-time knobs: ignore_local_changes is checked before
+      # recreate_on_changes, so changing them leaves the run alone.
       - field: wait_for_completion
         reason: deploy_option
       - field: timeout

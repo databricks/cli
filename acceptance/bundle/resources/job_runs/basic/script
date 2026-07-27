@@ -1,6 +1,5 @@
 cleanup() {
-    # destroy leaves the run in place (immutable historical record), so it makes
-    # no jobs/runs/delete call.
+    # destroy leaves the run in place: a run is immutable history.
     trace $CLI bundle destroy --auto-approve
     rm -f out.requests.txt
 }

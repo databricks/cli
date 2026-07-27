@@ -12,8 +12,8 @@ resources:
             left: "1"
             right: "1"
 
-  # Two runs with byte-identical config. Each is a distinct resource, so each
-  # must get its own run rather than deduping onto a shared idempotency token.
+  # Two runs with byte-identical config. Their resource keys go into the
+  # idempotency token, so each gets its own run.
   job_runs:
     my_run_a:
       job_id: ${resources.jobs.my_job.id}

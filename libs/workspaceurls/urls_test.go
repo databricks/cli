@@ -189,7 +189,7 @@ func TestJobRunPageURL(t *testing.T) {
 			"http://127.0.0.1:8080/?o=900800700600#job/1/run/2",
 			"http://127.0.0.1:8080/jobs/1/runs/2?o=900800700600",
 		},
-		// Unexpected formats are returned unchanged because the conversion is cosmetic.
+		// The conversion is cosmetic, so any other format passes through unchanged.
 		{
 			"already modern path is left as-is",
 			"https://myworkspace.databricks.test/jobs/123/runs/456?o=900800700600",

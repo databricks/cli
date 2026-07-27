@@ -9,8 +9,8 @@ run_id() {
     jq -r '.state["resources.job_runs.my_run"].__id__' "$STATE"
 }
 
-# Neither recreate nor destroy deletes a run: it is immutable history. Its
-# idempotency token therefore stays live and keeps deduping.
+# A run is immutable history that recreate and destroy leave in place, so its
+# idempotency token stays live and keeps deduping.
 
 title "deploy with env=dev triggers the first run"
 trace $CLI bundle deploy
@@ -22,8 +22,8 @@ trace $CLI bundle deploy
 prod=$(run_id)
 
 # The dev->prod recreate left the original dev run in place, so its token is
-# still live. Flipping back re-issues run-now with that token and dedupes onto
-# the original dev run instead of starting a new one.
+# still live: flipping back re-issues run-now with that token and dedupes onto
+# that run.
 title "flip env prod -> dev: dedupes back to the original dev run"
 trace update_file.py databricks.yml "env: prod" "env: dev"
 trace $CLI bundle deploy
@@ -39,8 +39,8 @@ title "destroy removes the resource from state but leaves the run in place"
 trace $CLI bundle destroy --auto-approve
 
 title "redeploy after destroy triggers a fresh run"
-# The job is recreated with a new id, so the run config -- and its token --
-# differ from the destroyed deployment's.
+# The job is recreated with a new id, so the run config, and with it the token,
+# differs from the destroyed deployment's.
 trace $CLI bundle deploy
 after_destroy=$(run_id)
 if [ "$after_destroy" != "$dev1" ]; then

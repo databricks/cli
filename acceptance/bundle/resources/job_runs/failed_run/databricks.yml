@@ -6,14 +6,14 @@ resources:
     my_job:
       name: my-job
       tasks:
-        # The test server runs notebook tasks for real; this notebook does not
-        # exist in the workspace, so the task -- and with it the run -- fails.
+        # The test server runs notebook tasks for real, and this path is missing
+        # from the workspace, so the task, and with it the run, fails.
         - task_key: main
           notebook_task:
             notebook_path: /Workspace/missing-notebook
 
-    # Depends on my_run's result_state. The run fails, so the deploy aborts at
-    # the run and this job is never created.
+    # Depends on my_run's result_state, so the failing run aborts the deploy
+    # before this job is created.
     downstream_job:
       name: downstream-job
       tags:

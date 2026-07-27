@@ -15,8 +15,8 @@ before=$(run_id)
 
 title "retry mid-run after a lost run id (deploy crashed before the id was recorded)"
 # Simulates a deploy that fired run-now but crashed before saving the run id.
-# job_id (and thus the idempotency token) is unchanged, so the retried run-now
-# dedupes to the existing run instead of starting a second one.
+# job_id, and with it the idempotency token, is unchanged, so the retried run-now
+# dedupes onto the existing run.
 jq 'del(.state["resources.job_runs.my_run"])' "$STATE" > "$STATE.new"
 mv "$STATE.new" "$STATE"
 trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"]'
@@ -30,8 +30,8 @@ trace $CLI bundle deploy
 after_kept=$(run_id)
 
 title "run-now was issued exactly twice, both with the same token, and no duplicate run was created"
-# Two run-now calls total (initial + lost-id retry); the recorded-id retry adds
-# none. All share one token, so only one run ever exists.
+# Two run-now calls total, from the initial deploy and the lost-id retry, both
+# with the same token, so a single run exists throughout.
 trace print_requests.py //jobs/run-now
 if [ "$before" = "$after_lost" ] && [ "$after_lost" = "$after_kept" ]; then
     echo "run id stable across both retries ($before): the idempotency token reused the existing run"

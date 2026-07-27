@@ -26,8 +26,7 @@ func tokenFor(t *testing.T, identity CreateIdentity, state *JobRunState) string 
 }
 
 func TestIdempotencyTokenRequiresIdentity(t *testing.T) {
-	// The framework always sets one, so its absence is a wiring bug, not a case
-	// to silently fall back from.
+	// The framework always sets one, so its absence is a wiring bug and errors.
 	_, err := idempotencyToken(t.Context(), &JobRunState{RunNow: jobs.RunNow{JobId: 123}})
 	require.ErrorContains(t, err, "without a create identity")
 }
@@ -79,7 +78,7 @@ func TestIdempotencyTokenIgnoresDeployOptions(t *testing.T) {
 	base := tokenFor(t, testIdentity, &JobRunState{RunNow: run})
 	tuned := tokenFor(t, testIdentity, &JobRunState{RunNow: run, WaitForCompletion: &wait, Timeout: "5m"})
 
-	// Neither is run identity, so changing them must not re-trigger the run.
+	// Both are deploy-time knobs, cleared before hashing so the token holds.
 	assert.Equal(t, base, tuned)
 }
 
@@ -93,8 +92,8 @@ func TestIdempotencyTokenChangesWithIdentity(t *testing.T) {
 	otherDeployment := testIdentity
 	otherDeployment.Deployment = "/Workspace/Users/me/.bundle/mybundle/prod"
 
-	// Identical config must not collapse onto one run across resource keys or
-	// across deployments sharing a workspace.
+	// The identity keeps identical config apart across resource keys and across
+	// deployments sharing a workspace.
 	assert.NotEqual(t, base, tokenFor(t, otherKey, state))
 	assert.NotEqual(t, base, tokenFor(t, otherDeployment, state))
 }
@@ -180,7 +179,7 @@ func TestJobRunWaitReportsFailedTask(t *testing.T) {
 	r := (&ResourceJobRun{}).New(client)
 	_, err = r.waitForRun(t.Context(), 123, time.Minute)
 
-	// The failing task and its error are named; the task that succeeded is not.
+	// The error names the failing task and the message it reported.
 	require.ErrorContains(t, err, `task "main": notebook not found`)
 	assert.NotContains(t, err.Error(), `task "ok"`)
 }
@@ -219,18 +218,17 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 	r := (&ResourceJobRun{}).New(client)
 	_, err := r.waitForRun(t.Context(), 123, time.Minute)
 
-	// INTERNAL_ERROR is the one terminal state that fails the deploy.
+	// The SDK waiter errors on INTERNAL_ERROR, ahead of the result check.
 	require.Error(t, err)
 }
 
-// Reports RUNNING before TERMINATED, so this is the only test that exercises the
-// poll loop (the others stub an already-terminal state).
+// Reports RUNNING before TERMINATED, exercising the poll loop (the other tests
+// stub an already-terminal state).
 func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	server := testserver.New(t)
 
-	// waitForRun's progress callback fires on every poll (there is no separate
-	// GET before the loop), so returning RUNNING for the first two polls just
-	// makes the waiter iterate more than once before it sees TERMINATED.
+	// Returning RUNNING for the first two polls makes the waiter iterate a few
+	// times, calling the progress callback on each, before it sees TERMINATED.
 	var gets atomic.Int32
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
 		if gets.Add(1) <= 2 {

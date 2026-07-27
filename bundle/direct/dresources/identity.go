@@ -2,24 +2,22 @@ package dresources
 
 import "context"
 
-// CreateIdentity is the deployment-scoped identity the framework attaches to the
-// create path, for resources that must derive a stable create-time key (e.g. a
-// run-now idempotency token) instead of letting the backend generate one.
+// CreateIdentity identifies the resource being created, for resources that
+// derive a stable create-time key from it (e.g. a run-now idempotency token).
 //
 // Every part is reconstructible from config and state, so a deploy that crashes
 // mid-create derives the same identity on the next attempt.
 type CreateIdentity struct {
 	// Deployment is the bundle's workspace root path. It keeps deployments that
-	// share a workspace (different targets, different users) from deriving the
-	// same key for the same resource.
+	// share a workspace (different targets, different users) apart.
 	Deployment string
 
 	// ResourceKey is the deployment-local key, e.g. "resources.job_runs.nightly".
 	ResourceKey string
 
 	// PriorID is the id of a resource whose remote copy has vanished, set only
-	// when re-creating it. Resources fold it in so the new key differs from the
-	// gone one, which the backend may still hold (e.g. a tombstoned run token).
+	// when re-creating it. Folding it in keeps the new key clear of the gone one,
+	// which the backend may still hold (e.g. a tombstoned run token).
 	PriorID string
 }
 

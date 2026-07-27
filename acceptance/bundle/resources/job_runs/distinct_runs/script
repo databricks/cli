@@ -14,9 +14,9 @@ trace $CLI bundle deploy
 a=$(run_id my_run_a)
 b=$(run_id my_run_b)
 
-# The two tokens differ but are both masked, so the recorded bodies print
-# identically and their order does not matter. Compare the ids through state
-# rather than stdout, which the two concurrent deploys interleave.
+# Both tokens are masked, so the recorded bodies print identically in any order.
+# The run ids are compared through state, since the two concurrent deploys
+# interleave stdout.
 title "two run-now requests were made; each resource stored its own run id"
 trace print_requests.py //jobs/run-now
 if [ "$a" != "$b" ]; then

@@ -13,6 +13,6 @@ title "the downstream job was created with the run's result_state resolved into 
 trace print_requests.py //jobs/create
 
 title "redeploy is a no-op: the resolved result_state tag is stable, not perpetual drift"
-# The resolved tag must not read back as drift, or the job recreates every deploy.
+# The resolved tag reads back identically, so the job stays as deployed.
 trace $CLI bundle plan -o json | jq '.plan["resources.jobs.downstream_job"].action // "none"'
 trace $CLI bundle deploy

@@ -20,5 +20,5 @@ trace $CLI bundle deploy
 
 title "the redeploy issued no further run-now request"
 # print_requests.py consumed the initial run-now above, so an empty result here
-# confirms the redeploy added none.
+# means the redeploy made no request.
 trace print_requests.py //jobs/run-now

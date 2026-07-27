@@ -10,9 +10,9 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-// pathDiags collects errors attached to configuration paths. Validators that
-// iterate resource maps use it so their output is ordered by path rather than by
-// Go's randomized map iteration.
+// pathDiags collects errors attached to configuration paths and returns them
+// sorted by path, so validators that iterate resource maps report in a stable
+// order despite Go's randomized map iteration.
 type pathDiags struct {
 	b     *bundle.Bundle
 	diags diag.Diagnostics
@@ -24,9 +24,8 @@ func (p *pathDiags) errorf(path, format string, args ...any) {
 	p.errorAt(dyn.MustPathFromString(path), p.b.Config.GetLocations(path), format, args...)
 }
 
-// errorAt reports an error about path at explicit locations. Use it when the
-// interesting location is not where path is defined, e.g. the reference that
-// points at it.
+// errorAt reports an error about path at explicit locations, e.g. at the
+// reference that points to path.
 func (p *pathDiags) errorAt(path dyn.Path, locations []dyn.Location, format string, args ...any) {
 	p.diags = append(p.diags, diag.Diagnostic{
 		Severity:  diag.Error,

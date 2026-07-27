@@ -104,10 +104,9 @@ func runNow(t *testing.T, workspace *FakeWorkspace, request jobs.RunNow) Respons
 	return workspace.JobsRunNow(Request{Body: body})
 }
 
-// The Jobs API does not free an idempotency_token when its run is deleted, so a
-// later reuse errors instead of starting a fresh run. This is exactly why
-// job_runs' DoDelete is a noop: deleting a run would tombstone the deterministic
-// token and break re-running the same config after destroy or a value flip-back.
+// An idempotency_token stays reserved after its run is deleted, so a later reuse
+// errors. This is why job_runs' DoDelete is a noop: keeping the run keeps its
+// deterministic token usable for re-running the same config.
 func TestJobsRunNow_IdempotencyTokenTombstonedAfterDelete(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	jobID := createJob(t, workspace)
@@ -119,7 +118,7 @@ func TestJobsRunNow_IdempotencyTokenTombstonedAfterDelete(t *testing.T) {
 	runID := first.Body.(jobs.RunNowResponse).RunId
 	require.NotZero(t, runID)
 
-	// A retry with the same token dedupes to the existing run (no duplicate).
+	// A retry with the same token dedupes onto the existing run.
 	second := runNow(t, workspace, jobs.RunNow{JobId: jobID, IdempotencyToken: token})
 	require.Equal(t, 0, second.StatusCode)
 	assert.Equal(t, runID, second.Body.(jobs.RunNowResponse).RunId)
@@ -129,7 +128,7 @@ func TestJobsRunNow_IdempotencyTokenTombstonedAfterDelete(t *testing.T) {
 	del := workspace.JobsDeleteRun(Request{Body: body})
 	require.Equal(t, 0, del.StatusCode)
 
-	// Reusing the tombstoned token now errors rather than starting a fresh run.
+	// The token stays reserved after the delete, so reuse errors.
 	third := runNow(t, workspace, jobs.RunNow{JobId: jobID, IdempotencyToken: token})
 	assert.Equal(t, 400, third.StatusCode)
 	assert.Contains(t, third.Body.(string), "has been deleted")

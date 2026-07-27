@@ -98,8 +98,8 @@ func JobRunURL(baseURL url.URL, jobID, runID string) string {
 //	https://<host>/?o=<id>#job/<jobID>/run/<runID>
 //
 // into the modern path form (see JobRunPath), preserving the workspace selector
-// query param. The conversion is cosmetic, so an unexpected format is returned
-// unchanged.
+// query param. The conversion is cosmetic, so any other format is passed
+// through unchanged.
 func JobRunPageURL(ctx context.Context, raw string) string {
 	u, err := url.Parse(raw)
 	if err != nil {

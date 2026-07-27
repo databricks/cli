@@ -179,8 +179,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		// Reads (typed): b.Config.Resources.JobRuns, (dynamic): * (searches for
 		// ${resources.job_runs.*.state} references)
-		// Rejects a user-set idempotency_token, an unparseable timeout, and
-		// references to the state of a run the deploy does not wait for.
+		// Rejects a user-set idempotency_token, an invalid timeout, and references
+		// to the state of a run with wait_for_completion: false.
 		validate.ValidateJobRuns(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)

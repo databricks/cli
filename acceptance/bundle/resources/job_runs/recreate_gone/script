@@ -15,12 +15,12 @@ before=$(run_id)
 
 title "delete the run out-of-band, tombstoning its idempotency token"
 # Simulates the workspace garbage-collecting run history: the run now 404s and
-# its token can no longer be reused (the Jobs API errors on a deleted token).
+# its token stays reserved, so the Jobs API errors on reuse.
 trace $CLI jobs delete-run "$before"
 
 title "redeploy re-triggers a fresh run instead of replaying the tombstoned token"
-# The planner sees the run gone and re-creates it; the token is rotated with the
-# prior run id, so RunNow starts a new run rather than erroring on the tombstone.
+# The planner sees the run gone and re-creates it, folding the prior run id into
+# the token so RunNow starts a new run.
 trace $CLI bundle deploy
 after=$(run_id)
 

@@ -332,8 +332,8 @@ var testDeps = map[string]prepareWorkspace{
 
 	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		// A run can only be triggered against an existing job, so create one first.
-		// The fake workspace executes notebook and python tasks for real and fails
-		// the run when the file is missing, so use a task type it does not execute.
+		// The fake workspace executes notebook and python tasks for real, so use a
+		// condition task, which it reports as succeeded.
 		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-for-run",
 			Tasks: []jobs.Task{
@@ -1083,8 +1083,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	// job_runs, like permissions/grants, has a noop DoDelete: a run is an
-	// immutable historical record left in place, so DoRead still finds it.
+	// job_runs, like permissions/grants, has a noop DoDelete: a run is immutable
+	// history left in place, so DoRead still finds it after delete.
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "job_runs"
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.

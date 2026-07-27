@@ -15,7 +15,7 @@ resources:
     downstream_job:
       name: downstream-job
       tags:
-        # Rejected: my_run is not waited for, so its state is unknown here.
+        # Rejected: my_run sets wait_for_completion: false, so state is unknown.
         run_result: ${resources.job_runs.my_run.state.result_state}
       tasks:
         - task_key: main

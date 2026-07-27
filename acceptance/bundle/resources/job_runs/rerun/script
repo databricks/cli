@@ -25,8 +25,8 @@ trace $CLI bundle deploy
 bumped=$(run_id)
 
 title "run-now was issued exactly twice (initial + bump); rerun_token itself is never sent to the API"
-# Two run-now calls total; the identical-config redeploy in between added none.
-# Neither body carries `rerun_token` -- it only feeds the masked idempotency_token.
+# Two run-now calls total, from the initial deploy and the bump. rerun_token
+# stays local: it only feeds the masked idempotency_token.
 trace print_requests.py //jobs/run-now
 if [ "$first" = "$same" ] && [ "$first" != "$bumped" ]; then
     echo "identical config reused run $first; bumping rerun_token triggered a new run $bumped"
