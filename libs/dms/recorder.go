@@ -1,12 +1,3 @@
-// Package dms records bundle deployments as versions with the Deployment
-// Metadata Service (DMS).
-//
-// It is intentionally independent of the deployment lock: a Recorder does not
-// acquire or hold any lock. Callers are responsible for serializing concurrent
-// deployments (today via the workspace-filesystem lock). The server-side
-// version counter — CreateVersion only succeeds when the requested version is
-// last_version_id + 1 — provides the concurrency control for the records
-// themselves.
 package dms
 
 import (
