@@ -1,0 +1,54 @@
+
+=== submit with inline dependencies
+>>> [CLI] experimental air run -f run.yaml
+Submitted run 555
+View at: [DATABRICKS_URL]/jobs/runs/555
+
+=== only config + command are uploaded; no requirements.yaml
+>>> print_requests.py //api/2.0/workspace-files/import-file --oneline --sort --unique --keep
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/command.sh", "q": {"overwrite": "true"}, "raw_body": "python train.py"}
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/training_config.yaml", "q": {"overwrite": "true"}, "raw_body": "experiment_name: deps-smoke\ncommand: python train.py\ncompute:\n  accelerator_type: GPU_1xH100\n  num_accelerators: 1\nenvironment:\n  version: 5\n  dependencies:\n    - numpy\n    - torch==2.3.0\n"}
+
+=== declared deps ride on environments[].spec.dependencies
+>>> print_requests.py //api/2.2/jobs/runs/submit
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/submit",
+  "body": {
+    "environments": [
+      {
+        "environment_key": "default",
+        "spec": {
+          "dependencies": [
+            "numpy",
+            "torch==2.3.0"
+          ],
+          "environment_version": "5"
+        }
+      }
+    ],
+    "idempotency_token": "[UUID]",
+    "run_name": "deps-smoke",
+    "tasks": [
+      {
+        "ai_runtime_task": {
+          "deployments": [
+            {
+              "command_path": "/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/command.sh",
+              "compute": {
+                "accelerator_count": 1,
+                "accelerator_type": "GPU_1xH100"
+              }
+            }
+          ],
+          "experiment": "deps-smoke"
+        },
+        "environment_key": "default",
+        "max_retries": 3,
+        "retry_on_timeout": true,
+        "run_if": "ALL_SUCCESS",
+        "task_key": "deps-smoke"
+      }
+    ]
+  }
+}

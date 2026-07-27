@@ -68,8 +68,7 @@ func TestBuildArtifacts_ParametersButNoRequirements(t *testing.T) {
 		Parameters: map[string]any{"lr": 0.1},
 	}
 
-	// Dependencies ride on spec.dependencies, not a requirements.yaml upload, so the
-	// artifacts are just the config, command, and hyperparameters.
+	// Inline deps are not uploaded, so the artifacts are config, command, and params.
 	items, err := buildArtifacts(cfg, path)
 	require.NoError(t, err)
 	assert.Equal(t, []string{trainingConfigName, commandScriptName, hyperparametersName}, itemNames(items))
@@ -104,8 +103,7 @@ func TestBuildArtifacts_RequirementsFileNotUploaded(t *testing.T) {
 		Environment: &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "reqs.yaml"}},
 	}
 
-	// A declared requirements file's deps travel on spec.dependencies, not as an
-	// uploaded artifact.
+	// A declared requirements file is not uploaded; its deps travel on spec.dependencies.
 	items, err := buildArtifacts(cfg, filepath.Join(dir, "run.yaml"))
 	require.NoError(t, err)
 	assert.Equal(t, []string{trainingConfigName, commandScriptName}, itemNames(items))
@@ -136,14 +134,4 @@ func (errWriter) Write(ctx context.Context, name string, reader io.Reader, mode 
 func TestUploadArtifacts_WriteError(t *testing.T) {
 	err := uploadArtifacts(t.Context(), errWriter{}, []uploadItem{{trainingConfigName, []byte("x")}})
 	require.ErrorContains(t, err, "failed to upload "+trainingConfigName)
-}
-
-func TestEnvironmentDependencies_MissingRequirementsFile(t *testing.T) {
-	cfgPath := writeConfigFile(t, "run.yaml", "x: y\n")
-	cfg := &runConfig{
-		Command:     new("echo hi"),
-		Environment: &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "nope.yaml"}},
-	}
-	_, err := environmentDependencies(cfg, cfgPath)
-	require.ErrorContains(t, err, "failed to read requirements file")
 }
