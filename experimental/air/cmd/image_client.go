@@ -13,10 +13,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/client"
 )
 
-// imagesAPIPath is the AI Compute Manager image service. The CLI talks to it with
-// a raw client.Do because the SDK does not model this service. The ":get",
-// ":delete", and ":checkImageAccess" verbs are literal path suffixes the backend
-// expects, not query-style actions.
+// imagesAPIPath is the AI Compute Manager image service, called with a raw
+// client.Do because the SDK does not model it. The ":get" and ":checkImageAccess"
+// verbs are literal path suffixes the backend expects, not query-style actions.
 const imagesAPIPath = "/api/2.0/ai-compute-manager/images"
 
 // imageStatus is the lifecycle state of a registered image, as reported in the

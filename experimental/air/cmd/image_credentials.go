@@ -25,7 +25,7 @@ const (
 // errSecretScopeQuota signals the workspace has hit its secret-scope limit. It
 // is surfaced to the user rather than swallowed, since it only resolves by
 // freeing a scope, not by retrying or falling back to the public-image path.
-var errSecretScopeQuota = errors.New("workspace has reached the maximum number of secret scopes")
+var errSecretScopeQuota = errors.New("workspace has reached the maximum number of secret scopes; delete an unused scope and retry")
 
 // encodeDockerCredentials base64-encodes "username:password", the form the
 // registration backend decodes.
@@ -69,13 +69,11 @@ func ensureSecretScope(ctx context.Context, w *databricks.WorkspaceClient, scope
 	}
 }
 
-// autoSetupDockerCredentials discovers local Docker credentials for dockerImageURL
-// storeDockerCredentials stores the given registry credentials in the per-user
-// secret scope, returning the (scope, key) reference for registration. ok is
-// false when storage fails for a non-quota reason (the caller falls back to the
-// public path); a quota failure returns a non-nil error so it surfaces to the
-// user. The credentials are resolved by the caller so the local Docker config is
-// read (and any credential helper invoked) only once.
+// storeDockerCredentials stores registry credentials in the per-user secret
+// scope and returns the (scope, key) reference for registration. ok is false
+// when storage fails for a non-quota reason (the caller falls back to the public
+// path); a quota failure returns an error so it surfaces to the user. The caller
+// resolves the credentials so the local Docker config is read only once.
 func storeDockerCredentials(ctx context.Context, w *databricks.WorkspaceClient, username, password string) (scope, key string, ok bool, err error) {
 	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {

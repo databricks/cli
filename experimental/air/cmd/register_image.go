@@ -151,10 +151,14 @@ configuration (run ` + "`docker login`" + ` first); there are no credential flag
 // error is returned; all other discovery failures are swallowed so registration
 // falls through to the public-image path.
 func discoverCredentials(ctx context.Context, w *databricks.WorkspaceClient, c *imageClient, dockerImageURL string) (scope, key string, err error) {
+	// readDockerCredentials keys off the registry host, so it needs the normalized
+	// URL (e.g. bare "ubuntu" resolves to the Docker Hub host).
+	normalized := normalizeDockerImageURL(dockerImageURL)
+
 	// Resolve local creds once (a cheap file read, or one credential-helper call),
 	// so the no-`docker login` case pays for nothing and helpers aren't invoked
 	// twice.
-	username, password, ok := readDockerCredentials(ctx, dockerImageURL)
+	username, password, ok := readDockerCredentials(ctx, normalized)
 	if !ok {
 		return "", "", nil
 	}

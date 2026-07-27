@@ -61,6 +61,17 @@ func TestReadDockerCredentialsDockerHubLegacyKey(t *testing.T) {
 	assert.Equal(t, "carol", u)
 }
 
+func TestReadDockerCredentialsNeedsNormalizedURL(t *testing.T) {
+	// A bare "ubuntu" has no registry host, so it must be normalized before
+	// lookup; discoverCredentials normalizes so Docker Hub creds are found.
+	ctx := writeDockerConfig(t, `{"auths":{"https://index.docker.io/v1/":{"auth":"`+b64(t, "dave:tok")+`"}}}`)
+	_, _, ok := readDockerCredentials(ctx, "ubuntu")
+	assert.False(t, ok)
+	u, _, ok := readDockerCredentials(ctx, normalizeDockerImageURL("ubuntu"))
+	require.True(t, ok)
+	assert.Equal(t, "dave", u)
+}
+
 func TestReadDockerCredentialsMissingRegistry(t *testing.T) {
 	ctx := writeDockerConfig(t, `{"auths":{"nvcr.io":{"auth":"`+b64(t, "bob:secret")+`"}}}`)
 	_, _, ok := readDockerCredentials(ctx, "ghcr.io/org/img:latest")
