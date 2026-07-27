@@ -3240,7 +3240,7 @@
                       "markdownDescription": "The instance pool definitions for the bundle, where each key is the name of the instance pool. See [instance_pools](https://docs.databricks.com/dev-tools/bundles/resources.html#instance_pools)."
                     },
                     "job_runs": {
-                      "description": "The job run definitions for the bundle, where each key is the name of the job run. Each job run triggers a run of an existing job as part of bundle deployment.",
+                      "description": "The job run definitions for the bundle, where each key is the name of the job run. Each job run triggers a run of an existing job as part of bundle deployment.\n\nA run is triggered once per configuration and is then tracked by its id. If the workspace no longer has that run, which happens once it ages out of run history after about 60 days, the next deployment triggers a fresh run of the same configuration. Avoid `job_runs` for a job that must run exactly once ever.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.JobRun"
                     },
                     "jobs": {

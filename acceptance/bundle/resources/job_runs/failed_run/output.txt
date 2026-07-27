@@ -3,9 +3,9 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/files...
 Deploying resources...
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
-[TIMESTAMP] "my-job" RUNNING
-[TIMESTAMP] "my-job" TERMINATED FAILED task main failed
+resources.job_runs.my_run: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+resources.job_runs.my_run: [TIMESTAMP] "my-job" RUNNING
+resources.job_runs.my_run: [TIMESTAMP] "my-job" TERMINATED FAILED task main failed
 Error: cannot create resources.job_runs.my_run: job run [NUMID] did not succeed: FAILED: task main failed
 task "main": notebook not found in workspace: /Workspace/missing-notebook (also tried .py)
 run page: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]

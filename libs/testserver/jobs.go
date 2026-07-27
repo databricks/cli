@@ -417,6 +417,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	s.JobRuns[runId] = jobs.Run{
 		RunId:                runId,
 		JobId:                request.JobId,
+		StartTime:            nowMilli(),
 		State:                &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
 		RunPageUrl:           fmt.Sprintf("%s/?o=900800700600#job/%d/run/%d", s.url, request.JobId, runId),
 		RunType:              jobs.RunTypeJobRun,
@@ -897,6 +898,10 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 			}
 		}
 		run.State = rollUpRunState(run.Tasks)
+		// Clients tell a run they just triggered apart from one run-now
+		// deduplicated onto by when it finished, so a terminal run needs an
+		// end_time.
+		run.EndTime = nowMilli()
 		s.JobRuns[runIdInt] = run
 
 		// Return RUNNING for this poll (before the transition).

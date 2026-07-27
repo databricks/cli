@@ -10,7 +10,12 @@ run_id() {
 }
 
 title "deploy triggers a separate run for each resource"
-trace $CLI bundle deploy
+# The two runs deploy concurrently onto one stream and the SDK jitters its poll
+# interval, so their lines arrive in either order: keep just those lines and sort
+# them. The resource-key prefix is what makes them attributable at all.
+$CLI bundle deploy > out.deploy.txt 2>&1
+trace grep '^resources\.job_runs\.' < out.deploy.txt | sort
+rm out.deploy.txt
 a=$(run_id my_run_a)
 b=$(run_id my_run_b)
 

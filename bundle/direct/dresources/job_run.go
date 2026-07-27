@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -189,26 +190,44 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 	req := config.RunNow
 	req.IdempotencyToken = token
 
+	// Read before the call, so a run that had already finished by then can be
+	// recognised as one run-now deduplicated onto; see reportReusedRun.
+	triggeredAt := time.Now()
 	triggered, err := r.client.Jobs.RunNow(ctx, req)
 	if err != nil {
-		return "", nil, err
+		return "", nil, fmt.Errorf("triggering a run of job %d: %w", req.JobId, err)
 	}
 	id := strconv.FormatInt(triggered.RunId, 10)
 
 	// wait_for_completion: false returns as soon as the run is triggered, with no
 	// remote; the validator rejects references to its state for that reason.
 	if config.WaitForCompletion != nil && !*config.WaitForCompletion {
+		// Nothing polls the run on this path, so read it once for the same run page
+		// link the waiting path prints from its first poll.
+		r.logRunPage(ctx, triggered.RunId)
 		return id, nil, nil
 	}
 
 	// The wait belongs in DoCreate: state persists only once it returns, so an
 	// interrupted wait re-triggers RunNow and the idempotency_token rejoins the
 	// same run.
-	remote, err := r.waitForRun(ctx, triggered.RunId, timeout)
+	remote, err := r.waitForRun(ctx, triggered.RunId, timeout, triggeredAt)
 	if err != nil {
 		return "", nil, err
 	}
 	return id, remote, nil
+}
+
+// logRunPage reports where to watch a run that this deploy does not wait for.
+func (r *ResourceJobRun) logRunPage(ctx context.Context, runID int64) {
+	var req jobs.GetRunRequest
+	req.RunId = runID
+	run, err := r.client.Jobs.GetRun(ctx, req)
+	if err != nil {
+		log.Debugf(ctx, "could not read job run %d to report its URL: %v", runID, err)
+		return
+	}
+	logRunLine(ctx, "Run URL: "+workspaceurls.JobRunPageURL(ctx, run.RunPageUrl))
 }
 
 // runTimeout is how long DoCreate waits for the run. The validator parses the
@@ -226,23 +245,49 @@ func runTimeout(config *JobRunState) (time.Duration, error) {
 
 // waitForRun blocks until the run reaches a terminal state and returns its
 // remote view. Only SUCCESS completes the deploy; any other terminal outcome is
-// an error.
-func (r *ResourceJobRun) waitForRun(ctx context.Context, runID int64, timeout time.Duration) (*JobRunRemote, error) {
-	// The wait can last hours, so report progress like `bundle run` does.
-	// prevState carries across poll callbacks.
+// an error. triggeredAt is when run-now was issued, see reportReusedRun.
+func (r *ResourceJobRun) waitForRun(ctx context.Context, runID int64, timeout time.Duration, triggeredAt time.Time) (*JobRunRemote, error) {
+	// The wait can last hours, so report progress like `bundle run` does. Both
+	// carry across poll callbacks; pageURL lets an abandoned wait link the run.
 	var prevState *jobs.RunState
+	var pageURL string
 	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, timeout, func(run *jobs.Run) {
+		pageURL = run.RunPageUrl
 		prevState = logRunProgress(ctx, run, prevState)
 	})
 	if err != nil {
-		return nil, err
+		// Giving up on the wait, whether on timeout or interrupt, does not stop the
+		// run; the next deploy re-issues run-now and the token re-attaches to it.
+		return nil, fmt.Errorf("waiting for job run %d, which keeps running: %w%s", runID, err, runPageLine(ctx, pageURL))
 	}
+	reportReusedRun(ctx, run, triggeredAt)
 	// FAILED, TIMEDOUT, CANCELED, SUCCESS_WITH_FAILURES and SKIPPED all fail the
 	// deploy; the waiter already errored on INTERNAL_ERROR and on timeout.
 	if run.State.ResultState != jobs.RunResultStateSuccess {
 		return nil, r.runFailedError(ctx, run)
 	}
 	return makeJobRunRemote(ctx, run), nil
+}
+
+// reportReusedRun tells the user when run-now deduplicated onto a run that had
+// already finished before this deploy asked for one, which happens whenever the
+// configuration matches a run triggered earlier (the Jobs API keeps each
+// idempotency_token for ~60 days). The deploy then reports that run's outcome
+// without anything having executed, so say so rather than imply a fresh run.
+func reportReusedRun(ctx context.Context, run *jobs.Run, triggeredAt time.Time) {
+	if !reusedEarlierRun(run, triggeredAt) {
+		return
+	}
+	logRunLine(ctx, fmt.Sprintf("Reusing run %d, which already ran this configuration; set rerun_token to a new value to trigger a fresh run", run.RunId))
+}
+
+// reusedEarlierRun reports whether the run had finished before we asked for one,
+// which no run we just triggered can have done, short of clock skew larger than
+// the run's own duration. Both sides are epoch milliseconds, the resolution of
+// end_time: a run finishing within the same millisecond we triggered it is the
+// run we triggered, not an earlier one.
+func reusedEarlierRun(run *jobs.Run, triggeredAt time.Time) bool {
+	return run.EndTime > 0 && run.EndTime < triggeredAt.UnixMilli()
 }
 
 // runFailedError reports why the run did not succeed, naming each failed task
@@ -259,39 +304,58 @@ func (r *ResourceJobRun) runFailedError(ctx context.Context, run *jobs.Run) erro
 		fmt.Fprintf(&msg, ": %s", run.State.StateMessage)
 	}
 	for _, task := range run.Tasks {
-		if task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
-			task.State.ResultState == jobs.RunResultStateFailed {
+		if taskFailed(task) {
 			fmt.Fprintf(&msg, "\ntask %q: %s", task.TaskKey, r.taskError(ctx, task))
 		}
 	}
-	if run.RunPageUrl != "" {
-		fmt.Fprintf(&msg, "\nrun page: %s", workspaceurls.JobRunPageURL(ctx, run.RunPageUrl))
-	}
+	msg.WriteString(runPageLine(ctx, run.RunPageUrl))
 	// A plain redeploy dedupes back onto this terminal run, even once the job is
 	// fixed, so name the way out.
 	msg.WriteString("\nset rerun_token to a new value to trigger a fresh run")
 	return errors.New(msg.String())
 }
 
+// taskFailed reports whether a task caused the run to fail rather than being a
+// casualty of it: tasks left SKIPPED, CANCELED or UPSTREAM_FAILED by an earlier
+// failure add noise without naming the problem.
+func taskFailed(task jobs.RunTask) bool {
+	// State is deprecated in favour of Status, so it may be absent.
+	if task.State == nil {
+		return false
+	}
+	return task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
+		task.State.ResultState == jobs.RunResultStateFailed ||
+		task.State.ResultState == jobs.RunResultStateTimedout
+}
+
 // taskError returns the message the task reported. The run page link covers the
-// stack trace.
+// stack trace. Only called for a task taskFailed accepted, so State is set.
 func (r *ResourceJobRun) taskError(ctx context.Context, task jobs.RunTask) string {
+	var reported string
 	output, err := r.client.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{RunId: task.RunId})
 	if err != nil {
 		log.Debugf(ctx, "could not read output of task %s: %v", task.TaskKey, err)
-		return string(task.State.LifeCycleState)
+	} else {
+		reported = output.Error
 	}
-	return output.Error
+	// Not every task type reports an error through GetRunOutput, so fall back to
+	// what the run itself says about the task.
+	return cmp.Or(reported, task.State.StateMessage, string(task.State.ResultState), string(task.State.LifeCycleState))
+}
+
+// runPageLine returns a line linking the run page, or an empty string when the
+// URL is unknown.
+func runPageLine(ctx context.Context, rawURL string) string {
+	if rawURL == "" {
+		return ""
+	}
+	return "\nrun page: " + workspaceurls.JobRunPageURL(ctx, rawURL)
 }
 
 // logRunProgress mirrors `bundle run`'s monitor: the run page URL once, then
-// each state change. It returns the state to remember for the next poll and
-// writes through cmdIO when one is attached.
-//
-// Apply logs concurrent deploys to a shared writer, so each callback emits its
-// lines in a single write and parallel runs stay order-independent.
+// each state change. It returns the state to remember for the next poll.
 func logRunProgress(ctx context.Context, run *jobs.Run, prev *jobs.RunState) *jobs.RunState {
-	if !cmdio.HasIO(ctx) || run.State == nil {
+	if run.State == nil {
 		return prev
 	}
 	if prev != nil &&
@@ -299,21 +363,30 @@ func logRunProgress(ctx context.Context, run *jobs.Run, prev *jobs.RunState) *jo
 		prev.ResultState == run.State.ResultState {
 		return prev
 	}
-	event := &progress.JobProgressEvent{
+	if prev == nil && run.RunPageUrl != "" {
+		logRunLine(ctx, "Run URL: "+workspaceurls.JobRunPageURL(ctx, run.RunPageUrl))
+	}
+	logRunLine(ctx, (&progress.JobProgressEvent{
 		Timestamp: time.Now(),
 		JobId:     run.JobId,
 		RunId:     run.RunId,
 		RunName:   run.RunName,
 		State:     *run.State,
-	}
-	msg := event.String()
-	if prev == nil && run.RunPageUrl != "" {
-		// JobRunUrlEvent.String() already ends in a newline.
-		msg = progress.NewJobRunUrlEvent(workspaceurls.JobRunPageURL(ctx, run.RunPageUrl)).String() + msg
-	}
-	cmdio.LogString(ctx, msg)
-	log.Info(ctx, event.String())
+	}).String())
 	return run.State
+}
+
+// logRunLine reports one line about a run to the user and the log. Deploys run
+// concurrently onto a shared writer, so the line is tagged with the resource key
+// (the same one the deploy's errors name) to keep parallel runs apart.
+func logRunLine(ctx context.Context, msg string) {
+	if identity, ok := GetCreateIdentity(ctx); ok {
+		msg = identity.ResourceKey + ": " + msg
+	}
+	log.Info(ctx, msg)
+	if cmdio.HasIO(ctx) {
+		cmdio.LogString(ctx, msg)
+	}
 }
 
 // A run is immutable: any config change recreates the resource as a fresh

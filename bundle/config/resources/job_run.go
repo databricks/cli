@@ -16,6 +16,10 @@ import (
 // JobRun is the bundle config for a triggered job run, described by the same
 // fields as the Jobs RunNow request (embedded). It re-triggers when its own
 // config changes; the job it targets is pinned by a stable job_id.
+//
+// A run is also re-triggered when the workspace no longer has the tracked run,
+// which happens once it ages out of run history (~60 days), so a long-lived
+// bundle re-runs the job periodically.
 type JobRun struct {
 	BaseResource
 	jobs.RunNow

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -22,6 +23,12 @@ func (v *validateJobRuns) Name() string {
 }
 
 func (v *validateJobRuns) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// checkStateReferences walks the whole configuration, so skip it entirely for
+	// the majority of bundles that declare no job runs.
+	if len(b.Config.Resources.JobRuns) == 0 {
+		return nil
+	}
+
 	d := pathDiags{b: b}
 
 	for name, jr := range b.Config.Resources.JobRuns {
@@ -38,17 +45,34 @@ func (v *validateJobRuns) Apply(_ context.Context, b *bundle.Bundle) diag.Diagno
 				"idempotency_token is computed automatically and must not be set in bundle configuration; set `rerun_token` to force a new run")
 		}
 
-		if jr.Timeout != "" {
-			if _, err := time.ParseDuration(jr.Timeout); err != nil {
-				d.errorf(prefix+".timeout",
-					"timeout must be a duration such as \"30m\" or \"2h\": %s", err)
-			}
-		}
+		checkTimeout(jr, prefix, &d)
 	}
 
 	v.checkStateReferences(b, &d)
 
 	return d.sorted()
+}
+
+// checkTimeout rejects a timeout the deploy cannot honor. Zero and negative
+// durations parse but mean neither "no timeout" nor the documented default: the
+// SDK waiter reads zero as its own 20 minute default and anything negative as
+// "poll forever".
+//
+// A timeout alongside wait_for_completion: false is left alone: it is ignored
+// rather than misapplied, and targets routinely override one without the other.
+func checkTimeout(jr *resources.JobRun, prefix string, d *pathDiags) {
+	if jr.Timeout == "" {
+		return
+	}
+	timeout, err := time.ParseDuration(jr.Timeout)
+	if err != nil {
+		d.errorf(prefix+".timeout",
+			"timeout must be a duration such as \"30m\" or \"2h\": %s", err)
+		return
+	}
+	if timeout <= 0 {
+		d.errorf(prefix+".timeout", "timeout must be positive, got %q", jr.Timeout)
+	}
 }
 
 // checkStateReferences rejects references to the `state` of a run configured
@@ -76,11 +100,11 @@ func (v *validateJobRuns) checkStateReferences(b *bundle.Bundle, d *pathDiags) {
 	})
 }
 
-// jobRunStateReference returns the run name when ref points into a job run's
-// `state`, e.g. "resources.job_runs.nightly.state.result_state".
+// jobRunStateReference returns the run name when ref points at a job run's
+// `state` or into it, e.g. "resources.job_runs.nightly.state.result_state".
 func jobRunStateReference(ref string) (string, bool) {
 	parts := strings.Split(ref, ".")
-	if len(parts) < 5 || parts[0] != "resources" || parts[1] != "job_runs" || parts[3] != "state" {
+	if len(parts) < 4 || parts[0] != "resources" || parts[1] != "job_runs" || parts[3] != "state" {
 		return "", false
 	}
 	return parts[2], true

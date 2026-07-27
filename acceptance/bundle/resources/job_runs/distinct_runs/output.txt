@@ -1,16 +1,12 @@
 
 === deploy triggers a separate run for each resource
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-distinct-runs/default/files...
-Deploying resources...
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
-[TIMESTAMP] "my-job" RUNNING
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
-[TIMESTAMP] "my-job" RUNNING
-[TIMESTAMP] "my-job" TERMINATED SUCCESS
-[TIMESTAMP] "my-job" TERMINATED SUCCESS
-Updating deployment state...
-Deployment complete!
+>>> grep ^resources\.job_runs\.
+resources.job_runs.my_run_a: [TIMESTAMP] "my-job" RUNNING
+resources.job_runs.my_run_a: [TIMESTAMP] "my-job" TERMINATED SUCCESS
+resources.job_runs.my_run_a: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+resources.job_runs.my_run_b: [TIMESTAMP] "my-job" RUNNING
+resources.job_runs.my_run_b: [TIMESTAMP] "my-job" TERMINATED SUCCESS
+resources.job_runs.my_run_b: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 === two run-now requests were made; each resource stored its own run id
 >>> print_requests.py //jobs/run-now

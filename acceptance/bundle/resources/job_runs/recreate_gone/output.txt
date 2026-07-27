@@ -3,9 +3,9 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-recreate-gone/default/files...
 Deploying resources...
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
-[TIMESTAMP] "my-job" RUNNING
-[TIMESTAMP] "my-job" TERMINATED SUCCESS
+resources.job_runs.my_run: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+resources.job_runs.my_run: [TIMESTAMP] "my-job" RUNNING
+resources.job_runs.my_run: [TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 
@@ -16,9 +16,9 @@ Deployment complete!
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-recreate-gone/default/files...
 Deploying resources...
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
-[TIMESTAMP] "my-job" RUNNING
-[TIMESTAMP] "my-job" TERMINATED SUCCESS
+resources.job_runs.my_run: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+resources.job_runs.my_run: [TIMESTAMP] "my-job" RUNNING
+resources.job_runs.my_run: [TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 

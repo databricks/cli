@@ -139,7 +139,7 @@ func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	_, err := r.waitForRun(t.Context(), 123, time.Minute)
+	_, err := r.waitForRun(t.Context(), 123, time.Minute, time.Now())
 
 	// Only SUCCESS completes the deploy; a FAILED result fails it.
 	require.ErrorContains(t, err, "did not succeed: FAILED: task failed")
@@ -177,7 +177,7 @@ func TestJobRunWaitReportsFailedTask(t *testing.T) {
 	require.NoError(t, err)
 
 	r := (&ResourceJobRun{}).New(client)
-	_, err = r.waitForRun(t.Context(), 123, time.Minute)
+	_, err = r.waitForRun(t.Context(), 123, time.Minute, time.Now())
 
 	// The error names the failing task and the message it reported.
 	require.ErrorContains(t, err, `task "main": notebook not found`)
@@ -191,7 +191,7 @@ func TestJobRunWaitFailsOnSkipped(t *testing.T) {
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	_, err := r.waitForRun(t.Context(), 123, time.Minute)
+	_, err := r.waitForRun(t.Context(), 123, time.Minute, time.Now())
 
 	require.ErrorContains(t, err, "did not succeed: SKIPPED")
 }
@@ -203,7 +203,7 @@ func TestJobRunWaitSucceeds(t *testing.T) {
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	remote, err := r.waitForRun(t.Context(), 123, time.Minute)
+	remote, err := r.waitForRun(t.Context(), 123, time.Minute, time.Now())
 
 	require.NoError(t, err)
 	require.NotNil(t, remote.State)
@@ -216,10 +216,52 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	_, err := r.waitForRun(t.Context(), 123, time.Minute)
+	_, err := r.waitForRun(t.Context(), 123, time.Minute, time.Now())
 
 	// The SDK waiter errors on INTERNAL_ERROR, ahead of the result check.
 	require.Error(t, err)
+}
+
+func TestJobRunWaitTimesOutNamingTheRun(t *testing.T) {
+	client := jobRunClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning})
+
+	r := (&ResourceJobRun{}).New(client)
+	_, err := r.waitForRun(t.Context(), 123, time.Millisecond, time.Now())
+
+	// Abandoning the wait leaves the run going, so the error has to name it.
+	require.ErrorContains(t, err, "waiting for job run 123, which keeps running")
+	require.ErrorContains(t, err, "timed out")
+}
+
+func TestReusedEarlierRun(t *testing.T) {
+	// Sub-millisecond component on purpose: end_time only has millisecond
+	// resolution, so comparing a truncated end_time against the full timestamp
+	// reports every run triggered mid-millisecond as an earlier one.
+	triggeredAt := time.UnixMilli(1_700_000_000_000).Add(400 * time.Microsecond)
+	millis := triggeredAt.UnixMilli()
+
+	// A run that finished earlier is one run-now deduplicated onto.
+	assert.True(t, reusedEarlierRun(&jobs.Run{EndTime: millis - 1}, triggeredAt))
+	// One finishing in the same millisecond is the run we just triggered.
+	assert.False(t, reusedEarlierRun(&jobs.Run{EndTime: millis}, triggeredAt))
+	assert.False(t, reusedEarlierRun(&jobs.Run{EndTime: millis + 1}, triggeredAt))
+	// A run that is still going has no end_time.
+	assert.False(t, reusedEarlierRun(&jobs.Run{}, triggeredAt))
+}
+
+func TestJobRunTimeout(t *testing.T) {
+	unset, err := runTimeout(&JobRunState{})
+	require.NoError(t, err)
+	assert.Equal(t, defaultJobRunTimeout, unset)
+
+	set, err := runTimeout(&JobRunState{Timeout: "90m"})
+	require.NoError(t, err)
+	assert.Equal(t, 90*time.Minute, set)
+
+	// The validator parses the value up front, so reaching this means hand-written
+	// state rather than bad configuration.
+	_, err = runTimeout(&JobRunState{Timeout: "soon"})
+	require.ErrorContains(t, err, `invalid timeout "soon"`)
 }
 
 // Reports RUNNING before TERMINATED, exercising the poll loop (the other tests
@@ -250,7 +292,7 @@ func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	require.NoError(t, err)
 
 	r := (&ResourceJobRun{}).New(client)
-	remote, err := r.waitForRun(t.Context(), 123, time.Minute)
+	remote, err := r.waitForRun(t.Context(), 123, time.Minute, time.Now())
 	require.NoError(t, err)
 
 	// SUCCESS is only reachable by polling past the RUNNING reads.

@@ -9,9 +9,9 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
 Deploying resources...
-Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
-[TIMESTAMP] "my-job" RUNNING
-[TIMESTAMP] "my-job" TERMINATED SUCCESS
+resources.job_runs.my_run: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+resources.job_runs.my_run: [TIMESTAMP] "my-job" RUNNING
+resources.job_runs.my_run: [TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 
