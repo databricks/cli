@@ -1,6 +1,13 @@
 # The fuzzer generates its own configs, so drop the inherited INPUT_CONFIG matrix.
 EnvMatrix.INPUT_CONFIG = []
 
+# Local only, unlike the rest of the invariant suite. Against a real workspace each seed's
+# deploy/migrate/plan/destroy round trip takes minutes, so it trips the script's per-seed
+# SEED_TIMEOUT and is reported as a hang. It would also add no signal: drift checking is off
+# unless FUZZ_CHECK_DRIFT is set, which the cloud run does not set, leaving it to re-assert
+# the same no-panic property over the same seeds that the local run already covers.
+Cloud = false
+
 # Raise the inherited 10m cap so the nightly FUZZ_TIME_BUDGET (script) has room plus the
 # final seed's tail. The committed run (5 seeds, no drift) finishes in seconds regardless.
 Timeout = '20m'
