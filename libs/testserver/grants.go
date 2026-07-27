@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -11,12 +12,6 @@ import (
 
 func grantsKey(securableType, fullName string) string {
 	return strings.ToUpper(securableType) + ":" + fullName
-}
-
-// normalizePrivilege mirrors UC: privilege names are uppercased and spaces are
-// converted to underscores (e.g. "use schema" -> "USE_SCHEMA").
-func normalizePrivilege(p catalog.Privilege) catalog.Privilege {
-	return catalog.Privilege(strings.ToUpper(strings.ReplaceAll(string(p), " ", "_")))
 }
 
 func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string) Response {
@@ -49,10 +44,10 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	for _, change := range request.Changes {
 		addSet := make(map[catalog.Privilege]bool, len(change.Add))
 		for _, p := range change.Add {
-			addSet[normalizePrivilege(p)] = true
+			addSet[p] = true
 		}
 		for _, p := range change.Remove {
-			if addSet[normalizePrivilege(p)] {
+			if addSet[p] {
 				return Response{
 					StatusCode: http.StatusBadRequest,
 					Body: map[string]string{
@@ -75,25 +70,21 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 
 		// Remove privileges
 		for _, privilege := range change.Remove {
-			if normalizePrivilege(privilege) == catalog.PrivilegeAllPrivileges {
+			if privilege == catalog.PrivilegeAllPrivileges {
 				principalPrivs[change.Principal] = make(map[catalog.Privilege]bool)
 			} else {
-				delete(principalPrivs[change.Principal], normalizePrivilege(privilege))
+				delete(principalPrivs[change.Principal], privilege)
 			}
 		}
 
-		// Add privileges. UC uppercases privilege names and converts spaces to
-		// underscores, so mirror that here (e.g. "use schema" -> "USE_SCHEMA").
+		// Add privileges
 		for _, privilege := range change.Add {
-			principalPrivs[change.Principal][normalizePrivilege(privilege)] = true
+			principalPrivs[change.Principal][privilege] = true
 		}
 	}
 
-	// Convert back to assignments.
-	// Note order of assignments AND privileges is randomized due to map iteration.
-	// This is intentional: UC does not guarantee a stable order (assignment order
-	// matches azure backend behavior; privilege order is unspecified across clouds),
-	// and the CLI must not rely on it.
+	// Convert back to assignments with sorted privileges
+	// Note order of assignments is randomized due to map. This is intentional, azure backend behaves the same way
 	// (deco env run -i -n azure-prod-ucws -- go test ./acceptance -run ^TestAccept$/^bundle$/^resources$/^grants$/^schemas$/^out_of_band_principal$/direct -count=10 -failfast -timeout=1h)
 
 	var assignments []catalog.PrivilegeAssignment
@@ -102,10 +93,14 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 			continue
 		}
 
+		// Collect and sort privileges directly
 		privileges := make([]catalog.Privilege, 0, len(privs))
 		for priv := range privs {
 			privileges = append(privileges, priv)
 		}
+		slices.SortFunc(privileges, func(a, b catalog.Privilege) int {
+			return strings.Compare(string(a), string(b))
+		})
 
 		assignments = append(assignments, catalog.PrivilegeAssignment{
 			Principal:  principal,

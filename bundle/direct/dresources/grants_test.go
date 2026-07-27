@@ -82,21 +82,12 @@ func TestNormalizeAssignments(t *testing.T) {
 		expected []catalog.PrivilegeAssignment
 	}{
 		{
-			name: "uppercases and sorts privileges",
+			name: "sorts privileges",
 			input: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{"use_schema", "apply_tag"}},
+				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeUseSchema, catalog.PrivilegeApplyTag}},
 			},
 			expected: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{"APPLY_TAG", "USE_SCHEMA"}},
-			},
-		},
-		{
-			name: "converts spaces to underscores",
-			input: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{"create table", "USE SCHEMA"}},
-			},
-			expected: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{"CREATE_TABLE", "USE_SCHEMA"}},
+				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag, catalog.PrivilegeUseSchema}},
 			},
 		},
 		{
@@ -110,17 +101,6 @@ func TestNormalizeAssignments(t *testing.T) {
 			},
 			expected: []catalog.PrivilegeAssignment{
 				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeAllPrivileges}},
-			},
-		},
-		{
-			// Distinct spellings collide only after normalization, so dedupe
-			// here; MergeGrants deduplicates the raw config strings earlier.
-			name: "deduplicates privileges that collide after normalization",
-			input: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{"USE SCHEMA", "use_schema", "USE_SCHEMA"}},
-			},
-			expected: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{"USE_SCHEMA"}},
 			},
 		},
 	}

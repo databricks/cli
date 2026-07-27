@@ -48,8 +48,8 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 		return nil, fmt.Errorf("expected *[]catalog.PrivilegeAssignment, got %T", inputConfig)
 	}
 
-	// Normalize the same way the backend does (uppercase privileges, sort) so
-	// the config and the value read back by DoRead compare equal.
+	// Normalize the same way as DoRead (sort, collapse ALL_PRIVILEGES) so the
+	// config and the value read back compare equal.
 	normalizeAssignments(*grantsPtr)
 
 	return &structvar.StructVar{
@@ -221,42 +221,25 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 		}
 		pageToken = resp.NextPageToken
 	}
-	// The backend does not guarantee a stable privilege order across reads, so
-	// normalize the same way as the config side to avoid false drift.
+	// Normalize the same way as the config side (sort, collapse ALL_PRIVILEGES)
+	// so the two compare equal and we don't report false drift.
 	normalizeAssignments(assignments)
 	return assignments, nil
 }
 
-// normalizePrivilege matches the backend's normalization: privileges are
-// uppercased and spaces are converted to underscores (e.g. "use schema" ->
-// "USE_SCHEMA"). Mirrors the Terraform provider's permissions.NormalizePrivilege.
-func normalizePrivilege(p catalog.Privilege) catalog.Privilege {
-	return catalog.Privilege(strings.ToUpper(strings.ReplaceAll(string(p), " ", "_")))
-}
-
-// normalizeAssignments normalizes each assignment's privileges in place so that
-// config and remote state compare equal. It uppercases privilege names, sorts
-// them (the backend does not guarantee a stable order), and collapses a
-// principal holding ALL_PRIVILEGES down to just ALL_PRIVILEGES. The collapse is
-// applied to both sides, so config granting only ALL_PRIVILEGES matches a
-// backend that reports ALL_PRIVILEGES plus the concrete privileges it implies,
-// instead of reporting a perpetual update.
+// normalizeAssignments sorts each assignment's privileges (the backend sorts
+// them, so we match that) and collapses a principal holding ALL_PRIVILEGES down
+// to just ALL_PRIVILEGES. The collapse is applied to both the config and read
+// sides, so config granting only ALL_PRIVILEGES matches a backend that reports
+// ALL_PRIVILEGES plus the concrete privileges it implies, instead of reporting a
+// perpetual update.
 func normalizeAssignments(assignments []catalog.PrivilegeAssignment) {
 	for i := range assignments {
-		for j := range assignments[i].Privileges {
-			assignments[i].Privileges[j] = normalizePrivilege(assignments[i].Privileges[j])
-		}
 		if slices.Contains(assignments[i].Privileges, catalog.PrivilegeAllPrivileges) {
 			assignments[i].Privileges = []catalog.Privilege{catalog.PrivilegeAllPrivileges}
 			continue
 		}
 		slices.Sort(assignments[i].Privileges)
-		// Dedupe here rather than relying on MergeGrants: it deduplicates the raw
-		// config strings before normalization, so distinct spellings of the same
-		// privilege (e.g. "use schema" and "USE_SCHEMA") only collide once
-		// normalized. Without this the config side keeps a duplicate the backend
-		// read side never returns, causing perpetual drift.
-		assignments[i].Privileges = slices.Compact(assignments[i].Privileges)
 	}
 }
 
