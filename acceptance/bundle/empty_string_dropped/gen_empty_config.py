@@ -56,14 +56,23 @@ TERRAFORM_ERRORS = {
     },
 }
 
-# Map resource type (plural, as in databricks.yml) to its create-request path.
+# Map resource type (plural, as in databricks.yml) to a substring that uniquely
+# identifies its create-request path (matched against the recorded request path).
 CREATE_PATHS = {
     "clusters": "clusters/create",
     "jobs": "jobs/create",
-    "pipelines": "pipelines",
-    "apps": "apps",
-    "instance_pools": "instance-pools/create",
-    "sql_warehouses": "warehouses",
+    "pipelines": "/pipelines",
+    "sql_warehouses": "/warehouses",
+    "models": "/mlflow/registered-models",
+    "experiments": "/experiments/create",
+    "registered_models": "/unity-catalog/models",
+    "schemas": "/unity-catalog/schemas",
+    "volumes": "/unity-catalog/volumes",
+    "catalogs": "/unity-catalog/catalogs",
+    "external_locations": "/unity-catalog/external-locations",
+    "database_instances": "/database/instances",
+    "vector_search_endpoints": "/vector-search/endpoints",
+    "model_serving_endpoints": "/serving-endpoints",
 }
 
 

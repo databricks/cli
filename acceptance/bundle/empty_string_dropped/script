@@ -9,11 +9,18 @@
 # out.empty_fields_dropped_by_direct.txt grows toward it, and the *_only.txt
 # files show the remaining gap.
 
+# Record only resource-create endpoints; workspace file-upload/mkdir/delete
+# requests are noisy and non-deterministic.
+RECORD="//clusters/create //jobs/create //pipelines //sql/warehouses \
+//mlflow/registered-models/create //mlflow/experiments/create \
+//unity-catalog/models //unity-catalog/schemas //unity-catalog/volumes \
+//database/instances ^//workspace ^//workspace-files"
+
 trace DATABRICKS_BUNDLE_ENGINE=terraform errcode $CLI bundle deploy -t tf
-print_requests.py //clusters/create //jobs/create //pipelines //warehouses --sort > out.requests.terraform.json
+print_requests.py $RECORD --sort > out.requests.terraform.json
 
 trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy -t direct
-print_requests.py //clusters/create //jobs/create //pipelines //warehouses --sort > out.requests.direct.json
+print_requests.py $RECORD --sort > out.requests.direct.json
 
 $TESTDIR/dropped_fields.py
 

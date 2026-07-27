@@ -1,5 +1,30 @@
 {
   "method": "POST",
+  "path": "/api/2.0/database/instances",
+  "body": {
+    "capacity": "CU_1",
+    "name": "test-db-instance",
+    "usage_policy_id": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/mlflow/experiments/create",
+  "body": {
+    "artifact_location": "",
+    "name": "/Users/[USERNAME]/test-experiment"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/mlflow/registered-models/create",
+  "body": {
+    "description": "",
+    "name": "test-model"
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.0/pipelines",
   "body": {
     "budget_policy_id": "",
@@ -47,6 +72,44 @@
     "policy_id": "",
     "single_user_name": "",
     "spark_version": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/models",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "created_by": "",
+    "full_name": "",
+    "metastore_id": "",
+    "name": "test-registered-model",
+    "owner": "",
+    "schema_name": "default",
+    "storage_location": "",
+    "updated_by": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "name": "test-schema",
+    "storage_root": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "name": "test-volume",
+    "schema_name": "default",
+    "storage_location": "",
+    "volume_type": "MANAGED"
   }
 }
 {

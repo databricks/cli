@@ -12,6 +12,25 @@ Updating deployment state...
 Deployment complete!
 
 === Dropped by terraform:
+/experiments/create artifact_location
+/mlflow/registered-models description
+/pipelines budget_policy_id
+/pipelines name
+/pipelines serverless_compute_id
+/pipelines usage_policy_id
+/unity-catalog/models comment
+/unity-catalog/models created_by
+/unity-catalog/models full_name
+/unity-catalog/models metastore_id
+/unity-catalog/models owner
+/unity-catalog/models storage_location
+/unity-catalog/models updated_by
+/unity-catalog/schemas comment
+/unity-catalog/schemas storage_root
+/unity-catalog/volumes comment
+/unity-catalog/volumes storage_location
+/unity-catalog/volumes volume_path
+/warehouses instance_profile_arn
 clusters/create cluster_name
 clusters/create node_type_id
 clusters/create policy_id
@@ -21,15 +40,29 @@ jobs/create description
 jobs/create name
 jobs/create parent_path
 jobs/create usage_policy_id
-pipelines budget_policy_id
-pipelines name
-pipelines serverless_compute_id
-pipelines usage_policy_id
-warehouses instance_profile_arn
 
 === Dropped by direct:
+/unity-catalog/volumes volume_path
 
 === Dropped by terraform only (direct still sends these):
+/experiments/create artifact_location
+/mlflow/registered-models description
+/pipelines budget_policy_id
+/pipelines name
+/pipelines serverless_compute_id
+/pipelines usage_policy_id
+/unity-catalog/models comment
+/unity-catalog/models created_by
+/unity-catalog/models full_name
+/unity-catalog/models metastore_id
+/unity-catalog/models owner
+/unity-catalog/models storage_location
+/unity-catalog/models updated_by
+/unity-catalog/schemas comment
+/unity-catalog/schemas storage_root
+/unity-catalog/volumes comment
+/unity-catalog/volumes storage_location
+/warehouses instance_profile_arn
 clusters/create cluster_name
 clusters/create node_type_id
 clusters/create policy_id
@@ -39,10 +72,5 @@ jobs/create description
 jobs/create name
 jobs/create parent_path
 jobs/create usage_policy_id
-pipelines budget_policy_id
-pipelines name
-pipelines serverless_compute_id
-pipelines usage_policy_id
-warehouses instance_profile_arn
 
 === Dropped by direct only:

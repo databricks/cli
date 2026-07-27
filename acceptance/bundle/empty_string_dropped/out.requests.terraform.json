@@ -1,5 +1,28 @@
 {
   "method": "POST",
+  "path": "/api/2.0/database/instances",
+  "body": {
+    "capacity": "CU_1",
+    "name": "test-db-instance",
+    "usage_policy_id": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/mlflow/experiments/create",
+  "body": {
+    "name": "/Users/[USERNAME]/test-experiment"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/mlflow/registered-models/create",
+  "body": {
+    "name": "test-model"
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
@@ -38,6 +61,33 @@
     "autotermination_minutes": 60,
     "num_workers": 1,
     "spark_version": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/models",
+  "body": {
+    "catalog_name": "main",
+    "name": "test-registered-model",
+    "schema_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "name": "test-schema"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "main",
+    "name": "test-volume",
+    "schema_name": "default",
+    "volume_type": "MANAGED"
   }
 }
 {

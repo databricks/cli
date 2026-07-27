@@ -5,12 +5,10 @@ bundle:
 # acceptance/bundle/invariant/configs. gen_empty_config.py overlays every
 # settable optional string field = "" onto each resource (skipping fields
 # already set here, which are the required/meaningful ones) and writes the merged
-# databricks.yml plus empty_fields.txt. Edit this file (not databricks.yml) and
-# rerun the generator.
+# databricks.yml plus empty_fields.txt.
 #
 # Only resources that deploy on BOTH engines belong here: a single resource's
-# deploy failure aborts the whole bundle and poisons the comparison. That rules
-# out instance_pools (terraform: direct-only) among others.
+# deploy failure aborts the whole bundle and poisons the comparison.
 resources:
   clusters:
     my_cluster:
@@ -28,13 +26,41 @@ resources:
 
   sql_warehouses:
     my_warehouse:
-      # name is required (client-side validation), so it stays set and is not
-      # part of the empty-string overlay.
       name: test-warehouse
       cluster_size: 2X-Small
       auto_stop_mins: 10
       max_num_clusters: 1
       min_num_clusters: 1
+
+  models:
+    my_model:
+      name: test-model
+
+  experiments:
+    my_experiment:
+      name: /Users/${workspace.current_user.userName}/test-experiment
+
+  registered_models:
+    my_registered_model:
+      name: test-registered-model
+      catalog_name: main
+      schema_name: default
+
+  schemas:
+    my_schema:
+      catalog_name: main
+      name: test-schema
+
+  volumes:
+    my_volume:
+      name: test-volume
+      catalog_name: main
+      schema_name: default
+
+  database_instances:
+    my_db_instance:
+      name: test-db-instance
+      capacity: CU_1
 
 targets:
   tf:
