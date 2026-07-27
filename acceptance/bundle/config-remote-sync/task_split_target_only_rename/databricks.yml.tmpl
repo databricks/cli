@@ -1,0 +1,32 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# Two targets. dev_only_task exists ONLY in the targets.dev override block.
+# Renaming it (remove+add) must keep the recreated task in targets.dev, reusing
+# the removed task's slot. If it were relocated to the top-level block it would
+# start applying to prod too — a silent multi-target semantics change.
+resources:
+  jobs:
+    my_job:
+      tasks:
+        - task_key: top_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/top
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        my_job:
+          tasks:
+            - task_key: dev_only_task
+              run_if: ALL_SUCCESS
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/dev
+  prod:
+    resources:
+      jobs:
+        my_job:
+          max_concurrent_runs: 5

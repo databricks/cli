@@ -1,0 +1,63 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+
+apply_edit() {
+  # $1 = job name, rest = python operating on the job settings (task list in r)
+  local name="$1"; shift
+  local id
+  id="$(read_id.py "$name")"
+  edit_resource.py jobs "$id" <<PY
+$*
+PY
+}
+
+# Merged+sorted order per job is shown in comments; edits target specific tasks.
+# job_index: top-level [bbb,ccc]+target [aaa] -> aaa,bbb,ccc. Edit bbb (top idx 0).
+apply_edit job_index '
+for t in r["tasks"]:
+    if t["task_key"] == "bbb_task": t["run_if"] = "ALL_DONE"
+'
+# job_local: top-level [zzz]+target [aaa_tgt] -> aaa_tgt,zzz. Edit aaa_tgt (target).
+apply_edit job_local '
+for t in r["tasks"]:
+    if t["task_key"] == "aaa_tgt": t["run_if"] = "ALL_DONE"
+'
+# job_nonzero: top-level [mmm,nnn]+target [aaa] -> aaa,mmm,nnn. Edit nnn (top idx 1).
+apply_edit job_nonzero '
+for t in r["tasks"]:
+    if t["task_key"] == "nnn_task": t["run_if"] = "ALL_DONE"
+'
+# job_mixed: top-level [ppp,rrr]+target [aaa]. Remove ppp (top idx 0), edit rrr.
+apply_edit job_mixed '
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "ppp_task"]
+for t in r["tasks"]:
+    if t["task_key"] == "rrr_task": t["run_if"] = "ALL_DONE"
+'
+# job_xremove: top-level [bbb,ccc]+target [aaa,eee]. Remove bbb (top) and eee (target).
+apply_edit job_xremove '
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] not in ("bbb_task", "eee_task")]
+'
+# job_xrename: top-level [mmm,nnn]+target [aaa]. Rename mmm->ppp (top) and aaa->qqq (target).
+apply_edit job_xrename '
+for t in r["tasks"]:
+    if t["task_key"] == "mmm_task": t["task_key"] = "ppp_task"
+    if t["task_key"] == "aaa_task": t["task_key"] = "qqq_task"
+'
+
+title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

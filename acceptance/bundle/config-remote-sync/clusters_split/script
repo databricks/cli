@@ -1,0 +1,46 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+
+# job_clusters (keyed): top-level [aaa,bbb]+target [ccc]. Edit ccc (target block).
+job_id="$(read_id.py my_job)"
+edit_resource.py jobs "$job_id" <<PY
+for c in r.get("job_clusters", []):
+    if c.get("job_cluster_key") == "ccc_cluster":
+        c["new_cluster"]["num_workers"] = 5
+PY
+
+# pipeline_target (positional): top-level [default]+target [maintenance]. Edit
+# maintenance (merged index 1, target-local index 0) -> must patch target block.
+pt_id="$(read_id.py pipeline_target)"
+edit_resource.py pipelines "$pt_id" <<PY
+for c in r.get("clusters", []):
+    if c.get("label") == "maintenance":
+        c["num_workers"] = 3
+PY
+
+# pipeline_index (positional): top-level [default,maintenance]+target [default].
+# Edit maintenance (top-level block index 1) -> must patch top-level block.
+pi_id="$(read_id.py pipeline_index)"
+edit_resource.py pipelines "$pi_id" <<PY
+for c in r.get("clusters", []):
+    if c.get("label") == "maintenance":
+        c["num_workers"] = 7
+PY
+
+title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

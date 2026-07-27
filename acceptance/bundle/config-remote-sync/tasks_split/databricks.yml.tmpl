@@ -1,0 +1,126 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# Each job below defines tasks partly in the top-level block and partly in the
+# targets.default override block. MergeJobTasks merges and sorts them by
+# task_key into one in-memory sequence, but each block is patched separately in
+# the YAML, so block-aware indexing must resolve edits to the right block.
+# Multiple split jobs in one bundle also prove block anchors are grouped per
+# resource, not globally across the file.
+resources:
+  jobs:
+    # target_index: edit a top-level task (bbb) that is not first after the sort.
+    job_index:
+      tasks:
+        - task_key: bbb_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/bbb
+        - task_key: ccc_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/ccc
+
+    # target_local: edit a target-block task (aaa) while a top-level task (zzz)
+    # sits at the same block-local index 0 and also has run_if.
+    job_local:
+      tasks:
+        - task_key: zzz_top
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/zzz
+
+    # nonzero_index: edit the second task of the top-level block (nnn).
+    job_nonzero:
+      tasks:
+        - task_key: mmm_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/mmm
+        - task_key: nnn_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nnn
+
+    # mixed_ops: remove a top-level task (ppp) and edit another (rrr) whose index
+    # shifts after the removal.
+    job_mixed:
+      tasks:
+        - task_key: ppp_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/ppp
+        - task_key: rrr_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/rrr
+
+    # crossblock_removes: remove one task from each block in a single sync.
+    job_xremove:
+      tasks:
+        - task_key: bbb_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/bbb
+        - task_key: ccc_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/ccc
+
+    # crossblock_rename: rename one task in each block (remove+add) in one sync.
+    job_xrename:
+      tasks:
+        - task_key: mmm_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/mmm
+        - task_key: nnn_task
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nnn
+
+targets:
+  default:
+    mode: development
+    resources:
+      jobs:
+        job_index:
+          tasks:
+            - task_key: aaa_task
+              run_if: ALL_SUCCESS
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/aaa
+        job_local:
+          tasks:
+            - task_key: aaa_tgt
+              run_if: ALL_SUCCESS
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/aaa
+        job_nonzero:
+          tasks:
+            - task_key: aaa_task
+              run_if: ALL_SUCCESS
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/aaa
+        job_mixed:
+          tasks:
+            - task_key: aaa_task
+              run_if: ALL_SUCCESS
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/aaa
+        job_xremove:
+          tasks:
+            - task_key: aaa_task
+              run_if: ALL_SUCCESS
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/aaa
+            - task_key: eee_task
+              run_if: ALL_SUCCESS
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/eee
+        job_xrename:
+          tasks:
+            - task_key: aaa_task
+              run_if: ALL_SUCCESS
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/aaa

@@ -27,14 +27,19 @@ type FieldChange struct {
 // the YAML file positions. It also returns the location of the resolved leaf value.
 // Example: "resources.jobs.foo.tasks[task_key='main'].name" -> "resources.jobs.foo.tasks[1].name"
 // Returns a PatternNode because for Add operations, [*] may be used as a placeholder for new elements.
-func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (*structpath.PatternNode, dyn.Location, error) {
+//
+// The returned bool reports whether the resolved element was contributed by a
+// target override block. Its numeric index is then local to that block, so only
+// the targets.<t>.-prefixed candidate is valid (see ResolveChanges).
+func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (*structpath.PatternNode, dyn.Location, bool, error) {
 	node, err := structpath.ParsePath(pathStr)
 	if err != nil {
-		return nil, dyn.Location{}, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
+		return nil, dyn.Location{}, false, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
 	}
 
 	nodes := node.AsSlice()
 	var result *structpath.PatternNode
+	inOverrideBlock := false
 	currentValue := b.Config.Value()
 
 	for _, n := range nodes {
@@ -47,6 +52,23 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 		}
 
 		if idx, ok := n.Index(); ok {
+			// A numeric index reaches here when the change path is positional
+			// rather than keyed — i.e. the resource registered no KeyedSlices
+			// entry for this sequence (e.g. pipeline `clusters`, which structdiff
+			// compares by position). When such a sequence is split across a
+			// top-level and a target override block, idx is the merged-sequence
+			// position; convert it to the block-local index and flag target-block
+			// elements, exactly as the keyed selector below does.
+			if currentValue.IsValid() && currentValue.Kind() == dyn.KindSequence {
+				seq, _ := currentValue.AsSequence()
+				seqLocations := currentValue.Locations()
+				if len(seqLocations) >= 2 && idx >= 0 && idx < len(seq) {
+					result = structpath.NewPatternIndex(result, yamlFileIndex(seq, idx, seqLocations))
+					inOverrideBlock = inOverrideBlock || elementInOverrideBlock(seq[idx].Location(), seqLocations)
+					currentValue = seq[idx]
+					continue
+				}
+			}
 			result = structpath.NewPatternIndex(result, idx)
 			if currentValue.IsValid() {
 				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Index(idx)})
@@ -57,10 +79,11 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 		// Check for key-value selector: [key='value']
 		if key, value, ok := n.KeyValue(); ok {
 			if !currentValue.IsValid() || currentValue.Kind() != dyn.KindSequence {
-				return nil, dyn.Location{}, fmt.Errorf("cannot apply [%s='%s'] selector to non-array value in path %s", key, value, pathStr)
+				return nil, dyn.Location{}, false, fmt.Errorf("cannot apply [%s='%s'] selector to non-array value in path %s", key, value, pathStr)
 			}
 
 			seq, _ := currentValue.AsSequence()
+			seqLocations := currentValue.Locations()
 			foundIndex := -1
 
 			for i, elem := range seq {
@@ -82,31 +105,52 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 					currentValue = dyn.Value{}
 					continue
 				}
-				return nil, dyn.Location{}, fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
+				return nil, dyn.Location{}, false, fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
 			}
 
 			// Mutators may reorder sequence elements (e.g., tasks sorted by task_key).
 			// Use location information to determine the original YAML file position.
-			yamlIndex := yamlFileIndex(seq, foundIndex)
+			yamlIndex := yamlFileIndex(seq, foundIndex, seqLocations)
 			result = structpath.NewPatternIndex(result, yamlIndex)
+			// yamlIndex is local to the element's own block; latch so a nested
+			// single-block selector further down doesn't clear a target match.
+			inOverrideBlock = inOverrideBlock || elementInOverrideBlock(seq[foundIndex].Location(), seqLocations)
 			currentValue = seq[foundIndex]
 			continue
 		}
 	}
 
-	return result, currentValue.Location(), nil
+	return result, currentValue.Location(), inOverrideBlock, nil
 }
 
-// yamlFileIndex determines the original YAML file position of a sequence element.
-// Mutators may reorder sequence elements (e.g., tasks sorted by task_key), so the
-// in-memory index may not match the position in the YAML file. This function uses
-// location information to count how many elements from the same file appear before
-// the target element, giving the correct index for YAML patching.
-func yamlFileIndex(seq []dyn.Value, sortedIndex int) int {
+// elementInOverrideBlock reports whether a merged sequence element came from a
+// target override block rather than the top-level block. merge keeps the
+// reference (top-level) locations first, so seqLocations[0] is the top-level
+// anchor; an element anchored elsewhere came from a target block and its
+// block-local index is only valid under the targets.<t>. prefix. A resource is
+// declared once across top-level files (duplicate keys are rejected at load), so
+// a second anchor can only be a target override, never a second top-level file.
+func elementInOverrideBlock(elemLoc dyn.Location, seqLocations []dyn.Location) bool {
+	if len(seqLocations) < 2 || elemLoc.File == "" {
+		return false
+	}
+	topAnchor := seqLocations[0]
+	return elemLoc.File != topAnchor.File || blockAnchor(elemLoc, seqLocations) != topAnchor.Line
+}
+
+// yamlFileIndex returns a sequence element's index within its own config block.
+// Tasks/clusters merged from a top-level block and a target override are one
+// sorted in-memory sequence but patched per block in the YAML, so the merged
+// index is wrong. seqLocations holds one anchor per block; counting only
+// same-block, earlier-line elements yields the block-local index. A single-block
+// sequence reduces to a plain same-file count.
+func yamlFileIndex(seq []dyn.Value, sortedIndex int, seqLocations []dyn.Location) int {
 	matchLocation := seq[sortedIndex].Location()
 	if matchLocation.File == "" {
 		return sortedIndex
 	}
+
+	matchAnchor := blockAnchor(matchLocation, seqLocations)
 
 	yamlIndex := 0
 	for i, elem := range seq {
@@ -114,11 +158,26 @@ func yamlFileIndex(seq []dyn.Value, sortedIndex int) int {
 			continue
 		}
 		loc := elem.Location()
-		if loc.File == matchLocation.File && loc.Line < matchLocation.Line {
+		if loc.File == matchLocation.File && loc.Line < matchLocation.Line && blockAnchor(loc, seqLocations) == matchAnchor {
 			yamlIndex++
 		}
 	}
 	return yamlIndex
+}
+
+// blockAnchor returns the config block a sequence element belongs to, identified by the
+// line of that block's sequence node. Blocks never interleave within a file, so the
+// element's block is the anchor with the greatest line at or before the element in the
+// same file. Returns 0 when no anchor matches (single unlocated block), which keeps all
+// elements in one group.
+func blockAnchor(loc dyn.Location, seqLocations []dyn.Location) int {
+	anchor := 0
+	for _, l := range seqLocations {
+		if l.File == loc.File && l.Line <= loc.Line && l.Line > anchor {
+			anchor = l.Line
+		}
+	}
+	return anchor
 }
 
 func pathDepth(pathStr string) int {
@@ -129,10 +188,30 @@ func pathDepth(pathStr string) int {
 	return len(node.AsSlice())
 }
 
+// blockScopedParent namespaces per-sequence index bookkeeping by block. A target
+// override block and the top-level block share the same unprefixed parent path
+// but keep block-local indices, so add/remove operations in one block must not
+// shift indices resolved in the other. Prefixing the override block's key with
+// targets.<t>. keeps the two buckets separate.
+func blockScopedParent(parentPathStr, targetName string, inOverrideBlock bool) string {
+	if inOverrideBlock {
+		return "targets." + targetName + "." + parentPathStr
+	}
+	return parentPathStr
+}
+
+// reuseFreedIndex pops the first index freed by a prior removal and rewrites path
+// to point at that slot, so a recreated (renamed) element reuses the removed
+// element's position instead of appending. Returns the remaining indices.
+func reuseFreedIndex(indices []int, path *structpath.PatternNode) ([]int, *structpath.PatternNode) {
+	return indices[1:], structpath.NewPatternIndex(path.Parent(), indices[0])
+}
+
 // adjustArrayIndex adjusts the index in a PatternNode based on previous operations.
 // When operations are applied sequentially, removals and additions shift array indices.
-// This function adjusts the index to account for those shifts.
-func adjustArrayIndex(path *structpath.PatternNode, operations map[string][]struct {
+// This function adjusts the index to account for those shifts. parentKey selects the
+// block-scoped bucket of operations that apply to this element's sequence block.
+func adjustArrayIndex(path *structpath.PatternNode, parentKey string, operations map[string][]struct {
 	index     int
 	operation OperationType
 },
@@ -143,8 +222,7 @@ func adjustArrayIndex(path *structpath.PatternNode, operations map[string][]stru
 	}
 
 	parentPath := path.Parent()
-	parentPathStr := parentPath.String()
-	ops := operations[parentPathStr]
+	ops := operations[parentKey]
 
 	adjustment := 0
 	for _, op := range ops {
@@ -215,7 +293,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			configChange := resourceChanges[fieldPath]
 			fullPath := resourceKey + "." + fieldPath
 
-			resolvedPath, resolvedLocation, err := resolveSelectors(fullPath, b, configChange.Operation)
+			resolvedPath, resolvedLocation, inOverrideBlock, err := resolveSelectors(fullPath, b, configChange.Operation)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
 			}
@@ -225,37 +303,57 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			if configChange.Operation == OperationRemove {
 				freeIndex, ok := resolvedPath.Index()
 				if ok {
-					parentPath := resolvedPath.Parent().String()
-					indicesToReplaceMap[parentPath] = append(indicesToReplaceMap[parentPath], freeIndex)
+					parentKey := blockScopedParent(resolvedPath.Parent().String(), targetName, inOverrideBlock)
+					indicesToReplaceMap[parentKey] = append(indicesToReplaceMap[parentKey], freeIndex)
 				}
 			}
 
 			if configChange.Operation == OperationAdd && resolvedPath.BracketStar() {
-				parentPath := resolvedPath.Parent().String()
-				indices, ok := indicesToReplaceMap[parentPath]
-				if ok && len(indices) > 0 {
-					index := indices[0]
-					indicesToReplaceMap[parentPath] = indices[1:]
-					resolvedPath = structpath.NewPatternIndex(resolvedPath.Parent(), index)
+				// A newly added keyed element has no location, so inOverrideBlock is
+				// false here. Reuse an index freed by a removal in the same sync (a
+				// rename diffs as remove+add): try the top-level block first, then the
+				// target override block. Reusing a target-block slot means this add
+				// renames a target-only element, so it must stay in that block — latch
+				// inOverrideBlock so it is not relocated to the top-level block.
+				topKey := resolvedPath.Parent().String()
+				targetKey := blockScopedParent(topKey, targetName, true)
+				switch {
+				case len(indicesToReplaceMap[topKey]) > 0:
+					indicesToReplaceMap[topKey], resolvedPath = reuseFreedIndex(indicesToReplaceMap[topKey], resolvedPath)
+				case targetName != "" && len(indicesToReplaceMap[targetKey]) > 0:
+					indicesToReplaceMap[targetKey], resolvedPath = reuseFreedIndex(indicesToReplaceMap[targetKey], resolvedPath)
+					inOverrideBlock = true
 				}
 			}
 
-			resolvedPath = adjustArrayIndex(resolvedPath, indexOperations)
+			parentKey := blockScopedParent(resolvedPath.Parent().String(), targetName, inOverrideBlock)
+			resolvedPath = adjustArrayIndex(resolvedPath, parentKey, indexOperations)
 
 			// Track this operation for future index adjustments (only for array element operations)
 			if originalIndex, ok := resolvedPath.Index(); ok {
-				parentPath := resolvedPath.Parent().String()
-				indexOperations[parentPath] = append(indexOperations[parentPath], struct {
+				indexOperations[parentKey] = append(indexOperations[parentKey], struct {
 					index     int
 					operation OperationType
 				}{originalIndex, configChange.Operation})
 			}
 
 			resolvedPathStr := resolvedPath.String()
-			candidates := []string{resolvedPathStr}
-			if targetName != "" {
-				targetPrefixedPath := "targets." + targetName + "." + resolvedPathStr
-				candidates = append(candidates, targetPrefixedPath)
+			var candidates []string
+			targetPrefixedPath := "targets." + targetName + "." + resolvedPathStr
+			switch {
+			case inOverrideBlock:
+				// inOverrideBlock is only ever set when a target override block
+				// contributed to the sequence, which requires a selected target, so
+				// targetName is non-empty here and targetPrefixedPath is well-formed.
+				// The index is local to that override block, so only the target-prefixed
+				// candidate points at the right element. Emitting the unprefixed
+				// candidate too would let applyChange write the same index into the
+				// top-level block and silently patch the wrong element.
+				candidates = []string{targetPrefixedPath}
+			case targetName != "":
+				candidates = []string{resolvedPathStr, targetPrefixedPath}
+			default:
+				candidates = []string{resolvedPathStr}
 			}
 
 			filePath := resolvedLocation.File

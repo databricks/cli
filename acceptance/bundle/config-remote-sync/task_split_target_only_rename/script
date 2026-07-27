@@ -1,0 +1,24 @@
+#!/bin/bash
+export DATABRICKS_BUNDLE_TARGET=dev
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve -t dev; }
+trap cleanup EXIT
+$CLI bundle deploy -t dev
+job_id="$(read_id.py -t dev my_job)"
+
+title "Rename dev_only_task -> renamed_task (target dev block)"
+echo
+edit_resource.py jobs $job_id <<PY
+for task in r["tasks"]:
+    if task["task_key"] == "dev_only_task":
+        task["task_key"] = "renamed_task"
+PY
+
+title "Sync (target dev)"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save -t dev
+title "Result: where did renamed_task land?"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

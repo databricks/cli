@@ -1,0 +1,60 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Detect and save changes
+Detected changes in 3 resource(s):
+
+Resource: resources.jobs.my_job
+  job_clusters[job_cluster_key='ccc_cluster'].new_cluster.num_workers: replace
+
+Resource: resources.pipelines.pipeline_index
+  clusters[1].num_workers: replace
+
+Resource: resources.pipelines.pipeline_target
+  clusters[1].num_workers: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -49,5 +49,5 @@
+           num_workers: 1
+         - label: maintenance
+-          num_workers: 1
++          num_workers: 7
+
+ targets:
+@@ -62,10 +62,10 @@
+                 spark_version: 13.3.x-snapshot-scala2.12
+                 node_type_id: [NODE_TYPE_ID]
+-                num_workers: 1
++                num_workers: 5
+       pipelines:
+         pipeline_target:
+           clusters:
+             - label: maintenance
+-              num_workers: 1
++              num_workers: 3
+         pipeline_index:
+           clusters:
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.pipelines.pipeline_index
+  delete resources.pipelines.pipeline_target
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.pipeline_index
+  delete resources.pipelines.pipeline_target
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

@@ -1,0 +1,121 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Detect and save changes
+Detected changes in 6 resource(s):
+
+Resource: resources.jobs.job_index
+  tasks[task_key='bbb_task'].run_if: replace
+
+Resource: resources.jobs.job_local
+  tasks[task_key='aaa_tgt'].run_if: replace
+
+Resource: resources.jobs.job_mixed
+  tasks[task_key='ppp_task']: remove
+  tasks[task_key='rrr_task'].run_if: replace
+
+Resource: resources.jobs.job_nonzero
+  tasks[task_key='nnn_task'].run_if: replace
+
+Resource: resources.jobs.job_xremove
+  tasks[task_key='bbb_task']: remove
+  tasks[task_key='eee_task']: remove
+
+Resource: resources.jobs.job_xrename
+  tasks[task_key='aaa_task']: remove
+  tasks[task_key='mmm_task']: remove
+  tasks[task_key='ppp_task']: add
+  tasks[task_key='qqq_task']: add
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -14,5 +14,5 @@
+       tasks:
+         - task_key: bbb_task
+-          run_if: ALL_SUCCESS
++          run_if: ALL_DONE
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/bbb
+@@ -39,5 +39,5 @@
+             notebook_path: /Users/{{workspace_user_name}}/mmm
+         - task_key: nnn_task
+-          run_if: ALL_SUCCESS
++          run_if: ALL_DONE
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/nnn
+@@ -47,10 +47,6 @@
+     job_mixed:
+       tasks:
+-        - task_key: ppp_task
+-          run_if: ALL_SUCCESS
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/ppp
+         - task_key: rrr_task
+-          run_if: ALL_SUCCESS
++          run_if: ALL_DONE
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/rrr
+@@ -59,8 +55,4 @@
+     job_xremove:
+       tasks:
+-        - task_key: bbb_task
+-          run_if: ALL_SUCCESS
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/bbb
+         - task_key: ccc_task
+           run_if: ALL_SUCCESS
+@@ -71,8 +63,7 @@
+     job_xrename:
+       tasks:
+-        - task_key: mmm_task
+-          run_if: ALL_SUCCESS
+-          notebook_task:
++        - notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/mmm
++          task_key: ppp_task
+         - task_key: nnn_task
+           run_if: ALL_SUCCESS
+@@ -94,5 +85,5 @@
+           tasks:
+             - task_key: aaa_tgt
+-              run_if: ALL_SUCCESS
++              run_if: ALL_DONE
+               notebook_task:
+                 notebook_path: /Users/{{workspace_user_name}}/aaa
+@@ -115,12 +106,7 @@
+               notebook_task:
+                 notebook_path: /Users/{{workspace_user_name}}/aaa
+-            - task_key: eee_task
+-              run_if: ALL_SUCCESS
+-              notebook_task:
+-                notebook_path: /Users/{{workspace_user_name}}/eee
+         job_xrename:
+           tasks:
+-            - task_key: aaa_task
+-              run_if: ALL_SUCCESS
+-              notebook_task:
+-                notebook_path: /Users/{{workspace_user_name}}/aaa
++            - notebook_task:
++                notebook_path: '/Users/{{workspace_user_name}}/aaa'
++              task_key: qqq_task
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job_index
+  delete resources.jobs.job_local
+  delete resources.jobs.job_mixed
+  delete resources.jobs.job_nonzero
+  delete resources.jobs.job_xremove
+  delete resources.jobs.job_xrename
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

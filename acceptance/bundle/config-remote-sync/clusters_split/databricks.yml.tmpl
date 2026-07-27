@@ -1,0 +1,73 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# job_clusters are keyed (merge.ElementsByKey by job_cluster_key, non-sorted);
+# pipeline clusters are positional (no KeyedSlices, so changes diff by numeric
+# index). Both sequences are split across the top-level block and the
+# targets.default override, exercising both resolveSelectors branches.
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: aaa_cluster
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - job_cluster_key: bbb_cluster
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+          job_cluster_key: aaa_cluster
+
+  pipelines:
+    # positional target edit: maintenance cluster lives in the target block.
+    pipeline_target:
+      name: test-pipeline-target-$UNIQUE_NAME
+      development: false
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook
+      clusters:
+        - label: default
+          num_workers: 1
+
+    # positional top-level index 1: maintenance is the second top-level cluster.
+    pipeline_index:
+      name: test-pipeline-index-$UNIQUE_NAME
+      development: false
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook
+      clusters:
+        - label: default
+          num_workers: 1
+        - label: maintenance
+          num_workers: 1
+
+targets:
+  default:
+    mode: development
+    resources:
+      jobs:
+        my_job:
+          job_clusters:
+            - job_cluster_key: ccc_cluster
+              new_cluster:
+                spark_version: $DEFAULT_SPARK_VERSION
+                node_type_id: $NODE_TYPE_ID
+                num_workers: 1
+      pipelines:
+        pipeline_target:
+          clusters:
+            - label: maintenance
+              num_workers: 1
+        pipeline_index:
+          clusters:
+            - label: default
+              num_workers: 2

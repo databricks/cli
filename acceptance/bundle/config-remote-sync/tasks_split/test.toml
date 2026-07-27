@@ -1,0 +1,11 @@
+# Local-only. One bundle with several jobs, each a distinct block-split scenario,
+# synced in one pass. Having multiple split jobs also verifies block anchors are
+# grouped per resource, not globally.
+RecordRequests = false
+Ignore = [".databricks", "databricks.yml", "databricks.yml.backup"]
+
+[Env]
+DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
