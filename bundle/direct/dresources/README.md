@@ -42,6 +42,10 @@ For resources whose create or update is asynchronous (the resource is not immedi
 
 If the API may return a slice's elements in a different order between calls (e.g., `depends_on` in job tasks, `privileges` in grants), implement `KeyedSlices` to compare elements by a natural key rather than by index. Without this, every deploy after any reordering shows phantom diffs.
 
+## No-op creates: SkipCreate
+
+If a resource can have a desired state that requires no API call at all to create (e.g. an empty grants list), implement `SkipCreate` so the planner omits the node instead of planning a create. It is only consulted when the node has no state entry yet: once state exists the node stays in the plan, so that emptying it still plans the corresponding update.
+
 ## State backward compatibility
 
 The state struct is serialized to JSON and persisted between deploys. Backward incompatible changes will result in a drift, which depending

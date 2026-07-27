@@ -961,14 +961,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			if err != nil {
 				return nil, err
 			}
-			// Terraform writes no grants resource for an empty list, so migrate leaves
-			// no state entry. Skip the node here too; otherwise plan shows a spurious
-			// "create". Keep it when state exists so emptying grants still revokes.
-			if gs, ok := inputConfigStructVar.Value.(*dresources.GrantsState); ok && len(gs.EmbeddedSlice) == 0 {
-				if _, hasState := db.State[node]; !hasState {
-					continue
-				}
-			}
 			inputConfig = inputConfigStructVar.Value
 			baseRefs = inputConfigStructVar.Refs
 		}
@@ -976,6 +968,18 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		newStateConfig, err := adapter.PrepareState(inputConfig)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+
+		// A node that already has state must stay in the plan even when creating it would be
+		// a no-op, otherwise emptying it would plan no action at all.
+		if _, hasState := db.State[node]; !hasState {
+			skip, err := adapter.SkipCreate(newStateConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", prefix, err)
+			}
+			if skip {
+				continue
+			}
 		}
 
 		// Note, we're extracting references in input config but resolving them in newState.Config which is PrepareState(inputConfig)

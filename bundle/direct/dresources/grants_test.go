@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildGrantChanges(t *testing.T) {
@@ -73,4 +74,56 @@ func TestBuildGrantChanges(t *testing.T) {
 			assert.Equal(t, tt.expected, buildGrantChanges(tt.desired, tt.removed))
 		})
 	}
+}
+
+// Goes through the adapter rather than calling the method directly, so that the optional
+// method is also checked to be discovered and type-validated by NewAdapter.
+func TestGrantsSkipCreate(t *testing.T) {
+	tests := []struct {
+		name     string
+		state    *GrantsState
+		expected bool
+	}{
+		{
+			name:     "empty grants list",
+			state:    &GrantsState{SecurableType: "schema", EmbeddedSlice: []catalog.PrivilegeAssignment{}},
+			expected: true,
+		},
+		{
+			name:     "unset grants list",
+			state:    &GrantsState{SecurableType: "schema"},
+			expected: true,
+		},
+		{
+			name: "one assignment",
+			state: &GrantsState{
+				SecurableType: "schema",
+				EmbeddedSlice: []catalog.PrivilegeAssignment{
+					{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeSelect}},
+				},
+			},
+			expected: false,
+		},
+	}
+
+	adapter, err := NewAdapter(SupportedResources["schemas.grants"], "schemas.grants", nil)
+	require.NoError(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			skip, err := adapter.SkipCreate(tt.state)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, skip)
+		})
+	}
+}
+
+// Resources without SkipCreate always need a create.
+func TestSkipCreateNotImplemented(t *testing.T) {
+	adapter, err := NewAdapter(SupportedResources["schemas"], "schemas", nil)
+	require.NoError(t, err)
+
+	skip, err := adapter.SkipCreate(&catalog.CreateSchema{Name: "myschema"})
+	require.NoError(t, err)
+	assert.False(t, skip)
 }
