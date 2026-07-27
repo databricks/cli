@@ -450,7 +450,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// subset selector keep these tests, so detect them at most once here.
 	var changedTests map[string][]string
 	if skipLocalWithChanged || subset.enabled {
-		changedTests = selectChangedLocalTests(testDirsSet)
+		changedTests = selectChangedLocalTests(t, testDirsSet)
 	}
 	subset.changed = changedTests
 

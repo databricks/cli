@@ -618,6 +618,8 @@ resources:
       # Backend applies a default of 60 minutes when the field is omitted.
       - field: idle_instance_autotermination_minutes
         values: [60]
+      # GCP seeds max_capacity (1000) when omitted; unconstrained as the default is cloud-dependent.
+      - field: max_capacity
 
   sql_warehouses:
     ignore_remote_changes:

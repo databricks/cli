@@ -74,7 +74,7 @@ const (
 type ErrorCode string
 
 const (
-	ErrUsage              ErrorCode = "E_USAGE"               // preflight: incompatible flags
+	ErrUsage              ErrorCode = "E_USAGE"               // preflight: incompatible flags; resolve: --job-task names a job but no task
 	ErrManagerUnsupported ErrorCode = "E_MANAGER_UNSUPPORTED" // preflight: manager is not uv
 	ErrNotWritable        ErrorCode = "E_NOT_WRITABLE"        // preflight: project dir not writable
 	ErrUvMissing          ErrorCode = "E_UV_MISSING"          // preflight: uv not found / install failed
