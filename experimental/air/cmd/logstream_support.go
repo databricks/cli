@@ -71,6 +71,78 @@ func printLogEvent(out io.Writer, eventType string, node int, line string) {
 	fmt.Fprintln(out, string(b))
 }
 
+// submittedEvent is the JSONL event `air run --watch -o json` emits before the
+// streamed log events, so a consumer sees the run id immediately.
+type submittedEvent struct {
+	Type         string `json:"type"`
+	TS           string `json:"ts"`
+	RunID        string `json:"run_id"`
+	DashboardURL string `json:"dashboard_url"`
+}
+
+// printSubmittedEvent writes the SUBMITTED JSONL event.
+func printSubmittedEvent(out io.Writer, runID, dashboardURL string) {
+	b, err := json.Marshal(submittedEvent{
+		Type:         "SUBMITTED",
+		TS:           time.Now().UTC().Format(time.RFC3339),
+		RunID:        runID,
+		DashboardURL: dashboardURL,
+	})
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(out, string(b))
+}
+
+// statusEvent is a JSONL event emitted on each lifecycle transition while
+// following a run with --watch.
+type statusEvent struct {
+	Type     string `json:"type"`
+	TS       string `json:"ts"`
+	Status   string `json:"status"`
+	Previous string `json:"previous_status,omitempty"`
+}
+
+// printStatusEvent writes a STATUS JSONL event for a lifecycle transition.
+func printStatusEvent(out io.Writer, current, previous string) {
+	b, err := json.Marshal(statusEvent{
+		Type:     "STATUS",
+		TS:       time.Now().UTC().Format(time.RFC3339),
+		Status:   current,
+		Previous: previous,
+	})
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(out, string(b))
+}
+
+// terminalEvent is the closing envelope `air run --watch -o json` emits after
+// streaming, carrying the run's terminal status.
+type terminalEvent struct {
+	V    int       `json:"v"`
+	TS   string    `json:"ts"`
+	Data runResult `json:"data"`
+}
+
+// printTerminalEvent writes the closing terminal-status envelope, matching the
+// shape of renderEnvelope(runResult).
+func printTerminalEvent(out io.Writer, runID, status, dashboardURL string) {
+	b, err := json.Marshal(terminalEvent{
+		V:  envelopeVersion,
+		TS: time.Now().UTC().Format(time.RFC3339),
+		Data: runResult{
+			Status:       status,
+			RunID:        runID,
+			DashboardURL: dashboardURL,
+		},
+	})
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(out, string(b))
+}
+
 // emitLogLine writes one log line: raw in text mode, or a JSONL LOG event under
 // --json. In --json mode a line matching a fatal-failure pattern also emits an
 // ALERT event first, giving an agent an immediate actionable signal.

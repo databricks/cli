@@ -1,7 +1,6 @@
 package aircmd
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -57,11 +56,6 @@ The workload is described by a YAML config file (see --file).`,
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		// --watch's pipeline is not ported yet; reject rather than silently ignore it.
-		if watch {
-			return errors.New("--watch is not yet supported")
-		}
-
 		cfg, err := loadRunConfigWithOverrides(ctx, file, overrides)
 		if err != nil {
 			return err
@@ -82,12 +76,48 @@ The workload is described by a YAML config file (see --file).`,
 		}
 
 		runIDStr := strconv.FormatInt(runID, 10)
-		if root.OutputType(cmd) == flags.OutputText {
+		jsonOut := root.OutputType(cmd) == flags.OutputJSON
+
+		if !watch {
+			if !jsonOut {
+				cmdio.LogString(ctx, "Submitted run "+runIDStr)
+				cmdio.LogString(ctx, "View at: "+dashboardURL)
+				cmdio.LogString(ctx, "\nTip: use --watch to stream logs until the run completes.")
+				return nil
+			}
+			return renderEnvelope(ctx, runResult{Status: "SUBMITTED", RunID: runIDStr, DashboardURL: dashboardURL})
+		}
+
+		// --watch: stream the submitted run's logs until it reaches a terminal
+		// state, then exit with the run's outcome. This is the same pipeline as
+		// `air logs <run>` (Bricklens with MLflow fallback).
+		req := logRequest{
+			runID:      runID,
+			attempt:    -1,
+			tailLines:  -1,
+			jsonOutput: jsonOut,
+		}
+
+		if !jsonOut {
 			cmdio.LogString(ctx, "Submitted run "+runIDStr)
 			cmdio.LogString(ctx, "View at: "+dashboardURL)
-			return nil
+			cmdio.LogString(ctx, "Monitoring run and streaming logs...")
+			return runLogs(ctx, cmd, req)
 		}
-		return renderEnvelope(ctx, runResult{Status: "SUBMITTED", RunID: runIDStr, DashboardURL: dashboardURL})
+
+		// --json: emit SUBMITTED first (so a consumer sees the run id immediately),
+		// STATUS events on each lifecycle transition, and a closing terminal-status
+		// envelope after streaming. Mirrors the Python CLI's --watch JSONL contract.
+		out := cmd.OutOrStdout()
+		printSubmittedEvent(out, runIDStr, dashboardURL)
+		terminalStatus := "FAILED"
+		req.onStatusChange = func(current, previous string) {
+			printStatusEvent(out, current, previous)
+			terminalStatus = current
+		}
+		err = runLogs(ctx, cmd, req)
+		printTerminalEvent(out, runIDStr, terminalStatus, dashboardURL)
+		return err
 	}
 
 	return cmd
