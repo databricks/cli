@@ -64,9 +64,6 @@ func readRequirementsDependencies(reqPath string) ([]string, error) {
 		return nil, fmt.Errorf("failed to parse requirements file %s: %w", reqPath, err)
 	}
 	for _, dep := range doc.Dependencies {
-		// A -r/--requirement include points at a second file that is never uploaded
-		// with the run, so it never installs on the node. Reject it rather than emit
-		// a dependency that silently fails at install time.
 		if fields := strings.Fields(dep); len(fields) > 0 && (fields[0] == "-r" || fields[0] == "--requirement") {
 			return nil, fmt.Errorf("requirements file dependency %q uses a requirements-file include (-r/--requirement), which is not supported; list the dependencies directly instead", dep)
 		}
@@ -80,8 +77,6 @@ func readRequirementsDependencies(reqPath string) ([]string, error) {
 //
 // Dependencies are no longer uploaded as a requirements.yaml; they ride inline on
 // the serverless environment's spec.dependencies instead (see buildSubmitPayload).
-// The AI Runtime launcher treats a missing co-located requirements.yaml as "no
-// requirements" (databricks-eng/universe#2297011), so uploading one is unnecessary.
 func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 	// TODO(DABs): with no _bases_/overrides ported yet, the merged config is the
 	// file as-is; once those land, upload the re-serialized merged YAML instead.
