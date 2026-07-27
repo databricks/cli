@@ -54,9 +54,9 @@ type Experimental struct {
 	// service (DMS), which records deployment history and tracks what changed
 	// across deployments.
 	//
-	// Setting this is currently an error: the direct engine needs a state upgrade
-	// path before DMS can own resource state. See
-	// validate.ValidateRecordDeploymentHistory.
+	// Only supported for a bundle with no deployed resources yet: DMS becomes the
+	// source of truth for resource state, and resources tracked in an existing
+	// state file cannot be handed over to it yet. See dstate.DeploymentState.Open.
 	RecordDeploymentHistory bool `json:"record_deployment_history,omitempty"`
 }
 

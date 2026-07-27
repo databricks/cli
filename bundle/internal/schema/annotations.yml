@@ -179,7 +179,7 @@ experimental:
       "description": |-
         Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
 
-        This setting is not supported yet and enabling it is an error.
+        Only supported for a bundle with no deployed resources yet.
     "scripts":
       "description": |-
         The commands to run.

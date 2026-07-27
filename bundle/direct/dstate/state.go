@@ -319,9 +319,33 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
-	if dmsClient != nil && db.Data.DeploymentID != "" {
-		if err := db.overlayDMSState(ctx, dmsClient, dmsCfg); err != nil {
-			return err
+	if dmsClient != nil {
+		// Only deployments that start out empty are recorded in DMS. Resources
+		// tracked in a state file that DMS does not know about are not in DMS and
+		// never will be: the first recorded deploy would create a deployment whose
+		// resource set covers only what that deploy touched, and DMS would then be
+		// authoritative for everything (see overlayDMSState). Resources this bundle
+		// already owns would look absent and be created a second time.
+		//
+		// A state file that DMS already owns (it carries a deployment ID) is fine —
+		// that is a bundle that opted in while it was still empty. So is a state file
+		// with no resources, e.g. one left behind by a destroy.
+		//
+		// TODO(DMS): lift this restriction by upgrading an existing state in place.
+		// That means writing the state at featureStateVersion (3) with a feature flag
+		// recording that DMS owns it, plus a tombstone entry per resource so a CLI
+		// that predates DMS refuses the state instead of silently deploying against a
+		// resource set it cannot see. The feature-flag scaffolding for this already
+		// exists (see featureStateVersion and Header.Features); once it is written,
+		// this check goes away and record_deployment_history becomes usable on
+		// existing bundles.
+		if db.Data.DeploymentID == "" && len(db.Data.State) > 0 {
+			return fmt.Errorf("cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded. Remove experimental.record_deployment_history, or destroy the bundle and deploy it again", path)
+		}
+		if db.Data.DeploymentID != "" {
+			if err := db.overlayDMSState(ctx, dmsClient, dmsCfg); err != nil {
+				return err
+			}
 		}
 	}
 

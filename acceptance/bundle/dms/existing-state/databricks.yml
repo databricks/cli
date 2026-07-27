@@ -1,8 +1,8 @@
 bundle:
-  name: dms-not-supported
+  name: dms-existing-state
 
 experimental:
-  record_deployment_history: true
+  record_deployment_history: false
 
 resources:
   jobs:
