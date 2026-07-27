@@ -28,16 +28,15 @@ def read_json_many(text):
 
 
 def present_fields(engine):
-    """Map create-request path (e.g. "clusters/create") -> set of body field paths."""
-    result = {}
+    """Return [(request_path, {body field paths}), ...] for each create request."""
+    result = []
     path = Path(f"out.requests.{engine}.json")
     if not path.exists():
         return result
     for req in read_json_many(path.read_text()):
-        # Normalize "/api/2.1/clusters/create" -> "clusters/create".
-        key = "/".join(req.get("path", "").rsplit("/", 2)[-2:])
-        fields = result.setdefault(key, set())
+        fields = set()
         _collect(req.get("body", {}), "", fields)
+        result.append((req.get("path", ""), fields))
     return result
 
 
@@ -53,10 +52,15 @@ def _collect(obj, prefix, out):
 
 
 def dropped(empty_fields, present):
-    """Return "<path> <field>" entries that were set empty but not sent."""
+    """Return "<path> <field>" entries set empty but absent from the matching request.
+
+    An entry's create_path (e.g. "clusters/create", "pipelines") is matched as a
+    substring of the recorded request path (e.g. "/api/2.1/clusters/create").
+    """
     out = []
     for create_path, field in empty_fields:
-        if field not in present.get(create_path, set()):
+        sent = any(field in fields for path, fields in present if create_path in path)
+        if not sent:
             out.append(f"{create_path} {field}")
     return out
 

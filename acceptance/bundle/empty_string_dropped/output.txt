@@ -1,27 +1,11 @@
 
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy -t tf
-Warning: invalid value "" for enum field. Valid values are [CLASSIC_PREVIEW]
-  at resources.clusters.my_cluster.kind
-  in databricks.yml:18:13
-
-Warning: invalid value "" for enum field. Valid values are [DATA_SECURITY_MODE_AUTO DATA_SECURITY_MODE_DEDICATED DATA_SECURITY_MODE_STANDARD LEGACY_PASSTHROUGH LEGACY_SINGLE_USER LEGACY_SINGLE_USER_STANDARD LEGACY_TABLE_ACL NONE SINGLE_USER USER_ISOLATION]
-  at resources.clusters.my_cluster.data_security_mode
-  in databricks.yml:17:27
-
+>>> DATABRICKS_BUNDLE_ENGINE=terraform errcode [CLI] bundle deploy -t tf
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy -t direct
-Warning: invalid value "" for enum field. Valid values are [CLASSIC_PREVIEW]
-  at resources.clusters.my_cluster.kind
-  in databricks.yml:18:13
-
-Warning: invalid value "" for enum field. Valid values are [DATA_SECURITY_MODE_AUTO DATA_SECURITY_MODE_DEDICATED DATA_SECURITY_MODE_STANDARD LEGACY_PASSTHROUGH LEGACY_SINGLE_USER LEGACY_SINGLE_USER_STANDARD LEGACY_TABLE_ACL NONE SINGLE_USER USER_ISOLATION]
-  at resources.clusters.my_cluster.data_security_mode
-  in databricks.yml:17:27
-
+>>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy -t direct
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files...
 Deploying resources...
 Updating deployment state...
@@ -29,26 +13,36 @@ Deployment complete!
 
 === Dropped by terraform:
 clusters/create cluster_name
-clusters/create data_security_mode
-clusters/create kind
 clusters/create node_type_id
 clusters/create policy_id
 clusters/create single_user_name
 jobs/create budget_policy_id
 jobs/create description
 jobs/create name
+jobs/create parent_path
+jobs/create usage_policy_id
+pipelines budget_policy_id
+pipelines name
+pipelines serverless_compute_id
+pipelines usage_policy_id
+warehouses instance_profile_arn
 
 === Dropped by direct:
 
 === Dropped by terraform only (direct still sends these):
 clusters/create cluster_name
-clusters/create data_security_mode
-clusters/create kind
 clusters/create node_type_id
 clusters/create policy_id
 clusters/create single_user_name
 jobs/create budget_policy_id
 jobs/create description
 jobs/create name
+jobs/create parent_path
+jobs/create usage_policy_id
+pipelines budget_policy_id
+pipelines name
+pipelines serverless_compute_id
+pipelines usage_policy_id
+warehouses instance_profile_arn
 
 === Dropped by direct only:

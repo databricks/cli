@@ -1,20 +1,21 @@
-# Deploy the same config through each engine (separate target => separate state),
-# recording create requests for each. dropped_fields.py then compares the fields
-# we set to "" against what each engine actually sent, and writes the four
-# comparison files.
+# databricks.yml and empty_fields.txt are committed, generated from the field
+# inventory by gen_empty_config.py (every settable string field set to ""). This
+# script deploys the same config through each engine (separate target => separate
+# state), records create requests, and dropped_fields.py compares the empties we
+# set against what each engine sent, writing the four comparison files.
 #
-# This test captures the current baseline. As the empty-string handling changes
-# (e.g. a mutator in the initialize phase), empty_fields_dropped_by_terraform.txt
-# should stay put, empty_fields_dropped_by_direct.txt should move toward it, and
-# the *_only.txt files show the remaining gap.
+# Baseline: terraform drops empties via omitempty, direct sends "". As direct
+# handling changes, out.empty_fields_dropped_by_terraform.txt stays put,
+# out.empty_fields_dropped_by_direct.txt grows toward it, and the *_only.txt
+# files show the remaining gap.
 
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy -t tf
-print_requests.py //clusters/create //jobs/create --sort > out.requests.terraform.json
+trace DATABRICKS_BUNDLE_ENGINE=terraform errcode $CLI bundle deploy -t tf
+print_requests.py //clusters/create //jobs/create //pipelines //warehouses --sort > out.requests.terraform.json
 
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy -t direct
-print_requests.py //clusters/create //jobs/create --sort > out.requests.direct.json
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy -t direct
+print_requests.py //clusters/create //jobs/create //pipelines //warehouses --sort > out.requests.direct.json
 
-./dropped_fields.py
+$TESTDIR/dropped_fields.py
 
 title "Dropped by terraform:\n"
 cat out.empty_fields_dropped_by_terraform.txt

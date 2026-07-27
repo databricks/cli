@@ -1,5 +1,38 @@
 {
   "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/files/pipeline.py"
+        }
+      }
+    ],
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses",
+  "body": {
+    "auto_stop_mins": 10,
+    "cluster_size": "2X-Small",
+    "enable_photon": true,
+    "max_num_clusters": 1,
+    "min_num_clusters": 1,
+    "name": "test-warehouse",
+    "spot_instance_policy": "COST_OPTIMIZED"
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.1/clusters/create",
   "body": {
     "autotermination_minutes": 60,

@@ -1,11 +1,47 @@
 {
   "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "budget_policy_id": "",
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files/pipeline.py"
+        }
+      }
+    ],
+    "name": "",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files",
+    "serverless_compute_id": "",
+    "usage_policy_id": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses",
+  "body": {
+    "auto_stop_mins": 10,
+    "cluster_size": "2X-Small",
+    "enable_photon": true,
+    "instance_profile_arn": "",
+    "max_num_clusters": 1,
+    "min_num_clusters": 1,
+    "name": "test-warehouse",
+    "spot_instance_policy": "COST_OPTIMIZED"
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.1/clusters/create",
   "body": {
     "autotermination_minutes": 60,
     "cluster_name": "",
-    "data_security_mode": "",
-    "kind": "",
     "node_type_id": "",
     "num_workers": 1,
     "policy_id": "",
@@ -27,8 +63,10 @@
     "format": "MULTI_TASK",
     "max_concurrent_runs": 1,
     "name": "",
+    "parent_path": "",
     "queue": {
       "enabled": true
-    }
+    },
+    "usage_policy_id": ""
   }
 }
