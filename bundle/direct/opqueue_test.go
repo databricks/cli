@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,6 +23,7 @@ type fakeUploader struct {
 
 	mu      sync.Mutex
 	uploads []string
+	actions map[string]bundledeployments.OperationActionType
 }
 
 func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
@@ -35,6 +37,10 @@ func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op record
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.uploads = append(f.uploads, resourceKey+"="+string(op.state))
+	if f.actions == nil {
+		f.actions = map[string]bundledeployments.OperationActionType{}
+	}
+	f.actions[resourceKey] = op.action
 	return f.err
 }
 
@@ -42,6 +48,12 @@ func (f *fakeUploader) recorded() []string {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return append([]string(nil), f.uploads...)
+}
+
+func (f *fakeUploader) actionFor(resourceKey string) bundledeployments.OperationActionType {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.actions[resourceKey]
 }
 
 func recordState(t *testing.T, q *operationQueue, resourceKey, name string) {
@@ -84,6 +96,35 @@ func TestOperationQueueCoalescesQueuedOperationsForSameResource(t *testing.T) {
 		`resources.jobs.foo={"name":"v1"}`,
 		`resources.jobs.foo={"name":"v3"}`,
 	}, f.recorded())
+}
+
+func TestOperationQueueCoalescingKeepsCreateAction(t *testing.T) {
+	// Hold the first upload so the create below stays queued and the update
+	// coalesces into it.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 1)}
+	q := newOperationQueue(t.Context(), f)
+
+	recordState(t, q, "resources.jobs.hold", "v1")
+	assert.Equal(t, "resources.jobs.hold", <-f.started)
+
+	// Occupy the remaining workers so nothing drains the key under test.
+	for i := range operationUploadWorkers - 1 {
+		recordState(t, q, "resources.jobs.hold"+strconv.Itoa(i), "v1")
+		assert.Equal(t, "resources.jobs.hold"+strconv.Itoa(i), <-f.started)
+	}
+
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "created"}))
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Update, "id-1", map[string]string{"name": "updated"}))
+
+	close(f.block)
+	require.NoError(t, q.close())
+
+	// The state is the later one, but the action stays CREATE: recording an update
+	// would tell DMS the resource already existed before this deploy.
+	assert.Contains(t, f.recorded(), `resources.jobs.foo={"name":"updated"}`)
+	assert.Equal(t,
+		bundledeployments.OperationActionTypeOperationActionTypeCreate,
+		f.actionFor("resources.jobs.foo"))
 }
 
 func TestOperationQueueReturnsUploadError(t *testing.T) {

@@ -91,8 +91,10 @@ func newOperationQueue(ctx context.Context, uploader operationUploader) *operati
 //
 // When an operation for the same resource is already waiting it is replaced
 // instead of queued again: DMS keeps one state per resource key, so the later
-// operation supersedes the earlier one and a single upload records both. This is
-// best effort - only operations that have not been picked up yet are collapsed.
+// operation supersedes the earlier one and a single upload records both. The
+// merged operation keeps the action of a queued create (see mergeAction), so
+// collapsing a create and a later update still records a create. This is best
+// effort - only operations that have not been picked up yet are collapsed.
 func (q *operationQueue) record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error {
 	if q == nil {
 		return nil
@@ -104,8 +106,11 @@ func (q *operationQueue) record(ctx context.Context, resourceKey string, action 
 	}
 
 	q.mu.Lock()
-	_, waiting := q.pending[resourceKey]
+	queued, waiting := q.pending[resourceKey]
 	owned := waiting || q.inflight[resourceKey]
+	if waiting {
+		op.action = mergeAction(queued.action, op.action)
+	}
 	q.pending[resourceKey] = op
 	q.mu.Unlock()
 

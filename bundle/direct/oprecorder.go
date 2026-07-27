@@ -56,6 +56,24 @@ func newRecordedOperation(action deployplan.ActionType, resourceID string, state
 	return op, nil
 }
 
+// mergeAction returns the action to record when a later operation coalesces into
+// one still queued for the same resource (see operationQueue.record). The state
+// uploaded is the later one, but the action must not be downgraded: Create and
+// Recreate tell DMS the resource ID is new, and a subsequent Update only refines
+// the state of that same new resource. Recording the pair as an Update would
+// claim the resource already existed. A Delete is the exception - the resource is
+// gone, so nothing earlier is worth reporting.
+func mergeAction(queued, next bundledeployments.OperationActionType) bundledeployments.OperationActionType {
+	if next == bundledeployments.OperationActionTypeOperationActionTypeDelete {
+		return next
+	}
+	if queued == bundledeployments.OperationActionTypeOperationActionTypeCreate ||
+		queued == bundledeployments.OperationActionTypeOperationActionTypeRecreate {
+		return queued
+	}
+	return next
+}
+
 // operationUploader records an applied resource operation with DMS. Uploads run
 // on the operationQueue workers, off the apply path.
 type operationUploader interface {
