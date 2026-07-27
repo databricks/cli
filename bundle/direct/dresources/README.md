@@ -44,7 +44,7 @@ If the API may return a slice's elements in a different order between calls (e.g
 
 ## No-op creates: SkipCreate
 
-If a resource can have a desired state that requires no API call at all to create (e.g. an empty grants list), implement `SkipCreate` so the planner omits the node instead of planning a create. It is only consulted when the node has no state entry yet: once state exists the node stays in the plan, so that emptying it still plans the corresponding update.
+If a desired state requires no API call to create (e.g. an empty grants list), implement `SkipCreate` and the planner omits the node instead of planning a create. It is only consulted for nodes without a state entry: once state exists the node stays in the plan, so emptying it still plans an update.
 
 ## State backward compatibility
 

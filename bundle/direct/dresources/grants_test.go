@@ -76,8 +76,7 @@ func TestBuildGrantChanges(t *testing.T) {
 	}
 }
 
-// Goes through the adapter rather than calling the method directly, so that the optional
-// method is also checked to be discovered and type-validated by NewAdapter.
+// Calls through the adapter so the optional-method wiring is covered too.
 func TestGrantsSkipCreate(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -970,8 +970,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		// A node that already has state must stay in the plan even when creating it would be
-		// a no-op, otherwise emptying it would plan no action at all.
+		// New nodes only: a node with state must stay in the plan, otherwise emptying it plans nothing.
 		if _, hasState := db.State[node]; !hasState {
 			skip, err := adapter.SkipCreate(newStateConfig)
 			if err != nil {

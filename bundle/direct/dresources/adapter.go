@@ -56,9 +56,8 @@ type IResource interface {
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
-	// [Optional] SkipCreate reports whether creating newState would be a no-op, so that the
-	// planner can omit the node instead of planning a create. Only consulted when there is no
-	// state entry for the node yet.
+	// [Optional] SkipCreate reports that creating newState is a no-op, so the planner omits the
+	// node instead of planning a create. Only consulted for nodes without a state entry.
 	// Example: func (*ResourceGrants) SkipCreate(state *GrantsState) bool
 	SkipCreate(newState any) bool
 
@@ -469,8 +468,7 @@ func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, erro
 	return id, remoteState, nil
 }
 
-// SkipCreate reports whether creating newState would be a no-op. Resources that do not
-// implement it always need a create.
+// SkipCreate reports whether creating newState is a no-op; false if not implemented.
 func (a *Adapter) SkipCreate(newState any) (bool, error) {
 	if a.skipCreate == nil {
 		return false, nil

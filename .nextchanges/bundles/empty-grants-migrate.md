@@ -1,1 +1,1 @@
-Fixed the direct deployment engine planning a spurious `create` for a resource's empty `grants: []` list. An empty grants list with no existing state entry is now a no-op, so `bundle plan` reports no actions after `bundle deployment migrate` (Terraform never records a grants resource for an empty list).
+Fixed the direct deployment engine planning a spurious `create` for an empty `grants: []` list. Terraform records no grants resource for such a list, so `bundle plan` after `bundle deployment migrate` no longer reports an action for it.
