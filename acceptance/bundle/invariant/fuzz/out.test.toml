@@ -1,5 +1,5 @@
 Local = true
-Cloud = true
+Cloud = false
 RequiresUnityCatalog = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
