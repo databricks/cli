@@ -26,6 +26,14 @@
   "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
+    "clusters": [
+      {
+        "aws_attributes": {
+          "availability": "SPOT"
+        },
+        "label": "default"
+      }
+    ],
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/state/metadata.json"
@@ -59,6 +67,14 @@
   "path": "/api/2.1/clusters/create",
   "body": {
     "autotermination_minutes": 60,
+    "aws_attributes": {
+      "availability": "SPOT"
+    },
+    "cluster_log_conf": {
+      "s3": {
+        "destination": "s3://test-bucket/logs"
+      }
+    },
     "num_workers": 1,
     "spark_version": ""
   }
@@ -100,6 +116,27 @@
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
+    "git_source": {
+      "git_branch": "main",
+      "git_provider": "gitHub",
+      "git_url": "https://example.com/repo"
+    },
+    "job_clusters": [
+      {
+        "job_cluster_key": "main",
+        "new_cluster": {
+          "aws_attributes": {
+            "availability": "SPOT"
+          },
+          "cluster_log_conf": {
+            "s3": {
+              "destination": "s3://test-bucket/logs"
+            }
+          },
+          "num_workers": 1
+        }
+      }
+    ],
     "max_concurrent_runs": 1,
     "queue": {
       "enabled": true

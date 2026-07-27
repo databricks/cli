@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Generate databricks.yml + empty_fields.txt covering every settable string field.
+"""Generate databricks.yml + empty_fields.txt covering settable string fields.
 
-For each resource we have a deployable base config (the invariant fixtures), we
-overlay every top-level optional string field set to "" and record it in
-empty_fields.txt as "<create-path> <field>". The comparison test then deploys
-through both engines and diffs which empties each drops.
+base.yml defines a deployable skeleton per resource, including whichever nested
+blocks we want to cover (job_clusters[*].new_cluster, git_source, one cloud
+attributes block, ...). This script walks every resource subtree and sets every
+settable string LEAF (including nested ones) that the base doesn't already set
+to "". Coverage is therefore scoped to the blocks present in base.yml, which is
+how we avoid mutually-exclusive blocks (aws vs gcp attributes, git_source vs
+none) that would make terraform abort.
 
-Sources:
-  - out.fields.txt: field inventory (path, Go type, flags). type=="string"
-    distinguishes plain strings from enums (e.g. compute.RuntimeEngine), so
-    filtering to "string" automatically skips enums, which terraform rejects
-    when empty.
-  - resources.generated.yml: output_only classification (fields the user cannot
-    set), excluded from the overlay.
+A field is settable/eligible when out.fields.txt types it as `string` (this
+skips enums, which are named types) with flag ALL or INPUT, and it is not
+output_only (resources.generated.yml), a bundle-framework field, or a known
+terraform-erroring field.
 
 Run from the repo root; writes databricks.yml and empty_fields.txt in the test
 directory:
@@ -27,37 +27,30 @@ import yaml
 
 FIELDS = Path("acceptance/bundle/refschema/out.fields.txt")
 GENERATED = Path("bundle/direct/dresources/resources.generated.yml")
-BASE = Path("acceptance/bundle/empty_string_dropped/base.yml")
+TESTDIR = Path("acceptance/bundle/empty_string_dropped")
+BASE = TESTDIR / "base.yml"
 
 # Bundle-framework fields present on every resource; not real API inputs.
 FRAMEWORK_FIELDS = {"id", "url", "modified_status"}
 
-# Fields that make terraform error at plan time, so no request is recorded and
-# there is nothing to compare. Keyed by resource type. Direct-engine behavior for
-# these is covered elsewhere.
+# Leaf field names that make terraform error at plan time (ConflictsWith, enum
+# validation on string-typed fields, computed attributes), so no request is
+# recorded. Applied per resource type. Matched by leaf name at any depth.
 TERRAFORM_ERRORS = {
-    # ConflictsWith: a cluster may set node type OR instance pool, not both, and
-    # terraform rejects even empty strings for the losing side.
     "clusters": {"instance_pool_id", "driver_instance_pool_id", "driver_node_type_id"},
-    "pipelines": {
-        # Enum validation ("" not accepted) — these are typed `string` in
-        # out.fields.txt but the TF provider validates them as enums.
-        "channel",
-        "edition",
-        # ConflictsWith pairs: catalog<->storage, schema<->target.
-        "catalog",
-        "storage",
-        "schema",
-        "target",
+    "jobs": {
+        "instance_pool_id",
+        "driver_instance_pool_id",
+        "driver_node_type_id",
+        # git_source: branch/commit/tag are mutually exclusive; base sets branch.
+        "git_commit",
+        "git_tag",
     },
-    "sql_warehouses": {
-        # Computed/unconfigurable in the TF provider; setting any value errors.
-        "creator_name",
-    },
+    "pipelines": {"channel", "edition", "catalog", "storage", "schema", "target"},
+    "sql_warehouses": {"creator_name"},
 }
 
-# Map resource type (plural, as in databricks.yml) to a substring that uniquely
-# identifies its create-request path (matched against the recorded request path).
+# Map resource type to a substring uniquely identifying its create-request path.
 CREATE_PATHS = {
     "clusters": "clusters/create",
     "jobs": "jobs/create",
@@ -68,17 +61,19 @@ CREATE_PATHS = {
     "registered_models": "/unity-catalog/models",
     "schemas": "/unity-catalog/schemas",
     "volumes": "/unity-catalog/volumes",
-    "catalogs": "/unity-catalog/catalogs",
-    "external_locations": "/unity-catalog/external-locations",
     "database_instances": "/database/instances",
-    "vector_search_endpoints": "/vector-search/endpoints",
-    "model_serving_endpoints": "/serving-endpoints",
 }
 
 
-def settable_string_fields():
-    """Return {resource_type: [field, ...]} of top-level settable string fields."""
-    pat = re.compile(r"^resources\.([a-z_]+)\.\*\.([a-z_]+)$")
+def string_leaf_parents():
+    """Map resource type -> {parent_schema_path: {leaf field names}}.
+
+    Schema paths mirror out.fields.txt: dotted segments, list elements marked
+    with "[*]" (e.g. "job_clusters[*].new_cluster"). Only string leaves that are
+    real object fields are kept: names ending in "[*]" (string-array elements) or
+    "*" (map values) are skipped.
+    """
+    pat = re.compile(r"^resources\.([a-z_]+)\.\*\.(.+)$")
     result = {}
     for line in FIELDS.read_text().splitlines():
         parts = line.split("\t")
@@ -90,12 +85,16 @@ def settable_string_fields():
         m = pat.match(path)
         if not m:
             continue
-        result.setdefault(m.group(1), []).append(m.group(2))
+        rtype, rel = m.group(1), m.group(2)
+        if rel.endswith(("[*]", ".*")) or rel == "*":
+            continue
+        parent, _, leaf = rel.rpartition(".")
+        result.setdefault(rtype, {}).setdefault(parent, set()).add(leaf)
     return result
 
 
 def output_only_fields():
-    """Return {resource_type: {field, ...}} the backend computes (user can't set)."""
+    """Map resource type -> {output_only field paths} (user cannot set)."""
     gen = yaml.safe_load(GENERATED.read_text()) or {}
     result = {}
     for rtype, spec in (gen.get("resources") or {}).items():
@@ -107,40 +106,48 @@ def output_only_fields():
     return result
 
 
+def fill(node, schema_path, body_path, parents, excluded, create_path, empty_fields):
+    """Recursively set settable string leaves under node to ""; recurse into blocks.
+
+    schema_path uses out.fields.txt syntax (list elements marked "[*]") to look up
+    eligible leaves; body_path is the flattened request-body path (no list index,
+    matching dropped_fields.py's _collect) recorded in empty_fields.txt.
+    """
+    if isinstance(node, dict):
+        for leaf in sorted(parents.get(schema_path, set())):
+            if leaf in node or leaf in excluded:
+                continue
+            node[leaf] = ""
+            full = f"{body_path}.{leaf}" if body_path else leaf
+            empty_fields.append(f"{create_path} {full}")
+        for key, value in list(node.items()):
+            schema_child = f"{schema_path}.{key}" if schema_path else key
+            body_child = f"{body_path}.{key}" if body_path else key
+            fill(value, schema_child, body_child, parents, excluded, create_path, empty_fields)
+    elif isinstance(node, list):
+        for item in node:
+            fill(item, schema_path + "[*]", body_path, parents, excluded, create_path, empty_fields)
+
+
 def main():
-    settable = settable_string_fields()
+    parents = string_leaf_parents()
     output_only = output_only_fields()
     base = yaml.safe_load(BASE.read_text())
 
     empty_fields = []
-    resources = base.setdefault("resources", {})
-
-    for rtype, entries in sorted(resources.items()):
+    for rtype, entries in sorted(base.get("resources", {}).items()):
         if rtype not in CREATE_PATHS:
             sys.exit(f"no create path mapped for resource type {rtype!r}")
-        create_path = CREATE_PATHS[rtype]
         excluded = output_only.get(rtype, set()) | FRAMEWORK_FIELDS | TERRAFORM_ERRORS.get(rtype, set())
-        overlay = sorted(f for f in settable.get(rtype, []) if f not in excluded)
+        for cfg in entries.values():
+            fill(cfg, "", "", parents.get(rtype, {}), excluded, CREATE_PATHS[rtype], empty_fields)
 
-        for cfg in dict(sorted(entries.items())).values():
-            for field in overlay:
-                # Don't overwrite fields the base config sets: those are the
-                # required / meaningful values that make the resource deployable
-                # (e.g. warehouse name, cluster node_type_id). Emptying them
-                # would trip client-side "required" validation and abort the
-                # whole deploy before any request is recorded.
-                if field in cfg:
-                    continue
-                cfg[field] = ""
-                empty_fields.append(f"{create_path} {field}")
-
-    testdir = Path("acceptance/bundle/empty_string_dropped")
     lines = sorted({f + "\n" for f in empty_fields})
-    (testdir / "empty_fields.txt").write_text(
+    (TESTDIR / "empty_fields.txt").write_text(
         '# Generated by gen_empty_config.py. Fields set to "" in databricks.yml,\n'
-        '# as "<create-path> <body-field>".\n' + "".join(lines)
+        '# as "<create-path> <body-field-leaf>".\n' + "".join(lines)
     )
-    (testdir / "databricks.yml").write_text(
+    (TESTDIR / "databricks.yml").write_text(
         "# Generated by gen_empty_config.py. Do not edit; edit base.yml and regenerate.\n"
         + yaml.dump(base, sort_keys=True, default_flow_style=False)
     )
