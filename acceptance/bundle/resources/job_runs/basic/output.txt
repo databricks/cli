@@ -1,53 +1,29 @@
 
 === deploy triggers exactly one run
->>> [CLI] bundle validate
-Name: job-runs-basic
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
-
-Validation OK!
-
 >>> [CLI] bundle plan
 create job_runs.my_run
 create jobs.my_job
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle summary
-Name: job-runs-basic
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
-Resources:
-  Job Runs:
-    my_run:
-      Name: 
-      URL:  (not deployed)
-  Jobs:
-    my_job:
-      Name: my-job
-      URL:  (not deployed)
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
 Deploying resources...
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[MY_JOB_ID]/run/[MY_RUN_ID]
+Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
 [TIMESTAMP] "my-job" RUNNING
 [TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 
+=== redeploy does not trigger a second run
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle summary
 Name: job-runs-basic

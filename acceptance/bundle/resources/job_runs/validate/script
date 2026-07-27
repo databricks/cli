@@ -1,0 +1,2 @@
+title "unsupported job_runs configuration is rejected before deploy"
+musterr trace $CLI bundle validate

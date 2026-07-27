@@ -6,20 +6,24 @@ resources:
     my_job:
       name: my-job
       tasks:
+        # The test server runs notebook tasks for real; this notebook does not
+        # exist in the workspace, so the task -- and with it the run -- fails.
         - task_key: main
           notebook_task:
-            notebook_path: /Workspace/test
+            notebook_path: /Workspace/missing-notebook
 
-    # Depends on my_run's result_state. The run finishes FAILED (see test.toml
-    # stub), so the deploy aborts at the run and this job is never created.
+    # Depends on my_run's result_state. The run fails, so the deploy aborts at
+    # the run and this job is never created.
     downstream_job:
       name: downstream-job
       tags:
         run_result: ${resources.job_runs.my_run.state.result_state}
       tasks:
         - task_key: main
-          notebook_task:
-            notebook_path: /Workspace/test
+          condition_task:
+            op: EQUAL_TO
+            left: "1"
+            right: "1"
 
   job_runs:
     my_run:

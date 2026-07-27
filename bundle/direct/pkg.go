@@ -21,6 +21,9 @@ type DeploymentUnit struct {
 	// Resource identifier: "resources.jobs.foo" or "resources.jobs.foo.permissions"
 	ResourceKey string
 
+	// Workspace root path of this deployment; see dresources.CreateIdentity.
+	DeploymentRoot string
+
 	// Implementation for this resource; all deployments from the same group share the adapter
 	Adapter *dresources.Adapter
 

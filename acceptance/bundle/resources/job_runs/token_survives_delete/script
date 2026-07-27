@@ -1,0 +1,53 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+STATE=.databricks/bundle/default/resources.json
+run_id() {
+    jq -r '.state["resources.job_runs.my_run"].__id__' "$STATE"
+}
+
+# Neither recreate nor destroy deletes a run: it is immutable history. Its
+# idempotency token therefore stays live and keeps deduping.
+
+title "deploy with env=dev triggers the first run"
+trace $CLI bundle deploy
+dev1=$(run_id)
+
+title "flip env dev -> prod: the config changed, so a fresh, different run is triggered"
+trace update_file.py databricks.yml "env: dev" "env: prod"
+trace $CLI bundle deploy
+prod=$(run_id)
+
+# The dev->prod recreate left the original dev run in place, so its token is
+# still live. Flipping back re-issues run-now with that token and dedupes onto
+# the original dev run instead of starting a new one.
+title "flip env prod -> dev: dedupes back to the original dev run"
+trace update_file.py databricks.yml "env: prod" "env: dev"
+trace $CLI bundle deploy
+dev2=$(run_id)
+
+if [ "$dev1" = "$dev2" ] && [ "$dev1" != "$prod" ]; then
+    echo "flip-back reused the original dev run ($dev1); prod had its own run ($prod)"
+else
+    echo "unexpected run ids: dev1=$dev1 prod=$prod dev2=$dev2"
+fi
+
+title "destroy removes the resource from state but leaves the run in place"
+trace $CLI bundle destroy --auto-approve
+
+title "redeploy after destroy triggers a fresh run"
+# The job is recreated with a new id, so the run config -- and its token --
+# differ from the destroyed deployment's.
+trace $CLI bundle deploy
+after_destroy=$(run_id)
+if [ "$after_destroy" != "$dev1" ]; then
+    echo "redeploy after destroy started a new run ($after_destroy)"
+else
+    echo "unexpected: redeploy reused the pre-destroy run ($dev1)"
+fi
+
+title "no run was ever deleted"
+trace print_requests.py --keep //jobs/runs/delete

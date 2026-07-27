@@ -1,1 +1,1 @@
-direct: the experimental `job_runs` resource now waits for the run to finish, fails the deploy on a non-success result, and dedupes runs on retries. Set `rerun_token` to force a fresh run, or `wait: false` to skip waiting.
+direct: the experimental `job_runs` resource now waits for the run to finish, fails the deploy on a non-success result, and dedupes runs on retries. Set `rerun_token` to force a fresh run, `wait_for_completion: false` to skip waiting, or `timeout` to bound the wait.

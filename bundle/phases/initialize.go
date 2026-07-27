@@ -177,8 +177,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 
-		// job_runs' idempotency_token is computed automatically, so reject a user-set value.
-		validate.ValidateJobRunIdempotencyToken(),
+		// Reads (typed): b.Config.Resources.JobRuns, (dynamic): * (searches for
+		// ${resources.job_runs.*.state} references)
+		// Rejects a user-set idempotency_token, an unparseable timeout, and
+		// references to the state of a run the deploy does not wait for.
+		validate.ValidateJobRuns(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference

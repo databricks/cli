@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-wait-output/default/files...
 Deploying resources...
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 [TIMESTAMP] "my-job" RUNNING
 [TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
@@ -28,8 +28,10 @@ Deployment complete!
     },
     "tasks": [
       {
-        "notebook_task": {
-          "notebook_path": "/Workspace/test"
+        "condition_task": {
+          "left": "1",
+          "op": "EQUAL_TO",
+          "right": "1"
         },
         "task_key": "main"
       }
@@ -56,8 +58,10 @@ Deployment complete!
     },
     "tasks": [
       {
-        "notebook_task": {
-          "notebook_path": "/Workspace/test"
+        "condition_task": {
+          "left": "1",
+          "op": "EQUAL_TO",
+          "right": "1"
         },
         "task_key": "main"
       }

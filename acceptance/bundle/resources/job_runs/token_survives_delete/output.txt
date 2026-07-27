@@ -1,0 +1,69 @@
+
+=== deploy with env=dev triggers the first run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-token-survives-delete/default/files...
+Deploying resources...
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+[TIMESTAMP] "my-job" RUNNING
+[TIMESTAMP] "my-job" TERMINATED SUCCESS
+Updating deployment state...
+Deployment complete!
+
+=== flip env dev -> prod: the config changed, so a fresh, different run is triggered
+>>> update_file.py databricks.yml env: dev env: prod
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-token-survives-delete/default/files...
+Deploying resources...
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+[TIMESTAMP] "my-job" RUNNING
+[TIMESTAMP] "my-job" TERMINATED SUCCESS
+Updating deployment state...
+Deployment complete!
+
+=== flip env prod -> dev: dedupes back to the original dev run
+>>> update_file.py databricks.yml env: prod env: dev
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-token-survives-delete/default/files...
+Deploying resources...
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+[TIMESTAMP] "my-job" TERMINATED SUCCESS
+Updating deployment state...
+Deployment complete!
+flip-back reused the original dev run ([NUMID]); prod had its own run ([NUMID])
+
+=== destroy removes the resource from state but leaves the run in place
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-token-survives-delete/default
+
+Deleting files...
+Destroy complete!
+
+=== redeploy after destroy triggers a fresh run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-token-survives-delete/default/files...
+Deploying resources...
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+[TIMESTAMP] "my-job" RUNNING
+[TIMESTAMP] "my-job" TERMINATED SUCCESS
+Updating deployment state...
+Deployment complete!
+redeploy after destroy started a new run ([NUMID])
+
+=== no run was ever deleted
+>>> print_requests.py --keep //jobs/runs/delete
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-token-survives-delete/default
+
+Deleting files...
+Destroy complete!

@@ -2,33 +2,38 @@ package dresources
 
 import "context"
 
-type resourceIdentityKey struct{}
+// CreateIdentity is the deployment-scoped identity the framework attaches to the
+// create path, for resources that must derive a stable create-time key (e.g. a
+// run-now idempotency token) instead of letting the backend generate one.
+//
+// Every part is reconstructible from config and state, so a deploy that crashes
+// mid-create derives the same identity on the next attempt.
+type CreateIdentity struct {
+	// Deployment is the bundle's workspace root path. It keeps deployments that
+	// share a workspace (different targets, different users) from deriving the
+	// same key for the same resource.
+	Deployment string
 
-// WithResourceIdentity records the deployment-scoped key of the resource being
-// deployed, so resources can derive a stable per-resource seed (e.g. a run-now
-// idempotency token). Set once by the framework in DeploymentUnit.Deploy.
-func WithResourceIdentity(ctx context.Context, key string) context.Context {
-	return context.WithValue(ctx, resourceIdentityKey{}, key)
+	// ResourceKey is the deployment-local key, e.g. "resources.job_runs.nightly".
+	ResourceKey string
+
+	// PriorID is the id of a resource whose remote copy has vanished, set only
+	// when re-creating it. Resources fold it in so the new key differs from the
+	// gone one, which the backend may still hold (e.g. a tombstoned run token).
+	PriorID string
 }
 
-// ResourceIdentity returns the key set by WithResourceIdentity, or "" if unset
-// (e.g. the unit-test harness that calls resources directly).
-func ResourceIdentity(ctx context.Context) string {
-	key, _ := ctx.Value(resourceIdentityKey{}).(string)
-	return key
+type createIdentityKey struct{}
+
+// WithCreateIdentity records the identity of the resource being created. Set by
+// the framework in DeploymentUnit.Deploy; see CreateIdentity.
+func WithCreateIdentity(ctx context.Context, id CreateIdentity) context.Context {
+	return context.WithValue(ctx, createIdentityKey{}, id)
 }
 
-type priorResourceIDKey struct{}
-
-// WithPriorResourceID records the id of a resource whose remote copy has
-// vanished, letting a re-create derive a fresh identity (e.g. a job run's
-// idempotency token) rather than reuse the gone one, which may be tombstoned.
-func WithPriorResourceID(ctx context.Context, id string) context.Context {
-	return context.WithValue(ctx, priorResourceIDKey{}, id)
-}
-
-// PriorResourceID returns the id set by WithPriorResourceID, or "" if unset.
-func PriorResourceID(ctx context.Context) string {
-	id, _ := ctx.Value(priorResourceIDKey{}).(string)
-	return id
+// GetCreateIdentity returns the identity set by WithCreateIdentity. ok is false
+// outside a deploy, e.g. in tests that drive a resource directly.
+func GetCreateIdentity(ctx context.Context) (CreateIdentity, bool) {
+	id, ok := ctx.Value(createIdentityKey{}).(CreateIdentity)
+	return id, ok
 }

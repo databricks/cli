@@ -1,10 +1,13 @@
 package workspaceurls
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"slices"
 	"strings"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 var resourceURLPatterns = map[string]string{
@@ -88,6 +91,41 @@ func JobRunPath(jobID, runID string) string {
 func JobRunURL(baseURL url.URL, jobID, runID string) string {
 	baseURL.Path = JobRunPath(jobID, runID)
 	return baseURL.String()
+}
+
+// JobRunPageURL converts the legacy run URL returned by the Jobs API
+//
+//	https://<host>/?o=<id>#job/<jobID>/run/<runID>
+//
+// into the modern path form (see JobRunPath), preserving the workspace selector
+// query param. The conversion is cosmetic, so an unexpected format is returned
+// unchanged.
+func JobRunPageURL(ctx context.Context, raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		log.Debugf(ctx, "could not parse run URL %q: %v", raw, err)
+		return raw
+	}
+
+	jobID, runID, ok := parseLegacyRunFragment(u.Fragment)
+	if !ok {
+		log.Debugf(ctx, "unexpected run URL fragment %q", u.Fragment)
+		return raw
+	}
+
+	u.Fragment = ""
+	u.Path = "/" + JobRunPath(jobID, runID)
+	return u.String()
+}
+
+// parseLegacyRunFragment extracts the job and run IDs from a legacy run URL
+// fragment of the form "job/<jobID>/run/<runID>".
+func parseLegacyRunFragment(fragment string) (jobID, runID string, ok bool) {
+	parts := strings.Split(fragment, "/")
+	if len(parts) != 4 || parts[0] != "job" || parts[2] != "run" || parts[1] == "" || parts[3] == "" {
+		return "", "", false
+	}
+	return parts[1], parts[3], true
 }
 
 // ResourceURL constructs a workspace URL for a named resource type and ID.

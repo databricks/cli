@@ -3,8 +3,13 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/files...
 Deploying resources...
-[TIMESTAMP] "" TERMINATED FAILED
-Error: cannot create resources.job_runs.my_run: job run [NUMID] did not succeed: FAILED; bump rerun_token to start a fresh run
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+[TIMESTAMP] "my-job" RUNNING
+[TIMESTAMP] "my-job" TERMINATED FAILED task main failed
+Error: cannot create resources.job_runs.my_run: job run [NUMID] did not succeed: FAILED: task main failed
+task "main": notebook not found in workspace: /Workspace/missing-notebook (also tried .py)
+run page: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+set rerun_token to a new value to trigger a fresh run
 
 Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
 
@@ -18,5 +23,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
-Exit code: 1

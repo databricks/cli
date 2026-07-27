@@ -3,6 +3,11 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 RecordRequests = true
 
+# The fake workspace runs notebook and python tasks for real and fails the run
+# when the file is missing. Bundles here use condition_task, which it does not
+# execute, so the run succeeds -- except in failed_run, where the failure is the
+# point.
+
 # idempotency_token is a SHA-256 that differs every run (job_id comes from a
 # time-based counter). Mask just that field so run-now goldens stay stable.
 [[Repls]]

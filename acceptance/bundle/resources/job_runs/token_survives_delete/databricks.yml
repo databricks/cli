@@ -1,5 +1,5 @@
 bundle:
-  name: job-runs-flip-back
+  name: job-runs-token-survives-delete
 
 resources:
   jobs:
@@ -7,8 +7,10 @@ resources:
       name: my-job
       tasks:
         - task_key: main
-          notebook_task:
-            notebook_path: /Workspace/test
+          condition_task:
+            op: EQUAL_TO
+            left: "1"
+            right: "1"
 
   job_runs:
     my_run:

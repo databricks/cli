@@ -332,13 +332,17 @@ var testDeps = map[string]prepareWorkspace{
 
 	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		// A run can only be triggered against an existing job, so create one first.
+		// The fake workspace executes notebook and python tasks for real and fails
+		// the run when the file is missing, so use a task type it does not execute.
 		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-for-run",
 			Tasks: []jobs.Task{
 				{
 					TaskKey: "t",
-					NotebookTask: &jobs.NotebookTask{
-						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+					ConditionTask: &jobs.ConditionTask{
+						Op:    jobs.ConditionTaskOpEqualTo,
+						Left:  "1",
+						Right: "1",
 					},
 				},
 			},
@@ -966,7 +970,11 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	newState, err := adapter.PrepareState(inputConfig)
 	require.NoError(t, err, "PrepareState failed")
 
-	ctx := t.Context()
+	// Stand in for the framework, which always attaches a create identity.
+	ctx := WithCreateIdentity(t.Context(), CreateIdentity{
+		Deployment:  "/Workspace/Users/user@example.com/.bundle/test/default",
+		ResourceKey: "resources." + group + ".test",
+	})
 
 	// initial DoRead() cannot find the resource
 	remote, err := adapter.DoRead(ctx, "1234")

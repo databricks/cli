@@ -1,7 +1,7 @@
 
-=== wait: false triggers the run and returns without waiting: no run URL / progress lines
+=== wait_for_completion: false triggers the run and returns without waiting: no run URL / progress lines
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-wait-false/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-deploy-options/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -20,19 +20,21 @@ Deployment complete!
 >>> read_id.py my_run
 [MY_RUN_ID]
 
-=== flipping wait false -> true is a deploy-time toggle, not a config change, so no re-trigger
->>> update_file.py databricks.yml wait: false wait: true
+=== changing either deploy-time knob is not a config change, so nothing re-triggers
+>>> update_file.py databricks.yml wait_for_completion: false wait_for_completion: true
+
+>>> update_file.py databricks.yml timeout: 30m timeout: 2h
 
 >>> [CLI] bundle plan -o json
 "skip"
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-wait-false/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-deploy-options/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== the wait-flip redeploy issued no further run-now request
+=== the redeploy issued no further run-now request
 >>> print_requests.py //jobs/run-now
 
 >>> [CLI] bundle destroy --auto-approve
@@ -40,7 +42,7 @@ The following resources will be deleted:
   delete resources.job_runs.my_run
   delete resources.jobs.my_job
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-wait-false/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-deploy-options/default
 
 Deleting files...
 Destroy complete!

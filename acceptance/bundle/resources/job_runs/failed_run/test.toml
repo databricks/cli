@@ -1,16 +1,2 @@
-# Force my_run's GetRun to report a terminal FAILED result so we can assert a
-# failed run fails the deploy. The first handler registered for a pattern wins,
-# so this overrides the default runs/get handler.
-
 # The deploy fails mid-way, leaving local deployment state behind.
 Ignore = [".databricks"]
-
-[[Server]]
-Pattern = "GET /api/2.2/jobs/runs/get"
-Response.Body = '''{
-  "run_id": 1,
-  "state": {
-    "life_cycle_state": "TERMINATED",
-    "result_state": "FAILED"
-  }
-}'''

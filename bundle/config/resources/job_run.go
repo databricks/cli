@@ -22,12 +22,19 @@ type JobRun struct {
 
 	// RerunToken forces a new run when its value changes; it feeds the computed
 	// idempotency_token but is never sent to the API. Leave it unset for normal
-	// deploys; bump it to re-run identical config or retry a failed run.
+	// deploys; change it to re-run identical config or retry a failed run.
+	//
+	// The Jobs API keeps each idempotency_token for ~60 days, so reverting to an
+	// earlier value within that window rejoins the run it first triggered rather
+	// than starting a new one.
 	RerunToken string `json:"rerun_token,omitempty"`
 
-	// Wait, when false, triggers the run without blocking the deploy on its
-	// outcome. Defaults to true (wait for completion, fail on non-success).
-	Wait *bool `json:"wait,omitempty"`
+	// WaitForCompletion, when false, triggers the run without blocking the deploy
+	// on its outcome. Defaults to true (wait, fail the deploy on non-success).
+	WaitForCompletion *bool `json:"wait_for_completion,omitempty"`
+
+	// Timeout bounds that wait, as a Go duration string. Defaults to 24h.
+	Timeout string `json:"timeout,omitempty"`
 
 	// ResolvedJobID holds the run's job_id loaded from state, used only to build
 	// the run URL. Keeping it separate from RunNow.JobId (a ${resources.jobs.*.id}

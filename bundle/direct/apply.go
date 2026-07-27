@@ -27,15 +27,10 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {
 	ctx = log.WithPrefix(ctx, "deploying "+d.ResourceKey)
-	ctx = dresources.WithResourceIdentity(ctx, d.ResourceKey)
 	if actionType == deployplan.Create {
 		// A leftover state id on a create means the remote vanished (recreate
-		// downgraded to create). Expose it so a resource that derives create-time
-		// data from its prior id can avoid reusing the gone one (see
-		// WithPriorResourceID).
-		if priorID := db.GetResourceID(d.ResourceKey); priorID != "" {
-			ctx = dresources.WithPriorResourceID(ctx, priorID)
-		}
+		// downgraded to create); otherwise this is a first create.
+		ctx = d.withCreateIdentity(ctx, db.GetResourceID(d.ResourceKey))
 		return d.Create(ctx, db, newState)
 	}
 
@@ -46,6 +41,10 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 
 	switch actionType {
 	case deployplan.Recreate:
+		// Recreate ends in Create as well. Its prior id is deliberately left out:
+		// Recreate drops the state entry before creating, so a retry after a crash
+		// mid-create sees no prior id and must derive the same identity.
+		ctx = d.withCreateIdentity(ctx, "")
 		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.Update:
 		return d.Update(ctx, db, oldID, newState, planEntry)
@@ -56,6 +55,16 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	default:
 		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
+}
+
+// withCreateIdentity attaches what a resource needs to derive stable create-time
+// data, such as an idempotency token; see dresources.CreateIdentity.
+func (d *DeploymentUnit) withCreateIdentity(ctx context.Context, priorID string) context.Context {
+	return dresources.WithCreateIdentity(ctx, dresources.CreateIdentity{
+		Deployment:  d.DeploymentRoot,
+		ResourceKey: d.ResourceKey,
+		PriorID:     priorID,
+	})
 }
 
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {

@@ -1,0 +1,22 @@
+
+=== unsupported job_runs configuration is rejected before deploy
+>>> [CLI] bundle validate
+Error: timeout must be a duration such as "30m" or "2h": time: invalid duration "soon"
+  at resources.job_runs.bad_timeout.timeout
+  in databricks.yml:40:16
+
+Error: idempotency_token is computed automatically and must not be set in bundle configuration; set `rerun_token` to force a new run
+  at resources.job_runs.bad_token.idempotency_token
+  in databricks.yml:35:26
+
+Error: "resources.job_runs.my_run.state.result_state": the run's state is not known because resources.job_runs.my_run sets wait_for_completion: false
+  at resources.jobs.downstream_job.tags.run_result
+  in databricks.yml:19:21
+
+Name: job-runs-validate
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-validate/default
+
+Found 3 errors

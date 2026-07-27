@@ -1,5 +1,5 @@
 bundle:
-  name: job-runs-wait-output
+  name: job-runs-validate
 
 resources:
   jobs:
@@ -12,11 +12,10 @@ resources:
             left: "1"
             right: "1"
 
-    # Reads the run's output. Must not be my_job (the run's target), or the
-    # reference would cycle: my_run already depends on my_job.id.
     downstream_job:
       name: downstream-job
       tags:
+        # Rejected: my_run is not waited for, so its state is unknown here.
         run_result: ${resources.job_runs.my_run.state.result_state}
       tasks:
         - task_key: main
@@ -28,3 +27,14 @@ resources:
   job_runs:
     my_run:
       job_id: ${resources.jobs.my_job.id}
+      wait_for_completion: false
+
+    bad_token:
+      job_id: ${resources.jobs.my_job.id}
+      # Rejected: the token is computed from the run's configuration.
+      idempotency_token: mine
+
+    bad_timeout:
+      job_id: ${resources.jobs.my_job.id}
+      # Rejected: not a duration.
+      timeout: soon

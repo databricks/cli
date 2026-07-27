@@ -1233,7 +1233,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.QueueSettings"
                       },
                       "rerun_token": {
-                        "description": "An arbitrary token that forces a new run when its value changes. Leave it unset for normal deploys; change it to re-run the same job configuration or to retry a run that finished unsuccessfully.",
+                        "description": "An arbitrary token that forces a new run when its value changes. Leave it unset for normal deploys; change it to re-run the same job configuration or to retry a run that finished unsuccessfully. Each distinct value maps to one run for about 60 days, so restoring a previous value within that window rejoins the run it originally triggered instead of starting a new one.",
                         "$ref": "#/$defs/string"
                       },
                       "spark_submit_params": {
@@ -1252,8 +1252,12 @@
                         "doNotSuggest": true,
                         "deprecated": true
                       },
-                      "wait": {
-                        "description": "Whether the deploy waits for the run to finish. Defaults to true, which waits for completion and fails the deploy if the run does not succeed. Set to false to trigger the run and continue without waiting for its outcome.",
+                      "timeout": {
+                        "description": "How long the deploy waits for the run to finish, as a duration such as \"30m\" or \"2h\". Defaults to 24h. Ignored when `wait_for_completion` is false.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "wait_for_completion": {
+                        "description": "Whether the deploy waits for the run to finish. Defaults to true, which waits for completion and fails the deploy if the run does not succeed. Set to false to trigger the run and continue without waiting for its outcome; the run's `state` is then unknown and cannot be referenced by other resources.",
                         "$ref": "#/$defs/bool"
                       }
                     },

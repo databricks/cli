@@ -4,20 +4,21 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "wait: false triggers the run and returns without waiting: no run URL / progress lines"
+title "wait_for_completion: false triggers the run and returns without waiting: no run URL / progress lines"
 trace $CLI bundle deploy
 
 title "the run-now request was made and its id is stored in state"
 trace print_requests.py //jobs/run-now
 trace read_id.py my_run
 
-title "flipping wait false -> true is a deploy-time toggle, not a config change, so no re-trigger"
-# ignore_local_changes hides the wait diff; the planner skips the run.
-trace update_file.py databricks.yml "wait: false" "wait: true"
+title "changing either deploy-time knob is not a config change, so nothing re-triggers"
+# ignore_local_changes hides both diffs; the planner skips the run.
+trace update_file.py databricks.yml "wait_for_completion: false" "wait_for_completion: true"
+trace update_file.py databricks.yml "timeout: 30m" "timeout: 2h"
 trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"].action // "none"'
 trace $CLI bundle deploy
 
-title "the wait-flip redeploy issued no further run-now request"
+title "the redeploy issued no further run-now request"
 # print_requests.py consumed the initial run-now above, so an empty result here
 # confirms the redeploy added none.
 trace print_requests.py //jobs/run-now

@@ -7,15 +7,12 @@ cleanup() {
 trap cleanup EXIT
 
 title "deploy triggers exactly one run"
-trace $CLI bundle validate
 trace $CLI bundle plan
-trace $CLI bundle summary
 trace $CLI bundle deploy
 
-# confirm that redeploy does not trigger a second run
-trace $CLI bundle deploy
-
+title "redeploy does not trigger a second run"
 trace $CLI bundle plan
+trace $CLI bundle deploy
 trace $CLI bundle summary
 
 title "exactly one run-now request was made"

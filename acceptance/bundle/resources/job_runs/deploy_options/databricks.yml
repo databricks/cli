@@ -1,0 +1,23 @@
+bundle:
+  name: job-runs-deploy-options
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          condition_task:
+            op: EQUAL_TO
+            left: "1"
+            right: "1"
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
+      # wait_for_completion and timeout control the deploy, not the run:
+      # wait_for_completion: false triggers the run without blocking on its
+      # outcome, so no run URL / progress lines are printed and a non-success
+      # result never fails the deploy.
+      wait_for_completion: false
+      timeout: 30m

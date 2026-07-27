@@ -3,6 +3,7 @@ package dresources
 import (
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -11,100 +12,105 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testIdentity is what the framework attaches on a first create.
+var testIdentity = CreateIdentity{
+	Deployment:  "/Workspace/Users/me/.bundle/mybundle/default",
+	ResourceKey: "resources.job_runs.nightly",
+}
+
+func tokenFor(t *testing.T, identity CreateIdentity, state *JobRunState) string {
+	t.Helper()
+	token, err := idempotencyToken(WithCreateIdentity(t.Context(), identity), state)
+	require.NoError(t, err)
+	return token
+}
+
+func TestIdempotencyTokenRequiresIdentity(t *testing.T) {
+	// The framework always sets one, so its absence is a wiring bug, not a case
+	// to silently fall back from.
+	_, err := idempotencyToken(t.Context(), &JobRunState{RunNow: jobs.RunNow{JobId: 123}})
+	require.ErrorContains(t, err, "without a create identity")
+}
+
 func TestIdempotencyTokenIsStableHex(t *testing.T) {
-	ctx := t.Context()
 	run := jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "prod"}}
 
-	got, err := idempotencyToken(ctx, &JobRunState{RunNow: run})
-	require.NoError(t, err)
+	got := tokenFor(t, testIdentity, &JobRunState{RunNow: run})
 
 	// hex SHA-256 is always 64 lowercase hex chars (the Jobs API maximum).
 	assert.Regexp(t, "^[0-9a-f]{64}$", got)
 
 	// Deterministic: the same config yields the same token, so a retry dedupes.
-	again, err := idempotencyToken(ctx, &JobRunState{RunNow: run})
-	require.NoError(t, err)
-	assert.Equal(t, got, again)
+	assert.Equal(t, got, tokenFor(t, testIdentity, &JobRunState{RunNow: run}))
 }
 
 func TestIdempotencyTokenIgnoresPresetToken(t *testing.T) {
-	ctx := t.Context()
-	a, err := idempotencyToken(ctx, &JobRunState{RunNow: jobs.RunNow{JobId: 123}})
-	require.NoError(t, err)
-	b, err := idempotencyToken(ctx, &JobRunState{RunNow: jobs.RunNow{JobId: 123, IdempotencyToken: "user-supplied"}})
-	require.NoError(t, err)
+	base := tokenFor(t, testIdentity, &JobRunState{RunNow: jobs.RunNow{JobId: 123}})
+	preset := tokenFor(t, testIdentity, &JobRunState{RunNow: jobs.RunNow{JobId: 123, IdempotencyToken: "user-supplied"}})
 
 	// The token is cleared before hashing, so a preset value cannot change it.
-	assert.Equal(t, a, b)
+	assert.Equal(t, base, preset)
 }
 
 func TestIdempotencyTokenChangesWithConfig(t *testing.T) {
-	ctx := t.Context()
-	dev, err := idempotencyToken(ctx, &JobRunState{RunNow: jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "dev"}}})
-	require.NoError(t, err)
-	prod, err := idempotencyToken(ctx, &JobRunState{RunNow: jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "prod"}}})
-	require.NoError(t, err)
-	otherJob, err := idempotencyToken(ctx, &JobRunState{RunNow: jobs.RunNow{JobId: 456}})
-	require.NoError(t, err)
+	dev := tokenFor(t, testIdentity, &JobRunState{RunNow: jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "dev"}}})
+	prod := tokenFor(t, testIdentity, &JobRunState{RunNow: jobs.RunNow{JobId: 123, JobParameters: map[string]string{"env": "prod"}}})
+	otherJob := tokenFor(t, testIdentity, &JobRunState{RunNow: jobs.RunNow{JobId: 456}})
 
 	assert.NotEqual(t, dev, prod)     // different params --> different token
 	assert.NotEqual(t, dev, otherJob) // different job_id --> different token
 }
 
 func TestIdempotencyTokenChangesWithRerunToken(t *testing.T) {
-	ctx := t.Context()
 	run := jobs.RunNow{JobId: 123}
 
-	base, err := idempotencyToken(ctx, &JobRunState{RunNow: run})
-	require.NoError(t, err)
-	bumped, err := idempotencyToken(ctx, &JobRunState{RunNow: run, RerunToken: "v2"})
-	require.NoError(t, err)
-	bumpedAgain, err := idempotencyToken(ctx, &JobRunState{RunNow: run, RerunToken: "v2"})
-	require.NoError(t, err)
+	base := tokenFor(t, testIdentity, &JobRunState{RunNow: run})
+	bumped := tokenFor(t, testIdentity, &JobRunState{RunNow: run, RerunToken: "v2"})
+	bumpedAgain := tokenFor(t, testIdentity, &JobRunState{RunNow: run, RerunToken: "v2"})
 
-	assert.NotEqual(t, base, bumped)     // bumping rerun_token forces a new run
+	assert.NotEqual(t, base, bumped)     // changing rerun_token forces a new run
 	assert.Equal(t, bumped, bumpedAgain) // the same rerun_token value stays stable
 }
 
-func TestIdempotencyTokenIgnoresWait(t *testing.T) {
-	ctx := t.Context()
+func TestIdempotencyTokenIgnoresDeployOptions(t *testing.T) {
 	run := jobs.RunNow{JobId: 123}
 	wait := false
 
-	base, err := idempotencyToken(ctx, &JobRunState{RunNow: run})
-	require.NoError(t, err)
-	noWait, err := idempotencyToken(ctx, &JobRunState{RunNow: run, Wait: &wait})
-	require.NoError(t, err)
+	base := tokenFor(t, testIdentity, &JobRunState{RunNow: run})
+	tuned := tokenFor(t, testIdentity, &JobRunState{RunNow: run, WaitForCompletion: &wait, Timeout: "5m"})
 
-	// wait is a deploy-time toggle, not run identity, so it must not change the token.
-	assert.Equal(t, base, noWait)
+	// Neither is run identity, so changing them must not re-trigger the run.
+	assert.Equal(t, base, tuned)
 }
 
-func TestIdempotencyTokenRotatesWithPriorResourceID(t *testing.T) {
-	run := jobs.RunNow{JobId: 123}
+func TestIdempotencyTokenChangesWithIdentity(t *testing.T) {
+	state := &JobRunState{RunNow: jobs.RunNow{JobId: 123}}
 
-	base, err := idempotencyToken(t.Context(), &JobRunState{RunNow: run})
-	require.NoError(t, err)
-	rotated, err := idempotencyToken(WithPriorResourceID(t.Context(), "555"), &JobRunState{RunNow: run})
-	require.NoError(t, err)
-	rotatedAgain, err := idempotencyToken(WithPriorResourceID(t.Context(), "555"), &JobRunState{RunNow: run})
-	require.NoError(t, err)
+	base := tokenFor(t, testIdentity, state)
+
+	otherKey := testIdentity
+	otherKey.ResourceKey = "resources.job_runs.other"
+	otherDeployment := testIdentity
+	otherDeployment.Deployment = "/Workspace/Users/me/.bundle/mybundle/prod"
+
+	// Identical config must not collapse onto one run across resource keys or
+	// across deployments sharing a workspace.
+	assert.NotEqual(t, base, tokenFor(t, otherKey, state))
+	assert.NotEqual(t, base, tokenFor(t, otherDeployment, state))
+}
+
+func TestIdempotencyTokenRotatesWithPriorID(t *testing.T) {
+	state := &JobRunState{RunNow: jobs.RunNow{JobId: 123}}
+	recreate := testIdentity
+	recreate.PriorID = "555"
+
+	base := tokenFor(t, testIdentity, state)
+	rotated := tokenFor(t, recreate, state)
 
 	// Re-creating a vanished run rotates the token off the tombstoned one...
 	assert.NotEqual(t, base, rotated)
 	// ...but stays deterministic so a retry dedupes onto the fresh run.
-	assert.Equal(t, rotated, rotatedAgain)
-}
-
-func TestIdempotencyTokenChangesWithResourceIdentity(t *testing.T) {
-	run := jobs.RunNow{JobId: 123}
-	a, err := idempotencyToken(WithResourceIdentity(t.Context(), "resources.job_runs.a"), &JobRunState{RunNow: run})
-	require.NoError(t, err)
-	b, err := idempotencyToken(WithResourceIdentity(t.Context(), "resources.job_runs.b"), &JobRunState{RunNow: run})
-	require.NoError(t, err)
-
-	// Identical config under different resource keys must not collapse onto one run.
-	assert.NotEqual(t, a, b)
+	assert.Equal(t, rotated, tokenFor(t, recreate, state))
 }
 
 // jobRunClient returns a client whose GetRun always reports the given terminal
@@ -134,10 +140,49 @@ func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	_, err := r.waitForRun(t.Context(), 123)
+	_, err := r.waitForRun(t.Context(), 123, time.Minute)
 
 	// Only SUCCESS completes the deploy; a FAILED result fails it.
 	require.ErrorContains(t, err, "did not succeed: FAILED: task failed")
+}
+
+func TestJobRunWaitReportsFailedTask(t *testing.T) {
+	failed := &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateTerminated,
+		ResultState:    jobs.RunResultStateFailed,
+	}
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+		return jobs.Run{
+			RunId: 123,
+			JobId: 456,
+			State: failed,
+			Tasks: []jobs.RunTask{
+				{TaskKey: "ok", RunId: 998, State: &jobs.RunState{
+					LifeCycleState: jobs.RunLifeCycleStateTerminated,
+					ResultState:    jobs.RunResultStateSuccess,
+				}},
+				{TaskKey: "main", RunId: 999, State: failed},
+			},
+		}
+	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
+		return jobs.RunOutput{Error: "notebook not found"}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	r := (&ResourceJobRun{}).New(client)
+	_, err = r.waitForRun(t.Context(), 123, time.Minute)
+
+	// The failing task and its error are named; the task that succeeded is not.
+	require.ErrorContains(t, err, `task "main": notebook not found`)
+	assert.NotContains(t, err.Error(), `task "ok"`)
 }
 
 func TestJobRunWaitFailsOnSkipped(t *testing.T) {
@@ -147,7 +192,7 @@ func TestJobRunWaitFailsOnSkipped(t *testing.T) {
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	_, err := r.waitForRun(t.Context(), 123)
+	_, err := r.waitForRun(t.Context(), 123, time.Minute)
 
 	require.ErrorContains(t, err, "did not succeed: SKIPPED")
 }
@@ -159,7 +204,7 @@ func TestJobRunWaitSucceeds(t *testing.T) {
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	remote, err := r.waitForRun(t.Context(), 123)
+	remote, err := r.waitForRun(t.Context(), 123, time.Minute)
 
 	require.NoError(t, err)
 	require.NotNil(t, remote.State)
@@ -172,7 +217,7 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 	})
 
 	r := (&ResourceJobRun{}).New(client)
-	_, err := r.waitForRun(t.Context(), 123)
+	_, err := r.waitForRun(t.Context(), 123, time.Minute)
 
 	// INTERNAL_ERROR is the one terminal state that fails the deploy.
 	require.Error(t, err)
@@ -207,7 +252,7 @@ func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	require.NoError(t, err)
 
 	r := (&ResourceJobRun{}).New(client)
-	remote, err := r.waitForRun(t.Context(), 123)
+	remote, err := r.waitForRun(t.Context(), 123, time.Minute)
 	require.NoError(t, err)
 
 	// SUCCESS is only reachable by polling past the RUNNING reads.

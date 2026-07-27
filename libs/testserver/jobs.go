@@ -351,17 +351,16 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 
 	// run-now is idempotent: the same token returns the existing run. The token
 	// is not freed when its run is deleted, so reusing it then errors instead of
-	// starting a fresh run.
+	// starting a fresh run. Only non-empty tokens are ever recorded, so an
+	// absent token cannot match here.
 	// https://docs.databricks.com/api/workspace/jobs/runnow
-	if request.IdempotencyToken != "" {
-		if existing, ok := s.JobRunsByToken[request.IdempotencyToken]; ok {
-			if _, alive := s.JobRuns[existing]; alive {
-				return Response{Body: jobs.RunNowResponse{RunId: existing}}
-			}
-			return Response{
-				StatusCode: 400,
-				Body:       fmt.Sprintf("idempotency_token %q was used for run %d, which has been deleted", request.IdempotencyToken, existing),
-			}
+	if existing, ok := s.JobRunsByToken[request.IdempotencyToken]; ok {
+		if _, alive := s.JobRuns[existing]; alive {
+			return Response{Body: jobs.RunNowResponse{RunId: existing}}
+		}
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("idempotency_token %q was used for run %d, which has been deleted", request.IdempotencyToken, existing),
 		}
 	}
 
@@ -885,19 +884,21 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	// Simulate cloud behavior: first poll returns RUNNING, next returns TERMINATED SUCCESS.
+	// Simulate cloud behavior: first poll returns RUNNING, next returns TERMINATED
+	// with the result rolled up from the tasks.
 	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
-		// Transition stored state to TERMINATED for the next poll.
-		run.State = &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateSuccess,
-		}
-		for i := range run.Tasks {
-			run.Tasks[i].State = &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateTerminated,
-				ResultState:    jobs.RunResultStateSuccess,
+		// Transition stored state to TERMINATED for the next poll. Tasks that
+		// already finished keep their result: JobsRunNow executes them up front and
+		// records a failure there.
+		for i, task := range run.Tasks {
+			if task.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
+				run.Tasks[i].State = &jobs.RunState{
+					LifeCycleState: jobs.RunLifeCycleStateTerminated,
+					ResultState:    jobs.RunResultStateSuccess,
+				}
 			}
 		}
+		run.State = rollUpRunState(run.Tasks)
 		s.JobRuns[runIdInt] = run
 
 		// Return RUNNING for this poll (before the transition).
@@ -911,6 +912,24 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	return Response{Body: run}
 }
 
+// rollUpRunState derives a run's terminal state from its tasks, as the backend
+// does: one failed task fails the whole run, and state_message names it.
+func rollUpRunState(tasks []jobs.RunTask) *jobs.RunState {
+	for _, task := range tasks {
+		if task.State.ResultState == jobs.RunResultStateFailed {
+			return &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateTerminated,
+				ResultState:    jobs.RunResultStateFailed,
+				StateMessage:   fmt.Sprintf("task %s failed", task.TaskKey),
+			}
+		}
+	}
+	return &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateTerminated,
+		ResultState:    jobs.RunResultStateSuccess,
+	}
+}
+
 func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {
 	var request jobs.DeleteRun
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -920,18 +939,10 @@ func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {
 		}
 	}
 
-	defer s.LockUnlock()()
-
-	if _, ok := s.JobRuns[request.RunId]; !ok {
-		return Response{StatusCode: 404}
-	}
-	delete(s.JobRuns, request.RunId)
-
-	// Keep the token->run mapping as a tombstone: the Jobs API does not free an
+	// JobRunsByToken keeps its entry as a tombstone: the Jobs API does not free an
 	// idempotency_token when its run is deleted, so a later reuse errors (see
 	// JobsRunNow) rather than starting a fresh run.
-
-	return Response{}
+	return MapDelete(s, s.JobRuns, request.RunId)
 }
 
 func (s *FakeWorkspace) JobsGetRunOutput(req Request) Response {
