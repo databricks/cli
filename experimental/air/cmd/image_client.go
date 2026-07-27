@@ -29,6 +29,10 @@ const (
 	imageStatusFailed    imageStatus = "FAILED"
 )
 
+// errImageUploadFailed marks a terminal FAILED upload, so callers can classify
+// it as permanent rather than a retryable transient error.
+var errImageUploadFailed = errors.New("image upload failed")
+
 // imageRegistration is a registered image with its status and metadata.
 type imageRegistration struct {
 	DockerImageURL string      `json:"docker_image_url"`
@@ -186,7 +190,7 @@ func (c *imageClient) waitForImageReady(ctx context.Context, dockerImageURL stri
 			if msg == "" {
 				msg = "unknown error"
 			}
-			return nil, fmt.Errorf("image upload failed: %s", msg)
+			return nil, fmt.Errorf("%w: %s", errImageUploadFailed, msg)
 		case imageStatusPending, imageStatusImporting:
 			// Still uploading; fall through to sleep and poll again.
 		}

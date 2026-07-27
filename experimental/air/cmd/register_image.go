@@ -125,7 +125,8 @@ configuration (run ` + "`docker login`" + ` first); there are no credential flag
 				updated, sha, err = resolveImage(ctx, c, dockerImageURL, "", "", timeout)
 			}
 			if err != nil {
-				return renderError(ctx, cmd, "REGISTRATION_FAILED", "TRANSIENT", true,
+				kind, retryable := classifyRegistrationError(err)
+				return renderError(ctx, cmd, "REGISTRATION_FAILED", kind, retryable,
 					registrationError(dockerImageURL, err))
 			}
 		}
@@ -185,6 +186,27 @@ func discoverCredentials(ctx context.Context, w *databricks.WorkspaceClient, c *
 // the SDK's typed sentinels.
 func isAuthError(err error) bool {
 	return errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied)
+}
+
+// classifyRegistrationError maps a registration failure to the error envelope's
+// kind and retryable flag. Auth, not-found, cancellation, and a terminal FAILED
+// upload are permanent — retrying without user action won't help; a poll timeout
+// or transient API error is retryable.
+func classifyRegistrationError(err error) (kind string, retryable bool) {
+	switch {
+	case errors.Is(err, context.Canceled):
+		return "PERMANENT", false
+	case isAuthError(err):
+		return "PERMANENT", false
+	case errors.Is(err, apierr.ErrNotFound):
+		return "PERMANENT", false
+	case errors.Is(err, errImageUploadFailed):
+		return "PERMANENT", false
+	default:
+		// Poll timeout (deadline exceeded) and unclassified API errors: a later
+		// run may succeed.
+		return "TRANSIENT", true
+	}
 }
 
 // registrationError wraps an auth failure with actionable `docker login`

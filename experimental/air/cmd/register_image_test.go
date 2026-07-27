@@ -1,14 +1,42 @@
 package aircmd
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestClassifyRegistrationError(t *testing.T) {
+	cases := []struct {
+		name      string
+		err       error
+		kind      string
+		retryable bool
+	}{
+		{"auth", apierr.ErrUnauthenticated, "PERMANENT", false},
+		{"permission", apierr.ErrPermissionDenied, "PERMANENT", false},
+		{"not found", apierr.ErrNotFound, "PERMANENT", false},
+		{"canceled", context.Canceled, "PERMANENT", false},
+		{"upload failed", fmt.Errorf("%w: boom", errImageUploadFailed), "PERMANENT", false},
+		{"timeout", errors.New("image did not become AVAILABLE within 1m0s"), "TRANSIENT", true},
+		{"unknown api error", errors.New("500 internal"), "TRANSIENT", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			kind, retryable := classifyRegistrationError(tc.err)
+			assert.Equal(t, tc.kind, kind)
+			assert.Equal(t, tc.retryable, retryable)
+		})
+	}
+}
 
 func TestValidateTagPolicy(t *testing.T) {
 	require.NoError(t, validateTagPolicy(""))
