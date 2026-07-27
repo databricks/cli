@@ -1,9 +1,8 @@
 
-=== First deploy of a bundle with no resources: the deployment is created and its ID is persisted, even though no resource state was written
+=== First deploy of a bundle with no resources: the deployment is created, and its workspace node identifies it even though no resource state was written
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/files...
 Deploying resources...
-Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py //api/2.0/bundle --sort --get
@@ -11,12 +10,13 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/state",
     "target_name": "default"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "1"
   },
@@ -28,38 +28,40 @@ Deployment complete!
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
 
->>> jq .deployment_id .databricks/bundle/default/resources.json
-"[UUID]"
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/state/resources.deployment.json
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/state/resources.deployment.json"
+}
 
-=== Redeploy: the persisted ID is reused, so no second deployment is created
+=== Redeploy: the deployment is resolved from that node, so no second deployment is created
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/files...
 Deploying resources...
-Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py //api/2.0/bundle --sort --get
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]"
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]"
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[UUID]/resources"
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "2"
   },
@@ -71,7 +73,7 @@ Deployment complete!
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/2/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }

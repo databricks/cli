@@ -3,14 +3,22 @@ package testserver
 import (
 	"bytes"
 	"encoding/json"
+	"path"
 	"slices"
 	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // Handlers for the Deployment Metadata Service (DMS) API under /api/2.0/bundle.
 // State is kept in FakeWorkspace.dmsDeployments, keyed by deployment ID.
+
+// dmsDeploymentNodeName is the name of the workspace node the service creates
+// for every deployment. It must match DEPLOYMENT_NODE_NAME on the service side
+// (DeploymentWhsClient); the literal is repeated here rather than shared with
+// the CLI so a test would catch the CLI drifting from the service.
+const dmsDeploymentNodeName = "resources.deployment.json"
 
 // dmsDeployment holds a deployment record together with the versions and
 // resources recorded under it, so the read APIs (ListVersions/ListResources)
@@ -27,29 +35,49 @@ type dmsDeployment struct {
 	// value as "DMS owns the state". Tracked separately because the SDK
 	// Deployment struct does not yet carry the field (still stage:DEVELOPMENT).
 	lastSuccessfulVersionID string
+	// nodePath is the workspace node whose object ID is this deployment's ID.
+	// Kept so DeleteDeployment can trash the node, the way the service does.
+	nodePath string
 }
 
 func (s *FakeWorkspace) CreateDeployment(req Request) Response {
-	// The client either supplies the deployment ID or, in the server-generated
-	// flow, leaves it empty for the server to mint one.
-	deploymentID := req.URL.Query().Get("deployment_id")
-	if deploymentID == "" {
-		deploymentID = nextUUID()
-	}
-
 	var dep bundledeployments.Deployment
 	if err := json.Unmarshal(req.Body, &dep); err != nil {
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
+	if dep.InitialParentPath == "" {
+		return Response{
+			StatusCode: 400,
+			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "initial_parent_path is required"},
+		}
+	}
 
 	defer s.LockUnlock()()
 
+	// The service registers the deployment as a workspace node under
+	// initial_parent_path and uses that node's ID as the deployment ID, so a
+	// get-status on the node path is how clients look the deployment back up.
+	nodePath := path.Join(dep.InitialParentPath, dmsDeploymentNodeName)
+	if resp, ok := s.requireParentDirectory(nodePath); !ok {
+		return resp
+	}
+	objectID := nextID()
+	s.files[nodePath] = FileEntry{
+		Info: workspace.ObjectInfo{
+			ObjectType: "FILE",
+			Path:       nodePath,
+			ObjectId:   objectID,
+		},
+	}
+
+	deploymentID := strconv.FormatInt(objectID, 10)
 	dep.Name = "deployments/" + deploymentID
 	dep.Status = bundledeployments.DeploymentStatusDeploymentStatusActive
 	s.dmsDeployments[deploymentID] = &dmsDeployment{
 		deployment: dep,
 		versions:   map[string]*bundledeployments.Version{},
 		resources:  map[string]bundledeployments.Resource{},
+		nodePath:   nodePath,
 	}
 	return Response{Body: dep}
 }
@@ -99,6 +127,11 @@ func deploymentBody(d *dmsDeployment) (map[string]any, error) {
 func (s *FakeWorkspace) DeleteDeployment(deploymentID string) Response {
 	defer s.LockUnlock()()
 
+	// The service trashes the deployment's workspace node, so a later get-status
+	// on the node path reports the deployment as absent.
+	if d, ok := s.dmsDeployments[deploymentID]; ok {
+		delete(s.files, d.nodePath)
+	}
 	delete(s.dmsDeployments, deploymentID)
 	return Response{Body: map[string]any{}}
 }

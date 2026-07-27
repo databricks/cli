@@ -19,13 +19,10 @@ import (
 // deployment. Once DMS is authoritative its resource set is trusted even when
 // empty (a successful deploy with no resources); the file's resources are only
 // used when DMS has no successful version, or when the user opts out of
-// recording deployment history. The caller holds db.mu and has already
-// populated db.Data from the file, including the DeploymentID.
-//
-// cfg is threaded in only for the temporary raw read in
-// deploymentHasSuccessfulVersion; see the TODO there.
-func (db *DeploymentState) overlayDMSState(ctx context.Context, client bundledeployments.BundleDeploymentsInterface, cfg *sdkconfig.Config) error {
-	authoritative, err := deploymentHasSuccessfulVersion(ctx, cfg, db.Data.DeploymentID)
+// recording deployment history. The caller holds db.mu, has already populated
+// db.Data from the file, and has resolved src.DeploymentID.
+func (db *DeploymentState) overlayDMSState(ctx context.Context, src *DMSSource) error {
+	authoritative, err := deploymentHasSuccessfulVersion(ctx, src.Config, src.DeploymentID)
 	if err != nil {
 		return err
 	}
@@ -35,7 +32,7 @@ func (db *DeploymentState) overlayDMSState(ctx context.Context, client bundledep
 		return nil
 	}
 
-	resources, err := fetchDeploymentResources(ctx, client, db.Data.DeploymentID, db.Data.State)
+	resources, err := fetchDeploymentResources(ctx, src.Client, src.DeploymentID, db.Data.State)
 	if err != nil {
 		return err
 	}
@@ -63,8 +60,7 @@ func (db *DeploymentState) overlayDMSState(ctx context.Context, client bundledep
 // because last_successful_version_id is still stage:DEVELOPMENT in the proto
 // and therefore stripped from the generated SDK. Once the field is promoted to
 // PRIVATE_PREVIEW and regenerated, replace the raw call with
-// client.GetDeployment(...).LastSuccessfulVersionId and drop the cfg argument
-// (revert overlayDMSState/Open back to taking only the typed client).
+// client.GetDeployment(...).LastSuccessfulVersionId and drop DMSSource.Config.
 func deploymentHasSuccessfulVersion(ctx context.Context, cfg *sdkconfig.Config, deploymentID string) (bool, error) {
 	apiClient, err := client.New(cfg)
 	if err != nil {

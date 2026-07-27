@@ -1,9 +1,8 @@
 Local = true
 Cloud = false
 
-# Deployment Metadata Service (DMS) recording is only meaningful in the direct
-# engine, where the deployment ID is stored in and read from the direct-engine
-# state.
+# Deployment Metadata Service (DMS) recording is only supported by the direct
+# engine; it is a no-op on terraform.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 RecordRequests = true

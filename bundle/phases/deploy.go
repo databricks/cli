@@ -169,7 +169,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// nothing; the deferred CompleteVersion is a no-op until CreateVersion runs.
 	// CompleteVersion is deferred before lock.Release so it runs while the lock
 	// is still held (defers run last-in-first-out).
-	recorder := newDeploymentRecorder(ctx, b, stateEngine, dms.VersionTypeDeploy)
+	recorder, err := newDeploymentRecorder(ctx, b, stateEngine, dms.VersionTypeDeploy)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	defer func() {
 		if err := recorder.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
 			logdiag.LogError(ctx, err)
@@ -276,11 +280,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			return
 		}
 		if recorder != nil {
-			// On a first deploy the server assigned the deployment ID; persist it in
-			// state (Finalize writes it to disk) so later deploys reuse the record.
 			// Record operations under the version just created so DMS holds the
-			// deployed resource state.
-			b.DeploymentBundle.StateDB.SetDeploymentID(recorder.DeploymentID())
+			// deployed resource state. On a first deploy the deployment ID was only
+			// assigned by CreateVersion above, so this must come after it.
 			b.DeploymentBundle.OpRec = direct.NewOperationRecorder(
 				b.WorkspaceClient(ctx).BundleDeployments,
 				recorder.DeploymentID(),

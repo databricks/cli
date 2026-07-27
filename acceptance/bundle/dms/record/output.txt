@@ -11,12 +11,13 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state",
     "target_name": "default"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "1"
   },
@@ -28,14 +29,14 @@ Deployment complete!
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/operations",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
   "q": {
     "resource_key": "jobs.foo"
   },
@@ -60,11 +61,17 @@ Deployment complete!
   }
 }
 
-=== The server-assigned deployment ID is persisted in the local state file
->>> jq .deployment_id .databricks/bundle/default/resources.json
-"[UUID]"
+=== The deployment ID is the ID of the workspace node the service registered under initial_parent_path; the CLI stores nothing locally
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json"
+}
 
-=== Redeploy after deleting the local cache: the deployment ID is recovered from remote state, the same deployment is reused, and the version increments (no new CreateDeployment)
+>>> jq has("deployment_id") .databricks/bundle/default/resources.json
+false
+
+=== Redeploy after deleting the local cache: the deployment ID is resolved from that node, the same deployment is reused, and the version increments (no new CreateDeployment)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record/default/files...
 Deploying resources...
@@ -74,7 +81,7 @@ Deployment complete!
 >>> print_requests.py //api/2.0/bundle --sort
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "2"
   },
@@ -86,7 +93,7 @@ Deployment complete!
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/2/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
@@ -105,11 +112,11 @@ Destroy complete!
 >>> print_requests.py //api/2.0/bundle --sort
 {
   "method": "DELETE",
-  "path": "/api/2.0/bundle/deployments/[UUID]"
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "3"
   },
@@ -121,14 +128,14 @@ Destroy complete!
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/3/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/3/operations",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/operations",
   "q": {
     "resource_key": "jobs.foo"
   },

@@ -74,11 +74,6 @@ type DeploymentState struct {
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
-
-	// headerDirty records that a header field changed in memory during this
-	// deployment (today only the DMS deployment ID), so the state file must be
-	// written on Finalize even when the WAL carried no resource entries.
-	headerDirty bool
 }
 
 type Header struct {
@@ -86,13 +81,6 @@ type Header struct {
 	CLIVersion   string `json:"cli_version"`
 	Lineage      string `json:"lineage"`
 	Serial       int    `json:"serial"`
-
-	// DeploymentID is the ID the deployment metadata service (DMS) assigned to
-	// this deployment. Unlike Lineage (a locally generated identifier for the
-	// state file), it is minted server-side by CreateDeployment and stored here so
-	// later deploys can find the same DMS deployment record and read its state.
-	// Empty/omitted until the bundle first records to DMS.
-	DeploymentID string `json:"deployment_id,omitempty"`
 
 	// Features maps each feature flag this state depends on to a (currently empty)
 	// value. This CLI writes no features; it only reads the field to detect a state
@@ -223,33 +211,6 @@ func (db *DeploymentState) GetOrInitLineage() string {
 	return db.Data.Lineage
 }
 
-// GetDeploymentID returns the DMS deployment ID recorded in the state, or an
-// empty string if this bundle has not yet recorded a deployment to DMS.
-func (db *DeploymentState) GetDeploymentID() string {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	return db.Data.DeploymentID
-}
-
-// SetDeploymentID stores the DMS-assigned deployment ID in the in-memory state
-// header. It is set during deploy, after CreateDeployment returns the
-// server-generated ID, and persisted to the state file by Finalize. Storing it
-// on db.Data (not the WAL header, which is written before the ID is known)
-// means the subsequent state write carries it forward.
-//
-// The header is marked dirty so Finalize persists it even when the deploy wrote
-// no resource entries; otherwise a bundle with no resources would mint a fresh
-// deployment record on every deploy, leaking one orphan per run.
-func (db *DeploymentState) SetDeploymentID(id string) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	if db.Data.DeploymentID == id {
-		return
-	}
-	db.Data.DeploymentID = id
-	db.headerDirty = true
-}
-
 type (
 	// If true, then Open reads the WAL and merges it in the state. If false, and WAL is present, Open returns an error.
 	WithRecovery bool
@@ -259,19 +220,32 @@ type (
 	WithWrite bool
 )
 
+// DMSSource tells Open to read resource state from the deployment metadata
+// service instead of the state file. A nil *DMSSource keeps Open file-only.
+type DMSSource struct {
+	// Client is the DMS client used to list the deployment's resources.
+	Client bundledeployments.BundleDeploymentsInterface
+
+	// Config accompanies Client (both come from the same workspace client) and is
+	// used only for a temporary raw read of last_successful_version_id; see the
+	// TODO in deploymentHasSuccessfulVersion.
+	Config *sdkconfig.Config
+
+	// DeploymentID identifies the deployment in DMS, resolved from the
+	// deployment's workspace node (see dms.ResolveDeploymentID). It is empty for a
+	// bundle that has not recorded a deployment yet.
+	DeploymentID string
+}
+
 // Open reads the deployment state from disk (and recovers the WAL when
-// withRecovery is set). When dmsClient is non-nil, the deployment metadata
+// withRecovery is set). When dmsSource is non-nil, the deployment metadata
 // service is the source of truth for resource state: if DMS holds a
 // successfully completed version for this deployment, the resources read from
 // the file are replaced with the ones recorded in DMS. The local identity
-// (lineage, serial, and deployment ID) always comes from the file, since that
-// is what the write path increments and carries forward. A nil dmsClient keeps
-// the behavior file-only.
-//
-// dmsCfg accompanies dmsClient (both come from the same workspace client) and
-// is used only for a temporary raw read of last_successful_version_id; see the
-// TODO in deploymentHasSuccessfulVersion.
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsClient bundledeployments.BundleDeploymentsInterface, dmsCfg *sdkconfig.Config) error {
+// (lineage and serial) always comes from the file, since that is what the write
+// path increments and carries forward. A nil dmsSource keeps the behavior
+// file-only.
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsSource *DMSSource) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -319,7 +293,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
-	if dmsClient != nil {
+	if dmsSource != nil {
 		// Only deployments that start out empty are recorded in DMS. Resources
 		// tracked in a state file that DMS does not know about are not in DMS and
 		// never will be: the first recorded deploy would create a deployment whose
@@ -327,9 +301,9 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		// authoritative for everything (see overlayDMSState). Resources this bundle
 		// already owns would look absent and be created a second time.
 		//
-		// A state file that DMS already owns (it carries a deployment ID) is fine —
-		// that is a bundle that opted in while it was still empty. So is a state file
-		// with no resources, e.g. one left behind by a destroy.
+		// A deployment DMS already owns (deploymentID is non-empty) is fine — that is
+		// a bundle that opted in while it was still empty. So is a state file with no
+		// resources, e.g. one left behind by a destroy.
 		//
 		// TODO(DMS): lift this restriction by upgrading an existing state in place.
 		// That means writing the state at featureStateVersion (3) with a feature flag
@@ -339,11 +313,11 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		// exists (see featureStateVersion and Header.Features); once it is written,
 		// this check goes away and record_deployment_history becomes usable on
 		// existing bundles.
-		if db.Data.DeploymentID == "" && len(db.Data.State) > 0 {
+		if dmsSource.DeploymentID == "" && len(db.Data.State) > 0 {
 			return fmt.Errorf("cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded. Remove experimental.record_deployment_history, or destroy the bundle and deploy it again", path)
 		}
-		if db.Data.DeploymentID != "" {
-			if err := db.overlayDMSState(ctx, dmsClient, dmsCfg); err != nil {
+		if dmsSource.DeploymentID != "" {
+			if err := db.overlayDMSState(ctx, dmsSource); err != nil {
 				return err
 			}
 		}
@@ -488,12 +462,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 		}
 	}
 
-	hasEntries := lineNumber > 1
-
-	// A header-only WAL still has to be persisted when a header field changed in
-	// memory during this deployment (the DMS deployment ID): dropping the write
-	// would lose the ID and make the next deploy create a second deployment.
-	persist := hasEntries || db.headerDirty
+	persist := lineNumber > 1
 
 	// Only advance the serial when the state file is actually written, because
 	// the caller (replayWAL) persists it only in that case. A header-only WAL

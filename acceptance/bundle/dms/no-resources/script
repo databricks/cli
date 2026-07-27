@@ -1,8 +1,8 @@
-title "First deploy of a bundle with no resources: the deployment is created and its ID is persisted, even though no resource state was written"
+title "First deploy of a bundle with no resources: the deployment is created, and its workspace node identifies it even though no resource state was written"
 trace $CLI bundle deploy
 trace print_requests.py //api/2.0/bundle --sort --get
-trace jq .deployment_id .databricks/bundle/default/resources.json
+trace $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-no-resources/default/state/resources.deployment.json" | jq '{object_type,path}'
 
-title "Redeploy: the persisted ID is reused, so no second deployment is created"
+title "Redeploy: the deployment is resolved from that node, so no second deployment is created"
 trace $CLI bundle deploy
 trace print_requests.py //api/2.0/bundle --sort --get

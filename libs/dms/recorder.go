@@ -30,13 +30,15 @@ const (
 // Recorder records a single deploy/destroy as a version with DMS.
 //
 // The deployment ID is assigned by the server on the first deploy: NewRecorder
-// is given the ID persisted in state (empty on a bundle's first-ever recorded
-// deploy), and CreateVersion creates the deployment record when that ID is
-// empty and exposes the server-assigned ID via DeploymentID so the caller can
-// persist it. Later deploys pass the stored ID back in and reuse the record.
+// is given the ID resolved from the workspace (empty on a bundle's first-ever
+// recorded deploy, see ResolveDeploymentID), and CreateVersion creates the
+// deployment record when that ID is empty. Later deploys resolve the same ID
+// from the deployment's workspace node and reuse the record; a destroy deletes
+// the record and its node, so the next deploy starts over from empty.
 type Recorder struct {
 	svc          bundledeployments.BundleDeploymentsInterface
 	deploymentID string
+	statePath    string
 	targetName   string
 	versionType  VersionType
 
@@ -46,12 +48,15 @@ type Recorder struct {
 }
 
 // NewRecorder returns a Recorder for the given deployment. deploymentID is the
-// DMS deployment ID persisted in state, or empty if this bundle has not yet
-// recorded a deployment (the server assigns one during CreateVersion).
-func NewRecorder(svc bundledeployments.BundleDeploymentsInterface, deploymentID, targetName string, versionType VersionType) *Recorder {
+// ID resolved from the deployment's workspace node, or empty if this bundle has
+// not yet recorded a deployment (the server assigns one during CreateVersion).
+// statePath is the bundle's remote state directory, under which DMS registers
+// the deployment node.
+func NewRecorder(svc bundledeployments.BundleDeploymentsInterface, deploymentID, statePath, targetName string, versionType VersionType) *Recorder {
 	return &Recorder{
 		svc:          svc,
 		deploymentID: deploymentID,
+		statePath:    statePath,
 		targetName:   targetName,
 		versionType:  versionType,
 	}
@@ -59,8 +64,7 @@ func NewRecorder(svc bundledeployments.BundleDeploymentsInterface, deploymentID,
 
 // DeploymentID returns the DMS deployment ID this recorder is bound to. It is
 // empty until CreateVersion has created the deployment record (on a first
-// deploy) and non-empty afterwards, so callers persist it once CreateVersion
-// succeeds.
+// deploy) and non-empty afterwards, so callers can parent operations under it.
 func (r *Recorder) DeploymentID() string {
 	if r == nil {
 		return ""
@@ -140,41 +144,40 @@ func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 }
 
 // createDeploymentVersion ensures the deployment record exists, then creates a
-// new version under it. When no deployment ID is stored, or the stored one no
-// longer exists in DMS, it creates the deployment and lets the server assign the
-// ID; otherwise it reads the existing deployment to compute the next version
-// number.
+// new version under it. With no deployment ID it creates the deployment and lets
+// the server assign the ID; otherwise it reads the existing deployment to
+// compute the next version number.
 func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID string, err error) {
 	if r.deploymentID != "" {
-		// Existing deployment: read it to compute the next version number.
+		// Existing deployment: read it to compute the next version number. A 404 is
+		// not recovered from by creating a second deployment: the ID was just
+		// resolved from the deployment's workspace node, which the service trashes
+		// when it deletes the record, so a missing record here means the two are out
+		// of sync and creating another one would collide on the same node path.
 		dep, getErr := r.svc.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
 			Name: "deployments/" + r.deploymentID,
 		})
-		switch {
-		case getErr == nil:
-			lastVersion, parseErr := strconv.ParseInt(dep.LastVersionId, 10, 64)
-			if parseErr != nil {
-				return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
-			}
-			versionID = strconv.FormatInt(lastVersion+1, 10)
-		case errors.Is(getErr, apierr.ErrNotFound):
-			// The record the state points at is gone: a successful destroy deletes
-			// it (leaving the ID behind in the local state file), and it can also be
-			// deleted out of band. Recording must not dead-end on it, so fall back to
-			// creating a new deployment; the caller persists the new ID.
-			log.Debugf(ctx, "Deployment %s no longer exists in the deployment metadata service, creating a new one", r.deploymentID)
-			r.deploymentID = ""
-		default:
+		if getErr != nil {
 			return "", fmt.Errorf("failed to get deployment: %w", getErr)
 		}
-	}
-
-	if r.deploymentID == "" {
-		// First deploy: create the deployment with an empty ID so the server
-		// assigns one, then start at version 1.
+		lastVersion, parseErr := strconv.ParseInt(dep.LastVersionId, 10, 64)
+		if parseErr != nil {
+			return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
+		}
+		versionID = strconv.FormatInt(lastVersion+1, 10)
+	} else {
+		// First deploy: create the deployment so the server assigns an ID, then
+		// start at version 1.
+		//
+		// initial_parent_path is required: the service creates the deployment's
+		// BUNDLE_DEPLOYMENT node under it, and that node's ID becomes the
+		// deployment ID that ResolveDeploymentID reads back on later deploys. The
+		// folder must already exist, which it does by this point - the deployment
+		// lock lives in the same directory.
 		dep, createErr := r.svc.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{
 			Deployment: bundledeployments.Deployment{
-				TargetName: r.targetName,
+				InitialParentPath: r.statePath,
+				TargetName:        r.targetName,
 			},
 		})
 		if createErr != nil {

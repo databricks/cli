@@ -20,13 +20,12 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/spf13/cobra"
 )
 
@@ -215,18 +214,24 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			_, localPath := b.StateFilenameDirect(ctx)
 
 			// When the bundle records deployment history, the deployment metadata
-			// service owns resource state, so hand Open its client to overlay DMS
-			// state on top of the local identity (lineage/serial/deployment ID).
-			// Reads open the state write-disabled, so no lineage is minted here.
-			// dmsCfg accompanies the client for a temporary raw read (see the TODO
-			// in dstate.deploymentHasSuccessfulVersion).
-			var dmsClient bundledeployments.BundleDeploymentsInterface
-			var dmsCfg *sdkconfig.Config
+			// service owns resource state, so hand Open a DMS source to overlay that
+			// state on top of the local identity (lineage/serial). Reads open the
+			// state write-disabled, so no lineage is minted here.
+			var dmsSource *dstate.DMSSource
 			if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
-				dmsClient = b.WorkspaceClient(ctx).BundleDeployments
-				dmsCfg = b.WorkspaceClient(ctx).Config
+				w := b.WorkspaceClient(ctx)
+				deploymentID, err := dms.ResolveDeploymentID(ctx, w, b.Config.Workspace.StatePath)
+				if err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+				dmsSource = &dstate.DMSSource{
+					Client:       w.BundleDeployments,
+					Config:       w.Config,
+					DeploymentID: deploymentID,
+				}
 			}
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsClient, dmsCfg); err != nil {
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsSource); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}

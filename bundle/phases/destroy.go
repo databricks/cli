@@ -137,7 +137,11 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	// created until the destroy is approved (below), so a cancelled destroy
 	// records nothing; the deferred CompleteVersion is a no-op until then. It is
 	// deferred before lock.Release so it runs while the lock is still held.
-	recorder := newDeploymentRecorder(ctx, b, engine, dms.VersionTypeDestroy)
+	recorder, err := newDeploymentRecorder(ctx, b, engine, dms.VersionTypeDestroy)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	defer func() {
 		if err := recorder.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
 			logdiag.LogError(ctx, err)

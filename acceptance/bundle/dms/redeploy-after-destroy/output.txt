@@ -1,5 +1,5 @@
 
-=== Deploy, then destroy: the deployment record is deleted, but its ID stays behind in the local state file
+=== Deploy, then destroy: the deployment record and its workspace node are both deleted, so nothing points at the destroyed deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/files...
 Deploying resources...
@@ -15,35 +15,34 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> jq .deployment_id .databricks/bundle/default/resources.json
-"[DESTROYED_DEPLOYMENT_ID]"
+>>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state/resources.deployment.json
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state/resources.deployment.json) doesn't exist.
 
-=== Deploy again: the stale deployment ID no longer resolves, so a new deployment is created instead of failing the deploy
+=== Deploy again: with no node to resolve, a fresh deployment is created at version 1, with its own workspace node
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state/resources.deployment.json
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state/resources.deployment.json"
+}
+
 >>> print_requests.py //api/2.0/bundle --sort --get
-{
-  "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[DESTROYED_DEPLOYMENT_ID]"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[DESTROYED_DEPLOYMENT_ID]"
-}
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state",
     "target_name": "default"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
     "version_id": "1"
   },
@@ -55,14 +54,14 @@ Deployment complete!
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/operations",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
   "q": {
     "resource_key": "jobs.foo"
   },
@@ -86,7 +85,3 @@ Deployment complete!
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
-
-=== The new deployment ID replaces the stale one in state
->>> jq .deployment_id .databricks/bundle/default/resources.json
-"[UUID]"
