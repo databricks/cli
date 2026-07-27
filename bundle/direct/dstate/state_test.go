@@ -63,6 +63,48 @@ func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 
+func TestDeploymentIDPersistsWithNoResourceEntries(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	// A bundle with no resources writes no WAL entries, but the deployment ID
+	// still has to be persisted: otherwise the next deploy sees no ID and creates
+	// a second deployment record, leaking one per deploy.
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil, nil))
+	db.SetDeploymentID("server-assigned-id")
+	mustFinalize(t, &db)
+
+	var reopened DeploymentState
+	require.NoError(t, reopened.Open(t.Context(), path, WithRecovery(false), WithWrite(false), nil, nil))
+	assert.Equal(t, "server-assigned-id", reopened.GetDeploymentID())
+	assert.Equal(t, 1, reopened.Data.Serial)
+	mustFinalize(t, &reopened)
+}
+
+func TestSetDeploymentIDToSameValueDoesNotWriteStateFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil, nil))
+	db.SetDeploymentID("server-assigned-id")
+	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{}, nil))
+	mustFinalize(t, &db)
+
+	before, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	// Re-setting the same ID is not a header change, so a deploy that commits
+	// nothing must not bump the serial (see mergeWalIntoState).
+	var reopened DeploymentState
+	require.NoError(t, reopened.Open(t.Context(), path, WithRecovery(false), WithWrite(true), nil, nil))
+	reopened.SetDeploymentID("server-assigned-id")
+	mustFinalize(t, &reopened)
+
+	after, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, string(before), string(after))
+}
+
 func TestExportStateFromDataJobRunJobID(t *testing.T) {
 	data := Database{
 		State: map[string]ResourceEntry{

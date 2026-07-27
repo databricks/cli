@@ -149,10 +149,35 @@ func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 }
 
 // createDeploymentVersion ensures the deployment record exists, then creates a
-// new version under it. On a first deploy (no stored deployment ID) it creates
-// the deployment and lets the server assign the ID; otherwise it reads the
-// existing deployment to compute the next version number.
+// new version under it. When no deployment ID is stored, or the stored one no
+// longer exists in DMS, it creates the deployment and lets the server assign the
+// ID; otherwise it reads the existing deployment to compute the next version
+// number.
 func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID string, err error) {
+	if r.deploymentID != "" {
+		// Existing deployment: read it to compute the next version number.
+		dep, getErr := r.svc.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+			Name: "deployments/" + r.deploymentID,
+		})
+		switch {
+		case getErr == nil:
+			lastVersion, parseErr := strconv.ParseInt(dep.LastVersionId, 10, 64)
+			if parseErr != nil {
+				return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
+			}
+			versionID = strconv.FormatInt(lastVersion+1, 10)
+		case errors.Is(getErr, apierr.ErrNotFound):
+			// The record the state points at is gone: a successful destroy deletes
+			// it (leaving the ID behind in the local state file), and it can also be
+			// deleted out of band. Recording must not dead-end on it, so fall back to
+			// creating a new deployment; the caller persists the new ID.
+			log.Debugf(ctx, "Deployment %s no longer exists in the deployment metadata service, creating a new one", r.deploymentID)
+			r.deploymentID = ""
+		default:
+			return "", fmt.Errorf("failed to get deployment: %w", getErr)
+		}
+	}
+
 	if r.deploymentID == "" {
 		// First deploy: create the deployment with an empty ID so the server
 		// assigns one, then start at version 1.
@@ -170,19 +195,6 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 		}
 		r.deploymentID = id
 		versionID = "1"
-	} else {
-		// Existing deployment: read it to compute the next version number.
-		dep, getErr := r.svc.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
-			Name: "deployments/" + r.deploymentID,
-		})
-		if getErr != nil {
-			return "", fmt.Errorf("failed to get deployment: %w", getErr)
-		}
-		lastVersion, parseErr := strconv.ParseInt(dep.LastVersionId, 10, 64)
-		if parseErr != nil {
-			return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
-		}
-		versionID = strconv.FormatInt(lastVersion+1, 10)
 	}
 
 	// The server validates that versionID equals last_version_id + 1 and returns

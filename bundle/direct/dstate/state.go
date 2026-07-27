@@ -74,6 +74,11 @@ type DeploymentState struct {
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
+
+	// headerDirty records that a header field changed in memory during this
+	// deployment (today only the DMS deployment ID), so the state file must be
+	// written on Finalize even when the WAL carried no resource entries.
+	headerDirty bool
 }
 
 type Header struct {
@@ -231,10 +236,18 @@ func (db *DeploymentState) GetDeploymentID() string {
 // server-generated ID, and persisted to the state file by Finalize. Storing it
 // on db.Data (not the WAL header, which is written before the ID is known)
 // means the subsequent state write carries it forward.
+//
+// The header is marked dirty so Finalize persists it even when the deploy wrote
+// no resource entries; otherwise a bundle with no resources would mint a fresh
+// deployment record on every deploy, leaking one orphan per run.
 func (db *DeploymentState) SetDeploymentID(id string) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+	if db.Data.DeploymentID == id {
+		return
+	}
 	db.Data.DeploymentID = id
+	db.headerDirty = true
 }
 
 type (
@@ -353,7 +366,7 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 
 func (db *DeploymentState) replayWAL(ctx context.Context) error {
 	walPath := db.Path + walSuffix
-	hasEntries, err := db.mergeWalIntoState(ctx)
+	persist, err := db.mergeWalIntoState(ctx)
 	if err != nil {
 		if errors.Is(err, errStaleWAL) {
 			log.Debugf(ctx, "Deleting stale WAL file %s", walPath)
@@ -362,7 +375,7 @@ func (db *DeploymentState) replayWAL(ctx context.Context) error {
 		}
 		return fmt.Errorf("WAL recovery failed: %w", err)
 	}
-	if hasEntries {
+	if persist {
 		if err := db.unlockedSave(); err != nil {
 			return err
 		}
@@ -373,6 +386,9 @@ func (db *DeploymentState) replayWAL(ctx context.Context) error {
 	return nil
 }
 
+// mergeWalIntoState replays the WAL into db.Data and reports whether the caller
+// must persist the state file: either the WAL carried resource entries, or a
+// header field changed in memory during this deployment.
 func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) {
 	if db.walFile != nil {
 		panic("internal error: walFile must be closed")
@@ -450,17 +466,23 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 
 	hasEntries := lineNumber > 1
 
-	// Only advance the serial when the WAL carried entries, because the caller
-	// (replayWAL) persists the new state file only in that case. A header-only
-	// WAL is a deploy that started but committed nothing; advancing the serial
-	// for it leaves the in-memory serial ahead of the persisted one, so the
-	// next deploy writes its WAL header at serial+2 and recovery rejects it as
-	// "ahead of expected". See acceptance/bundle/deploy/wal/header-only-wal.
-	if hasEntries {
+	// A header-only WAL still has to be persisted when a header field changed in
+	// memory during this deployment (the DMS deployment ID): dropping the write
+	// would lose the ID and make the next deploy create a second deployment.
+	persist := hasEntries || db.headerDirty
+
+	// Only advance the serial when the state file is actually written, because
+	// the caller (replayWAL) persists it only in that case. A header-only WAL
+	// that changed nothing is a deploy that started but committed nothing;
+	// advancing the serial for it leaves the in-memory serial ahead of the
+	// persisted one, so the next deploy writes its WAL header at serial+2 and
+	// recovery rejects it as "ahead of expected".
+	// See acceptance/bundle/deploy/wal/header-only-wal.
+	if persist {
 		db.Data.Serial = newSerial
 	}
 
-	return hasEntries, nil
+	return persist, nil
 }
 
 // Finalize replays the WAL (if open for write), captures the resulting state, and resets.

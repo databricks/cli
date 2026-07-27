@@ -35,7 +35,7 @@ func (db *DeploymentState) overlayDMSState(ctx context.Context, client bundledep
 		return nil
 	}
 
-	resources, err := fetchDeploymentResources(ctx, client, db.Data.DeploymentID)
+	resources, err := fetchDeploymentResources(ctx, client, db.Data.DeploymentID, db.Data.State)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,12 @@ func deploymentHasSuccessfulVersion(ctx context.Context, cfg *sdkconfig.Config, 
 
 // fetchDeploymentResources lists every resource recorded for the deployment in
 // DMS and maps them into state entries keyed by the fully-qualified resource key.
-func fetchDeploymentResources(ctx context.Context, client bundledeployments.BundleDeploymentsInterface, deploymentID string) (map[string]ResourceEntry, error) {
+//
+// DMS does not record dependency edges, so depends_on is carried over from the
+// local state entry for the same key. It is derived from the local config on
+// every deploy and is only consumed for delete ordering, so falling back to an
+// empty list when the local state has no entry is safe.
+func fetchDeploymentResources(ctx context.Context, client bundledeployments.BundleDeploymentsInterface, deploymentID string, local map[string]ResourceEntry) (map[string]ResourceEntry, error) {
 	it := client.ListResources(ctx, bundledeployments.ListResourcesRequest{
 		Parent: "deployments/" + deploymentID,
 	})
@@ -114,8 +119,9 @@ func fetchDeploymentResources(ctx context.Context, client bundledeployments.Bund
 		}
 
 		out[key] = ResourceEntry{
-			ID:    res.ResourceId,
-			State: state,
+			ID:        res.ResourceId,
+			State:     state,
+			DependsOn: local[key].DependsOn,
 		}
 	}
 	return out, nil

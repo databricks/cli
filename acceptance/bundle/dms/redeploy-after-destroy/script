@@ -1,0 +1,15 @@
+title "Deploy, then destroy: the deployment record is deleted, but its ID stays behind in the local state file"
+trace $CLI bundle deploy
+trace $CLI bundle destroy --auto-approve
+print_requests.py //api/2.0/bundle --sort --get > /dev/null
+
+destroyed_id=$(jq -r .deployment_id .databricks/bundle/default/resources.json)
+add_repl.py "$destroyed_id" DESTROYED_DEPLOYMENT_ID
+trace jq .deployment_id .databricks/bundle/default/resources.json
+
+title "Deploy again: the stale deployment ID no longer resolves, so a new deployment is created instead of failing the deploy"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --sort --get
+
+title "The new deployment ID replaces the stale one in state"
+trace jq .deployment_id .databricks/bundle/default/resources.json

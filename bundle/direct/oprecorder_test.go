@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,6 +51,27 @@ func TestOperationRecorderDeleteHasNoState(t *testing.T) {
 	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeDelete, f.requests[0].Operation.ActionType)
 	// Delete operations carry no serialized state.
 	assert.Nil(t, f.requests[0].Operation.State)
+}
+
+func TestOperationRecorderRedactsSensitiveFields(t *testing.T) {
+	f := &fakeOpClient{}
+	r := NewOperationRecorder(f, "dep-1", 2)
+
+	state := struct {
+		Name  string `json:"name"`
+		Token string `json:"token" bundle:"sensitive"`
+	}{Name: "foo", Token: "super-secret"}
+
+	err := r.record(t.Context(), "resources.jobs.foo", deployplan.Create, "job-123", state)
+	require.NoError(t, err)
+
+	require.Len(t, f.requests, 1)
+	require.NotNil(t, f.requests[0].Operation.State)
+	// Sensitive fields are redacted before leaving the CLI, matching what
+	// dstate.SaveState writes to the local state file.
+	assert.JSONEq(t,
+		`{"name":"foo","token":"`+dyn.SensitiveValueRedacted+`"}`,
+		string(*f.requests[0].Operation.State))
 }
 
 func TestDeployActionToSDK(t *testing.T) {

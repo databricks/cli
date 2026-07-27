@@ -2,8 +2,11 @@ package dms
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -102,6 +105,41 @@ func TestRecorderSubsequentDeployReusesDeploymentAndIncrementsVersion(t *testing
 	require.Len(t, f.versions, 1)
 	assert.Equal(t, "5", f.versions[0].VersionId)
 	assert.Equal(t, "stored-id", r.DeploymentID())
+}
+
+func TestRecorderStaleDeploymentIDCreatesNewDeployment(t *testing.T) {
+	f := &fakeDMS{
+		assignedID: "fresh-id",
+		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
+			return nil, fmt.Errorf("deployment %s: %w", id, apierr.ErrNotFound)
+		},
+	}
+	// A deploy after a destroy still has the destroyed deployment's ID in state,
+	// but the record is gone. Recording must recover rather than fail the deploy.
+	r := NewRecorder(f, "destroyed-id", "dev", VersionTypeDeploy)
+
+	require.NoError(t, r.CreateVersion(t.Context()))
+
+	require.Len(t, f.created, 1)
+	assert.Equal(t, "fresh-id", r.DeploymentID())
+	require.Len(t, f.versions, 1)
+	assert.Equal(t, "1", f.versions[0].VersionId)
+	assert.Equal(t, "deployments/fresh-id", f.versions[0].Parent)
+}
+
+func TestRecorderGetDeploymentErrorFailsDeploy(t *testing.T) {
+	f := &fakeDMS{
+		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
+			return nil, errors.New("boom")
+		},
+	}
+	r := NewRecorder(f, "stored-id", "dev", VersionTypeDeploy)
+
+	// Only a missing deployment is recovered from; any other read failure is fatal
+	// rather than silently forking a second deployment record.
+	err := r.CreateVersion(t.Context())
+	assert.ErrorContains(t, err, "failed to get deployment")
+	assert.Empty(t, f.created)
 }
 
 func TestRecorderDestroyDeletesDeploymentOnSuccess(t *testing.T) {

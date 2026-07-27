@@ -1,0 +1,92 @@
+
+=== Deploy, then destroy: the deployment record is deleted, but its ID stays behind in the local state file
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default
+
+Deleting files...
+Destroy complete!
+
+>>> jq .deployment_id .databricks/bundle/default/resources.json
+"[DESTROYED_DEPLOYMENT_ID]"
+
+=== Deploy again: the stale deployment ID no longer resolves, so a new deployment is created instead of failing the deploy
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle --sort --get
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[DESTROYED_DEPLOYMENT_ID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[DESTROYED_DEPLOYMENT_ID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "body": {
+    "target_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "target_name": "default",
+    "version_type": "VERSION_TYPE_DEPLOY"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/operations",
+  "q": {
+    "resource_key": "jobs.foo"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "resource_id": "[NUMID]",
+    "resource_key": "jobs.foo",
+    "state": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "foo",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+
+=== The new deployment ID replaces the stale one in state
+>>> jq .deployment_id .databricks/bundle/default/resources.json
+"[UUID]"

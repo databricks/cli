@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -67,8 +69,13 @@ func (r *operationRecorder) record(ctx context.Context, resourceKey string, acti
 	// The DMS Operation.State field carries the serialized config so the backend
 	// can serve it as resource state. It is intentionally left unset for delete,
 	// where the resource no longer exists.
+	//
+	// Redact sensitive fields, matching what dstate.SaveState writes to the local
+	// state file: DMS state is read back as resource state, so recording secrets
+	// in plaintext would both leak them to the service and reintroduce them into
+	// a local state file via the read path.
 	if state != nil {
-		raw, err := json.Marshal(state)
+		raw, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
 		if err != nil {
 			return fmt.Errorf("serializing state: %w", err)
 		}

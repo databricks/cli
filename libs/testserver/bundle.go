@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"slices"
 	"strconv"
@@ -61,17 +62,38 @@ func (s *FakeWorkspace) GetDeployment(deploymentID string) Response {
 		return dmsNotFound("deployment " + deploymentID)
 	}
 
-	// The SDK Deployment struct does not yet carry last_successful_version_id
-	// (still stage:DEVELOPMENT, so stripped from generation), but the read path
-	// reads it off the raw JSON. Serve it as an extra field alongside the typed
-	// deployment so the overlay behaves as it will against the real server.
-	return Response{Body: struct {
-		bundledeployments.Deployment
-		LastSuccessfulVersionID string `json:"last_successful_version_id,omitempty"`
-	}{
-		Deployment:              d.deployment,
-		LastSuccessfulVersionID: d.lastSuccessfulVersionID,
-	}}
+	body, err := deploymentBody(d)
+	if err != nil {
+		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
+	}
+	return Response{Body: body}
+}
+
+// deploymentBody renders a deployment the way the real server does: the typed
+// fields plus last_successful_version_id, which the generated SDK struct does
+// not carry yet (still stage:DEVELOPMENT) but the read path reads off the raw
+// JSON.
+//
+// The extra field cannot be added by embedding Deployment in a wrapper struct:
+// Deployment has its own MarshalJSON, which is promoted to the wrapper and
+// silently drops any sibling field.
+func deploymentBody(d *dmsDeployment) (map[string]any, error) {
+	raw, err := json.Marshal(d.deployment)
+	if err != nil {
+		return nil, err
+	}
+
+	var body map[string]any
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	if err := dec.Decode(&body); err != nil {
+		return nil, err
+	}
+
+	if d.lastSuccessfulVersionID != "" {
+		body["last_successful_version_id"] = d.lastSuccessfulVersionID
+	}
+	return body, nil
 }
 
 func (s *FakeWorkspace) DeleteDeployment(deploymentID string) Response {
