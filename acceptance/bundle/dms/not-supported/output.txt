@@ -1,0 +1,24 @@
+
+=== record_deployment_history is rejected: DMS cannot own resource state until the direct engine has a state upgrade path
+>>> musterr [CLI] bundle validate
+Error: experimental.record_deployment_history is not supported yet
+  at experimental.record_deployment_history
+  in databricks.yml:5:30
+
+Name: dms-not-supported
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/dms-not-supported/default
+
+Found 1 error
+
+=== The hidden opt-in lifts the error
+>>> DATABRICKS_BUNDLE_ENABLE_RECORD_DEPLOYMENT_HISTORY=1 [CLI] bundle validate
+Name: dms-not-supported
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/dms-not-supported/default
+
+Validation OK!

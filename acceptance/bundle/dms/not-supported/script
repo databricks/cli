@@ -1,0 +1,5 @@
+title "record_deployment_history is rejected: DMS cannot own resource state until the direct engine has a state upgrade path"
+trace musterr $CLI bundle validate
+
+title "The hidden opt-in lifts the error"
+trace DATABRICKS_BUNDLE_ENABLE_RECORD_DEPLOYMENT_HISTORY=1 $CLI bundle validate

@@ -178,6 +178,8 @@ experimental:
     "record_deployment_history":
       "description": |-
         Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
+
+        This setting is not supported yet and enabling it is an error.
     "scripts":
       "description": |-
         The commands to run.

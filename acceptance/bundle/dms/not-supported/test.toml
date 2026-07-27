@@ -1,0 +1,5 @@
+# Unset the opt-in inherited from the parent: this test asserts the error users see.
+Env.DATABRICKS_BUNDLE_ENABLE_RECORD_DEPLOYMENT_HISTORY = ""
+
+# This test only checks validation output; no DMS request is made either way.
+RecordRequests = false
