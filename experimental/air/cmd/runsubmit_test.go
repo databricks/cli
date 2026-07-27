@@ -3,6 +3,7 @@ package aircmd
 import (
 	"encoding/json"
 	"io"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -41,7 +42,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 		MLflowExperimentDirectory: new("/Workspace/Users/me/exp"),
 	}
 
-	p := buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{})
+	p := buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{}, nil)
 
 	assert.Equal(t, "exp", p.RunName)
 	assert.Equal(t, 1800, p.TimeoutSeconds)
@@ -76,7 +77,7 @@ func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
 		Command:        new("x"),
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}).Tasks[0]
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}, nil).Tasks[0]
 	assert.Equal(t, defaultMaxRetries, task.MaxRetries)
 	assert.True(t, task.RetryOnTimeout)
 }
@@ -91,7 +92,7 @@ func TestBuildSubmitPayloadNoRetries(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 		MaxRetries:     new(0),
 	}
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}).Tasks[0]
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}, nil).Tasks[0]
 	assert.Equal(t, 0, task.MaxRetries)
 	assert.False(t, task.RetryOnTimeout)
 
@@ -99,6 +100,78 @@ func TestBuildSubmitPayloadNoRetries(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(b), `"max_retries":0`)
 	assert.NotContains(t, string(b), "retry_on_timeout")
+}
+
+func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_8xH100", NumAccelerators: 8},
+	}
+
+	// Declared deps ride inline on spec.dependencies; the runtime channel is preserved.
+	deps := []string{"torch==2.3.0", "--extra-index-url https://internal/pypi", "numpy"}
+	spec := buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{}, deps).Environments[0].Spec
+	assert.Equal(t, deps, spec.Dependencies)
+	assert.Equal(t, "5", spec.EnvironmentVersion)
+
+	// An empty or absent deps list omits the key (the SDK marshaler drops empty
+	// slices), leaving the payload unchanged from before.
+	for _, empty := range [][]string{{}, nil} {
+		spec = buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{}, empty).Environments[0].Spec
+		assert.Empty(t, spec.Dependencies)
+		b, err := json.Marshal(spec)
+		require.NoError(t, err)
+		assert.NotContains(t, string(b), "dependencies")
+	}
+}
+
+func TestEnvironmentDependencies(t *testing.T) {
+	// Inline list is returned directly.
+	cfg := &runConfig{Environment: &environmentConfig{
+		Dependencies: dependencies{set: true, isList: true, list: []string{"torch", "numpy"}},
+	}}
+	deps, err := environmentDependencies(cfg, "run.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"torch", "numpy"}, deps)
+
+	// A requirements file's deps are read and resolved against the config's directory.
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "reqs.yaml"), []byte("version: \"5\"\ndependencies:\n  - pandas\n"), 0o600))
+	cfg = &runConfig{Environment: &environmentConfig{
+		Dependencies: dependencies{set: true, isList: false, path: "reqs.yaml"},
+	}}
+	deps, err = environmentDependencies(cfg, filepath.Join(dir, "run.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"pandas"}, deps)
+
+	// No dependencies declared returns nil.
+	deps, err = environmentDependencies(&runConfig{}, "run.yaml")
+	require.NoError(t, err)
+	assert.Nil(t, deps)
+}
+
+func TestReadRequirementsDependencies(t *testing.T) {
+	dir := t.TempDir()
+
+	reqPath := filepath.Join(dir, "requirements.yaml")
+	require.NoError(t, os.WriteFile(reqPath, []byte("version: \"5\"\ndependencies:\n  - torch==2.3.0\n  - numpy\n"), 0o600))
+	deps, err := readRequirementsDependencies(reqPath)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"torch==2.3.0", "numpy"}, deps)
+
+	// No dependencies key yields an empty list.
+	emptyPath := filepath.Join(dir, "empty.yaml")
+	require.NoError(t, os.WriteFile(emptyPath, []byte("version: \"5\"\n"), 0o600))
+	deps, err = readRequirementsDependencies(emptyPath)
+	require.NoError(t, err)
+	assert.Empty(t, deps)
+
+	// A -r/--requirement include is rejected.
+	includePath := filepath.Join(dir, "include.yaml")
+	require.NoError(t, os.WriteFile(includePath, []byte("dependencies:\n  - -r other.txt\n"), 0o600))
+	_, err = readRequirementsDependencies(includePath)
+	require.ErrorContains(t, err, "requirements-file include")
 }
 
 func TestSubmitToken(t *testing.T) {

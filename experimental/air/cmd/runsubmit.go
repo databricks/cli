@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -38,8 +39,26 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 	return strings.TrimPrefix(img, "CLIENT-GPU-")
 }
 
+// environmentDependencies resolves the user's declared dependencies as a flat
+// list to carry inline on the serverless environment's spec.dependencies: the
+// inline list directly, or the dependencies read from a requirements file
+// (resolved against the config's directory). Returns nil when none are declared.
+func environmentDependencies(cfg *runConfig, configPath string) ([]string, error) {
+	if deps, ok := cfg.inlineDependencies(); ok {
+		return deps, nil
+	}
+	if reqPath, ok := cfg.requirementsFile(); ok {
+		if !filepath.IsAbs(reqPath) {
+			reqPath = filepath.Join(filepath.Dir(configPath), reqPath)
+		}
+		return readRequirementsDependencies(reqPath)
+	}
+	return nil, nil
+}
+
 // buildSubmitPayload assembles the runs/submit payload. commandPath is the
-// workspace path of the uploaded command.sh; dlImage is the runtime channel.
+// workspace path of the uploaded command.sh; dlImage is the runtime channel;
+// deps is the user's declared dependencies (nil when none are declared).
 //
 // max_retries is always sent (including 0) so the user's YAML value is honored:
 // setting it to 0 explicitly disables retries rather than falling back to the
@@ -47,7 +66,7 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 // omitempty so the wire form matches the Python CLI (which never emits a bare
 // "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
 // workload.
-func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapshotResult) jobs.SubmitRun {
+func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapshotResult, deps []string) jobs.SubmitRun {
 	task := jobs.AiRuntimeTask{
 		Experiment: cfg.ExperimentName,
 		Deployments: []jobs.DeploymentSpec{{
@@ -80,13 +99,22 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapsh
 		ForceSendFields: []string{"MaxRetries"},
 	}
 
+	// Carry the user's declared deps inline on spec.dependencies; the AI Runtime
+	// backend installs them via --deps-config. The SDK marshaler drops nil and empty
+	// slices, so a no-deps run omits the key. Deps are no longer uploaded as a
+	// requirements.yaml (see buildArtifacts).
+	envSpec := &compute.Environment{EnvironmentVersion: dlImage}
+	if len(deps) > 0 {
+		envSpec.Dependencies = deps
+	}
+
 	return jobs.SubmitRun{
 		RunName:        cfg.ExperimentName,
 		TimeoutSeconds: cfg.timeoutSeconds(),
 		Tasks:          []jobs.SubmitTask{st},
 		Environments: []jobs.JobEnvironment{{
 			EnvironmentKey: aiRuntimeEnvironmentKey,
-			Spec:           &compute.Environment{EnvironmentVersion: dlImage},
+			Spec:           envSpec,
 		}},
 	}
 }
@@ -166,8 +194,12 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		}
 	}
 
+	deps, err := environmentDependencies(cfg, configPath)
+	if err != nil {
+		return 0, "", err
+	}
 	runtimeVersion, _ := cfg.runtimeVersion()
-	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), snap)
+	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), snap, deps)
 	payload.IdempotencyToken = token
 
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
