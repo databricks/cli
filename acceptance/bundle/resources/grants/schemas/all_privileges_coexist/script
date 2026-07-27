@@ -16,7 +16,11 @@ trace $CLI bundle deploy
 envsubst < update.json > update.resolved.json
 trace $CLI grants update schema "$SCHEMA_FULL_NAME" --json @update.resolved.json > /dev/null
 
-# The plan output differs between engines: the direct engine treats ALL_PRIVILEGES
+# The first plan differs between engines: the direct engine treats ALL_PRIVILEGES
 # as implying every concrete privilege, so it reports no drift (issue #6030),
 # while terraform revokes the extra privilege to match the config exactly.
 trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+
+# After deploying, both engines converge: the follow-up plan reports no changes.
+trace $CLI bundle deploy
+trace $CLI bundle plan

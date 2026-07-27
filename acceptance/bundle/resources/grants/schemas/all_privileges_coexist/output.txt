@@ -7,6 +7,15 @@ Deployment complete!
 
 >>> [CLI] grants update schema main.schema_all_priv_coexist_[UNIQUE_NAME] --json @update.resolved.json
 
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-all-privileges-coexist-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
 >>> errcode [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.grants_schema
