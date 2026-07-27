@@ -49,13 +49,16 @@ def generate(seed):
 def mutate_base(seed):
     name = MUTATE_BASES[seed % len(MUTATE_BASES)]
     path = os.path.join(os.environ["TESTDIR"], "..", "configs", name + ".yml.tmpl")
+    # Seeds share one long-lived workspace, so scope $UNIQUE_NAME to the seed as generate()
+    # does; otherwise state a seed leaves behind reads back as drift in the next one.
+    unique = f"{os.environ['UNIQUE_NAME']}-{seed}"
+    os.environ["UNIQUE_NAME"] = unique
     with open(path) as f:
         rendered = substitute_variables(f.read())
     config = load_yaml(rendered)
     # The schema lets mutate inject valid optional fields, not just perturb existing ones.
     with open(os.environ["FUZZ_SCHEMA"]) as f:
         schema = json.load(f)
-    unique = f"{os.environ['UNIQUE_NAME']}-{seed}"
     return to_yaml(mutate(config, seed, schema=schema, unique=unique))
 
 
