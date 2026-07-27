@@ -158,21 +158,27 @@ func TestOperationQueueUploadsOneResourceAtATime(t *testing.T) {
 		distinctKeyMod = 12
 	)
 
+	ctx := t.Context()
 	u := &serialUploader{live: map[string]bool{}, last: map[string]string{}}
-	q := newOperationQueue(t.Context(), u)
+	q := newOperationQueue(ctx, u)
 
+	// Collect record errors instead of asserting inside the goroutines: testify
+	// assertions may only run on the goroutine running the test function.
+	errs := make(chan error, workers*perWorker)
 	var wg sync.WaitGroup
 	for w := range workers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for i := range perWorker {
 				key := "resources.jobs.job" + strconv.Itoa((w*perWorker+i)%distinctKeyMod)
-				recordState(t, q, key, strconv.Itoa(w))
+				errs <- q.record(ctx, key, deployplan.Update, "id-1", map[string]string{"name": strconv.Itoa(w)})
 			}
-		}()
+		})
 	}
 	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
 	require.NoError(t, q.close())
 
 	assert.False(t, u.uneven, "two uploads overlapped for the same resource key")
