@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -189,13 +190,54 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	assert.Equal(t, 4, at.Deployments[0].Compute.AcceleratorCount)
 }
 
-// TestSubmitWorkloadWithCodeSource exercises the snapshot path end to end: a
-// git-pinned code_source is packaged, uploaded, and its paths attached to the task.
+// A working-tree code_source is packaged into a tarball, uploaded via DABs' artifact
+// plumbing, and its remote code_source_path attached to the submitted task.
 func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
 	// Register before AddDefaultHandlers: the router is first-wins, so this must claim the route ahead of the default handler.
+	var got jobs.SubmitRun
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	// A plain working-tree directory: packaging is plain-tar.
+	repo := filepath.Join(t.TempDir(), "src")
+	writeRepoFile(t, repo, "train.py", "print()")
+
+	cfg := minimalConfig + `
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ` + repo + `
+`
+	cfgPath := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	// The DABs upload path logs via cmdio; the real `air run` context carries it.
+	ctx := cmdio.MockDiscard(t.Context())
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
+	require.NoError(t, err)
+
+	at := got.Tasks[0].AiRuntimeTask
+	// The tarball is uploaded to the artifact .internal dir and code_source_path
+	// rewritten to it.
+	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/.internal/")
+	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
+}
+
+// A git-pinned code_source is git-archived at the commit, uploaded via DABs' artifact
+// plumbing, and its remote code_source_path attached to the submitted task.
+func TestSubmitWorkloadWithGitPinnedCodeSource(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
 	var got jobs.SubmitRun
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
@@ -222,15 +264,56 @@ code_source:
 	loaded, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, loaded, cfgPath, "idem")
+	ctx := cmdio.MockDiscard(t.Context())
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
-	// The tarball path is under the user's repo_snapshots dir. git_state_path /
-	// git_diff_path are not asserted: the typed jobs.AiRuntimeTask has no such fields
-	// (see the TEMP note in buildSubmitPayload), so they aren't sent. The git_state
-	// sidecar file is still uploaded next to the tarball — covered by TestRunSnapshot.
-	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/"+filepath.Base(repo)+"/")
+	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/.internal/")
+	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
+}
+
+// remote_volume uploads the snapshot to a UC Volume: DABs' artifact uploader handles
+// /Volumes destinations natively, so code_source_path lands under the Volume path.
+func TestSubmitWorkloadWithRemoteVolumeCodeSource(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	var got jobs.SubmitRun
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	// Stub the UC Volume file write: the fake server's default handler 404s when the
+	// parent dir is absent (no auto-mkdir), so accept the PUT to exercise the Volume
+	// upload route. This asserts we route to /api/2.0/fs/files/Volumes/... at all.
+	server.Handle("PUT", "/api/2.0/fs/files/Volumes/{path...}", func(req testserver.Request) any {
+		return testserver.Response{StatusCode: 204}
+	})
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	repo := filepath.Join(t.TempDir(), "src")
+	writeRepoFile(t, repo, "train.py", "print()")
+
+	cfg := minimalConfig + `
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ` + repo + `
+    remote_volume: /Volumes/main/default/code
+`
+	cfgPath := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
+	require.NoError(t, err)
+
+	at := got.Tasks[0].AiRuntimeTask
+	assert.Contains(t, at.CodeSourcePath, "/Volumes/main/default/code/.internal/")
 	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
 }
 

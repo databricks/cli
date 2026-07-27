@@ -19,8 +19,6 @@ import (
 // `git archive`, with every entry prefixed by directoryName/. When includePaths is
 // set, only those paths are archived.
 func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outputTarball, directoryName string, includePaths []string) error {
-	// Single git invocation writes the gzipped tar with the desired prefix; no
-	// extract/repack. Provenance lives in the git_state.json sidecar, not here.
 	args := []string{
 		"archive",
 		"--format=tar.gz",
