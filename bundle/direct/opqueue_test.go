@@ -1,0 +1,192 @@
+package direct
+
+import (
+	"context"
+	"errors"
+	"strconv"
+	"sync"
+	"testing"
+
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// fakeUploader records the uploads it receives and optionally blocks until
+// release is closed, so a test can hold operations in the queue and observe
+// coalescing.
+type fakeUploader struct {
+	block   chan struct{}
+	started chan string
+	err     error
+
+	mu      sync.Mutex
+	uploads []string
+}
+
+func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
+	if f.started != nil {
+		f.started <- resourceKey
+	}
+	if f.block != nil {
+		<-f.block
+	}
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.uploads = append(f.uploads, resourceKey+"="+string(op.state))
+	return f.err
+}
+
+func (f *fakeUploader) recorded() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]string(nil), f.uploads...)
+}
+
+func recordState(t *testing.T, q *operationQueue, resourceKey, name string) {
+	t.Helper()
+	require.NoError(t, q.record(t.Context(), resourceKey, deployplan.Update, "id-1", map[string]string{"name": name}))
+}
+
+func TestOperationQueueUploadsEachOperation(t *testing.T) {
+	f := &fakeUploader{}
+	q := newOperationQueue(t.Context(), f)
+
+	for i := range 20 {
+		recordState(t, q, "resources.jobs.job"+strconv.Itoa(i), "n")
+	}
+	require.NoError(t, q.close())
+
+	assert.Len(t, f.recorded(), 20)
+}
+
+func TestOperationQueueCoalescesQueuedOperationsForSameResource(t *testing.T) {
+	// Hold the first upload so later operations for the same resource pile up in
+	// the queue and are collapsed into one.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 1)}
+	q := newOperationQueue(t.Context(), f)
+
+	recordState(t, q, "resources.jobs.foo", "v1")
+	// Wait until a worker owns the key, so the operations below are queued behind
+	// an in-flight upload rather than racing it.
+	assert.Equal(t, "resources.jobs.foo", <-f.started)
+
+	recordState(t, q, "resources.jobs.foo", "v2")
+	recordState(t, q, "resources.jobs.foo", "v3")
+
+	close(f.block)
+	require.NoError(t, q.close())
+
+	// Two uploads, not three: v2 was superseded by v3 while both were queued, and
+	// the last recorded state is the one the service ends up with.
+	assert.Equal(t, []string{
+		`resources.jobs.foo={"name":"v1"}`,
+		`resources.jobs.foo={"name":"v3"}`,
+	}, f.recorded())
+}
+
+func TestOperationQueueReturnsUploadError(t *testing.T) {
+	uploadErr := errors.New("boom")
+	f := &fakeUploader{err: uploadErr}
+	q := newOperationQueue(t.Context(), f)
+
+	recordState(t, q, "resources.jobs.foo", "v1")
+
+	err := q.close()
+	require.Error(t, err)
+	assert.ErrorIs(t, err, uploadErr)
+	assert.Contains(t, err.Error(), "resources.jobs.foo")
+}
+
+func TestOperationQueueRecordRejectsUnsupportedAction(t *testing.T) {
+	f := &fakeUploader{}
+	q := newOperationQueue(t.Context(), f)
+
+	// Serialization failures surface at record time, on the resource that caused
+	// them, rather than from the drain at the end of apply.
+	err := q.record(t.Context(), "resources.jobs.foo", deployplan.Skip, "id-1", nil)
+	require.Error(t, err)
+
+	require.NoError(t, q.close())
+	assert.Empty(t, f.recorded())
+}
+
+func TestOperationQueueCloseIsIdempotent(t *testing.T) {
+	f := &fakeUploader{err: errors.New("boom")}
+	q := newOperationQueue(t.Context(), f)
+
+	recordState(t, q, "resources.jobs.foo", "v1")
+
+	require.Error(t, q.close())
+	// A second close reports the same error instead of panicking on the already
+	// closed channel, so callers can both defer close and check it explicitly.
+	require.Error(t, q.close())
+}
+
+// serialUploader fails if two uploads for the same resource key ever overlap.
+type serialUploader struct {
+	mu     sync.Mutex
+	live   map[string]bool
+	last   map[string]string
+	uneven bool
+}
+
+func (s *serialUploader) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
+	s.mu.Lock()
+	if s.live[resourceKey] {
+		s.uneven = true
+	}
+	s.live[resourceKey] = true
+	s.mu.Unlock()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.live[resourceKey] = false
+	s.last[resourceKey] = string(op.state)
+	return nil
+}
+
+func TestOperationQueueUploadsOneResourceAtATime(t *testing.T) {
+	// Concurrent apply workers repeatedly record overlapping resource keys, the
+	// case where a coalesced key can be handed to a second worker while the first
+	// is still uploading it. The service keeps one state per key, so overlapping
+	// uploads for a key could land out of order and leave a stale state behind.
+	const (
+		workers        = 10
+		perWorker      = 5
+		distinctKeyMod = 12
+	)
+
+	u := &serialUploader{live: map[string]bool{}, last: map[string]string{}}
+	q := newOperationQueue(t.Context(), u)
+
+	var wg sync.WaitGroup
+	for w := range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range perWorker {
+				key := "resources.jobs.job" + strconv.Itoa((w*perWorker+i)%distinctKeyMod)
+				recordState(t, q, key, strconv.Itoa(w))
+			}
+		}()
+	}
+	wg.Wait()
+	require.NoError(t, q.close())
+
+	assert.False(t, u.uneven, "two uploads overlapped for the same resource key")
+	// Every distinct key was recorded, and close drained all of them.
+	assert.Len(t, u.last, distinctKeyMod)
+	assert.Empty(t, q.pending)
+	assert.Empty(t, q.inflight)
+}
+
+func TestNilOperationQueueIsNoOp(t *testing.T) {
+	// Recording is disabled: newOperationQueue returns nil and every method is a
+	// no-op, so Apply does not have to branch.
+	q := newOperationQueue(t.Context(), nil)
+	require.Nil(t, q)
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", nil))
+	require.NoError(t, q.close())
+}

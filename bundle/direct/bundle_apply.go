@@ -34,6 +34,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
+	// Operations are recorded with DMS from background workers so a resource's
+	// deploy is not held up by the CreateOperation round trip. The queue is
+	// drained below, once every apply worker has finished recording.
+	opQueue := newOperationQueue(ctx, b.OpRec)
+
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
@@ -89,7 +94,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 			// Record the delete with DMS. State is nil: the resource is gone.
-			if err := b.recordOperation(ctx, resourceKey, action, "", nil); err != nil {
+			if err := opQueue.record(ctx, resourceKey, action, "", nil); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -125,7 +130,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			// Record the operation with DMS. The resource ID and applied config
 			// (sv.Value) come from the write just performed; GetResourceID reads
 			// the ID assigned by Deploy.
-			if err := b.recordOperation(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), sv.Value); err != nil {
+			if err := opQueue.record(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), sv.Value); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -152,6 +157,13 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		return true
 	})
+
+	// Wait for the queued operations before returning: the caller completes the
+	// DMS version right after, and a version must not be completed with uploads
+	// still in flight.
+	if err := opQueue.close(); err != nil {
+		logdiag.LogError(ctx, err)
+	}
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {

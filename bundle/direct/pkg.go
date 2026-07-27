@@ -45,10 +45,12 @@ type DeploymentBundle struct {
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
 
-	// OpRec records each applied resource operation with the deployment metadata
+	// OpRec uploads each applied resource operation to the deployment metadata
 	// service (DMS). It is nil unless the bundle opts into recording deployment
 	// history, in which case the phases package sets it after CreateVersion.
-	OpRec opRecorder
+	// Apply queues the operations and drains them before returning, so the
+	// uploads do not block the resources being deployed.
+	OpRec operationUploader
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

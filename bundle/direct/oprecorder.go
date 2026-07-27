@@ -12,59 +12,30 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// opRecorder records a resource operation with the deployment metadata service
-// (DMS) after it has been applied to the workspace. state is the serialized
+// recordedOperation is an applied resource operation, serialized and waiting to be
+// uploaded to the deployment metadata service (DMS).
+//
+// The payload is built on the apply worker rather than in the uploader so the
+// queue does not hold on to the live resource struct, and so a malformed state
+// fails the resource that produced it instead of the drain at the end of apply.
+type recordedOperation struct {
+	action     bundledeployments.OperationActionType
+	resourceID string
+
+	// state is the serialized local config after the operation. It is nil for a
+	// delete, where the resource no longer exists.
+	state json.RawMessage
+}
+
+// newRecordedOperation serializes an applied operation for upload. state is the
 // local config after the operation and must be nil for delete operations.
-type opRecorder interface {
-	record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error
-}
-
-// recordOperation reports an applied resource operation to DMS. It is a no-op
-// unless the bundle opted into recording deployment history (OpRec is set).
-// state is the serialized local config after the operation and must be nil for
-// delete operations.
-func (b *DeploymentBundle) recordOperation(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error {
-	if b.OpRec == nil {
-		return nil
-	}
-	return b.OpRec.record(ctx, resourceKey, action, resourceID, state)
-}
-
-// operationRecorder records operations via the DMS CreateOperation API.
-type operationRecorder struct {
-	client bundledeployments.BundleDeploymentsInterface
-	// parent is the version the operations are recorded under, formatted as
-	// "deployments/{deployment_id}/versions/{version_id}".
-	parent string
-}
-
-// NewOperationRecorder returns an opRecorder backed by the DMS CreateOperation
-// API. deploymentID and version identify the deployment version assigned by DMS
-// that the operations are recorded under.
-func NewOperationRecorder(client bundledeployments.BundleDeploymentsInterface, deploymentID string, version int64) opRecorder {
-	return &operationRecorder{
-		client: client,
-		parent: fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version),
-	}
-}
-
-func (r *operationRecorder) record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error {
+func newRecordedOperation(action deployplan.ActionType, resourceID string, state any) (recordedOperation, error) {
 	actionType, err := deployActionToSDK(action)
 	if err != nil {
-		return err
+		return recordedOperation{}, err
 	}
 
-	// DMS resource keys are unprefixed (e.g. "jobs.foo"), while the CLI's state
-	// keys carry a leading "resources." (e.g. "resources.jobs.foo"). Strip it on
-	// the way out; the read path re-adds it (see dstate.fetchDeploymentResources).
-	dmsKey := strings.TrimPrefix(resourceKey, "resources.")
-
-	op := bundledeployments.Operation{
-		ActionType:  actionType,
-		ResourceId:  resourceID,
-		ResourceKey: dmsKey,
-		Status:      bundledeployments.OperationStatusOperationStatusSucceeded,
-	}
+	op := recordedOperation{action: actionType, resourceID: resourceID}
 
 	// The DMS Operation.State field carries the serialized config so the backend
 	// can serve it as resource state. It is intentionally left unset for delete,
@@ -77,16 +48,58 @@ func (r *operationRecorder) record(ctx context.Context, resourceKey string, acti
 	if state != nil {
 		raw, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
 		if err != nil {
-			return fmt.Errorf("serializing state: %w", err)
+			return recordedOperation{}, fmt.Errorf("serializing state: %w", err)
 		}
-		msg := json.RawMessage(raw)
-		op.State = &msg
+		op.state = raw
 	}
 
-	_, err = r.client.CreateOperation(ctx, bundledeployments.CreateOperationRequest{
+	return op, nil
+}
+
+// operationUploader records an applied resource operation with DMS. Uploads run
+// on the operationQueue workers, off the apply path.
+type operationUploader interface {
+	upload(ctx context.Context, resourceKey string, op recordedOperation) error
+}
+
+// operationRecorder uploads operations via the DMS CreateOperation API.
+type operationRecorder struct {
+	client bundledeployments.BundleDeploymentsInterface
+	// parent is the version the operations are recorded under, formatted as
+	// "deployments/{deployment_id}/versions/{version_id}".
+	parent string
+}
+
+// NewOperationRecorder returns an operationUploader backed by the DMS
+// CreateOperation API. deploymentID and version identify the deployment version
+// assigned by DMS that the operations are recorded under.
+func NewOperationRecorder(client bundledeployments.BundleDeploymentsInterface, deploymentID string, version int64) operationUploader {
+	return &operationRecorder{
+		client: client,
+		parent: fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version),
+	}
+}
+
+func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
+	// DMS resource keys are unprefixed (e.g. "jobs.foo"), while the CLI's state
+	// keys carry a leading "resources." (e.g. "resources.jobs.foo"). Strip it on
+	// the way out; the read path re-adds it (see dstate.fetchDeploymentResources).
+	dmsKey := strings.TrimPrefix(resourceKey, "resources.")
+
+	operation := bundledeployments.Operation{
+		ActionType:  op.action,
+		ResourceId:  op.resourceID,
+		ResourceKey: dmsKey,
+		Status:      bundledeployments.OperationStatusOperationStatusSucceeded,
+	}
+	if op.state != nil {
+		operation.State = &op.state
+	}
+
+	_, err := r.client.CreateOperation(ctx, bundledeployments.CreateOperationRequest{
 		Parent:      r.parent,
 		ResourceKey: dmsKey,
-		Operation:   op,
+		Operation:   operation,
 	})
 	return err
 }
