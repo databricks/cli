@@ -1,0 +1,214 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
+  "body": {
+    "budget_policy_id": "",
+    "description": "",
+    "name": "test-app-direct",
+    "space": "",
+    "usage_policy_id": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/database/instances",
+  "body": {
+    "capacity": "CU_1",
+    "name": "test-db-instance",
+    "usage_policy_id": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/mlflow/experiments/create",
+  "body": {
+    "artifact_location": "",
+    "name": "/Users/[USERNAME]/test-experiment"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/mlflow/registered-models/create",
+  "body": {
+    "description": "",
+    "name": "test-model"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "budget_policy_id": "",
+    "channel": "CURRENT",
+    "clusters": [
+      {
+        "aws_attributes": {
+          "availability": "SPOT",
+          "instance_profile_arn": "",
+          "zone_id": ""
+        },
+        "driver_instance_pool_id": "",
+        "driver_node_type_id": "",
+        "instance_pool_id": "",
+        "label": "default",
+        "node_type_id": "",
+        "policy_id": ""
+      }
+    ],
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files/pipeline.py"
+        },
+        "jar": "",
+        "whl": ""
+      }
+    ],
+    "name": "",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files",
+    "serverless_compute_id": "",
+    "usage_policy_id": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses",
+  "body": {
+    "auto_stop_mins": 10,
+    "cluster_size": "2X-Small",
+    "enable_photon": true,
+    "instance_profile_arn": "",
+    "max_num_clusters": 1,
+    "min_num_clusters": 1,
+    "name": "test-warehouse",
+    "spot_instance_policy": "COST_OPTIMIZED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/create",
+  "body": {
+    "autotermination_minutes": 60,
+    "aws_attributes": {
+      "availability": "SPOT",
+      "instance_profile_arn": "",
+      "zone_id": ""
+    },
+    "cluster_log_conf": {
+      "s3": {
+        "canned_acl": "",
+        "destination": "s3://test-bucket/logs",
+        "encryption_type": "",
+        "endpoint": "",
+        "kms_key": "",
+        "region": ""
+      }
+    },
+    "cluster_name": "",
+    "node_type_id": "",
+    "num_workers": 1,
+    "policy_id": "",
+    "single_user_name": "",
+    "spark_version": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/models",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "created_by": "",
+    "full_name": "",
+    "metastore_id": "",
+    "name": "test-registered-model",
+    "owner": "",
+    "schema_name": "default",
+    "storage_location": "",
+    "updated_by": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "name": "test-schema",
+    "storage_root": ""
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "name": "test-volume",
+    "schema_name": "default",
+    "storage_location": "",
+    "volume_type": "MANAGED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "budget_policy_id": "",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
+    },
+    "description": "",
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "git_source": {
+      "git_branch": "main",
+      "git_provider": "gitHub",
+      "git_url": "https://example.com/repo"
+    },
+    "job_clusters": [
+      {
+        "job_cluster_key": "main",
+        "new_cluster": {
+          "aws_attributes": {
+            "availability": "SPOT",
+            "instance_profile_arn": "",
+            "zone_id": ""
+          },
+          "cluster_log_conf": {
+            "s3": {
+              "canned_acl": "",
+              "destination": "s3://test-bucket/logs",
+              "encryption_type": "",
+              "endpoint": "",
+              "kms_key": "",
+              "region": ""
+            }
+          },
+          "cluster_name": "",
+          "node_type_id": "",
+          "num_workers": 1,
+          "policy_id": "",
+          "single_user_name": "",
+          "spark_version": ""
+        }
+      }
+    ],
+    "max_concurrent_runs": 1,
+    "name": "",
+    "parent_path": "",
+    "queue": {
+      "enabled": true
+    },
+    "usage_policy_id": ""
+  }
+}
