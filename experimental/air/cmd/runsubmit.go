@@ -152,6 +152,13 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
+	// Resolve dependencies before any upload too, so a bad requirements file fails
+	// fast without leaving orphaned artifacts in the workspace.
+	deps, err := environmentDependencies(cfg, configPath)
+	if err != nil {
+		return 0, "", err
+	}
+
 	experimentDir := ""
 	if cfg.MLflowExperimentDirectory != nil {
 		experimentDir = *cfg.MLflowExperimentDirectory
@@ -194,10 +201,6 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		}
 	}
 
-	deps, err := environmentDependencies(cfg, configPath)
-	if err != nil {
-		return 0, "", err
-	}
 	runtimeVersion, _ := cfg.runtimeVersion()
 	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), snap, deps)
 	payload.IdempotencyToken = token
