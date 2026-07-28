@@ -13,8 +13,4 @@ fi
 
 invariant_deploy LOG.deploy $CLI bundle deploy $(readplanarg plan.json)
 
-# JSON plan asserts every action is "skip" -- a strict superset of the text
-# renderer's "Plan: 0 to add, 0 to change, 0 to delete" summary.
-$CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
-cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
-verify_no_drift.py LOG.planjson
+invariant_verify_no_drift

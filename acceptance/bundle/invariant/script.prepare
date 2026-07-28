@@ -53,3 +53,13 @@ invariant_deploy() {
     # Tells the fuzzer the generated config was valid; failures after this count as bugs.
     echo INPUT_CONFIG_OK
 }
+
+# JSON plan asserts every action is "skip" -- a strict superset of the text
+# renderer's "Plan: 0 to add, 0 to change, 0 to delete" summary.
+# Callers whose config the server does not round-trip exactly override this
+# from their own script.prepare.
+invariant_verify_no_drift() {
+    $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
+    cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
+    verify_no_drift.py LOG.planjson
+}
