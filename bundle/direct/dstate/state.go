@@ -31,21 +31,27 @@ const (
 	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
 
-	// featureStateVersion is the schema version a future CLI will write once it
-	// records deployment state "feature flags" (see Header.Features). This CLI does
-	// not write it and records no features; it exists now only so this CLI reads
-	// such states correctly (see migrateState):
-	//   - featureStateVersion with no features  -> accept and leave the version as-is
-	//   - featureStateVersion with any feature   -> refuse, tell the user to upgrade
+	// featureStateVersion is the schema version written once a state records
+	// deployment state "feature flags" (see Header.Features). Reading such a state
+	// (see migrateState):
+	//   - featureStateVersion with no features        -> accept, leave the version as-is
+	//   - featureStateVersion with known features     -> accept
+	//   - featureStateVersion with unknown features   -> refuse, tell the user to upgrade
 	//
 	// A featureStateVersion state with no features is equivalent to
 	// currentStateVersion, but we deliberately do not flip the on-disk version down
 	// to currentStateVersion: a state written at featureStateVersion stays at
-	// featureStateVersion. This is forward-compat scaffolding so that a later release
-	// can start writing featureStateVersion + features without older CLIs (with this
-	// change) either mishandling a feature they lack or rejecting a featureless state
-	// outright. featureStateVersion is always 3.
+	// featureStateVersion. That way a release can start writing
+	// featureStateVersion + features without older CLIs either mishandling a feature
+	// they lack or rejecting a featureless state outright. featureStateVersion is
+	// always 3.
 	featureStateVersion = 3
+
+	// FeatureDeploymentHistory marks a state whose resources live in the deployment
+	// metadata service rather than in the state file. A CLI that does not know this
+	// feature refuses the state instead of deploying against a resource set it
+	// cannot see - the file's resources are not authoritative.
+	FeatureDeploymentHistory = "deployment_history"
 
 	// supportedStateVersion is the highest schema version this CLI can read. It is
 	// normally equal to currentStateVersion — the version this CLI reads is the
@@ -82,11 +88,25 @@ type Header struct {
 	Serial       int    `json:"serial"`
 
 	// Features maps each feature flag this state depends on to a (currently empty)
-	// value. This CLI writes no features; it only reads the field to detect a state
-	// that depends on features it lacks and refuse it (see migrateState). It is a
-	// map so a future CLI can attach per-feature data without reshaping the state.
-	// Empty/omitted for states that use no features.
+	// value. A CLI that does not implement one of them refuses the state rather than
+	// deploying against it (see migrateState). It is a map so a future CLI can attach
+	// per-feature data without reshaping the state. Empty/omitted for states that use
+	// no features.
 	Features map[string]struct{} `json:"features,omitempty"`
+}
+
+// hasFeature reports whether the state records the given feature flag.
+func (h *Header) hasFeature(name string) bool {
+	_, ok := h.Features[name]
+	return ok
+}
+
+// setFeature records a feature flag in the state.
+func (h *Header) setFeature(name string) {
+	if h.Features == nil {
+		h.Features = make(map[string]struct{})
+	}
+	h.Features[name] = struct{}{}
 }
 
 type Database struct {
@@ -228,6 +248,10 @@ type DMSSource struct {
 	// DeploymentID is resolved from the deployment's workspace node (see
 	// dms.ResolveDeploymentID), and empty before the first recorded deploy.
 	DeploymentID string
+
+	// TargetName names the bundle target in the error Open returns for a state that
+	// predates the opt-in, since the feature is enabled per target.
+	TargetName string
 }
 
 // Open reads the deployment state from disk (and recovers the WAL when
@@ -283,18 +307,18 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	}
 
 	if dmsSource != nil {
-		// Only bundles that start out empty can be recorded. Once DMS owns a
-		// deployment it is authoritative for the whole resource set (see
-		// readDMSState), so pre-existing resources it never saw would look absent and
-		// get created a second time.
-		//
-		// TODO(DMS): allow this by upgrading the state in place, writing it at
-		// featureStateVersion with a feature flag plus a tombstone per resource so an
-		// older CLI refuses the state instead of deploying against resources it
-		// cannot see.
-		if dmsSource.DeploymentID == "" && len(db.Data.State) > 0 {
-			return fmt.Errorf("cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded. Remove experimental.record_deployment_history, or destroy the bundle and deploy it again", path)
+		// An existing state file has to be marked as DMS-owned before its resources
+		// can be read from DMS. Recording only starts on an empty state, so a state
+		// with resources and no feature flag predates the opt-in: DMS never saw those
+		// resources and is authoritative for the whole set once enabled (see
+		// readDMSState), so they would look absent and be created a second time.
+		// Migrating such a target is not supported yet.
+		if len(db.Data.State) > 0 && !db.Data.hasFeature(FeatureDeploymentHistory) {
+			return fmt.Errorf("target %q was deployed without experimental.record_deployment_history and cannot be migrated to it: %s tracks resources this deployment recorded before the feature was enabled. Use a new target, destroy this one and deploy it again, or unset experimental.record_deployment_history", dmsSource.TargetName, path)
 		}
+		// Mark the state as DMS-owned so a CLI without this feature refuses it rather
+		// than deploying against a resource set it cannot see.
+		db.Data.setFeature(FeatureDeploymentHistory)
 		if dmsSource.DeploymentID != "" {
 			if err := db.readDMSState(ctx, dmsSource); err != nil {
 				return err
@@ -311,13 +335,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 			return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
 		}
 		db.walFile = walFile
-		walHead := Header{
-			Lineage:      db.GetOrInitLineage(),
-			Serial:       db.Data.Serial + 1,
-			StateVersion: currentStateVersion,
-			CLIVersion:   build.GetInfo().Version,
-		}
-		return appendJSONLine(db.walFile, walHead)
+		return appendJSONLine(db.walFile, db.newWalHeader())
 	}
 
 	return nil
@@ -404,6 +422,16 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 				return false, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
 			}
 			newSerial = header.Serial
+
+			// Carry the WAL's features (and the version that goes with them) into the
+			// state being written, so recovering a WAL written by a DMS-recording deploy
+			// still produces a state marked as DMS-owned.
+			for name := range header.Features {
+				db.Data.setFeature(name)
+			}
+			if len(db.Data.Features) > 0 {
+				db.Data.StateVersion = featureStateVersion
+			}
 		} else {
 			var entry WALEntry
 			if err := json.Unmarshal(line, &entry); err != nil {
@@ -507,13 +535,25 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	}
 	db.walFile = walFile
 
-	walHead := Header{
+	return appendJSONLine(db.walFile, db.newWalHeader())
+}
+
+// newWalHeader builds the header for a fresh WAL. Features carry over from the
+// state being written, and a state that records any feature is written at
+// featureStateVersion so a CLI that lacks the feature refuses it instead of
+// deploying against it. The caller holds db.mu.
+func (db *DeploymentState) newWalHeader() Header {
+	version := currentStateVersion
+	if len(db.Data.Features) > 0 {
+		version = featureStateVersion
+	}
+	return Header{
 		Lineage:      db.GetOrInitLineage(),
 		Serial:       db.Data.Serial + 1,
-		StateVersion: currentStateVersion,
+		StateVersion: version,
 		CLIVersion:   build.GetInfo().Version,
+		Features:     db.Data.Features,
 	}
-	return appendJSONLine(db.walFile, walHead)
 }
 
 func (db *DeploymentState) AssertOpenedForReadOrWrite() {

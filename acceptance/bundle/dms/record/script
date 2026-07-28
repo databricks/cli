@@ -6,6 +6,9 @@ title "The deployment ID is the ID of the workspace node the service registered 
 trace $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record/default/state/resources.deployment.json" | jq '{object_type,path}'
 trace jq 'has("deployment_id")' .databricks/bundle/default/resources.json
 
+title "The state records the feature flag, at the version that makes a CLI without it refuse the state rather than deploy against resources it cannot see"
+trace jq '{state_version, features}' .databricks/bundle/default/resources.json
+
 title "Redeploy after deleting the local cache: the deployment ID is resolved from that node, the same deployment is reused, and the version increments (no new CreateDeployment)"
 rm -rf .databricks
 trace $CLI bundle deploy

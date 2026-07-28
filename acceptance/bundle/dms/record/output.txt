@@ -73,6 +73,15 @@ Deployment complete!
 >>> jq has("deployment_id") .databricks/bundle/default/resources.json
 false
 
+=== The state records the feature flag, at the version that makes a CLI without it refuse the state rather than deploy against resources it cannot see
+>>> jq {state_version, features} .databricks/bundle/default/resources.json
+{
+  "state_version": 3,
+  "features": {
+    "deployment_history": {}
+  }
+}
+
 === Redeploy after deleting the local cache: the deployment ID is resolved from that node, the same deployment is reused, and the version increments (no new CreateDeployment)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record/default/files...
