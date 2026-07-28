@@ -1,0 +1,7 @@
+# job_runs is a direct-engine-only resource; the Terraform provider has no
+# equivalent, so restrict the matrix to direct.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+RecordRequests = true
+
+# The deploy fails mid-way, leaving local deployment state behind.
+Ignore = [".databricks"]

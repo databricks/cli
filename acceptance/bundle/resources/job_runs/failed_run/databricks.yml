@@ -1,0 +1,34 @@
+bundle:
+  name: job-runs-failed-run
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        # The test server runs this locally; the script exits non-zero, which
+        # fails the task and with it the run.
+        - task_key: main
+          spark_python_task:
+            python_file: ./fail.py
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "2"
+
+    # Depends on my_run's result_state, so the failing run aborts the deploy
+    # before this job is created.
+    downstream_job:
+      name: downstream-job
+      tags:
+        run_result: ${resources.job_runs.my_run.state.result_state}
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
