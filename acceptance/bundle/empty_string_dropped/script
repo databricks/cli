@@ -8,11 +8,9 @@
 
 # Exclude non-create traffic: workspace file ops and telemetry (nondeterministic).
 trace DATABRICKS_BUNDLE_ENGINE=terraform errcode $CLI bundle deploy -t tf
-print_requests.py ^/api/2.0/workspace ^/telemetry --sort --keep > out.requests.terraform.json
-print_requests.py //jobs/create > out.requests.job.terraform.json
+print_requests.py ^/api/2.0/workspace ^/telemetry --sort > out.requests.terraform.json
 
 trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy -t direct
-print_requests.py ^/api/2.0/workspace ^/telemetry --sort --keep > out.requests.direct.json
-print_requests.py //jobs/create > out.requests.job.direct.json
+print_requests.py ^/api/2.0/workspace ^/telemetry --sort > out.requests.direct.json
 
 $TESTDIR/dropped_fields.py
