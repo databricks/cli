@@ -1883,9 +1883,6 @@ resources:
         "name":
           "description": |-
             The name of the secret, relative to its parent schema.
-        "owner":
-          "description": |-
-            The owner of the secret. Defaults to the creating principal on creation.
         "schema_name":
           "description": |-
             The name of the schema where the secret resides.
