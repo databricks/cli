@@ -94,7 +94,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 			// Record the delete with DMS. State is nil: the resource is gone.
-			if err := opQueue.record(ctx, resourceKey, action, "", nil); err != nil {
+			if err := opQueue.record(ctx, resourceKey, action, "", nil, nil); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -129,8 +129,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 			// Record the operation with DMS. The resource ID and applied config
 			// (sv.Value) come from the write just performed; GetResourceID reads
-			// the ID assigned by Deploy.
-			if err := opQueue.record(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), sv.Value); err != nil {
+			// the ID assigned by Deploy. depends_on is recorded alongside the config
+			// because it cannot be recomputed from it (see dstate.RecordedState).
+			if err := opQueue.record(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), sv.Value, d.DependsOn); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}

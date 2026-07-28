@@ -59,7 +59,7 @@ func (f *fakeUploader) actionFor(resourceKey string) bundledeployments.Operation
 
 func recordState(t *testing.T, q *operationQueue, resourceKey, name string) {
 	t.Helper()
-	require.NoError(t, q.record(t.Context(), resourceKey, deployplan.Update, "id-1", map[string]string{"name": name}))
+	require.NoError(t, q.record(t.Context(), resourceKey, deployplan.Update, "id-1", map[string]string{"name": name}, nil))
 }
 
 func TestOperationQueueUploadsEachOperation(t *testing.T) {
@@ -94,8 +94,8 @@ func TestOperationQueueCoalescesQueuedOperationsForSameResource(t *testing.T) {
 	// Two uploads, not three: v2 was superseded by v3 while both were queued, and
 	// the last recorded state is the one the service ends up with.
 	assert.Equal(t, []string{
-		`resources.jobs.foo={"name":"v1"}`,
-		`resources.jobs.foo={"name":"v3"}`,
+		`resources.jobs.foo={"state":{"name":"v1"}}`,
+		`resources.jobs.foo={"state":{"name":"v3"}}`,
 	}, f.recorded())
 }
 
@@ -114,15 +114,15 @@ func TestOperationQueueCoalescingKeepsCreateAction(t *testing.T) {
 		assert.Equal(t, "resources.jobs.hold"+strconv.Itoa(i), <-f.started)
 	}
 
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "created"}))
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Update, "id-1", map[string]string{"name": "updated"}))
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "created"}, nil))
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Update, "id-1", map[string]string{"name": "updated"}, nil))
 
 	close(f.block)
 	require.NoError(t, q.close())
 
 	// The state is the later one, but the action stays CREATE: recording an update
 	// would tell DMS the resource already existed before this deploy.
-	assert.Contains(t, f.recorded(), `resources.jobs.foo={"name":"updated"}`)
+	assert.Contains(t, f.recorded(), `resources.jobs.foo={"state":{"name":"updated"}}`)
 	assert.Equal(t,
 		bundledeployments.OperationActionTypeOperationActionTypeCreate,
 		f.actionFor("resources.jobs.foo"))
@@ -147,7 +147,7 @@ func TestOperationQueueRecordRejectsUnsupportedAction(t *testing.T) {
 
 	// Serialization failures surface at record time, on the resource that caused
 	// them, rather than from the drain at the end of apply.
-	err := q.record(t.Context(), "resources.jobs.foo", deployplan.Skip, "id-1", nil)
+	err := q.record(t.Context(), "resources.jobs.foo", deployplan.Skip, "id-1", nil, nil)
 	require.Error(t, err)
 
 	require.NoError(t, q.close())
@@ -159,7 +159,7 @@ func TestOperationQueueRecordRejectsOversizedState(t *testing.T) {
 	q := newOperationQueue(t.Context(), f)
 
 	big := map[string]string{"name": strings.Repeat("x", maxOperationStateSize)}
-	err := q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", big)
+	err := q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", big, nil)
 	require.ErrorContains(t, err, "exceeds the 65536 byte limit")
 
 	require.NoError(t, q.close())
@@ -224,7 +224,7 @@ func TestOperationQueueUploadsOneResourceAtATime(t *testing.T) {
 		wg.Go(func() {
 			for i := range perWorker {
 				key := "resources.jobs.job" + strconv.Itoa((w*perWorker+i)%distinctKeyMod)
-				errs <- q.record(ctx, key, deployplan.Update, "id-1", map[string]string{"name": strconv.Itoa(w)})
+				errs <- q.record(ctx, key, deployplan.Update, "id-1", map[string]string{"name": strconv.Itoa(w)}, nil)
 			}
 		})
 	}
@@ -247,6 +247,6 @@ func TestNilOperationQueueIsNoOp(t *testing.T) {
 	// no-op, so Apply does not have to branch.
 	q := newOperationQueue(t.Context(), nil)
 	require.Nil(t, q)
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", nil))
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", nil, nil))
 	require.NoError(t, q.close())
 }

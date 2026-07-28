@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
@@ -35,7 +36,7 @@ type recordedOperation struct {
 // newRecordedOperation serializes an applied operation for upload. state is the
 // local config after the operation and must be nil for delete operations. It
 // errors when the serialized state exceeds maxOperationStateSize.
-func newRecordedOperation(action deployplan.ActionType, resourceID string, state any) (recordedOperation, error) {
+func newRecordedOperation(action deployplan.ActionType, resourceID string, state any, dependsOn []deployplan.DependsOnEntry) (recordedOperation, error) {
 	actionType, err := deployActionToSDK(action)
 	if err != nil {
 		return recordedOperation{}, err
@@ -43,14 +44,18 @@ func newRecordedOperation(action deployplan.ActionType, resourceID string, state
 
 	op := recordedOperation{action: actionType, resourceID: resourceID}
 
-	// Operation.State carries the serialized config, which DMS serves back as
+	// Operation.State carries the serialized state, which DMS serves back as
 	// resource state. Unset for delete: the resource is gone.
 	//
 	// Redact secrets, like dstate.SaveState does for the local state file:
 	// otherwise we leak them to the service and the read path writes them back
 	// into a local state file in plaintext.
 	if state != nil {
-		raw, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
+		config, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
+		if err != nil {
+			return recordedOperation{}, fmt.Errorf("serializing state: %w", err)
+		}
+		raw, err := json.Marshal(dstate.RecordedState{State: config, DependsOn: dependsOn})
 		if err != nil {
 			return recordedOperation{}, fmt.Errorf("serializing state: %w", err)
 		}

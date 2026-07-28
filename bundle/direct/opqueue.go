@@ -90,12 +90,12 @@ func newOperationQueue(ctx context.Context, uploader operationUploader) *operati
 // queueing again: DMS keeps one state per key, so one upload records both. The
 // merge keeps a queued create's action (see mergeAction). Best effort — only
 // operations no worker has picked up yet are collapsed.
-func (q *operationQueue) record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error {
+func (q *operationQueue) record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any, dependsOn []deployplan.DependsOnEntry) error {
 	if q == nil {
 		return nil
 	}
 
-	op, err := newRecordedOperation(action, resourceID, state)
+	op, err := newRecordedOperation(action, resourceID, state, dependsOn)
 	if err != nil {
 		return err
 	}

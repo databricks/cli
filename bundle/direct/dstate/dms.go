@@ -7,12 +7,29 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
+
+// RecordedState is what the CLI serializes into the DMS Operation.State field.
+//
+// It is an envelope rather than the bare resource config, because depends_on has
+// to survive the round trip: DMS has no field for dependency edges, and they
+// cannot be recomputed from the config once it is recorded (references are
+// resolved to literals before serialization). Nesting depends_on inside the
+// config instead would collide with resource fields of the same name, e.g.
+// jobs.Task.depends_on.
+//
+// The shape deliberately matches the local ResourceEntry so both sides of the
+// state round trip look the same.
+type RecordedState struct {
+	State     json.RawMessage             `json:"state"`
+	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
+}
 
 // overlayDMSState replaces the file-derived resource state with the state
 // recorded in DMS, when DMS owns this deployment. An authoritative DMS is
@@ -29,7 +46,7 @@ func (db *DeploymentState) overlayDMSState(ctx context.Context, src *DMSSource) 
 		return nil
 	}
 
-	resources, err := fetchDeploymentResources(ctx, src.Client, src.DeploymentID, db.Data.State)
+	resources, err := fetchDeploymentResources(ctx, src.Client, src.DeploymentID)
 	if err != nil {
 		return err
 	}
@@ -76,16 +93,7 @@ func deploymentHasSuccessfulVersion(ctx context.Context, cfg *sdkconfig.Config, 
 
 // fetchDeploymentResources lists every resource recorded for the deployment in
 // DMS and maps them into state entries keyed by the fully-qualified resource key.
-//
-// DMS has no field for dependency edges, and they cannot be recovered from the
-// recorded state either: references are resolved to literals before it is
-// serialized. So depends_on is carried over from the local state file.
-//
-// TODO(DMS): resources present in DMS but not in the local file therefore get no
-// depends_on. Plan recomputes it from config for everything it still declares,
-// so this only affects deletes of resources dropped from config, which are
-// ordered arbitrarily among themselves.
-func fetchDeploymentResources(ctx context.Context, client bundledeployments.BundleDeploymentsInterface, deploymentID string, local map[string]ResourceEntry) (map[string]ResourceEntry, error) {
+func fetchDeploymentResources(ctx context.Context, client bundledeployments.BundleDeploymentsInterface, deploymentID string) (map[string]ResourceEntry, error) {
 	it := client.ListResources(ctx, bundledeployments.ListResourcesRequest{
 		Parent: "deployments/" + deploymentID,
 	})
@@ -102,15 +110,17 @@ func fetchDeploymentResources(ctx context.Context, client bundledeployments.Bund
 		// ("resources.jobs.foo"), so prepend it here.
 		key := "resources." + res.ResourceKey
 
-		var state json.RawMessage
+		var recorded RecordedState
 		if res.State != nil {
-			state = *res.State
+			if err := json.Unmarshal(*res.State, &recorded); err != nil {
+				return nil, fmt.Errorf("interpreting state recorded for %s: %w", key, err)
+			}
 		}
 
 		out[key] = ResourceEntry{
 			ID:        res.ResourceId,
-			State:     state,
-			DependsOn: local[key].DependsOn,
+			State:     recorded.State,
+			DependsOn: recorded.DependsOn,
 		}
 	}
 	return out, nil

@@ -35,40 +35,34 @@ func (f *fakeResourceLister) ListResources(ctx context.Context, req bundledeploy
 	)
 }
 
-func TestFetchDeploymentResourcesPreservesLocalDependsOn(t *testing.T) {
-	state := json.RawMessage(`{"name":"foo"}`)
+func TestFetchDeploymentResourcesUnwrapsEnvelope(t *testing.T) {
+	recorded := json.RawMessage(`{"state":{"name":"foo"},"depends_on":[{"node":"resources.pipelines.bar","label":"${resources.pipelines.bar.id}"}]}`)
 	f := &fakeResourceLister{resources: []bundledeployments.Resource{
-		{ResourceKey: "jobs.foo", ResourceId: "123", State: &state},
+		{ResourceKey: "jobs.foo", ResourceId: "123", State: &recorded},
 		{ResourceKey: "pipelines.bar", ResourceId: "456"},
 	}}
 
-	dependsOn := []deployplan.DependsOnEntry{{Node: "resources.pipelines.bar", Label: "pipeline_id"}}
-	local := map[string]ResourceEntry{
-		"resources.jobs.foo": {ID: "stale", DependsOn: dependsOn},
-	}
-
-	got, err := fetchDeploymentResources(t.Context(), f, "dep-1", local)
+	got, err := fetchDeploymentResources(t.Context(), f, "dep-1")
 	require.NoError(t, err)
 
-	// DMS owns the ID and state, but it does not record dependency edges, so
-	// depends_on must survive from the local entry. Losing it breaks delete
-	// ordering and --select expansion.
+	// depends_on comes back from the envelope, so a bundle whose local state was
+	// wiped still has the edges needed for delete ordering.
 	assert.Equal(t, map[string]ResourceEntry{
-		"resources.jobs.foo":      {ID: "123", State: state, DependsOn: dependsOn},
+		"resources.jobs.foo": {
+			ID:        "123",
+			State:     json.RawMessage(`{"name":"foo"}`),
+			DependsOn: []deployplan.DependsOnEntry{{Node: "resources.pipelines.bar", Label: "${resources.pipelines.bar.id}"}},
+		},
 		"resources.pipelines.bar": {ID: "456"},
 	}, got)
 }
 
-func TestFetchDeploymentResourcesWithNoLocalState(t *testing.T) {
+func TestFetchDeploymentResourcesRejectsMalformedState(t *testing.T) {
+	recorded := json.RawMessage(`not json`)
 	f := &fakeResourceLister{resources: []bundledeployments.Resource{
-		{ResourceKey: "jobs.foo", ResourceId: "123"},
+		{ResourceKey: "jobs.foo", ResourceId: "123", State: &recorded},
 	}}
 
-	// A bundle whose local state was wiped has no entry to carry depends_on from;
-	// the resource is still recovered from DMS.
-	got, err := fetchDeploymentResources(t.Context(), f, "dep-1", nil)
-	require.NoError(t, err)
-	assert.Equal(t, map[string]ResourceEntry{
-		"resources.jobs.foo": {ID: "123"},
-	}, got)
+	_, err := fetchDeploymentResources(t.Context(), f, "dep-1")
+	assert.ErrorContains(t, err, "interpreting state recorded for resources.jobs.foo")
 }

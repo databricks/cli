@@ -30,7 +30,7 @@ func (f *fakeOpClient) CreateOperation(ctx context.Context, req bundledeployment
 // an operationQueue worker does.
 func uploadOne(t *testing.T, u operationUploader, resourceKey string, action deployplan.ActionType, resourceID string, state any) {
 	t.Helper()
-	op, err := newRecordedOperation(action, resourceID, state)
+	op, err := newRecordedOperation(action, resourceID, state, nil)
 	require.NoError(t, err)
 	require.NoError(t, u.upload(t.Context(), resourceKey, op))
 }
@@ -71,18 +71,31 @@ func TestNewRecordedOperationRedactsSensitiveFields(t *testing.T) {
 		Token string `json:"token" bundle:"sensitive"`
 	}{Name: "foo", Token: "super-secret"}
 
-	op, err := newRecordedOperation(deployplan.Create, "job-123", state)
+	op, err := newRecordedOperation(deployplan.Create, "job-123", state, nil)
 	require.NoError(t, err)
 
 	// Sensitive fields are redacted before leaving the CLI, matching what
 	// dstate.SaveState writes to the local state file.
 	assert.JSONEq(t,
-		`{"name":"foo","token":"`+dyn.SensitiveValueRedacted+`"}`,
+		`{"state":{"name":"foo","token":"`+dyn.SensitiveValueRedacted+`"}}`,
+		string(op.state))
+}
+
+func TestNewRecordedOperationRecordsDependsOn(t *testing.T) {
+	// depends_on rides in an envelope alongside the config: it cannot be
+	// recomputed from the config, whose references are already resolved.
+	dependsOn := []deployplan.DependsOnEntry{{Node: "resources.jobs.bar", Label: "${resources.jobs.bar.id}"}}
+
+	op, err := newRecordedOperation(deployplan.Create, "job-123", map[string]string{"name": "foo"}, dependsOn)
+	require.NoError(t, err)
+
+	assert.JSONEq(t,
+		`{"state":{"name":"foo"},"depends_on":[{"node":"resources.jobs.bar","label":"${resources.jobs.bar.id}"}]}`,
 		string(op.state))
 }
 
 func TestNewRecordedOperationRejectsUnsupportedAction(t *testing.T) {
-	_, err := newRecordedOperation(deployplan.Skip, "job-123", nil)
+	_, err := newRecordedOperation(deployplan.Skip, "job-123", nil, nil)
 	assert.Error(t, err)
 }
 

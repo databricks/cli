@@ -45,16 +45,18 @@ Deployment complete!
     "resource_id": "[NUMID]",
     "resource_key": "jobs.foo",
     "state": {
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/metadata.json"
-      },
-      "edit_mode": "UI_LOCKED",
-      "format": "MULTI_TASK",
-      "max_concurrent_runs": 1,
-      "name": "foo",
-      "queue": {
-        "enabled": true
+      "state": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "foo",
+        "queue": {
+          "enabled": true
+        }
       }
     },
     "status": "OPERATION_STATUS_SUCCEEDED"
