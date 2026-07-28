@@ -10,9 +10,8 @@ invariant_cleanup() {
     fi
 }
 
-# Renders the curated config named by INPUT_CONFIG. Callers that build the config
-# themselves override this from their own script.prepare, which the harness concatenates
-# after this file.
+# Separate from invariant_setup so a caller that generates its own config can override the
+# render alone; child script.prepare files are concatenated after this one.
 invariant_render() {
     cp -r "$TESTDIR/../data/." . &> LOG.cp
 
@@ -26,15 +25,15 @@ invariant_render() {
     cp databricks.yml LOG.config
 }
 
-# Call from the target, not at prepare time: prepares run outside the subshell wrapping
-# the script, so the EXIT trap would otherwise belong to the outer shell.
+# Call from the target, not at prepare time: prepare runs outside the subshell wrapping the
+# script, so the trap would belong to the outer shell.
 invariant_setup() {
     invariant_render
 
     trap invariant_cleanup EXIT
 }
 
-# Runs the gating deploy into log $1; trace applies any VAR=val prefixes in the command.
+# Goes through trace, so callers can prefix the command with VAR=val.
 invariant_deploy() {
     local logfile="$1"
     shift
@@ -47,8 +46,7 @@ invariant_deploy() {
 
 # JSON plan asserts every action is "skip" -- a strict superset of the text
 # renderer's "Plan: 0 to add, 0 to change, 0 to delete" summary.
-# Callers whose config the server does not round-trip exactly override this
-# from their own script.prepare.
+# Overridable for a caller whose config the server does not round-trip exactly.
 invariant_verify_no_drift() {
     $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
     cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
