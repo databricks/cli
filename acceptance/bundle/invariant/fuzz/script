@@ -1,8 +1,7 @@
 # Invariant fuzzing: generate a random config per seed and run the real invariant script
-# (no_drift/migrate). Those print INPUT_CONFIG_OK once a config deploys, so a non-zero
+# (no_drift/migrate), which reaches the generator through the helper overrides in
+# script.prepare. Those scripts print INPUT_CONFIG_OK once a config deploys, so a non-zero
 # result before the marker is a rejection; a panic anywhere, or a failure after it, is a bug.
-# Drift checking is opt-in (FUZZ_CHECK_DRIFT): a random config can deploy yet legitimately
-# differ from the fake server, so the committed run asserts only no-panic.
 
 START="${FUZZ_SEED_START:-0}"
 COUNT="${FUZZ_SEED_COUNT:-5}"
@@ -17,10 +16,6 @@ SEED_TIMEOUT="${FUZZ_SEED_TIMEOUT:-180}"
 # 20m test.toml Timeout for the last seed plus teardown. Set FUZZ_TIME_BUDGET=0 to disable.
 BUDGET="${FUZZ_TIME_BUDGET:-900}"
 
-if [ -z "${FUZZ_CHECK_DRIFT:-}" ]; then
-    export SKIP_DRIFT_CHECK=1
-fi
-
 # no_drift/script reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
 export READPLAN=""
 
@@ -31,9 +26,6 @@ cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
 # One seed's worth of work, factored out so it can run directly or under `timeout`.
 seed_body() {
     cd "$1"
-    # Stage the fixtures the generator's file_path/source_code_path fields point at, as the
-    # curated scripts do.
-    cp -r "$TESTDIR/../data/." .
     export FUZZ_SEED="$2"
     export FUZZ_SCHEMA="../schema.json"
     source "$TESTDIR/../${FUZZ_TARGET:-no_drift}/script"

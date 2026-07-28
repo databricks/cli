@@ -1,7 +1,7 @@
 # Invariant to test: no drift after deploy
 # Additional checks: no internal errors / panics in validate/plan/deploy
 
-source "$TESTDIR/../prologue.sh"
+invariant_setup
 
 # Only compute a plan up front when the READPLAN variant actually consumes it via --plan.
 # Without READPLAN, deploy computes its own plan internally, so a separate `bundle plan`
@@ -11,34 +11,6 @@ if [[ -n "$READPLAN" ]]; then
     cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
 fi
 
-invariant_deploy $CLI bundle deploy $(readplanarg plan.json)
+invariant_deploy LOG.deploy $CLI bundle deploy $(readplanarg plan.json)
 
-# A fuzzed config can deploy yet legitimately differ from the fake server, so the fuzzer
-# sets SKIP_DRIFT_CHECK to swap the exact no-drift check for the fidelity-independent
-# plan-determinism oracle; curated configs check full drift.
-if [ -z "${SKIP_DRIFT_CHECK:-}" ]; then
-    # JSON plan asserts every action is "skip" -- a strict superset of the text
-    # renderer's "Plan: 0 to add, 0 to change, 0 to delete" summary.
-    $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
-    cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
-    verify_no_drift.py LOG.planjson
-else
-    # Fuzz mode: the exact no-drift check false-positives (the fake server doesn't round-trip
-    # every field), so assert the one server-fidelity-independent invariant: planning is
-    # deterministic. Two consecutive plans of the same state must be byte-identical; a diff
-    # means nondeterministic planning/serialization, a real bug. Compare only when both
-    # plans succeed -- a plan that fails on an unstubbed read is a gap and can differ run to
-    # run. Capture each plan's code under set +e for the guard.
-    set +e
-    $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err
-    plan1_rc=$?
-    $CLI bundle plan -o json > LOG.plan2.json 2>LOG.plan2.err
-    plan2_rc=$?
-    set -e
-    cat LOG.plan1.err | contains.py '!panic:' '!internal error' > /dev/null
-    cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
-    if [ "$plan1_rc" -eq 0 ] && [ "$plan2_rc" -eq 0 ]; then
-        # diff exits non-zero on any difference; under set -e that fails the seed as a bug.
-        diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
-    fi
-fi
+invariant_verify_no_drift
