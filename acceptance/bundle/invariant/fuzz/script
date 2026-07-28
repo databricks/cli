@@ -54,7 +54,10 @@ run_seed() {
         timeout --signal=QUIT --kill-after=10s "$SEED_TIMEOUT" \
             bash -euo pipefail -c 'seed_body "$@"' _ "$dir" "$seed" > "$dir/LOG.check" 2>&1
     else
-        ( seed_body "$dir" "$seed" ) > "$dir/LOG.check" 2>&1
+        # set -euo pipefail explicitly: the caller disables errexit to capture the seed's
+        # exit code and a plain subshell inherits that, unlike the fresh bash above. Without
+        # errexit a rejected config runs on to INPUT_CONFIG_OK and reads as a bug.
+        ( set -euo pipefail; seed_body "$dir" "$seed" ) > "$dir/LOG.check" 2>&1
     fi
 }
 
