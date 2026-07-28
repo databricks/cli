@@ -169,6 +169,20 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 func NewAdapterFromInstance(instance any, resourceType string) (*Adapter, error) {
 	resourceType = strings.TrimPrefix(resourceType, "internal.")
 	adapter := &Adapter{
+		prepareState:            nil,
+		remapState:              nil,
+		doRefresh:               nil,
+		doDelete:                nil,
+		doCreate:                nil,
+		doUpdate:                nil,
+		doUpdateWithID:          nil,
+		doResize:                nil,
+		waitAfterCreate:         nil,
+		waitAfterUpdate:         nil,
+		waitAfterDelete:         nil,
+		overrideChangeDesc:      nil,
+		keyedSlices:             nil,
+		isGone:                  nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 	}
