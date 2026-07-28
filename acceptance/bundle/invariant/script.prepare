@@ -4,7 +4,8 @@ invariant_cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy
     cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
 
-    CLEANUP_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-cleanup.sh"
+    # INPUT_CONFIG is unset for callers that generate their own config, such as the fuzzer.
+    CLEANUP_SCRIPT="$TESTDIR/../configs/${INPUT_CONFIG:-}-cleanup.sh"
     if [ -f "$CLEANUP_SCRIPT" ]; then
         source "$CLEANUP_SCRIPT" &> LOG.cleanup
     fi
@@ -34,11 +35,19 @@ invariant_setup() {
 }
 
 # Goes through trace, so callers can prefix the command with VAR=val.
+# set -e is lifted around the deploy so the panic scan still runs when it fails: a config
+# the CLI rejects must not panic on the way out. A clean failure exits with the deploy's code.
 invariant_deploy() {
     local logfile="$1"
     shift
+    set +e
     trace "$@" &> "$logfile"
+    local rc=$?
+    set -e
     cat "$logfile" | contains.py '!panic:' '!internal error' > /dev/null
+    if [ "$rc" -ne 0 ]; then
+        exit "$rc"
+    fi
 
     # Tells the fuzzer the generated config was valid; failures after this count as bugs.
     echo INPUT_CONFIG_OK
