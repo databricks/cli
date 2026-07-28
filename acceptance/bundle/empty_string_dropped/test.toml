@@ -10,10 +10,3 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 Ignore = [
     ".databricks",
 ]
-
-# The script passes leading-"/" path filters to print_requests.py (e.g.
-# ^/api/2.0/workspace). On Windows, Git Bash rewrites those into Windows paths
-# ("^C:/Program Files/Git/api/2.0/workspace"), so print_requests.py rejects the
-# filter. Disable the MSYS path conversion for this test.
-[Env]
-MSYS_NO_PATHCONV = "1"
