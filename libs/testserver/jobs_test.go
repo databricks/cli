@@ -87,6 +87,77 @@ func TestJobsSubmit_RunReachesTerminalStateOnPoll(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, second.State.ResultState)
 }
 
+func createJob(t *testing.T, workspace *FakeWorkspace, tasks ...jobs.Task) int64 {
+	t.Helper()
+	body, err := json.Marshal(jobs.CreateJob{Name: "my-job", Tasks: tasks})
+	require.NoError(t, err)
+
+	response := workspace.JobsCreate(Request{Body: body})
+	require.Equal(t, 0, response.StatusCode)
+	return response.Body.(jobs.CreateResponse).JobId
+}
+
+func runNow(t *testing.T, workspace *FakeWorkspace, request jobs.RunNow) Response {
+	t.Helper()
+	body, err := json.Marshal(request)
+	require.NoError(t, err)
+	return workspace.JobsRunNow(Request{Body: body})
+}
+
+func terminatedTask(taskKey string, result jobs.RunResultState) jobs.RunTask {
+	return jobs.RunTask{
+		TaskKey: taskKey,
+		State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    result,
+		},
+	}
+}
+
+func TestTerminateRun_FailedTaskFailsTheRun(t *testing.T) {
+	run := jobs.Run{Tasks: []jobs.RunTask{
+		terminatedTask("first", jobs.RunResultStateSuccess),
+		terminatedTask("second", jobs.RunResultStateFailed),
+	}}
+
+	terminateRun(&run)
+
+	assert.Equal(t, jobs.RunLifeCycleStateTerminated, run.State.LifeCycleState)
+	assert.Equal(t, jobs.RunResultStateFailed, run.State.ResultState)
+	assert.Equal(t, "task second failed", run.State.StateMessage)
+}
+
+func TestTerminateRun_CompletesTasksThatAreStillRunning(t *testing.T) {
+	// jobs/runs/submit records its tasks as running: they are never executed.
+	run := jobs.Run{Tasks: []jobs.RunTask{
+		{TaskKey: "main", State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}},
+	}}
+
+	terminateRun(&run)
+
+	assert.Equal(t, jobs.RunResultStateSuccess, run.State.ResultState)
+	assert.Empty(t, run.State.StateMessage)
+	assert.Equal(t, jobs.RunResultStateSuccess, run.Tasks[0].State.ResultState)
+}
+
+// See errNoCodeInWorkspace: a missing notebook is this server's gap, not a
+// failure of the job.
+func TestJobsGetRun_TaskWithoutCodeDoesNotFailTheRun(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	jobID := createJob(t, workspace, jobs.Task{
+		TaskKey:      "main",
+		NotebookTask: &jobs.NotebookTask{NotebookPath: "/missing-notebook"},
+	})
+
+	response := runNow(t, workspace, jobs.RunNow{JobId: jobID})
+	require.Equal(t, 0, response.StatusCode)
+	runID := response.Body.(jobs.RunNowResponse).RunId
+
+	// The first poll reports RUNNING, the second the terminal state.
+	require.Equal(t, jobs.RunLifeCycleStateRunning, getRun(t, workspace, runID).State.LifeCycleState)
+	assert.Equal(t, jobs.RunResultStateSuccess, getRun(t, workspace, runID).State.ResultState)
+}
+
 func TestJobsSubmit_RejectsInvalidGitProvider(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
