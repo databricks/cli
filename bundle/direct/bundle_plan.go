@@ -191,6 +191,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, id, err)
 					// This is not an error during deletion, so don't return false here
 				}
+			} else if adapter.IsGone(remoteState) {
+				// The resource is in a transient terminal-teardown state (e.g. an app in
+				// DELETING) that a GET still returns but a second delete would reject.
+				// Treat it as gone: apply cleans up state without re-issuing the delete.
+				entry.Gone = true
 			}
 
 			entry.RemoteState = remoteState
