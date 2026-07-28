@@ -4,10 +4,8 @@ Error: resources.jobs.oversized has a serialized state of 70278 bytes, which exc
   at resources.jobs.oversized
   in databricks.yml:10:7
 
-Deployment history records the state of each resource, and this resource is too
-large to record. Move the oversized field out of the resource definition, for
-example by pointing a task at a workspace file instead of inlining its contents.
-
+Deployment history records the state of each resource, and this resource is too large to record.
+The limit applies per resource, so split this job into multiple jobs, each with fewer tasks.
 
 Name: state_size_limit
 Target: default

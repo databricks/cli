@@ -55,7 +55,8 @@ func (v *validateStateSize) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 	var diags diag.Diagnostics
 	for _, key := range sortedResourceKeys(b) {
-		adapter, ok := adapters[config.GetResourceTypeFromKey(key)]
+		resourceType := config.GetResourceTypeFromKey(key)
+		adapter, ok := adapters[resourceType]
 		if !ok {
 			// Resource types the direct engine does not support are rejected
 			// during planning, with a better message than we could give here.
@@ -71,18 +72,35 @@ func (v *validateStateSize) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		}
 
 		diags = diags.Append(diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("%s has a serialized state of %d bytes, which exceeds the %d byte limit for recording deployment history", key, size, MaxStateSizeBytes),
-			Detail: `Deployment history records the state of each resource, and this resource is too
-large to record. Move the oversized field out of the resource definition, for
-example by pointing a task at a workspace file instead of inlining its contents.
-`,
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("%s has a serialized state of %d bytes, which exceeds the %d byte limit for recording deployment history", key, size, MaxStateSizeBytes),
+			Detail:    "Deployment history records the state of each resource, and this resource is too large to record.\n" + sizeAdvice(resourceType),
 			Locations: b.Config.GetLocations(key),
 			Paths:     []dyn.Path{dyn.MustPathFromString(key)},
 		})
 	}
 
 	return diags
+}
+
+// sizeAdvice returns the remediation hint for an oversized resource of the given
+// type. The limit is per resource, so the way out is always to split the
+// definition into smaller ones; the wording names the split that applies.
+//
+// Note that file_path on alerts, dashboards and genie spaces is deliberately not
+// suggested: those mutators inline the file into the resource during initialize,
+// so the recorded state is the same size either way.
+func sizeAdvice(resourceType string) string {
+	switch resourceType {
+	case "jobs":
+		return "The limit applies per resource, so split this job into multiple jobs, each with fewer tasks."
+	case "alerts":
+		return "The limit applies per resource, so split this alert into multiple alerts, each covering fewer conditions."
+	case "pipelines":
+		return "The limit applies per resource, so split this pipeline into multiple pipelines, each with fewer libraries."
+	default:
+		return "The limit applies per resource, so split this resource into multiple smaller resources."
+	}
 }
 
 // stateSize returns the size of the state that would be recorded for the
