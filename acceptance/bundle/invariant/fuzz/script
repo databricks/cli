@@ -134,8 +134,9 @@ if [ -f LOG.summary ]; then
 fi
 
 # Nothing deploying is not a pass: it means the schema, generator or fixtures are broken,
-# which otherwise looks just like the CLI correctly rejecting random input.
-if ! grep -qs '^deployed ' LOG.summary; then
+# which otherwise looks just like the CLI correctly rejecting random input. Not applied to a
+# single-seed replay, where one rejected config is a normal outcome.
+if [ "$COUNT" -gt 1 ] && ! grep -qs '^deployed ' LOG.summary; then
     echo "fuzz: no seed deployed; the schema, generator or fixtures are broken" >&2
     exit 1
 fi

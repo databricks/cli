@@ -743,11 +743,13 @@ tasks:
         # FUZZ_TIME_BUDGET stops each variant cleanly rather than letting it be force-killed.
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-200}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
+        # -count=1: only the script reads FUZZ_*, so Go's test cache would serve a different
+        # window's result as this one's.
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/bundle/invariant/fuzz"
+          -- -count=1 -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/bundle/invariant/fuzz"
 
   test-fuzz-cover:
     desc: Run the schema fuzzer under coverage and report which CLI packages it exercises
@@ -766,7 +768,7 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-40m} -run "TestAccept/bundle/invariant/fuzz" || true
+          -- -count=1 -timeout=${LOCAL_TIMEOUT:-40m} -run "TestAccept/bundle/invariant/fuzz" || true
       - "go tool covdata merge -i $(printf '%s,' acceptance/build/cover-fuzz/* | sed 's/,$//') -o acceptance/build/cover-fuzz-merged/"
       - go tool covdata textfmt -i acceptance/build/cover-fuzz-merged -o coverage-fuzz.txt
       - |
