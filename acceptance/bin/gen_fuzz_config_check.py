@@ -14,12 +14,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from gen_fuzz_config import DANGEROUS_STRINGS, SKIP_PROPERTY_NAMES, gen_config, to_yaml
 
-# Tricky shapes: strings with ':' and '"', nested maps, lists of dicts, empty containers.
+# Tricky shapes: strings with ':' and '"', nested maps, lists of dicts, lists in lists,
+# empty containers.
 CASES = [
     {"comment": "value: with a colon", "description": 'quote " and : colon'},
     {"resources": {"jobs": {"j": {"name": "n", "tags": {"team": "jobs"}}}}},
     {"tasks": [{"description": "d", "timeout_seconds": 3600}, {"comment": "c"}]},
     {"nums": [0, 1, 2], "flag": True, "ratio": 1.5, "empty_map": {}, "empty_list": []},
+    {"matrix": [[1, 2], [], {}]},
 ]
 
 HEADER = re.compile(r"[\w.\-]+:$")  # non-empty container: `key:`
@@ -28,6 +30,8 @@ SCALAR = re.compile(r"[\w.\-]+: (.+)$")  # `key: <json>`
 
 def check_line(line):
     rest = line.lstrip(" ")
+    if rest == "-":
+        return  # nested container marker; value is on following lines
     rest = rest.removeprefix("- ")
     if HEADER.fullmatch(rest):
         return  # container header; value is on following lines

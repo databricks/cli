@@ -3,23 +3,30 @@
 Check that all actions in plan are "skip".
 """
 
-import os
+import json
 import sys
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from util import load_plan
 
 
 def check_plan(path):
-    data, raw = load_plan(path)
+    with open(path) as fobj:
+        raw = fobj.read()
+
+    # A failed `bundle plan` leaves nothing to check; say so instead of raising below.
+    if not raw.strip():
+        sys.exit(f"{path}: empty plan output (bundle plan failed)")
 
     changes_detected = 0
-    for key, value in data["plan"].items():
-        action = value.get("action")
-        if action != "skip":
-            print(f"Unexpected {action=} for {key}")
-            changes_detected += 1
+
+    try:
+        data = json.loads(raw)
+        for key, value in data["plan"].items():
+            action = value.get("action")
+            if action != "skip":
+                print(f"Unexpected {action=} for {key}")
+                changes_detected += 1
+    except Exception:
+        print(raw, flush=True)
+        raise
 
     if changes_detected:
         print(raw, flush=True)

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Mutate a known-good bundle config by deleting, perturbing, and adding random fields.
 
@@ -9,23 +8,22 @@ Two mutation kinds, chosen per step:
 
 - destructive (always): delete a field or replace it with a token, a dangerous value, or
   an empty container. Stays within the base's fields, so it finds only reject/panic bugs.
-- additive (with --schema): inject a valid optional field the base omits, valued by the
+- additive (with a schema): inject a valid optional field the base omits, valued by the
   schema generator. This is what reaches reconcile/drift bugs.
 
-Reads the base databricks.yml (envsubst-rendered) from stdin, writes the mutated config to
-stdout. --seed makes it reproducible. The harness only asserts no-panic on fuzzed configs,
-so an invalid mutation is fine: the CLI must reject it cleanly, not crash.
+The seed makes it reproducible. The harness only asserts no-panic on fuzzed configs, so an
+invalid mutation is fine: the CLI must reject it cleanly, not crash.
+
+Used as a library by emit_fuzz_config.py.
 """
 
-import argparse
-import json
 import os
 import random
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, Generator, resource_types, to_yaml
+from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, Generator, resource_types
 
 # The same probes gen_fuzz_config injects into free-form scalars, dropped onto any field.
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
@@ -50,6 +48,11 @@ def tokenize(text):
 def scalar(text):
     if text in ("", "null", "~"):
         return None
+    # to_yaml emits empty containers in flow form; read them back so load -> emit -> load holds.
+    if text == "[]":
+        return []
+    if text == "{}":
+        return {}
     if text == "true":
         return True
     if text == "false":
@@ -254,26 +257,3 @@ def mutate(config, seed, schema=None, unique="fuzz"):
             mutate_once(rng, roots)
 
     return config
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--seed", type=int, required=True, help="RNG seed (for reproducibility)")
-    parser.add_argument("--schema", help="Path to bundle JSON schema; enables valid-optional-field injection")
-    parser.add_argument("--unique", default="fuzz", help="Unique suffix for injected field values")
-    args = parser.parse_args()
-
-    config = load_yaml(sys.stdin.read())
-    if not isinstance(config, dict):
-        sys.exit("mutate_fuzz_config: base config did not parse to a mapping")
-
-    schema = None
-    if args.schema:
-        with open(args.schema) as f:
-            schema = json.load(f)
-
-    sys.stdout.write(to_yaml(mutate(config, args.seed, schema=schema, unique=args.unique)))
-
-
-if __name__ == "__main__":
-    main()

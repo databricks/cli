@@ -739,8 +739,8 @@ tasks:
     cmds:
       - |
         # Wider window than the committed run, with drift on; a repro narrows it via
-        # FUZZ_SEED_START/COUNT. FUZZ_TIME_BUDGET stops each variant cleanly if 200 seeds
-        # don't fit the Timeout, rather than letting it be force-killed.
+        # FUZZ_SEED_START/COUNT. If 200 seeds don't fit the Timeout, the script's
+        # FUZZ_TIME_BUDGET stops each variant cleanly rather than letting it be force-killed.
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-200}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
         {{.GO_TOOL}} gotestsum \
@@ -761,8 +761,7 @@ tasks:
         # run exercises the full deploy/plan path instead of stopping on the first drift.
         export CLI_GOCOVERDIR=build/cover-fuzz
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-100}"
-        export FUZZ_TIME_BUDGET="${FUZZ_TIME_BUDGET:-900}"
-        unset FUZZ_CHECK_DRIFT || true
+        unset FUZZ_CHECK_DRIFT
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
@@ -771,7 +770,7 @@ tasks:
       - "go tool covdata merge -i $(printf '%s,' acceptance/build/cover-fuzz/* | sed 's/,$//') -o acceptance/build/cover-fuzz-merged/"
       - go tool covdata textfmt -i acceptance/build/cover-fuzz-merged -o coverage-fuzz.txt
       - |
-        echo "== total CLI coverage exercised by the fuzz corpus =="
+        echo "== total CLI coverage exercised by the fuzz run =="
         go tool cover -func=coverage-fuzz.txt | awk '/^total:/{print $NF}'
         echo
         echo "== bundle/cmd packages by coverage (ascending; 0.0% = never exercised) =="

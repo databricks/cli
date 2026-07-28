@@ -18,3 +18,9 @@ flag: true
 ratio: 1.5
 empty_map: {}
 empty_list: []
+matrix:
+  -
+    - 1
+    - 2
+  - []
+  - {}

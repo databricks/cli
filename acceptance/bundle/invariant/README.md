@@ -5,17 +5,25 @@ test will dump full JSON plan to the output.
 
 In order to add a new test, add a config to configs/ and include it in test.toml.
 
-The fuzz/ test generates random configs from the live `databricks bundle schema`
-(see fuzz/script) and runs each one through a real invariant test script. The target is
-selected by `FUZZ_TARGET` (matrixed in fuzz/test.toml); each target is also a curated
-invariant test that runs over the `INPUT_CONFIG` matrix. Free-form scalars are occasionally
-replaced with dangerous / near-range-end values (empty, whitespace, over-long, control
-characters, int32/int64 boundaries) to probe the CLI's input handling.
+The fuzz/ test runs generated configs through a real invariant test script (see fuzz/script).
+Both the target and the way configs are built are matrixed in fuzz/test.toml:
+
+`FUZZ_TARGET` picks the invariant, and each one is also a curated invariant test that runs
+over the `INPUT_CONFIG` matrix:
 
 - `no_drift` -- deploy, then no drift
 - `migrate` -- Terraform deploy, migrate to direct, then no drift
 
+`FUZZ_MODE` picks how the config is built:
+
+- `generate` -- build a random resource by walking the live `databricks bundle schema`
+- `mutate` -- perturb one of the curated configs (see MUTATE_BASES in emit_fuzz_config.py)
+
+Free-form scalars are occasionally replaced with dangerous / near-range-end values (empty,
+whitespace, over-long, control characters, int32/int64 boundaries) to probe the CLI's input
+handling.
+
 Since the schema comes from the CLI under test, an unrelated struct change can shift a
 seed onto a new config. A failure is a real CLI bug (panic, internal error, or drift),
-not flakiness; reproduce with
-`FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_TARGET=no_drift task test-fuzz`.
+not flakiness; the failing seed's `LOG.repro` prints a ready-to-run repro, of the form
+`FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_TARGET=no_drift FUZZ_MODE=generate task test-fuzz`.
