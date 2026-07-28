@@ -47,6 +47,49 @@ func watchServer(t *testing.T, resultState string) *httptest.Server {
 	return srv
 }
 
+// watchServerMLflow serves a run whose Bricklens endpoint is gated off
+// (FEATURE_DISABLED), forcing the MLflow fallback, plus the MLflow artifact
+// chain (get-output, artifacts/list, credentials-for-read, the pre-signed bytes).
+// STATUS events never fire on this path, so it guards the closing terminal
+// envelope against relying on onStatusChange.
+func watchServerMLflow(t *testing.T, resultState string) *httptest.Server {
+	t.Helper()
+	var base string
+	runGet := `{
+		"run_id": 777,
+		"state": {"life_cycle_state": "TERMINATED", "result_state": "` + resultState + `"},
+		"tasks": [{"run_id": 778, "attempt_number": 0}]
+	}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/jobs/runs/submit"):
+			_, _ = w.Write([]byte(`{"run_id": 777}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(runGet))
+		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error_code": "FEATURE_DISABLED", "message": "gated off"}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}`))
+		case r.URL.Path == "/api/2.0/mlflow/artifacts/list":
+			if r.URL.Query().Get("path") == "logs" {
+				_, _ = w.Write([]byte(`{"files": [{"path": "logs/node_0", "is_dir": true}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"files": [{"path": "logs/node_0/logs-0.chunk.txt", "file_size": 12}]}`))
+		case r.URL.Path == "/api/2.0/mlflow/artifacts/credentials-for-read":
+			_, _ = w.Write([]byte(`{"credential_infos": [{"signed_uri": "` + base + `/presigned"}]}`))
+		case r.URL.Path == "/presigned":
+			_, _ = w.Write([]byte("step 1\nstep 2\n"))
+		default:
+			_, _ = w.Write([]byte(`{"userName": "u@example.com", "workspace_id": 1}`))
+		}
+	}))
+	base = srv.URL
+	t.Cleanup(srv.Close)
+	return srv
+}
+
 func runWatchCmd(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL string) error {
 	t.Helper()
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
@@ -137,6 +180,22 @@ func TestRunWatchDryRunSkipsSubmit(t *testing.T) {
 		assert.NotContains(t, p, "/jobs/runs/submit", "dry-run must not submit")
 		assert.NotContains(t, p, "/logs", "dry-run must not stream logs")
 	}
+}
+
+func TestRunWatchJSONMLflowFallbackTerminalEnvelope(t *testing.T) {
+	// Regression: through the MLflow fallback the terminal status must come from
+	// the run's actual state, not the onStatusChange callback (which is
+	// Bricklens-only), so a SUCCESS run isn't mislabeled FAILED in the envelope.
+	var buf bytes.Buffer
+	err := runWatchCmd(t, flags.OutputJSON, &buf, watchServerMLflow(t, "SUCCESS").URL)
+	require.NoError(t, err)
+
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	assert.Contains(t, lines[0], `"type":"SUBMITTED"`)
+	// Logs stream through the fallback, and the closing envelope reflects the
+	// real terminal status.
+	assert.Contains(t, buf.String(), `"line":"step 1"`)
+	assert.Contains(t, lines[len(lines)-1], `"status":"SUCCESS"`)
 }
 
 func TestRunWatchFlagRegistered(t *testing.T) {

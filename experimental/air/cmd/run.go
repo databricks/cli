@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
 
@@ -110,15 +112,29 @@ The workload is described by a YAML config file (see --file).`,
 		// envelope after streaming. Mirrors the Python CLI's --watch JSONL contract.
 		out := cmd.OutOrStdout()
 		printSubmittedEvent(out, runIDStr, dashboardURL)
-		terminalStatus := "FAILED"
 		req.onStatusChange = func(current, previous string) {
 			printStatusEvent(out, current, previous)
-			terminalStatus = current
 		}
 		err = runLogs(ctx, cmd, req)
-		printTerminalEvent(out, runIDStr, terminalStatus, dashboardURL)
+
+		// Re-resolve the run for the closing envelope. STATUS events only fire on
+		// the Bricklens path, so the terminal status must come from the run's
+		// actual state — correct whether Bricklens or the MLflow fallback served
+		// the logs.
+		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, runID), dashboardURL)
 		return err
 	}
 
 	return cmd
+}
+
+// watchTerminalStatus resolves a watched run's final display state for the
+// closing --watch envelope. The run is terminal once streaming returns; if the
+// status can't be re-fetched, "UNKNOWN" is reported rather than guessing.
+func watchTerminalStatus(ctx context.Context, w *databricks.WorkspaceClient, runID int64) string {
+	status, err := resolveRunStatus(ctx, w, runID)
+	if err != nil {
+		return "UNKNOWN"
+	}
+	return status.displayState()
 }
