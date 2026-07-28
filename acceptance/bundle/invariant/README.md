@@ -13,6 +13,8 @@ over the `INPUT_CONFIG` matrix:
 
 - `no_drift` -- deploy, then no drift
 - `migrate` -- Terraform deploy, migrate to direct, then no drift
+- `delete_idempotent` -- deploy, delete by emptying the config, then re-run the delete on restored state
+- `destroy_idempotent` -- deploy, destroy, then destroy again on restored state
 
 `FUZZ_MODE` picks how the config is built:
 

@@ -34,6 +34,10 @@ seed_body() {
     # Stage the fixtures the generator's file_path/source_code_path fields point at, as the
     # curated scripts do.
     cp -r "$TESTDIR/../data/." .
+    # Seeds share one long-lived workspace, so scope the unique name to the seed; otherwise
+    # state a seed leaves behind reads back as drift in the next one. Scoped here rather than
+    # in the generator so targets that derive workspace paths from $UNIQUE_NAME see it too.
+    export UNIQUE_NAME="$UNIQUE_NAME-$2"
     export FUZZ_SEED="$2"
     export FUZZ_SCHEMA="../schema.json"
     source "$TESTDIR/../${FUZZ_TARGET:-no_drift}/script"

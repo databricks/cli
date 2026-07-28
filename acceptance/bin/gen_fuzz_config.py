@@ -386,7 +386,9 @@ def gen_config(schema, seed, unique, allowed=frozenset()):
     rtype, key, instance = gen_resource(schema, gen, types, candidates, seed, unique)
 
     return {
-        "bundle": {"name": f"fuzz-{unique}"},
+        # Same name shape as the curated configs, so targets that derive workspace paths
+        # from the bundle name work unchanged.
+        "bundle": {"name": f"test-bundle-{unique}"},
         "resources": {rtype: {key: instance}},
     }
 
