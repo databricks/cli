@@ -25,7 +25,7 @@ func newTestClient(t *testing.T, statusCode int, body string) *databricks.Worksp
 	}))
 	t.Cleanup(srv.Close)
 	t.Cleanup(func() {
-		assert.Equal(t, "/Workspace/state/"+DeploymentNodeName, gotPath)
+		assert.Equal(t, nodePath, gotPath)
 	})
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{
@@ -36,6 +36,8 @@ func newTestClient(t *testing.T, statusCode int, body string) *databricks.Worksp
 	require.NoError(t, err)
 	return w
 }
+
+const nodePath = "/Workspace/state/" + DeploymentNodeName
 
 func TestResolveDeploymentIDReturnsNodeID(t *testing.T) {
 	w := newTestClient(t, http.StatusOK, `{"object_type":"FILE","object_id":123456789,"path":"/Workspace/state/`+DeploymentNodeName+`"}`)

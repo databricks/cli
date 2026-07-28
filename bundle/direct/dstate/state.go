@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structwalk"
-	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/google/uuid"
 )
@@ -221,13 +220,10 @@ type (
 )
 
 // DMSSource tells Open to read resource state from the deployment metadata
-// service instead of the state file. A nil *DMSSource keeps Open file-only.
+// service instead of the state file. Callers pass it only when the bundle set
+// experimental.record_deployment_history; a nil *DMSSource keeps Open file-only.
 type DMSSource struct {
 	Client bundledeployments.BundleDeploymentsInterface
-
-	// Config is only for a temporary raw read of last_successful_version_id; see
-	// the TODO in deploymentHasSuccessfulVersion.
-	Config *sdkconfig.Config
 
 	// DeploymentID is resolved from the deployment's workspace node (see
 	// dms.ResolveDeploymentID), and empty before the first recorded deploy.
@@ -235,10 +231,9 @@ type DMSSource struct {
 }
 
 // Open reads the deployment state from disk (and recovers the WAL when
-// withRecovery is set). With a non-nil dmsSource, resources come from DMS
-// instead of the file whenever DMS holds a successful version. Lineage and
-// serial always come from the file, since that is what the write path
-// increments.
+// withRecovery is set). With a non-nil dmsSource, resources come from DMS rather
+// than the file. Lineage and serial always come from the file, since that is
+// what the write path increments.
 func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsSource *DMSSource) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -290,8 +285,8 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	if dmsSource != nil {
 		// Only bundles that start out empty can be recorded. Once DMS owns a
 		// deployment it is authoritative for the whole resource set (see
-		// overlayDMSState), so pre-existing resources it never saw would look absent
-		// and get created a second time.
+		// readDMSState), so pre-existing resources it never saw would look absent and
+		// get created a second time.
 		//
 		// TODO(DMS): allow this by upgrading the state in place, writing it at
 		// featureStateVersion with a feature flag plus a tombstone per resource so an
@@ -301,7 +296,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 			return fmt.Errorf("cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded. Remove experimental.record_deployment_history, or destroy the bundle and deploy it again", path)
 		}
 		if dmsSource.DeploymentID != "" {
-			if err := db.overlayDMSState(ctx, dmsSource); err != nil {
+			if err := db.readDMSState(ctx, dmsSource); err != nil {
 				return err
 			}
 		}

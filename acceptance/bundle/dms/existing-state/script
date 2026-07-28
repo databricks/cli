@@ -9,6 +9,11 @@ trace musterr $CLI bundle deploy
 title "No deployment was created in DMS"
 trace print_requests.py //api/2.0/bundle --sort --oneline
 
+title "Still an error after wiping the local cache: deploy pulls the state file back from the workspace, so the resources are still tracked"
+rm -rf .databricks
+trace musterr $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --sort --oneline
+
 title "Destroy clears the tracked resources, so recording can be enabled afterwards"
 trace update_file.py databricks.yml "record_deployment_history: true" "record_deployment_history: false"
 trace $CLI bundle destroy --auto-approve

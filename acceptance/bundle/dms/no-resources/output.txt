@@ -53,10 +53,6 @@ Deployment complete!
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
 }
 {
