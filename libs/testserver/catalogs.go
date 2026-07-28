@@ -24,21 +24,26 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
+	// Echo back every field create accepts: a dropped one makes the next plan see a
+	// phantom change.
 	catalogInfo := catalog.CatalogInfo{
-		Name:         createRequest.Name,
-		Comment:      createRequest.Comment,
-		StorageRoot:  createRequest.StorageRoot,
-		ProviderName: createRequest.ProviderName,
-		ShareName:    createRequest.ShareName,
-		Options:      createRequest.Options,
-		Properties:   createRequest.Properties,
-		FullName:     createRequest.Name,
-		CreatedAt:    nowMilli(),
-		CreatedBy:    s.CurrentUser().UserName,
-		UpdatedBy:    s.CurrentUser().UserName,
-		MetastoreId:  nextUUID(),
-		Owner:        s.CurrentUser().UserName,
-		CatalogType:  catalog.CatalogTypeManagedCatalog,
+		Name:                      createRequest.Name,
+		Comment:                   createRequest.Comment,
+		ConnectionName:            createRequest.ConnectionName,
+		CustomMaxRetentionHours:   createRequest.CustomMaxRetentionHours,
+		ManagedEncryptionSettings: createRequest.ManagedEncryptionSettings,
+		StorageRoot:               createRequest.StorageRoot,
+		ProviderName:              createRequest.ProviderName,
+		ShareName:                 createRequest.ShareName,
+		Options:                   createRequest.Options,
+		Properties:                createRequest.Properties,
+		FullName:                  createRequest.Name,
+		CreatedAt:                 nowMilli(),
+		CreatedBy:                 s.CurrentUser().UserName,
+		UpdatedBy:                 s.CurrentUser().UserName,
+		MetastoreId:               nextUUID(),
+		Owner:                     s.CurrentUser().UserName,
+		CatalogType:               catalog.CatalogTypeManagedCatalog,
 	}
 	catalogInfo.UpdatedAt = catalogInfo.CreatedAt
 	if catalogInfo.Properties == nil && createRequest.Name == catalogNameManagedDefaults {

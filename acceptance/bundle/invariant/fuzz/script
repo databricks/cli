@@ -28,9 +28,6 @@ export READPLAN=""
 $CLI bundle schema > schema.json 2>LOG.schema.err
 cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
 
-# Fail loud on a schema type the generator can't produce (the loop below would hide it).
-check_schema_types.py --schema schema.json
-
 # One seed's worth of work, factored out so it can run directly or under `timeout`.
 seed_body() {
     cd "$1"
@@ -42,7 +39,7 @@ seed_body() {
     source "$TESTDIR/../${FUZZ_TARGET:-no_drift}/script"
 }
 
-# timeout spawns a fresh bash without our functions, so export them (and seed_body).
+# timeout spawns a fresh bash, so export seed_body and the harness helpers it calls (trace).
 export -f $(compgen -A function)
 
 # Run one seed, capped at SEED_TIMEOUT when `timeout` is available.
@@ -61,6 +58,15 @@ run_seed() {
 # stdout, so the committed run's empty-output assertion holds.
 record() {
     echo "$1 seed=$2 target=${FUZZ_TARGET:-no_drift} mode=${FUZZ_MODE:-generate}" >> LOG.summary
+}
+
+# Record a failing seed and stop the variant. The repro goes to a file because the harness
+# rewrites env-var values (FUZZ_TARGET, FUZZ_MODE) in stdout.
+fail() {
+    local seed="$1" kind="$2" reason="$3" prefix="${4:-}"
+    record "$kind" "$seed"
+    echo "fuzz: seed $seed $reason, reproduce with: ${prefix}FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} task test-fuzz" > LOG.repro
+    exit 1
 }
 
 for ((offset = 0; offset < COUNT; offset++)); do
@@ -82,49 +88,39 @@ for ((offset = 0; offset < COUNT; offset++)); do
 
     if [ "$rc" -eq 0 ]; then
         record deployed "$seed"
-        # Optional corpus: persist configs that deployed, so runs accumulate known-good,
-        # replayable inputs that survive generator changes. Unset by default.
-        if [ -n "${FUZZ_CORPUS_DIR:-}" ]; then
-            mkdir -p "$FUZZ_CORPUS_DIR"
-            cp "$dir/databricks.yml" "$FUZZ_CORPUS_DIR/${FUZZ_MODE:-generate}-${FUZZ_TARGET:-no_drift}-seed${seed}.yml"
-        fi
         continue
     fi
 
     # timeout exits 124 (137 if the SIGKILL backstop fired): the seed hung. Report a hang,
     # distinct from a drift bug; any goroutine dump is in the seed's LOG.*.
     if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
-        record hang "$seed"
-        echo "fuzz: seed $seed hung (>${SEED_TIMEOUT}s), reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_SEED_TIMEOUT=0 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} task test-fuzz" >&2
-        exit 1
+        fail "$seed" hang "hung (>${SEED_TIMEOUT}s)" "FUZZ_SEED_TIMEOUT=0 "
     fi
 
-    bug=""
+    # The generator only writes to stderr when it fails: our bug, not a rejected config.
+    if [ -s "$dir/LOG.gen.err" ]; then
+        fail "$seed" bug "could not be generated: $(head -1 "$dir/LOG.gen.err")"
+    fi
 
-    # A panic anywhere is a bug even if the CLI then rejects the config.
+    # A panic or internal error anywhere is a bug even if the CLI then rejects the config.
     if ! cat "$dir"/LOG.* 2>/dev/null | contains.py '!panic:' '!internal error' > /dev/null; then
-        bug=1
+        fail "$seed" bug "panicked or hit an internal error"
+    fi
+
+    # A 501 "No stub found" is a testserver coverage gap, whenever it happens. Checked before
+    # the marker below, else an unstubbed route during plan or destroy reads as a drift bug.
+    if grep -qs "No stub found for pattern" "$dir"/LOG.*; then
+        record gap "$seed"
+        continue
     fi
 
     # Failing after INPUT_CONFIG_OK means the config deployed but drifted (or destroy
     # failed); failing before it with no panic just means the config was rejected.
     if grep -q INPUT_CONFIG_OK "$dir/LOG.check"; then
-        bug=1
+        fail "$seed" bug "broke the invariant"
     fi
 
-    if [ -n "$bug" ]; then
-        record bug "$seed"
-        echo "fuzz: invariant failed, reproduce with: FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} task test-fuzz" >&2
-        exit 1
-    fi
-
-    # A 501 "No stub found" is a testserver coverage gap; anything else before
-    # INPUT_CONFIG_OK is a genuine config rejection.
-    if grep -qs "No stub found for pattern" "$dir"/LOG.*; then
-        record gap "$seed"
-    else
-        record rejected "$seed"
-    fi
+    record rejected "$seed"
 done
 
 # Per-variant tally for triage. Reached only on a clean run; a bug/hang exits above.
@@ -135,4 +131,11 @@ if [ -f LOG.summary ]; then
         echo "--- totals ---"
         echo "$totals"
     } >> LOG.summary
+fi
+
+# Nothing deploying is not a pass: it means the schema, generator or fixtures are broken,
+# which otherwise looks just like the CLI correctly rejecting random input.
+if ! grep -qs '^deployed ' LOG.summary; then
+    echo "fuzz: no seed deployed; the schema, generator or fixtures are broken" >&2
+    exit 1
 fi

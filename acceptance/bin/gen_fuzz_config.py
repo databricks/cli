@@ -1,14 +1,14 @@
-#!/usr/bin/env python3
 """
 Generate a random bundle config from the bundle JSON schema.
 
 Walks `databricks bundle schema` (resolving $ref, picking concrete oneOf/anyOf branches)
-and emits one random resource, seeded by --seed. Free-form scalars are sometimes replaced
-with dangerous values (DANGEROUS_STRINGS/INTS) to probe input handling. The harness drops
-configs the CLI rejects, so output may be structurally random but invalid.
+and emits one random resource, seeded by the caller. Free-form scalars are sometimes
+replaced with dangerous values (DANGEROUS_STRINGS/INTS) to probe input handling. The
+harness drops configs the CLI rejects, so output may be structurally random but invalid.
+
+Used as a library by emit_fuzz_config.py and mutate_fuzz_config.py.
 """
 
-import argparse
 import json
 import os
 import random
@@ -22,9 +22,9 @@ MAX_DEPTH = 6
 # bundle/internal/schema/main.go addInterpolationPatterns); we emit concrete values.
 INTERPOLATION_MARKER = "\\$\\{"
 
-# Types the generator can produce; keep in sync with libs/jsonschema.Type.
+# Types the generator can produce; keep in sync with libs/jsonschema.Type. gen_scalar exits
+# on anything else.
 SCALAR_TYPES = {"boolean", "integer", "number", "string"}
-HANDLED_TYPES = SCALAR_TYPES | {"object", "array"}
 
 # Cross-resource refs must resolve on every workspace (fake server and real UC).
 # "main"/"default" are the standard seeded catalog/schema; a random name deploys on the
@@ -65,8 +65,9 @@ PERMISSION_LEVEL = {
     "vector_search_endpoints": "CAN_USE",
 }
 
-# Output-only/computed fields the schema lists but users never set; emitting them causes
-# false drift after migrate. Mirrors output_only/backend_defaults in dresources/resources.yml.
+# Fields the backend computes; emitting them causes false drift after migrate. Mirrors
+# output_only/backend_defaults in dresources/resources.yml. Blocked by name everywhere, so
+# writable exceptions (an external volume's storage_location) need a curated config.
 SKIP_PROPERTY_NAMES = frozenset(
     {
         "browse_only",
@@ -131,7 +132,8 @@ PARENT_PATH = "/Workspace/Shared"
 DURATION_VALUE = "3600s"
 
 # Dangerous/near-range-end probes for free-form scalars: empty, whitespace, over-long,
-# newlines/tabs, non-ASCII, quotes, a dangling ${...} ref, path traversal, int boundaries.
+# newlines/tabs, non-ASCII, quotes, a dangling ${...} ref, path traversal, both ends of the
+# int32/int64 ranges, and -1 where a count is expected.
 # The CLI must reject or round-trip these without panicking; mutate_fuzz_config reuses them.
 DANGEROUS_STRINGS = [
     "",
@@ -145,9 +147,11 @@ DANGEROUS_STRINGS = [
     "../../etc/passwd",
 ]
 DANGEROUS_INTS = [
+    2**31 - 1,
     2**31,
     -(2**31),
     2**63 - 1,
+    -(2**63),
     -1,
 ]
 
@@ -259,8 +263,11 @@ class Generator:
             if not keep:
                 continue
             value = self.gen(prop_schema, depth + 1, prop_name)
-            if value is not None:
-                result[prop_name] = value
+            # Drop an object whose every property was skipped: `{}` carries no information
+            # and some fields reject it outright.
+            if value is None or value == {}:
+                continue
+            result[prop_name] = value
 
         # Map type (additionalProperties, no fixed properties): synthesize a few random
         # keys, e.g. resources.<type> or string maps like tags.
@@ -278,19 +285,19 @@ class Generator:
         return [self.gen(items, depth + 1, name) for _ in range(self.rng.randint(1, 3))]
 
     def gen_grants(self):
-        # One known-good grant for the securable; skip types we have no valid privilege for
-        # rather than emit one UC rejects.
+        # One known-good grant for the securable. No valid privilege means no grants node:
+        # UC rejects a wrong one, and an empty one only reproduces the known drift bugs.
         privilege = GRANT_PRIVILEGE.get(self.rtype)
         if privilege is None:
-            return []
+            return None
         return [{"principal": DEFAULT_PRINCIPAL, "privileges": [privilege]}]
 
     def gen_permissions(self):
-        # One known-good permission for the resource; skip types we have no valid level for
-        # rather than emit a random principal or ${...} ref.
+        # One known-good permission. No valid level means no permissions node, rather than a
+        # random principal, a ${...} ref, or an empty list.
         level = PERMISSION_LEVEL.get(self.rtype)
         if level is None:
-            return []
+            return None
         return [{"level": level, "group_name": DEFAULT_PERMISSION_GROUP}]
 
     def gen_scalar(self, schema, name):
@@ -368,7 +375,7 @@ def gen_resource(schema, gen, types, candidates, seed, unique):
     return rtype, key, instance
 
 
-def gen_config(schema, seed, unique, allowed):
+def gen_config(schema, seed, unique, allowed=frozenset()):
     gen = Generator(schema, random.Random(seed), unique)
 
     types = resource_types(schema, gen)
@@ -402,7 +409,10 @@ def to_yaml(obj, indent=0, list_item=False):
         return out
     if isinstance(obj, list):
         if not obj:
-            return f"{pad}[]\n"
+            return f"{pad}- []\n" if list_item else f"{pad}[]\n"
+        # A list inside a list: the marker needs its own line, else the two flatten into one.
+        if list_item:
+            return f"{pad}-\n" + to_yaml(obj, indent + 1)
         out = ""
         for item in obj:
             if isinstance(item, (dict, list)):
@@ -418,27 +428,3 @@ def dump_scalar(v):
     # (e.g. the 🚀 probe) into surrogate pairs that YAML rejects, killing the config at parse
     # time before it reaches bundle logic. Control chars stay escaped by json.dumps (YAML ok).
     return json.dumps(v, ensure_ascii=False)
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--schema", required=True, help="Path to bundle JSON schema")
-    parser.add_argument("--seed", type=int, required=True, help="RNG seed (for reproducibility)")
-    parser.add_argument("--unique", default="local", help="Unique suffix for resource names")
-    parser.add_argument(
-        "--resources",
-        default="",
-        help="Comma-separated allow-list of resource types (default: all)",
-    )
-    args = parser.parse_args()
-
-    with open(args.schema) as f:
-        schema = json.load(f)
-
-    allowed = {r.strip() for r in args.resources.split(",") if r.strip()}
-    config = gen_config(schema, args.seed, args.unique, allowed)
-    sys.stdout.write(to_yaml(config))
-
-
-if __name__ == "__main__":
-    main()

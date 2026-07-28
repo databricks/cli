@@ -457,16 +457,13 @@ jobs:
           COMMIT: ${{ github.sha }}
         run: |
           body=$(cat <<EOF
-          The nightly schema fuzz invariant job (\`task test-fuzz\`) failed on commit \`$COMMIT\`.
+          The nightly schema fuzz invariant job (\`task test-fuzz\`) failed while running against
+          commit \`$COMMIT\`. Each night covers a new seed window, so the failing config is most
+          likely pre-existing rather than introduced by this commit.
 
           Run: $RUN_URL
 
-          The failing seed is printed in the job log as \`reproduce with: ...\`.
-          Reproduce locally with:
-
-          \`\`\`
-          FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 task test-fuzz
-          \`\`\`
+          The job log prints a ready-to-run repro as \`LOG.repro: fuzz: seed <n> ...\`.
           EOF
           )
 

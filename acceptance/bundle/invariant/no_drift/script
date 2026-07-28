@@ -3,13 +3,6 @@
 
 source "$TESTDIR/../prologue.sh"
 
-# Fuzz-only validate panic check before deploy. Curated configs skip it -- deploy runs the
-# same validate pipeline. Output is redirected, not recorded, as a fuzzed config may warn.
-if [ -n "${FUZZ_SEED:-}" ]; then
-    trace $CLI bundle validate &> LOG.validate
-    cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
-fi
-
 # Only compute a plan up front when the READPLAN variant actually consumes it via --plan.
 # Without READPLAN, deploy computes its own plan internally, so a separate `bundle plan`
 # invocation is pure waste.

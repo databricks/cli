@@ -13,7 +13,8 @@ Cloud = false
 Timeout = '20m'
 
 # The fuzzer can emit resource types the testserver doesn't model; a missing handler is a
-# coverage gap, so return 501 (config rejected) instead of failing the whole run.
+# coverage gap, so return 501 and let the script record the seed as a gap instead of
+# failing the whole run.
 IgnoreUnhandledRequests = true
 
 # Run each target's real invariant script. No redeploy target: no_drift's post-deploy plan
@@ -23,3 +24,8 @@ EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate"]
 
 # generate = build from the schema; mutate = perturb a curated config. See emit_fuzz_config.py.
 EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
+
+# mutate + migrate only rediscovers what ../migrate/test.toml already excludes: three mutate
+# bases are direct-only or permanently drift (catalog, external_location, sql_warehouse), and
+# emptying a grants list reproduces no_empty_grants. Re-enable once databricks/cli#6039 lands.
+EnvMatrixExclude.no_mutate_on_migrate = ["FUZZ_MODE=mutate", "FUZZ_TARGET=migrate"]
