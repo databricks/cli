@@ -1,2 +1,31 @@
 # The deploy fails mid-way, leaving local deployment state behind.
 Ignore = [".databricks"]
+
+# The fake workspace reports every run as succeeded, so a failing run has to be
+# stubbed. run_page_url is omitted because a static stub cannot know the test
+# server's address; wait_output covers the run page link.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 12345678,
+  "job_id": 87654321,
+  "run_name": "my-job",
+  "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "FAILED",
+    "state_message": "task main failed"
+  },
+  "tasks": [
+    {
+      "task_key": "main",
+      "run_id": 12345679,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED"}
+    }
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '{"error": "notebook not found in workspace: /Workspace/missing-notebook"}'

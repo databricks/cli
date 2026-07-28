@@ -332,17 +332,13 @@ var testDeps = map[string]prepareWorkspace{
 
 	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		// A run can only be triggered against an existing job, so create one first.
-		// The fake workspace executes notebook and python tasks for real, so use a
-		// condition task, which it reports as succeeded.
 		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-for-run",
 			Tasks: []jobs.Task{
 				{
 					TaskKey: "t",
-					ConditionTask: &jobs.ConditionTask{
-						Op:    jobs.ConditionTaskOpEqualTo,
-						Left:  "1",
-						Right: "1",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "/Workspace/Users/user@example.com/notebook",
 					},
 				},
 			},

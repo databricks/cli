@@ -12,29 +12,9 @@ resources:
             left: "1"
             right: "1"
 
-    downstream_job:
-      name: downstream-job
-      tags:
-        # Rejected: my_run sets wait_for_completion: false, so state is unknown.
-        run_result: ${resources.job_runs.my_run.state.result_state}
-      tasks:
-        - task_key: main
-          condition_task:
-            op: EQUAL_TO
-            left: "1"
-            right: "1"
-
   job_runs:
-    my_run:
-      job_id: ${resources.jobs.my_job.id}
-      wait_for_completion: false
-
     bad_token:
       job_id: ${resources.jobs.my_job.id}
-      # Rejected: the token is computed from the run's configuration.
+      # Rejected: the token is computed from the run's configuration, and
+      # rerun_token is the supported way to force a new run.
       idempotency_token: mine
-
-    bad_timeout:
-      job_id: ${resources.jobs.my_job.id}
-      # Rejected: not a duration.
-      timeout: soon

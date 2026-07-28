@@ -12,10 +12,8 @@ resources:
           default: us
       tasks:
         - task_key: main
-          condition_task:
-            op: EQUAL_TO
-            left: "1"
-            right: "1"
+          notebook_task:
+            notebook_path: /Workspace/test
 
   job_runs:
     my_run:

@@ -14,8 +14,8 @@ import (
 )
 
 // JobRun is the bundle config for a triggered job run, described by the same
-// fields as the Jobs RunNow request (embedded). It re-triggers when its own
-// config changes; the job it targets is pinned by a stable job_id.
+// fields as the Jobs RunNow request (embedded). It re-triggers only when its own
+// config changes, not when the targeted job (stable job_id) changes.
 //
 // A run is also re-triggered when the workspace no longer has the tracked run,
 // which happens once it ages out of run history (~60 days), so a long-lived
@@ -30,16 +30,9 @@ type JobRun struct {
 	// within that window rejoins the run it first triggered.
 	RerunToken string `json:"rerun_token,omitempty"`
 
-	// WaitForCompletion blocks the deploy until the run finishes and fails it on a
-	// non-success result. Defaults to true; false returns once the run starts.
-	WaitForCompletion *bool `json:"wait_for_completion,omitempty"`
-
-	// Timeout bounds that wait, as a Go duration string. Defaults to 24h.
-	Timeout string `json:"timeout,omitempty"`
-
-	// ResolvedJobID is the run's job_id as loaded from state, used to build the run
-	// URL. It is kept apart from RunNow.JobId so state loading preserves that
-	// field's ${resources.jobs.*.id} reference and the plan dependency it carries.
+	// ResolvedJobID holds the run's job_id loaded from state, used only to build
+	// the run URL. Keeping it separate from RunNow.JobId (a ${resources.jobs.*.id}
+	// reference) lets state loading preserve that reference and its plan dependency.
 	ResolvedJobID int64 `json:"resolved_job_id,omitempty" bundle:"internal"`
 }
 
@@ -51,8 +44,8 @@ func (r JobRun) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(r)
 }
 
-// Exists reports whether the run still exists, for as long as the workspace
-// retains its run history.
+// Exists reports whether the run with the given numeric id still exists, for as
+// long as the workspace retains its run history.
 func (r *JobRun) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
 	runID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
@@ -80,7 +73,7 @@ func (r *JobRun) ResourceDescription() ResourceDescription {
 	}
 }
 
-// GetName returns an empty string: a run is identified by its id.
+// GetName returns the in-product name, which is empty: a run has no name.
 func (r *JobRun) GetName() string {
 	return ""
 }
@@ -89,9 +82,9 @@ func (r *JobRun) GetURL() string {
 	return r.URL
 }
 
-// InitializeURL sets the run's workspace URL, taking the job id from
-// RunNow.JobId once resolved (deploy) or from ResolvedJobID (read-only
-// commands). The URL stays empty until both ids are known.
+// InitializeURL sets the run's workspace URL. The job id comes from RunNow.JobId
+// when resolved (deploy) or ResolvedJobID from state (read-only commands); if
+// either id is missing we skip rather than emit a broken jobs/0 URL.
 func (r *JobRun) InitializeURL(baseURL url.URL) {
 	jobID := r.JobId
 	if jobID == 0 {

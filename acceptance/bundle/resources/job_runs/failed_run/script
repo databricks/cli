@@ -4,8 +4,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# The run's only task fails, so the deploy aborts: the error names the failed
-# task and points at rerun_token for the retry, and downstream_job is reported as
-# a failed dependency.
+# The run finishes FAILED, so the deploy aborts: the error names the failed task
+# and the message it reported, points at rerun_token for the retry, and
+# downstream_job is reported as a failed dependency.
 title "a run that finishes FAILED fails the deploy"
 musterr trace $CLI bundle deploy

@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"context"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -20,15 +21,9 @@ var testIdentity = CreateIdentity{
 
 func tokenFor(t *testing.T, identity CreateIdentity, state *JobRunState) string {
 	t.Helper()
-	token, err := idempotencyToken(WithCreateIdentity(t.Context(), identity), state)
+	token, err := idempotencyToken(identity, state)
 	require.NoError(t, err)
 	return token
-}
-
-func TestIdempotencyTokenRequiresIdentity(t *testing.T) {
-	// The framework always sets one, so its absence is a wiring bug and errors.
-	_, err := idempotencyToken(t.Context(), &JobRunState{RunNow: jobs.RunNow{JobId: 123}})
-	require.ErrorContains(t, err, "without a create identity")
 }
 
 func TestIdempotencyTokenIsStableHex(t *testing.T) {
@@ -71,17 +66,6 @@ func TestIdempotencyTokenChangesWithRerunToken(t *testing.T) {
 	assert.Equal(t, bumped, bumpedAgain) // the same rerun_token value stays stable
 }
 
-func TestIdempotencyTokenIgnoresDeployOptions(t *testing.T) {
-	run := jobs.RunNow{JobId: 123}
-	wait := false
-
-	base := tokenFor(t, testIdentity, &JobRunState{RunNow: run})
-	tuned := tokenFor(t, testIdentity, &JobRunState{RunNow: run, WaitForCompletion: &wait, Timeout: "5m"})
-
-	// Both are deploy-time knobs, cleared before hashing so the token holds.
-	assert.Equal(t, base, tuned)
-}
-
 func TestIdempotencyTokenChangesWithIdentity(t *testing.T) {
 	state := &JobRunState{RunNow: jobs.RunNow{JobId: 123}}
 
@@ -112,15 +96,13 @@ func TestIdempotencyTokenRotatesWithPriorID(t *testing.T) {
 	assert.Equal(t, rotated, tokenFor(t, recreate, state))
 }
 
-// jobRunClient returns a client whose GetRun always reports the given terminal
-// run state, so waitForRun can be exercised without a real run.
-func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClient {
+// jobRunServer returns a test server whose runs/get handler is the given one,
+// so a wait can be exercised without a real run.
+func jobRunServer(t *testing.T, getRun testserver.HandlerFunc) *databricks.WorkspaceClient {
 	t.Helper()
 	server := testserver.New(t)
 	// First registration wins, so this overrides the default runs/get handler.
-	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{RunId: 123, JobId: 456, State: state}
-	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get", getRun)
 	testserver.AddDefaultHandlers(server)
 
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{
@@ -131,6 +113,30 @@ func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClien
 	return client
 }
 
+// jobRunClient returns a client whose GetRun always reports the given terminal
+// run state.
+func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClient {
+	t.Helper()
+	return jobRunServer(t, func(req testserver.Request) any {
+		return jobs.Run{RunId: 123, JobId: 456, State: state}
+	})
+}
+
+func waitForTestRun(t *testing.T, client *databricks.WorkspaceClient) (*JobRunRemote, error) {
+	t.Helper()
+	r := (&ResourceJobRun{}).New(client)
+	return r.waitForRun(t.Context(), "resources.job_runs.nightly", 123)
+}
+
+func TestJobRunCreateRequiresIdentity(t *testing.T) {
+	client := jobRunClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated})
+	r := (&ResourceJobRun{}).New(client)
+
+	// The framework always sets one, so its absence is a wiring bug and errors.
+	_, _, err := r.DoCreate(t.Context(), &JobRunState{RunNow: jobs.RunNow{JobId: 123}})
+	require.ErrorContains(t, err, "without a create identity")
+}
+
 func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateTerminated,
@@ -138,11 +144,13 @@ func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 		StateMessage:   "task failed",
 	})
 
-	r := (&ResourceJobRun{}).New(client)
-	_, err := r.waitForRun(t.Context(), 123, time.Minute, time.Now())
+	_, err := waitForTestRun(t, client)
 
 	// Only SUCCESS completes the deploy; a FAILED result fails it.
 	require.ErrorContains(t, err, "did not succeed: FAILED: task failed")
+	// The state is not saved, so the next deploy re-issues run-now with the same
+	// token and lands back on this run. Point at the way out.
+	require.ErrorContains(t, err, "set rerun_token to a new value")
 }
 
 func TestJobRunWaitReportsFailedTask(t *testing.T) {
@@ -176,10 +184,10 @@ func TestJobRunWaitReportsFailedTask(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	r := (&ResourceJobRun{}).New(client)
-	_, err = r.waitForRun(t.Context(), 123, time.Minute, time.Now())
+	_, err = waitForTestRun(t, client)
 
-	// The error names the failing task and the message it reported.
+	// The error names the failing task and the message it reported, and leaves out
+	// the tasks that did not fail.
 	require.ErrorContains(t, err, `task "main": notebook not found`)
 	assert.NotContains(t, err.Error(), `task "ok"`)
 }
@@ -190,8 +198,7 @@ func TestJobRunWaitFailsOnSkipped(t *testing.T) {
 		LifeCycleState: jobs.RunLifeCycleStateSkipped,
 	})
 
-	r := (&ResourceJobRun{}).New(client)
-	_, err := r.waitForRun(t.Context(), 123, time.Minute, time.Now())
+	_, err := waitForTestRun(t, client)
 
 	require.ErrorContains(t, err, "did not succeed: SKIPPED")
 }
@@ -202,8 +209,7 @@ func TestJobRunWaitSucceeds(t *testing.T) {
 		ResultState:    jobs.RunResultStateSuccess,
 	})
 
-	r := (&ResourceJobRun{}).New(client)
-	remote, err := r.waitForRun(t.Context(), 123, time.Minute, time.Now())
+	remote, err := waitForTestRun(t, client)
 
 	require.NoError(t, err)
 	require.NotNil(t, remote.State)
@@ -215,64 +221,33 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 		LifeCycleState: jobs.RunLifeCycleStateInternalError,
 	})
 
-	r := (&ResourceJobRun{}).New(client)
-	_, err := r.waitForRun(t.Context(), 123, time.Minute, time.Now())
+	_, err := waitForTestRun(t, client)
 
-	// The SDK waiter errors on INTERNAL_ERROR, ahead of the result check.
-	require.Error(t, err)
+	// The SDK waiter errors on INTERNAL_ERROR, ahead of the result check, so the
+	// wrapping is all that names the run.
+	require.ErrorContains(t, err, "waiting for job run 123")
+	require.ErrorContains(t, err, "INTERNAL_ERROR")
 }
 
-func TestJobRunWaitTimesOutNamingTheRun(t *testing.T) {
+func TestJobRunWaitAbandonedNamesTheRun(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning})
 
+	ctx, cancel := context.WithTimeout(t.Context(), time.Millisecond)
+	defer cancel()
 	r := (&ResourceJobRun{}).New(client)
-	_, err := r.waitForRun(t.Context(), 123, time.Millisecond, time.Now())
+	_, err := r.waitForRun(ctx, "resources.job_runs.nightly", 123)
 
-	// Abandoning the wait leaves the run going, so the error has to name it.
-	require.ErrorContains(t, err, "waiting for job run 123, which keeps running")
-	require.ErrorContains(t, err, "timed out")
-}
-
-func TestReusedEarlierRun(t *testing.T) {
-	// Sub-millisecond component on purpose: end_time only has millisecond
-	// resolution, so comparing a truncated end_time against the full timestamp
-	// reports every run triggered mid-millisecond as an earlier one.
-	triggeredAt := time.UnixMilli(1_700_000_000_000).Add(400 * time.Microsecond)
-	millis := triggeredAt.UnixMilli()
-
-	// A run that finished earlier is one run-now deduplicated onto.
-	assert.True(t, reusedEarlierRun(&jobs.Run{EndTime: millis - 1}, triggeredAt))
-	// One finishing in the same millisecond is the run we just triggered.
-	assert.False(t, reusedEarlierRun(&jobs.Run{EndTime: millis}, triggeredAt))
-	assert.False(t, reusedEarlierRun(&jobs.Run{EndTime: millis + 1}, triggeredAt))
-	// A run that is still going has no end_time.
-	assert.False(t, reusedEarlierRun(&jobs.Run{}, triggeredAt))
-}
-
-func TestJobRunTimeout(t *testing.T) {
-	unset, err := runTimeout(&JobRunState{})
-	require.NoError(t, err)
-	assert.Equal(t, defaultJobRunTimeout, unset)
-
-	set, err := runTimeout(&JobRunState{Timeout: "90m"})
-	require.NoError(t, err)
-	assert.Equal(t, 90*time.Minute, set)
-
-	// The validator parses the value up front, so reaching this means hand-written
-	// state rather than bad configuration.
-	_, err = runTimeout(&JobRunState{Timeout: "soon"})
-	require.ErrorContains(t, err, `invalid timeout "soon"`)
+	// Giving up on the wait does not stop the run, so the error has to name it.
+	require.ErrorContains(t, err, "waiting for job run 123")
 }
 
 // Reports RUNNING before TERMINATED, exercising the poll loop (the other tests
 // stub an already-terminal state).
 func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
-	server := testserver.New(t)
-
 	// Returning RUNNING for the first two polls makes the waiter iterate a few
 	// times, calling the progress callback on each, before it sees TERMINATED.
 	var gets atomic.Int32
-	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+	client := jobRunServer(t, func(req testserver.Request) any {
 		if gets.Add(1) <= 2 {
 			return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
 				LifeCycleState: jobs.RunLifeCycleStateRunning,
@@ -283,16 +258,8 @@ func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 			ResultState:    jobs.RunResultStateSuccess,
 		}}
 	})
-	testserver.AddDefaultHandlers(server)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  server.URL,
-		Token: "testtoken",
-	})
-	require.NoError(t, err)
-
-	r := (&ResourceJobRun{}).New(client)
-	remote, err := r.waitForRun(t.Context(), 123, time.Minute, time.Now())
+	remote, err := waitForTestRun(t, client)
 	require.NoError(t, err)
 
 	// SUCCESS is only reachable by polling past the RUNNING reads.

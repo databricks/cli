@@ -417,7 +417,6 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	s.JobRuns[runId] = jobs.Run{
 		RunId:                runId,
 		JobId:                request.JobId,
-		StartTime:            nowMilli(),
 		State:                &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
 		RunPageUrl:           fmt.Sprintf("%s/?o=900800700600#job/%d/run/%d", s.url, request.JobId, runId),
 		RunType:              jobs.RunTypeJobRun,
@@ -884,24 +883,19 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	// Simulate cloud behavior: first poll returns RUNNING, next returns TERMINATED
-	// with the result rolled up from the tasks.
+	// Simulate cloud behavior: first poll returns RUNNING, next returns TERMINATED SUCCESS.
 	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
-		// Transition stored state to TERMINATED for the next poll, keeping the
-		// results of tasks JobsRunNow already executed.
-		for i, task := range run.Tasks {
-			if task.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
-				run.Tasks[i].State = &jobs.RunState{
-					LifeCycleState: jobs.RunLifeCycleStateTerminated,
-					ResultState:    jobs.RunResultStateSuccess,
-				}
+		// Transition stored state to TERMINATED for the next poll.
+		run.State = &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateSuccess,
+		}
+		for i := range run.Tasks {
+			run.Tasks[i].State = &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateTerminated,
+				ResultState:    jobs.RunResultStateSuccess,
 			}
 		}
-		run.State = rollUpRunState(run.Tasks)
-		// Clients tell a run they just triggered apart from one run-now
-		// deduplicated onto by when it finished, so a terminal run needs an
-		// end_time.
-		run.EndTime = nowMilli()
 		s.JobRuns[runIdInt] = run
 
 		// Return RUNNING for this poll (before the transition).
@@ -913,24 +907,6 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	}
 
 	return Response{Body: run}
-}
-
-// rollUpRunState derives a run's terminal state from its tasks, as the backend
-// does: one failed task fails the whole run, and state_message names it.
-func rollUpRunState(tasks []jobs.RunTask) *jobs.RunState {
-	for _, task := range tasks {
-		if task.State.ResultState == jobs.RunResultStateFailed {
-			return &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateTerminated,
-				ResultState:    jobs.RunResultStateFailed,
-				StateMessage:   fmt.Sprintf("task %s failed", task.TaskKey),
-			}
-		}
-	}
-	return &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateSuccess,
-	}
 }
 
 func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {

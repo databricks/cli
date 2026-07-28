@@ -17,6 +17,3 @@ resources:
   job_runs:
     foo_run:
       job_id: ${resources.jobs.foo.id}
-      # These tests assert plan and state invariants, not run outcomes, and a real
-      # workspace reports a run of condition tasks alone as SKIPPED.
-      wait_for_completion: false

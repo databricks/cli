@@ -15,8 +15,8 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-// Apply executes plan. deploymentRoot is the bundle's workspace root path; it
-// scopes the create-time keys resources derive, see dresources.CreateIdentity.
+// Apply executes plan. deploymentRoot is the bundle's workspace root path, which
+// scopes the create-time keys resources derive (see dresources.CreateIdentity).
 func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan, deploymentRoot string) {
 	if plan == nil {
 		panic("Planning is not done")

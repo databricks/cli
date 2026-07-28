@@ -2,14 +2,12 @@ package validate
 
 import (
 	"context"
-	"strings"
-	"time"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 func ValidateJobRuns() bundle.ReadOnlyMutator {
@@ -23,89 +21,25 @@ func (v *validateJobRuns) Name() string {
 }
 
 func (v *validateJobRuns) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// checkStateReferences walks the whole configuration, so skip it entirely for
-	// the majority of bundles that declare no job runs.
-	if len(b.Config.Resources.JobRuns) == 0 {
-		return nil
-	}
+	var diags diag.Diagnostics
 
-	d := pathDiags{b: b}
-
-	for name, jr := range b.Config.Resources.JobRuns {
+	// Sorted so the reported order does not depend on map iteration order.
+	for _, name := range slices.Sorted(maps.Keys(b.Config.Resources.JobRuns)) {
+		jr := b.Config.Resources.JobRuns[name]
 		// An empty `job_runs.<name>:` entry loads as a present key with a nil value.
-		if jr == nil {
+		if jr == nil || jr.IdempotencyToken == "" {
 			continue
 		}
-		prefix := "resources.job_runs." + name
-
-		// idempotency_token is computed in DoCreate; rerun_token is the supported
-		// way to force a run.
-		if jr.IdempotencyToken != "" {
-			d.errorf(prefix+".idempotency_token",
-				"idempotency_token is computed automatically and must not be set in bundle configuration; set `rerun_token` to force a new run")
-		}
-
-		checkTimeout(jr, prefix, &d)
+		// DoCreate computes the token so a retried deploy rejoins the run it already
+		// triggered; a user-set one would break that.
+		path := "resources.job_runs." + name + ".idempotency_token"
+		diags = append(diags, diag.Diagnostic{
+			Severity:  diag.Error,
+			Summary:   "idempotency_token is computed automatically and must not be set in bundle configuration; set `rerun_token` to force a new run",
+			Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+			Locations: b.Config.GetLocations(path),
+		})
 	}
 
-	v.checkStateReferences(b, &d)
-
-	return d.sorted()
-}
-
-// checkTimeout rejects a timeout the deploy cannot honor. Zero and negative
-// durations parse but mean neither "no timeout" nor the documented default: the
-// SDK waiter reads zero as its own 20 minute default and anything negative as
-// "poll forever".
-//
-// A timeout alongside wait_for_completion: false is left alone: it is ignored
-// rather than misapplied, and targets routinely override one without the other.
-func checkTimeout(jr *resources.JobRun, prefix string, d *pathDiags) {
-	if jr.Timeout == "" {
-		return
-	}
-	timeout, err := time.ParseDuration(jr.Timeout)
-	if err != nil {
-		d.errorf(prefix+".timeout",
-			"timeout must be a duration such as \"30m\" or \"2h\": %s", err)
-		return
-	}
-	if timeout <= 0 {
-		d.errorf(prefix+".timeout", "timeout must be positive, got %q", jr.Timeout)
-	}
-}
-
-// checkStateReferences rejects references to the `state` of a run configured
-// with wait_for_completion: false, which is still in flight when the dependent
-// resources are created.
-func (v *validateJobRuns) checkStateReferences(b *bundle.Bundle, d *pathDiags) {
-	_ = dyn.WalkReadOnly(b.Config.Value(), func(path dyn.Path, val dyn.Value) error {
-		ref, ok := dynvar.NewRef(val)
-		if !ok {
-			return nil
-		}
-		for _, r := range ref.References() {
-			name, ok := jobRunStateReference(r)
-			if !ok {
-				continue
-			}
-			jr := b.Config.Resources.JobRuns[name]
-			if jr == nil || jr.WaitForCompletion == nil || *jr.WaitForCompletion {
-				continue
-			}
-			d.errorAt(path, []dyn.Location{val.Location()},
-				"%q: the run's state is not known because resources.job_runs.%s sets wait_for_completion: false", r, name)
-		}
-		return nil
-	})
-}
-
-// jobRunStateReference returns the run name when ref points at a job run's
-// `state` or into it, e.g. "resources.job_runs.nightly.state.result_state".
-func jobRunStateReference(ref string) (string, bool) {
-	parts := strings.Split(ref, ".")
-	if len(parts) < 4 || parts[0] != "resources" || parts[1] != "job_runs" || parts[3] != "state" {
-		return "", false
-	}
-	return parts[2], true
+	return diags
 }

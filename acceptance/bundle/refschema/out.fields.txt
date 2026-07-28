@@ -877,9 +877,7 @@ resources.job_runs.*.state.queue_reason	string	REMOTE
 resources.job_runs.*.state.result_state	jobs.RunResultState	REMOTE
 resources.job_runs.*.state.state_message	string	REMOTE
 resources.job_runs.*.state.user_cancelled_or_timedout	bool	REMOTE
-resources.job_runs.*.timeout	string	ALL
 resources.job_runs.*.url	string	INPUT
-resources.job_runs.*.wait_for_completion	*bool	ALL
 resources.jobs.*.budget_policy_id	string	ALL
 resources.jobs.*.continuous	*jobs.Continuous	ALL
 resources.jobs.*.continuous.pause_status	jobs.PauseStatus	ALL

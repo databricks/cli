@@ -6,8 +6,6 @@ resources:
     my_job:
       name: my-job
       tasks:
-        # The test server runs notebook tasks for real, and this path is missing
-        # from the workspace, so the task, and with it the run, fails.
         - task_key: main
           notebook_task:
             notebook_path: /Workspace/missing-notebook
@@ -20,10 +18,8 @@ resources:
         run_result: ${resources.job_runs.my_run.state.result_state}
       tasks:
         - task_key: main
-          condition_task:
-            op: EQUAL_TO
-            left: "1"
-            right: "1"
+          notebook_task:
+            notebook_path: /Workspace/test
 
   job_runs:
     my_run:

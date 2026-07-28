@@ -17,14 +17,14 @@ type CreateIdentity struct {
 
 	// PriorID is the id of a resource whose remote copy has vanished, set only
 	// when re-creating it. Folding it in keeps the new key clear of the gone one,
-	// which the backend may still hold (e.g. a tombstoned run token).
+	// which the backend may still reserve (e.g. a deleted run's token).
 	PriorID string
 }
 
 type createIdentityKey struct{}
 
 // WithCreateIdentity records the identity of the resource being created. Set by
-// the framework in DeploymentUnit.Deploy; see CreateIdentity.
+// the framework in DeploymentUnit.Create; see CreateIdentity.
 func WithCreateIdentity(ctx context.Context, id CreateIdentity) context.Context {
 	return context.WithValue(ctx, createIdentityKey{}, id)
 }

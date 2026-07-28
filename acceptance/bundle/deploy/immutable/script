@@ -16,7 +16,4 @@ trace $CLI jobs get $JOB_ID | jq '.settings.tasks' | jq '.[] | select(.notebook_
 trace $CLI jobs get $JOB_ID | jq '.settings.environments[0].spec.dependencies'
 
 # Redirect run output to a log file — the real workspace produces different output than the local test server.
-# The test server discards the uploaded snapshot, so a task reading from the
-# snapshot folder fails locally. This test checks the deployed job settings
-# above, so the run is allowed to fail.
-$CLI bundle run my_job &> LOG.run || true
+$CLI bundle run my_job &> LOG.run

@@ -97,9 +97,15 @@ func JobRunURL(baseURL url.URL, jobID, runID string) string {
 //
 //	https://<host>/?o=<id>#job/<jobID>/run/<runID>
 //
-// into the modern path form (see JobRunPath), preserving the workspace selector
-// query param. The conversion is cosmetic, so any other format is passed
-// through unchanged.
+// into the modern path form
+//
+//	https://<host>/jobs/<jobID>/runs/<runID>?o=<id>
+//
+// so that non-admin users permitted to view the run are not redirected to the
+// workspace homepage. See https://github.com/databricks/cli/issues/5142. The
+// workspace selector query param (o) is preserved as-is. The conversion is
+// cosmetic, so the original URL is returned on the rare chance the format is
+// unexpected.
 func JobRunPageURL(ctx context.Context, raw string) string {
 	u, err := url.Parse(raw)
 	if err != nil {

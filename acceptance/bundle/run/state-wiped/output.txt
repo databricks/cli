@@ -14,7 +14,6 @@ Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "foo" RUNNING
 [TIMESTAMP] "foo" TERMINATED SUCCESS
-hello from foo
 
 === Testing that clean state that affect run command -- it'll fetch the state
 >>> rm -fr .databricks
@@ -24,4 +23,3 @@ Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "foo" RUNNING
 [TIMESTAMP] "foo" TERMINATED SUCCESS
-hello from foo

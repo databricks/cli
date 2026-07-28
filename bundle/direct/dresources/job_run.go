@@ -22,9 +22,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// defaultJobRunTimeout is the wait when the config sets no timeout, matching
-// `bundle run` (jobRunTimeout in bundle/run/job.go).
-const defaultJobRunTimeout = 24 * time.Hour
+// jobRunTimeout bounds the wait for a run to finish, matching `bundle run`
+// (jobRunTimeout in bundle/run/job.go).
+const jobRunTimeout = 24 * time.Hour
 
 // JobRunState is what we persist for a triggered run: the RunNow request.
 type JobRunState struct {
@@ -33,15 +33,6 @@ type JobRunState struct {
 	// RerunToken folds into the idempotency token, so changing it recreates the
 	// run. Bundle-only, never sent to the API.
 	RerunToken string `json:"rerun_token,omitempty"`
-
-	// WaitForCompletion blocks the deploy until the run finishes (default true).
-	// Bundle-only, and excluded from the token and from diffing as a deploy-time
-	// knob.
-	WaitForCompletion *bool `json:"wait_for_completion,omitempty"`
-
-	// Timeout bounds that wait, as a Go duration (default 24h). Bundle-only and
-	// excluded like WaitForCompletion.
-	Timeout string `json:"timeout,omitempty"`
 }
 
 func (s *JobRunState) UnmarshalJSON(b []byte) error {
@@ -53,22 +44,21 @@ func (s JobRunState) MarshalJSON() ([]byte, error) {
 }
 
 // JobRunRemote embeds RunNow so every StateType path is a valid RemoteType path
-// (see TestRemoteSuperset), plus the run's output-only fields for a faithful view.
+// (see TestRemoteSuperset), plus the run's output-only fields.
 type JobRunRemote struct {
 	jobs.RunNow
 
-	// Bundle-only state fields, declared here because every state field needs a
-	// remote counterpart (TestRemoteSuperset). makeJobRunRemote leaves them empty
-	// and root ignore_remote_changes hides the resulting drift.
-	RerunToken        string `json:"rerun_token,omitempty"`
-	WaitForCompletion *bool  `json:"wait_for_completion,omitempty"`
-	Timeout           string `json:"timeout,omitempty"`
+	// RerunToken is bundle-only. GetRun never reports it, so it stays empty here
+	// and root ignore_remote_changes hides the drift against state.
+	RerunToken string `json:"rerun_token,omitempty"`
 
-	RunId      int64          `json:"run_id,omitempty"`
-	RunName    string         `json:"run_name,omitempty"`
-	State      *jobs.RunState `json:"state,omitempty"`
-	RunPageUrl string         `json:"run_page_url,omitempty"`
-	RunType    jobs.RunType   `json:"run_type,omitempty"`
+	RunId   int64          `json:"run_id,omitempty"`
+	RunName string         `json:"run_name,omitempty"`
+	State   *jobs.RunState `json:"state,omitempty"`
+	// Normalized to the path form that resolves for non-admins, so whatever
+	// references it gets a usable link. See workspaceurls.JobRunPageURL.
+	RunPageUrl string       `json:"run_page_url,omitempty"`
+	RunType    jobs.RunType `json:"run_type,omitempty"`
 }
 
 // Custom marshaler needed because embedded RunNow's MarshalJSON would otherwise
@@ -93,10 +83,8 @@ func (*ResourceJobRun) New(client *databricks.WorkspaceClient) *ResourceJobRun {
 
 func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	return &JobRunState{
-		RunNow:            input.RunNow,
-		RerunToken:        input.RerunToken,
-		WaitForCompletion: input.WaitForCompletion,
-		Timeout:           input.Timeout,
+		RunNow:     input.RunNow,
+		RerunToken: input.RerunToken,
 	}
 }
 
@@ -134,14 +122,11 @@ func makeJobRunRemote(ctx context.Context, run *jobs.Run) *JobRunRemote {
 			Queue:             nil,
 			ForceSendFields:   nil,
 		},
-		// Bundle-only fields; see their doc comments.
-		RerunToken:        "",
-		WaitForCompletion: nil,
-		Timeout:           "",
-		RunId:             run.RunId,
-		RunName:           run.RunName,
-		State:             run.State,
-		// Normalized to the URL form that resolves for non-admins.
+		// Bundle-only; see its doc comment.
+		RerunToken: "",
+		RunId:      run.RunId,
+		RunName:    run.RunName,
+		State:      run.State,
 		RunPageUrl: workspaceurls.JobRunPageURL(ctx, run.RunPageUrl),
 		RunType:    run.RunType,
 	}
@@ -165,23 +150,23 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 	return makeJobRunRemote(ctx, run), nil
 }
 
-// RemapState maps remote into the state shape for diffing. The bundle-only
-// fields are empty in remote; root ignore_remote_changes hides that drift.
+// RemapState maps remote into the state shape for diffing. RerunToken is empty
+// in remote; root ignore_remote_changes hides that drift.
 func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &JobRunState{
-		RunNow:            remote.RunNow,
-		RerunToken:        remote.RerunToken,
-		WaitForCompletion: remote.WaitForCompletion,
-		Timeout:           remote.Timeout,
+		RunNow:     remote.RunNow,
+		RerunToken: remote.RerunToken,
 	}
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
-	token, err := idempotencyToken(ctx, config)
-	if err != nil {
-		return "", nil, err
+	// The framework always attaches an identity on create, so its absence is a
+	// wiring bug rather than a user error.
+	identity, ok := GetCreateIdentity(ctx)
+	if !ok {
+		return "", nil, errors.New("internal error: job_run created without a create identity")
 	}
-	timeout, err := runTimeout(config)
+	token, err := idempotencyToken(identity, config)
 	if err != nil {
 		return "", nil, err
 	}
@@ -189,105 +174,44 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 	// Copy so the token reaches the API and stays out of state.
 	req := config.RunNow
 	req.IdempotencyToken = token
-
-	// Read before the call, so a run that had already finished by then can be
-	// recognised as one run-now deduplicated onto; see reportReusedRun.
-	triggeredAt := time.Now()
 	triggered, err := r.client.Jobs.RunNow(ctx, req)
 	if err != nil {
 		return "", nil, fmt.Errorf("triggering a run of job %d: %w", req.JobId, err)
 	}
-	id := strconv.FormatInt(triggered.RunId, 10)
 
-	// wait_for_completion: false returns as soon as the run is triggered, with no
-	// remote; the validator rejects references to its state for that reason.
-	if config.WaitForCompletion != nil && !*config.WaitForCompletion {
-		// Nothing polls the run on this path, so read it once for the same run page
-		// link the waiting path prints from its first poll.
-		r.logRunPage(ctx, triggered.RunId)
-		return id, nil, nil
-	}
-
-	// The wait belongs in DoCreate: state persists only once it returns, so an
-	// interrupted wait re-triggers RunNow and the idempotency_token rejoins the
-	// same run.
-	remote, err := r.waitForRun(ctx, triggered.RunId, timeout, triggeredAt)
+	// Waiting here rather than in WaitAfterCreate keeps the retry idempotent:
+	// state persists only once DoCreate returns, so an interrupted wait re-issues
+	// RunNow and the token rejoins this same run.
+	remote, err := r.waitForRun(ctx, identity.ResourceKey, triggered.RunId)
 	if err != nil {
 		return "", nil, err
 	}
-	return id, remote, nil
-}
-
-// logRunPage reports where to watch a run that this deploy does not wait for.
-func (r *ResourceJobRun) logRunPage(ctx context.Context, runID int64) {
-	var req jobs.GetRunRequest
-	req.RunId = runID
-	run, err := r.client.Jobs.GetRun(ctx, req)
-	if err != nil {
-		log.Debugf(ctx, "could not read job run %d to report its URL: %v", runID, err)
-		return
-	}
-	logRunLine(ctx, "Run URL: "+workspaceurls.JobRunPageURL(ctx, run.RunPageUrl))
-}
-
-// runTimeout is how long DoCreate waits for the run. The validator parses the
-// value up front, so an error here means hand-written state.
-func runTimeout(config *JobRunState) (time.Duration, error) {
-	if config.Timeout == "" {
-		return defaultJobRunTimeout, nil
-	}
-	timeout, err := time.ParseDuration(config.Timeout)
-	if err != nil {
-		return 0, fmt.Errorf("invalid timeout %q: %w", config.Timeout, err)
-	}
-	return timeout, nil
+	return strconv.FormatInt(triggered.RunId, 10), remote, nil
 }
 
 // waitForRun blocks until the run reaches a terminal state and returns its
-// remote view. Only SUCCESS completes the deploy; any other terminal outcome is
-// an error. triggeredAt is when run-now was issued, see reportReusedRun.
-func (r *ResourceJobRun) waitForRun(ctx context.Context, runID int64, timeout time.Duration, triggeredAt time.Time) (*JobRunRemote, error) {
-	// The wait can last hours, so report progress like `bundle run` does. Both
-	// carry across poll callbacks; pageURL lets an abandoned wait link the run.
+// remote view. Only SUCCESS completes the deploy; any other outcome is an error.
+func (r *ResourceJobRun) waitForRun(ctx context.Context, resourceKey string, runID int64) (*JobRunRemote, error) {
+	// A run can take hours, so report progress like `bundle run` does. prevState
+	// suppresses repeats; pageURL survives the callback so an abandoned wait can
+	// still link the run.
 	var prevState *jobs.RunState
 	var pageURL string
-	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, timeout, func(run *jobs.Run) {
+	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, jobRunTimeout, func(run *jobs.Run) {
 		pageURL = run.RunPageUrl
-		prevState = logRunProgress(ctx, run, prevState)
+		prevState = logRunProgress(ctx, resourceKey, run, prevState)
 	})
 	if err != nil {
-		// Giving up on the wait, whether on timeout or interrupt, does not stop the
-		// run; the next deploy re-issues run-now and the token re-attaches to it.
-		return nil, fmt.Errorf("waiting for job run %d, which keeps running: %w%s", runID, err, runPageLine(ctx, pageURL))
+		// The run may have hit INTERNAL_ERROR, or we gave up on timeout or
+		// interrupt while it kept going. Only the wrapped error tells them apart.
+		return nil, fmt.Errorf("waiting for job run %d: %w%s", runID, err, runPageLine(ctx, pageURL))
 	}
-	reportReusedRun(ctx, run, triggeredAt)
 	// FAILED, TIMEDOUT, CANCELED, SUCCESS_WITH_FAILURES and SKIPPED all fail the
 	// deploy; the waiter already errored on INTERNAL_ERROR and on timeout.
 	if run.State.ResultState != jobs.RunResultStateSuccess {
 		return nil, r.runFailedError(ctx, run)
 	}
 	return makeJobRunRemote(ctx, run), nil
-}
-
-// reportReusedRun tells the user when run-now deduplicated onto a run that had
-// already finished before this deploy asked for one, which happens whenever the
-// configuration matches a run triggered earlier (the Jobs API keeps each
-// idempotency_token for ~60 days). The deploy then reports that run's outcome
-// without anything having executed, so say so rather than imply a fresh run.
-func reportReusedRun(ctx context.Context, run *jobs.Run, triggeredAt time.Time) {
-	if !reusedEarlierRun(run, triggeredAt) {
-		return
-	}
-	logRunLine(ctx, fmt.Sprintf("Reusing run %d, which already ran this configuration; set rerun_token to a new value to trigger a fresh run", run.RunId))
-}
-
-// reusedEarlierRun reports whether the run had finished before we asked for one,
-// which no run we just triggered can have done, short of clock skew larger than
-// the run's own duration. Both sides are epoch milliseconds, the resolution of
-// end_time: a run finishing within the same millisecond we triggered it is the
-// run we triggered, not an earlier one.
-func reusedEarlierRun(run *jobs.Run, triggeredAt time.Time) bool {
-	return run.EndTime > 0 && run.EndTime < triggeredAt.UnixMilli()
 }
 
 // runFailedError reports why the run did not succeed, naming each failed task
@@ -309,15 +233,15 @@ func (r *ResourceJobRun) runFailedError(ctx context.Context, run *jobs.Run) erro
 		}
 	}
 	msg.WriteString(runPageLine(ctx, run.RunPageUrl))
-	// A plain redeploy dedupes back onto this terminal run, even once the job is
-	// fixed, so name the way out.
-	msg.WriteString("\nset rerun_token to a new value to trigger a fresh run")
+	// No state was saved, so a redeploy re-issues run-now with the same token and
+	// gets this same terminal run back, even once the job itself is fixed.
+	msg.WriteString("\nredeploying reports this same run; set rerun_token to a new value to run the job again")
 	return errors.New(msg.String())
 }
 
 // taskFailed reports whether a task caused the run to fail rather than being a
-// casualty of it: tasks left SKIPPED, CANCELED or UPSTREAM_FAILED by an earlier
-// failure add noise without naming the problem.
+// casualty of it. Tasks left SKIPPED or UPSTREAM_FAILED by an earlier failure
+// add noise without naming the problem.
 func taskFailed(task jobs.RunTask) bool {
 	// State is deprecated in favour of Status, so it may be absent.
 	if task.State == nil {
@@ -328,8 +252,9 @@ func taskFailed(task jobs.RunTask) bool {
 		task.State.ResultState == jobs.RunResultStateTimedout
 }
 
-// taskError returns the message the task reported. The run page link covers the
-// stack trace. Only called for a task taskFailed accepted, so State is set.
+// taskError returns the message the task reported, from the same place
+// `bundle run` reads it. Only called for a task taskFailed accepted, so State is
+// set.
 func (r *ResourceJobRun) taskError(ctx context.Context, task jobs.RunTask) string {
 	var reported string
 	output, err := r.client.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{RunId: task.RunId})
@@ -354,7 +279,7 @@ func runPageLine(ctx context.Context, rawURL string) string {
 
 // logRunProgress mirrors `bundle run`'s monitor: the run page URL once, then
 // each state change. It returns the state to remember for the next poll.
-func logRunProgress(ctx context.Context, run *jobs.Run, prev *jobs.RunState) *jobs.RunState {
+func logRunProgress(ctx context.Context, resourceKey string, run *jobs.Run, prev *jobs.RunState) *jobs.RunState {
 	if run.State == nil {
 		return prev
 	}
@@ -364,9 +289,9 @@ func logRunProgress(ctx context.Context, run *jobs.Run, prev *jobs.RunState) *jo
 		return prev
 	}
 	if prev == nil && run.RunPageUrl != "" {
-		logRunLine(ctx, "Run URL: "+workspaceurls.JobRunPageURL(ctx, run.RunPageUrl))
+		logRunLine(ctx, resourceKey, "Run URL: "+workspaceurls.JobRunPageURL(ctx, run.RunPageUrl))
 	}
-	logRunLine(ctx, (&progress.JobProgressEvent{
+	logRunLine(ctx, resourceKey, (&progress.JobProgressEvent{
 		Timestamp: time.Now(),
 		JobId:     run.JobId,
 		RunId:     run.RunId,
@@ -376,21 +301,18 @@ func logRunProgress(ctx context.Context, run *jobs.Run, prev *jobs.RunState) *jo
 	return run.State
 }
 
-// logRunLine reports one line about a run to the user and the log. Deploys run
-// concurrently onto a shared writer, so the line is tagged with the resource key
-// (the same one the deploy's errors name) to keep parallel runs apart.
-func logRunLine(ctx context.Context, msg string) {
-	if identity, ok := GetCreateIdentity(ctx); ok {
-		msg = identity.ResourceKey + ": " + msg
-	}
+// logRunLine reports one line about a run to the user and the log. Runs deploy
+// concurrently onto one stream, so the user-facing copy is tagged with the
+// resource key; the log already carries it via log.WithPrefix.
+func logRunLine(ctx context.Context, resourceKey, msg string) {
 	log.Info(ctx, msg)
 	if cmdio.HasIO(ctx) {
-		cmdio.LogString(ctx, msg)
+		cmdio.LogString(ctx, resourceKey+": "+msg)
 	}
 }
 
-// A run is immutable: any config change recreates the resource as a fresh
-// RunNow and leaves the prior run in place.
+// DoUpdate is intentionally not implemented: a run is immutable, so any config
+// change recreates the resource as a fresh RunNow.
 
 // DoDelete is a noop: a run is immutable history, so destroy and recreate leave
 // it in place. That also keeps its idempotency_token usable, which the Jobs API
@@ -407,26 +329,18 @@ func parseRunID(id string) (int64, error) {
 	return result, nil
 }
 
-// idempotencyToken hashes the create identity and the run config into a stable
-// hex SHA-256 (64 chars, the Jobs API maximum): a retried create dedupes onto
-// the same run, a config change (including rerun_token) triggers a new one, and
-// the identity keeps identical configs apart across resource keys and
-// deployments.
+// idempotencyToken hashes the create identity and the run config into a hex
+// SHA-256 (64 chars, the Jobs API maximum). It is stable, so a retried create
+// dedupes onto the same run; it changes with the config, so an edited run (or a
+// bumped rerun_token) starts a new one; and the identity keeps identical configs
+// apart across resource keys and deployments.
 //
-// The hash covers the SDK RunNow JSON, so an SDK field rename changes the token.
-// That reaches only a create retried across such an upgrade, which then starts a
-// fresh run.
-func idempotencyToken(ctx context.Context, state *JobRunState) (string, error) {
-	identity, ok := GetCreateIdentity(ctx)
-	if !ok {
-		return "", errors.New("internal error: job_run created without a create identity")
-	}
-
+// Hashing the SDK RunNow JSON means an SDK field rename changes the token, which
+// only affects a create retried across such an upgrade: it starts a fresh run.
+func idempotencyToken(identity CreateIdentity, state *JobRunState) (string, error) {
 	toHash := *state
+	// Not part of the run's identity: it is what we are computing.
 	toHash.IdempotencyToken = ""
-	// Deploy-time knobs, excluded so changing them keeps the token stable.
-	toHash.WaitForCompletion = nil
-	toHash.Timeout = ""
 	canonical, err := json.Marshal(toHash)
 	if err != nil {
 		return "", err

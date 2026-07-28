@@ -1,10 +1,35 @@
 
 === deploy triggers exactly one run
+>>> [CLI] bundle validate
+Name: job-runs-basic
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
+
+Validation OK!
+
 >>> [CLI] bundle plan
 create job_runs.my_run
 create jobs.my_job
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle summary
+Name: job-runs-basic
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
+Resources:
+  Job Runs:
+    my_run:
+      Name: 
+      URL:  (not deployed)
+  Jobs:
+    my_job:
+      Name: my-job
+      URL:  (not deployed)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...

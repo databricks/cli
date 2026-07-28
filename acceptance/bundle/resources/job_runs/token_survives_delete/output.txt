@@ -29,7 +29,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-token-sur
 Deploying resources...
 resources.job_runs.my_run: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 resources.job_runs.my_run: [TIMESTAMP] "my-job" TERMINATED SUCCESS
-resources.job_runs.my_run: Reusing run [NUMID], which already ran this configuration; set rerun_token to a new value to trigger a fresh run
 Updating deployment state...
 Deployment complete!
 flip-back reused the original dev run ([NUMID]); prod had its own run ([NUMID])
