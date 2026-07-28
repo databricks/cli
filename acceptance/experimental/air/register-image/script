@@ -16,6 +16,9 @@ errcode trace $CLI experimental air register-image my-image:latest --tag-policy 
 title "invalid tag policy (json)"
 errcode trace $CLI experimental air register-image my-image:latest --tag-policy bogus -o json
 
+title "non-positive timeout is rejected"
+errcode trace $CLI experimental air register-image my-image:latest --timeout-minutes 0
+
 title "removed credential flags are unknown"
 errcode trace $CLI experimental air register-image my-image:latest --scope s --key k
 

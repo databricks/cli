@@ -34,6 +34,8 @@ func TestClassifyRegistrationError(t *testing.T) {
 		{"wait timeout", fmt.Errorf("%w within 1m0s", errImageWaitTimeout), "TRANSIENT", true},
 		{"rate limited", apierr.ErrTooManyRequests, "TRANSIENT", true},
 		{"server error", apierr.ErrInternalError, "TRANSIENT", true},
+		{"unavailable", apierr.ErrTemporarilyUnavailable, "TRANSIENT", true},
+		{"deadline exceeded", apierr.ErrDeadlineExceeded, "TRANSIENT", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

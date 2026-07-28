@@ -63,6 +63,12 @@ Exit code: 1
 
 Exit code: 1
 
+=== non-positive timeout is rejected
+>>> [CLI] experimental air register-image my-image:latest --timeout-minutes 0
+Error: --timeout-minutes must be positive, got 0
+
+Exit code: 1
+
 === removed credential flags are unknown
 >>> [CLI] experimental air register-image my-image:latest --scope s --key k
 Error: unknown flag: --scope

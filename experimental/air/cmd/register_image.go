@@ -90,6 +90,11 @@ configuration (run ` + "`docker login`" + ` first); there are no credential flag
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 		}
 
+		if timeoutMinutes <= 0 {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				fmt.Errorf("--timeout-minutes must be positive, got %d", timeoutMinutes))
+		}
+
 		w := cmdctx.WorkspaceClient(ctx)
 
 		// Validate authentication against the workspace before registering
