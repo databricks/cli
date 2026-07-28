@@ -1,15 +1,27 @@
 package dresources
 
 import (
+	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/run/progress"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
+
+// jobRunTimeout bounds the wait for a run to finish, matching `bundle run`
+// (jobRunTimeout in bundle/run/job.go).
+const jobRunTimeout = 24 * time.Hour
 
 // JobRunState is what we persist for a triggered run: the RunNow request.
 type JobRunState struct {
@@ -100,7 +112,7 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 		RunId:      run.RunId,
 		RunName:    run.RunName,
 		State:      run.State,
-		RunPageUrl: run.RunPageUrl,
+		RunPageUrl: workspaceurls.ModernizeJobRunPageURL(run.RunPageUrl),
 		RunType:    run.RunType,
 	}
 }
@@ -138,12 +150,141 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 	return strconv.FormatInt(wait.RunId, 10), nil, nil
 }
 
+// WaitAfterCreate blocks until the triggered run finishes, so a resource that
+// references this run's output (e.g. state.result_state) is created only once the
+// run has produced it. Only a SUCCESS lets the deploy continue.
+func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobRunState) (*JobRunRemote, error) {
+	runID, err := parseRunID(id)
+	if err != nil {
+		return nil, err
+	}
+	return r.waitForRun(ctx, runID)
+}
+
+// waitForRun blocks until the run reaches a terminal state and returns its
+// remote view; only SUCCESS returns a nil error.
+func (r *ResourceJobRun) waitForRun(ctx context.Context, runID int64) (*JobRunRemote, error) {
+	// A run can take hours, so report progress like `bundle run` does. pageURL
+	// outlives the callback so an abandoned wait can still link the run.
+	var prevState *jobs.RunState
+	var pageURL string
+	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, jobRunTimeout, func(run *jobs.Run) {
+		pageURL = run.RunPageUrl
+		prevState = logRunProgress(ctx, run, prevState)
+	})
+	if err != nil {
+		// The run hit INTERNAL_ERROR, or we gave up on timeout or interrupt while it
+		// kept going; either way the run id is what makes the error actionable.
+		return nil, fmt.Errorf("waiting for job run %d: %w%s", runID, err, runPageLine(pageURL))
+	}
+	// FAILED, TIMEDOUT, CANCELED, SUCCESS_WITH_FAILURES and SKIPPED all fail the
+	// deploy; the waiter already errored on INTERNAL_ERROR and on timeout.
+	if run.State.ResultState != jobs.RunResultStateSuccess {
+		return nil, r.runFailedError(ctx, run)
+	}
+	return makeJobRunRemote(run), nil
+}
+
+// runFailedError reports why the run did not succeed, naming each failed task
+// and the error it reported.
+func (r *ResourceJobRun) runFailedError(ctx context.Context, run *jobs.Run) error {
+	outcome := string(run.State.ResultState)
+	if outcome == "" {
+		// A skipped run has no result_state; report the lifecycle state.
+		outcome = string(run.State.LifeCycleState)
+	}
+	var msg strings.Builder
+	fmt.Fprintf(&msg, "job run %d did not succeed: %s", run.RunId, outcome)
+	if run.State.StateMessage != "" {
+		fmt.Fprintf(&msg, ": %s", run.State.StateMessage)
+	}
+	for _, task := range run.Tasks {
+		if taskFailed(task) {
+			fmt.Fprintf(&msg, "\ntask %q: %s", task.TaskKey, r.taskError(ctx, task))
+		}
+	}
+	msg.WriteString(runPageLine(run.RunPageUrl))
+	return errors.New(msg.String())
+}
+
+// taskFailed reports whether a task caused the run to fail rather than being a
+// casualty of it. Tasks left SKIPPED or UPSTREAM_FAILED by an earlier failure
+// add noise without naming the problem.
+func taskFailed(task jobs.RunTask) bool {
+	// State is deprecated in favour of Status, so it may be absent.
+	if task.State == nil {
+		return false
+	}
+	return task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
+		task.State.ResultState == jobs.RunResultStateFailed ||
+		task.State.ResultState == jobs.RunResultStateTimedout
+}
+
+// taskError returns the message the task reported, from the same place
+// `bundle run` reads it. Only called for tasks that taskFailed accepted, so
+// State is set.
+func (r *ResourceJobRun) taskError(ctx context.Context, task jobs.RunTask) string {
+	var reported string
+	output, err := r.client.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{RunId: task.RunId})
+	if err != nil {
+		log.Debugf(ctx, "could not read output of task %s: %v", task.TaskKey, err)
+	} else {
+		reported = output.Error
+	}
+	// Not every task type reports an error through GetRunOutput, so fall back to
+	// what the run itself says about the task.
+	return cmp.Or(reported, task.State.StateMessage, string(task.State.ResultState), string(task.State.LifeCycleState))
+}
+
+// runPageLine returns a line linking the run page, or an empty string when the
+// URL is unknown.
+func runPageLine(rawURL string) string {
+	if rawURL == "" {
+		return ""
+	}
+	return "\nrun page: " + workspaceurls.ModernizeJobRunPageURL(rawURL)
+}
+
+// logRunProgress mirrors `bundle run`'s monitor: the run page URL once, then
+// each state change. It returns the state to remember for the next poll.
+func logRunProgress(ctx context.Context, run *jobs.Run, prev *jobs.RunState) *jobs.RunState {
+	if run.State == nil {
+		return prev
+	}
+	if prev != nil &&
+		prev.LifeCycleState == run.State.LifeCycleState &&
+		prev.ResultState == run.State.ResultState {
+		return prev
+	}
+	if prev == nil && run.RunPageUrl != "" {
+		logRunLine(ctx, run.RunId, "Run URL: "+workspaceurls.ModernizeJobRunPageURL(run.RunPageUrl))
+	}
+	logRunLine(ctx, run.RunId, (&progress.JobProgressEvent{
+		Timestamp: time.Now(),
+		JobId:     run.JobId,
+		RunId:     run.RunId,
+		RunName:   run.RunName,
+		State:     *run.State,
+	}).String())
+	return run.State
+}
+
+// logRunLine reports one line about a run to the user and the log. Resources
+// deploy concurrently onto one stream, so the user-facing copy names the run it
+// describes; the log already carries the resource key via log.WithPrefix.
+func logRunLine(ctx context.Context, runID int64, msg string) {
+	log.Info(ctx, msg)
+	if cmdio.HasIO(ctx) {
+		cmdio.LogString(ctx, fmt.Sprintf("job run %d: %s", runID, msg))
+	}
+}
+
 // DoUpdate is intentionally not implemented: a run can't be modified in place,
 // so any change recreates it (delete + a fresh RunNow).
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the
-// recreate path. The API rejects a still-active run; this milestone doesn't
-// await completion, so that error surfaces to the user.
+// recreate path. The API rejects a still-active run, which WaitAfterCreate
+// leaves terminal; that error surfaces for a run whose wait was interrupted.
 func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *JobRunState) error {
 	runID, err := parseRunID(id)
 	if err != nil {
