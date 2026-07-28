@@ -3,9 +3,14 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/files...
 Deploying resources...
+resources.job_runs.my_run: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+resources.job_runs.my_run: [TIMESTAMP] "my-job" RUNNING
 resources.job_runs.my_run: [TIMESTAMP] "my-job" TERMINATED FAILED task main failed
 Error: cannot create resources.job_runs.my_run: job run [NUMID] did not succeed: FAILED: task main failed
-task "main": notebook not found in workspace: /Workspace/missing-notebook
+task "main": spark python task execution failed: exit status 1
+intentional failure
+
+run page: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 redeploying reports this same run; set rerun_token to a new value to run the job again
 
 Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
