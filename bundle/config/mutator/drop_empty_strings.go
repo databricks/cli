@@ -32,12 +32,27 @@ func (m *dropEmptyStrings) Name() string {
 func (m *dropEmptyStrings) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return dyn.Map(root, "resources", func(_ dyn.Path, resources dyn.Value) (dyn.Value, error) {
+		root, err := dyn.Map(root, "resources", func(_ dyn.Path, resources dyn.Value) (dyn.Value, error) {
 			// Normalize against the resources type so omitempty is known per field.
 			// Only DropEmptyStrings is set: existing values are kept as-is otherwise.
 			out, normDiags := convert.Normalize(config.Resources{}, resources, convert.DropEmptyStrings)
 			diags = diags.Extend(normDiags)
 			return out, nil
+		})
+		if err != nil {
+			return root, err
+		}
+
+		// It seems safe to send an empty description "" to the backend, but for apps
+		// it causes drift in terraform: the Apps API always returns "" for an unset
+		// description, so bundle/deploy/terraform/tfdyn/convert_app.go injects it
+		// anyway. To avoid an unnecessary difference between the direct and terraform
+		// engines, keep the empty apps description here instead of dropping it.
+		return dyn.MapByPattern(root, dyn.NewPattern(dyn.Key("resources"), dyn.Key("apps"), dyn.AnyKey()), func(_ dyn.Path, app dyn.Value) (dyn.Value, error) {
+			if _, err := dyn.Get(app, "description"); err != nil {
+				return dyn.Set(app, "description", dyn.V(""))
+			}
+			return app, nil
 		})
 	})
 	if err != nil {
