@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Compute which empty-string fields each engine dropped from create requests.
+"""Diff terraform vs direct create-request bodies to show empty-string handling.
 
-Reads recorded requests (out.requests.<engine>.json) for both engines plus the
-list of fields set to "" in config (empty_fields.txt, one "<create-path> <field>"
-per line). For each engine a field counts as "dropped" when it was set empty in
-config but is absent from that engine's matching create-request body. Emits four
-files so the direct/terraform difference is visible and reviewable in a diff.
+Both engines deploy the same config, so their create requests have the same
+shape; any body field one engine sends that the other omits is a field that
+engine kept and the other dropped. Comparing the two request sets therefore
+yields the difference directly, with no reference list of configured fields:
+
+  out.empty_fields_dropped_by_terraform_only.txt  present in direct, not terraform
+  out.empty_fields_dropped_direct_only.txt        present in terraform, not direct
+
+(The direct engine currently sends every "" while terraform drops them, so today
+the first file lists the whole gap and the second is empty.)
 """
 
 import json
@@ -27,16 +32,13 @@ def read_json_many(text):
     return objects
 
 
-def present_fields(engine):
-    """Return [(request_path, {body field paths}), ...] for each create request."""
-    result = []
+def body_fields(engine):
+    """Return {request_path: {body field paths}} for each recorded create request."""
+    result = {}
     path = Path(f"out.requests.{engine}.json")
-    if not path.exists():
-        return result
     for req in read_json_many(path.read_text()):
-        fields = set()
+        fields = result.setdefault(req.get("path", ""), set())
         _collect(req.get("body", {}), "", fields)
-        result.append((req.get("path", ""), fields))
     return result
 
 
@@ -51,46 +53,25 @@ def _collect(obj, prefix, out):
             _collect(item, prefix, out)
 
 
-def dropped(empty_fields, present):
-    """Return "<path> <field>" entries set empty but absent from the matching request.
-
-    An entry's create_path (e.g. "clusters/create", "pipelines") is matched as a
-    substring of the recorded request path (e.g. "/api/2.1/clusters/create").
-    """
+def only_in(a, b):
+    """Return sorted "<path> <field>" present in engine a's request but not b's."""
     out = []
-    for create_path, field in empty_fields:
-        sent = any(field in fields for path, fields in present if create_path in path)
-        if not sent:
-            out.append(f"{create_path} {field}")
-    return out
+    for path, fields in a.items():
+        for field in fields - b.get(path, set()):
+            out.append(f"{path} {field}")
+    return sorted(out)
 
 
 def main():
-    empty_fields = []
-    for line in Path("empty_fields.txt").read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#"):
-            create_path, field = line.split()
-            empty_fields.append((create_path, field))
-    empty_fields.sort()
+    tf = body_fields("terraform")
+    direct = body_fields("direct")
 
-    tf = present_fields("terraform")
-    direct = present_fields("direct")
-
-    dropped_tf = dropped(empty_fields, tf)
-    dropped_direct = dropped(empty_fields, direct)
-
-    tf_only = [f for f in dropped_tf if f not in dropped_direct]
-    direct_only = [f for f in dropped_direct if f not in dropped_tf]
-
-    _write("out.empty_fields_dropped_by_terraform.txt", dropped_tf)
-    _write("out.empty_fields_dropped_by_direct.txt", dropped_direct)
-    _write("out.empty_fields_dropped_by_terraform_only.txt", tf_only)
-    _write("out.empty_fields_dropped_direct_only.txt", direct_only)
+    _write("out.empty_fields_dropped_by_terraform_only.txt", only_in(direct, tf))
+    _write("out.empty_fields_dropped_direct_only.txt", only_in(tf, direct))
 
 
-def _write(name, fields):
-    Path(name).write_text("".join(f + "\n" for f in fields))
+def _write(name, lines):
+    Path(name).write_text("".join(line + "\n" for line in lines))
 
 
 if __name__ == "__main__":

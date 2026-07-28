@@ -1,0 +1,54 @@
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "budget_policy_id": "",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
+    },
+    "description": "",
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "git_source": {
+      "git_branch": "main",
+      "git_provider": "gitHub",
+      "git_url": "https://example.com/repo"
+    },
+    "job_clusters": [
+      {
+        "job_cluster_key": "main",
+        "new_cluster": {
+          "aws_attributes": {
+            "availability": "SPOT",
+            "instance_profile_arn": "",
+            "zone_id": ""
+          },
+          "cluster_log_conf": {
+            "s3": {
+              "canned_acl": "",
+              "destination": "s3://test-bucket/logs",
+              "encryption_type": "",
+              "endpoint": "",
+              "kms_key": "",
+              "region": ""
+            }
+          },
+          "cluster_name": "",
+          "node_type_id": "",
+          "num_workers": 1,
+          "policy_id": "",
+          "single_user_name": "",
+          "spark_version": ""
+        }
+      }
+    ],
+    "max_concurrent_runs": 1,
+    "name": "",
+    "parent_path": "",
+    "queue": {
+      "enabled": true
+    },
+    "usage_policy_id": ""
+  }
+}
