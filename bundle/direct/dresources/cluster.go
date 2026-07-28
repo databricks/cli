@@ -203,7 +203,7 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 		return nil, err
 	} else if !desiredStarted && alreadyRunning {
 		// lifecycle.started=false: fire Delete; WaitAfterUpdate polls for TERMINATED.
-		// Delete does not remove the cluster, it just sets the state to TERMINATED.
+		// Note: Delete terminates the cluster; permanent removal is a separate API (permanent-delete).
 		_, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
 		return nil, err
 	}
@@ -237,6 +237,7 @@ func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config
 
 	if config.Lifecycle != nil && config.Lifecycle.Started != nil && !*config.Lifecycle.Started {
 		// started=false: terminate the cluster after it reaches RUNNING.
+		// Note: Delete terminates the cluster; permanent removal is a separate API (permanent-delete).
 		deleteWaiter, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
 		if err != nil {
 			return nil, err
