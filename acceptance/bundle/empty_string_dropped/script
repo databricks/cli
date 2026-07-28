@@ -12,9 +12,9 @@ $CLI bundle validate -o json -t direct | jq .resources > out.validate.json
 
 # Exclude non-create traffic: workspace file ops and telemetry (nondeterministic).
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy -t tf
-print_requests.py ^/api/2.0/workspace ^/telemetry --sort > out.requests.terraform.json
+print_requests.py ^//api/2.0/workspace ^//telemetry --sort > out.requests.terraform.json
 
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy -t direct
-print_requests.py ^/api/2.0/workspace ^/telemetry --sort > out.requests.direct.json
+print_requests.py ^//api/2.0/workspace ^//telemetry --sort > out.requests.direct.json
 
 $TESTDIR/empty_sent.py
