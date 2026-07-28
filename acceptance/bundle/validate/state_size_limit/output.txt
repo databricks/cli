@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle validate
+Error: resources.jobs.oversized has a serialized state of 70278 bytes, which exceeds the 65536 byte limit for recording deployment history
+  at resources.jobs.oversized
+  in databricks.yml:10:7
+
+Deployment history records the state of each resource, and this resource is too
+large to record. Move the oversized field out of the resource definition, for
+example by pointing a task at a workspace file instead of inlining its contents.
+
+
+Name: state_size_limit
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/state_size_limit/default
+
+Found 1 error
+
+Exit code: 1
