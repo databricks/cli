@@ -670,6 +670,11 @@ func isEmptyStruct(rv reflect.Value) bool {
 // For regular resources like "resources.jobs.foo.name", returns ("resources.jobs.foo", "name").
 // For sub-resources like "resources.jobs.foo.permissions[0].level", returns ("resources.jobs.foo.permissions", "[0].level").
 func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode) {
+	// Internal resources: "internal.<name>.<field>" — key is first two components.
+	if key, ok := path.Prefix(1).StringKey(); ok && key == "internal" {
+		return path.Prefix(2).String(), path.SkipPrefix(2)
+	}
+
 	// Check if the 4th component is "permissions" or "grants" (sub-resource)
 	if path.Len() > 4 {
 		first := path.SkipPrefix(3).Prefix(1)
@@ -681,12 +686,6 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	// ${workspace.snapshot_path} is resolved by the mutator pipeline after
-	// snapshot.Upload() — not by the direct engine. Return errDelayed so the
-	// template string is preserved in the plan output rather than causing an error.
-	if path.String() == "workspace.snapshot_path" {
-		return nil, errDelayed
-	}
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 
@@ -744,7 +743,7 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	localConfig := sv.Value
 
-	adapter := b.Adapters[targetGroup]
+	adapter, err := b.getAdapterForKey(targetResourceKey)
 	if adapter == nil {
 		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)
 	}
@@ -919,8 +918,29 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 	}
 
-	slices.Sort(nodes)
+	// If configRoot is nil it means we are destroying the bundle,
+	// so we don't need to prepare internal resources same way as for regular resources.
+	if configRoot != nil {
+		// Register internal resources first so regular resources can depend on them.
+		for _, ir := range b.InternalResources {
+			delete(existingKeys, ir.Key) // prevent it being marked for deletion
 
+			stateVal, err := ir.Adapter.PrepareState(ir.InputConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: preparing state: %w", ir.Key, err)
+			}
+			sv := &structvar.StructVar{Value: stateVal}
+			b.StateCache.Store(ir.Key, sv)
+
+			newStateJSON, err := sv.ToJSON()
+			if err != nil {
+				return nil, fmt.Errorf("%s: serializing state: %w", ir.Key, err)
+			}
+			p.Plan[ir.Key] = &deployplan.PlanEntry{NewState: newStateJSON}
+		}
+	}
+
+	slices.Sort(nodes)
 	for _, node := range nodes {
 		delete(existingKeys, node)
 
@@ -994,11 +1014,8 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 					return nil, fmt.Errorf("parsing %q: %w", targetPath, err)
 				}
 
-				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
-				targetNode := targetNodeDP.String()
-				// ${workspace.snapshot_path} is resolved by the mutator pipeline after
-				// snapshot.Upload(), not by the direct engine — skip it here.
-				if targetPath == "workspace.snapshot_path" {
+				targetNode := resourceNodeFromPath(targetPath, targetPathParsed)
+				if targetNode == "" {
 					continue
 				}
 
@@ -1057,6 +1074,11 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		p.Plan[n] = &deployplan.PlanEntry{
 			Action:    deployplan.Delete,
 			DependsOn: entry.DependsOn,
+		}
+
+		// If the node is an internal snapshot resource, we need to mark it as gone because it can't be deleted.
+		if n == "internal.snapshot" {
+			p.Plan[n].Gone = true
 		}
 	}
 
@@ -1135,7 +1157,27 @@ func dynPathToStructPath(p dyn.Path) *structpath.PathNode {
 	return node
 }
 
+// resourceNodeFromPath extracts the plan node key from a reference target path.
+// Returns "" for paths that aren't plan nodes (e.g. bundle.*, variables.*).
+func resourceNodeFromPath(targetPath string, parsed dyn.Path) string {
+	if strings.HasPrefix(targetPath, "internal.") {
+		// "internal.<name>.<field>" → "internal.<name>"
+		parts := strings.SplitN(targetPath, ".", 3)
+		if len(parts) >= 2 {
+			return parts[0] + "." + parts[1]
+		}
+		return ""
+	}
+	node, _ := config.GetNodeAndType(parsed)
+	return node.String()
+}
+
 func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Adapter, error) {
+	// Internal resources are looked up by exact key, not by parsed group.
+	if adapter := b.findInternalAdapter(resourceKey); adapter != nil {
+		return adapter, nil
+	}
+
 	group := config.GetResourceTypeFromKey(resourceKey)
 	if group == "" {
 		return nil, fmt.Errorf("internal error: bad node: %s", resourceKey)

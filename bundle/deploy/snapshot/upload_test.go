@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
+	libsnapshot "github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,7 +30,7 @@ func TestBuildACLCurrentUserOnly(t *testing.T) {
 
 	acl := snapshot.BuildACL(b)
 
-	assert.Equal(t, []snapshot.ACLEntry{
+	assert.Equal(t, []libsnapshot.ACLEntry{
 		{UserName: "alice@example.com", PermissionLevel: "CAN_READ"},
 	}, acl)
 }
@@ -44,7 +45,7 @@ func TestBuildACLWithTopLevelPermissions(t *testing.T) {
 
 	acl := snapshot.BuildACL(b)
 
-	assert.Equal(t, []snapshot.ACLEntry{
+	assert.Equal(t, []libsnapshot.ACLEntry{
 		{UserName: "alice@example.com", PermissionLevel: "CAN_READ"},
 		{UserName: "bob@example.com", PermissionLevel: "CAN_READ"},
 		{GroupName: "devs", PermissionLevel: "CAN_READ"},

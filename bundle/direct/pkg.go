@@ -39,11 +39,42 @@ type DeploymentUnit struct {
 
 // DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
-	StateDB          dstate.DeploymentState
-	Adapters         map[string]*dresources.Adapter
-	Plan             *deployplan.Plan
-	RemoteStateCache sync.Map
-	StateCache       structvar.Cache
+	StateDB           dstate.DeploymentState
+	Adapters          map[string]*dresources.Adapter
+	InternalResources []InternalResource
+	Plan              *deployplan.Plan
+	RemoteStateCache  sync.Map
+	StateCache        structvar.Cache
+}
+
+type InternalResource struct {
+	Key         string
+	Adapter     *dresources.Adapter
+	InputConfig any // passed to adapter.PrepareState during makePlan
+}
+
+// RegisterInternalResource creates an adapter from instance and queues the
+// resource for planning and apply. Must be called before CalculatePlan.
+func (b *DeploymentBundle) RegisterInternalResource(key string, instance any, inputConfig any) error {
+	adapter, err := dresources.NewAdapterFromInstance(instance, key)
+	if err != nil {
+		return fmt.Errorf("registering internal resource %s: %w", key, err)
+	}
+	b.InternalResources = append(b.InternalResources, InternalResource{
+		Key:         key,
+		Adapter:     adapter,
+		InputConfig: inputConfig,
+	})
+	return nil
+}
+
+func (b *DeploymentBundle) findInternalAdapter(key string) *dresources.Adapter {
+	for i := range b.InternalResources {
+		if b.InternalResources[i].Key == key {
+			return b.InternalResources[i].Adapter
+		}
+	}
+	return nil
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

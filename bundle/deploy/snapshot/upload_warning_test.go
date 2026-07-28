@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
@@ -20,8 +21,12 @@ import (
 
 type mockUploader struct{ path string }
 
-func (m *mockUploader) Upload(_ context.Context, _, _ string, _ []ACLEntry, _ []byte) (*SnapshotInfo, error) {
-	return &SnapshotInfo{Path: m.path}, nil
+func (m *mockUploader) Upload(_ context.Context, _, _ string, _ []snapshot.ACLEntry, _ []byte) (*snapshot.SnapshotInfo, error) {
+	return &snapshot.SnapshotInfo{Path: m.path}, nil
+}
+
+func (m *mockUploader) Get(_ context.Context, _ string) (*snapshot.SnapshotInfo, error) {
+	return &snapshot.SnapshotInfo{Path: m.path}, nil
 }
 
 func makeBundle(t *testing.T, nFiles int) *bundle.Bundle {

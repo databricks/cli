@@ -35,12 +35,15 @@ type ACLEntry struct {
 // the same workspace location.
 // This interface exists so the implementation can later be replaced with a Go SDK call.
 type SnapshotUploader interface {
-	Upload(ctx context.Context, bundleID, snapshotID string, acl []ACLEntry, zipContent []byte) (*SnapshotInfo, error)
+	GetSnapshotRootPath(ctx context.Context) (string, error)
+	Upload(ctx context.Context, path, bundleID string, acl []ACLEntry, zipContent []byte) (*SnapshotInfo, error)
+	Get(ctx context.Context, path string) (*SnapshotInfo, error)
 }
 
 // snapshotAPIClient implements SnapshotUploader against /api/2.0/repos/snapshots.
 type snapshotAPIClient struct {
-	client *databricksclient.DatabricksClient
+	workspaceClient *databricks.WorkspaceClient
+	client          *databricksclient.DatabricksClient
 }
 
 // snapshotUploadResponse mirrors the /api/2.0/repos/snapshots response body.
@@ -50,23 +53,27 @@ type snapshotUploadResponse struct {
 	} `json:"snapshot"`
 }
 
+type snapshotRootPathResponse struct {
+	Path string `json:"path"`
+}
+
 // NewSnapshotUploader creates a SnapshotUploader backed by /api/2.0/repos/snapshots.
 func NewSnapshotUploader(w *databricks.WorkspaceClient) (SnapshotUploader, error) {
 	c, err := databricksclient.New(w.Config)
 	if err != nil {
 		return nil, err
 	}
-	return &snapshotAPIClient{client: c}, nil
+	return &snapshotAPIClient{workspaceClient: w, client: c}, nil
 }
 
 // Upload uploads zipContent as an immutable snapshot identified by snapshotID.
 // snapshotID is the SHA-256 of the zip and is used by the server as the
 // content-addressed path component. acl grants CAN_READ to each listed principal.
-func (c *snapshotAPIClient) Upload(ctx context.Context, bundleID, snapshotID string, acl []ACLEntry, zipContent []byte) (*SnapshotInfo, error) {
+func (c *snapshotAPIClient) Upload(ctx context.Context, path, bundleID string, acl []ACLEntry, zipContent []byte) (*SnapshotInfo, error) {
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
 
-	if err := mw.WriteField("snapshot_id", snapshotID); err != nil {
+	if err := mw.WriteField("snapshot_id", HashFromContent(zipContent)); err != nil {
 		return nil, fmt.Errorf("failed to write snapshot_id: %w", err)
 	}
 	if err := mw.WriteField("bundle_id", bundleID); err != nil {
@@ -111,4 +118,21 @@ func (c *snapshotAPIClient) Upload(ctx context.Context, bundleID, snapshotID str
 	}
 
 	return &SnapshotInfo{Path: resp.Snapshot.Path}, nil
+}
+
+func (c *snapshotAPIClient) Get(ctx context.Context, path string) (*SnapshotInfo, error) {
+	resp, err := c.workspaceClient.Workspace.GetStatusByPath(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("snapshot get: %w", err)
+	}
+	return &SnapshotInfo{Path: resp.Path}, nil
+}
+
+func (c *snapshotAPIClient) GetSnapshotRootPath(ctx context.Context) (string, error) {
+	var resp snapshotRootPathResponse
+	err := c.client.Do(ctx, http.MethodGet, "/api/2.0/repos/snapshots/rootpath", auth.WorkspaceIDHeaders(c.client.Config), nil, nil, &resp)
+	if err != nil {
+		return "", fmt.Errorf("snapshot root path get: %w", err)
+	}
+	return resp.Path, nil
 }

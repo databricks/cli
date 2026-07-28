@@ -795,3 +795,11 @@ resources:
     backend_defaults:
       # The Vector Search API assigns index_subtype when the config omits it
       - field: index_subtype
+
+internal:
+  snapshot:
+    recreate_on_changes:
+      - field: full_path
+        reason: immutable
+      - field: relative_path
+        reason: immutable
