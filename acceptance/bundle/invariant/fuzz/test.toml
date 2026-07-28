@@ -17,10 +17,10 @@ Timeout = '20m'
 # failing the whole run.
 IgnoreUnhandledRequests = true
 
-# Run each target's real invariant script. The idempotency targets are the two whose oracle
-# holds regardless of how faithfully the fake server round-trips fields: a delete or destroy
-# re-run against state that still references the removed resources must succeed. No redeploy
-# target: no_drift's post-deploy plan already dry-runs a redeploy, and the only surface a real
+# Run each target's real invariant script. The idempotency targets assert that a delete or
+# destroy re-run against state that still references the removed resources succeeds, which
+# holds regardless of how faithfully the fake server round-trips fields. No redeploy target:
+# no_drift's post-deploy plan already dry-runs a redeploy, and the only surface a real
 # redeploy adds (plan/apply divergence) never surfaced a bug in nightly runs.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "delete_idempotent", "destroy_idempotent"]
 
@@ -34,3 +34,11 @@ EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
 # bases are direct-only or permanently drift (catalog, external_location, sql_warehouse), and
 # emptying a grants list reproduces no_empty_grants. Re-enable once databricks/cli#6039 lands.
 EnvMatrixExclude.no_mutate_on_migrate = ["FUZZ_MODE=mutate", "FUZZ_TARGET=migrate"]
+
+# The already-gone delete path is selected by resource type, and ../delete_idempotent and
+# ../destroy_idempotent already run every type in the INPUT_CONFIG matrix. Generate mode adds
+# no axis on top: it pins name/display_name, so it cannot vary the identifier the delete call
+# uses, and its dangerous values only reach free-form strings no delete path reads. Mutate can
+# hit the identifier and reshape grants/permissions, so it is the mode worth running here.
+EnvMatrixExclude.no_generate_on_delete_idempotent = ["FUZZ_MODE=generate", "FUZZ_TARGET=delete_idempotent"]
+EnvMatrixExclude.no_generate_on_destroy_idempotent = ["FUZZ_MODE=generate", "FUZZ_TARGET=destroy_idempotent"]
