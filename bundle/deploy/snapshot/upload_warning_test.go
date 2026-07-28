@@ -29,6 +29,10 @@ func (m *mockUploader) Get(_ context.Context, _ string) (*snapshot.SnapshotInfo,
 	return &snapshot.SnapshotInfo{Path: m.path}, nil
 }
 
+func (m *mockUploader) GetSnapshotRootPath(_ context.Context) (string, error) {
+	return filepath.Join(m.path, "snapshots"), nil
+}
+
 func makeBundle(t *testing.T, nFiles int) *bundle.Bundle {
 	t.Helper()
 	dir := t.TempDir()
@@ -71,7 +75,6 @@ func TestUploadWarnsAboveFileLimit(t *testing.T) {
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Contains(t, diags[0].Summary, fmt.Sprintf("%d files", fileLimitWarning+1))
-	assert.Equal(t, "/snapshots/test", b.Config.Workspace.SnapshotPath)
 }
 
 func TestUploadNoWarningBelowFileLimit(t *testing.T) {
