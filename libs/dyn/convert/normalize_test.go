@@ -995,7 +995,7 @@ func TestNormalizeStructDropEmptyStrings(t *testing.T) {
 	assert.False(t, hasOpt, "empty omitempty string should be dropped")
 	req, hasReq := vout.MustMap().Get(dyn.V("req"))
 	assert.True(t, hasReq, "empty non-omitempty string should be kept")
-	assert.Equal(t, "", req.MustString())
+	assert.Empty(t, req.MustString())
 }
 
 func TestNormalizeStructDropEmptyStringsKeepsNonEmpty(t *testing.T) {
