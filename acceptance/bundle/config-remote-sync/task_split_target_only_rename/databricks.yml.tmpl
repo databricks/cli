@@ -2,9 +2,9 @@ bundle:
   name: test-bundle-$UNIQUE_NAME
 
 # Two targets. dev_only_task exists ONLY in the targets.dev override block.
-# Renaming it (remove+add) must keep the recreated task in targets.dev, reusing
-# the removed task's slot. If it were relocated to the top-level block it would
-# start applying to prod too — a silent multi-target semantics change.
+# A rename is an unpaired remove+add, so config sync cannot prove that the add
+# belongs in targets.dev. It must leave both operations stale rather than risk
+# relocating the task to the top-level block where it would also affect prod.
 resources:
   jobs:
     my_job:

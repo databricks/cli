@@ -14,23 +14,9 @@ Resource: resources.jobs.my_job
 
 
 
-=== Result: where did renamed_task land?
+=== Result: ambiguous rename stays stale
 
 >>> diff.py databricks.yml.backup databricks.yml
---- databricks.yml.backup
-+++ databricks.yml
-@@ -22,8 +22,7 @@
-         my_job:
-           tasks:
--            - task_key: dev_only_task
--              run_if: ALL_SUCCESS
--              notebook_task:
--                notebook_path: /Users/{{workspace_user_name}}/dev
-+            - notebook_task:
-+                notebook_path: '/Users/{{workspace_user_name}}/dev'
-+              task_key: renamed_task
-   prod:
-     resources:
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:

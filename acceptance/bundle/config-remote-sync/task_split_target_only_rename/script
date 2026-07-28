@@ -18,7 +18,7 @@ title "Sync (target dev)"
 echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save -t dev
-title "Result: where did renamed_task land?"
+title "Result: ambiguous rename stays stale"
 echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup

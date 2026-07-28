@@ -51,6 +51,10 @@ for t in r["tasks"]:
     if t["task_key"] == "mmm_task": t["task_key"] = "ppp_task"
     if t["task_key"] == "aaa_task": t["task_key"] = "qqq_task"
 '
+# A change that does not enter the split sequence is still safe to apply.
+apply_edit job_scalar '
+r["timeout_seconds"] = 200
+'
 
 title "Detect and save changes"
 echo

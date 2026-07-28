@@ -3,8 +3,8 @@ bundle:
 
 # job_clusters are keyed (merge.ElementsByKey by job_cluster_key, non-sorted);
 # pipeline clusters are positional (no KeyedSlices, so changes diff by numeric
-# index). Both sequences are split across the top-level block and the
-# targets.default override, exercising both resolveSelectors branches.
+# index). Changes to either kind of split sequence must be left stale because
+# the merged value cannot always be mapped safely back to its YAML block.
 resources:
   jobs:
     my_job:

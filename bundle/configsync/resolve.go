@@ -188,6 +188,49 @@ func pathDepth(pathStr string) int {
 	return len(node.AsSlice())
 }
 
+// pathTouchesSplitSequence reports whether resolving path crosses a sequence
+// assembled from multiple YAML blocks. The merged value does not retain enough
+// per-element provenance to map every remote edit back to the correct block, so
+// callers must not emit patches for resources containing such changes.
+func pathTouchesSplitSequence(pathStr string, b *bundle.Bundle) (bool, error) {
+	node, err := structpath.ParsePath(pathStr)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
+	}
+
+	currentValue := b.Config.Value()
+	for _, n := range node.AsSlice() {
+		if currentValue.IsValid() && currentValue.Kind() == dyn.KindSequence && len(currentValue.Locations()) > 1 {
+			return true, nil
+		}
+
+		if key, ok := n.StringKey(); ok {
+			currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Key(key)})
+			continue
+		}
+		if idx, ok := n.Index(); ok {
+			currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Index(idx)})
+			continue
+		}
+		if key, value, ok := n.KeyValue(); ok {
+			seq, ok := currentValue.AsSequence()
+			if !ok {
+				return false, nil
+			}
+			currentValue = dyn.Value{}
+			for _, elem := range seq {
+				keyValue, err := dyn.GetByPath(elem, dyn.Path{dyn.Key(key)})
+				if err == nil && keyValue.Kind() == dyn.KindString && keyValue.MustString() == value {
+					currentValue = elem
+					break
+				}
+			}
+		}
+	}
+
+	return currentValue.IsValid() && currentValue.Kind() == dyn.KindSequence && len(currentValue.Locations()) > 1, nil
+}
+
 // blockScopedParent namespaces per-sequence index bookkeeping by block. A target
 // override block and the top-level block share the same unprefixed parent path
 // but keep block-local indices, so add/remove operations in one block must not
@@ -251,6 +294,26 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 
 	for _, resourceKey := range resourceKeys {
 		resourceChanges := configChanges[resourceKey]
+
+		// A split sequence can contain an unpaired remove/add rename and elements
+		// whose target-block location was collapsed by the merge. Skip the whole
+		// resource before resolving any fields so a compound edit cannot be applied
+		// partially and corrupt the source YAML.
+		skipResource := false
+		for fieldPath := range resourceChanges {
+			split, err := pathTouchesSplitSequence(resourceKey+"."+fieldPath, b)
+			if err != nil {
+				return nil, err
+			}
+			if split {
+				skipResource = true
+				break
+			}
+		}
+		if skipResource {
+			log.Debugf(ctx, "Skipping config sync for resource %s because a changed sequence is defined in multiple YAML blocks", resourceKey)
+			continue
+		}
 
 		fieldPaths := make([]string, 0, len(resourceChanges))
 		fieldPathsDepths := map[string]int{}

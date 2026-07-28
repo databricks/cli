@@ -3,10 +3,9 @@ bundle:
 
 # Each job below defines tasks partly in the top-level block and partly in the
 # targets.default override block. MergeJobTasks merges and sorts them by
-# task_key into one in-memory sequence, but each block is patched separately in
-# the YAML, so block-aware indexing must resolve edits to the right block.
-# Multiple split jobs in one bundle also prove block anchors are grouped per
-# resource, not globally across the file.
+# task_key into one in-memory sequence, but each block is a separate region of
+# YAML. Config sync must leave changes to these sequences stale instead of
+# risking a write to the wrong block.
 resources:
   jobs:
     # target_index: edit a top-level task (bbb) that is not first after the sort.
@@ -79,6 +78,14 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/nnn
 
+    # A scalar edit remains safe even when another field is a split sequence.
+    job_scalar:
+      timeout_seconds: 100
+      tasks:
+        - task_key: top_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/top
+
 targets:
   default:
     mode: development
@@ -124,3 +131,8 @@ targets:
               run_if: ALL_SUCCESS
               notebook_task:
                 notebook_path: /Users/{{workspace_user_name}}/aaa
+        job_scalar:
+          tasks:
+            - task_key: target_task
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/target

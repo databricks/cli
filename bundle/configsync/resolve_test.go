@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
@@ -296,4 +297,56 @@ func TestElementInOverrideBlock(t *testing.T) {
 	multiFile := []dyn.Location{{File: "a.yml", Line: 6}, {File: "b.yml", Line: 4}}
 	assert.True(t, elementInOverrideBlock(dyn.Location{File: "b.yml", Line: 6}, multiFile))  // target block, other file
 	assert.False(t, elementInOverrideBlock(dyn.Location{File: "a.yml", Line: 8}, multiFile)) // top-level block
+}
+
+func TestResolveChangesSkipsResourceWithChangedSplitSequence(t *testing.T) {
+	ctx := logdiag.InitContext(t.Context())
+	tmpDir := t.TempDir()
+	yamlContent := `bundle:
+  name: test
+resources:
+  jobs:
+    split_job:
+      name: split
+      tasks:
+        - task_key: top
+          description: top
+    regular_job:
+      name: regular
+targets:
+  default:
+    default: true
+    resources:
+      jobs:
+        split_job:
+          tasks:
+            - task_key: target
+              description: target
+`
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "databricks.yml"), []byte(yamlContent), 0o644))
+
+	b, err := bundle.Load(ctx, tmpDir)
+	require.NoError(t, err)
+	mutator.DefaultMutators(ctx, b)
+	diags := bundle.Apply(ctx, b, mutator.SelectTarget("default"))
+	require.NoError(t, diags.Error())
+	diags = bundle.Apply(ctx, b, resourcemutator.MergeJobTasks())
+	require.NoError(t, diags.Error())
+
+	changes := Changes{
+		"resources.jobs.split_job": {
+			"name":                                 {Operation: OperationReplace, Value: "changed"},
+			"tasks[task_key='top']":                {Operation: OperationRemove},
+			"tasks[task_key='target'].description": {Operation: OperationReplace, Value: "changed"},
+			"tasks[task_key='new_task']":           {Operation: OperationAdd, Value: map[string]any{"task_key": "new_task"}},
+		},
+		"resources.jobs.regular_job": {
+			"name": {Operation: OperationReplace, Value: "changed"},
+		},
+	}
+
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
+	require.NoError(t, err)
+	require.Len(t, fieldChanges, 1)
+	assert.Equal(t, []string{"resources.jobs.regular_job.name", "targets.default.resources.jobs.regular_job.name"}, fieldChanges[0].FieldCandidates)
 }
