@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -153,6 +154,18 @@ func TestOperationQueueRecordRejectsUnsupportedAction(t *testing.T) {
 	assert.Empty(t, f.recorded())
 }
 
+func TestOperationQueueRecordRejectsOversizedState(t *testing.T) {
+	f := &fakeUploader{}
+	q := newOperationQueue(t.Context(), f)
+
+	big := map[string]string{"name": strings.Repeat("x", maxOperationStateSize)}
+	err := q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", big)
+	require.ErrorContains(t, err, "exceeds the 65536 byte limit")
+
+	require.NoError(t, q.close())
+	assert.Empty(t, f.recorded())
+}
+
 func TestOperationQueueCloseIsIdempotent(t *testing.T) {
 	f := &fakeUploader{err: errors.New("boom")}
 	q := newOperationQueue(t.Context(), f)
@@ -226,7 +239,7 @@ func TestOperationQueueUploadsOneResourceAtATime(t *testing.T) {
 	// Every distinct key was recorded, and close drained all of them.
 	assert.Len(t, u.last, distinctKeyMod)
 	assert.Empty(t, q.pending)
-	assert.Empty(t, q.inflight)
+	assert.Empty(t, q.owned)
 }
 
 func TestNilOperationQueueIsNoOp(t *testing.T) {

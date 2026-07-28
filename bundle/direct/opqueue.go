@@ -22,19 +22,15 @@ const (
 )
 
 // operationQueue uploads recorded operations from background workers, so an apply
-// worker does not wait for the CreateOperation round trip before moving on to the
-// next resource.
+// worker does not wait for the CreateOperation round trip.
 //
-// It guarantees at most one upload in flight per resource key: within a key the
-// worker that owns it uploads sequentially, so the last operation recorded for a
-// resource is also the last one the service sees.
+// At most one upload is in flight per resource key, so the last operation
+// recorded for a resource is also the last one the service sees.
 //
-// Uploads are not fire-and-forget: close drains the queue and returns the first
-// failure, which fails the deploy. That matters because a successfully completed
-// version makes DMS the source of truth for resource state (see
-// dstate.overlayDMSState); silently dropping an operation would leave DMS with an
-// incomplete resource set, and the next deploy would plan to create resources
-// that already exist.
+// Uploads are not fire-and-forget: close returns the first failure and fails the
+// deploy. A dropped operation would leave DMS with an incomplete resource set,
+// and since DMS then becomes the source of truth (see dstate.overlayDMSState),
+// the next deploy would recreate resources that already exist.
 type operationQueue struct {
 	uploader operationUploader
 
@@ -51,10 +47,11 @@ type operationQueue struct {
 	// picked up yet.
 	pending map[string]recordedOperation
 
-	// inflight holds the resource keys a worker currently owns. A key that is
-	// in flight is not queued again: the owning worker re-checks pending after its
-	// upload and picks up anything recorded in the meantime.
-	inflight map[string]bool
+	// owned holds the resource keys that are already queued or being uploaded.
+	// Such a key is never queued a second time; recording writes to pending
+	// instead, which the owning worker re-checks after each upload. This is what
+	// keeps uploads for one resource sequential.
+	owned map[string]bool
 
 	err    error
 	closed bool
@@ -74,7 +71,7 @@ func newOperationQueue(ctx context.Context, uploader operationUploader) *operati
 		uploader: uploader,
 		queue:    make(chan string, operationQueueSize),
 		pending:  make(map[string]recordedOperation),
-		inflight: make(map[string]bool),
+		owned:    make(map[string]bool),
 	}
 
 	q.wg.Add(operationUploadWorkers)
@@ -85,16 +82,14 @@ func newOperationQueue(ctx context.Context, uploader operationUploader) *operati
 	return q
 }
 
-// record serializes an operation and queues it for upload. It performs no API
-// call, so upload failures surface from close rather than here; the error
-// returned is only about turning the applied resource into a payload.
+// record serializes an operation and queues it for upload. It makes no API call,
+// so upload failures surface from close; an error here only means the applied
+// resource could not be turned into a payload.
 //
-// When an operation for the same resource is already waiting it is replaced
-// instead of queued again: DMS keeps one state per resource key, so the later
-// operation supersedes the earlier one and a single upload records both. The
-// merged operation keeps the action of a queued create (see mergeAction), so
-// collapsing a create and a later update still records a create. This is best
-// effort - only operations that have not been picked up yet are collapsed.
+// An operation for a resource that is still waiting replaces it rather than
+// queueing again: DMS keeps one state per key, so one upload records both. The
+// merge keeps a queued create's action (see mergeAction). Best effort — only
+// operations no worker has picked up yet are collapsed.
 func (q *operationQueue) record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error {
 	if q == nil {
 		return nil
@@ -107,15 +102,21 @@ func (q *operationQueue) record(ctx context.Context, resourceKey string, action 
 
 	q.mu.Lock()
 	queued, waiting := q.pending[resourceKey]
-	owned := waiting || q.inflight[resourceKey]
 	if waiting {
 		op.action = mergeAction(queued.action, op.action)
 	}
 	q.pending[resourceKey] = op
+	owned := q.owned[resourceKey]
+	q.owned[resourceKey] = true
 	q.mu.Unlock()
 
-	if owned {
+	if waiting {
 		log.Debugf(ctx, "Coalescing queued deployment operation for %s", resourceKey)
+	}
+
+	// Someone already owns this key, so pending is enough: a worker will pick the
+	// operation up. Queueing again would upload the resource twice in parallel.
+	if owned {
 		return nil
 	}
 
@@ -167,21 +168,20 @@ func (q *operationQueue) work(ctx context.Context) {
 	}
 }
 
-// take claims the operation waiting for resourceKey, marking the key in flight so
-// record does not queue it a second time. It reports false, and releases the key,
-// when nothing is waiting.
+// take claims the operation waiting for resourceKey. It reports false and gives
+// up ownership when nothing is waiting, which is what lets the next record
+// queue the key again.
 func (q *operationQueue) take(resourceKey string) (recordedOperation, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	op, ok := q.pending[resourceKey]
 	if !ok {
-		delete(q.inflight, resourceKey)
+		delete(q.owned, resourceKey)
 		return recordedOperation{}, false
 	}
 
 	delete(q.pending, resourceKey)
-	q.inflight[resourceKey] = true
 	return op, true
 }
 

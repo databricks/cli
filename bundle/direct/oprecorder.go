@@ -12,6 +12,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
+// maxOperationStateSize is the largest serialized state DMS accepts per
+// operation. Uploading more is rejected server-side, so fail early with a
+// message that names the resource.
+const maxOperationStateSize = 64 * 1024
+
 // recordedOperation is an applied resource operation, serialized and waiting to be
 // uploaded to the deployment metadata service (DMS).
 //
@@ -28,7 +33,8 @@ type recordedOperation struct {
 }
 
 // newRecordedOperation serializes an applied operation for upload. state is the
-// local config after the operation and must be nil for delete operations.
+// local config after the operation and must be nil for delete operations. It
+// errors when the serialized state exceeds maxOperationStateSize.
 func newRecordedOperation(action deployplan.ActionType, resourceID string, state any) (recordedOperation, error) {
 	actionType, err := deployActionToSDK(action)
 	if err != nil {
@@ -37,18 +43,19 @@ func newRecordedOperation(action deployplan.ActionType, resourceID string, state
 
 	op := recordedOperation{action: actionType, resourceID: resourceID}
 
-	// The DMS Operation.State field carries the serialized config so the backend
-	// can serve it as resource state. It is intentionally left unset for delete,
-	// where the resource no longer exists.
+	// Operation.State carries the serialized config, which DMS serves back as
+	// resource state. Unset for delete: the resource is gone.
 	//
-	// Redact sensitive fields, matching what dstate.SaveState writes to the local
-	// state file: DMS state is read back as resource state, so recording secrets
-	// in plaintext would both leak them to the service and reintroduce them into
-	// a local state file via the read path.
+	// Redact secrets, like dstate.SaveState does for the local state file:
+	// otherwise we leak them to the service and the read path writes them back
+	// into a local state file in plaintext.
 	if state != nil {
 		raw, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
 		if err != nil {
 			return recordedOperation{}, fmt.Errorf("serializing state: %w", err)
+		}
+		if len(raw) > maxOperationStateSize {
+			return recordedOperation{}, fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(raw), maxOperationStateSize)
 		}
 		op.state = raw
 	}

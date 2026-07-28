@@ -29,12 +29,10 @@ const (
 
 // Recorder records a single deploy/destroy as a version with DMS.
 //
-// The deployment ID is assigned by the server on the first deploy: NewRecorder
-// is given the ID resolved from the workspace (empty on a bundle's first-ever
-// recorded deploy, see ResolveDeploymentID), and CreateVersion creates the
-// deployment record when that ID is empty. Later deploys resolve the same ID
-// from the deployment's workspace node and reuse the record; a destroy deletes
-// the record and its node, so the next deploy starts over from empty.
+// The server assigns the deployment ID on the first deploy, i.e. when the ID
+// resolved from the workspace is empty (see ResolveDeploymentID). Later deploys
+// resolve the same ID and reuse the record; a destroy deletes the record and its
+// node, so the next deploy starts over from empty.
 type Recorder struct {
 	svc          bundledeployments.BundleDeploymentsInterface
 	deploymentID string
@@ -150,10 +148,10 @@ func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID string, err error) {
 	if r.deploymentID != "" {
 		// Existing deployment: read it to compute the next version number. A 404 is
-		// not recovered from by creating a second deployment: the ID was just
-		// resolved from the deployment's workspace node, which the service trashes
-		// when it deletes the record, so a missing record here means the two are out
-		// of sync and creating another one would collide on the same node path.
+		// not recovered from by creating a second deployment. The service trashes the
+		// workspace node when it deletes the record, so a node that resolved but has
+		// no record means the two are out of sync, and creating another deployment
+		// would collide on the same node path.
 		dep, getErr := r.svc.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
 			Name: "deployments/" + r.deploymentID,
 		})
@@ -166,14 +164,12 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 		}
 		versionID = strconv.FormatInt(lastVersion+1, 10)
 	} else {
-		// First deploy: create the deployment so the server assigns an ID, then
-		// start at version 1.
+		// First deploy: create the deployment so the server assigns an ID.
 		//
-		// initial_parent_path is required: the service creates the deployment's
-		// BUNDLE_DEPLOYMENT node under it, and that node's ID becomes the
-		// deployment ID that ResolveDeploymentID reads back on later deploys. The
-		// folder must already exist, which it does by this point - the deployment
-		// lock lives in the same directory.
+		// initial_parent_path is required. The service creates the deployment node
+		// under it, and that node's ID is the deployment ID ResolveDeploymentID reads
+		// back later. The folder already exists by now: the deployment lock lives in
+		// the same directory.
 		dep, createErr := r.svc.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{
 			Deployment: bundledeployments.Deployment{
 				InitialParentPath: r.statePath,

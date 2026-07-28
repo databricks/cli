@@ -223,28 +223,22 @@ type (
 // DMSSource tells Open to read resource state from the deployment metadata
 // service instead of the state file. A nil *DMSSource keeps Open file-only.
 type DMSSource struct {
-	// Client is the DMS client used to list the deployment's resources.
 	Client bundledeployments.BundleDeploymentsInterface
 
-	// Config accompanies Client (both come from the same workspace client) and is
-	// used only for a temporary raw read of last_successful_version_id; see the
-	// TODO in deploymentHasSuccessfulVersion.
+	// Config is only for a temporary raw read of last_successful_version_id; see
+	// the TODO in deploymentHasSuccessfulVersion.
 	Config *sdkconfig.Config
 
-	// DeploymentID identifies the deployment in DMS, resolved from the
-	// deployment's workspace node (see dms.ResolveDeploymentID). It is empty for a
-	// bundle that has not recorded a deployment yet.
+	// DeploymentID is resolved from the deployment's workspace node (see
+	// dms.ResolveDeploymentID), and empty before the first recorded deploy.
 	DeploymentID string
 }
 
 // Open reads the deployment state from disk (and recovers the WAL when
-// withRecovery is set). When dmsSource is non-nil, the deployment metadata
-// service is the source of truth for resource state: if DMS holds a
-// successfully completed version for this deployment, the resources read from
-// the file are replaced with the ones recorded in DMS. The local identity
-// (lineage and serial) always comes from the file, since that is what the write
-// path increments and carries forward. A nil dmsSource keeps the behavior
-// file-only.
+// withRecovery is set). With a non-nil dmsSource, resources come from DMS
+// instead of the file whenever DMS holds a successful version. Lineage and
+// serial always come from the file, since that is what the write path
+// increments.
 func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsSource *DMSSource) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -294,25 +288,15 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	}
 
 	if dmsSource != nil {
-		// Only deployments that start out empty are recorded in DMS. Resources
-		// tracked in a state file that DMS does not know about are not in DMS and
-		// never will be: the first recorded deploy would create a deployment whose
-		// resource set covers only what that deploy touched, and DMS would then be
-		// authoritative for everything (see overlayDMSState). Resources this bundle
-		// already owns would look absent and be created a second time.
+		// Only bundles that start out empty can be recorded. Once DMS owns a
+		// deployment it is authoritative for the whole resource set (see
+		// overlayDMSState), so pre-existing resources it never saw would look absent
+		// and get created a second time.
 		//
-		// A deployment DMS already owns (deploymentID is non-empty) is fine — that is
-		// a bundle that opted in while it was still empty. So is a state file with no
-		// resources, e.g. one left behind by a destroy.
-		//
-		// TODO(DMS): lift this restriction by upgrading an existing state in place.
-		// That means writing the state at featureStateVersion (3) with a feature flag
-		// recording that DMS owns it, plus a tombstone entry per resource so a CLI
-		// that predates DMS refuses the state instead of silently deploying against a
-		// resource set it cannot see. The feature-flag scaffolding for this already
-		// exists (see featureStateVersion and Header.Features); once it is written,
-		// this check goes away and record_deployment_history becomes usable on
-		// existing bundles.
+		// TODO(DMS): allow this by upgrading the state in place, writing it at
+		// featureStateVersion with a feature flag plus a tombstone per resource so an
+		// older CLI refuses the state instead of deploying against resources it
+		// cannot see.
 		if dmsSource.DeploymentID == "" && len(db.Data.State) > 0 {
 			return fmt.Errorf("cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded. Remove experimental.record_deployment_history, or destroy the bundle and deploy it again", path)
 		}
@@ -364,7 +348,7 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 
 func (db *DeploymentState) replayWAL(ctx context.Context) error {
 	walPath := db.Path + walSuffix
-	persist, err := db.mergeWalIntoState(ctx)
+	hasEntries, err := db.mergeWalIntoState(ctx)
 	if err != nil {
 		if errors.Is(err, errStaleWAL) {
 			log.Debugf(ctx, "Deleting stale WAL file %s", walPath)
@@ -373,7 +357,7 @@ func (db *DeploymentState) replayWAL(ctx context.Context) error {
 		}
 		return fmt.Errorf("WAL recovery failed: %w", err)
 	}
-	if persist {
+	if hasEntries {
 		if err := db.unlockedSave(); err != nil {
 			return err
 		}
@@ -384,9 +368,6 @@ func (db *DeploymentState) replayWAL(ctx context.Context) error {
 	return nil
 }
 
-// mergeWalIntoState replays the WAL into db.Data and reports whether the caller
-// must persist the state file: either the WAL carried resource entries, or a
-// header field changed in memory during this deployment.
 func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) {
 	if db.walFile != nil {
 		panic("internal error: walFile must be closed")
@@ -462,20 +443,19 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 		}
 	}
 
-	persist := lineNumber > 1
+	hasEntries := lineNumber > 1
 
-	// Only advance the serial when the state file is actually written, because
-	// the caller (replayWAL) persists it only in that case. A header-only WAL
-	// that changed nothing is a deploy that started but committed nothing;
-	// advancing the serial for it leaves the in-memory serial ahead of the
-	// persisted one, so the next deploy writes its WAL header at serial+2 and
-	// recovery rejects it as "ahead of expected".
-	// See acceptance/bundle/deploy/wal/header-only-wal.
-	if persist {
+	// Only advance the serial when the WAL carried entries, because the caller
+	// (replayWAL) persists the new state file only in that case. A header-only
+	// WAL is a deploy that started but committed nothing; advancing the serial
+	// for it leaves the in-memory serial ahead of the persisted one, so the
+	// next deploy writes its WAL header at serial+2 and recovery rejects it as
+	// "ahead of expected". See acceptance/bundle/deploy/wal/header-only-wal.
+	if hasEntries {
 		db.Data.Serial = newSerial
 	}
 
-	return persist, nil
+	return hasEntries, nil
 }
 
 // Finalize replays the WAL (if open for write), captures the resulting state, and resets.

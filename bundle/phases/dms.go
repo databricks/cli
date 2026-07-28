@@ -16,11 +16,10 @@ import (
 // AND the engine is direct: DMS resource state is tracked per direct-engine
 // deployment. Returning nil for terraform leaves those deployments untouched.
 //
-// The deployment ID is resolved from the workspace rather than from local state
-// (see dms.ResolveDeploymentID). The lookup happens here, after the deployment
-// lock has been acquired, so it observes any deployment a concurrent deploy
-// created. It is empty on a bundle's first recorded deploy, in which case the
-// recorder creates the deployment and the server assigns the ID.
+// The deployment ID is resolved from the workspace, not local state (see
+// dms.ResolveDeploymentID). The lookup happens here, after the deployment lock is
+// held, so it sees any deployment a concurrent deploy created. It is empty on the
+// first recorded deploy, where the recorder creates the deployment instead.
 func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, versionType dms.VersionType) (*dms.Recorder, error) {
 	if b.Config.Experimental == nil || !b.Config.Experimental.RecordDeploymentHistory {
 		return nil, nil

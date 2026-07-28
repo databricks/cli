@@ -15,12 +15,9 @@ import (
 )
 
 // overlayDMSState replaces the file-derived resource state with the state
-// recorded in the deployment metadata service (DMS), when DMS owns this
-// deployment. Once DMS is authoritative its resource set is trusted even when
-// empty (a successful deploy with no resources); the file's resources are only
-// used when DMS has no successful version, or when the user opts out of
-// recording deployment history. The caller holds db.mu, has already populated
-// db.Data from the file, and has resolved src.DeploymentID.
+// recorded in DMS, when DMS owns this deployment. An authoritative DMS is
+// trusted even when its resource set is empty (a successful deploy of nothing).
+// The caller holds db.mu and has already populated db.Data from the file.
 func (db *DeploymentState) overlayDMSState(ctx context.Context, src *DMSSource) error {
 	authoritative, err := deploymentHasSuccessfulVersion(ctx, src.Config, src.DeploymentID)
 	if err != nil {
@@ -45,21 +42,13 @@ func (db *DeploymentState) overlayDMSState(ctx context.Context, src *DMSSource) 
 	return nil
 }
 
-// deploymentHasSuccessfulVersion reports whether DMS holds a successfully
-// completed version for the deployment. It is the signal that DMS owns the
-// state: if the deployment was never recorded to DMS, or its initial DMS deploy
-// did not complete successfully, DMS state is absent or partial and Open keeps
-// the local file's resources instead.
+// deploymentHasSuccessfulVersion reports whether DMS owns the state. The server
+// advances last_successful_version_id only when a version completes (unlike
+// last_version_id, which also advances on failure), so a non-empty value means
+// DMS holds a complete resource set. Otherwise Open keeps the file's resources.
 //
-// The deployment carries last_successful_version_id, which the server advances
-// only when a version completes successfully (unlike last_version_id, which
-// also advances on failure). So a non-empty value is exactly the "DMS owns the
-// state" signal, readable in a single GetDeployment.
-//
-// TODO(DMS): this reads the deployment via a raw GET into a local struct
-// because last_successful_version_id is still stage:DEVELOPMENT in the proto
-// and therefore stripped from the generated SDK. Once the field is promoted to
-// PRIVATE_PREVIEW and regenerated, replace the raw call with
+// TODO(DMS): raw GET because last_successful_version_id is stage:DEVELOPMENT and
+// stripped from the generated SDK. Once it ships, use
 // client.GetDeployment(...).LastSuccessfulVersionId and drop DMSSource.Config.
 func deploymentHasSuccessfulVersion(ctx context.Context, cfg *sdkconfig.Config, deploymentID string) (bool, error) {
 	apiClient, err := client.New(cfg)
@@ -88,10 +77,14 @@ func deploymentHasSuccessfulVersion(ctx context.Context, cfg *sdkconfig.Config, 
 // fetchDeploymentResources lists every resource recorded for the deployment in
 // DMS and maps them into state entries keyed by the fully-qualified resource key.
 //
-// DMS does not record dependency edges, so depends_on is carried over from the
-// local state entry for the same key. It is derived from the local config on
-// every deploy and is only consumed for delete ordering, so falling back to an
-// empty list when the local state has no entry is safe.
+// DMS has no field for dependency edges, and they cannot be recovered from the
+// recorded state either: references are resolved to literals before it is
+// serialized. So depends_on is carried over from the local state file.
+//
+// TODO(DMS): resources present in DMS but not in the local file therefore get no
+// depends_on. Plan recomputes it from config for everything it still declares,
+// so this only affects deletes of resources dropped from config, which are
+// ordered arbitrarily among themselves.
 func fetchDeploymentResources(ctx context.Context, client bundledeployments.BundleDeploymentsInterface, deploymentID string, local map[string]ResourceEntry) (map[string]ResourceEntry, error) {
 	it := client.ListResources(ctx, bundledeployments.ListResourcesRequest{
 		Parent: "deployments/" + deploymentID,
