@@ -29,7 +29,7 @@ resources:
       num_workers: 1
       policy_id: ''
       single_user_name: ''
-      spark_version: ''
+      spark_version: 13.3.x-scala2.12
   database_instances:
     my_db_instance:
       capacity: CU_1
@@ -67,7 +67,7 @@ resources:
             num_workers: 1
             policy_id: ''
             single_user_name: ''
-            spark_version: ''
+            spark_version: 13.3.x-scala2.12
       max_concurrent_runs: 1
       name: ''
       parent_path: ''
