@@ -33,7 +33,7 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
 		Name:            input.Name,
 		Value:           input.Value,
 		Comment:         input.Comment,
-		Owner:           input.Owner,
+		Owner:           "",
 		ExpireTime:      expireTime,
 		CreateTime:      nil,
 		CreatedBy:       "",

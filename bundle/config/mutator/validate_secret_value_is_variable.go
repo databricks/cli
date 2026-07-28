@@ -40,7 +40,7 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 		}
 
 		// Value must be a variable reference to prevent leaking secrets in config files
-		if !dynvar.ContainsVariableReference(valueStr) {
+		if !dynvar.IsPureVariableReference(valueStr) {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  "Secret value must be a variable reference",

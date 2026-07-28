@@ -3487,7 +3487,7 @@ resources.secrets.*.lifecycle.prevent_destroy	bool	INPUT
 resources.secrets.*.metastore_id	string	REMOTE	STATE
 resources.secrets.*.modified_status	string	INPUT
 resources.secrets.*.name	string	ALL
-resources.secrets.*.owner	string	ALL
+resources.secrets.*.owner	string	REMOTE	STATE
 resources.secrets.*.schema_name	string	ALL
 resources.secrets.*.update_time	*time.Time	REMOTE	STATE
 resources.secrets.*.updated_by	string	REMOTE	STATE

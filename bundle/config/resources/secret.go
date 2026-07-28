@@ -34,10 +34,6 @@ type Secret struct {
 	// User-provided free-form text description of the secret.
 	Comment string `json:"comment,omitempty"`
 
-	// The owner of the secret. Defaults to the creating principal on creation.
-	// Can be updated to transfer ownership of the secret to another principal.
-	Owner string `json:"owner,omitempty"`
-
 	// User-provided expiration time of the secret. This field indicates when
 	// the secret should no longer be used and may be displayed as a warning in
 	// the UI. It is purely informational and does not trigger any automatic

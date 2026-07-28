@@ -196,6 +196,7 @@ var allowList = []string{
 	"job_runs",
 	"schemas",
 	"secret_scopes",
+	"secrets",
 	"sql_warehouses",
 	"vector_search_endpoints",
 	"vector_search_indexes",
