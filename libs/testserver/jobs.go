@@ -20,11 +20,9 @@ import (
 
 const missingJobGitProviderMessage = "git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit"
 
-// errNoCodeInWorkspace marks a task whose code the fake workspace does not have,
-// so there is nothing to execute locally: an immutable deployment, for example,
-// uploads the bundle as a snapshot zip that the fake workspace never unpacks.
-// Such a task is left successful, because the gap is in the fake workspace
-// rather than in the job under test.
+// errNoCodeInWorkspace marks a task there is nothing to execute for, e.g.
+// because an immutable deployment uploaded the code as a snapshot zip this
+// server never unpacks. The gap is here, not in the job, so the task succeeds.
 var errNoCodeInWorkspace = errors.New("task code is not in the workspace")
 
 // venvPython returns the path to the Python executable in a venv.
@@ -410,7 +408,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 
 			switch {
 			case errors.Is(err, errNoCodeInWorkspace):
-				// Nothing was executed; see errNoCodeInWorkspace.
+				// Nothing ran, so the task keeps its SUCCESS state.
 			case err != nil:
 				taskRun.State.ResultState = jobs.RunResultStateFailed
 				s.JobRunOutputs[taskRunId] = jobs.RunOutput{
@@ -876,13 +874,11 @@ func sparkVersionToPython(task jobs.Task) string {
 	return "3.10"
 }
 
-// terminateRun completes the run and rolls its task outcomes up into the
-// run-level state, the way the Jobs API does: a task that JobsRunNow executed
-// and that failed fails the whole run.
+// terminateRun completes the run, rolling task outcomes up into the run-level
+// state the way the Jobs API does: one failed task fails the whole run.
 func terminateRun(run *jobs.Run) {
 	for i := range run.Tasks {
-		// Tasks the fake workspace does not execute (jobs/runs/submit) are still
-		// running at this point; complete them before rolling the run up.
+		// Tasks that were never executed (jobs/runs/submit) are still running.
 		if run.Tasks[i].State.LifeCycleState != jobs.RunLifeCycleStateTerminated {
 			run.Tasks[i].State.LifeCycleState = jobs.RunLifeCycleStateTerminated
 			run.Tasks[i].State.ResultState = jobs.RunResultStateSuccess
@@ -919,8 +915,7 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	// Simulate cloud behavior: first poll returns RUNNING, next returns the
-	// terminal state the tasks add up to.
+	// Simulate cloud behavior: first poll returns RUNNING, next the terminal state.
 	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
 		// Transition stored state to TERMINATED for the next poll.
 		terminateRun(&run)

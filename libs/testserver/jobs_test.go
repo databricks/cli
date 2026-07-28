@@ -144,8 +144,6 @@ func terminatedTask(taskKey string, result jobs.RunResultState) jobs.RunTask {
 	}
 }
 
-// A run whose task failed must not report SUCCESS: the failure is what a test
-// waiting on the run is there to observe.
 func TestTerminateRun_FailedTaskFailsTheRun(t *testing.T) {
 	run := jobs.Run{Tasks: []jobs.RunTask{
 		terminatedTask("first", jobs.RunResultStateSuccess),
@@ -172,8 +170,8 @@ func TestTerminateRun_CompletesTasksThatAreStillRunning(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, run.Tasks[0].State.ResultState)
 }
 
-// The fake workspace has nothing to execute for a task whose code it does not
-// have, so the task is left successful (see errNoCodeInWorkspace).
+// See errNoCodeInWorkspace: a missing notebook is this server's gap, not a
+// failure of the job.
 func TestJobsGetRun_TaskWithoutCodeDoesNotFailTheRun(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	jobID := createJob(t, workspace, jobs.Task{
