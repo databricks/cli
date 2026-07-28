@@ -1,4 +1,14 @@
 {
+  "apps": {
+    "my_app": {
+      "budget_policy_id": "",
+      "description": "",
+      "name": "test-app-direct",
+      "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files/app",
+      "space": "",
+      "usage_policy_id": ""
+    }
+  },
   "clusters": {
     "my_cluster": {
       "autotermination_minutes": 60,

@@ -11,6 +11,13 @@ bundle:
 # Fields set to a real value here are treated as required/meaningful and left
 # alone; everything else settable-and-string is emptied.
 resources:
+  apps:
+    my_app:
+      # App names are globally unique in the workspace; the two targets deploy to
+      # the same fake workspace, so scope the name per target to avoid a 409.
+      name: test-app-${bundle.target}
+      source_code_path: ./app
+
   clusters:
     my_cluster:
       num_workers: 1

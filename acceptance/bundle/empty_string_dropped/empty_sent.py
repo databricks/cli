@@ -26,6 +26,7 @@ from pathlib import Path
 # Substring uniquely identifying each resource type's create-request path, used
 # to attribute a config field to the request it should appear in.
 CREATE_PATHS = {
+    "apps": "/apps",
     "clusters": "clusters/create",
     "jobs": "jobs/create",
     "pipelines": "/pipelines",

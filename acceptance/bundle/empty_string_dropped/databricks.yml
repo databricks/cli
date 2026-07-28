@@ -2,6 +2,14 @@
 bundle:
   name: test-bundle
 resources:
+  apps:
+    my_app:
+      budget_policy_id: ''
+      description: ''
+      name: test-app-${bundle.target}
+      source_code_path: ./app
+      space: ''
+      usage_policy_id: ''
   clusters:
     my_cluster:
       aws_attributes:

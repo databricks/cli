@@ -1,5 +1,19 @@
 {
   "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
+  "body": {
+    "budget_policy_id": "",
+    "description": "",
+    "name": "test-app-tf",
+    "space": "",
+    "usage_policy_id": ""
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.0/database/instances",
   "body": {
     "capacity": "CU_1",

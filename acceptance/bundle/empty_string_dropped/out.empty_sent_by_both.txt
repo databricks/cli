@@ -1,2 +1,6 @@
+/api/2.0/apps budget_policy_id
+/api/2.0/apps description
+/api/2.0/apps space
+/api/2.0/apps usage_policy_id
 /api/2.0/database/instances usage_policy_id
 /api/2.1/clusters/create spark_version
