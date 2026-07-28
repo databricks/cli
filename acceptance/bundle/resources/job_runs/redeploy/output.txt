@@ -3,6 +3,9 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
 Deploying resources...
+job run [NUMID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?o=[NUMID]
+job run [NUMID]: [TIMESTAMP] "my-job" RUNNING
+job run [NUMID]: [TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 
@@ -64,10 +67,11 @@ Resources:
     },
     "run_id": [NUMID],
     "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/?o=[NUMID]#job/[MY_JOB_ID]/run/[NUMID]",
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?o=[NUMID]",
     "run_type": "JOB_RUN",
     "state": {
-      "life_cycle_state": "RUNNING"
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS"
     }
   },
   "changes": {
@@ -84,6 +88,9 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
 Deploying resources...
+job run [NUMID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?o=[NUMID]
+job run [NUMID]: [TIMESTAMP] "my-job" RUNNING
+job run [NUMID]: [TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 

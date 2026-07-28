@@ -1,0 +1,30 @@
+bundle:
+  name: job-runs-wait-output
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          condition_task:
+            op: EQUAL_TO
+            left: "1"
+            right: "1"
+
+    # Reads the run's output. A job separate from my_job (the run's target),
+    # since my_run already depends on my_job.id and a reference back would cycle.
+    downstream_job:
+      name: downstream-job
+      tags:
+        run_result: ${resources.job_runs.my_run.state.result_state}
+      tasks:
+        - task_key: main
+          condition_task:
+            op: EQUAL_TO
+            left: "1"
+            right: "1"
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}

@@ -6,14 +6,13 @@ resources:
     foo:
       name: test-job-$UNIQUE_NAME
       tasks:
+        # Deploying a job_run actually runs the job, so use a condition task,
+        # which needs no workspace files or compute.
         - task_key: only_task
-          notebook_task:
-            notebook_path: /Shared/notebook
-          new_cluster:
-            spark_version: $DEFAULT_SPARK_VERSION
-            node_type_id: $NODE_TYPE_ID
-            instance_pool_id: $TEST_INSTANCE_POOL_ID
-            num_workers: 1
+          condition_task:
+            op: EQUAL_TO
+            left: "1"
+            right: "1"
 
   job_runs:
     foo_run:

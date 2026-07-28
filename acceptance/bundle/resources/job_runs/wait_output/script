@@ -1,0 +1,18 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "deploy waits for the run to finish, then the downstream job reads its result_state"
+trace $CLI bundle deploy
+
+title "the downstream job was created with the run's result_state resolved into its tag"
+# A concrete SUCCESS tag proves the run finished and the wait published its
+# output before the downstream job was created.
+trace print_requests.py //jobs/create
+
+title "redeploy is a no-op: the resolved result_state tag is stable, not perpetual drift"
+# The resolved tag reads back identically, so the job stays as deployed.
+trace $CLI bundle plan -o json | jq '.plan["resources.jobs.downstream_job"].action // "none"'
+trace $CLI bundle deploy

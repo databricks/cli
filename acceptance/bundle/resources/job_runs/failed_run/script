@@ -1,0 +1,24 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# The run finishes FAILED, so the deploy aborts: the error names the failed task
+# and the message it reported, and downstream_job is reported as a failed
+# dependency because it reads the run's result_state.
+title "a run that finishes FAILED fails the deploy"
+musterr trace $CLI bundle deploy
+
+# The framework saves the run id before calling WaitAfterCreate, so a run that
+# failed stays recorded and an unchanged config plans no second run.
+title "the failed run stays recorded, so a redeploy starts no new run"
+trace read_id.py my_run
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+title "downstream_job resolved its tag from the failed run"
+trace jq -r 'select(.path == "/api/2.2/jobs/create" and .body.name == "downstream-job") | .body.tags.run_result' out.requests.txt
+
+title "run-now was issued once"
+trace print_requests.py //jobs/run-now
