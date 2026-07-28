@@ -40,26 +40,26 @@ resources:
         git_provider: gitHub
         git_url: https://example.com/repo
       job_clusters:
-      - job_cluster_key: main
-        new_cluster:
-          aws_attributes:
-            availability: SPOT
-            instance_profile_arn: ''
-            zone_id: ''
-          cluster_log_conf:
-            s3:
-              canned_acl: ''
-              destination: s3://test-bucket/logs
-              encryption_type: ''
-              endpoint: ''
-              kms_key: ''
-              region: ''
-          cluster_name: ''
-          node_type_id: ''
-          num_workers: 1
-          policy_id: ''
-          single_user_name: ''
-          spark_version: ''
+        - job_cluster_key: main
+          new_cluster:
+            aws_attributes:
+              availability: SPOT
+              instance_profile_arn: ''
+              zone_id: ''
+            cluster_log_conf:
+              s3:
+                canned_acl: ''
+                destination: s3://test-bucket/logs
+                encryption_type: ''
+                endpoint: ''
+                kms_key: ''
+                region: ''
+            cluster_name: ''
+            node_type_id: ''
+            num_workers: 1
+            policy_id: ''
+            single_user_name: ''
+            spark_version: ''
       max_concurrent_runs: 1
       name: ''
       parent_path: ''
@@ -72,21 +72,21 @@ resources:
     my_pipeline:
       budget_policy_id: ''
       clusters:
-      - aws_attributes:
-          availability: SPOT
-          instance_profile_arn: ''
-          zone_id: ''
-        driver_instance_pool_id: ''
-        driver_node_type_id: ''
-        instance_pool_id: ''
-        label: default
-        node_type_id: ''
-        policy_id: ''
+        - aws_attributes:
+            availability: SPOT
+            instance_profile_arn: ''
+            zone_id: ''
+          driver_instance_pool_id: ''
+          driver_node_type_id: ''
+          instance_pool_id: ''
+          label: default
+          node_type_id: ''
+          policy_id: ''
       libraries:
-      - file:
-          path: pipeline.py
-        jar: ''
-        whl: ''
+        - file:
+            path: pipeline.py
+          jar: ''
+          whl: ''
       name: ''
       root_path: ''
       serverless_compute_id: ''

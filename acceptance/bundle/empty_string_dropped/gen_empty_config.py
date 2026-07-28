@@ -48,6 +48,7 @@ TERRAFORM_ERRORS = {
     "sql_warehouses": {"creator_name"},
 }
 
+
 def string_leaf_parents():
     """Map resource type -> {parent_schema_path: {leaf field names}}.
 
