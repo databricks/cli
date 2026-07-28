@@ -24,7 +24,7 @@ def normalize_json_field(line, fields):
     Normalize JSON in a field if the field name matches.
 
     >>> normalize_json_field('  "foo": "{\\"a\\": 1}",', {'foo'})
-    '  "foo": "{\\"a\\":1}",'
+    '  "foo": "{\\"a\\":1}",\n'
     >>> normalize_json_field('  "foo": "{\\"a\\": 1}",', {'bar'})
     '  "foo": "{\\"a\\": 1}",'
     >>> normalize_json_field('  "other": "plain string",', {'foo'})
