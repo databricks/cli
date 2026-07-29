@@ -4,6 +4,12 @@ cd output/my_default_python
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
 
+# Record the field bitmap for this realistic template. The bitmap reflects
+# config-field presence and is engine-independent, so both the encoded blob and
+# the set-bit list are recorded once (not per engine).
+trace $CLI bundle bitmap bitmap -t dev
+$CLI bundle bitmap bitmap-text -t dev | grep '^1 ' > ../../out.bitmap.txt
+
 trace $CLI bundle plan -t dev
 trace $CLI bundle plan -t prod
 

@@ -1,4 +1,11 @@
 trace $CLI bundle bitmap schema > out.schema.txt
 trace $CLI bundle bitmap bitmap-text > out.bitmap-text.txt
-trace $CLI bundle bitmap bitmap
+
+# The encoded bitmap must round-trip: decoding it against the schema reproduces
+# the bitmap-text output exactly. decoded.txt is a temp artifact (not an "out"
+# golden) since it must equal out.bitmap-text.txt.
+trace $CLI bundle bitmap bitmap > out.bitmap.b64
+decode_bitmap.py out.schema.txt < out.bitmap.b64 > decoded.txt
+diff.py out.bitmap-text.txt decoded.txt
+
 trace $CLI bundle bitmap update-schema --validate
