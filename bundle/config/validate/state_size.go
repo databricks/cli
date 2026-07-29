@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
 // MaxStateSizeBytes is the largest serialized resource state the deployment
@@ -104,8 +104,7 @@ func sizeAdvice(resourceType string) string {
 }
 
 // stateSize returns the size of the state that would be recorded for the
-// resource at key. It mirrors what the deploy path uploads: the state prepared
-// from config, serialized with sensitive fields redacted.
+// resource at key: the state prepared from config, serialized as JSON.
 func stateSize(b *bundle.Bundle, adapter *dresources.Adapter, key string) (int, error) {
 	inputConfig, err := b.Config.GetResourceConfig(key)
 	if err != nil {
@@ -117,7 +116,7 @@ func stateSize(b *bundle.Bundle, adapter *dresources.Adapter, key string) (int, 
 		return 0, fmt.Errorf("cannot prepare state for %s: %w", key, err)
 	}
 
-	raw, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
+	raw, err := json.Marshal(state)
 	if err != nil {
 		return 0, fmt.Errorf("cannot serialize state for %s: %w", key, err)
 	}
