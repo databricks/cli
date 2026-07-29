@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -31,7 +32,7 @@ import (
 // not reimplement workspace/volume upload. A minimal in-memory bundle carries the
 // local tarball path as code_source_path; ReplaceWithRemotePath rewrites it to the
 // artifact .internal path and Upload pushes the bytes.
-func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath string) (snapshotResult, error) {
+func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath string, sidecarStore filer.Filer, sidecarBase string) (snapshotResult, error) {
 	repoPath, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
 	if err != nil {
 		return snapshotResult{}, err
@@ -50,7 +51,73 @@ func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, s
 	if snap.RemoteVolume != nil {
 		remoteVolume = *snap.RemoteVolume
 	}
-	return uploadSnapshotViaDABs(ctx, w, repoPath, plan, remoteVolume)
+	result, err := uploadSnapshotViaDABs(ctx, w, repoPath, plan, remoteVolume)
+	if err != nil {
+		return snapshotResult{}, err
+	}
+
+	// Upload git provenance sidecars (git_state.json / git_diff.patch) next to the
+	// run's launch dir so the submitted commit + working-tree diff are inspectable.
+	// Best-effort and git-only: any failure logs and leaves the paths empty rather
+	// than failing an otherwise-valid submission.
+	//
+	// The sidecars are deliberately NOT bundled into the code tarball. The git_archive
+	// tarball is content-addressed and cached by (commit, include_paths), so a second
+	// run at the same commit reuses it; but the sidecars vary per run (git_state's
+	// timestamp, and git_diff captures the working tree at submit time). Folding them
+	// in would force a distinct tarball per run (defeating the cache) or serve a prior
+	// run's stale provenance on a cache hit. They also live in the per-run launch dir,
+	// not the shared artifact dir, so they don't accumulate. Keep them out of the tar.
+	if plan.isGitRepo {
+		result.GitStatePath, result.GitDiffPath = uploadSnapshotSidecars(ctx, sidecarStore, sidecarBase, newGitRepo(repoPath), plan)
+	}
+	return result, nil
+}
+
+// uploadSnapshotSidecars writes the git_state.json provenance record — and, when the
+// working tree is dirty, a captured git_diff.patch — into the run's launch dir via
+// sidecarStore (rooted at sidecarBase, used only to report absolute paths). It is
+// best-effort: every failure logs a warning and yields an empty path, never an error,
+// so provenance capture cannot fail a submission.
+func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidecarBase string, git gitRepo, plan snapshotPlan) (statePath, diffPath string) {
+	mode := packagingModePlainTar
+	pinnedTip := ""
+	if plan.mode == modeGitArchive {
+		mode = packagingModeGitArchive
+		pinnedTip = plan.commitSHA
+	}
+
+	sidecar, err := buildGitStateSidecar(ctx, git, mode, pinnedTip, time.Now())
+	if err != nil {
+		log.Warnf(ctx, "skipping git provenance sidecar: %v", err)
+		return "", ""
+	}
+
+	// Capture the dirty diff first so its status/path land in git_state.json.
+	if sidecar.Dirty {
+		status, diff := captureDirtyDiff(ctx, git, dirtyDiffSizeCapBytes, dirtyDiffTimeout)
+		sidecar.DiffStatus = status
+		if status == diffStatusCaptured {
+			if err := sidecarStore.Write(ctx, gitDiffName, bytes.NewReader(diff), filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
+				log.Warnf(ctx, "failed to upload git diff sidecar: %v", err)
+				sidecar.DiffStatus = diffStatusClean
+			} else {
+				diffPath = path.Join(sidecarBase, gitDiffName)
+				sidecar.DiffPath = &diffPath
+			}
+		}
+	}
+
+	data, err := sidecar.marshal()
+	if err != nil {
+		log.Warnf(ctx, "failed to encode git state sidecar: %v", err)
+		return "", diffPath
+	}
+	if err := sidecarStore.Write(ctx, gitStateName, bytes.NewReader(data), filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
+		log.Warnf(ctx, "failed to upload git state sidecar: %v", err)
+		return "", diffPath
+	}
+	return path.Join(sidecarBase, gitStateName), diffPath
 }
 
 // snapshotTarballName is the uploaded filename for the snapshot. It is deterministic

@@ -2,12 +2,14 @@ package aircmd
 
 import (
 	"encoding/json"
+	"io"
 	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -274,6 +276,16 @@ code_source:
 	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
 }
 
+// testSidecarStore builds a workspace filer + base path standing in for the run's
+// launch dir, where snapshotViaDABsUpload writes git provenance sidecars.
+func testSidecarStore(t *testing.T, w *databricks.WorkspaceClient) (filer.Filer, string) {
+	t.Helper()
+	base := "/Workspace/Users/tester@databricks.com/.air/cli_launch/test"
+	f, err := filer.NewWorkspaceFilesClient(w, base)
+	require.NoError(t, err)
+	return f, base
+}
+
 // A plain-tar (working-tree) snapshot is uploaded under a unique, timestamped name so
 // two concurrent submissions of the same root_path don't clobber each other's upload.
 func TestSubmitWorkloadPlainTarNameIsUnique(t *testing.T) {
@@ -304,7 +316,8 @@ code_source:
 
 	// The uploaded name carries a discriminator (timestamp), not the bare dir name.
 	ctx := cmdio.MockDiscard(t.Context())
-	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath)
+	sidecarStore, sidecarBase := testSidecarStore(t, w)
+	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 	base := path.Base(snap.CodeSourcePath)
 	assert.NotEqual(t, "src.tar.gz", base, "plain-tar name must be unique, not the bare dir name")
@@ -354,15 +367,66 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath)
+	sidecarStore, sidecarBase := testSidecarStore(t, w)
+	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
-	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath)
+	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
 	// Same pinned commit → identical content-addressed remote path, uploaded once
 	// (the second submit is a cache hit and moves no bytes).
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Len(t, uploaded, 1, "git_archive cache hit should skip the second upload")
+}
+
+// A git code_source also uploads git provenance sidecars (git_state.json, and
+// git_diff.patch when the tree is dirty) next to the run's launch dir, so the
+// submitted commit + working-tree diff are inspectable.
+func TestSubmitWorkloadUploadsGitSidecars(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	// Commit, then dirty the tree so both git_state.json and git_diff.patch are produced.
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "train.py", "print()")
+	commitAll(t, repo, "init")
+	writeRepoFile(t, repo, "train.py", "print('dirty')")
+
+	cfg := minimalConfig + `
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ` + repo + `
+`
+	cfgPath := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	sidecarStore, sidecarBase := testSidecarStore(t, w)
+	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
+	require.NoError(t, err)
+
+	// Both sidecars are reported under the launch dir and actually exist there.
+	assert.Equal(t, path.Join(sidecarBase, gitStateName), snap.GitStatePath)
+	assert.Equal(t, path.Join(sidecarBase, gitDiffName), snap.GitDiffPath)
+
+	r, err := sidecarStore.Read(ctx, gitStateName)
+	require.NoError(t, err)
+	stateBytes, err := io.ReadAll(r)
+	require.NoError(t, err)
+	var state map[string]any
+	require.NoError(t, json.Unmarshal(stateBytes, &state))
+	assert.Equal(t, "plain_tar", state["packaging_mode"])
+	assert.Equal(t, true, state["dirty"])
+	assert.Equal(t, "captured", state["diff_status"])
 }
 
 // remote_volume uploads the snapshot to a UC Volume: DABs' artifact uploader handles

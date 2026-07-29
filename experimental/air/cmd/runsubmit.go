@@ -159,7 +159,8 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// code_source leaves it empty. Snapshot is the only code_source type.
 	var snap snapshotResult
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
-		snap, err = snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath)
+		// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
+		snap, err = snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, fc, funcDir)
 		if err != nil {
 			return 0, "", err
 		}

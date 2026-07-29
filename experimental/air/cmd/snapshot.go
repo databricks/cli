@@ -10,10 +10,13 @@ import (
 	"github.com/databricks/cli/libs/env"
 )
 
-// snapshotResult holds the code_source_path wired into the submit payload: the
-// uploaded code archive's remote path.
+// snapshotResult holds the code_source_path wired into the submit payload (the
+// uploaded code archive's remote path) plus the remote paths of the best-effort git
+// provenance sidecars (empty when not a git repo or upload failed).
 type snapshotResult struct {
 	CodeSourcePath string
+	GitStatePath   string
+	GitDiffPath    string
 }
 
 // resolveRootPath resolves a code_source snapshot root_path: expand environment
