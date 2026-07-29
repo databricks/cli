@@ -112,27 +112,35 @@ func TestRecorderSubsequentDeployReusesDeploymentAndIncrementsVersion(t *testing
 }
 
 func TestRecorderGetDeploymentErrorFailsDeploy(t *testing.T) {
-	cases := map[string]error{
-		// A resolved ID whose record is missing means the record and the workspace
-		// node it was resolved from are out of sync. Creating a second deployment
-		// would collide on the same node path, so fail instead.
-		"not found": fmt.Errorf("deployment: %w", apierr.ErrNotFound),
-		"other":     errors.New("boom"),
+	f := &fakeDMS{
+		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
+			return nil, errors.New("boom")
+		},
 	}
-	for name, getErr := range cases {
-		t.Run(name, func(t *testing.T) {
-			f := &fakeDMS{
-				getDeployment: func(id string) (*bundledeployments.Deployment, error) {
-					return nil, getErr
-				},
-			}
-			r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy)
+	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy)
 
-			err := r.CreateVersion(t.Context())
-			assert.ErrorContains(t, err, "failed to get deployment")
-			assert.Empty(t, f.created)
-		})
+	err := r.CreateVersion(t.Context())
+	assert.ErrorContains(t, err, "failed to get deployment")
+	assert.Empty(t, f.created)
+}
+
+func TestRecorderMissingDeploymentRecordStartsAtVersionOne(t *testing.T) {
+	// The record is created by the first version, so a node can name a deployment
+	// that has none yet - an earlier deploy registered it and then failed. Record
+	// version 1 under that same ID instead of creating a second deployment, which
+	// would collide on the node path.
+	f := &fakeDMS{
+		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
+			return nil, fmt.Errorf("deployment: %w", apierr.ErrNotFound)
+		},
 	}
+	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy)
+
+	require.NoError(t, r.CreateVersion(t.Context()))
+	assert.Empty(t, f.created)
+	require.Len(t, f.versions, 1)
+	assert.Equal(t, "1", f.versions[0].VersionId)
+	assert.Equal(t, "deployments/stored-id", f.versions[0].Parent)
 }
 
 func TestRecorderDestroyDeletesDeploymentOnSuccess(t *testing.T) {

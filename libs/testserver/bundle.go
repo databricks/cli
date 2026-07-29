@@ -35,9 +35,6 @@ type dmsDeployment struct {
 	// value as "DMS owns the state". Tracked separately because the SDK
 	// Deployment struct does not yet carry the field (still stage:DEVELOPMENT).
 	lastSuccessfulVersionID string
-	// nodePath is the workspace node whose object ID is this deployment's ID.
-	// Kept so DeleteDeployment can trash the node, the way the service does.
-	nodePath string
 }
 
 func (s *FakeWorkspace) CreateDeployment(req Request) Response {
@@ -70,15 +67,15 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 		},
 	}
 
+	// Only the node is created here. The deployment record itself is created by the
+	// first CreateVersion, so a client that creates a deployment and then fails
+	// before recording a version leaves no record behind - just the node, which
+	// names the ID that first version will be created under.
 	deploymentID := strconv.FormatInt(objectID, 10)
+	s.dmsDeploymentNodes[deploymentID] = nodePath
+
 	dep.Name = "deployments/" + deploymentID
 	dep.Status = bundledeployments.DeploymentStatusDeploymentStatusActive
-	s.dmsDeployments[deploymentID] = &dmsDeployment{
-		deployment: dep,
-		versions:   map[string]*bundledeployments.Version{},
-		resources:  map[string]bundledeployments.Resource{},
-		nodePath:   nodePath,
-	}
 	return Response{Body: dep}
 }
 
@@ -129,9 +126,10 @@ func (s *FakeWorkspace) DeleteDeployment(deploymentID string) Response {
 
 	// The service trashes the deployment's workspace node, so a later get-status
 	// on the node path reports the deployment as absent.
-	if d, ok := s.dmsDeployments[deploymentID]; ok {
-		delete(s.files, d.nodePath)
+	if nodePath, ok := s.dmsDeploymentNodes[deploymentID]; ok {
+		delete(s.files, nodePath)
 	}
+	delete(s.dmsDeploymentNodes, deploymentID)
 	delete(s.dmsDeployments, deploymentID)
 	return Response{Body: map[string]any{}}
 }
@@ -148,7 +146,22 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 
 	d, ok := s.dmsDeployments[deploymentID]
 	if !ok {
-		return dmsNotFound("deployment " + deploymentID)
+		// The deployment record is created by its first version, not by
+		// CreateDeployment. That call only registered the workspace node, so the node
+		// existing is what makes this ID valid.
+		if _, known := s.dmsDeploymentNodes[deploymentID]; !known {
+			return dmsNotFound("deployment " + deploymentID)
+		}
+		d = &dmsDeployment{
+			deployment: bundledeployments.Deployment{
+				Name:       "deployments/" + deploymentID,
+				Status:     bundledeployments.DeploymentStatusDeploymentStatusActive,
+				TargetName: version.TargetName,
+			},
+			versions:  map[string]*bundledeployments.Version{},
+			resources: map[string]bundledeployments.Resource{},
+		}
+		s.dmsDeployments[deploymentID] = d
 	}
 
 	// Mirror the server-side optimistic concurrency check: the new version must

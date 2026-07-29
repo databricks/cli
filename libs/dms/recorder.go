@@ -150,22 +150,26 @@ func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 // compute the next version number.
 func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID string, err error) {
 	if r.deploymentID != "" {
-		// Existing deployment: read it to compute the next version number. A 404 is
-		// not recovered from by creating a second deployment. The service trashes the
-		// workspace node when it deletes the record, so a node that resolved but has
-		// no record means the two are out of sync, and creating another deployment
-		// would collide on the same node path.
+		// A resolved node names the deployment, but its record is created by the
+		// first version, so there may be none yet: a deploy that registered the
+		// deployment and then failed before recording a version. Start at version 1
+		// under the ID the node already names, rather than creating a second
+		// deployment, which would collide on the same node path.
 		dep, getErr := r.svc.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
 			Name: "deployments/" + r.deploymentID,
 		})
-		if getErr != nil {
+		switch {
+		case getErr == nil:
+			lastVersion, parseErr := strconv.ParseInt(dep.LastVersionId, 10, 64)
+			if parseErr != nil {
+				return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
+			}
+			versionID = strconv.FormatInt(lastVersion+1, 10)
+		case errors.Is(getErr, apierr.ErrNotFound), errors.Is(getErr, apierr.ErrResourceDoesNotExist):
+			versionID = "1"
+		default:
 			return "", fmt.Errorf("failed to get deployment: %w", getErr)
 		}
-		lastVersion, parseErr := strconv.ParseInt(dep.LastVersionId, 10, 64)
-		if parseErr != nil {
-			return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
-		}
-		versionID = strconv.FormatInt(lastVersion+1, 10)
 	} else {
 		// First deploy: create the deployment so the server assigns an ID.
 		//

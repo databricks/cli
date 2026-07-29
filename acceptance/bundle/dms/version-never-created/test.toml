@@ -1,0 +1,7 @@
+# The first version fails, so the deployment record is never created - only the
+# workspace node CreateDeployment registered. The next deploy resolves the ID from
+# that node and has to cope with a deployment that has no record yet.
+[[Server]]
+Pattern = "POST /api/2.0/bundle/deployments/{deployment_id}/versions"
+Response.StatusCode = 500
+Response.Body = '''{"error_code": "INTERNAL_ERROR", "message": "Internal error"}'''

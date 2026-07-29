@@ -3,9 +3,12 @@ package dstate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -33,6 +36,15 @@ type RecordedState struct {
 func (db *DeploymentState) readDMSState(ctx context.Context, src *DMSSource) error {
 	resources, err := fetchDeploymentResources(ctx, src.Client, src.DeploymentID)
 	if err != nil {
+		// The deployment's record is created by its first version, so a node can
+		// resolve to an ID that has none yet: a deploy that registered the deployment
+		// and then failed before recording a version. There is nothing to read, and
+		// the file's resources are still empty, so carry on and let this deploy record
+		// the first version.
+		if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
+			log.Debugf(ctx, "No deployment record for %s yet; keeping local state", src.DeploymentID)
+			return nil
+		}
 		return err
 	}
 
