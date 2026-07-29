@@ -10,3 +10,11 @@ RecordRequests = true
 Ignore = [
     '.databricks',
 ]
+
+# These tests pass workspace paths to $CLI. On Windows, Git Bash rewrites a
+# leading-'/' argument into a Windows path before the CLI sees it, so
+# `workspace get-status /Workspace/...` looks up C:/Program Files/Git/Workspace/...
+# and 404s. Quoting the argument does not help - the conversion happens in the
+# Windows binary's argument processing.
+[Env]
+MSYS_NO_PATHCONV = "1"
