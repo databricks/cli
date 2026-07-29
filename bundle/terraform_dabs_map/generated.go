@@ -2,24 +2,21 @@
 
 package terraform_dabs_map
 
-// alerts / databricks_alert_v2: 5 dabs-only
+// alerts / databricks_alert_v2: 1 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
 // apps / databricks_app: 16 dabs-only
 // apps / databricks_app: 1 tf-only
-// clusters / databricks_cluster: 1 dabs-only
 // clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
-// experiments / databricks_mlflow_experiment: 1 dabs-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 13 dabs-only
-// jobs / databricks_job: 258 tf-only
-// model_serving_endpoints / databricks_model_serving: 6 dabs-only
+// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 259 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 27 dabs-only
+// pipelines / databricks_pipeline: 5 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
@@ -28,7 +25,6 @@ package terraform_dabs_map
 // postgres_projects / databricks_postgres_project: 2 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
 // postgres_roles / databricks_postgres_role: 1 unwraps
-// postgres_synced_tables / databricks_postgres_synced_table: 5 dabs-only
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 dabs-only
 // schemas / databricks_schema: 1 tf-only
@@ -84,17 +80,15 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 	"postgres_roles": {
 		"spec": {Unwrap: true},
 	},
+	"postgres_synced_tables": {
+		"spec": {Unwrap: true},
+	},
 }
 
 // DABsOnlyFields maps DABs group name → FieldSet of DABs fields with no TF equivalent.
 var DABsOnlyFields = map[string]FieldSet{
 	"alerts": {
 		"file_path": {},
-		"parameters": {
-			"name":  {}, // alerts.*.parameters.name
-			"type":  {}, // alerts.*.parameters.type
-			"value": {}, // alerts.*.parameters.value
-		},
 	},
 	"apps": {
 		"config": {
@@ -118,33 +112,15 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 		"source_code_path": {},
 	},
-	"clusters": {
-		"dependency_mode": {},
-	},
-	"experiments": {
-		"trace_location": {
-			"uc_trace_location": {
-				"effective_table_prefix": {}, // experiments.*.trace_location.uc_trace_location.effective_table_prefix
-			},
-		},
-	},
 	"jobs": {
 		"job_clusters": {
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
-				"dependency_mode":         {}, // jobs.*.job_clusters.new_cluster.dependency_mode
 			},
-			"serverless_compute_id": {}, // jobs.*.job_clusters.serverless_compute_id
 		},
 		"tasks": {
-			"ai_runtime_task": {
-				"code_source_path": {}, // jobs.*.tasks.ai_runtime_task.code_source_path
-			},
 			"for_each_task": {
 				"task": {
-					"ai_runtime_task": {
-						"code_source_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.code_source_path
-					},
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -152,25 +128,12 @@ var DABsOnlyFields = map[string]FieldSet{
 					},
 					"new_cluster": {
 						"autotermination_minutes": {}, // jobs.*.tasks.for_each_task.task.new_cluster.autotermination_minutes
-						"dependency_mode":         {}, // jobs.*.tasks.for_each_task.task.new_cluster.dependency_mode
 					},
 				},
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
-				"dependency_mode":         {}, // jobs.*.tasks.new_cluster.dependency_mode
 			},
-		},
-	},
-	"model_serving_endpoints": {
-		"telemetry_config": {
-			"table_names": {
-				"annotations_table": {}, // model_serving_endpoints.*.telemetry_config.table_names.annotations_table
-				"logs_table":        {}, // model_serving_endpoints.*.telemetry_config.table_names.logs_table
-				"metrics_table":     {}, // model_serving_endpoints.*.telemetry_config.table_names.metrics_table
-				"traces_table":      {}, // model_serving_endpoints.*.telemetry_config.table_names.traces_table
-			},
-			"telemetry_profile_id": {}, // model_serving_endpoints.*.telemetry_config.telemetry_profile_id
 		},
 	},
 	"pipelines": {
@@ -181,57 +144,8 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"dry_run": {},
-		"ingestion_definition": {
-			"objects": {
-				"schema": {
-					"connector_options": {
-						"reddit_ads_options": {
-							"custom_report_options": {
-								"breakdowns": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.custom_report_options.breakdowns
-								"fields":     {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.custom_report_options.fields
-							},
-							"lookback_window_days": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.lookback_window_days
-							"sync_start_date":      {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.sync_start_date
-						},
-					},
-					"fanout_options": {
-						"fanout_by": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.fanout_by
-						"transforms": {
-							"format": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.format
-							"json_options": {
-								"as_variant":            {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.as_variant
-								"schema":                {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema
-								"schema_evolution_mode": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_evolution_mode
-								"schema_file_path":      {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_file_path
-								"schema_hints":          {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_hints
-							},
-						},
-					},
-				},
-				"table": {
-					"connector_options": {
-						"reddit_ads_options": {
-							"custom_report_options": {
-								"breakdowns": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.custom_report_options.breakdowns
-								"fields":     {}, // pipelines.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.custom_report_options.fields
-							},
-							"lookback_window_days": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.lookback_window_days
-							"sync_start_date":      {}, // pipelines.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.sync_start_date
-						},
-					},
-				},
-			},
-		},
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
-		},
-	},
-	"postgres_synced_tables": {
-		"extra_columns": {
-			"column_name": {}, // postgres_synced_tables.*.extra_columns.column_name
-			"column_type": {}, // postgres_synced_tables.*.extra_columns.column_type
-			"compute":     {}, // postgres_synced_tables.*.extra_columns.compute
-			"maintenance": {}, // postgres_synced_tables.*.extra_columns.maintenance
 		},
 	},
 	"schemas": {
@@ -248,11 +162,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 				"effective_retrigger_seconds": {}, // databricks_alert_v2.*.evaluation.notification.effective_retrigger_seconds
 			},
 		},
-		"parameters": {
-			"name":  {}, // databricks_alert_v2.*.parameters.name
-			"type":  {}, // databricks_alert_v2.*.parameters.type
-			"value": {}, // databricks_alert_v2.*.parameters.value
-		},
 		"purge_on_delete": {},
 	},
 	"apps": {
@@ -268,7 +177,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 			},
 			"remote_mount_dir_path": {}, // databricks_cluster.*.cluster_mount_info.remote_mount_dir_path
 		},
-		"dependency_mode":   {},
 		"idempotency_token": {},
 		"is_pinned":         {},
 		"library": {
@@ -302,11 +210,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 	},
 	"experiments": {
 		"description": {},
-		"trace_location": {
-			"uc_trace_location": {
-				"effective_table_prefix": {}, // databricks_mlflow_experiment.*.trace_location.uc_trace_location.effective_table_prefix
-			},
-		},
 	},
 	"jobs": {
 		"always_running":    {},
@@ -333,7 +236,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 					},
 					"remote_mount_dir_path": {}, // databricks_job.*.job_cluster.new_cluster.cluster_mount_info.remote_mount_dir_path
 				},
-				"dependency_mode":   {}, // databricks_job.*.job_cluster.new_cluster.dependency_mode
 				"idempotency_token": {}, // databricks_job.*.job_cluster.new_cluster.idempotency_token
 				"library": {
 					"cran": {
@@ -355,7 +257,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 					"whl":          {}, // databricks_job.*.job_cluster.new_cluster.library.whl
 				},
 			},
-			"serverless_compute_id": {}, // databricks_job.*.job_cluster.serverless_compute_id
 		},
 		"library": {
 			"cran": {
@@ -581,14 +482,8 @@ var TerraformOnlyFields = map[string]FieldSet{
 			"parameters": {}, // databricks_job.*.spark_submit_task.parameters
 		},
 		"task": {
-			"ai_runtime_task": {
-				"code_source_path": {}, // databricks_job.*.task.ai_runtime_task.code_source_path
-			},
 			"for_each_task": {
 				"task": {
-					"ai_runtime_task": {
-						"code_source_path": {}, // databricks_job.*.task.for_each_task.task.ai_runtime_task.code_source_path
-					},
 					"new_cluster": {
 						"cluster_id": {}, // databricks_job.*.task.for_each_task.task.new_cluster.cluster_id
 						"cluster_mount_info": {
@@ -599,7 +494,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 							},
 							"remote_mount_dir_path": {}, // databricks_job.*.task.for_each_task.task.new_cluster.cluster_mount_info.remote_mount_dir_path
 						},
-						"dependency_mode":   {}, // databricks_job.*.task.for_each_task.task.new_cluster.dependency_mode
 						"idempotency_token": {}, // databricks_job.*.task.for_each_task.task.new_cluster.idempotency_token
 						"library": {
 							"cran": {
@@ -634,7 +528,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 					},
 					"remote_mount_dir_path": {}, // databricks_job.*.task.new_cluster.cluster_mount_info.remote_mount_dir_path
 				},
-				"dependency_mode":   {}, // databricks_job.*.task.new_cluster.dependency_mode
 				"idempotency_token": {}, // databricks_job.*.task.new_cluster.idempotency_token
 				"library": {
 					"cran": {
@@ -662,93 +555,14 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"model_serving_endpoints": {
 		"endpoint_url":        {},
 		"serving_endpoint_id": {},
-		"telemetry_config": {
-			"table_names": {
-				"annotations_table": {}, // databricks_model_serving.*.telemetry_config.table_names.annotations_table
-				"logs_table":        {}, // databricks_model_serving.*.telemetry_config.table_names.logs_table
-				"metrics_table":     {}, // databricks_model_serving.*.telemetry_config.table_names.metrics_table
-				"traces_table":      {}, // databricks_model_serving.*.telemetry_config.table_names.traces_table
-			},
-			"telemetry_profile_id": {}, // databricks_model_serving.*.telemetry_config.telemetry_profile_id
-		},
 	},
 	"pipelines": {
 		"expected_last_modified": {},
-		"ingestion_definition": {
-			"objects": {
-				"schema": {
-					"connector_options": {
-						"reddit_ads_options": {
-							"custom_report_options": {
-								"breakdowns": {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.custom_report_options.breakdowns
-								"fields":     {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.custom_report_options.fields
-							},
-							"lookback_window_days": {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.lookback_window_days
-							"sync_start_date":      {}, // databricks_pipeline.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.sync_start_date
-						},
-					},
-					"fanout_options": {
-						"fanout_by": {}, // databricks_pipeline.*.ingestion_definition.objects.schema.fanout_options.fanout_by
-						"transforms": {
-							"format": {}, // databricks_pipeline.*.ingestion_definition.objects.schema.fanout_options.transforms.format
-							"json_options": {
-								"as_variant":            {}, // databricks_pipeline.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.as_variant
-								"schema":                {}, // databricks_pipeline.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema
-								"schema_evolution_mode": {}, // databricks_pipeline.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_evolution_mode
-								"schema_file_path":      {}, // databricks_pipeline.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_file_path
-								"schema_hints":          {}, // databricks_pipeline.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_hints
-							},
-						},
-					},
-				},
-				"table": {
-					"connector_options": {
-						"reddit_ads_options": {
-							"custom_report_options": {
-								"breakdowns": {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.custom_report_options.breakdowns
-								"fields":     {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.custom_report_options.fields
-							},
-							"lookback_window_days": {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.lookback_window_days
-							"sync_start_date":      {}, // databricks_pipeline.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.sync_start_date
-						},
-					},
-				},
-			},
-		},
-		"url": {},
+		"url":                    {},
 	},
 	"postgres_projects": {
 		"initial_branch_spec": {
 			"is_protected": {}, // databricks_postgres_project.*.initial_branch_spec.is_protected
-		},
-	},
-	"postgres_synced_tables": {
-		"spec": {
-			"accelerated_sync":                   {}, // databricks_postgres_synced_table.*.spec.accelerated_sync
-			"branch":                             {}, // databricks_postgres_synced_table.*.spec.branch
-			"create_database_objects_if_missing": {}, // databricks_postgres_synced_table.*.spec.create_database_objects_if_missing
-			"existing_pipeline_id":               {}, // databricks_postgres_synced_table.*.spec.existing_pipeline_id
-			"extra_columns": {
-				"column_name": {}, // databricks_postgres_synced_table.*.spec.extra_columns.column_name
-				"column_type": {}, // databricks_postgres_synced_table.*.spec.extra_columns.column_type
-				"compute":     {}, // databricks_postgres_synced_table.*.spec.extra_columns.compute
-				"maintenance": {}, // databricks_postgres_synced_table.*.spec.extra_columns.maintenance
-			},
-			"new_pipeline_spec": {
-				"budget_policy_id": {}, // databricks_postgres_synced_table.*.spec.new_pipeline_spec.budget_policy_id
-				"storage_catalog":  {}, // databricks_postgres_synced_table.*.spec.new_pipeline_spec.storage_catalog
-				"storage_schema":   {}, // databricks_postgres_synced_table.*.spec.new_pipeline_spec.storage_schema
-			},
-			"postgres_database":      {}, // databricks_postgres_synced_table.*.spec.postgres_database
-			"primary_key_columns":    {}, // databricks_postgres_synced_table.*.spec.primary_key_columns
-			"scheduling_policy":      {}, // databricks_postgres_synced_table.*.spec.scheduling_policy
-			"source_table_full_name": {}, // databricks_postgres_synced_table.*.spec.source_table_full_name
-			"timeseries_key":         {}, // databricks_postgres_synced_table.*.spec.timeseries_key
-			"type_overrides": {
-				"column_name": {}, // databricks_postgres_synced_table.*.spec.type_overrides.column_name
-				"pg_type":     {}, // databricks_postgres_synced_table.*.spec.type_overrides.pg_type
-				"size":        {}, // databricks_postgres_synced_table.*.spec.type_overrides.size
-			},
 		},
 	},
 	"schemas": {
@@ -800,12 +614,13 @@ var DABsToTerraformRenameMap = map[string]RenameTree{
 // For groups using Unwrap in TerraformToDABsFieldMap, every DABs path must be prefixed
 // with this segment to obtain the corresponding TF path.
 var DABsToTerraformWrappers = map[string]string{
-	"postgres_branches":  "spec",
-	"postgres_catalogs":  "spec",
-	"postgres_databases": "spec",
-	"postgres_endpoints": "spec",
-	"postgres_projects":  "spec",
-	"postgres_roles":     "spec",
+	"postgres_branches":      "spec",
+	"postgres_catalogs":      "spec",
+	"postgres_databases":     "spec",
+	"postgres_endpoints":     "spec",
+	"postgres_projects":      "spec",
+	"postgres_roles":         "spec",
+	"postgres_synced_tables": "spec",
 }
 
 // DABsToTerraformWrapperFields maps DABs group name → first-level DABs field names that
@@ -856,5 +671,19 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"identity_type":    {},
 		"membership_roles": {},
 		"postgres_role":    {},
+	},
+	"postgres_synced_tables": {
+		"accelerated_sync":                   {},
+		"branch":                             {},
+		"create_database_objects_if_missing": {},
+		"existing_pipeline_id":               {},
+		"extra_columns":                      {},
+		"new_pipeline_spec":                  {},
+		"postgres_database":                  {},
+		"primary_key_columns":                {},
+		"scheduling_policy":                  {},
+		"source_table_full_name":             {},
+		"timeseries_key":                     {},
+		"type_overrides":                     {},
 	},
 }
