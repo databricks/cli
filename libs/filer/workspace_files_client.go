@@ -191,7 +191,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
 		if err != nil {
 			if mkdirErr, ok := errors.AsType[*apierr.APIError](err); ok && mkdirErr.StatusCode == http.StatusForbidden {
-				return permissionError{absPath}
+				return permissionError{absPath, mkdirErr}
 			}
 			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
 		}
@@ -217,7 +217,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 	// This API returns StatusForbidden when you have read access but don't have write access to a file
 	if aerr.StatusCode == http.StatusForbidden {
-		return permissionError{absPath}
+		return permissionError{absPath, aerr}
 	}
 
 	return err

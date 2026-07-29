@@ -1,0 +1,7 @@
+preflight  ok  check
+resolve    error  resolving job task 12345.transform: task "transform" of job 12345 binds environment "default", which records no environment version
+fetch      pending
+merge      pending
+provision  pending
+validate   pending
+For more detail, re-run with --debug, or --output json to share a structured report.

@@ -387,15 +387,15 @@ func newCreateCdfConfig() *cobra.Command {
 	cmd.Flags().StringVar(&createCdfConfigReq.CdfConfig.Name, "name", createCdfConfigReq.CdfConfig.Name, `Output only.`)
 
 	cmd.Use = "create-cdf-config PARENT CATALOG SCHEMA POSTGRES_SCHEMA"
-	cmd.Short = `*Beta* Create a Lakebase CDF configuration.`
+	cmd.Short = `*Beta* Create a change data feed configuration.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
-Create a Lakebase CDF configuration.
+Create a change data feed configuration.
 
-  Create a Lakebase CDF configuration (CdfConfig). Replicates the tables of a
-  Postgres schema into a Unity Catalog schema. Returns ALREADY_EXISTS if a
-  config with the requested id exists, or if another config already replicates
-  the target Postgres schema.
+  Create a CDF configuration that materializes the change data feed for all
+  tables in a Postgres schema as open-format Delta tables in Unity Catalog. Once
+  created, each table's change history is continuously written to its
+  corresponding Lakehouse table.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1504,14 +1504,14 @@ func newDeleteCdfConfig() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteCdfConfigReq.Force, "force", deleteCdfConfigReq.Force, `When true, also drops the replicated Delta tables in Unity Catalog.`)
 
 	cmd.Use = "delete-cdf-config NAME"
-	cmd.Short = `*Beta* Delete a Lakebase CDF configuration.`
+	cmd.Short = `*Beta* Delete a change data feed configuration.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
-Delete a Lakebase CDF configuration.
+Delete a change data feed configuration.
 
-  Delete a Lakebase CDF configuration (CdfConfig). Stops replication and removes
-  the config. When force is true, also drops the replicated Delta tables in
-  Unity Catalog.
+  Delete a CDF configuration and stop materializing the change data feed. When
+  force=true, also drops the Delta tables in Unity Catalog. When force=false
+  (default), the existing tables are preserved at their last state.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2463,12 +2463,14 @@ func newGetCdfConfig() *cobra.Command {
 	var getCdfConfigReq postgres.GetCdfConfigRequest
 
 	cmd.Use = "get-cdf-config NAME"
-	cmd.Short = `*Beta* Get a Lakebase CDF configuration.`
+	cmd.Short = `*Beta* Get a change data feed configuration.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
-Get a Lakebase CDF configuration.
+Get a change data feed configuration.
 
-  Get a single Lakebase CDF configuration (CdfConfig).
+  Get a single Lakebase CDF configuration, including the source Postgres schema,
+  target Unity Catalog schema, and the identity under which writes are
+  authorized.
 
   Arguments:
     NAME: The resource name of the CdfConfig to retrieve. Format:
@@ -2525,13 +2527,13 @@ func newGetCdfStatus() *cobra.Command {
 	var getCdfStatusReq postgres.GetCdfStatusRequest
 
 	cmd.Use = "get-cdf-status NAME"
-	cmd.Short = `*Beta* Get the replication status of a replicated table.`
+	cmd.Short = `*Beta* Get a change data feed status.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
-Get the replication status of a replicated table.
+Get a change data feed status.
 
-  Get the replication status of a single replicated table within a Lakebase CDF
-  configuration.
+  Get the CDF status of a single table within a Lakebase CDF configuration,
+  including its current state and the last committed position in the feed.
 
   Arguments:
     NAME: The resource name of the CdfStatus to retrieve. Format:
@@ -3115,12 +3117,14 @@ func newListCdfConfigs() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-cdf-configs PARENT"
-	cmd.Short = `*Beta* List Lakebase CDF configurations.`
+	cmd.Short = `*Beta* List change data feed configurations.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
-List Lakebase CDF configurations.
+List change data feed configurations.
 
-  List the Lakebase CDF configurations (CdfConfigs) under a database.
+  List all CDF configurations for a Lakebase database. Each configuration maps a
+  Postgres schema to a Unity Catalog schema where the change data feed is
+  materialized.
 
   Arguments:
     PARENT: The parent database to list CdfConfigs for. Format:
@@ -3193,13 +3197,14 @@ func newListCdfStatuses() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-cdf-statuses PARENT"
-	cmd.Short = `*Beta* List the replication statuses of replicated tables.`
+	cmd.Short = `*Beta* List change data feed statuses.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
-List the replication statuses of replicated tables.
+List change data feed statuses.
 
-  List the replication statuses of all tables replicated under a Lakebase CDF
-  configuration.
+  List the per-table CDF statuses within a Lakebase CDF configuration. Each
+  status shows whether a table's change data feed is snapshotting, streaming, or
+  skipped.
 
   Arguments:
     PARENT: The parent CdfConfig to list CdfStatuses for. Format:

@@ -15,7 +15,7 @@ Flags:
       --constraints-only            apply the Python version and constraints without adding the databricks-connect dependency
       --dry-run                     compute the plan without writing files or provisioning
   -h, --help                        help for setup-local
-      --job-id string               job ID to use as the compute target
+      --job-task string             job task to use as the compute target, as <job-id>.<task-key> (the task key is required)
       --serverless-version string   serverless version to use as the compute target (e.g. 5)
 
 Global Flags:

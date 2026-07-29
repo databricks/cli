@@ -43,6 +43,15 @@ class AiRuntimeTask:
     `mlflow_experiment_directory`.
     """
 
+    code_source_path: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Workspace or UC volume path of the code-source archive, unpacked on
+    each node and exposed through `$CODE_SOURCE`. Set by first-party
+    tooling; not for direct callers.
+    """
+
     deployments: VariableOrList[DeploymentSpec] = field(default_factory=list)
     """
     :meta private: [EXPERIMENTAL]
@@ -92,6 +101,15 @@ class AiRuntimeTaskDict(TypedDict, total=False):
     otherwise a new experiment is created. To target a specific MLflow
     storage location (for example, when running as a service principal), set
     `mlflow_experiment_directory`.
+    """
+
+    code_source_path: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Workspace or UC volume path of the code-source archive, unpacked on
+    each node and exposed through `$CODE_SOURCE`. Set by first-party
+    tooling; not for direct callers.
     """
 
     deployments: VariableOrList[DeploymentSpecParam]

@@ -32,7 +32,7 @@ class AzureAttributes:
 
     capacity_reservation_group: VariableOrOptional[str] = None
     """
-    [Public Preview] The Azure capacity reservation group resource ID to use for launching VMs.
+    The Azure capacity reservation group resource ID to use for launching VMs.
     When specified, VMs will be launched using the provided capacity reservation.
     
     Capacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not
@@ -89,7 +89,7 @@ class AzureAttributesDict(TypedDict, total=False):
 
     capacity_reservation_group: VariableOrOptional[str]
     """
-    [Public Preview] The Azure capacity reservation group resource ID to use for launching VMs.
+    The Azure capacity reservation group resource ID to use for launching VMs.
     When specified, VMs will be launched using the provided capacity reservation.
     
     Capacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not

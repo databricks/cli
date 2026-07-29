@@ -1,0 +1,31 @@
+
+=== Deploy (creates the job and the deployment)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== destroy without --force-lock (lock write hits the node limit: aborts)
+>>> errcode [CLI] bundle destroy --auto-approve
+Error: Failed to acquire deployment lock: access denied: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Error: Failed to update, encountered possible permission error: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+Error: unable to deploy to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state as [USERNAME].
+Please make sure the current user or one of their groups is listed under the permissions of this bundle.
+For assistance, contact the owners of this project.
+They may need to redeploy the bundle to apply the new permissions.
+Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions.
+
+
+Exit code: 1
+
+=== destroy with --force-lock (tolerates the node limit: proceeds and completes)
+>>> [CLI] bundle destroy --force-lock --auto-approve
+Warn: Proceeding with destroy without a deployment lock: access denied: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!

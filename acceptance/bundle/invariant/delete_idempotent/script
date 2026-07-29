@@ -2,49 +2,21 @@
 # After a delete succeeds, restoring the pre-delete state and running deploy again
 # must succeed even though the resources are already gone on the server.
 
-# Copy data files to test directory
-cp -r "$TESTDIR/../data/." . &> LOG.cp
-
-# Run init script if present
-INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
-if [ -f "$INIT_SCRIPT" ]; then
-    source "$INIT_SCRIPT" &> LOG.init
-fi
-
-envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
-
-cp databricks.yml LOG.config
+invariant_setup
 
 # All configs use `test-bundle-$UNIQUE_NAME`; workspace root/state paths follow
 # the default `~/.bundle/<name>/<target>` template with target=default.
 bundle_name=test-bundle-$UNIQUE_NAME
 STATE_PATH=/Workspace/Users/$CURRENT_USER_NAME/.bundle/$bundle_name/default/state
 
-cleanup() {
-    trace $CLI bundle destroy --auto-approve &> LOG.destroy
-    cat LOG.destroy | contains.py '!panic' '!internal error' > /dev/null
-
-    CLEANUP_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-cleanup.sh"
-    if [ -f "$CLEANUP_SCRIPT" ]; then
-        source "$CLEANUP_SCRIPT" &> LOG.cleanup
-    fi
-}
-
-trap cleanup EXIT
-
 # Initial deploy of the resources. Only pre-plan when READPLAN=1 exercises the
 # saved-plan deploy path; otherwise `bundle deploy` plans on its own.
 if [[ -n "$READPLAN" ]]; then
     $CLI bundle plan -o json > plan_initial.json 2>LOG.plan_initial.err
-    cat LOG.plan_initial.err | contains.py '!panic' '!internal error' > /dev/null
+    cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
 fi
 
-trace $CLI bundle deploy $(readplanarg plan_initial.json) &> LOG.deploy_initial
-cat LOG.deploy_initial | contains.py '!panic' '!internal error' > /dev/null
-
-# Special message to fuzzer that generated config was fine.
-# Any failures after this point will be considered as "bug detected" by fuzzer.
-echo INPUT_CONFIG_OK
+invariant_deploy LOG.deploy_initial $CLI bundle deploy $(readplanarg plan_initial.json)
 
 # Snapshot the deploy state before we delete anything.
 cp -r .databricks .databricks.backup
@@ -59,11 +31,11 @@ EOF
 
 if [[ -n "$READPLAN" ]]; then
     $CLI bundle plan -o json > plan_delete.json 2>LOG.plan_delete.err
-    cat LOG.plan_delete.err | contains.py '!panic' '!internal error' > /dev/null
+    cat LOG.plan_delete.err | contains.py '!panic:' '!internal error' > /dev/null
 fi
 
 trace $CLI bundle deploy --auto-approve $(readplanarg plan_delete.json) &> LOG.deploy_delete
-cat LOG.deploy_delete | contains.py '!panic' '!internal error' > /dev/null
+cat LOG.deploy_delete | contains.py '!panic:' '!internal error' > /dev/null
 
 # Restore the pre-delete state; the resources are already gone from the server,
 # so the next delete-deploy must handle "resource already gone" idempotently.
@@ -78,12 +50,12 @@ mv .databricks.backup .databricks
 # workspace path into C:/Program Files/Git/...; it is scoped to this command so
 # the Python helpers (which need their own paths converted) are unaffected.
 MSYS_NO_PATHCONV=1 $CLI workspace delete --recursive "$STATE_PATH" &> LOG.wipe_remote_state
-cat LOG.wipe_remote_state | contains.py '!panic' '!internal error' > /dev/null
+cat LOG.wipe_remote_state | contains.py '!panic:' '!internal error' > /dev/null
 
 if [[ -n "$READPLAN" ]]; then
     $CLI bundle plan -o json > plan_delete2.json 2>LOG.plan_delete2.err
-    cat LOG.plan_delete2.err | contains.py '!panic' '!internal error' > /dev/null
+    cat LOG.plan_delete2.err | contains.py '!panic:' '!internal error' > /dev/null
 fi
 
 trace $CLI bundle deploy --auto-approve $(readplanarg plan_delete2.json) &> LOG.deploy_delete2
-cat LOG.deploy_delete2 | contains.py '!panic' '!internal error' > /dev/null
+cat LOG.deploy_delete2 | contains.py '!panic:' '!internal error' > /dev/null
