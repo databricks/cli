@@ -3,6 +3,7 @@
 package registered_models
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -93,7 +94,6 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: aliases
-	cmd.Flags().BoolVar(&createReq.BrowseOnly, "browse-only", createReq.BrowseOnly, `Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.`)
 	cmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `The name of the catalog where the schema and the registered model reside.`)
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the registered model.`)
 	cmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
@@ -224,7 +224,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the registered model")
+			return errors.New("expected to have the three-level (fully qualified) name of the registered model")
 		}
 		deleteReq.FullName = args[0]
 
@@ -367,7 +367,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the registered model")
+			return errors.New("expected to have the three-level (fully qualified) name of the registered model")
 		}
 		getReq.FullName = args[0]
 
@@ -521,7 +521,7 @@ func newSetAlias() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, ALIAS as positional arguments. Provide 'version_num' in your JSON input")
+				return errors.New("when --json flag is specified, provide only FULL_NAME, ALIAS as positional arguments. Provide 'version_num' in your JSON input")
 			}
 			return nil
 		}
@@ -594,7 +594,6 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: aliases
-	cmd.Flags().BoolVar(&updateReq.BrowseOnly, "browse-only", updateReq.BrowseOnly, `Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.`)
 	cmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `The name of the catalog where the schema and the registered model reside.`)
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the registered model.`)
 	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
@@ -661,7 +660,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the registered model")
+			return errors.New("expected to have the three-level (fully qualified) name of the registered model")
 		}
 		updateReq.FullName = args[0]
 

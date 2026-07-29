@@ -11,6 +11,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+const (
+	appStatusRunningMessage     = "App has status: App is running"
+	appStatusUnavailableMessage = "App status is unavailable."
+)
+
 func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 	var updateReq apps.AsyncUpdateAppRequest
 	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
@@ -154,6 +159,11 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 		State:   apps.ComputeStateActive,
 		Message: "App compute is active.",
 	}
+	// Starting the compute brings the application up.
+	app.AppStatus = &apps.ApplicationStatus{
+		State:   "RUNNING",
+		Message: appStatusRunningMessage,
+	}
 	s.Apps[name] = app
 
 	return Response{Body: app}
@@ -169,11 +179,72 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 
 	app.ComputeStatus = &apps.ComputeStatus{
 		State:   apps.ComputeStateStopped,
-		Message: "App compute is stopped.",
+		Message: "Start the app compute to deploy the app.",
 	}
+	// Stopping the compute takes the application down.
+	app.AppStatus = &apps.ApplicationStatus{
+		State:   "UNAVAILABLE",
+		Message: appStatusUnavailableMessage,
+	}
+	// The backend clears both deployments on stop for the apps these fixtures use,
+	// so the deploy-only fields read back empty. Match that so drift tests are realistic.
+	app.ActiveDeployment = nil
+	app.PendingDeployment = nil
 	s.Apps[name] = app
 
 	return Response{Body: app}
+}
+
+// AppsGet returns the app, keeping DELETING resources visible so callers can
+// observe transient state (matches the cloud DELETE lifecycle).
+func (s *FakeWorkspace) AppsGet(name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Resource apps.App not found: %v", name)},
+		}
+	}
+
+	return Response{Body: app}
+}
+
+// AppsDelete simulates the real Apps DELETE lifecycle: the first DELETE flips
+// the app into DELETING state (without removing it), and a second DELETE while
+// still in DELETING returns 400 with the exact cloud error message.
+func (s *FakeWorkspace) AppsDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	if app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateDeleting {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "BAD_REQUEST",
+				"message": fmt.Sprintf(
+					"Cannot delete app %s as it is not terminal with state DELETING, "+
+						"and was updated less than 20 minutes ago. Please wait before trying again.", name),
+			},
+		}
+	}
+
+	app.ComputeStatus = &apps.ComputeStatus{
+		State:   apps.ComputeStateDeleting,
+		Message: "App is being deleted.",
+	}
+	app.AppStatus = &apps.ApplicationStatus{
+		State:   "UNAVAILABLE",
+		Message: appStatusUnavailableMessage,
+	}
+	s.Apps[name] = app
+
+	return Response{}
 }
 
 func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
@@ -215,18 +286,22 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		}
 	}
 
-	app.AppStatus = &apps.ApplicationStatus{
-		State:   "RUNNING",
-		Message: "Application is running.",
-	}
-
-	// Respect no_compute query param: if true, start the app in STOPPED state.
+	// A no_compute app is created without running compute, so on cloud it
+	// reports an UNAVAILABLE application status until it is started.
 	if req.URL.Query().Get("no_compute") == "true" {
+		app.AppStatus = &apps.ApplicationStatus{
+			State:   "UNAVAILABLE",
+			Message: appStatusUnavailableMessage,
+		}
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   apps.ComputeStateStopped,
 			Message: "App compute is stopped.",
 		}
 	} else {
+		app.AppStatus = &apps.ApplicationStatus{
+			State:   "RUNNING",
+			Message: "Application is running.",
+		}
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   "ACTIVE",
 			Message: "App compute is active.",

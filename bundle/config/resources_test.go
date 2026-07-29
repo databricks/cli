@@ -125,6 +125,10 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	// Resources that intentionally have no workspace URL.
 	noURL := map[string]bool{
 		"external_locations": true,
+		// A job run does have a workspace URL, but it's addressed by two IDs
+		// (job + run) so it can't be expressed as a single-ID pattern here; it's
+		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
+		"job_runs":           true,
 		"postgres_branches":  true,
 		"postgres_databases": true,
 		"postgres_endpoints": true,
@@ -159,6 +163,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				JobSettings: jobs.JobSettings{},
 			},
 		},
+		JobRuns: map[string]*resources.JobRun{
+			"my_job_run": {
+				RunNow: jobs.RunNow{},
+			},
+		},
 		Pipelines: map[string]*resources.Pipeline{
 			"my_pipeline": {
 				CreatePipeline: pipelines.CreatePipeline{},
@@ -191,6 +200,9 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Clusters: map[string]*resources.Cluster{
 			"my_cluster": {},
+		},
+		InstancePools: map[string]*resources.InstancePool{
+			"my_instance_pool": {},
 		},
 		Dashboards: map[string]*resources.Dashboard{
 			"my_dashboard": {},
@@ -336,6 +348,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockJobsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
@@ -343,6 +356,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockExternalLocationsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockInstancePoolsAPI().EXPECT().GetByInstancePoolId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockGenieAPI().EXPECT().GetSpace(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)

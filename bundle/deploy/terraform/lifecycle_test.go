@@ -18,6 +18,8 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 		"catalogs",
 		"external_locations",
 		"genie_spaces",
+		"instance_pools",
+		"job_runs",
 		"vector_search_endpoints",
 		"vector_search_indexes",
 	}

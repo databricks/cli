@@ -170,6 +170,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 		Name:                 config.Name,
 		NotificationSettings: config.NotificationSettings,
 		Parameters:           config.Parameters,
+		ParentPath:           config.ParentPath,
 		PerformanceTarget:    config.PerformanceTarget,
 		Queue:                config.Queue,
 		RunAs:                config.RunAs,

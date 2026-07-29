@@ -3,7 +3,7 @@
 package restrict_workspace_admins
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -225,7 +225,7 @@ Update the restrict workspace admins setting.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Settings.RestrictWorkspaceAdmins().Update(ctx, updateReq)

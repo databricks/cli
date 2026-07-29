@@ -3,6 +3,7 @@
 package repos
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -75,6 +76,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().Int64Var(&createReq.GitCredentialId, "git-credential-id", createReq.GitCredentialId, `Git credential ID to use when cloning the repository.`)
 	cmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
 	// TODO: complex arg: sparse_checkout
 
@@ -103,7 +105,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'url', 'provider' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'url', 'provider' in your JSON input")
 			}
 			return nil
 		}
@@ -202,7 +204,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to delete")
+			return errors.New("expected to have the id for the corresponding repo to delete")
 		}
 		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
 		if err != nil {
@@ -275,7 +277,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have id of the git folder (repo) object in the workspace")
+			return errors.New("expected to have id of the git folder (repo) object in the workspace")
 		}
 		_, err = fmt.Sscan(args[0], &getReq.RepoId)
 		if err != nil {
@@ -349,7 +351,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.RepoId = args[0]
 
@@ -421,7 +423,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
 		getPermissionsReq.RepoId = args[0]
 
@@ -582,7 +584,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
 		setPermissionsReq.RepoId = args[0]
 
@@ -625,6 +627,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
 	cmd.Flags().BoolVar(&updateReq.DangerouslyForceDiscardAll, "dangerously-force-discard-all", updateReq.DangerouslyForceDiscardAll, `WARNING: DESTRUCTIVE AND IRREVERSIBLE.`)
+	cmd.Flags().Int64Var(&updateReq.GitCredentialId, "git-credential-id", updateReq.GitCredentialId, `Git credential ID to use for this update operation.`)
 	// TODO: complex arg: sparse_checkout
 	cmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to.`)
 
@@ -674,7 +677,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have id of the git folder (repo) object in the workspace")
+			return errors.New("expected to have id of the git folder (repo) object in the workspace")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
 		if err != nil {
@@ -765,7 +768,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
 		updatePermissionsReq.RepoId = args[0]
 

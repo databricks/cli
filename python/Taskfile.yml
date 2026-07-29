@@ -81,6 +81,11 @@ tasks:
       # Generated code is fixed and formatted by the global ruff (see ../ruff.toml).
       - uvx ruff@0.15.17 check --fix databricks databricks_tests || true
       - uvx ruff@0.15.17 format
+      # The `uv run` invocations above rewrite the lockfiles with the internal
+      # *.databricks.com PyPI proxy URL when uv/pip is proxy-configured (locally
+      # or via setup-jfrog in CI). That is environment noise, not codegen output;
+      # revert it so the committed locks stay on pypi.org.
+      - git checkout -- uv.lock codegen/uv.lock
 
   pydabs-build:
     desc: Build pydabs wheel

@@ -1,0 +1,13 @@
+json.plan_version = 2;
+json.cli_version = "[CLI_VERSION]";
+json.plan.resources.model_serving_endpoints.my_endpoint.action = "create";
+json.plan.resources.model_serving_endpoints.my_endpoint.new_state.value.name = "[ENDPOINT_NAME_1]";
+json.plan.resources.model_serving_endpoints.my_endpoint.permissions.depends_on[0].node = "resources.model_serving_endpoints.my_endpoint";
+json.plan.resources.model_serving_endpoints.my_endpoint.permissions.depends_on[0].label = "${resources.model_serving_endpoints.my_endpoint.endpoint_id}";
+json.plan.resources.model_serving_endpoints.my_endpoint.permissions.action = "create";
+json.plan.resources.model_serving_endpoints.my_endpoint.permissions.new_state.value.object_id = "";
+json.plan.resources.model_serving_endpoints.my_endpoint.permissions.new_state.value.__embed__[0].level = "CAN_MANAGE";
+json.plan.resources.model_serving_endpoints.my_endpoint.permissions.new_state.value.__embed__[0].service_principal_name = "[USERNAME]";
+json.plan.resources.model_serving_endpoints.my_endpoint.permissions.new_state.value.__embed__[1].level = "CAN_VIEW";
+json.plan.resources.model_serving_endpoints.my_endpoint.permissions.new_state.value.__embed__[1].user_name = "deco-test-user@databricks.com";
+json.plan.resources.model_serving_endpoints.my_endpoint.permissions.new_state.vars.object_id = "/serving-endpoints/${resources.model_serving_endpoints.my_endpoint.endpoint_id}";

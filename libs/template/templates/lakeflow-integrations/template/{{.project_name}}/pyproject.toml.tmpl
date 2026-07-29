@@ -1,0 +1,29 @@
+[project]
+name = "{{.project_name}}"
+version = "0.0.1"
+authors = []
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # Any dependencies for jobs and pipelines in this project can be added here
+    # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies
+    "databricks-lakeflow-integrations",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "src/{{.project_name}}",
+]
+
+[dependency-groups]
+dev = [
+    # libraries part of serverless environment
+    "requests",
+    "databricks-sdk"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120

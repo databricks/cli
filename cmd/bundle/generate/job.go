@@ -27,6 +27,7 @@ func NewGenerateJobCommand() *cobra.Command {
 	var jobId int64
 	var force bool
 	var bind bool
+	var downloadSparkPythonFiles bool
 
 	cmd := &cobra.Command{
 		Use:   "job",
@@ -49,7 +50,8 @@ Examples:
 
 What gets generated:
 - Job configuration YAML file in the resources directory
-- Any associated notebook or Python files in the source directory
+- Any associated notebook files in the source directory
+- Any associated python spark files in the source directory, if --download-spark-python-files is provided
 
 After generation, you can deploy this job to other targets using:
   databricks bundle deploy --target staging
@@ -64,6 +66,7 @@ After generation, you can deploy this job to other targets using:
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated resource to the existing resource`)
 	cmd.Flags().MarkHidden("bind")
+	cmd.Flags().BoolVar(&downloadSparkPythonFiles, "download-spark-python-files", false, `download workspace files referenced by spark_python_task and rewrite them to a relative path`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
@@ -80,7 +83,11 @@ After generation, you can deploy this job to other targets using:
 			return err
 		}
 
-		downloader := generate.NewDownloader(w, sourceDir, configDir)
+		var opts []generate.DownloaderOption
+		if downloadSparkPythonFiles {
+			opts = append(opts, generate.WithSparkPythonFiles())
+		}
+		downloader := generate.NewDownloader(w, sourceDir, configDir, opts...)
 
 		// Don't download files if the job is using Git source
 		// When Git source is used, the job will be using the files from the Git repository
@@ -146,6 +153,8 @@ After generation, you can deploy this job to other targets using:
 		}
 
 		cmdio.LogString(ctx, "Job configuration successfully saved to "+filepath.ToSlash(filename))
+
+		warnIfNotIncluded(ctx, b, filename)
 
 		if bind {
 			return deployment.BindResource(cmd, jobKey, strconv.FormatInt(jobId, 10), true, false, true)

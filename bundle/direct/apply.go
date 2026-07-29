@@ -107,7 +107,10 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// place, matching the Terraform provider's recreate behaviour.
 	err = retryOnTransientErr(ctx, func() error { return d.Adapter.DoDelete(ctx, oldID, oldState) })
 	if err != nil && !apierr.IsMissing(err) && !isManagedByParent(err) {
-		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
+		if !d.deleteConfirmedGone(ctx, oldID) {
+			return fmt.Errorf("deleting old id=%s: %w", oldID, err)
+		}
+		log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
 	}
 
 	// Drop the state entry so a subsequent failure of Create or WaitAfterDelete
@@ -225,6 +228,8 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		// mean configuration error that user is trying to fix by removing resource from their bundle.
 		if errors.Is(err, apierr.ErrPermissionDenied) {
 			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
+		} else if d.deleteConfirmedGone(ctx, oldID) {
+			log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
 		} else {
 			return fmt.Errorf("deleting id=%s: %w", oldID, err)
 		}
@@ -244,6 +249,25 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	return nil
+}
+
+// deleteConfirmedGone reports whether a failed DoDelete can be treated as
+// complete: the backend already removed the resource, or it is in a transient
+// terminal-teardown state (e.g. an app in DELETING) that IsGone recognises and a
+// retried delete would keep rejecting. This closes the plan/apply gap for saved
+// plans: IsGone is consulted at plan time, but with `deploy --plan` the resource
+// may enter that state only after the plan is saved. We re-read rather than match
+// the delete error because the backend returns a generic 400 BAD_REQUEST (see
+// apps/src/utils/AppsStatusUtils.scala) that carries no distinct SDK sentinel.
+func (d *DeploymentUnit) deleteConfirmedGone(ctx context.Context, id string) bool {
+	remote, err := d.Adapter.DoRead(ctx, id)
+	if apierr.IsMissing(err) {
+		return true
+	}
+	if err != nil {
+		return false
+	}
+	return d.Adapter.IsGone(remote)
 }
 
 func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState, id string, newState any, entry *deployplan.PlanEntry) error {

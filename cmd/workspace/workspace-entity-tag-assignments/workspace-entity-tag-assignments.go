@@ -3,6 +3,7 @@
 package workspace_entity_tag_assignments
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -91,7 +92,7 @@ Create a tag assignment for an entity.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'entity_type', 'entity_id', 'tag_key' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'entity_type', 'entity_id', 'tag_key' in your JSON input")
 			}
 			return nil
 		}

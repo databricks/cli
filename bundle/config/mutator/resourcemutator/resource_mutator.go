@@ -295,6 +295,17 @@ func NormalizeResources(
 		return
 	}
 
+	// Permissions added to an existing resource by a Python mutator must still get the
+	// deploying user as IS_OWNER, otherwise the Permissions API rejects the PUT with
+	// "must have exactly one owner" (#5682). FixPermissions is idempotent, so re-running
+	// it on resources that already have an owner is a no-op. ApplyBundlePermissions is
+	// intentionally not re-run here: it is not idempotent (it appends bundle-level
+	// permissions) and already ran for these resources in ProcessStaticResources.
+	bundle.ApplyContext(ctx, b, FixPermissions())
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	// after mutators, we merge updated resources back to snapshot to preserve non-selected resources
 	err = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return mergeResources(root, snapshot)

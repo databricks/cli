@@ -6,7 +6,7 @@ package terraform_dabs_map
 // alerts / databricks_alert_v2: 3 tf-only
 // apps / databricks_app: 16 dabs-only
 // apps / databricks_app: 1 tf-only
-// clusters / databricks_cluster: 25 tf-only
+// clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
@@ -18,22 +18,18 @@ package terraform_dabs_map
 // pipelines / databricks_pipeline: 3 renames
 // pipelines / databricks_pipeline: 5 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
-// postgres_branches / databricks_postgres_branch: 1 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
-// postgres_databases / databricks_postgres_database: 1 tf-only
 // postgres_databases / databricks_postgres_database: 1 unwraps
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
 // postgres_projects / databricks_postgres_project: 2 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
-// postgres_roles / databricks_postgres_role: 1 tf-only
 // postgres_roles / databricks_postgres_role: 1 unwraps
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 dabs-only
 // schemas / databricks_schema: 1 tf-only
 // secret_scopes / databricks_secret_scope: 1 tf-only
 // sql_warehouses / databricks_sql_endpoint: 2 tf-only
-// volumes / databricks_volume: 1 tf-only
 
 // TerraformToDABsFieldMap maps DABs group name → nested TF segments → DABs segment name.
 // Navigate using TF field name segments; DABs is the corresponding DABs name when it differs.
@@ -172,6 +168,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"no_compute": {},
 	},
 	"clusters": {
+		"clear_cloud_attributes_on_remove": {},
 		"cluster_mount_info": {
 			"local_mount_dir_path": {}, // databricks_cluster.*.cluster_mount_info.local_mount_dir_path
 			"network_filesystem_info": {
@@ -562,19 +559,10 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"expected_last_modified": {},
 		"url":                    {},
 	},
-	"postgres_branches": {
-		"purge_on_delete": {},
-	},
-	"postgres_databases": {
-		"replace_existing": {},
-	},
 	"postgres_projects": {
 		"initial_branch_spec": {
 			"is_protected": {}, // databricks_postgres_project.*.initial_branch_spec.is_protected
 		},
-	},
-	"postgres_roles": {
-		"replace_existing": {},
 	},
 	"schemas": {
 		"force_destroy": {},
@@ -585,9 +573,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"sql_warehouses": {
 		"data_source_id": {},
 		"no_wait":        {},
-	},
-	"volumes": {
-		"volume_path": {},
 	},
 }
 

@@ -1,0 +1,7 @@
+preflight  ok  uv [UV_VERSION]
+resolve    error  No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --cluster-name / --serverless-version / --job-task
+fetch      pending
+merge      pending
+provision  pending
+validate   pending
+For more detail, re-run with --debug, or --output json to share a structured report.

@@ -52,6 +52,18 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	var r pipelines.GetPipelineResponse
 	r.Spec = &spec
 
+	// parameters is not on PipelineSpec (only on CreatePipeline), so the decode above
+	// drops it. The backend echoes it on GetPipelineResponse.Parameters; mirror that
+	// here, else a re-read misses it and the CLI plans a perpetual update.
+	var create pipelines.CreatePipeline
+	if err := json.Unmarshal(req.Body, &create); err != nil {
+		return Response{
+			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+			StatusCode: 400,
+		}
+	}
+	r.Parameters = create.Parameters
+
 	pipelineId := nextUUID()
 	r.PipelineId = pipelineId
 	r.CreatorUserName = "tester@databricks.com"
@@ -100,7 +112,18 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		}
 	}
 
+	// parameters is on EditPipeline, not PipelineSpec; round-trip it like
+	// PipelineCreate does.
+	var edit pipelines.EditPipeline
+	if err := json.Unmarshal(req.Body, &edit); err != nil {
+		return Response{
+			Body:       fmt.Sprintf("internal error: %s", err),
+			StatusCode: 400,
+		}
+	}
+
 	item.Spec = &spec
+	item.Parameters = edit.Parameters
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = item
 

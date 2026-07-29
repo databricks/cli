@@ -87,9 +87,7 @@ class ConnectorOptions:
 
     kafka_options: VariableOrOptional[KafkaOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview]
+    [Beta]
     """
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptions] = None
@@ -171,9 +169,7 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     kafka_options: VariableOrOptional[KafkaOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview]
+    [Beta]
     """
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptionsParam]

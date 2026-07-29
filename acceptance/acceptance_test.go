@@ -29,6 +29,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/databricks/cli/acceptance/internal"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
@@ -234,10 +235,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// signal because os.LookupEnv reports them as present.
 	// Keep this list in sync with listKnownAgents() in
 	// github.com/databricks/databricks-sdk-go/useragent/agent.go
-	// plus the AGENT and AI_AGENT generic fallbacks.
+	// plus the AGENT and AI_AGENT generic fallbacks and the CLI's own
+	// AIDEVKIT_HOME detection override.
 	for _, v := range []string{
 		"AGENT",
 		"AI_AGENT",
+		"AIDEVKIT_HOME",
 		"AMP_CURRENT_THREAD_ID",
 		"ANTIGRAVITY_AGENT",
 		"AUGMENT_AGENT",
@@ -298,11 +301,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	}
 
 	execPath := ""
+	cliVersion := ""
 
 	if inprocessMode {
 		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
+		// In-process mode runs the CLI code directly; the test binary's own build
+		// info is the correct version.
+		cliVersion = build.GetInfo().Version
 	} else {
 		if CLIPath != "" {
 			// Use a prebuilt binary (e.g. a CLI built from main) instead of building
@@ -314,8 +321,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				version = resolveLatestVersion(t, buildDir)
 			}
 			execPath = DownloadCLI(t, buildDir, version)
+			// For a downloaded release the version string is already known.
+			cliVersion = version
 		} else {
 			execPath = BuildCLI(t, buildDir, coverDir, runtime.GOOS, runtime.GOARCH)
+		}
+		if cliVersion == "" {
+			// Run the binary to get its version: the test binary itself is compiled
+			// by "go test" in a tmpdir where VCS stamps are unavailable, so
+			// build.GetInfo().Version returns bare "0.0.0-dev" rather than
+			// "0.0.0-dev+<commit>". The built CLI binary includes VCS stamps.
+			cliVersion = getBinaryVersion(t, execPath)
 		}
 	}
 
@@ -388,8 +404,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
-	testdiff.PrepareReplacementsDevVersion(t, &repls)
+	repls.Set(cliVersion, "[CLI_VERSION]")
+	// Also replace the base version without build metadata (e.g. "0.0.0-dev" when
+	// cliVersion is "0.0.0-dev+abc123"), so fixture data that stores a bare version
+	// string is also normalized.
+	if base, _, found := strings.Cut(cliVersion, "+"); found {
+		repls.Set(base, "[CLI_VERSION]")
+	}
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
+	testdiff.PrepareReplacementTfProviderVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
 	t.Setenv("TESTROOT", cwd)
@@ -406,6 +429,30 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
+
+	testDirsSet := make(map[string]bool, len(testDirs))
+	for _, d := range testDirs {
+		testDirsSet[d] = true
+	}
+
+	skipLocalMode := os.Getenv(SkipLocalEnvVar)
+	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun)
+
+	switch skipLocalMode {
+	case "", SkipLocalAll, SkipLocalWithChanged:
+	default:
+		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, skipLocalMode, SkipLocalAll, SkipLocalWithChanged)
+	}
+	skipLocalWithChanged := skipLocalMode == SkipLocalWithChanged
+
+	// changedTests maps test dir to extra env filters for added/modified tests; nil
+	// filters means all variants of that dir changed. Both SkipLocalWithChanged and the
+	// subset selector keep these tests, so detect them at most once here.
+	var changedTests map[string][]string
+	if skipLocalWithChanged || subset.enabled {
+		changedTests = selectChangedLocalTests(t, testDirsSet)
+	}
+	subset.changed = changedTests
 
 	if singleTest != "" {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
@@ -461,7 +508,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath)
+			skipReason := getSkipReason(&config, configPath, dir, skipLocalMode, changedTests)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -504,6 +551,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			// If the matrix expands to a single empty envset, run the test directly
 			// without creating a subtest (avoids the "#00" dummy subtest name).
 			if len(expanded) == 1 && len(expanded[0]) == 0 {
+				if reason := subset.skipReason(dir, nil); reason != "" {
+					t.Skip(reason)
+				}
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters, sandboxProxyURL)
 			} else {
 				for ind, envset := range expanded {
@@ -511,6 +561,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 					t.Run(envname, func(t *testing.T) {
 						if runParallel {
 							t.Parallel()
+						}
+						// Under SkipLocalWithChanged, an invariant dir re-enabled by a
+						// specific config change runs only its matching variants.
+						if skipLocalWithChanged {
+							if variantFilters := changedTests[dir]; variantFilters != nil {
+								checkEnvFilters(t, envset, variantFilters)
+							}
+						}
+						if reason := subset.skipReason(dir, envset); reason != "" {
+							t.Skip(reason)
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
@@ -584,9 +644,20 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-func getSkipReason(config *internal.TestConfig, configPath string) string {
-	if os.Getenv("DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
-		return "Disabled via DATABRICKS_TEST_SKIPLOCAL environment variable in " + configPath
+// skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
+// changedTests maps test dirs to extra env filters; nil map means feature is off.
+func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode string, changedTests map[string][]string) string {
+	switch skipLocalMode {
+	case SkipLocalAll:
+		if isTruePtr(config.Local) {
+			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalAll + " in " + configPath
+		}
+	case SkipLocalWithChanged:
+		if isTruePtr(config.Local) {
+			if _, ok := changedTests[dir]; !ok {
+				return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
+			}
+		}
 	}
 
 	if Forcerun {
@@ -767,7 +838,7 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
@@ -854,6 +925,15 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	if !isRunningOnCloud {
+		// Expose a guest token for the as-test-sp helper: the guest prefix plus
+		// the primary identity's uuid suffix make it share the same fake
+		// workspace. On cloud TEST_SP_TOKEN comes from the real environment.
+		suffix := cfg.Token
+		for _, prefix := range []string{testserver.UserNameTokenPrefix, testserver.ServicePrincipalTokenPrefix} {
+			suffix = strings.TrimPrefix(suffix, prefix)
+		}
+		cmd.Env = append(cmd.Env, "TEST_SP_TOKEN="+testserver.GuestServicePrincipalTokenPrefix+suffix)
+
 		proxyURL := sharedProxyURL
 		if DebugSandbox {
 			// Per-test proxy: errors are attributed to this subtest's t, making
@@ -1143,6 +1223,17 @@ func getBuildDir(t *testing.T, cwd, osName, arch string) string {
 	err := os.MkdirAll(buildDir, os.ModePerm)
 	require.NoError(t, err)
 	return buildDir
+}
+
+// getBinaryVersion runs `<path> version` and parses out the version string (e.g. "0.293.0").
+func getBinaryVersion(t *testing.T, path string) string {
+	t.Helper()
+	out, err := exec.Command(path, "version").Output()
+	require.NoError(t, err)
+	// Output is "Databricks CLI v<version>\n"; strip the prefix.
+	line := strings.TrimSpace(string(out))
+	line = strings.TrimPrefix(line, "Databricks CLI v")
+	return line
 }
 
 func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {

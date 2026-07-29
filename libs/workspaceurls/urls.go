@@ -33,6 +33,7 @@ var resourceURLPatterns = map[string]string{
 	"vector_search_indexes":   "explore/data/%s",
 	"volumes":                 "explore/data/volumes/%s",
 	"warehouses":              "sql/warehouses/%s",
+	"instance_pools":          "compute/instance-pools/%s",
 }
 
 // resourceAliases lets callers use bundle-config plural names as synonyms for
@@ -79,6 +80,14 @@ func ResourceTypes() []string {
 // See https://github.com/databricks/cli/issues/5142.
 func JobRunPath(jobID, runID string) string {
 	return fmt.Sprintf("jobs/%s/runs/%s", jobID, runID)
+}
+
+// JobRunURL constructs a workspace URL for a job run. Unlike ResourceURL it takes
+// two IDs (parent job and run), so it can't be a single entry in
+// resourceURLPatterns.
+func JobRunURL(baseURL url.URL, jobID, runID string) string {
+	baseURL.Path = JobRunPath(jobID, runID)
+	return baseURL.String()
 }
 
 // ResourceURL constructs a workspace URL for a named resource type and ID.

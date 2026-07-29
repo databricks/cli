@@ -3,6 +3,7 @@
 package connections
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -72,6 +73,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 	// TODO: complex arg: environment_settings
+	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `Parent schema for schema-level connections, in format "schemas/{catalog}.{schema}".`)
 	// TODO: map via StringToStringVar: properties
 	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `If the connection is read only.`)
 
@@ -106,7 +108,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Connections.Create(ctx, createReq)
@@ -176,7 +178,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the name of the connection to be deleted")
+			return errors.New("expected to have the name of the connection to be deleted")
 		}
 		deleteReq.Name = args[0]
 
@@ -246,7 +248,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the connection")
+			return errors.New("expected to have name of the connection")
 		}
 		getReq.Name = args[0]
 
@@ -287,6 +289,8 @@ func newList() *cobra.Command {
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
+
+	cmd.Flags().StringVar(&listReq.Parent, "parent", listReq.Parent, `Optional.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -404,7 +408,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.Name = args[0]
 
