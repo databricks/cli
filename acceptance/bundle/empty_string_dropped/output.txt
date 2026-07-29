@@ -1,12 +1,32 @@
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy -t tf
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created apps.my_app
+created clusters.my_cluster
+created database_instances.my_db_instance
+created experiments.my_experiment
+created jobs.my_job
+created models.my_model
+created pipelines.my_pipeline
+created registered_models.my_registered_model
+created schemas.my_schema
+created sql_warehouses.my_warehouse
+created volumes.my_volume
+
+Deploy: 11 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy -t direct
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created apps.my_app
+created clusters.my_cluster
+created database_instances.my_db_instance
+created experiments.my_experiment
+created jobs.my_job
+created models.my_model
+created pipelines.my_pipeline
+created registered_models.my_registered_model
+created schemas.my_schema
+created sql_warehouses.my_warehouse
+created volumes.my_volume
+
+Deploy: 11 created, 0 changed, 0 deleted, 0 unchanged.
