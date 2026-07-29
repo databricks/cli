@@ -15,6 +15,11 @@ invariant_deploy LOG.deploy $CLI bundle deploy $(readplanarg plan.json)
 
 invariant_verify_no_drift
 
+# Exercise the bitmap encoder over every invariant config. Output goes to a
+# LOG file (logged, not diffed) so this just checks it runs without panicking.
+$CLI bundle bitmap bitmap &> LOG.bitmap
+cat LOG.bitmap | contains.py '!panic:' '!internal error' > /dev/null
+
 # Field removal: dropping a non-required field (tagged `# CAN_REMOVE` on each of its lines) must be
 # applied as an update that converges -- a field the config stops declaring must be sent as its zero
 # value, not silently dropped from the request (which either fails or drifts forever). Runs only on the

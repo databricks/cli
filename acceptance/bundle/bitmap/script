@@ -1,0 +1,4 @@
+trace $CLI bundle bitmap schema > out.schema.txt
+trace $CLI bundle bitmap bitmap-text > out.bitmap-text.txt
+trace $CLI bundle bitmap bitmap
+trace $CLI bundle bitmap update-schema --validate
