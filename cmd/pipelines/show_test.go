@@ -1,6 +1,7 @@
 package pipelines
 
 import (
+	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -84,4 +85,20 @@ func TestExecuteSelectSurfacesStatementError(t *testing.T) {
 	var stmtErr *sqlexec.StatementError
 	require.ErrorAs(t, err, &stmtErr)
 	assert.Equal(t, sql.ServiceErrorCodeBadRequest, stmtErr.Code)
+}
+
+func TestExecuteSelectInterruptedSetsContextError(t *testing.T) {
+	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).RunAndReturn(
+		func(context.Context, sql.ExecuteStatementRequest) (*sql.StatementResponse, error) {
+			cancel()
+			return &sql.StatementResponse{StatementId: "s1", Status: &sql.StatementStatus{State: sql.StatementStatePending}}, nil
+		})
+
+	client := sqlexec.New(mockAPI, "wh-1")
+	_, err := client.Execute(ctx, "SELECT * FROM `x`.`y`.`z` LIMIT 25")
+	require.Error(t, err)
+	assert.Error(t, ctx.Err())
 }
