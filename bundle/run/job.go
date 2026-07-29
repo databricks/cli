@@ -84,42 +84,25 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 // jobRunMonitor tracks state for a single job run and provides callbacks
 // for monitoring progress.
 type jobRunMonitor struct {
-	ctx       context.Context
-	prevState *jobs.RunState
+	ctx     context.Context
+	tracker progress.JobStateTracker
 }
 
 // onProgress is the single callback that handles all state tracking and logging.
 func (m *jobRunMonitor) onProgress(info *jobs.Run) {
-	state := info.State
-	if state == nil {
+	event, first := m.tracker.Poll(info)
+	if event == nil {
 		return
 	}
 
 	// First time we see this run.
-	if m.prevState == nil {
+	if first {
 		runURL := workspaceurls.ModernizeJobRunPageURL(info.RunPageUrl)
 		log.Infof(m.ctx, "Run available at %s", runURL)
 		cmdio.Log(m.ctx, progress.NewJobRunUrlEvent(runURL))
 	}
 
-	// No state change: do not log.
-	if m.prevState != nil &&
-		m.prevState.LifeCycleState == state.LifeCycleState &&
-		m.prevState.ResultState == state.ResultState {
-		return
-	}
-
-	// Capture current state as previous state for next call.
-	m.prevState = state
-
 	// Log progress event both to the terminal (in place or append), and to the logger.
-	event := &progress.JobProgressEvent{
-		Timestamp: time.Now(),
-		JobId:     info.JobId,
-		RunId:     info.RunId,
-		RunName:   info.RunName,
-		State:     *info.State,
-	}
 	cmdio.Log(m.ctx, event)
 	log.Info(m.ctx, event.String())
 }
