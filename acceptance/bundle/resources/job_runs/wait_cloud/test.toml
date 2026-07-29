@@ -16,5 +16,10 @@ Ignore = [
     "databricks.yml",
     "databricks.yml.tmpl",
     "hello.py",
-    "deploy.log",
 ]
+
+# The host and the workspace selector in the run URL differ per workspace, and the
+# URL form itself is covered by libs/workspaceurls; assert only that it is reported.
+[[Repls]]
+Old = 'Run URL: .*'
+New = 'Run URL: [RUN_URL]'

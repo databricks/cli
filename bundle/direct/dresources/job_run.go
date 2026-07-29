@@ -202,8 +202,8 @@ func (r *ResourceJobRun) runFailedError(ctx context.Context, run *jobs.Run) erro
 	return errors.New(msg.String())
 }
 
-// taskFailed reports whether a task caused the run to fail rather than being a
-// casualty of it: tasks left SKIPPED or UPSTREAM_FAILED add noise.
+// taskFailed reports whether a task is a cause of the run's failure. A task left
+// SKIPPED or UPSTREAM_FAILED never ran, so it has no error to report.
 func taskFailed(task jobs.RunTask) bool {
 	// State is deprecated in favour of Status, so it may be absent.
 	if task.State == nil {
@@ -236,22 +236,37 @@ func runPageLine(rawURL string) string {
 	return "\nrun page: " + workspaceurls.ModernizeJobRunPageURL(rawURL)
 }
 
-// logRunProgress mirrors `bundle run`: the run page URL once, then each state change.
+// logRunProgress logs every state change like `bundle run` does, but reports only
+// the run page URL and the state the run ends in to the user: how many states a
+// run passes through depends on how long its compute takes to start, which would
+// make a deploy's output differ between runs of the same bundle.
 func logRunProgress(ctx context.Context, run *jobs.Run, tracker *progress.JobStateTracker) {
 	event, first := tracker.Poll(run)
 	if event == nil {
 		return
 	}
+	log.Info(ctx, event.String())
 	if first && run.RunPageUrl != "" {
-		logRunLine(ctx, run.RunId, "Run URL: "+workspaceurls.ModernizeJobRunPageURL(run.RunPageUrl))
+		line := "Run URL: " + workspaceurls.ModernizeJobRunPageURL(run.RunPageUrl)
+		log.Info(ctx, line)
+		reportRunLine(ctx, run.RunId, line)
 	}
-	logRunLine(ctx, run.RunId, event.String())
+	if runIsTerminal(run.State.LifeCycleState) {
+		reportRunLine(ctx, run.RunId, event.String())
+	}
 }
 
-// logRunLine names the run in the user-facing copy, since resources deploy
-// concurrently onto one stream; the log carries the resource key already.
-func logRunLine(ctx context.Context, runID int64, msg string) {
-	log.Info(ctx, msg)
+// runIsTerminal reports whether a run is done, i.e. in one of the states the SDK
+// waiter stops on.
+func runIsTerminal(state jobs.RunLifeCycleState) bool {
+	return state == jobs.RunLifeCycleStateTerminated ||
+		state == jobs.RunLifeCycleStateSkipped ||
+		state == jobs.RunLifeCycleStateInternalError
+}
+
+// reportRunLine names the run it describes, since resources deploy concurrently
+// onto one output stream.
+func reportRunLine(ctx context.Context, runID int64, msg string) {
 	if cmdio.HasIO(ctx) {
 		cmdio.LogString(ctx, fmt.Sprintf("job run %d: %s", runID, msg))
 	}
