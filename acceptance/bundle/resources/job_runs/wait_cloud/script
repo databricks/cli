@@ -9,7 +9,7 @@ title "the deploy waits for the run to finish"
 trace $CLI bundle deploy
 
 # Registers the run id as a replacement, so the deploy output above compares the
-# same way against a real workspace as against the test server.
+# same against a real workspace as against the test server.
 trace read_id.py my_run
 
 title "the downstream job was created with the run's result_state"

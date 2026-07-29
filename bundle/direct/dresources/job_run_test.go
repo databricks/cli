@@ -28,8 +28,8 @@ func jobRunClientFor(t *testing.T, server *testserver.Server) *databricks.Worksp
 	return client
 }
 
-// jobRunServer returns a test server whose runs/get handler is the given one,
-// so a wait can be exercised without a real run.
+// jobRunServer returns a client whose runs/get is the given handler, so a wait can
+// be driven without a real run.
 func jobRunServer(t *testing.T, getRun testserver.HandlerFunc) *databricks.WorkspaceClient {
 	t.Helper()
 	server := testserver.New(t)

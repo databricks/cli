@@ -150,8 +150,7 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 }
 
 // WaitAfterCreate blocks until the run finishes, so a resource referencing its
-// output (e.g. state.result_state) sees a settled run. Only SUCCESS lets the
-// deploy continue.
+// output (e.g. state.result_state) sees a settled run. Only SUCCESS continues the deploy.
 func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobRunState) (*JobRunRemote, error) {
 	runID, err := parseRunID(id)
 	if err != nil {
@@ -237,9 +236,9 @@ func runPageLine(rawURL string) string {
 }
 
 // logRunProgress logs every state change like `bundle run` does, but reports only
-// the run page URL and the state the run ends in to the user: how many states a
-// run passes through depends on how long its compute takes to start, which would
-// make a deploy's output differ between runs of the same bundle.
+// the run page URL and the run's final state to the user: how many states a run
+// passes through varies with how long its compute takes to start, so a deploy's
+// output would not be reproducible.
 func logRunProgress(ctx context.Context, run *jobs.Run, tracker *progress.JobStateTracker) {
 	event, first := tracker.Poll(run)
 	if event == nil {
@@ -256,16 +255,14 @@ func logRunProgress(ctx context.Context, run *jobs.Run, tracker *progress.JobSta
 	}
 }
 
-// runIsTerminal reports whether a run is done, i.e. in one of the states the SDK
-// waiter stops on.
+// runIsTerminal reports whether a run is done, i.e. in a state the SDK waiter stops on.
 func runIsTerminal(state jobs.RunLifeCycleState) bool {
 	return state == jobs.RunLifeCycleStateTerminated ||
 		state == jobs.RunLifeCycleStateSkipped ||
 		state == jobs.RunLifeCycleStateInternalError
 }
 
-// reportRunLine names the run it describes, since resources deploy concurrently
-// onto one output stream.
+// reportRunLine names the run, since resources deploy concurrently onto one stream.
 func reportRunLine(ctx context.Context, runID int64, msg string) {
 	if cmdio.HasIO(ctx) {
 		cmdio.LogString(ctx, fmt.Sprintf("job run %d: %s", runID, msg))
