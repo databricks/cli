@@ -12,7 +12,7 @@ package terraform_dabs_map
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
 // jobs / databricks_job: 7 dabs-only
-// jobs / databricks_job: 258 tf-only
+// jobs / databricks_job: 259 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
@@ -338,6 +338,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 				"*": {}, // databricks_job.*.new_cluster.custom_tags.*
 			},
 			"data_security_mode": {}, // databricks_job.*.new_cluster.data_security_mode
+			"dependency_mode":    {}, // databricks_job.*.new_cluster.dependency_mode
 			"docker_image": {
 				"basic_auth": {
 					"password": {}, // databricks_job.*.new_cluster.docker_image.basic_auth.password
@@ -676,6 +677,7 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"branch":                             {},
 		"create_database_objects_if_missing": {},
 		"existing_pipeline_id":               {},
+		"extra_columns":                      {},
 		"new_pipeline_spec":                  {},
 		"postgres_database":                  {},
 		"primary_key_columns":                {},

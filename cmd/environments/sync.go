@@ -49,8 +49,8 @@ env-owned sections are refreshed, user-owned content is preserved).`,
 func addTargetFlags(cmd *cobra.Command) {
 	cmd.Flags().String("cluster-id", "", "cluster ID to use as the compute target")
 	cmd.Flags().String("cluster-name", "", "cluster name to use as the compute target (resolved to an ID via the Clusters API)")
-	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. v4)")
-	cmd.Flags().String("job-id", "", "job ID to use as the compute target")
+	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. 5)")
+	cmd.Flags().String("job-task", "", "job task to use as the compute target, as <job-id>.<task-key> (the task key is required)")
 	cmd.Flags().Bool("constraints-only", false, "apply the Python version and constraints without adding the databricks-connect dependency")
 	cmd.Flags().Bool("dry-run", false, "compute the plan without writing files or provisioning")
 	cmd.Flags().String("constraint-source-url", "", "URL for the constraint source (overrides "+envConstraintSource+")")
@@ -69,7 +69,7 @@ func runPipeline(cmd *cobra.Command) error {
 	cluster, _ := cmd.Flags().GetString("cluster-id")
 	clusterName, _ := cmd.Flags().GetString("cluster-name")
 	serverless, _ := cmd.Flags().GetString("serverless-version")
-	job, _ := cmd.Flags().GetString("job-id")
+	jobTask, _ := cmd.Flags().GetString("job-task")
 	constraintsOnly, _ := cmd.Flags().GetBool("constraints-only")
 	check, _ := cmd.Flags().GetBool("dry-run")
 	constraintSource, _ := cmd.Flags().GetString("constraint-source-url")
@@ -78,7 +78,7 @@ func runPipeline(cmd *cobra.Command) error {
 		Cluster:     cluster,
 		ClusterName: clusterName,
 		Serverless:  serverless,
-		Job:         job,
+		JobTask:     jobTask,
 	}
 	// Flag validation (including mutual exclusivity) happens in the pipeline's
 	// preflight, so a conflict is reported as E_USAGE through the phase/JSON
@@ -103,11 +103,11 @@ func runPipeline(cmd *cobra.Command) error {
 	cacheDir = filepath.Join(cacheDir, "databricks", "localenv")
 
 	// The bundle is only a fallback: ResolveTarget consults it solely when no
-	// explicit --cluster-id/--cluster-name/--serverless-version/--job-id flag is set. Skip the bundle load
+	// explicit --cluster-id/--cluster-name/--serverless-version/--job-task flag is set. Skip the bundle load
 	// entirely when a flag is present — it would otherwise re-run TryConfigureBundle
 	// (a second full load) and re-print any bundle load-time diagnostics for nothing.
 	var bt libslocalenv.BundleTarget
-	if cluster == "" && clusterName == "" && serverless == "" && job == "" {
+	if cluster == "" && clusterName == "" && serverless == "" && jobTask == "" {
 		bt = bundleTarget(cmd)
 	}
 

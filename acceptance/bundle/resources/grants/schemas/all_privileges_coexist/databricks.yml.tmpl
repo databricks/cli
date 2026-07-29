@@ -1,0 +1,17 @@
+bundle:
+  name: schema-grants-all-privileges-coexist-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_all_priv_coexist_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        # Config declares only ALL_PRIVILEGES for the principal. Reproduces
+        # issue #6030: the backend also reports a concrete privilege for this
+        # principal (added out of band below / materialized for owners), and
+        # buildGrantChanges skips the ALL_PRIVILEGES removal, so the concrete
+        # privilege is never reconciled and the plan reports perpetual update.
+        - principal: $CURRENT_USER_NAME
+          privileges:
+            - ALL_PRIVILEGES

@@ -1,0 +1,5 @@
+
+=== Deploy the app
+
+=== Apply the stale delete plan against the DELETING app
+DELETE_OK

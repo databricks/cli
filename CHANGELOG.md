@@ -1,5 +1,29 @@
 # Version changelog
 
+## Release v1.9.0 (2026-07-22)
+
+### CLI
+
+ * `databricks auth profiles` no longer stalls on an unreachable workspace and instead fails validation after 5 seconds per host ([#5928](https://github.com/databricks/cli/pull/5928)).
+ * Fixed `databricks fs rm -r` failing on UC Volumes backed by GCS when a directory becomes empty during recursive deletion ([#5958](https://github.com/databricks/cli/pull/5958)).
+ * You can now ask questions about your data directly from the CLI with `databricks genie ask "..."`. Genie answers natural-language questions ("what were total sales last month?", "which tables are in the sales catalog?"), runs the query inside Databricks, and renders the answer in the terminal. This promotes the former `databricks experimental genie ask` command; the experimental alias still works but is deprecated and will be removed in a future release ([#6010](https://github.com/databricks/cli/pull/6010)).
+
+### Bundles
+
+ * `bundle validate` now reports a clear error when a `sql_warehouse` is missing a `name` (including whitespace-only names), and a warning when a grant is missing a `principal` ([#5818](https://github.com/databricks/cli/pull/5818)).
+ * Bundle templates now scaffold an `AGENTS.md` that points coding agents at Databricks AI Tools, alongside a minimal `CLAUDE.md` that includes it via `@AGENTS.md` ([#5996](https://github.com/databricks/cli/pull/5996)).
+ * `bundle generate job` can now download workspace files referenced by `spark_python_task`, rewriting them to a relative path like it already does for notebooks. This is opt-in via the `--download-spark-python-files` flag ([#5799](https://github.com/databricks/cli/pull/5799)).
+ * Simplified the `default-minimal` bundle template and added an alias `databricks bundle init empty` ([#5899](https://github.com/databricks/cli/pull/5899)).
+ * Add support for the `instance_pools` resource type in Declarative Automation Bundles. Instance pools are only supported in direct deployment mode.
+ * Do not emit "unknown field" warnings for YAML anchors grouped in a list or map, matching the existing suppression for standalone anchors ([#5975](https://github.com/databricks/cli/pull/5975)).
+ * Provide an actionable error message if databricks.yml is missing or DATABRICKS_BUNDLE_ROOT is invalid ([#5953](https://github.com/databricks/cli/pull/5953)).
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.154.0 to v0.160.0 ([#5982](https://github.com/databricks/cli/pull/5982)).
+ * Bump Terraform provider from v1.121.0 to v1.122.0 ([#5977](https://github.com/databricks/cli/pull/5977)).
+
+
 ## Release v1.8.0 (2026-07-15)
 
 ### Notable Changes

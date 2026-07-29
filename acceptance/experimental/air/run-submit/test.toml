@@ -7,8 +7,7 @@ RecordRequests = true
 # it isn't a committed input to diff.
 Ignore = ["run.yaml"]
 
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # The SDK probes host reachability with a HEAD request; stub it for determinism.
 [[Server]]

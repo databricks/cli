@@ -1,0 +1,5 @@
+EnvMatrix.READPLAN = ["", "1"]
+
+# Snapshot of pre-delete state used to re-run the delete on state that still
+# references the (now-gone) resources; may linger if the test fails mid-run.
+Ignore = [".databricks.backup"]
