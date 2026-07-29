@@ -10,6 +10,10 @@ TERMINATED SUCCESS
 >>> [CLI] jobs get [DOWNSTREAM_JOB_ID] -o json
 SUCCESS
 
+=== the parameters the run resolved are not drift
+>>> [CLI] bundle plan -o json
+skip
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.job_runs.my_run

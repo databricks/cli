@@ -18,3 +18,6 @@ trace grep -o "TERMINATED SUCCESS" deploy.log
 title "the downstream job was created with the run's result_state"
 downstream_id=$(read_id.py downstream_job)
 trace $CLI jobs get $downstream_id -o json | jq -r ".settings.tags.run_result"
+
+title "the parameters the run resolved are not drift"
+trace $CLI bundle plan -o json | jq -r '.plan["resources.job_runs.my_run"].action'
