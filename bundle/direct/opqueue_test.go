@@ -307,13 +307,16 @@ func (s *serialUploader) upload(ctx context.Context, resourceKey string, op reco
 }
 
 func TestOperationQueueUploadsOneResourceAtATime(t *testing.T) {
-	// Concurrent apply workers repeatedly record overlapping resource keys, the
-	// case where a coalesced key can be handed to a second worker while the first
-	// is still uploading it. The service keeps one state per key, so overlapping
-	// uploads for a key could land out of order and leave a stale state behind.
+	// Two workers must never upload the same resource at the same time. DMS stores
+	// one state per resource, so concurrent uploads can finish out of order and
+	// leave the older state as the final one.
 	//
-	// The interleaving that breaks this is scheduler-dependent, so one pass proves
-	// little: repeat it so a single run has many chances to hit the bad ordering.
+	// Lots of goroutines record a small set of keys, so the same key is recorded
+	// repeatedly while its earlier upload may still be running. serialUploader flags
+	// any overlap it sees.
+	//
+	// Whether a bug shows up depends on how the scheduler interleaves things, so one
+	// pass proves little - repeat it to get many chances at a bad ordering.
 	const (
 		iterations     = 200
 		workers        = 10
