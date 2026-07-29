@@ -1,11 +1,10 @@
 # Fuzz overrides of the shared invariant helpers, which the harness concatenates from
 # ../script.prepare before this file. The target scripts stay unaware of fuzzing.
 
-# The config comes from the generator rather than configs/$INPUT_CONFIG, which the fuzzer
-# leaves unset. The validate probe lives here because the config only exists once it is
-# rendered and must be probed before the target's deploy; curated targets skip it, as deploy
-# runs the same validate pipeline. Its output is redirected, not recorded, as a fuzzed config
-# may warn.
+# The config comes from the generator rather than configs/$INPUT_CONFIG, which the fuzzer leaves
+# unset. The validate probe lives here because the config only exists once it is rendered and
+# must be probed before the target's deploy. Its output is redirected, not recorded, as a fuzzed
+# config may warn.
 invariant_render() {
     # Stage the fixtures the generator's file_path/source_code_path fields point at.
     cp -r "$TESTDIR/../data/." . &> LOG.cp
@@ -17,15 +16,14 @@ invariant_render() {
     cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
 }
 
-# A generated config can deploy and still legitimately differ from the fake server, which
-# does not round-trip every field, so the exact check false-positives. Swap in the one oracle
-# that does not depend on server fidelity: planning is deterministic, so two consecutive plans
-# of the same state must be byte-identical, and a diff is a real bug. Nightly runs set
-# FUZZ_CHECK_DRIFT to keep the exact check instead.
+# A generated config can deploy and still legitimately differ from the fake server, which does
+# not round-trip every field, so the exact check false-positives. Swap in the one oracle that
+# does not depend on server fidelity: planning is deterministic, so two consecutive plans of the
+# same state must be byte-identical. Nightly runs set FUZZ_CHECK_DRIFT to keep the exact check.
 if [ -z "${FUZZ_CHECK_DRIFT:-}" ]; then
     invariant_verify_no_drift() {
-        # Compare only when both plans succeed -- a plan that fails on an unstubbed read is a
-        # gap and can differ run to run. Capture each plan's code under set +e for the guard.
+        # Compare only when both plans succeed -- a plan that fails on an unstubbed read is a gap
+        # and can differ run to run.
         set +e
         $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err
         local plan1_rc=$?

@@ -83,8 +83,8 @@ type TestConfig struct {
 	// out.requests.txt
 	RecordRequests *bool
 
-	// Return 501 for a request with no handler instead of failing the test. The fuzzer
-	// emits resource types the testserver may not model; a missing handler is a gap, not a bug.
+	// Return 501 for a request with no handler instead of failing the test: a resource type the
+	// testserver doesn't model is a coverage gap, not a bug.
 	IgnoreUnhandledRequests *bool
 
 	// List of request headers to include when recording requests.

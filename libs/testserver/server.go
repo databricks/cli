@@ -74,9 +74,8 @@ type Server struct {
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
 
-	// IgnoreUnhandledRequests returns 501 for a request with no handler instead of failing
-	// the test: the fuzzer emits resource types the testserver may not model. Curated tests
-	// leave it false so real gaps stay loud.
+	// Return 501 for a request with no handler instead of failing the test: the fuzzer emits
+	// resource types the testserver may not model. Curated tests leave it false so gaps stay loud.
 	IgnoreUnhandledRequests bool
 }
 

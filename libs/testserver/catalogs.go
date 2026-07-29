@@ -24,8 +24,8 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
-	// The name is the catalog's identity, so accepting an empty one would store a catalog the
-	// CLI cannot find again. UC rejects it; verified against a real workspace.
+	// An empty name would store a catalog the CLI cannot find again. UC rejects it; verified
+	// against a real workspace.
 	if createRequest.Name == "" {
 		return Response{
 			StatusCode: 400,

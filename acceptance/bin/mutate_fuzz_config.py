@@ -1,18 +1,18 @@
 """
 Mutate a known-good bundle config by deleting, perturbing, and adding random fields.
 
-Complements gen_fuzz_config.py: instead of building from the schema, this perturbs a
-curated invariant config that already deploys, so it reaches a much higher deploy rate.
+Complements gen_fuzz_config.py: instead of building from the schema, this perturbs a curated
+invariant config that already deploys, so it reaches a much higher deploy rate.
 
 Two mutation kinds, chosen per step:
 
-- destructive (always): delete a field or replace it with a token, a dangerous value, or
-  an empty container. Stays within the base's fields, so it finds only reject/panic bugs.
-- additive (with a schema): inject a valid optional field the base omits, valued by the
-  schema generator. This is what reaches reconcile/drift bugs.
+- destructive (always): delete a field or replace it with a token, a dangerous value, or an empty
+  container. Stays within the base's fields, so it finds only reject/panic bugs.
+- additive (with a schema): inject a valid optional field the base omits, valued by the schema
+  generator. This is what reaches reconcile/drift bugs.
 
-The seed makes it reproducible. The harness only asserts no-panic on fuzzed configs, so an
-invalid mutation is fine: the CLI must reject it cleanly, not crash.
+The harness only asserts no-panic on fuzzed configs, so an invalid mutation is fine: the CLI must
+reject it cleanly, not crash.
 
 Used as a library by emit_fuzz_config.py.
 """
@@ -25,17 +25,16 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, Generator, resource_types
 
-# The same probes gen_fuzz_config injects into free-form scalars, dropped onto any field.
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
-# Chance a step injects a field rather than perturbing one. Biased high: injection is the
-# path to drift bugs, and destructive coverage is already dense.
+# Chance a step injects a field rather than perturbing one. Biased high: injection is the path to
+# drift bugs, and destructive coverage is already dense.
 ADD_PROB = 0.6
 
 
 def tokenize(text):
-    # (indent, content) per non-blank, non-comment line. Only full-line comments are
-    # stripped; the curated bases have no trailing "#" in values.
+    # (indent, content) per non-blank, non-comment line. Only full-line comments are stripped; the
+    # curated bases have no trailing "#" in values.
     out = []
     for raw in text.splitlines():
         stripped = raw.lstrip(" ")
@@ -110,8 +109,8 @@ def parse_seq(tokens, i, indent):
     while i < len(tokens) and tokens[i][0] == indent and (tokens[i][1].startswith("- ") or tokens[i][1] == "-"):
         after = tokens[i][1][2:] if tokens[i][1].startswith("- ") else ""
         child_indent = indent + 2
-        # The item is its own block: the inline remainder (re-indented to child_indent)
-        # plus any deeper continuation lines that belong to it.
+        # The item is its own block: the inline remainder (re-indented to child_indent) plus any
+        # deeper continuation lines that belong to it.
         item = []
         if after:
             item.append((child_indent, after))
@@ -171,8 +170,8 @@ def resource_element(gen, type_schema):
 
 
 def collect_insertions(gen, node, schema, rtype, out):
-    # Record every writable optional field absent from an object, walking node and schema
-    # together so nested objects are candidates too.
+    # Record every writable optional field absent from an object, walking node and schema together
+    # so nested objects are candidates too.
     schema = gen.resolve(schema)
     if not isinstance(schema, dict):
         return
@@ -241,16 +240,16 @@ def mutate(config, seed, schema=None, unique="fuzz"):
     rng = random.Random(seed)
     gen = Generator(schema, rng, unique) if schema is not None else None
 
-    # Mutate only inside resource instances: keep the bundle/name and resources skeleton so
-    # there is always something to deploy, while every instance field is fair game.
+    # Mutate only inside resource instances: keep the bundle/name and resources skeleton so there
+    # is always something to deploy, while every instance field is fair game.
     roots = []
     for instances in config.get("resources", {}).values():
         if isinstance(instances, dict):
             roots.extend(v for v in instances.values() if isinstance(v, (dict, list)))
 
     for _ in range(rng.randint(1, 3)):
-        # gen is None short-circuits before rng is touched, so the no-schema path keeps its
-        # exact RNG stream unchanged.
+        # gen is None short-circuits before rng is touched, so the no-schema path keeps its exact
+        # RNG stream unchanged.
         if gen is not None and rng.random() < ADD_PROB:
             add_field(gen, rng, config)
         else:

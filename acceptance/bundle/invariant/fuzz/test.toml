@@ -1,27 +1,21 @@
 # The fuzzer generates its own configs, so drop the inherited INPUT_CONFIG matrix.
 EnvMatrix.INPUT_CONFIG = []
 
-# Local only, unlike the rest of the invariant suite. Against a real workspace each seed's
-# deploy/migrate/plan/destroy round trip takes minutes, so it trips the script's per-seed
-# SEED_TIMEOUT and is reported as a hang. It would also add no signal: drift checking is off
-# unless FUZZ_CHECK_DRIFT is set, which the cloud run does not set, leaving it to re-assert
-# the same no-panic property over the same seeds that the local run already covers.
+# Local only: against a real workspace each seed's deploy/migrate/plan/destroy round trip
+# takes minutes and trips SEED_TIMEOUT, and the cloud run leaves FUZZ_CHECK_DRIFT unset, so it
+# would only re-assert the no-panic property the local run already covers.
 Cloud = false
 
-# Raise the inherited 10m cap so the nightly FUZZ_TIME_BUDGET (script) has room plus the
-# final seed's tail. The committed run (5 seeds, no drift) finishes in seconds regardless.
+# Room for the nightly FUZZ_TIME_BUDGET (script) plus the last seed's tail.
 Timeout = '20m'
 
-# The fuzzer can emit resource types the testserver doesn't model; a missing handler is a
-# coverage gap, so return 501 and let the script record the seed as a gap instead of
-# failing the whole run.
+# A resource type the testserver doesn't model is a coverage gap, not a failure: 501 lets the
+# script record the seed as a gap instead of failing the whole run.
 IgnoreUnhandledRequests = true
 
-# Run each target's real invariant script. The idempotency targets assert that a delete or
-# destroy re-run against state that still references the removed resources succeeds, which
-# holds regardless of how faithfully the fake server round-trips fields. No redeploy target:
-# no_drift's post-deploy plan already dry-runs a redeploy, and the only surface a real
-# redeploy adds (plan/apply divergence) never surfaced a bug in nightly runs.
+# The idempotency targets assert a delete or destroy re-run succeeds, which holds regardless of
+# how faithfully the fake server round-trips fields. No redeploy target: no_drift's post-deploy
+# plan already dry-runs one.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "delete_idempotent", "destroy_idempotent"]
 
 # Snapshot of pre-delete state the idempotency targets keep; may linger if a seed fails.
@@ -30,10 +24,8 @@ Ignore = [".databricks.backup"]
 # generate = build from the schema; mutate = perturb a curated config. See emit_fuzz_config.py.
 EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
 
-# The already-gone delete path is selected by resource type, and ../delete_idempotent and
-# ../destroy_idempotent already run every type in the INPUT_CONFIG matrix. Generate mode adds
-# no axis on top: it pins name/display_name, so it cannot vary the identifier the delete call
-# uses, and its dangerous values only reach free-form strings no delete path reads. Mutate can
-# hit the identifier and reshape grants/permissions, so it is the mode worth running here.
+# Generate mode pins name/display_name, so it cannot vary the identifier the delete path reads,
+# and ../delete_idempotent already covers every resource type. Mutate can hit the identifier and
+# reshape grants/permissions, so it is the mode worth running here.
 EnvMatrixExclude.no_generate_on_delete_idempotent = ["FUZZ_MODE=generate", "FUZZ_TARGET=delete_idempotent"]
 EnvMatrixExclude.no_generate_on_destroy_idempotent = ["FUZZ_MODE=generate", "FUZZ_TARGET=destroy_idempotent"]
