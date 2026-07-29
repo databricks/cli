@@ -3,11 +3,14 @@ package aitools
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -154,6 +157,9 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 }
 
 func TestBuildAgentEntries(t *testing.T) {
+	// Isolate HOME so the skills-only on-disk detection doesn't pick up the
+	// developer's real agent skills dirs.
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 	globalState := &installer.InstallState{
 		Plugins: map[string]installer.PluginRecord{
 			"claude-code": {Plugin: "databricks", Version: "0.2.6"},
@@ -161,7 +167,7 @@ func TestBuildAgentEntries(t *testing.T) {
 		},
 	}
 
-	entries := buildAgentEntries(t.Context(), map[string]*installer.InstallState{
+	entries := buildAgentEntries(ctx, map[string]*installer.InstallState{
 		installer.ScopeGlobal: globalState,
 	})
 	byName := map[string]agentEntry{}
@@ -189,6 +195,44 @@ func TestBuildAgentEntries(t *testing.T) {
 	require.Contains(t, byName, "copilot")
 	assert.True(t, byName["copilot"].Managed)
 	assert.Empty(t, byName["copilot"].Installed)
+}
+
+func TestBuildAgentEntriesReportsSkillsOnlyAgentFromDisk(t *testing.T) {
+	// Skills-only agents (Plugin == nil) never get a plugin record; their skills
+	// are symlinked into the agent's own skills dir. The install must still be
+	// reported from disk, versioned by the scope's recorded release.
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	// Pin XDG_CONFIG_HOME so OpenCode's config dir resolves under the temp home
+	// rather than the developer's real ~/.config.
+	ctx = env.Set(ctx, "XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+
+	// OpenCode is skills-only; its global skills dir is $XDG_CONFIG_HOME/opencode/skills.
+	// The CLI installs skills there as symlinks to the canonical store, so build
+	// the symlink to exercise the real on-disk shape.
+	canonical := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-jobs")
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	skillsDir := filepath.Join(home, ".config", "opencode", "skills")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	require.NoError(t, os.Symlink(canonical, filepath.Join(skillsDir, "databricks-jobs")))
+
+	globalState := &installer.InstallState{Release: "0.2.6"}
+	entries := buildAgentEntries(ctx, map[string]*installer.InstallState{
+		installer.ScopeGlobal: globalState,
+	})
+	byName := map[string]agentEntry{}
+	for _, e := range entries {
+		byName[e.Name] = e
+	}
+
+	require.Contains(t, byName, "opencode")
+	opencode := byName["opencode"]
+	assert.False(t, opencode.Managed)
+	assert.Equal(t, "0.2.6", opencode.Installed[installer.ScopeGlobal].Version)
+
+	// A skills-only agent with nothing on disk stays empty.
+	require.Contains(t, byName, "cursor")
+	assert.Empty(t, byName["cursor"].Installed)
 }
 
 func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {

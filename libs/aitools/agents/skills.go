@@ -38,13 +38,20 @@ func HasDatabricksSkillsInstalled(ctx context.Context) bool {
 }
 
 // HasDatabricksSkillsIn checks if dir contains a subdirectory starting with "databricks".
+// The CLI installs skills into an agent's skills dir as symlinks to the canonical
+// store, and os.ReadDir reports symlinks via Lstat (so IsDir is false for them), so
+// entries are resolved with os.Stat to follow the link to its target.
 func HasDatabricksSkillsIn(dir string) bool {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return false
 	}
 	for _, e := range entries {
-		if e.IsDir() && strings.HasPrefix(e.Name(), databricksSkillPrefix) {
+		if !strings.HasPrefix(e.Name(), databricksSkillPrefix) {
+			continue
+		}
+		info, err := os.Stat(filepath.Join(dir, e.Name()))
+		if err == nil && info.IsDir() {
 			return true
 		}
 	}

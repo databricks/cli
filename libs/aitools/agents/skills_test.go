@@ -141,6 +141,30 @@ func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
 	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
 }
 
+func TestHasDatabricksSkillsInFollowsSymlinks(t *testing.T) {
+	// The CLI installs skills into an agent's dir as symlinks to the canonical
+	// store, so the check must follow the link rather than rely on IsDir (which
+	// os.ReadDir reports false for a symlink).
+	tmp := t.TempDir()
+	target := filepath.Join(tmp, "store", "databricks-jobs")
+	require.NoError(t, os.MkdirAll(target, 0o755))
+
+	skillsDir := filepath.Join(tmp, "skills")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	require.NoError(t, os.Symlink(target, filepath.Join(skillsDir, "databricks-jobs")))
+
+	assert.True(t, HasDatabricksSkillsIn(skillsDir))
+}
+
+func TestHasDatabricksSkillsInIgnoresDanglingSymlink(t *testing.T) {
+	tmp := t.TempDir()
+	skillsDir := filepath.Join(tmp, "skills")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	require.NoError(t, os.Symlink(filepath.Join(tmp, "missing"), filepath.Join(skillsDir, "databricks-jobs")))
+
+	assert.False(t, HasDatabricksSkillsIn(skillsDir))
+}
+
 func TestHasDatabricksSkillsInstalledLegacyPath(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)

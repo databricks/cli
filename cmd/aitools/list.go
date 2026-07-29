@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"os"
 	"slices"
 	"strings"
 	"text/tabwriter"
@@ -235,12 +236,41 @@ func buildAgentEntries(ctx context.Context, states map[string]*installer.Install
 		for scope, st := range states {
 			if rec, ok := st.Plugins[a.Name]; ok {
 				entry.Installed[scope] = pluginInfo{Version: rec.Version, NativeScope: rec.Scope}
+				continue
+			}
+			// Skills-only agents (Plugin == nil) never get a plugin record: their
+			// skills are symlinked/copied into the agent's own skills dir instead.
+			// Detect the install from disk and report the scope's recorded release
+			// as the version, so JSON consumers see them as installed too.
+			if a.Plugin == nil && agentHasSkillsInScope(ctx, a, scope) {
+				entry.Installed[scope] = pluginInfo{Version: installer.DisplaySkillsVersion(st.Release)}
 			}
 		}
 
 		entries = append(entries, entry)
 	}
 	return entries
+}
+
+// agentHasSkillsInScope reports whether databricks skills are present in the
+// agent's own skills directory for the given CLI scope. It is the on-disk
+// install signal for skills-only agents, which have no plugin record to consult.
+func agentHasSkillsInScope(ctx context.Context, a *agents.Agent, scope string) bool {
+	if scope == installer.ScopeProject {
+		if !a.SupportsProjectScope {
+			return false
+		}
+		cwd, err := os.Getwd()
+		if err != nil {
+			return false
+		}
+		return agents.HasDatabricksSkillsIn(a.ProjectSkillsDir(cwd))
+	}
+	dir, err := a.SkillsDir(ctx)
+	if err != nil {
+		return false
+	}
+	return agents.HasDatabricksSkillsIn(dir)
 }
 
 // loadStateForScope returns the install state for the named scope when the
