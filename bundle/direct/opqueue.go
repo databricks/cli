@@ -189,6 +189,11 @@ func (q *operationQueue) take(resourceKey string) (recordedOperation, bool) {
 		return recordedOperation{}, false
 	}
 
+	// The key stays in queuedOrUploading: the worker keeps coming back here until
+	// nothing is pending for it, so anything recorded while this operation uploads
+	// is still picked up. The mark is only cleared above, once there is nothing
+	// left - which is also what stops a second worker from taking the key and
+	// uploading the same resource concurrently.
 	delete(q.pending, resourceKey)
 	return op, true
 }

@@ -8,8 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -47,11 +45,11 @@ func newRecordedOperation(action deployplan.ActionType, resourceID string, state
 	// Operation.State carries the serialized state, which DMS serves back as
 	// resource state. Unset for delete: the resource is gone.
 	//
-	// Redact secrets, like dstate.SaveState does for the local state file:
-	// otherwise we leak them to the service and the read path writes them back
-	// into a local state file in plaintext.
+	// TODO(DMS): fields marked bundle:"sensitive" are recorded in plaintext here,
+	// unlike dstate.SaveState which redacts them before writing the local state
+	// file. Redact them before this ships to users.
 	if state != nil {
-		config, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
+		config, err := json.Marshal(state)
 		if err != nil {
 			return recordedOperation{}, fmt.Errorf("serializing state: %w", err)
 		}

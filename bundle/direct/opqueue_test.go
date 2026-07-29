@@ -149,6 +149,33 @@ func TestOperationQueueCoalescingKeepsLatestOperation(t *testing.T) {
 		f.actionFor("resources.jobs.foo"))
 }
 
+func TestOperationQueueRecordDuringUploadIsStillUploaded(t *testing.T) {
+	// Record while the key's own upload is in flight: the key is off the queue but
+	// still marked, so record does not queue it again. The worker that holds the key
+	// has to come back for it, or the operation would be silently dropped.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 1)}
+	q := newOperationQueue(t.Context(), f)
+
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "", map[string]string{"name": "v1"}, nil))
+	assert.Equal(t, "resources.jobs.foo", <-f.started)
+
+	// The worker has taken the key off the queue and is uploading v1 right now.
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "v2"}, nil))
+
+	close(f.block)
+	require.NoError(t, q.close())
+
+	// Two uploads, in order: an in-flight request cannot be recalled, so v2 goes up
+	// after v1 rather than replacing it. The service ends up with the newest state.
+	assert.Equal(t, []string{
+		`resources.jobs.foo={"state":{"name":"v1"}}`,
+		`resources.jobs.foo={"state":{"name":"v2"}}`,
+	}, f.recorded())
+	assert.Equal(t, "id-1", f.resourceIDFor("resources.jobs.foo"))
+	assert.Empty(t, q.pending)
+	assert.Empty(t, q.queuedOrUploading)
+}
+
 func TestOperationQueueReturnsUploadError(t *testing.T) {
 	uploadErr := errors.New("boom")
 	f := &fakeUploader{err: uploadErr}
