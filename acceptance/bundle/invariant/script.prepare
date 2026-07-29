@@ -47,8 +47,13 @@ invariant_deploy() {
 # JSON plan asserts every action is "skip" -- a strict superset of the text
 # renderer's "Plan: 0 to add, 0 to change, 0 to delete" summary.
 # Overridable for a caller whose config the server does not round-trip exactly.
+#
+# LOCAL_DIFF is empty for most callers; the no_drift target matrixes it over
+# ["", "--planmode=offline"] so the invariant also holds when the plan is computed
+# without reading remote state. Unset expands to nothing, so other callers are
+# unaffected.
 invariant_verify_no_drift() {
-    $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
+    $CLI bundle plan $LOCAL_DIFF -o json > LOG.planjson 2>LOG.planjson.err
     cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
     verify_no_drift.py LOG.planjson
 }
