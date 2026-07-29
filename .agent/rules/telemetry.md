@@ -10,13 +10,13 @@ paths:
 
 # Extending bundle deploy telemetry
 
-The deploy payload is declared twice: the proto in the universe repo (`proto/logs/frontend/databricks_cli/bundle_deploy.proto`, source of truth for the backend table) and the Go struct in `libs/telemetry/protos/` that the CLI serializes to JSON. Ingestion ignores unknown fields, so the two PRs are independent and can land in either order — a field the CLI sends before the proto lands is dropped, not rejected.
+The deploy payload is declared twice: the proto in the universe repo (`proto/logs/frontend/databricks_cli/bundle_deploy.proto`, source of truth for the backend table) and the Go struct in `libs/telemetry/protos/` that the CLI serializes to JSON. Ingestion ignores unknown fields, so the two PRs can land in either order — a field the CLI sends before the proto lands is dropped, not rejected.
 
 ## Adding a new resource type
 
-**RULE: A new bundle resource type needs no telemetry change at all.** Per-type counts come from `resources_metadata.resources[*]`, which `resourceMetadata` in `bundle/phases/resources_metadata.go` derives from `Resources.AllResources()`. That list is exhaustive by construction and guarded by `TestResourcesAllResourcesCompleteness`, so a new type is reported from the moment it ships.
+**RULE: A new bundle resource type needs no telemetry change.** Per-type counts come from `resources_metadata.resources[*]`, which `resourceMetadata` in `bundle/phases/resources_metadata.go` derives from `Resources.AllResources()` — exhaustive by construction and guarded by `TestResourcesAllResourcesCompleteness`.
 
-**RULE: Do not add new `resource_<type>_count` fields to `BundleDeployEvent`.** The 13 that exist are marked `deprecated = true` in the universe proto and are kept only for continuity of existing dashboards. Adding more re-creates the problem `resources_metadata` was introduced to solve: a hand-maintained field list that silently lags the resource types, making a new type indistinguishable from zero adoption. New dashboard panels should read `resources_metadata`.
+**RULE: Do not add new `resource_<type>_count` fields to `BundleDeployEvent`.** The 13 that exist are `deprecated = true` in the universe proto, kept only for continuity of existing dashboards. Adding more re-creates what `resources_metadata` fixed: a hand-maintained field list that silently lags the resource types, making a new type indistinguishable from zero adoption. New dashboard panels should read `resources_metadata`.
 
 ## Adding a new metric
 
@@ -24,7 +24,7 @@ The deploy payload is declared twice: the proto in the universe repo (`proto/log
 2. Refresh the acceptance golden: `go test ./acceptance -run '^TestAccept/bundle/telemetry' -update`. Anything engine-dependent belongs in a per-engine `out.*.$DATABRICKS_BUNDLE_ENGINE.txt` file rather than the engine-agnostic `out.telemetry.txt`; see the comments in that test's `script`.
 3. Send the universe PR adding the same field to the proto, with a `compliance.data_label` annotation matching the neighbouring fields.
 
-**RULE: Never send a resource name, path, or any other user-authored string.** Names are PII. Resource identity is reported through the numeric/UUID ID lists (`resource_job_ids` and friends), and only for types that have such an ID.
+**RULE: Never send a resource name, path, or any other user-authored string.** Names are PII. Resource identity goes through the numeric/UUID ID lists (`resource_job_ids` and friends), and only for types that have such an ID.
 
 **RULE: Do not add `omitempty` to a count or measurement that can legitimately be zero.** An explicit `0` distinguishes "nothing of this kind in this deploy" from "CLI too old to report the field"; with `omitempty` both arrive as null and the population can't be sized.
 
@@ -37,4 +37,4 @@ Other things worth knowing:
 
 ## Where the data lands
 
-Deploy events land in `main.team_eng_deco.bundle_deploy_telemetry`; the dashboard is `app/dabs_telemetry` in `databricks-eng/ds-projects`. A new field is picked up by the daily pipeline because it reads `entry.bundle_deploy_event.*` wholesale, but it has to be added to a dashboard panel by hand to become visible.
+Deploy events land in `main.team_eng_deco.bundle_deploy_telemetry`; the dashboard is `app/dabs_telemetry` in `databricks-eng/ds-projects`. The daily pipeline reads `entry.bundle_deploy_event.*` wholesale, so a new field arrives on its own, but it has to be added to a dashboard panel by hand to become visible.

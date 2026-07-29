@@ -14,23 +14,17 @@ import (
 )
 
 // collectResourcesMetadata builds a BundleResourcesMetadata for the deployment:
-// how many resources of each type the bundle declares, plus per-type state-size
-// statistics where the engine reports them.
+// per-resource-type counts, plus state sizes for the types the engine measures.
 //
-// Counts are taken from the configuration rather than from the deployment state
-// so that every resource type is reported on every deploy, whatever the engine.
-// That is what makes this message a superset of the per-type
-// resource_*_count fields it replaces (those are deprecated in the proto), and it
-// means a newly added resource type is covered without any telemetry change:
-// AllResources is exhaustive by construction and guarded by
-// TestResourcesAllResourcesCompleteness.
+// Counts come from the configuration rather than from state, so every type is
+// reported on every deploy whatever the engine, and a newly added resource type
+// needs no telemetry change (AllResources is exhaustive by construction, guarded
+// by TestResourcesAllResourcesCompleteness). That is what makes this message a
+// superset of the deprecated per-type resource_*_count fields.
 //
-// Sizes come from b.Metrics.ResourceState, the direct engine's finalized state
-// populated in deployCore from the WAL replay the deploy already performs; each
-// entry carries StateSizeBytes (len of the JSON blob stored in resources.json).
-// So no marshalling, file read, or JSON parsing happens here — sizes are read
-// straight off the in-memory map. The terraform path leaves StateSizeBytes zero,
-// so terraform deploys report counts with zero sizes.
+// Sizes come from b.Metrics.ResourceState, whose entries already carry
+// StateSizeBytes from the WAL replay the direct deploy performed, so nothing is
+// marshalled, read, or parsed here. Terraform leaves those zero.
 //
 // Returns nil when the bundle declares no resources and none are in state.
 func collectResourcesMetadata(ctx context.Context, b *bundle.Bundle) *protos.BundleResourcesMetadata {
@@ -79,10 +73,9 @@ func resourceMetadata(r *config.Resources, state resourcestate.ExportedResources
 	}
 	for t, sizes := range sizesByType {
 		if _, ok := counts[t]; !ok {
-			// Types that exist only in state: sub-resources such as
-			// "jobs.permissions", which the configuration does not model as a
-			// resource type, and resources being removed from the bundle. Their
-			// count comes from the state since the configuration has none.
+			// Sub-resources such as "jobs.permissions", and resources being removed
+			// from the bundle: the configuration declares none, so the state is the
+			// only available count.
 			counts[t] = int64(len(sizes))
 			types = append(types, t)
 		}

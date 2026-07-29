@@ -32,9 +32,8 @@ func TestResourceMetadata_CountsFromConfigSizesFromState(t *testing.T) {
 
 	got := resourceMetadata(r, state)
 
-	// Sorted by resource type. jobs median is the lower-middle of sorted [10,20]
-	// -> index (2-1)/2 = 0 -> 10. jobs.permissions is not a configuration
-	// resource type, so its count comes from the state.
+	// Sorted by resource type. jobs median is the lower-middle of [10,20], so 10.
+	// jobs.permissions is not a configuration type, so its count comes from state.
 	assert.Equal(t, []protos.ResourceMetadata{
 		{ResourceType: "jobs", Count: 2, StateSizeMaxBytes: 20, StateSizeMeanBytes: 15, StateSizeMedianBytes: 10},
 		{ResourceType: "jobs.permissions", Count: 1, StateSizeMaxBytes: 2, StateSizeMeanBytes: 2, StateSizeMedianBytes: 2},
@@ -43,8 +42,7 @@ func TestResourceMetadata_CountsFromConfigSizesFromState(t *testing.T) {
 	}, got)
 }
 
-// A terraform deploy reports counts with no sizes: the terraform path leaves
-// StateSizeBytes zero, so there is nothing to measure per type.
+// A terraform deploy has no per-resource state, so it reports counts only.
 func TestResourceMetadata_CountsWithoutState(t *testing.T) {
 	r := &config.Resources{
 		Jobs: map[string]*resources.Job{"foo": {}},
@@ -81,11 +79,9 @@ func TestCollectResourcesMetadata_NilWhenNoResources(t *testing.T) {
 	assert.Nil(t, collectResourcesMetadata(t.Context(), b))
 }
 
-// Every resource type must be reported, otherwise a type looks like it has zero
-// adoption and the omission only surfaces when someone reads the dashboard and
-// concludes nobody uses it. resourceMetadata derives the types from
-// AllResources, so filling one resource of every type is enough to catch a type
-// that falls out of that list.
+// A type missing from the report is indistinguishable from zero adoption on the
+// dashboard, so fill one resource of every type to catch a type that falls out of
+// AllResources.
 func TestResourceMetadataCoversAllResourceTypes(t *testing.T) {
 	var r config.Resources
 	rv := reflect.ValueOf(&r).Elem()

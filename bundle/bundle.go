@@ -58,8 +58,8 @@ type Metrics struct {
 	ExecutionTimes              []protos.IntMapEntry
 	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
 
-	// StateEngine is the engine that ran the deploy, captured in deployCore.
-	// Empty when telemetry is emitted without a deploy having run.
+	// StateEngine is the engine that ran the deploy, set in deployCore. Empty when
+	// telemetry is emitted without a deploy having run.
 	StateEngine engine.EngineType
 
 	// ResourceState is the direct engine's per-resource deployment state
