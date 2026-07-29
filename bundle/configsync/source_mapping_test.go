@@ -27,8 +27,8 @@ func TestSourceSnapshotKeepsPlanAndYAMLOnSameContent(t *testing.T) {
 	snapshot, err := CaptureSourceSnapshot(ctx, b)
 	require.NoError(t, err)
 
-	// Simulate a watcher replacing the source after bundle loading but before
-	// the remote plan finishes. Routing must stay tied to the loaded bytes.
+	// Simulate a watcher replacing the source after snapshot capture but before
+	// the remote plan finishes. Routing must stay tied to the captured bytes.
 	require.NoError(t, os.WriteFile(path, []byte(replacedOnDisk), 0o644))
 	err = snapshot.Validate()
 	require.ErrorIs(t, err, ErrSourceChanged)
@@ -55,6 +55,26 @@ func TestSourceSnapshotKeepsPlanAndYAMLOnSameContent(t *testing.T) {
 	content, readErr := os.ReadFile(path)
 	require.NoError(t, readErr)
 	assert.Equal(t, replacedOnDisk, string(content))
+}
+
+func TestSourceSnapshotReadsFilesAtCapture(t *testing.T) {
+	ctx := logdiag.InitContext(t.Context())
+	directory := t.TempDir()
+	path := filepath.Join(directory, "databricks.yml")
+	loaded := "bundle:\n  name: loaded\n"
+	current := "bundle:\n  name: current\n"
+	require.NoError(t, os.WriteFile(path, []byte(loaded), 0o644))
+
+	b, err := bundle.Load(ctx, directory)
+	require.NoError(t, err)
+	mutator.DefaultMutators(ctx, b)
+	require.False(t, logdiag.HasError(ctx))
+	require.NoError(t, os.WriteFile(path, []byte(current), 0o644))
+
+	snapshot, err := CaptureSourceSnapshot(ctx, b)
+	require.NoError(t, err)
+	assert.Equal(t, current, string(snapshot.index.files[path].content))
+	require.NoError(t, snapshot.Validate())
 }
 
 func TestSourceSnapshotDetectsNewIncludeMatch(t *testing.T) {

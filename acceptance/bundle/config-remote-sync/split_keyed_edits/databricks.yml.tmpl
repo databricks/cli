@@ -32,7 +32,7 @@ resources:
           notebook_task:
             notebook_path: /Workspace/s3-shared
 
-    flow_style_provenance:
+    flow_style_mapping:
       tasks: [{task_key: alpha, timeout_seconds: 701, notebook_task: {notebook_path: /Workspace/flow-alpha}}, {task_key: beta, timeout_seconds: 702, notebook_task: {notebook_path: /Workspace/flow-beta}}]
 
     s7_remove_both_blocks:
@@ -103,7 +103,7 @@ targets:
               notebook_task:
                 notebook_path: /Workspace/s3-omega
 
-        flow_style_provenance:
+        flow_style_mapping:
           tasks: [{task_key: aardvark, timeout_seconds: 703, notebook_task: {notebook_path: /Workspace/flow-target}}]
 
         s7_remove_both_blocks:

@@ -47,7 +47,7 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // matches the leaf value. Non-sequence Adds (new map fields) are left
 // untouched.
 //
-// Source values and sibling candidates are captured with exact provenance
+// Source values and sibling candidates are captured with exact locations
 // before changes are resolved. This preserves references from the physical
 // YAML source without loading files again after routing.
 // Restoration counts by mechanism are accumulated into stats (used for

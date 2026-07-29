@@ -12,7 +12,7 @@ $CLI bundle deploy -t dev
 s1_id="$(read_id.py -t dev s1_non_first_top)"
 s2_id="$(read_id.py -t dev s2_target_only)"
 s3_id="$(read_id.py -t dev s3_both_blocks_sibling)"
-flow_id="$(read_id.py -t dev flow_style_provenance)"
+flow_id="$(read_id.py -t dev flow_style_mapping)"
 s7_id="$(read_id.py -t dev s7_remove_both_blocks)"
 s8_id="$(read_id.py -t dev s8_remove_and_edit)"
 s10_id="$(read_id.py -t dev s10_preserve_variable)"

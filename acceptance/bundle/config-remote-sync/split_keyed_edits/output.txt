@@ -16,7 +16,7 @@ Deployment complete!
 === Sync split keyed-list edits
 Detected changes in 10 resource(s):
 
-Resource: resources.jobs.flow_style_provenance
+Resource: resources.jobs.flow_style_mapping
   tasks[task_key='beta'].timeout_seconds: replace
 
 Resource: resources.jobs.s10_preserve_variable
@@ -66,7 +66,7 @@ Resource: resources.jobs.target_only_resource
              notebook_path: /Workspace/s1-beta
 @@ -34,11 +34,12 @@
 
-     flow_style_provenance:
+     flow_style_mapping:
 -      tasks: [{task_key: alpha, timeout_seconds: 701, notebook_task: {notebook_path: /Workspace/flow-alpha}}, {task_key: beta, timeout_seconds: 702, notebook_task: {notebook_path: /Workspace/flow-beta}}]
 +      tasks:
 +        - {task_key: alpha, timeout_seconds: 701, notebook_task: {notebook_path: /Workspace/flow-alpha}}
@@ -162,7 +162,7 @@ No changes detected.
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:
-  delete resources.jobs.flow_style_provenance
+  delete resources.jobs.flow_style_mapping
   delete resources.jobs.s10_preserve_variable
   delete resources.jobs.s10_target_only_variable_clone
   delete resources.jobs.s11_scalar_with_split_list

@@ -145,7 +145,7 @@ func ResolveChangesFromSnapshot(ctx context.Context, b *bundle.Bundle, configCha
 	if snapshot == nil || snapshot.index == nil {
 		return nil, errors.New("source snapshot unavailable")
 	}
-	return resolveChangesWithProvenance(ctx, b, configChanges, snapshot.index)
+	return resolveChangesWithSourceMapping(ctx, b, configChanges, snapshot.index)
 }
 
 // translateWorkspacePaths recursively converts absolute workspace paths to relative

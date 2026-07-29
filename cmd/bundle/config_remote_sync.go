@@ -204,7 +204,7 @@ Examples:
 			return err
 		}
 
-		// A source conflict invalidates both the plan and its YAML provenance.
+		// A source conflict invalidates both the plan and its YAML source mapping.
 		// Reload the bundle and remote state together so the unattended sync
 		// lands the edit on the newest source instead of returning stale.
 		err := retrySourceChanges(baseContext, func() error {

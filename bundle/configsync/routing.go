@@ -1192,7 +1192,7 @@ func coalesceSequenceElementAdds(fieldChanges []FieldChange) ([]FieldChange, err
 	return result, nil
 }
 
-func resolveChangesWithProvenance(ctx context.Context, b *bundle.Bundle, configChanges Changes, sources *sourceIndex) ([]FieldChange, error) {
+func resolveChangesWithSourceMapping(ctx context.Context, b *bundle.Bundle, configChanges Changes, sources *sourceIndex) ([]FieldChange, error) {
 	var result []FieldChange
 	for _, resourceKey := range slices.Sorted(maps.Keys(configChanges)) {
 		resourceChanges := configChanges[resourceKey]

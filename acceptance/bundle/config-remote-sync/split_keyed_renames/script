@@ -41,7 +41,7 @@ r["tasks"].extend([
 ])
 EOF
 
-title "S5: rename elements in both blocks without swapping their provenance"
+title "S5: rename elements in both blocks without swapping their source blocks"
 edit_resource.py jobs "$s5_id" <<'EOF'
 next(t for t in r["tasks"] if t["task_key"] == "m")["task_key"] = "z_new_top"
 next(t for t in r["tasks"] if t["task_key"] == "a")["task_key"] = "a_new_target"

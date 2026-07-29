@@ -32,18 +32,15 @@ type sourceIndex struct {
 	files      map[string]*sourceFile
 }
 
-// SourceSnapshot binds physical YAML provenance and file contents to the
+// SourceSnapshot binds physical YAML locations and file contents to the
 // configuration tree used to calculate a remote-change plan.
 type SourceSnapshot struct {
 	index        *sourceIndex
-	files        map[string][]byte
 	bundle       *bundle.Bundle
 	includeFiles []string
 }
 
-// CaptureSourceSnapshot captures source provenance before remote planning.
-// Reusing this snapshot through save prevents a later disk read from pairing
-// stale merged locations with newer YAML content.
+// CaptureSourceSnapshot reads the source mapping before remote planning.
 func CaptureSourceSnapshot(_ context.Context, b *bundle.Bundle) (*SourceSnapshot, error) {
 	index, err := loadSourceIndex(b)
 	if err != nil {
@@ -55,7 +52,6 @@ func CaptureSourceSnapshot(_ context.Context, b *bundle.Bundle) (*SourceSnapshot
 	}
 	return &SourceSnapshot{
 		index:        index,
-		files:        b.Config.SourceFileContents(),
 		bundle:       b,
 		includeFiles: includeFiles,
 	}, nil
@@ -74,7 +70,7 @@ func (s *SourceSnapshot) Validate() error {
 	if !slices.Equal(currentIncludes, s.includeFiles) {
 		return fmt.Errorf("%w: source include matches changed while remote changes were being resolved", ErrSourceChanged)
 	}
-	for _, file := range slices.Sorted(maps.Keys(s.files)) {
+	for _, file := range slices.Sorted(maps.Keys(s.index.files)) {
 		content, err := os.ReadFile(file)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
@@ -82,7 +78,7 @@ func (s *SourceSnapshot) Validate() error {
 			}
 			return fmt.Errorf("reading current source file %s: %w", file, err)
 		}
-		if !bytes.Equal(content, s.files[file]) {
+		if !bytes.Equal(content, s.index.files[file].content) {
 			return fmt.Errorf("%w: source file %s changed while remote changes were being resolved", ErrSourceChanged, file)
 		}
 	}
@@ -113,12 +109,10 @@ func loadSourceIndex(b *bundle.Bundle) (*sourceIndex, error) {
 	if err != nil {
 		return nil, fmt.Errorf("collecting source configuration files: %w", err)
 	}
-	loadedFiles := b.Config.SourceFileContents()
-
 	for _, file := range slices.Sorted(maps.Keys(fileSet)) {
-		content, ok := loadedFiles[file]
-		if !ok {
-			return nil, fmt.Errorf("loaded content unavailable for source configuration file %s", file)
+		content, err := os.ReadFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("reading source configuration file %s: %w", file, err)
 		}
 		parsed, diags := config.LoadFromBytes(file, content)
 		if diags.HasError() {

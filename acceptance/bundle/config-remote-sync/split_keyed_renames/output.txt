@@ -6,7 +6,7 @@ Deployment complete!
 === S4: rename a target-only element
 === Rename matching is not confused by a preceding deletion
 === A new keyed list element uses the broadest existing resource scope
-=== S5: rename elements in both blocks without swapping their provenance
+=== S5: rename elements in both blocks without swapping their source blocks
 === S6: keep a rename in target while placing a genuinely new element at top level
 === Sync split keyed-list renames
 Detected changes in 5 resource(s):
