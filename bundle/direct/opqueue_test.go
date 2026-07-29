@@ -20,7 +20,10 @@ import (
 type fakeUploader struct {
 	block   chan struct{}
 	started chan string
-	err     error
+	// done receives the resource key after the upload returns, for tests that need
+	// an upload to have completed rather than merely started.
+	done chan string
+	err  error
 
 	mu          sync.Mutex
 	uploads     []string
@@ -37,7 +40,6 @@ func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op record
 	}
 
 	f.mu.Lock()
-	defer f.mu.Unlock()
 	f.uploads = append(f.uploads, resourceKey+"="+string(op.state))
 	if f.actions == nil {
 		f.actions = map[string]bundledeployments.OperationActionType{}
@@ -45,6 +47,13 @@ func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op record
 	}
 	f.actions[resourceKey] = op.action
 	f.resourceIDs[resourceKey] = op.resourceID
+	f.mu.Unlock()
+
+	// Sent outside the lock: a test that stops reading this channel would otherwise
+	// hold f.mu and deadlock every other worker.
+	if f.done != nil {
+		f.done <- resourceKey
+	}
 	return f.err
 }
 
@@ -189,6 +198,54 @@ func TestOperationQueueReturnsUploadError(t *testing.T) {
 	assert.Contains(t, err.Error(), "resources.jobs.foo")
 }
 
+func TestOperationQueueRecordFailsAfterUploadError(t *testing.T) {
+	// An upload failure stops the deploy at the next resource instead of surfacing
+	// only at close, so the apply workers do not keep creating resources that DMS
+	// has no record of.
+	uploadErr := errors.New("boom")
+	f := &fakeUploader{err: uploadErr, done: make(chan string, 1)}
+	q := newOperationQueue(t.Context(), f)
+
+	// Wait for the failing upload to finish, so the error is stored before the next
+	// record rather than racing it.
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "v1"}, nil))
+	assert.Equal(t, "resources.jobs.foo", <-f.done)
+
+	// The next resource an apply worker tries to record is refused, with the upload
+	// error that caused it.
+	err := q.record(t.Context(), "resources.jobs.bar", deployplan.Create, "id-2", map[string]string{"name": "v1"}, nil)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, uploadErr)
+
+	// The refused resource was not queued, and close still reports the failure.
+	require.ErrorIs(t, q.close(), uploadErr)
+	assert.Equal(t, []string{`resources.jobs.foo={"state":{"name":"v1"}}`}, f.recorded())
+	assert.Empty(t, q.pending)
+	assert.Empty(t, q.queuedOrUploading)
+}
+
+func TestOperationQueueDrainsQueuedOperationsAfterUploadError(t *testing.T) {
+	// A failure refuses new work but does not discard work already recorded: the
+	// records DMS ends up with have to match the resources that were applied.
+	uploadErr := errors.New("boom")
+	f := &fakeUploader{err: uploadErr, block: make(chan struct{}), started: make(chan string, 1)}
+	q := newOperationQueue(t.Context(), f)
+
+	// Every worker is parked mid-upload, so these stay queued.
+	for i := range operationUploadWorkers {
+		require.NoError(t, q.record(t.Context(), "resources.jobs.hold"+strconv.Itoa(i), deployplan.Create, "id-1", map[string]string{"name": "v1"}, nil))
+		assert.Equal(t, "resources.jobs.hold"+strconv.Itoa(i), <-f.started)
+	}
+	require.NoError(t, q.record(t.Context(), "resources.jobs.queued", deployplan.Create, "id-2", map[string]string{"name": "v1"}, nil))
+
+	close(f.block)
+	require.ErrorIs(t, q.close(), uploadErr)
+
+	// The queued operation was uploaded rather than dropped on the way out.
+	assert.Contains(t, f.recorded(), `resources.jobs.queued={"state":{"name":"v1"}}`)
+	assert.Len(t, f.recorded(), operationUploadWorkers+1)
+}
+
 func TestOperationQueueRecordRejectsUnsupportedAction(t *testing.T) {
 	f := &fakeUploader{}
 	q := newOperationQueue(t.Context(), f)
@@ -254,40 +311,46 @@ func TestOperationQueueUploadsOneResourceAtATime(t *testing.T) {
 	// case where a coalesced key can be handed to a second worker while the first
 	// is still uploading it. The service keeps one state per key, so overlapping
 	// uploads for a key could land out of order and leave a stale state behind.
+	//
+	// The interleaving that breaks this is scheduler-dependent, so one pass proves
+	// little: repeat it so a single run has many chances to hit the bad ordering.
 	const (
+		iterations     = 200
 		workers        = 10
 		perWorker      = 5
 		distinctKeyMod = 12
 	)
 
-	ctx := t.Context()
-	u := &serialUploader{live: map[string]bool{}, last: map[string]string{}}
-	q := newOperationQueue(ctx, u)
+	for range iterations {
+		ctx := t.Context()
+		u := &serialUploader{live: map[string]bool{}, last: map[string]string{}}
+		q := newOperationQueue(ctx, u)
 
-	// Collect record errors instead of asserting inside the goroutines: testify
-	// assertions may only run on the goroutine running the test function.
-	errs := make(chan error, workers*perWorker)
-	var wg sync.WaitGroup
-	for w := range workers {
-		wg.Go(func() {
-			for i := range perWorker {
-				key := "resources.jobs.job" + strconv.Itoa((w*perWorker+i)%distinctKeyMod)
-				errs <- q.record(ctx, key, deployplan.Update, "id-1", map[string]string{"name": strconv.Itoa(w)}, nil)
-			}
-		})
-	}
-	wg.Wait()
-	close(errs)
-	for err := range errs {
-		require.NoError(t, err)
-	}
-	require.NoError(t, q.close())
+		// Collect record errors instead of asserting inside the goroutines: testify
+		// assertions may only run on the goroutine running the test function.
+		errs := make(chan error, workers*perWorker)
+		var wg sync.WaitGroup
+		for w := range workers {
+			wg.Go(func() {
+				for i := range perWorker {
+					key := "resources.jobs.job" + strconv.Itoa((w*perWorker+i)%distinctKeyMod)
+					errs <- q.record(ctx, key, deployplan.Update, "id-1", map[string]string{"name": strconv.Itoa(w)}, nil)
+				}
+			})
+		}
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			require.NoError(t, err)
+		}
+		require.NoError(t, q.close())
 
-	assert.False(t, u.uneven, "two uploads overlapped for the same resource key")
-	// Every distinct key was recorded, and close drained all of them.
-	assert.Len(t, u.last, distinctKeyMod)
-	assert.Empty(t, q.pending)
-	assert.Empty(t, q.queuedOrUploading)
+		require.False(t, u.uneven, "two uploads overlapped for the same resource key")
+		// Every distinct key was recorded, and close drained all of them.
+		require.Len(t, u.last, distinctKeyMod)
+		require.Empty(t, q.pending)
+		require.Empty(t, q.queuedOrUploading)
+	}
 }
 
 func TestNilOperationQueueIsNoOp(t *testing.T) {

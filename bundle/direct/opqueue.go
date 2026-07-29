@@ -93,15 +93,31 @@ func newOperationQueue(ctx context.Context, uploader operationUploader) *operati
 	return q
 }
 
-// record serializes an operation and hands it to the upload workers. It makes no
-// API call, so upload failures surface from close; an error here only means the
-// applied resource could not be turned into a payload.
+// record serializes an operation and hands it to the upload workers. The upload
+// itself happens on a worker, so an error returned here is either a failure to
+// turn the applied resource into a payload, or an earlier upload's error
+// resurfaced (see below).
 //
 // Recording a resource that is still waiting replaces the waiting operation
 // outright, since the newer one carries the resource's full state.
 func (q *operationQueue) record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any, dependsOn []deployplan.DependsOnEntry) error {
 	if q == nil {
 		return nil
+	}
+
+	// Report an earlier upload failure to the apply worker that is about to record
+	// the next resource, so the deploy stops instead of running to completion and
+	// only failing at close. That matters because a successfully completed version
+	// makes DMS the source of truth for resource state (see dstate.readDMSState):
+	// deploying everything while its records are missing leaves resources the next
+	// deploy would create a second time.
+	//
+	// This refuses new work only. Operations already recorded still upload - close
+	// drains them - so the records DMS does end up with match the resources that
+	// were actually applied. Resources already mid-apply also finish, so the deploy
+	// stops shortly after the first failure rather than exactly at it.
+	if err := q.firstErr(); err != nil {
+		return err
 	}
 
 	op, err := newRecordedOperation(action, resourceID, state, dependsOn)
@@ -207,4 +223,13 @@ func (q *operationQueue) setErr(err error) {
 	if q.err == nil {
 		q.err = err
 	}
+}
+
+// firstErr returns the first upload error, or nil if every upload so far
+// succeeded.
+func (q *operationQueue) firstErr() error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	return q.err
 }
