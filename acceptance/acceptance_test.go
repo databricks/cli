@@ -427,6 +427,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("NODE_TYPE_ID", nodeTypeID)
 	repls.Set(nodeTypeID, "[NODE_TYPE_ID]")
 
+	// On cloud, destroy every bundle this run deploys once all tests finish.
+	// Registered before the tests are spawned so it runs after they complete.
+	if !inprocessMode {
+		setupBundleCleanup(t, execPath, cloudEnv)
+	}
+
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
