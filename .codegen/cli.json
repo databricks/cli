@@ -2311,7 +2311,7 @@
       "enum_launch_stages": {
         "LARGE": "GA",
         "MEDIUM": "GA",
-        "XLARGE": "PRIVATE_PREVIEW"
+        "XLARGE": "GA"
       }
     },
     "apps.ComputeState": {
@@ -3539,7 +3539,8 @@
           ]
         },
         "creator_user_name": {
-          "description": "The policy creator user name to be filtered on.\nIf unspecified, all policies will be returned.",
+          "description": "Deprecated: Do not use this field in new integrations. Creator filtering will be removed in a\nfuture version.\nThe policy creator user name to be filtered on.\nIf unspecified, all policies will be returned.",
+          "deprecated": true,
           "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -3980,12 +3981,8 @@
     "bundledeployments.CreateDeploymentRequest": {
       "fields": {
         "deployment": {
-          "description": "The deployment to create. Caller must set `initial_parent_path`; every other field is\npopulated by the service.",
+          "description": "The deployment to create. The caller must set `initial_parent_path`. Other fields are ignored\non input and populated by the service.",
           "ref": "bundledeployments.Deployment",
-          "launch_stage": "PRIVATE_PREVIEW"
-        },
-        "deployment_id": {
-          "description": "The ID to use for the deployment, which will become the final\ncomponent of the deployment's resource name\n(i.e. `deployments/{deployment_id}`).",
           "launch_stage": "PRIVATE_PREVIEW"
         }
       }
@@ -4043,7 +4040,7 @@
           ]
         },
         "destroy_time": {
-          "description": "When the deployment was destroyed (i.e. `bundle destroy` completed).\nUnset if the deployment has not been destroyed.\nNamed destroy_time (not delete_time) because this tracks the\n`databricks bundle destroy` command, not the API-level deletion.",
+          "description": "When deletion was recorded. Unset if deletion has not been recorded.\nThis response metadata does not determine the deployment's lifecycle status.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
@@ -4057,7 +4054,7 @@
           ]
         },
         "display_name": {
-          "description": "Human-readable name for the deployment. Output only: it is denormalized from\nthe latest version, not set directly on the deployment.",
+          "description": "Human-readable name for the deployment, up to 256 characters. Output only: clients update it\nby setting `display_name` when creating a version.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
@@ -4072,7 +4069,7 @@
           ]
         },
         "initial_parent_path": {
-          "description": "The workspace path of the folder where the deployment is initially created. Includes a leading slash\nand no trailing slash. On create, the deployment is registered as a typed\nBUNDLE_DEPLOYMENT tree node under this folder, which must already exist. This field is\ninput only and is not returned in create, get, or list responses. The service rejects\ncreate requests that omit it.",
+          "description": "The workspace path of the existing folder where the deployment is initially created. Must be\nabsolute and canonical, with single separators, no `.` or `..` segments, and no trailing slash\nunless the path is `/`. It may contain at most 24 path segments, excluding an optional leading\n`/Workspace` segment. The complete path may contain up to 1,024 characters, and each segment\nmay contain up to 511 characters. This field is input only and is not returned in create, get,\nor list responses.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "INPUT_ONLY"
@@ -4242,7 +4239,7 @@
     "bundledeployments.ListDeploymentsRequest": {
       "fields": {
         "page_size": {
-          "description": "The maximum number of deployments to return. The service may return\nfewer than this value.\nIf unspecified, at most 50 deployments will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+          "description": "The maximum number of deployments to return. The service may return\nfewer than this value.\nIf unspecified, at most 20 deployments will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -4344,7 +4341,7 @@
     "bundledeployments.ListVersionsRequest": {
       "fields": {
         "page_size": {
-          "description": "The maximum number of versions to return. The service may return\nfewer than this value.\nIf unspecified, at most 50 versions will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+          "description": "The maximum number of versions to return. The service may return\nfewer than this value.\nIf unspecified, at most 20 versions will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -4597,7 +4594,7 @@
           ]
         },
         "display_name": {
-          "description": "Display name for the deployment, captured at the time of this version.",
+          "description": "Display name for the deployment, captured at the time of this version. Up to 256 characters.\nWhen present, creating the version updates the deployment display name. An empty value clears\nit; an absent value leaves the current deployment display name unchanged.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "IMMUTABLE"
@@ -8528,15 +8525,15 @@
       "fields": {
         "page_size": {
           "description": "Specifies the maximum number of privilege assignments to return (page length).\nEvery EffectivePrivilegeAssignment present in a single page response is guaranteed to contain all the effective\nprivileges granted on (or inherited by) the requested Securable for the respective principal.\n\nIf not set, a server-configured default is used.\nIf set to\n- lesser than 0: invalid parameter error\n- 0: page length is set to a server configured value\n- lesser than 150 but greater than 0: invalid parameter error (this is to ensure that server is able to return at\nleast one complete EffectivePrivilegeAssignment in a single page response)\n- greater than (or equal to) 150: page length is the minimum of this value and a server configured value",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW"
         },
         "page_token": {
           "description": "Opaque pagination token to go to next page based on previous query.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW"
         },
         "principal": {
           "description": "If provided, only the effective permissions for the specified principal (user or group) are returned.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -8547,14 +8544,14 @@
       "fields": {
         "effective_privilege_assignments": {
           "description": "The effective privilege assignments for the securable (and optional principal).",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "next_page_token": {
           "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\n__page_token__ should be set to this value for the next request (for the next page of results).",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -8817,15 +8814,15 @@
       "fields": {
         "page_size": {
           "description": "Specifies the maximum number of privilege assignments to return (page length).\nEvery PrivilegeAssignment present in a single page response is guaranteed to contain all the privileges granted on\nthe requested Securable for the respective principal.\n\nIf not set, page length is the server configured value.\nIf set to\n- lesser than 0: invalid parameter error\n- 0: page length is set to a server configured value\n- lesser than 150 but greater than 0: invalid parameter error (this is to ensure that server is able to return at\nleast one complete PrivilegeAssignment in a single page response)\n- greater than (or equal to) 150: page length is the minimum of this value and a server configured value",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW"
         },
         "page_token": {
           "description": "Opaque pagination token to go to next page based on previous query.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW"
         },
         "principal": {
           "description": "If provided, only the permissions for the specified principal (user or group) are returned.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -8836,13 +8833,13 @@
       "fields": {
         "next_page_token": {
           "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\n__page_token__ should be set to this value for the next request (for the next page of results).",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "privilege_assignments": {
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -11018,14 +11015,24 @@
         "SPECIAL_DESTINATION_EXTERNAL_LOCATION_OWNER",
         "SPECIAL_DESTINATION_CONNECTION_OWNER",
         "SPECIAL_DESTINATION_CREDENTIAL_OWNER",
-        "SPECIAL_DESTINATION_METASTORE_OWNER"
+        "SPECIAL_DESTINATION_METASTORE_OWNER",
+        "SPECIAL_DESTINATION_SCHEMA_OWNER",
+        "SPECIAL_DESTINATION_TABLE_OWNER",
+        "SPECIAL_DESTINATION_VOLUME_OWNER",
+        "SPECIAL_DESTINATION_FUNCTION_OWNER",
+        "SPECIAL_DESTINATION_REGISTERED_MODEL_OWNER"
       ],
       "enum_launch_stages": {
         "SPECIAL_DESTINATION_CATALOG_OWNER": "PUBLIC_PREVIEW",
         "SPECIAL_DESTINATION_CONNECTION_OWNER": "PUBLIC_PREVIEW",
         "SPECIAL_DESTINATION_CREDENTIAL_OWNER": "PUBLIC_PREVIEW",
         "SPECIAL_DESTINATION_EXTERNAL_LOCATION_OWNER": "PUBLIC_PREVIEW",
-        "SPECIAL_DESTINATION_METASTORE_OWNER": "PUBLIC_PREVIEW"
+        "SPECIAL_DESTINATION_FUNCTION_OWNER": "PUBLIC_BETA",
+        "SPECIAL_DESTINATION_METASTORE_OWNER": "PUBLIC_PREVIEW",
+        "SPECIAL_DESTINATION_REGISTERED_MODEL_OWNER": "PUBLIC_BETA",
+        "SPECIAL_DESTINATION_SCHEMA_OWNER": "PUBLIC_BETA",
+        "SPECIAL_DESTINATION_TABLE_OWNER": "PUBLIC_BETA",
+        "SPECIAL_DESTINATION_VOLUME_OWNER": "PUBLIC_BETA"
       }
     },
     "catalog.SseEncryptionDetails": {
@@ -13949,7 +13956,7 @@
         },
         "capacity_reservation_group": {
           "description": "The Azure capacity reservation group resource ID to use for launching VMs.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "first_on_demand": {
           "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nThis value should be greater than 0, to make sure the cluster driver node is placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster.",
@@ -14136,6 +14143,11 @@
         "data_security_mode": {
           "ref": "compute.DataSecurityMode",
           "launch_stage": "GA"
+        },
+        "dependency_mode": {
+          "description": "Controls dependency configuration for the cluster.",
+          "ref": "compute.DependencyMode",
+          "launch_stage": "PUBLIC_BETA"
         },
         "docker_image": {
           "description": "Custom docker image BYOC",
@@ -14329,6 +14341,11 @@
         "default_tags": {
           "description": "Tags that are added by Databricks regardless of any `custom_tags`, including:\n\n- Vendor: Databricks\n\n- Creator: \u003cusername_of_creator\u003e\n\n- ClusterName: \u003cname_of_cluster\u003e\n\n- ClusterId: \u003cid_of_cluster\u003e\n\n- Name: \u003cDatabricks internal use\u003e",
           "launch_stage": "GA"
+        },
+        "dependency_mode": {
+          "description": "Controls dependency configuration for the cluster.",
+          "ref": "compute.DependencyMode",
+          "launch_stage": "PUBLIC_BETA"
         },
         "docker_image": {
           "description": "Custom docker image BYOC",
@@ -14786,6 +14803,11 @@
           "ref": "compute.DataSecurityMode",
           "launch_stage": "GA"
         },
+        "dependency_mode": {
+          "description": "Controls dependency configuration for the cluster.",
+          "ref": "compute.DependencyMode",
+          "launch_stage": "PUBLIC_BETA"
+        },
         "docker_image": {
           "description": "Custom docker image BYOC",
           "ref": "compute.DockerImage",
@@ -15057,6 +15079,11 @@
         "data_security_mode": {
           "ref": "compute.DataSecurityMode",
           "launch_stage": "GA"
+        },
+        "dependency_mode": {
+          "description": "Controls dependency configuration for the cluster.",
+          "ref": "compute.DependencyMode",
+          "launch_stage": "PUBLIC_BETA"
         },
         "docker_image": {
           "description": "Custom docker image BYOC",
@@ -15435,6 +15462,24 @@
     },
     "compute.DeletePolicyResponse": {},
     "compute.DeleteResponse": {},
+    "compute.DependencyMode": {
+      "description": "Controls dependency configuration for the cluster.\n\n* `DEPENDENCY_MODE_AUTO`: Databricks will choose the most appropriate dependency mode based on your compute configuration.\n* `DEPENDENCY_MODE_ENVIRONMENTS`: Enables a unified dependency management experience across classic and serverless, resulting in increased stability and performance. Supported only on DBR 19+ in Standard access mode.\n* `DEPENDENCY_MODE_CLUSTER_LIBRARIES`: Legacy mode: dependencies come from cluster libraries and init scripts.",
+      "enum": [
+        "DEPENDENCY_MODE_ENVIRONMENTS",
+        "DEPENDENCY_MODE_CLUSTER_LIBRARIES",
+        "DEPENDENCY_MODE_AUTO"
+      ],
+      "enum_launch_stages": {
+        "DEPENDENCY_MODE_AUTO": "PUBLIC_BETA",
+        "DEPENDENCY_MODE_CLUSTER_LIBRARIES": "PUBLIC_BETA",
+        "DEPENDENCY_MODE_ENVIRONMENTS": "PUBLIC_BETA"
+      },
+      "enum_descriptions": {
+        "DEPENDENCY_MODE_AUTO": "\u003cDatabricks\u003e will choose the most appropriate dependency mode based on your compute configuration.",
+        "DEPENDENCY_MODE_CLUSTER_LIBRARIES": "Legacy mode: dependencies come from cluster libraries and init scripts.",
+        "DEPENDENCY_MODE_ENVIRONMENTS": "Enables a unified dependency management experience across classic and serverless, resulting in increased stability and performance. Supported only on DBR 19+ in Standard access mode."
+      }
+    },
     "compute.DestroyContext": {
       "fields": {
         "clusterId": {
@@ -15586,6 +15631,11 @@
         "data_security_mode": {
           "ref": "compute.DataSecurityMode",
           "launch_stage": "GA"
+        },
+        "dependency_mode": {
+          "description": "Controls dependency configuration for the cluster.",
+          "ref": "compute.DependencyMode",
+          "launch_stage": "PUBLIC_BETA"
         },
         "docker_image": {
           "description": "Custom docker image BYOC",
@@ -15855,6 +15905,11 @@
         "data_security_mode": {
           "ref": "compute.DataSecurityMode",
           "launch_stage": "GA"
+        },
+        "dependency_mode": {
+          "description": "Controls dependency configuration for the cluster.",
+          "ref": "compute.DependencyMode",
+          "launch_stage": "PUBLIC_BETA"
         },
         "docker_image": {
           "description": "Custom docker image BYOC",
@@ -16988,7 +17043,7 @@
         },
         "capacity_reservation_group": {
           "description": "The Azure capacity reservation group resource ID to use for launching VMs in this pool.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nNOTE: Omitting this field will clear any existing configured capacity reservation group on the pool.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "spot_bid_max_price": {
           "description": "With variable pricing, you have option to set a max price, in US dollars (USD)\nFor example, the value 2 would be a max price of $2.00 USD per hour.\nIf you set the max price to be -1, the VM won't be evicted based on price.\nThe price for the VM will be the current price for spot or the price for a standard VM,\nwhich ever is less, as long as there is capacity and quota available.",
@@ -18528,6 +18583,11 @@
         "data_security_mode": {
           "ref": "compute.DataSecurityMode",
           "launch_stage": "GA"
+        },
+        "dependency_mode": {
+          "description": "Controls dependency configuration for the cluster.",
+          "ref": "compute.DependencyMode",
+          "launch_stage": "PUBLIC_BETA"
         },
         "docker_image": {
           "description": "Custom docker image BYOC",
@@ -21706,7 +21766,7 @@
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "size": {
-          "description": "Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\nor PG_SPECIFIC_TYPE_HALFVEC (specifies the vector dimension, e.g., 1024).",
+          "description": "Size parameter for the target type, for types that take one (e.g. vector\ndimension, varchar length). Required when the chosen pg_type needs a size.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -23515,7 +23575,7 @@
     "files.FileInfo": {
       "fields": {
         "file_size": {
-          "description": "The length of the file in bytes. This field is omitted for directories.",
+          "description": "The length of the file in bytes. Set to 0 for directories.",
           "launch_stage": "GA"
         },
         "is_dir": {
@@ -25955,7 +26015,7 @@
       }
     },
     "iamv2.WorkspaceAssignmentDetail": {
-      "description": "The details of a principal's assignment to a workspace.",
+      "description": "The direct assignment of a provisioned account-level principal (user, service\nprincipal, or group) to a workspace, together with the entitlements that\nassignment grants in the workspace.\n\nA WorkspaceAssignmentDetail exists only for principals that are directly\nassigned to the workspace; principals that merely inherit workspace access\nthrough a group are not represented here (see WorkspaceAccessDetail /\nWorkspaceIdentityDetail for the effective, direct-or-indirect view). Creating\nthe resource assigns the principal to the workspace; deleting it removes the\nassignment. The `entitlements` field is the only client-settable field and\ndefines the entitlements granted directly on this assignment; `effective_entitlements`\nis the read-only union of those plus any granted via group membership.\n\nA direct assignment always carries at least one directly-assigned entitlement:\nthe assignment is what grants the entitlement, so a WorkspaceAssignmentDetail\nwith an empty `entitlements` set is not a valid state. Both create and update\nrequire a non-empty `entitlements` set (an empty set is rejected); to remove a\nprincipal's assignment entirely, delete the resource.\n\nThis resource replaces workspace assignment previously managed through the\nworkspace SCIM and permission-assignment APIs, and is intended for account\nand workspace admins.",
       "fields": {
         "account_id": {
           "description": "The account ID parent of the workspace where the principal is assigned",
@@ -25964,11 +26024,20 @@
             "OUTPUT_ONLY"
           ]
         },
+        "effective_entitlements": {
+          "description": "The principal's full effective entitlements granted in this workspace: every entitlement it holds\nwhether granted directly or via group membership. Populated on Get; empty on List.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY",
+            "UNORDERED_LIST"
+          ]
+        },
         "entitlements": {
           "description": "Entitlements granted directly to the principal on this workspace. The only client-settable\nfield: create and update manage exactly this set (including entitlements the principal also\nholds via a group).\nNot populated by ListWorkspaceAssignmentDetails (omitted for scalability); call\nGetWorkspaceAssignmentDetail to read the entitlements for a single principal.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
-            "OPTIONAL"
+            "OPTIONAL",
+            "UNORDERED_LIST"
           ]
         },
         "principal_id": {
@@ -26005,6 +26074,13 @@
     "jobs.AiRuntimeTask": {
       "description": "AiRuntimeTask: multi-node GPU compute task definition for Databricks AI\nRuntime workloads.\n\nJobs-framework-level concepts (retries, per-task timeout, idempotency\ntoken, usage/budget policy, permissions) live on the surrounding\nTaskSettings / run-submit request and are intentionally NOT duplicated\nhere. Users compose `ai_runtime_task` with the standard Jobs/DABs task\nwrapper to get those.",
       "fields": {
+        "code_source_path": {
+          "description": "Workspace or UC volume path of the code-source archive, unpacked on\neach node and exposed through `$CODE_SOURCE`. Set by first-party\ntooling; not for direct callers.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "deployments": {
           "description": "Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
           "launch_stage": "PRIVATE_PREVIEW"
@@ -27488,6 +27564,10 @@
           "description": "If new_cluster, a description of a cluster that is created for each task.",
           "ref": "compute.ClusterSpec",
           "launch_stage": "GA"
+        },
+        "serverless_compute_id": {
+          "description": "The ID of the serverless compute object to bind this cluster to. At most one\nJobCluster per job may set this field; the rate limit defined on the referenced\nserverless compute applies across all tasks bound to this cluster.",
+          "launch_stage": "PRIVATE_PREVIEW"
         }
       }
     },
@@ -28681,7 +28761,7 @@
       }
     },
     "jobs.ResolvedValuesAiRuntimeTaskResolvedValues": {
-      "description": "Resolved env_vars for an AiRuntimeTask after dynamic-value substitution.\nMirrors the task's `resolved_parameters_field` (env_vars) so Jobs can\nexpand `{{tasks.\u003ckey\u003e.values.\u003cname\u003e}}` references before submission."
+      "description": "Resolved values for an AiRuntimeTask after dynamic-value substitution, so\nJobs can expand `{{tasks.\u003ckey\u003e.values.\u003cname\u003e}}` references before\nsubmission."
     },
     "jobs.Run": {
       "description": "Run was retrieved successfully",
@@ -30054,6 +30134,11 @@
         "notification_settings": {
           "description": "Optional notification settings that are used when sending notifications to each of the `email_notifications` and `webhook_notifications` for this run.",
           "ref": "jobs.JobNotificationSettings",
+          "launch_stage": "GA"
+        },
+        "performance_target": {
+          "description": "The performance mode on a serverless one-time run. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
+          "ref": "jobs.PerformanceTarget",
           "launch_stage": "GA"
         },
         "queue": {
@@ -34283,7 +34368,7 @@
       }
     },
     "ml.DirectSchemas": {
-      "description": "Schema definitions provided directly on the Stream, as opposed to referencing a schema registry.\nIn a future milestone, we will support schema registries through a UC Connection.",
+      "description": "Schema definitions provided directly on the Stream, as opposed to referencing a schema registry.\nTo resolve schemas from a registry instead, use SchemaRegistryConfig.",
       "fields": {
         "key_schema": {
           "description": "Schema for the message key. This is only used for Kafka streams.\nFor Kafka, at least one of payload_schema or key_schema must be specified.",
@@ -35398,18 +35483,6 @@
         }
       }
     },
-    "ml.LifetimeWindow": {
-      "description": "A window that spans the entire lifetime of a data source, accumulating from the source's start\nrather than over a bounded duration. All fields are optional; an empty message denotes the\ncontinuous, fully-accurate variant.",
-      "fields": {
-        "slide_duration": {
-          "description": "The slide duration for the discrete (offline) variant: the value updates only at these\nboundaries. Must be positive when set. When absent, the window is continuous (the value is as\nfresh as the pipeline delivers).",
-          "launch_stage": "PRIVATE_PREVIEW",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        }
-      }
-    },
     "ml.LineageContext": {
       "description": "Lineage context information for tracking where an API was invoked. This will allow us to track lineage, which currently uses caller entity information for use across the Lineage Client and Observability in Lumberjack.",
       "fields": {
@@ -36045,22 +36118,6 @@
         "value": {
           "description": "The tag value.",
           "launch_stage": "GA"
-        }
-      }
-    },
-    "ml.LongRollingWindow": {
-      "description": "A long (multi-day) rolling window served via the hybrid batch + streaming path. The batch\npipeline maintains daily partial aggregates for the bulk of the window while the streaming\npipeline maintains the most recent day(s), and serving merges them on read. Distinct from\nRollingWindow so the control plane can explicitly identify long rolling window features rather\nthan inferring hybrid behavior from window_duration.",
-      "fields": {
-        "delay": {
-          "description": "The delay applied to the end of the rolling window (must be non-negative).\nFor example, delay=1d shifts the window end 1 day before the evaluation time.",
-          "launch_stage": "PRIVATE_PREVIEW",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "window_duration": {
-          "description": "The duration of the rolling window. Must be positive and span more than two days, so that both\nthe batch (N-1 day) and stale-path (N-2 day) partial aggregates are well defined. The duration\nneed not be a whole number of days (e.g. 3 days 15 minutes is allowed).",
-          "launch_stage": "PRIVATE_PREVIEW"
         }
       }
     },
@@ -37050,8 +37107,11 @@
           ]
         },
         "window_duration": {
-          "description": "The duration of the rolling window (must be positive).",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "The duration of the rolling window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
         }
       }
     },
@@ -37183,6 +37243,25 @@
         }
       }
     },
+    "ml.SawtoothWindow": {
+      "description": "A sawtooth window served via the hybrid batch + streaming path. The batch pipeline maintains\ndaily partial aggregates for the bulk of the window while the streaming pipeline maintains the\nmost recent day(s), and serving merges them on read. Same field shape as RollingWindow, but a\ndistinct type so the control plane can explicitly identify hybrid (sawtooth) features rather\nthan inferring hybrid behavior from window_duration.",
+      "fields": {
+        "delay": {
+          "description": "The delay applied to the end of the window (must be non-negative).\nFor example, delay=1d shifts the window end 1 day before the evaluation time.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "window_duration": {
+          "description": "The duration of the window. Must be positive and span more than two days when set, so that both\nthe batch (N-1 day) and stale-path (N-2 day) partial aggregates are well defined. The duration\nneed not be a whole number of days (e.g. 3 days 15 minutes is allowed). Absent means lifetime\n(aggregate over the entity's entire history).",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
     "ml.ScalarDataType": {
       "description": "Scalar data types for request-time field definitions.\nOnly flat (non-nested) types are supported.",
       "enum": [
@@ -37231,6 +37310,79 @@
         "proto_schema": {
           "description": "Protocol Buffer schema with its payload message name.",
           "ref": "ml.ProtoSchemaSpec",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
+    "ml.SchemaLocator": {
+      "description": "Schema locator for one side (payload or key) of a message.\nIdentifies which schema to use in the schema registry and the serialization format.",
+      "fields": {
+        "confluent_schema": {
+          "description": "Confluent Schema Registry schema locator.",
+          "ref": "ml.SchemaLocatorConfluentSchema",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "format": {
+          "description": "Serialization format for this schema.",
+          "ref": "ml.SchemaLocatorFormat",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "ml.SchemaLocatorConfluentSchema": {
+      "description": "Confluent Schema Registry schema locator.\nThe value to provide for `subject` depends on the naming strategy configured in your registry:\n- TopicNameStrategy (default): \"{topic}-key\" or \"{topic}-value\"\ne.g. for topic \"transactions\" use \"transactions-value\" for the payload and \"transactions-key\" for the key.\n- RecordNameStrategy: the fully-qualified record name\ne.g. \"com.example.Payment\" for Avro, the bare message name (without package) for Protobuf,\nor the `title` field value for JSON.\n- TopicRecordNameStrategy: \"{topic}-{fully-qualified-record-name}\"\ne.g. \"transactions-com.example.Payment\".",
+      "fields": {
+        "subject": {
+          "description": "The Confluent schema registry subject name.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "ml.SchemaLocatorFormat": {
+      "description": "Supported serialization formats for a schema registry schema.",
+      "enum": [
+        "FORMAT_AVRO",
+        "FORMAT_PROTOBUF",
+        "FORMAT_JSON"
+      ],
+      "enum_launch_stages": {
+        "FORMAT_AVRO": "PRIVATE_PREVIEW",
+        "FORMAT_JSON": "PRIVATE_PREVIEW",
+        "FORMAT_PROTOBUF": "PRIVATE_PREVIEW"
+      }
+    },
+    "ml.SchemaRegistryConfig": {
+      "description": "Configuration for resolving a Stream's schema from an external schema registry (e.g. Confluent).",
+      "fields": {
+        "api_secret_ref": {
+          "description": "Reference to the schema registry API secret in a Databricks secret scope.",
+          "ref": "ml.SecretScopeReference",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "key_schema_locator": {
+          "description": "Schema locator for the message key. Only used for Kafka streams.\nAt least one of payload_schema_locator or key_schema_locator must be set.",
+          "ref": "ml.SchemaLocator",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "payload_schema_locator": {
+          "description": "Schema locator for the message payload. For Kafka this is the value.\nAt least one of payload_schema_locator or key_schema_locator must be set.",
+          "ref": "ml.SchemaLocator",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "uc_connection": {
+          "description": "A Schema Registry UC Connection object.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -37558,8 +37710,11 @@
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "window_duration": {
-          "description": "The duration of the sliding window.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "The duration of the sliding window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
         }
       }
     },
@@ -37645,7 +37800,7 @@
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "schema_config": {
-          "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+          "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
           "ref": "ml.StreamSchemaConfig",
           "launch_stage": "PRIVATE_PREVIEW"
         },
@@ -37691,11 +37846,19 @@
       }
     },
     "ml.StreamSchemaConfig": {
-      "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+      "description": "Schema definitions for the stream.\nFeature store supports both direct schemas and schema registries.",
       "fields": {
         "direct_schemas": {
           "description": "Schema definitions provided directly on the Stream.",
           "ref": "ml.DirectSchemas",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "schema_registry_config": {
+          "description": "Resolve schemas from an external schema registry.",
+          "ref": "ml.SchemaRegistryConfig",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -37706,6 +37869,13 @@
     "ml.StreamSource": {
       "description": "A Stream entity used as a data source for a feature.",
       "fields": {
+        "dataframe_schema": {
+          "description": "Schema of the resulting dataframe after transformations, in Spark StructType\nJSON format (from df.schema.json()).\nAny subsequent functions operate against this dataframe.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "filter_condition": {
           "description": "The filter condition applied to the source data before aggregation.",
           "launch_stage": "PRIVATE_PREVIEW",
@@ -37716,6 +37886,13 @@
         "full_name": {
           "description": "Three-part full name of the Stream (catalog.schema.stream).",
           "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "transformation_sql": {
+          "description": "The pipeline runs these SQL statements immediately after conversion into\nthe schema specified on the Stream object.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
         }
       }
     },
@@ -37836,24 +38013,16 @@
             "OPTIONAL"
           ]
         },
-        "lifetime": {
-          "description": "A window that spans the entire lifetime of the data source.",
-          "ref": "ml.LifetimeWindow",
-          "launch_stage": "PRIVATE_PREVIEW",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "long_rolling": {
-          "description": "A long (multi-day) rolling window served via the hybrid batch + streaming path.",
-          "ref": "ml.LongRollingWindow",
-          "launch_stage": "PRIVATE_PREVIEW",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
         "rolling": {
           "ref": "ml.RollingWindow",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "sawtooth": {
+          "description": "A sawtooth window served via the hybrid batch + streaming path.",
+          "ref": "ml.SawtoothWindow",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -37960,6 +38129,13 @@
             "IMMUTABLE"
           ]
         },
+        "effective_table_prefix": {
+          "description": "The trace-table prefix actually in effect: `table_prefix` if it was set on\ncreation, otherwise the server-generated default.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
         "schema": {
           "description": "The name of the Unity Catalog schema within `catalog`.",
           "launch_stage": "PRIVATE_PREVIEW",
@@ -37968,7 +38144,7 @@
           ]
         },
         "table_prefix": {
-          "description": "The prefix for the trace tables, which are named\n`{catalog}.{schema}.{table_prefix}_otel_*`. May only contain letters,\ndigits, and underscores, and may be at most 238 characters. When unset, a\nserver-generated prefix derived from the experiment ID is used.",
+          "description": "The prefix for the trace tables, which are named\n`{catalog}.{schema}.{table_prefix}_otel_*`. May only contain letters,\ndigits, and underscores, and may be at most 238 characters. When unset, a\nserver-generated prefix derived from the experiment ID is used and this\nfield stays empty on read; the resolved value is always available in\n`effective_table_prefix`.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "IMMUTABLE"
@@ -38256,6 +38432,33 @@
         "DELETED_ONLY": "GA"
       }
     },
+    "networking.AwsVpcEndpointInfo": {
+      "fields": {
+        "aws_account_id": {
+          "description": "The AWS account ID in which this VPC endpoint lives.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "IMMUTABLE",
+            "OUTPUT_ONLY"
+          ]
+        },
+        "aws_endpoint_service_id": {
+          "description": "The ID of the Databricks VPC endpoint service that this endpoint connects to.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "IMMUTABLE",
+            "OUTPUT_ONLY"
+          ]
+        },
+        "aws_vpc_endpoint_id": {
+          "description": "The ID of the underlying VPC endpoint in AWS. Provided by the customer when\nregistering an existing AWS VPC endpoint.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "IMMUTABLE"
+          ]
+        }
+      }
+    },
     "networking.AzurePrivateEndpointInfo": {
       "fields": {
         "private_endpoint_name": {
@@ -38302,6 +38505,15 @@
             "OUTPUT_ONLY"
           ]
         },
+        "aws_vpc_endpoint_info": {
+          "description": "Info for an AWS VPC endpoint.",
+          "ref": "networking.AwsVpcEndpointInfo",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "IMMUTABLE",
+            "OPTIONAL"
+          ]
+        },
         "azure_private_endpoint_info": {
           "description": "Info for an Azure private endpoint.",
           "ref": "networking.AzurePrivateEndpointInfo",
@@ -38332,6 +38544,15 @@
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
+          ]
+        },
+        "gcp_psc_endpoint_info": {
+          "description": "Info for a GCP Private Service Connect endpoint.",
+          "ref": "networking.GcpPscEndpointInfo",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "IMMUTABLE",
+            "OPTIONAL"
           ]
         },
         "name": {
@@ -38388,6 +38609,47 @@
       ],
       "enum_launch_stages": {
         "SERVICE_DIRECT": "GA"
+      }
+    },
+    "networking.GcpPscEndpointInfo": {
+      "fields": {
+        "endpoint_region": {
+          "description": "The GCP region of the PSC connection endpoint. Provided by the customer when registering an\nexisting PSC endpoint. GCP supports only same-region PSC, so this must match the workspace\nregion.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "IMMUTABLE"
+          ]
+        },
+        "project_id": {
+          "description": "The GCP consumer project ID in which this PSC endpoint is created. Provided by the customer\nwhen registering an existing PSC endpoint.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "IMMUTABLE"
+          ]
+        },
+        "psc_connection_id": {
+          "description": "The ID of the underlying Private Service Connect connection in the GCP consumer project,\nassigned by GCP when the PSC connection is created.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "IMMUTABLE",
+            "OUTPUT_ONLY"
+          ]
+        },
+        "psc_endpoint": {
+          "description": "The name of this PSC connection in the GCP consumer project. Provided by the customer when\nregistering an existing PSC endpoint.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "IMMUTABLE"
+          ]
+        },
+        "service_attachment_id": {
+          "description": "The ID of the Databricks service attachment this PSC endpoint connects to.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "IMMUTABLE",
+            "OUTPUT_ONLY"
+          ]
+        }
       }
     },
     "networking.GetEndpointRequest": {},
@@ -39247,6 +39509,10 @@
         },
         "outlook_options": {
           "ref": "pipelines.OutlookOptions",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "reddit_ads_options": {
+          "ref": "pipelines.RedditAdsOptions",
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "sharepoint_options": {
@@ -40110,6 +40376,19 @@
           "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
           "ref": "pipelines.TableSpecificConfig",
           "launch_stage": "PUBLIC_PREVIEW"
+        }
+      }
+    },
+    "pipelines.IngestionPipelineDefinitionFanoutOptions": {
+      "description": "Fanout configuration for multi-table routing from streaming sources.\nRoutes each input record to a destination table based on a routing\nkey derived from the record. The key value becomes the table name\nsuffix: {destination_catalog}.{destination_schema}.{key_value}.",
+      "fields": {
+        "fanout_by": {
+          "description": "Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "transforms": {
+          "description": "Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
+          "launch_stage": "PRIVATE_PREVIEW"
         }
       }
     },
@@ -41255,6 +41534,37 @@
         "LEGACY_PUBLISHING_MODE": "GA"
       }
     },
+    "pipelines.RedditAdsOptions": {
+      "description": "Reddit Ads specific options for ingestion",
+      "fields": {
+        "custom_report_options": {
+          "description": "(Optional) Custom report definition. When set, the table is treated as a\nuser-defined Reddit Ads custom report. When unset, the table must match\none of the connector's prebuilt sources.",
+          "ref": "pipelines.RedditAdsOptionsRedditAdsCustomReportOptions",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "lookback_window_days": {
+          "description": "(Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.\nIf not specified, defaults to 30 days.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "sync_start_date": {
+          "description": "(Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, defaults to 2 years ago.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "pipelines.RedditAdsOptionsRedditAdsCustomReportOptions": {
+      "description": "User-defined custom report for the Reddit Ads connector.\nApplies only to the custom_report table — prebuilt tables ignore this.",
+      "fields": {
+        "breakdowns": {
+          "description": "(Optional) Breakdown dimensions to group report data by.\nExamples: CAMPAIGN_ID, DATE, COUNTRY, REGION, AD_ID.\nMust include at least one time dimension (DATE or HOUR).",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "fields": {
+          "description": "(Optional) Fields to include in the report (maps to the Reddit Ads API `fields` parameter).\nExamples: IMPRESSIONS, CLICKS, SPEND, CPC, CTR.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
     "pipelines.ReplaceWhereOverride": {
       "description": "Specifies a replace_where predicate override for a replace where flow.",
       "fields": {
@@ -41370,6 +41680,11 @@
         "destination_schema": {
           "description": "Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.",
           "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "fanout_options": {
+          "description": "Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
+          "ref": "pipelines.IngestionPipelineDefinitionFanoutOptions",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "source_catalog": {
           "description": "The source catalog name. Might be optional depending on the type of source.",
@@ -44598,6 +44913,13 @@
             "OPTIONAL"
           ]
         },
+        "extra_columns": {
+          "description": "Extra PostgreSQL-only columns to add to the synced table.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "new_pipeline_spec": {
           "description": "Specification for creating a new pipeline.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned via the top level pipeline_id attribute.",
           "ref": "postgres.NewPipelineSpec",
@@ -44651,6 +44973,42 @@
         }
       }
     },
+    "postgres.SyncedTableSyncedTableSpecExtraColumn": {
+      "description": "An extra PostgreSQL column to add to the synced table.",
+      "fields": {
+        "column_name": {
+          "description": "Name of the column.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "column_type": {
+          "description": "PostgreSQL type of the column, for example \"tsvector\" or \"vector(1024)\".",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "compute": {
+          "description": "SQL expression used to compute the column's value, for example\n\"to_tsvector('english', content)\".",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "maintenance": {
+          "ref": "postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
+    "postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance": {
+      "description": "How the column's value is populated and kept up to date.",
+      "enum": [
+        "STORED_GENERATED"
+      ],
+      "enum_launch_stages": {
+        "STORED_GENERATED": "PRIVATE_PREVIEW"
+      }
+    },
     "postgres.SyncedTableSyncedTableSpecPgSpecificType": {
       "description": "PostgreSQL-specific target types that can override the default Delta-to-PG mapping.",
       "enum": [
@@ -44686,7 +45044,7 @@
           "launch_stage": "PUBLIC_BETA"
         },
         "size": {
-          "description": "Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\nor PG_SPECIFIC_TYPE_HALFVEC (specifies the vector dimension, e.g., 1024).",
+          "description": "Size parameter for the target type, for types that take one (e.g. vector\ndimension, varchar length). Required when the chosen pg_type needs a size.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -46153,7 +46511,10 @@
         },
         "ai21labs_api_key_plaintext": {
           "description": "An AI21 Labs API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `ai21labs_api_key`. You\nmust provide an API key using one of the following fields:\n`ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         }
       }
     },
@@ -46327,7 +46688,10 @@
         },
         "aws_access_key_id_plaintext": {
           "description": "An AWS access key ID with permissions to interact with Bedrock services\nprovided as a plaintext string. If you prefer to reference your key using\nDatabricks Secrets, see `aws_access_key_id`. You must provide an API key\nusing one of the following fields: `aws_access_key_id` or\n`aws_access_key_id_plaintext`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "aws_region": {
           "description": "The AWS region to use. Bedrock has to be enabled there.",
@@ -46339,7 +46703,10 @@
         },
         "aws_secret_access_key_plaintext": {
           "description": "An AWS secret access key paired with the access key ID, with permissions\nto interact with Bedrock services provided as a plaintext string. If you\nprefer to reference your key using Databricks Secrets, see\n`aws_secret_access_key`. You must provide an API key using one of the\nfollowing fields: `aws_secret_access_key` or\n`aws_secret_access_key_plaintext`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "bedrock_provider": {
           "description": "The underlying provider in Amazon Bedrock. Supported values (case\ninsensitive) include: Anthropic, Cohere, AI21Labs, Amazon.",
@@ -46374,7 +46741,10 @@
         },
         "anthropic_api_key_plaintext": {
           "description": "The Anthropic API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `anthropic_api_key`. You\nmust provide an API key using one of the following fields:\n`anthropic_api_key` or `anthropic_api_key_plaintext`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         }
       }
     },
@@ -46390,7 +46760,10 @@
         },
         "value_plaintext": {
           "description": "The API Key provided as a plaintext string. If you prefer to reference your\ntoken using Databricks Secrets, see `value`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         }
       }
     },
@@ -46456,7 +46829,10 @@
         },
         "token_plaintext": {
           "description": "The token provided as a plaintext string. If you prefer to reference your\ntoken using Databricks Secrets, see `token`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         }
       }
     },
@@ -46507,7 +46883,10 @@
         },
         "cohere_api_key_plaintext": {
           "description": "The Cohere API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `cohere_api_key`. You\nmust provide an API key using one of the following fields:\n`cohere_api_key` or `cohere_api_key_plaintext`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         }
       }
     },
@@ -46630,7 +47009,10 @@
         },
         "databricks_api_token_plaintext": {
           "description": "The Databricks API token that corresponds to a user or service principal\nwith Can Query access to the model serving endpoint pointed to by this\nexternal model provided as a plaintext string. If you prefer to reference\nyour key using Databricks Secrets, see `databricks_api_token`. You must\nprovide an API key using one of the following fields:\n`databricks_api_token` or `databricks_api_token_plaintext`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "databricks_workspace_url": {
           "description": "The URL of the Databricks workspace containing the model serving endpoint\npointed to by this external model.",
@@ -47055,7 +47437,10 @@
         },
         "private_key_plaintext": {
           "description": "The private key for the service account which has access to the Google\nCloud Vertex AI Service provided as a plaintext secret. See [Best\npractices for managing service account keys]. If you prefer to reference\nyour key using Databricks Secrets, see `private_key`. You must provide an\nAPI key using one of the following fields: `private_key` or\n`private_key_plaintext`.\n\n[Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "project_id": {
           "description": "This is the Google Cloud project id that the service account is\nassociated with.",
@@ -47107,7 +47492,10 @@
         },
         "microsoft_entra_client_secret_plaintext": {
           "description": "The client secret used for Microsoft Entra ID authentication provided as\na plaintext string. If you prefer to reference your key using Databricks\nSecrets, see `microsoft_entra_client_secret`. You must provide an API key\nusing one of the following fields: `microsoft_entra_client_secret` or\n`microsoft_entra_client_secret_plaintext`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "microsoft_entra_tenant_id": {
           "description": "This field is only required for Azure AD OpenAI and is the Microsoft\nEntra Tenant ID.",
@@ -47123,7 +47511,10 @@
         },
         "openai_api_key_plaintext": {
           "description": "The OpenAI API key using the OpenAI or Azure service provided as a\nplaintext string. If you prefer to reference your key using Databricks\nSecrets, see `openai_api_key`. You must provide an API key using one of\nthe following fields: `openai_api_key` or `openai_api_key_plaintext`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "openai_api_type": {
           "description": "This is an optional field to specify the type of OpenAI API to use. For\nAzure OpenAI, this field is required, and adjust this parameter to\nrepresent the preferred security access validation protocol. For access\ntoken validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.",
@@ -47151,7 +47542,10 @@
         },
         "palm_api_key_plaintext": {
           "description": "The PaLM API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `palm_api_key`. You must\nprovide an API key using one of the following fields: `palm_api_key` or\n`palm_api_key_plaintext`.",
-          "launch_stage": "GA"
+          "launch_stage": "GA",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         }
       }
     },
@@ -47163,6 +47557,16 @@
         },
         "delete_tags": {
           "description": "List of tag keys to delete",
+          "launch_stage": "GA"
+        }
+      }
+    },
+    "serving.PatchTelemetryConfigRequest": {
+      "description": "Updates the telemetry configuration of a serving endpoint.",
+      "fields": {
+        "telemetry_config": {
+          "description": "The telemetry configuration to be applied to the serving endpoint.\nCan specify either a telemetry_profile_id to use an existing profile,\nor table_names to create a new profile with the specified Unity Catalog tables.\nIf not provided, the telemetry configuration will be removed from the endpoint.",
+          "ref": "serving.TelemetryConfig",
           "launch_stage": "GA"
         }
       }
@@ -47462,7 +47866,10 @@
       "fields": {
         "burst_scaling_enabled": {
           "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "entity_name": {
           "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.",
@@ -47527,7 +47934,10 @@
       "fields": {
         "burst_scaling_enabled": {
           "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "creation_timestamp": {
           "launch_stage": "GA"
@@ -47627,7 +48037,10 @@
       "fields": {
         "burst_scaling_enabled": {
           "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "environment_vars": {
           "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
@@ -47709,7 +48122,10 @@
       "fields": {
         "burst_scaling_enabled": {
           "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "creation_timestamp": {
           "launch_stage": "GA"
@@ -48106,6 +48522,15 @@
           "description": "Configuration for inference table payload logging, including sampling.",
           "ref": "serving.TelemetryInferenceTableConfig",
           "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "table_names": {
+          "description": "The Unity Catalog tables to which endpoint telemetry (logs, traces, and metrics) is exported.\nProvide this to create a new telemetry profile for the endpoint from the given tables.",
+          "ref": "serving.UnityCatalogTableNames",
+          "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "telemetry_profile_id": {
+          "description": "The ID of an existing telemetry profile to apply to this endpoint. Provide this to reuse a\ntelemetry profile that has already been created, instead of specifying table_names.",
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -48130,6 +48555,26 @@
         "routes": {
           "description": "The list of routes that define traffic to each served entity.",
           "launch_stage": "GA"
+        }
+      }
+    },
+    "serving.UnityCatalogTableNames": {
+      "fields": {
+        "annotations_table": {
+          "description": "The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported annotations.",
+          "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "logs_table": {
+          "description": "The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported logs.",
+          "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "metrics_table": {
+          "description": "The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported metrics.",
+          "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "traces_table": {
+          "description": "The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported traces (spans).",
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -48222,7 +48667,7 @@
         "ingress": {
           "description": "The network policies applying for ingress traffic.",
           "ref": "settings.CustomerFacingIngressNetworkPolicy",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -48230,7 +48675,7 @@
         "ingress_dry_run": {
           "description": "The ingress policy for dry run mode. Dry run will always run even if the request\nis allowed by the ingress policy. When this field is set, the policy will be evaluated\nand emit logs only without blocking requests.",
           "ref": "settings.CustomerFacingIngressNetworkPolicy",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -48535,7 +48980,8 @@
         "HITRUST",
         "K_FSI",
         "GERMANY_C5",
-        "GERMANY_TISAX"
+        "GERMANY_TISAX",
+        "KSA_ECC_CCC_DCC"
       ],
       "enum_launch_stages": {
         "CANADA_PROTECTED_B": "GA",
@@ -48550,6 +48996,7 @@
         "IRAP_PROTECTED": "GA",
         "ISMAP": "GA",
         "ITAR_EAR": "GA",
+        "KSA_ECC_CCC_DCC": "GA",
         "K_FSI": "GA",
         "NONE": "GA",
         "PCI_DSS": "GA"
@@ -48807,7 +49254,7 @@
         "public_access": {
           "description": "The network policy restrictions for public access to the workspace.\nConfigures how public internet traffic is allowed or denied access.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyPublicAccess",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -48852,15 +49299,15 @@
         "API_SCOPE_QUALIFIER_ALL"
       ],
       "enum_launch_stages": {
-        "API_SCOPE_QUALIFIER_ALL": "PUBLIC_BETA",
-        "API_SCOPE_QUALIFIER_READ": "PUBLIC_BETA"
+        "API_SCOPE_QUALIFIER_ALL": "GA",
+        "API_SCOPE_QUALIFIER_READ": "GA"
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyAppsRuntimeDestination": {
       "fields": {
         "all_destinations": {
           "description": "Must be set to true.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -48868,22 +49315,22 @@
       "fields": {
         "identities": {
           "description": "Valid only when IdentityType is IDENTITY_TYPE_SELECTED_IDENTITIES.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "identity_type": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyAuthenticationIdentityType",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyAuthenticationIdentity": {
       "fields": {
         "principal_id": {
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "principal_type": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyAuthenticationIdentityPrincipalType",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -48893,8 +49340,8 @@
         "PRINCIPAL_TYPE_SERVICE_PRINCIPAL"
       ],
       "enum_launch_stages": {
-        "PRINCIPAL_TYPE_SERVICE_PRINCIPAL": "PUBLIC_BETA",
-        "PRINCIPAL_TYPE_USER": "PUBLIC_BETA"
+        "PRINCIPAL_TYPE_SERVICE_PRINCIPAL": "GA",
+        "PRINCIPAL_TYPE_USER": "GA"
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyAuthenticationIdentityType": {
@@ -48904,9 +49351,9 @@
         "IDENTITY_TYPE_SELECTED_IDENTITIES"
       ],
       "enum_launch_stages": {
-        "IDENTITY_TYPE_ALL_SERVICE_PRINCIPALS": "PUBLIC_BETA",
-        "IDENTITY_TYPE_ALL_USERS": "PUBLIC_BETA",
-        "IDENTITY_TYPE_SELECTED_IDENTITIES": "PUBLIC_BETA"
+        "IDENTITY_TYPE_ALL_SERVICE_PRINCIPALS": "GA",
+        "IDENTITY_TYPE_ALL_USERS": "GA",
+        "IDENTITY_TYPE_SELECTED_IDENTITIES": "GA"
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyCrossWorkspaceAccess": {
@@ -48985,7 +49432,7 @@
       "fields": {
         "ip_ranges": {
           "description": "We only support IPv4 and IPv4 CIDR notation for now.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -48993,7 +49440,7 @@
       "fields": {
         "all_destinations": {
           "description": "Must be set to true.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -49081,20 +49528,20 @@
     "settings.CustomerFacingIngressNetworkPolicyPublicAccess": {
       "fields": {
         "allow_rules": {
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "deny_rules": {
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "restriction_mode": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyPublicAccessRestrictionMode",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -49104,8 +49551,8 @@
         "RESTRICTED_ACCESS"
       ],
       "enum_launch_stages": {
-        "FULL_ACCESS": "PUBLIC_BETA",
-        "RESTRICTED_ACCESS": "PUBLIC_BETA"
+        "FULL_ACCESS": "GA",
+        "RESTRICTED_ACCESS": "GA"
       }
     },
     "settings.CustomerFacingIngressNetworkPolicyPublicIngressRule": {
@@ -49113,19 +49560,19 @@
       "fields": {
         "authentication": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyAuthentication",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "destination": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyRequestDestination",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "label": {
           "description": "The label for this ingress rule.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "origin": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyPublicRequestOrigin",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -49133,17 +49580,17 @@
       "fields": {
         "all_ip_ranges": {
           "description": "Matches all IPv4 and IPv6 ranges (both public and private).",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "excluded_ip_ranges": {
           "description": "Excluded means: all public IP ranges except this one.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyIpRanges",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "included_ip_ranges": {
           "description": "Will not allow IP ranges with private IPs.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyIpRanges",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -49166,23 +49613,23 @@
         },
         "all_destinations": {
           "description": "When true, match all destinations, no other destination fields can be set.\nWhen not set or false, at least one specific destination must be provided.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "apps_runtime": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyAppsRuntimeDestination",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "lakebase_runtime": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyLakebaseRuntimeDestination",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "workspace_api": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyWorkspaceApiDestination",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "workspace_ui": {
           "ref": "settings.CustomerFacingIngressNetworkPolicyWorkspaceUiDestination",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -49192,10 +49639,10 @@
         "scope_qualifier": {
           "description": "Qualifies the breadth of API access for the listed scopes. See ApiScopeQualifier.",
           "ref": "settings.CustomerFacingIngressNetworkPolicyApiScopeQualifier",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "scopes": {
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -49210,7 +49657,7 @@
       "fields": {
         "all_destinations": {
           "description": "Must be set to true.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -54510,6 +54957,29 @@
         "UNKNOWN": "GA"
       }
     },
+    "sql.AlertStatementParameter": {
+      "description": "Redash-owned copy of the internal StatementParameter for the external AlertV2 API.\nThe internal `ordinal` and `args` fields are intentionally omitted: the public API\nsupports only flat, named scalar parameters; complex types (ARRAY, MAP, STRUCT) are\nnot supported. This mirrors SEA's public StatementParameter schema, see:\ncmdexec/sql-exec-api/proto/sql_exec_api_service.proto:763-779",
+      "fields": {
+        "name": {
+          "description": "The name of the parameter, referenced in the query as `:name`.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "type": {
+          "description": "The SQL data type of the parameter, e.g. STRING, INT, or DATE. Defaults to STRING. This is a\nstring rather than an enum because scalar subtypes such as DECIMAL(10, 4) cannot be enumerated.\nComplex types such as ARRAY, MAP, and STRUCT are not supported.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "value": {
+          "description": "The bound value for the parameter, given as a string. If omitted, the value is interpreted as NULL.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
     "sql.AlertV2": {
       "fields": {
         "create_time": {
@@ -54569,6 +55039,14 @@
           "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
+          ]
+        },
+        "parameters": {
+          "description": "Query parameters bound when executing the alert query, referenced in the\nquery text with `:name` syntax. Static values only.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL",
+            "UNORDERED_LIST"
           ]
         },
         "parent_path": {
@@ -59691,7 +60169,7 @@
         },
         "target_qps": {
           "description": "Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "usage_policy_id": {
           "description": "The usage policy id to be applied once we've migrated to usage policies",
@@ -59965,7 +60443,7 @@
         "scaling_info": {
           "description": "Scaling information for the endpoint",
           "ref": "vectorsearch.EndpointScalingInfo",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -59973,7 +60451,7 @@
       "fields": {
         "requested_target_qps": {
           "description": "The requested QPS target for the endpoint. Best-effort; the system does not\nguarantee this QPS will be achieved.",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "state": {
           "description": "The current state of the scaling change request.",
@@ -61141,6 +61619,10 @@
         "branch": {
           "description": "Branch that the local version of the repo is checked out to.",
           "launch_stage": "GA"
+        },
+        "git_cli_enabled": {
+          "description": "Whether the Git CLI is enabled for this Git folder (repo). When true, Git commands\ncan be run directly against this Git folder using the Git CLI.",
+          "launch_stage": "PUBLIC_BETA"
         },
         "head_commit_id": {
           "description": "SHA-1 hash representing the commit ID of the current HEAD of the repo.",
@@ -67539,6 +68021,18 @@
                 }
               },
               {
+                "name": "parameters",
+                "description": "Query parameters bound when executing the alert query, referenced in the\nquery text with `:name` syntax. Static values only.",
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AlertStatementParameterList",
+                  "array_value": {
+                    "pascal_name": "AlertStatementParameter",
+                    "is_object": true
+                  }
+                }
+              },
+              {
                 "name": "parent_path",
                 "description": "The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.",
                 "is_request_body_field": true,
@@ -68402,6 +68896,18 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "parameters",
+                "description": "Query parameters bound when executing the alert query, referenced in the\nquery text with `:name` syntax. Static values only.",
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AlertStatementParameterList",
+                  "array_value": {
+                    "pascal_name": "AlertStatementParameter",
+                    "is_object": true
+                  }
                 }
               },
               {
@@ -74907,7 +75413,7 @@
           },
           {
             "name": "CreateDeployment",
-            "description": "Creates a new deployment in the workspace.\n\nThe caller must provide a `deployment_id` which becomes the final\ncomponent of the deployment's resource name. If a deployment with the\nsame ID already exists, the server returns `ALREADY_EXISTS`.",
+            "description": "Creates a new deployment in the workspace.",
             "summary": "Create a deployment.",
             "path": "/api/2.0/bundle/deployments",
             "can_use_json": true,
@@ -74923,39 +75429,19 @@
               "required_fields": [
                 {
                   "name": "deployment",
-                  "description": "The deployment to create. Caller must set `initial_parent_path`; every other field is\npopulated by the service.",
+                  "description": "The deployment to create. The caller must set `initial_parent_path`. Other fields are ignored\non input and populated by the service.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
                     "pascal_name": "Deployment",
                     "is_object": true
                   }
-                },
-                {
-                  "name": "deployment_id",
-                  "description": "The ID to use for the deployment, which will become the final\ncomponent of the deployment's resource name\n(i.e. `deployments/{deployment_id}`).",
-                  "required": true,
-                  "is_query": true,
-                  "entity": {
-                    "is_string": true
-                  }
-                }
-              ],
-              "required_in_url_fields": [
-                {
-                  "name": "deployment_id",
-                  "description": "The ID to use for the deployment, which will become the final\ncomponent of the deployment's resource name\n(i.e. `deployments/{deployment_id}`).",
-                  "required": true,
-                  "is_query": true,
-                  "entity": {
-                    "is_string": true
-                  }
                 }
               ],
               "required_request_body_fields": [
                 {
                   "name": "deployment",
-                  "description": "The deployment to create. Caller must set `initial_parent_path`; every other field is\npopulated by the service.",
+                  "description": "The deployment to create. The caller must set `initial_parent_path`. Other fields are ignored\non input and populated by the service.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -74967,7 +75453,7 @@
             },
             "request_body_field": {
               "name": "deployment",
-              "description": "The deployment to create. Caller must set `initial_parent_path`; every other field is\npopulated by the service.",
+              "description": "The deployment to create. The caller must set `initial_parent_path`. Other fields are ignored\non input and populated by the service.",
               "required": true,
               "is_request_body_field": true,
               "entity": {
@@ -74982,21 +75468,12 @@
             "all_fields": [
               {
                 "name": "deployment",
-                "description": "The deployment to create. Caller must set `initial_parent_path`; every other field is\npopulated by the service.",
+                "description": "The deployment to create. The caller must set `initial_parent_path`. Other fields are ignored\non input and populated by the service.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "Deployment",
                   "is_object": true
-                }
-              },
-              {
-                "name": "deployment_id",
-                "description": "The ID to use for the deployment, which will become the final\ncomponent of the deployment's resource name\n(i.e. `deployments/{deployment_id}`).",
-                "required": true,
-                "is_query": true,
-                "entity": {
-                  "is_string": true
                 }
               },
               {
@@ -75037,7 +75514,7 @@
               },
               {
                 "name": "destroy_time",
-                "description": "When the deployment was destroyed (i.e. `bundle destroy` completed).\nUnset if the deployment has not been destroyed.\nNamed destroy_time (not delete_time) because this tracks the\n`databricks bundle destroy` command, not the API-level deletion.",
+                "description": "When deletion was recorded. Unset if deletion has not been recorded.\nThis response metadata does not determine the deployment's lifecycle status.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "is_optional_object": true,
@@ -75056,7 +75533,7 @@
               },
               {
                 "name": "display_name",
-                "description": "Human-readable name for the deployment. Output only: it is denormalized from\nthe latest version, not set directly on the deployment.",
+                "description": "Human-readable name for the deployment, up to 256 characters. Output only: clients update it\nby setting `display_name` when creating a version.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -75076,7 +75553,7 @@
               },
               {
                 "name": "initial_parent_path",
-                "description": "The workspace path of the folder where the deployment is initially created. Includes a leading slash\nand no trailing slash. On create, the deployment is registered as a typed\nBUNDLE_DEPLOYMENT tree node under this folder, which must already exist. This field is\ninput only and is not returned in create, get, or list responses. The service rejects\ncreate requests that omit it.",
+                "description": "The workspace path of the existing folder where the deployment is initially created. Must be\nabsolute and canonical, with single separators, no `.` or `..` segments, and no trailing slash\nunless the path is `/`. It may contain at most 24 path segments, excluding an optional leading\n`/Workspace` segment. The complete path may contain up to 1,024 characters, and each segment\nmay contain up to 511 characters. This field is input only and is not returned in create, get,\nor list responses.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -75151,17 +75628,6 @@
                 "entity": {
                   "pascal_name": "WorkspaceInfo",
                   "is_object": true
-                }
-              }
-            ],
-            "required_positional_arguments": [
-              {
-                "name": "deployment_id",
-                "description": "The ID to use for the deployment, which will become the final\ncomponent of the deployment's resource name\n(i.e. `deployments/{deployment_id}`).",
-                "required": true,
-                "is_query": true,
-                "entity": {
-                  "is_string": true
                 }
               }
             ]
@@ -76212,7 +76678,7 @@
               },
               {
                 "name": "display_name",
-                "description": "Display name for the deployment, captured at the time of this version.",
+                "description": "Display name for the deployment, captured at the time of this version. Up to 256 characters.\nWhen present, creating the version updates the deployment display name. An empty value clears\nit; an absent value leaves the current deployment display name unchanged.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -76348,7 +76814,7 @@
           },
           {
             "name": "DeleteDeployment",
-            "description": "Deletes a deployment.\n\nThe deployment is marked as deleted. It and all its children (versions\nand their operations) will be permanently deleted after the retention\npolicy expires. If the deployment has an in-progress version, the\nserver returns `RESOURCE_CONFLICT`.",
+            "description": "Deletes a deployment.",
             "summary": "Delete a deployment.",
             "path": "/api/2.0/bundle/{name=deployments/*}",
             "is_hidden_cli": true,
@@ -77078,7 +77544,7 @@
             "all_fields": [
               {
                 "name": "page_size",
-                "description": "The maximum number of deployments to return. The service may return\nfewer than this value.\nIf unspecified, at most 50 deployments will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+                "description": "The maximum number of deployments to return. The service may return\nfewer than this value.\nIf unspecified, at most 20 deployments will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -77328,7 +77794,7 @@
             "all_fields": [
               {
                 "name": "page_size",
-                "description": "The maximum number of versions to return. The service may return\nfewer than this value.\nIf unspecified, at most 50 versions will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+                "description": "The maximum number of versions to return. The service may return\nfewer than this value.\nIf unspecified, at most 20 versions will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -82959,6 +83425,25 @@
                 }
               },
               {
+                "name": "dependency_mode",
+                "description": "Controls dependency configuration for the cluster.",
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "DependencyMode",
+                  "enum": [
+                    {
+                      "content": "DEPENDENCY_MODE_AUTO"
+                    },
+                    {
+                      "content": "DEPENDENCY_MODE_CLUSTER_LIBRARIES"
+                    },
+                    {
+                      "content": "DEPENDENCY_MODE_ENVIRONMENTS"
+                    }
+                  ]
+                }
+              },
+              {
                 "name": "docker_image",
                 "description": "Custom docker image BYOC",
                 "is_request_body_field": true,
@@ -83501,6 +83986,25 @@
                     },
                     {
                       "content": "USER_ISOLATION"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "dependency_mode",
+                "description": "Controls dependency configuration for the cluster.",
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "DependencyMode",
+                  "enum": [
+                    {
+                      "content": "DEPENDENCY_MODE_AUTO"
+                    },
+                    {
+                      "content": "DEPENDENCY_MODE_CLUSTER_LIBRARIES"
+                    },
+                    {
+                      "content": "DEPENDENCY_MODE_ENVIRONMENTS"
                     }
                   ]
                 }
@@ -103518,6 +104022,16 @@
                 }
               },
               {
+                "name": "aws_vpc_endpoint_info",
+                "description": "Info for an AWS VPC endpoint.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "AwsVpcEndpointInfo",
+                  "is_object": true
+                }
+              },
+              {
                 "name": "azure_private_endpoint_info",
                 "description": "Info for an Azure private endpoint.",
                 "is_request_body_field": true,
@@ -103553,6 +104067,16 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "gcp_psc_endpoint_info",
+                "description": "Info for a GCP Private Service Connect endpoint.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "GcpPscEndpointInfo",
+                  "is_object": true
                 }
               },
               {
@@ -115048,7 +115572,7 @@
                   },
                   {
                     "name": "schema_config",
-                    "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                    "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -115099,7 +115623,7 @@
                   },
                   {
                     "name": "schema_config",
-                    "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                    "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -115156,7 +115680,7 @@
                 },
                 {
                   "name": "schema_config",
-                  "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                  "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -115207,7 +115731,7 @@
                 },
                 {
                   "name": "schema_config",
-                  "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                  "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -115269,7 +115793,7 @@
                     },
                     {
                       "name": "schema_config",
-                      "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                      "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -115320,7 +115844,7 @@
                     },
                     {
                       "name": "schema_config",
-                      "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                      "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -115408,7 +115932,7 @@
               },
               {
                 "name": "schema_config",
-                "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -115478,7 +116002,7 @@
               },
               {
                 "name": "schema_config",
-                "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -116170,7 +116694,7 @@
                 },
                 {
                   "name": "schema_config",
-                  "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                  "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -116221,7 +116745,7 @@
                 },
                 {
                   "name": "schema_config",
-                  "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                  "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -118039,7 +118563,7 @@
                   },
                   {
                     "name": "schema_config",
-                    "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                    "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -118090,7 +118614,7 @@
                   },
                   {
                     "name": "schema_config",
-                    "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                    "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -118147,7 +118671,7 @@
                 },
                 {
                   "name": "schema_config",
-                  "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                  "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -118198,7 +118722,7 @@
                 },
                 {
                   "name": "schema_config",
-                  "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                  "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -118269,7 +118793,7 @@
                     },
                     {
                       "name": "schema_config",
-                      "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                      "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -118320,7 +118844,7 @@
                     },
                     {
                       "name": "schema_config",
-                      "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                      "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -118417,7 +118941,7 @@
               },
               {
                 "name": "schema_config",
-                "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -118496,7 +119020,7 @@
               },
               {
                 "name": "schema_config",
-                "description": "Schema definitions for the stream. Currently only direct schemas are supported.\nIn a future milestone, we will support schema registries through a UC Connection.",
+                "description": "Schema definitions for the stream, provided either directly on the Stream or\nresolved from an external schema registry through a UC Connection.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -126901,10 +127425,11 @@
             "description": "Lists the privilege assignments for a securable. Does not include inherited privileges.\nPaginated version of Get Permissions API.",
             "summary": "List permissions.",
             "path": "/api/2.1/unity-catalog/privilege-assignments/{securable_type}/{full_name}",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "ListPrivilegeAssignmentsRequest",
               "is_object": true,
@@ -127035,10 +127560,11 @@
             "description": "Lists the effective privilege assignments for a securable. Includes inherited privileges.\nPaginated version of Get Effective Permissions API.",
             "summary": "List effective permissions.",
             "path": "/api/2.1/unity-catalog/effective-privilege-assignments/{securable_type}/{full_name}",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "ListEffectivePrivilegeAssignmentsRequest",
               "is_object": true,
@@ -128425,7 +128951,7 @@
             "name": "CreateWorkspaceAssignmentDetail",
             "description": "Creates a workspace assignment detail for a principal. Entitlement grants are applied\nindividually and non-atomically — if a failure occurs partway through, the principal will be\nassigned to the workspace but with only a subset of the requested entitlements. Use\nGetWorkspaceAssignmentDetail to confirm which entitlements were successfully granted.",
             "summary": "Create a workspace assignment detail.",
-            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspaceAssignmentDetails",
+            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspace-assignment-details",
             "can_use_json": true,
             "is_hidden_cli": true,
             "has_required_positional_arguments": true,
@@ -128593,6 +129119,38 @@
                 }
               },
               {
+                "name": "effective_entitlements",
+                "description": "The principal's full effective entitlements granted in this workspace: every entitlement it holds\nwhether granted directly or via group membership. Populated on Get; empty on List.",
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "EntitlementList",
+                  "array_value": {
+                    "pascal_name": "Entitlement",
+                    "enum": [
+                      {
+                        "content": "ALLOW_CLUSTER_CREATE"
+                      },
+                      {
+                        "content": "ALLOW_INSTANCE_POOL_CREATE"
+                      },
+                      {
+                        "content": "DATABRICKS_SQL_ACCESS"
+                      },
+                      {
+                        "content": "WORKSPACE_ACCESS"
+                      },
+                      {
+                        "content": "WORKSPACE_ADMIN"
+                      },
+                      {
+                        "content": "WORKSPACE_CONSUME"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
                 "name": "entitlements",
                 "description": "Entitlements granted directly to the principal on this workspace. The only client-settable\nfield: create and update manage exactly this set (including entitlements the principal also\nholds via a group).\nNot populated by ListWorkspaceAssignmentDetails (omitted for scalability); call\nGetWorkspaceAssignmentDetail to read the entitlements for a single principal.",
                 "is_request_body_field": true,
@@ -128686,7 +129244,7 @@
             "name": "DeleteWorkspaceAssignmentDetail",
             "description": "Deletes a workspace assignment detail for a principal, revoking all associated entitlements.\nEntitlement revocations are applied individually and non-atomically — if a failure occurs\npartway through, the principal remains assigned with a subset of its original entitlements,\nand the operation is safe to retry.",
             "summary": "Delete a workspace assignment detail.",
-            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspaceAssignmentDetails/{principal_id}",
+            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspace-assignment-details/{principal_id}",
             "is_hidden_cli": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PRIVATE_PREVIEW",
@@ -128783,7 +129341,7 @@
             "name": "GetWorkspaceAccessDetail",
             "description": "Returns the access details for a principal in a workspace. Allows for checking access details for any\nprovisioned principal (user, service principal, or group) in a workspace.\n* Provisioned principal here refers to one that has been synced into Databricks from the customer's IdP or\nadded explicitly to Databricks via SCIM/UI.\nAllows for passing in a \"view\" parameter to control what fields are returned (BASIC by default or FULL).",
             "summary": "Get workspace access details for a principal.",
-            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspaceAccessDetails/{principal_id}",
+            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspace-access-details/{principal_id}",
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
             "cli_launch_stage_label": "*Beta*",
@@ -128898,7 +129456,7 @@
             "name": "GetWorkspaceAssignmentDetail",
             "description": "Returns the assignment details for a principal in a workspace.",
             "summary": "Get workspace assignment details for a principal.",
-            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspaceAssignmentDetails/{principal_id}",
+            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspace-assignment-details/{principal_id}",
             "is_hidden_cli": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PRIVATE_PREVIEW",
@@ -129019,7 +129577,7 @@
             "name": "ListWorkspaceAssignmentDetails",
             "description": "Lists workspace assignment details for a workspace.\nFor scalability, the response omits the per-principal entitlement fields (`entitlements` and\n`effective_entitlements`); call GetWorkspaceAssignmentDetail to read entitlements for a single\nprincipal.",
             "summary": "List workspace assignment details for a workspace.",
-            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspaceAssignmentDetails",
+            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspace-assignment-details",
             "is_hidden_cli": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PRIVATE_PREVIEW",
@@ -129097,7 +129655,7 @@
             "name": "ResolveGroup",
             "description": "Resolves a group with the given external ID from the customer's IdP. If the group does not exist, it will be created in the account.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
             "summary": "Resolve an external group in the Databricks account.",
-            "path": "/api/2.0/identity/accounts/{account_id}/groups/resolveByExternalId",
+            "path": "/api/2.0/identity/accounts/{account_id}/groups/resolve-by-external-id",
             "can_use_json": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
@@ -129162,7 +129720,7 @@
             "name": "ResolveServicePrincipal",
             "description": "Resolves an SP with the given external ID from the customer's IdP. If the SP does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
             "summary": "Resolve an external service principal in the Databricks account.",
-            "path": "/api/2.0/identity/accounts/{account_id}/servicePrincipals/resolveByExternalId",
+            "path": "/api/2.0/identity/accounts/{account_id}/service-principals/resolve-by-external-id",
             "can_use_json": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
@@ -129227,7 +129785,7 @@
             "name": "ResolveUser",
             "description": "Resolves a user with the given external ID from the customer's IdP. If the user does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
             "summary": "Resolve an external user in the Databricks account.",
-            "path": "/api/2.0/identity/accounts/{account_id}/users/resolveByExternalId",
+            "path": "/api/2.0/identity/accounts/{account_id}/users/resolve-by-external-id",
             "can_use_json": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
@@ -129292,7 +129850,7 @@
             "name": "UpdateWorkspaceAssignmentDetail",
             "description": "Updates the entitlements of a directly assigned principal in a workspace. Entitlement changes\nare applied individually and non-atomically — if a failure occurs partway through, only a\nsubset of the requested changes may have been applied. Use GetWorkspaceAssignmentDetail to\nconfirm the final state.",
             "summary": "Update a workspace assignment detail.",
-            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspaceAssignmentDetails/{principal_id}",
+            "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspace-assignment-details/{principal_id}",
             "can_use_json": true,
             "is_hidden_cli": true,
             "has_required_positional_arguments": true,
@@ -129512,6 +130070,38 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "effective_entitlements",
+                "description": "The principal's full effective entitlements granted in this workspace: every entitlement it holds\nwhether granted directly or via group membership. Populated on Get; empty on List.",
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "EntitlementList",
+                  "array_value": {
+                    "pascal_name": "Entitlement",
+                    "enum": [
+                      {
+                        "content": "ALLOW_CLUSTER_CREATE"
+                      },
+                      {
+                        "content": "ALLOW_INSTANCE_POOL_CREATE"
+                      },
+                      {
+                        "content": "DATABRICKS_SQL_ACCESS"
+                      },
+                      {
+                        "content": "WORKSPACE_ACCESS"
+                      },
+                      {
+                        "content": "WORKSPACE_ADMIN"
+                      },
+                      {
+                        "content": "WORKSPACE_CONSUME"
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -133922,6 +134512,22 @@
                 "entity": {
                   "pascal_name": "JobNotificationSettings",
                   "is_object": true
+                }
+              },
+              {
+                "name": "performance_target",
+                "description": "The performance mode on a serverless one-time run. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "PerformanceTarget",
+                  "enum": [
+                    {
+                      "content": "PERFORMANCE_OPTIMIZED"
+                    },
+                    {
+                      "content": "STANDARD"
+                    }
+                  ]
                 }
               },
               {
@@ -157588,8 +158194,8 @@
           },
           {
             "name": "CreateCdfConfig",
-            "description": "Create a Lakebase CDF configuration (CdfConfig). Replicates the tables of a\nPostgres schema into a Unity Catalog schema. Returns ALREADY_EXISTS if a\nconfig with the requested id exists, or if another config already replicates\nthe target Postgres schema.",
-            "summary": "Create a Lakebase CDF configuration.",
+            "description": "Create a CDF configuration that materializes the change data feed for all\ntables in a Postgres schema as open-format Delta tables in Unity Catalog.\nOnce created, each table's change history is continuously written to its\ncorresponding Lakehouse table.",
+            "summary": "Create a change data feed configuration.",
             "path": "/api/2.0/postgres/{parent=projects/*/branches/*/databases/*}/cdf-configs",
             "can_use_json": true,
             "is_crud_create": true,
@@ -159279,8 +159885,8 @@
           },
           {
             "name": "DeleteCdfConfig",
-            "description": "Delete a Lakebase CDF configuration (CdfConfig). Stops replication and\nremoves the config. When force is true, also drops the replicated Delta\ntables in Unity Catalog.",
-            "summary": "Delete a Lakebase CDF configuration.",
+            "description": "Delete a CDF configuration and stop materializing the change data feed. When\nforce=true, also drops the Delta tables in Unity Catalog. When force=false\n(default), the existing tables are preserved at their last state.",
+            "summary": "Delete a change data feed configuration.",
             "path": "/api/2.0/postgres/{name=projects/*/branches/*/databases/*/cdf-configs/*}",
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
@@ -160051,8 +160657,8 @@
           },
           {
             "name": "GetCdfConfig",
-            "description": "Get a single Lakebase CDF configuration (CdfConfig).",
-            "summary": "Get a Lakebase CDF configuration.",
+            "description": "Get a single Lakebase CDF configuration, including the source Postgres\nschema, target Unity Catalog schema, and the identity under which writes are\nauthorized.",
+            "summary": "Get a change data feed configuration.",
             "path": "/api/2.0/postgres/{name=projects/*/branches/*/databases/*/cdf-configs/*}",
             "is_crud_read": true,
             "has_required_positional_arguments": true,
@@ -160174,8 +160780,8 @@
           },
           {
             "name": "GetCdfStatus",
-            "description": "Get the replication status of a single replicated table within a Lakebase\nCDF configuration.",
-            "summary": "Get the replication status of a replicated table.",
+            "description": "Get the CDF status of a single table within a Lakebase CDF configuration,\nincluding its current state and the last committed position in the feed.",
+            "summary": "Get a change data feed status.",
             "path": "/api/2.0/postgres/{name=projects/*/branches/*/databases/*/cdf-configs/*/cdf-statuses/*}",
             "is_crud_read": true,
             "has_required_positional_arguments": true,
@@ -160784,8 +161390,8 @@
           },
           {
             "name": "ListCdfConfigs",
-            "description": "List the Lakebase CDF configurations (CdfConfigs) under a database.",
-            "summary": "List Lakebase CDF configurations.",
+            "description": "List all CDF configurations for a Lakebase database. Each configuration maps\na Postgres schema to a Unity Catalog schema where the change data feed is\nmaterialized.",
+            "summary": "List change data feed configurations.",
             "path": "/api/2.0/postgres/{parent=projects/*/branches/*/databases/*}/cdf-configs",
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
@@ -160875,8 +161481,8 @@
           },
           {
             "name": "ListCdfStatuses",
-            "description": "List the replication statuses of all tables replicated under a Lakebase CDF\nconfiguration.",
-            "summary": "List the replication statuses of replicated tables.",
+            "description": "List the per-table CDF statuses within a Lakebase CDF configuration. Each\nstatus shows whether a table's change data feed is snapshotting, streaming,\nor skipped.",
+            "summary": "List change data feed statuses.",
             "path": "/api/2.0/postgres/{parent=projects/*/branches/*/databases/*/cdf-configs/*}/cdf-statuses",
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
@@ -173196,7 +173802,7 @@
           },
           {
             "name": "List",
-            "description": "Returns repos that the calling user has Manage permissions on.\nUse `next_page_token` to iterate through additional pages.",
+            "description": "Returns repos that the calling user has Manage permissions on.\nUse `next_page_token` to iterate through additional pages.\n\nDeprecated: This operation does not return a complete list of the repos in the workspace, because\nrepos with the Git CLI enabled are not included in its results. Instead, use the Repos and\nWorkspace APIs to find repos and their associated metadata in the workspace.",
             "summary": "Get repos.",
             "path": "/api/2.0/repos",
             "has_required_positional_arguments": true,
@@ -180911,6 +181517,78 @@
             ]
           },
           {
+            "name": "PatchTelemetryConfig",
+            "description": "Updates the telemetry configuration of a serving endpoint.",
+            "summary": "Update the telemetry config of a serving endpoint.",
+            "path": "/api/2.0/serving-endpoints/{name}/telemetry-config",
+            "can_use_json": true,
+            "has_required_positional_arguments": true,
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
+            "request": {
+              "pascal_name": "PatchTelemetryConfigRequest",
+              "is_object": true,
+              "required_fields": [
+                {
+                  "name": "name",
+                  "description": "The name of the serving endpoint whose telemetry configuration is being updated. This field is required.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ],
+              "required_in_url_fields": [
+                {
+                  "name": "name",
+                  "description": "The name of the serving endpoint whose telemetry configuration is being updated. This field is required.",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ]
+            },
+            "response": {
+              "pascal_name": "ServingEndpointDetailed",
+              "is_object": true
+            },
+            "all_fields": [
+              {
+                "name": "name",
+                "description": "The name of the serving endpoint whose telemetry configuration is being updated. This field is required.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "telemetry_config",
+                "description": "The telemetry configuration to be applied to the serving endpoint.\nCan specify either a telemetry_profile_id to use an existing profile,\nor table_names to create a new profile with the specified Unity Catalog tables.\nIf not provided, the telemetry configuration will be removed from the endpoint.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "TelemetryConfig",
+                  "is_object": true
+                }
+              }
+            ],
+            "required_positional_arguments": [
+              {
+                "name": "name",
+                "description": "The name of the serving endpoint whose telemetry configuration is being updated. This field is required.",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          },
+          {
             "name": "Put",
             "description": "Deprecated: Please use AI Gateway to manage rate limits instead.",
             "summary": "Update rate limits of a serving endpoint.",
@@ -183677,7 +184355,7 @@
       {
         "id": "sql.StatementExecution",
         "name": "StatementExecution",
-        "description": "The Databricks SQL Statement Execution API can be used to execute SQL statements on a SQL warehouse and fetch the result.\n\n**Getting started**\n\nWe suggest beginning with the [Databricks SQL Statement Execution API tutorial](https://docs.databricks.com/sql/api/sql-execution-tutorial.html).\n\n**Overview of statement execution and result fetching**\n\nStatement execution begins by issuing a :method:statementexecution/executeStatement request with a valid\nSQL statement and warehouse ID, along with optional parameters such as the data catalog and output format.\nIf no other parameters are specified, the server will wait for up to 10s before returning a response.\nIf the statement has completed within this timespan, the response will include the result data as a JSON\narray and metadata.\nOtherwise, if no result is available after the 10s timeout expired, the response will provide the\nstatement ID that can be used to poll for results by using a :method:statementexecution/getStatement\nrequest.\n\nYou can specify whether the call should behave synchronously, asynchronously\nor start synchronously with a fallback to asynchronous execution.\nThis is controlled with the `wait_timeout` and `on_wait_timeout` settings.\nIf `wait_timeout` is set between 5-50 seconds (default:\n10s), the call waits for results up to\nthe specified timeout; when set to `0s`, the call is asynchronous and responds immediately with a\nstatement ID. The `on_wait_timeout` setting specifies what should happen when the timeout is reached while\nthe statement execution has not yet finished. This can be set to either `CONTINUE`, to fallback to\nasynchronous mode, or it can be set to `CANCEL`, which cancels the statement.\n\nIn summary:\n- **Synchronous mode** (`wait_timeout=30s` and `on_wait_timeout=CANCEL`):\nThe call waits up to 30 seconds; if the statement execution finishes within this time,\nthe result data is returned directly in the response. If the execution takes longer than 30 seconds,\nthe execution is canceled and the call returns with a `CANCELED` state.\n- **Asynchronous mode** (`wait_timeout=0s` and `on_wait_timeout` is ignored):\nThe call doesn't wait for the statement to finish but returns directly with a statement ID.\nThe status of the statement execution can be polled by issuing :method:statementexecution/getStatement with the statement ID.\nOnce the execution has succeeded, this call also returns the result and metadata in the response.\n- **[Default] Hybrid mode** (`wait_timeout=10s` and `on_wait_timeout=CONTINUE`):\nThe call waits for up to 10 seconds; if the statement execution finishes within this time,\nthe result data is returned directly in the response. If the execution takes longer than 10\nseconds, a statement ID is returned. The statement ID can be used to fetch status and results in\nthe same way as in the asynchronous mode.\n\nDepending on the size, the result can be split into multiple chunks. If the statement execution is\nsuccessful, the statement response contains a manifest and the first chunk of the result. The manifest\ncontains schema information and provides metadata for each chunk in the result. Result chunks can be\nretrieved by index with :method:statementexecution/getStatementResultChunkN which may be called in any\norder and in parallel. For sequential fetching, each chunk, apart from the last, also contains a\n`next_chunk_index` and `next_chunk_internal_link` that point to the next chunk.\n\nA statement can be canceled with :method:statementexecution/cancelExecution.\n\n**Fetching result data: format and disposition**\n\nTo specify the format of the result data, use the `format` field, which can be set to one of the following\noptions: `JSON_ARRAY` (JSON), `ARROW_STREAM`\n([Apache Arrow Columnar](https://arrow.apache.org/overview/)), or `CSV`.\n\nThere are two ways to receive statement results, controlled by the `disposition` setting,\nwhich can be either `INLINE` or `EXTERNAL_LINKS`:\n\n- `INLINE`: In this mode, the result data is directly included in the response. It's best suited for smaller results.\nThis mode can only be used with the `JSON_ARRAY` format.\n\n- `EXTERNAL_LINKS`: In this mode, the response provides links that can be used to download the result data in chunks separately.\nThis approach is ideal for larger results and offers higher throughput.\nThis mode can be used with all the formats: `JSON_ARRAY`, `ARROW_STREAM`, and `CSV`.\n\nBy default, the API uses `format=JSON_ARRAY` and `disposition=INLINE`.\n\n**Limits and limitations**\n\nNote: The byte limit for INLINE disposition is based on internal storage metrics and will not exactly match the byte count of the actual payload.\n\n- Statements with `disposition=INLINE` are limited to 25 MiB and will fail when this limit is\nexceeded.\n- Statements with `disposition=EXTERNAL_LINKS` are limited to 100 GiB. Result sets larger than\nthis limit will be truncated. Truncation is indicated by the `truncated` field in the result manifest.\n- The maximum query text size is 16 MiB.\n- Cancelation might silently fail. A successful response from a cancel request indicates that the cancel request\nwas successfully received and sent to the processing engine. However, an outstanding statement\nmight have already completed execution when the cancel request arrives. Polling\nfor status until a terminal state is reached is a reliable way to determine the final state.\n- Wait timeouts are approximate, occur server-side, and cannot account for things such as caller delays and network latency from caller to service.\n- To guarantee that the statement is kept alive, you must poll at least once every 15 minutes.\n- The results are only available for one hour after success; polling does not extend this.\n- The SQL Execution API must be used for the entire lifecycle of the statement. For example, you cannot use the Jobs API to execute the command, and then the SQL Execution API to cancel it.",
+        "description": "The Databricks SQL Statement Execution API can be used to execute SQL statements on a SQL warehouse and fetch the result.\n\n**Getting started**\n\nWe suggest beginning with the [Databricks SQL Statement Execution API tutorial](https://docs.databricks.com/sql/api/sql-execution-tutorial.html).\n\n**Overview of statement execution and result fetching**\n\nStatement execution begins by issuing a :method:statementexecution/executeStatement request with a valid\nSQL statement and warehouse ID, along with optional parameters such as the data catalog and output format.\nIf no other parameters are specified, the server will wait for up to 10s before returning a response.\nIf the statement has completed within this timespan, the response will include the result data as a JSON\narray and metadata.\nOtherwise, if no result is available after the 10s timeout expired, the response will provide the\nstatement ID that can be used to poll for results by using a :method:statementexecution/getStatement\nrequest.\n\nYou can specify whether the call should behave synchronously, asynchronously\nor start synchronously with a fallback to asynchronous execution.\nThis is controlled with the `wait_timeout` and `on_wait_timeout` settings.\nIf `wait_timeout` is set between 5-50 seconds (default:\n10s), the call waits for results up to\nthe specified timeout; when set to `0s`, the call is asynchronous and responds immediately with a\nstatement ID. The `on_wait_timeout` setting specifies what should happen when the timeout is reached while\nthe statement execution has not yet finished. This can be set to either `CONTINUE`, to fallback to\nasynchronous mode, or it can be set to `CANCEL`, which cancels the statement.\n\nIn summary:\n- **Synchronous mode** (`wait_timeout=30s` and `on_wait_timeout=CANCEL`):\nThe call waits up to 30 seconds; if the statement execution finishes within this time,\nthe result data is returned directly in the response. If the execution takes longer than 30 seconds,\nthe execution is canceled and the call returns with a `CANCELED` state.\n- **Asynchronous mode** (`wait_timeout=0s` and `on_wait_timeout` is ignored):\nThe call doesn't wait for the statement to finish but returns directly with a statement ID.\nThe status of the statement execution can be polled by issuing :method:statementexecution/getStatement with the statement ID.\nOnce the execution has succeeded, this call also returns the result and metadata in the response.\n- **[Default] Hybrid mode** (`wait_timeout=10s` and `on_wait_timeout=CONTINUE`):\nThe call waits for up to 10 seconds; if the statement execution finishes within this time,\nthe result data is returned directly in the response. If the execution takes longer than 10\nseconds, a statement ID is returned. The statement ID can be used to fetch status and results in\nthe same way as in the asynchronous mode.\n\nDepending on the size, the result can be split into multiple chunks. If the statement execution is\nsuccessful, the statement response contains a manifest and the first chunk of the result. The manifest\ncontains schema information and provides metadata for each chunk in the result. Result chunks can be\nretrieved by index with :method:statementexecution/getStatementResultChunkN which may be called in any\norder and in parallel. For sequential fetching, each chunk, apart from the last, also contains a\n`next_chunk_index` and `next_chunk_internal_link` that point to the next chunk.\n\nA statement can be canceled with :method:statementexecution/cancelExecution.\n\n**Fetching result data: format and disposition**\n\nTo specify the format of the result data, use the `format` field, which can be set to one of the following\noptions: `JSON_ARRAY` (JSON), `ARROW_STREAM`\n([Apache Arrow Columnar](https://arrow.apache.org/overview/)), or `CSV`.\n\nThere are two ways to receive statement results, controlled by the `disposition` setting,\nwhich can be either `INLINE` or `EXTERNAL_LINKS`:\n\n- `INLINE`: In this mode, the result data is directly included in the response. It's best suited for smaller results.\nThis mode can only be used with the `JSON_ARRAY` format.\n\n- `EXTERNAL_LINKS`: In this mode, the response provides links that can be used to download the result data in chunks separately.\nThis approach is ideal for larger results and offers higher throughput.\nThis mode can be used with all the formats: `JSON_ARRAY`, `ARROW_STREAM`, and `CSV`.\n\nBy default, the API uses `format=JSON_ARRAY` and `disposition=INLINE`.\n\n**Limits and limitations**\n\nNote: The byte limit for INLINE disposition is based on internal storage metrics and will not exactly match the byte count of the actual payload.\n\n- Statements with `disposition=INLINE` are limited to 25 MiB and will fail when this limit is\nexceeded.\n- Statements with `disposition=EXTERNAL_LINKS` are limited to 100 GiB. Result sets larger than\nthis limit will be truncated. Truncation is indicated by the `truncated` field in the result manifest.\n- The maximum query text size is 16 MiB.\n- Cancelation might silently fail. A successful response from a cancel request indicates that the cancel request\nwas successfully received and sent to the processing engine. However, an outstanding statement\nmight have already completed execution when the cancel request arrives. Polling\nfor status until a terminal state is reached is a reliable way to determine the final state.\n- Wait timeouts are approximate, occur server-side, and cannot account for things such as caller delays and network latency from caller to service.\n- To keep a statement alive, poll for its status at least once every 15 minutes. Regular polling guarantees the statement stays alive.\n- To stop a statement you no longer need, cancel it explicitly with :method:statementexecution/cancelExecution. Stopping polling does not cancel a statement. Explicit cancellation is the only way to end statement execution on demand.\n- The results are only available for one hour after success; polling does not extend this.\n- The SQL Execution API must be used for the entire lifecycle of the statement. For example, you cannot use the Jobs API to execute the command, and then the SQL Execution API to cancel it.",
         "package": {
           "name": "sql"
         },
@@ -201382,7 +202060,7 @@
             "name": "CreateWorkspaceAssignmentDetailProxy",
             "description": "Creates a workspace assignment detail for a principal (workspace-level proxy). Entitlement\ngrants are applied individually and non-atomically — if a failure occurs partway through, the\nprincipal will be assigned to the workspace but with only a subset of the requested\nentitlements. Use GetWorkspaceAssignmentDetail to confirm which entitlements were successfully\ngranted.",
             "summary": "Create a workspace assignment detail for a workspace.",
-            "path": "/api/2.0/identity/workspaceAssignmentDetails",
+            "path": "/api/2.0/identity/workspace-assignment-details",
             "can_use_json": true,
             "is_hidden_cli": true,
             "has_required_positional_arguments": true,
@@ -201521,6 +202199,38 @@
                 }
               },
               {
+                "name": "effective_entitlements",
+                "description": "The principal's full effective entitlements granted in this workspace: every entitlement it holds\nwhether granted directly or via group membership. Populated on Get; empty on List.",
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "EntitlementList",
+                  "array_value": {
+                    "pascal_name": "Entitlement",
+                    "enum": [
+                      {
+                        "content": "ALLOW_CLUSTER_CREATE"
+                      },
+                      {
+                        "content": "ALLOW_INSTANCE_POOL_CREATE"
+                      },
+                      {
+                        "content": "DATABRICKS_SQL_ACCESS"
+                      },
+                      {
+                        "content": "WORKSPACE_ACCESS"
+                      },
+                      {
+                        "content": "WORKSPACE_ADMIN"
+                      },
+                      {
+                        "content": "WORKSPACE_CONSUME"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
                 "name": "entitlements",
                 "description": "Entitlements granted directly to the principal on this workspace. The only client-settable\nfield: create and update manage exactly this set (including entitlements the principal also\nholds via a group).\nNot populated by ListWorkspaceAssignmentDetails (omitted for scalability); call\nGetWorkspaceAssignmentDetail to read the entitlements for a single principal.",
                 "is_request_body_field": true,
@@ -201605,7 +202315,7 @@
             "name": "DeleteWorkspaceAssignmentDetailProxy",
             "description": "Deletes a workspace assignment detail for a principal (workspace-level proxy), revoking all\nassociated entitlements. Entitlement revocations are applied individually and non-atomically\n— if a failure occurs partway through, the principal remains assigned with a subset of its\noriginal entitlements, and the operation is safe to retry.",
             "summary": "Delete a workspace assignment detail for a workspace.",
-            "path": "/api/2.0/identity/workspaceAssignmentDetails/{principal_id}",
+            "path": "/api/2.0/identity/workspace-assignment-details/{principal_id}",
             "is_hidden_cli": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PRIVATE_PREVIEW",
@@ -201666,7 +202376,7 @@
             "name": "GetWorkspaceAccessDetailLocal",
             "description": "Returns the access details for a principal in the current workspace. Allows for checking access details for any\nprovisioned principal (user, service principal, or group) in the current workspace.\n* Provisioned principal here refers to one that has been synced into Databricks from the customer's IdP or\nadded explicitly to Databricks via SCIM/UI.\nAllows for passing in a \"view\" parameter to control what fields are returned (BASIC by default or FULL).",
             "summary": "Get workspace access details for a principal.",
-            "path": "/api/2.0/identity/workspaceAccessDetails/{principal_id}",
+            "path": "/api/2.0/identity/workspace-access-details/{principal_id}",
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
             "cli_launch_stage_label": "*Beta*",
@@ -201745,7 +202455,7 @@
             "name": "GetWorkspaceAssignmentDetailProxy",
             "description": "Returns the assignment details for a principal in a workspace (workspace-level proxy).",
             "summary": "Get workspace assignment details for a principal.",
-            "path": "/api/2.0/identity/workspaceAssignmentDetails/{principal_id}",
+            "path": "/api/2.0/identity/workspace-assignment-details/{principal_id}",
             "is_hidden_cli": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PRIVATE_PREVIEW",
@@ -201830,7 +202540,7 @@
             "name": "ListWorkspaceAssignmentDetailsProxy",
             "description": "Lists workspace assignment details for a workspace (workspace-level proxy).\nFor scalability, the response omits the per-principal entitlement fields (`entitlements` and\n`effective_entitlements`); call GetWorkspaceAssignmentDetailProxy to read entitlements for a\nsingle principal.",
             "summary": "List workspace assignment details for a workspace.",
-            "path": "/api/2.0/identity/workspaceAssignmentDetails",
+            "path": "/api/2.0/identity/workspace-assignment-details",
             "is_hidden_cli": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PRIVATE_PREVIEW",
@@ -201866,7 +202576,7 @@
             "name": "ResolveGroupProxy",
             "description": "Resolves a group with the given external ID from the customer's IdP. If the group does not exist, it will be created in the account.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
             "summary": "Resolve an external group in the Databricks account.",
-            "path": "/api/2.0/identity/groups/resolveByExternalId",
+            "path": "/api/2.0/identity/groups/resolve-by-external-id",
             "can_use_json": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
@@ -201931,7 +202641,7 @@
             "name": "ResolveServicePrincipalProxy",
             "description": "Resolves an SP with the given external ID from the customer's IdP. If the SP does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
             "summary": "Resolve an external service principal in the Databricks account.",
-            "path": "/api/2.0/identity/servicePrincipals/resolveByExternalId",
+            "path": "/api/2.0/identity/service-principals/resolve-by-external-id",
             "can_use_json": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
@@ -201996,7 +202706,7 @@
             "name": "ResolveUserProxy",
             "description": "Resolves a user with the given external ID from the customer's IdP. If the user does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
             "summary": "Resolve an external user in the Databricks account.",
-            "path": "/api/2.0/identity/users/resolveByExternalId",
+            "path": "/api/2.0/identity/users/resolve-by-external-id",
             "can_use_json": true,
             "has_required_positional_arguments": true,
             "launch_stage": "PUBLIC_BETA",
@@ -202061,7 +202771,7 @@
             "name": "UpdateWorkspaceAssignmentDetailProxy",
             "description": "Updates the entitlements of a directly assigned principal in a workspace (workspace-level\nproxy). Entitlement changes are applied individually and non-atomically — if a failure occurs\npartway through, only a subset of the requested changes may have been applied. Use\nGetWorkspaceAssignmentDetail to confirm the final state.",
             "summary": "Update a workspace assignment detail for a workspace.",
-            "path": "/api/2.0/identity/workspaceAssignmentDetails/{principal_id}",
+            "path": "/api/2.0/identity/workspace-assignment-details/{principal_id}",
             "can_use_json": true,
             "is_hidden_cli": true,
             "has_required_positional_arguments": true,
@@ -202254,6 +202964,38 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "effective_entitlements",
+                "description": "The principal's full effective entitlements granted in this workspace: every entitlement it holds\nwhether granted directly or via group membership. Populated on Get; empty on List.",
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "EntitlementList",
+                  "array_value": {
+                    "pascal_name": "Entitlement",
+                    "enum": [
+                      {
+                        "content": "ALLOW_CLUSTER_CREATE"
+                      },
+                      {
+                        "content": "ALLOW_INSTANCE_POOL_CREATE"
+                      },
+                      {
+                        "content": "DATABRICKS_SQL_ACCESS"
+                      },
+                      {
+                        "content": "WORKSPACE_ACCESS"
+                      },
+                      {
+                        "content": "WORKSPACE_ADMIN"
+                      },
+                      {
+                        "content": "WORKSPACE_CONSUME"
+                      }
+                    ]
+                  }
                 }
               },
               {

@@ -230,8 +230,10 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list SECURABLE_TYPE FULL_NAME"
-	cmd.Short = `List permissions.`
-	cmd.Long = `List permissions.
+	cmd.Short = `*Public Preview* List permissions.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List permissions.
 
   Lists the privilege assignments for a securable. Does not include inherited
   privileges. Paginated version of Get Permissions API.
@@ -240,12 +242,9 @@ func newList() *cobra.Command {
     SECURABLE_TYPE: Type of securable.
     FULL_NAME: Full name of securable.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -312,8 +311,10 @@ func newListEffective() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-effective SECURABLE_TYPE FULL_NAME"
-	cmd.Short = `List effective permissions.`
-	cmd.Long = `List effective permissions.
+	cmd.Short = `*Public Preview* List effective permissions.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List effective permissions.
 
   Lists the effective privilege assignments for a securable. Includes inherited
   privileges. Paginated version of Get Effective Permissions API.
@@ -322,12 +323,9 @@ func newListEffective() *cobra.Command {
     SECURABLE_TYPE: Type of securable.
     FULL_NAME: Full name of securable.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

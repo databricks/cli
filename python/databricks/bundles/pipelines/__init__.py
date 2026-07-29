@@ -90,6 +90,9 @@ __all__ = [
     "IngestionGatewayPipelineDefinitionParam",
     "IngestionPipelineDefinition",
     "IngestionPipelineDefinitionDict",
+    "IngestionPipelineDefinitionFanoutOptions",
+    "IngestionPipelineDefinitionFanoutOptionsDict",
+    "IngestionPipelineDefinitionFanoutOptionsParam",
     "IngestionPipelineDefinitionParam",
     "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig",
     "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict",
@@ -174,6 +177,12 @@ __all__ = [
     "PostgresSlotConfig",
     "PostgresSlotConfigDict",
     "PostgresSlotConfigParam",
+    "RedditAdsOptions",
+    "RedditAdsOptionsDict",
+    "RedditAdsOptionsParam",
+    "RedditAdsOptionsRedditAdsCustomReportOptions",
+    "RedditAdsOptionsRedditAdsCustomReportOptionsDict",
+    "RedditAdsOptionsRedditAdsCustomReportOptionsParam",
     "ReportSpec",
     "ReportSpecDict",
     "ReportSpecParam",
@@ -395,6 +404,11 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinitionDict,
     IngestionPipelineDefinitionParam,
 )
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_fanout_options import (
+    IngestionPipelineDefinitionFanoutOptions,
+    IngestionPipelineDefinitionFanoutOptionsDict,
+    IngestionPipelineDefinitionFanoutOptionsParam,
+)
 from databricks.bundles.pipelines._models.ingestion_pipeline_definition_table_specific_config_query_based_connector_config import (
     IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig,
     IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict,
@@ -535,6 +549,16 @@ from databricks.bundles.pipelines._models.postgres_slot_config import (
     PostgresSlotConfig,
     PostgresSlotConfigDict,
     PostgresSlotConfigParam,
+)
+from databricks.bundles.pipelines._models.reddit_ads_options import (
+    RedditAdsOptions,
+    RedditAdsOptionsDict,
+    RedditAdsOptionsParam,
+)
+from databricks.bundles.pipelines._models.reddit_ads_options_reddit_ads_custom_report_options import (
+    RedditAdsOptionsRedditAdsCustomReportOptions,
+    RedditAdsOptionsRedditAdsCustomReportOptionsDict,
+    RedditAdsOptionsRedditAdsCustomReportOptionsParam,
 )
 from databricks.bundles.pipelines._models.report_spec import (
     ReportSpec,

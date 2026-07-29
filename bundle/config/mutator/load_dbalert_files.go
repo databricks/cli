@@ -179,6 +179,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			RunAs:          dbalertFromFile.RunAs,
 			RunAsUserName:  dbalertFromFile.RunAsUserName,
 			ParentPath:     dbalertFromFile.ParentPath,
+			Parameters:     dbalertFromFile.Parameters,
 
 			// Output only fields.
 			CreateTime:     dbalertFromFile.CreateTime,

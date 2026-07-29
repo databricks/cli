@@ -412,9 +412,8 @@ func newCreateStream() *cobra.Command {
     NAME: Full three-part (catalog.schema.stream) name of the stream.
     SOURCE_CONFIG: Source-specific configuration. Determines the streaming platform source.
     CONNECTION_CONFIG: Specifies how to connect and authenticate to the stream platform.
-    SCHEMA_CONFIG: Schema definitions for the stream. Currently only direct schemas are
-      supported. In a future milestone, we will support schema registries
-      through a UC Connection.
+    SCHEMA_CONFIG: Schema definitions for the stream, provided either directly on the Stream
+      or resolved from an external schema registry through a UC Connection.
     INGESTION_CONFIG: Configuration for streaming data ingestion: the managed table storing an
       offline copy of forward fill data and optional historical backfill.`
 
@@ -1616,9 +1615,8 @@ func newUpdateStream() *cobra.Command {
     UPDATE_MASK: The list of fields to update.
     SOURCE_CONFIG: Source-specific configuration. Determines the streaming platform source.
     CONNECTION_CONFIG: Specifies how to connect and authenticate to the stream platform.
-    SCHEMA_CONFIG: Schema definitions for the stream. Currently only direct schemas are
-      supported. In a future milestone, we will support schema registries
-      through a UC Connection.
+    SCHEMA_CONFIG: Schema definitions for the stream, provided either directly on the Stream
+      or resolved from an external schema registry through a UC Connection.
     INGESTION_CONFIG: Configuration for streaming data ingestion: the managed table storing an
       offline copy of forward fill data and optional historical backfill.`
 
