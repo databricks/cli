@@ -16,9 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/google/uuid"
 )
 
@@ -121,11 +119,8 @@ func NewDatabase(lineage string, serial int) Database {
 }
 
 func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
-	// Redact sensitive fields before persisting: secrets must not appear on disk
-	// in plaintext. The original struct is not modified; the plan uses the
-	// unredacted in-memory value for API calls. RedactSensitiveFields marshals
-	// without indentation, so every WAL entry remains on a single line.
-	b, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
+	// don't indent so that every WAL entry remains on a single line
+	b, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
@@ -134,8 +129,6 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 
 // SaveStateJSON saves pre-marshaled JSON state, avoiding a redundant marshal when
 // the caller already holds the serialized bytes (e.g. the StateSaver dedup path).
-// Callers are responsible for redacting sensitive fields before marshaling; the
-// bytes are persisted as-is.
 func (db *DeploymentState) SaveStateJSON(key, newID string, state json.RawMessage, dependsOn []deployplan.DependsOnEntry) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()

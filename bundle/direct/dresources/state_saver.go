@@ -7,10 +7,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
 // StateSaver provides state persistence to resource implementations.
@@ -65,14 +63,7 @@ func (e *StateSaver) SaveState(ctx context.Context, id string, x any) {
 	if xt != e.stateType {
 		panic(fmt.Sprintf("SaveState: type mismatch: expected %v, got %v", e.stateType, xt))
 	}
-	// Redact sensitive fields before persisting: secrets must not appear on disk
-	// in plaintext. The saveFunc hands these bytes to SaveStateJSON, which writes
-	// them as-is, so redaction must happen here rather than in the state layer.
-	b, err := structwalk.RedactSensitiveFields(x, dyn.SensitiveValueRedacted)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
+	b, _ := json.Marshal(x)
 	if bytes.Equal(e.lastSaved, b) {
 		log.Debugf(ctx, "SaveState: %s id=%s: skipping, state unchanged", e.resourceKey, id)
 		return
