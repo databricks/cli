@@ -1,0 +1,22 @@
+
+=== the deploy waits for the run to finish
+>>> grep -c Run URL:  deploy.log
+1
+
+>>> grep -o TERMINATED SUCCESS deploy.log
+TERMINATED SUCCESS
+
+=== the downstream job was created with the run's result_state
+>>> [CLI] jobs get [DOWNSTREAM_JOB_ID] -o json
+SUCCESS
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.downstream_job
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
