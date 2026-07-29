@@ -30,6 +30,12 @@ const magic = "DBTB"
 // context values are reserved for narrower bitmaps in the future.
 const ContextFullBundle uint16 = 0
 
+// valueSuffix marks the second of the two schema entries emitted for every bool
+// field. The first entry (the bare path) is the presence bit; this one is set
+// when the field's value is true. Together they encode a *bool tri-state:
+// unset -> 0,0; &false -> 1,0; &true -> 1,1.
+const valueSuffix = "#true"
+
 // headerSize is the size of the fixed header: magic (4) + size (4) + context (2).
 const headerSize = 10
 
@@ -40,11 +46,13 @@ func EmbeddedSchema() []string {
 
 // WalkSchema reflects over config.Root and returns the ordered list of field
 // paths, one per field, with map keys rendered as ".*" and slice elements as
-// "[*]". This is the freshly computed schema; the committed schema.txt is a
-// prefix of it plus any fields since removed from config.Root.
+// "[*]". Every bool field additionally gets a "#true" value entry right after
+// its presence entry (see valueSuffix). This is the freshly computed schema;
+// the committed schema.txt is a prefix of it plus any fields since removed from
+// config.Root.
 func WalkSchema() ([]string, error) {
 	var paths []string
-	err := structwalk.WalkType(reflect.TypeFor[config.Root](), func(path *structpath.PatternNode, _ reflect.Type, _ *reflect.StructField) bool {
+	err := structwalk.WalkType(reflect.TypeFor[config.Root](), func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
 		if path == nil {
 			return true
 		}
@@ -53,12 +61,23 @@ func WalkSchema() ([]string, error) {
 			return false
 		}
 		paths = append(paths, p)
+		if isBool(typ) {
+			paths = append(paths, p+valueSuffix)
+		}
 		return true
 	})
 	if err != nil {
 		return nil, err
 	}
 	return paths, nil
+}
+
+// isBool reports whether typ is a bool or a pointer to one.
+func isBool(typ reflect.Type) bool {
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	return typ.Kind() == reflect.Bool
 }
 
 // isPruned reports whether a schema path should be excluded from the bitmap.
@@ -101,7 +120,8 @@ func Merge(old, fresh []string) (merged, added []string) {
 
 // Bits walks the loaded configuration and returns a bit per schema entry: true
 // when the field (or any descendant of it) is set. A leaf value sets both its
-// own bit and every ancestor-prefix bit.
+// own presence bit and every ancestor-prefix bit. A bool leaf that is true also
+// sets its "#true" value bit.
 func Bits(cfg config.Root, schema []string) ([]bool, error) {
 	index := make(map[string]int, len(schema))
 	for i, p := range schema {
@@ -109,11 +129,18 @@ func Bits(cfg config.Root, schema []string) ([]bool, error) {
 	}
 
 	bits := make([]bool, len(schema))
-	err := structwalk.Walk(cfg, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
-		for _, pattern := range normalizePrefixes(path) {
-			if i, ok := index[pattern]; ok {
-				bits[i] = true
-			}
+	setBit := func(pattern string) {
+		if i, ok := index[pattern]; ok {
+			bits[i] = true
+		}
+	}
+	err := structwalk.Walk(cfg, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
+		prefixes := normalizePrefixes(path)
+		for _, pattern := range prefixes {
+			setBit(pattern)
+		}
+		if b, ok := val.(bool); ok && b {
+			setBit(prefixes[len(prefixes)-1] + valueSuffix)
 		}
 	})
 	if err != nil {

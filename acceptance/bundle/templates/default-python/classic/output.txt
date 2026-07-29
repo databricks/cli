@@ -32,6 +32,9 @@ Workspace:
 
 Validation OK!
 
+>>> [CLI] bundle bitmap bitmap -t dev
+cnEKcWJg4LVkYDjBIKfUbcfAzsDA0MD+/ukDbgUGBgUGhu8MDAwMHCCCQYCFIfkMgw0DBFxgIBnwMbCg8JkcmhgYGCQPwLgMDA7sDTBJCSS1jNkHGCgAkg0KDC4JDIMdMDfUQrzZwAgVYUFXwujAAAgAAP//
+
 >>> [CLI] bundle plan -t dev
 Building python_artifact...
 create jobs.sample_job
