@@ -739,12 +739,11 @@ tasks:
     cmds:
       - |
         # Wider window than the committed run, with drift on; a repro narrows it via
-        # FUZZ_SEED_START/COUNT. If 200 seeds don't fit the Timeout, the script's
-        # FUZZ_TIME_BUDGET stops each variant cleanly rather than letting it be force-killed.
+        # FUZZ_SEED_START/COUNT.
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-200}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
-        # -count=1: only the script reads FUZZ_*, so Go's test cache would serve a different
-        # window's result as this one's.
+        # -count=1: only the script reads FUZZ_*, so the test cache would serve another window's
+        # result as this one's.
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
@@ -758,9 +757,9 @@ tasks:
       - rm -fr ./acceptance/build/cover-fuzz/ ./acceptance/build/cover-fuzz-merged/
       - mkdir -p ./acceptance/build/cover-fuzz-merged/
       - |
-        # CLI_GOCOVERDIR makes the harness build a -cover CLI and set GOCOVERDIR per run, so
-        # every fuzzed `bundle` invocation drops aggregatable counter files. Drift off so the
-        # run exercises the full deploy/plan path instead of stopping on the first drift.
+        # CLI_GOCOVERDIR makes the harness build a -cover CLI and set GOCOVERDIR per run, so every
+        # fuzzed `bundle` invocation drops aggregatable counter files. Drift off so the run
+        # exercises the full deploy/plan path instead of stopping on the first drift.
         export CLI_GOCOVERDIR=build/cover-fuzz
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-100}"
         unset FUZZ_CHECK_DRIFT

@@ -1,0 +1,40 @@
+# Fuzz overrides of the shared invariant helpers, which the harness concatenates from
+# ../script.prepare before this file. The target scripts stay unaware of fuzzing.
+
+# The config comes from the generator rather than configs/$INPUT_CONFIG, which the fuzzer leaves
+# unset. The validate probe lives here because the config only exists once it is rendered and
+# must be probed before the target's deploy. Its output is redirected, not recorded, as a fuzzed
+# config may warn.
+invariant_render() {
+    # Stage the fixtures the generator's file_path/source_code_path fields point at.
+    cp -r "$TESTDIR/../data/." . &> LOG.cp
+
+    emit_fuzz_config.py > databricks.yml 2>LOG.gen.err
+    cp databricks.yml LOG.config
+
+    trace $CLI bundle validate &> LOG.validate
+    cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
+}
+
+# A generated config can deploy and still legitimately differ from the fake server, which does
+# not round-trip every field, so the exact check false-positives. Swap in the one oracle that
+# does not depend on server fidelity: planning is deterministic, so two consecutive plans of the
+# same state must be byte-identical. Nightly runs set FUZZ_CHECK_DRIFT to keep the exact check.
+if [ -z "${FUZZ_CHECK_DRIFT:-}" ]; then
+    invariant_verify_no_drift() {
+        # Compare only when both plans succeed -- a plan that fails on an unstubbed read is a gap
+        # and can differ run to run.
+        set +e
+        $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err
+        local plan1_rc=$?
+        $CLI bundle plan -o json > LOG.plan2.json 2>LOG.plan2.err
+        local plan2_rc=$?
+        set -e
+        cat LOG.plan1.err | contains.py '!panic:' '!internal error' > /dev/null
+        cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
+        if [ "$plan1_rc" -eq 0 ] && [ "$plan2_rc" -eq 0 ]; then
+            # diff exits non-zero on any difference; under set -e that fails the seed as a bug.
+            diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
+        fi
+    }
+fi

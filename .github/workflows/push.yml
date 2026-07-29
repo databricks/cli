@@ -443,8 +443,7 @@ jobs:
         env:
           FUZZ_SEED_COUNT: "25"
         run: |
-          # GITHUB_RUN_NUMBER * COUNT keeps each nightly window non-overlapping, so CI
-          # explores new configs every run.
+          # Non-overlapping windows, so CI explores new configs every run.
           export FUZZ_SEED_START=$(( GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
