@@ -19,8 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// jobRunTimeout bounds the wait for a run to finish, matching `bundle run`
-// (jobRunTimeout in bundle/run/job.go).
+// jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
 // JobRunState is what we persist for a triggered run: the RunNow request.
@@ -169,7 +168,7 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	})
 	if err != nil {
 		// The wait can end with the run still going (timeout, interrupt), so link
-		// the run page; the framework's wrapper carries the id.
+		// the run page.
 		return nil, fmt.Errorf("%w%s", err, runPageLine(pageURL))
 	}
 	// FAILED, TIMEDOUT, CANCELED, SUCCESS_WITH_FAILURES and SKIPPED all fail the
@@ -216,7 +215,7 @@ func taskFailed(task jobs.RunTask) bool {
 }
 
 // taskError returns the message the task reported, from the same place `bundle
-// run` reads it. Only called for tasks taskFailed accepted, so State is set.
+// run` reads it. Only reached for a task taskFailed accepted, so State is set.
 func (r *ResourceJobRun) taskError(ctx context.Context, task jobs.RunTask) string {
 	var reported string
 	output, err := r.client.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{RunId: task.RunId})
@@ -230,8 +229,6 @@ func (r *ResourceJobRun) taskError(ctx context.Context, task jobs.RunTask) strin
 	return cmp.Or(reported, task.State.StateMessage, string(task.State.ResultState), string(task.State.LifeCycleState))
 }
 
-// runPageLine returns a line linking the run page, or an empty string when the
-// URL is unknown.
 func runPageLine(rawURL string) string {
 	if rawURL == "" {
 		return ""
@@ -239,8 +236,7 @@ func runPageLine(rawURL string) string {
 	return "\nrun page: " + workspaceurls.ModernizeJobRunPageURL(rawURL)
 }
 
-// logRunProgress reports what `bundle run` reports: the run page URL once, then
-// each state change.
+// logRunProgress mirrors `bundle run`: the run page URL once, then each state change.
 func logRunProgress(ctx context.Context, run *jobs.Run, tracker *progress.JobStateTracker) {
 	event, first := tracker.Poll(run)
 	if event == nil {
@@ -252,9 +248,8 @@ func logRunProgress(ctx context.Context, run *jobs.Run, tracker *progress.JobSta
 	logRunLine(ctx, run.RunId, event.String())
 }
 
-// logRunLine reports one line about a run to the user and the log. Resources
-// deploy concurrently onto one stream, so the user-facing copy names the run it
-// describes; the log already carries the resource key via log.WithPrefix.
+// logRunLine names the run in the user-facing copy, since resources deploy
+// concurrently onto one stream; the log carries the resource key already.
 func logRunLine(ctx context.Context, runID int64, msg string) {
 	log.Info(ctx, msg)
 	if cmdio.HasIO(ctx) {
@@ -266,8 +261,8 @@ func logRunLine(ctx context.Context, runID int64, msg string) {
 // so any change recreates it (delete + a fresh RunNow).
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the
-// recreate path. The API rejects a still-active run, which WaitAfterCreate
-// leaves terminal; that error surfaces for a run whose wait was interrupted.
+// recreate path. The API rejects a still-active run; WaitAfterCreate leaves it
+// terminal, so that error only surfaces when a wait was interrupted.
 func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *JobRunState) error {
 	runID, err := parseRunID(id)
 	if err != nil {

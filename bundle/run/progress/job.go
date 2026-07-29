@@ -16,15 +16,14 @@ type JobProgressEvent struct {
 	State     jobs.RunState `json:"state"`
 }
 
-// JobStateTracker turns the polls of a job run into one event per state change,
-// for callers that report a run's progress as it goes.
+// JobStateTracker turns the polls of a job run into one event per state change.
 type JobStateTracker struct {
 	prev *jobs.RunState
 }
 
-// Poll returns the event to report for this poll of run, or nil when the state
-// has not changed since the last one. first is true for the state a run is seen
-// in initially, where callers also report the run page URL.
+// Poll returns the event to report for this poll, or nil when the state has not
+// changed. first is true for the state the run is seen in initially, where
+// callers also report the run page URL.
 func (t *JobStateTracker) Poll(run *jobs.Run) (event *JobProgressEvent, first bool) {
 	if run.State == nil {
 		return nil, false
