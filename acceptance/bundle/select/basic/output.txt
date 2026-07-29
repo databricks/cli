@@ -24,8 +24,8 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged, 1 not selected
 
 === bundle deploy --select jobs.foo
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/files...
-created jobs.bar
-created jobs.foo
+created jobs.bar  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.foo  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged, 1 not selected.
 
@@ -102,7 +102,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Full deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/files...
-created jobs.baz
+created jobs.baz  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 2 unchanged.
 

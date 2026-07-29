@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default/files...
-created alerts.myalert
+created alerts.myalert              [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]?w=[NUMID]
 created alerts.myalert.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

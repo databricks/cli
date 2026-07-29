@@ -1,8 +1,8 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created volumes.bar
-created volumes.baz
-created volumes.foo
+created volumes.bar  [DATABRICKS_URL]/explore/data/volumes/mycatalog/myschema/mycatalog/myschema/bazname?w=[NUMID]
+created volumes.baz  [DATABRICKS_URL]/explore/data/volumes/mycatalog/myschema/bazname?w=[NUMID]
+created volumes.foo  [DATABRICKS_URL]/explore/data/volumes/mycatalog/myschema/fooname?w=[NUMID]
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.

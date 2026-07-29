@@ -2,7 +2,7 @@
 === Test auto-approve pipelines destroy
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default/files...
-created pipelines.my_pipeline
+created pipelines.my_pipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]

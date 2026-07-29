@@ -10,7 +10,7 @@
 Run 'bundle deploy' to deploy changes to your workspace
 
 === Deploy bundle: Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-updated schemas.schema1
+updated schemas.schema1  [DATABRICKS_URL]/explore/data/main/test-schema-[UUID]?w=[NUMID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

@@ -32,6 +32,7 @@
       }
     },
     "resources.pipelines.foo.permissions": {
+      "id": "/pipelines/[FOO_ID]",
       "depends_on": [
         {
           "node": "resources.pipelines.foo",

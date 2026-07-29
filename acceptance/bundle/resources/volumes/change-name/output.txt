@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created volumes.volume1
+created volumes.volume1  [DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -44,7 +44,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated volumes.volume1
+updated volumes.volume1  [DATABRICKS_URL]/explore/data/volumes/main/myschema/mynewvolume?w=[NUMID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

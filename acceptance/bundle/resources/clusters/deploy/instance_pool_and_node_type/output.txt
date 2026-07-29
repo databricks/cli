@@ -1,7 +1,7 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-instance-pool/default/files...
-created clusters.cluster1
+created clusters.cluster1  [DATABRICKS_URL]/compute/clusters/[UUID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

@@ -21,7 +21,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created experiments.foo
+created experiments.foo              [DATABRICKS_URL]/ml/experiments/[NUMID]?w=[NUMID]
 created experiments.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

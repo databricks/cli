@@ -2,7 +2,7 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created model_serving_endpoints.endpoint1
+created model_serving_endpoints.endpoint1  [DATABRICKS_URL]/ml/endpoints/test-endpoint?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

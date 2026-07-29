@@ -21,7 +21,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created genie_spaces.foo
+created genie_spaces.foo              [DATABRICKS_URL]/genie/rooms/[FOO_ID]?w=[NUMID]
 created genie_spaces.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-remote-sync-telemetry/default/files...
-created jobs.foo
+created jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

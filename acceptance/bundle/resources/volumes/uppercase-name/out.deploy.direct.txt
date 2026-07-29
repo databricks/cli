@@ -1,6 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-created schemas.schema1
-created volumes.vol1
+created schemas.schema1  [DATABRICKS_URL]/explore/data/main/myschema_[UNIQUE_NAME]?w=[NUMID]
+created volumes.vol1     [DATABRICKS_URL]/explore/data/volumes/main/myschema_[UNIQUE_NAME]/myvolume?w=[NUMID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 {

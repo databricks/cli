@@ -24,8 +24,8 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default/files...
-created database_catalogs.my_catalog
-created database_instances.my_instance
+created database_catalogs.my_catalog    [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]?w=[NUMID]
+created database_instances.my_instance  [DATABRICKS_URL]/compute/database-instances/test-db-catalog-[UNIQUE_NAME]?w=[NUMID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

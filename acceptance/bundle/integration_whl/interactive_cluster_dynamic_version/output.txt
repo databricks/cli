@@ -3,8 +3,8 @@
 Building python_artifact...
 Uploading .databricks/bundle/default/patched_wheels/python_artifact_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created clusters.test_cluster
-created jobs.some_other_job
+created clusters.test_cluster  [DATABRICKS_URL]/compute/clusters/[TEST_CLUSTER_ID]?w=[NUMID]
+created jobs.some_other_job    [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]?w=[NUMID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

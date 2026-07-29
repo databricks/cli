@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alert-task-[UNIQUE_NAME]/default/files...
-created jobs.my_job
+created jobs.my_job  [DATABRICKS_URL]/jobs/[JOB_ID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

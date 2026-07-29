@@ -2,8 +2,8 @@
 === deploy triggers the run with only the overridden parameter
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-job-parameters/default/files...
-created job_runs.my_run
-created jobs.my_job
+created job_runs.my_run  [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?w=[NUMID]
+created jobs.my_job      [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

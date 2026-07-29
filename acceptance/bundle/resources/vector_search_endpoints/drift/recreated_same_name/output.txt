@@ -2,7 +2,7 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-recreated-same-name-[UNIQUE_NAME]/default/files...
-created vector_search_endpoints.my_endpoint
+created vector_search_endpoints.my_endpoint              [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
 created vector_search_endpoints.my_endpoint.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

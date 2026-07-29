@@ -5,6 +5,7 @@
   "serial": 1,
   "plan": {
     "resources.jobs.job": {
+      "id": "[NUMID]",
       "action": "delete",
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS],

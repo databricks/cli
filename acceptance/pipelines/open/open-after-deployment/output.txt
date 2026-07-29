@@ -7,7 +7,7 @@ Exit code: 1
 
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipelines-open/default/files...
-created pipelines.test-pipelines-open
+created pipelines.test-pipelines-open  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 View your pipeline test-pipelines-open here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]

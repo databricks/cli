@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-run-flags/default/files...
-created pipelines.my_pipeline
+created pipelines.my_pipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

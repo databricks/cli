@@ -200,6 +200,7 @@ func (p *Plan) GetActions() []Action {
 			ResourceKey: key,
 			ActionType:  entry.Action,
 			Gone:        entry.Gone,
+			ID:          entry.ID,
 		})
 	}
 

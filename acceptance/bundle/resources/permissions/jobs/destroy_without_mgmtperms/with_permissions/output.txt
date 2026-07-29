@@ -12,7 +12,7 @@ No active deployment found to destroy!
 
 >>> as-test-sp [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-created jobs.foo
+created jobs.foo              [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 created jobs.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

@@ -35,9 +35,9 @@
 
 >>> [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
-created pipelines.mypipeline
-created schemas.bar
-created volumes.foo
+created pipelines.mypipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+created schemas.bar           [DATABRICKS_URL]/explore/data/mycatalog/dev_[USERNAME]_myschema?w=[NUMID]
+created volumes.foo           [DATABRICKS_URL]/explore/data/volumes/mycatalog/dev_[USERNAME]_myschema/myname?w=[NUMID]
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 

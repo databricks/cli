@@ -29,7 +29,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   recreate resources.pipelines.foo
-recreated pipelines.foo
+recreated pipelines.foo  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 1 deleted, 0 unchanged.
 

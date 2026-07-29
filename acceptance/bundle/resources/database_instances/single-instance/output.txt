@@ -22,7 +22,7 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default/files...
-created database_instances.my_database
+created database_instances.my_database  [DATABRICKS_URL]/compute/database-instances/test-db-instance-single-[UNIQUE_NAME]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

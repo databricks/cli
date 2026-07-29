@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
+	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
@@ -29,6 +31,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/workspaceurls"
 )
 
 var deployApprovalGroups = []approvalGroup{
@@ -132,22 +135,13 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 }
 
 // logDeploySummary prints the per-resource actions that were applied followed by
-// a summary line, mirroring the output of "bundle plan". Per-resource lines are
-// suppressed by --quiet. The past-tense verb is the short action name plus "d"
-// (create→created, delete→deleted, ...).
+// a summary line, mirroring the output of "bundle plan". Each per-resource line
+// shows a workspace URL for the resource when one is available. Per-resource
+// lines are suppressed by --quiet. The past-tense verb is the short action name
+// plus "d" (create→created, delete→deleted, ...).
 func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
-	printed := false
 	if !b.Quiet {
-		for _, action := range plan.GetActions() {
-			if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
-				continue
-			}
-			cmdio.LogString(ctx, action.ActionType.StringShort()+"d "+strings.TrimPrefix(action.ResourceKey, "resources."))
-			printed = true
-		}
-	}
-	if printed {
-		cmdio.LogString(ctx, "")
+		logResourceActions(ctx, b, plan)
 	}
 
 	counts := plan.CountActions()
@@ -159,6 +153,91 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 		summary += fmt.Sprintf(", %d not selected", plan.NotSelected)
 	}
 	cmdio.LogString(ctx, summary+".")
+}
+
+// logResourceActions prints one line per applied action, aligning resource URLs
+// into a column. URLs require the workspace ID, whose resolution may cost an API
+// call; that only happens here, when the per-resource lines are printed.
+func logResourceActions(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
+	baseURL, err := mutator.WorkspaceBaseURL(ctx, b)
+	if err != nil {
+		// Fall back to printing the lines without URLs rather than failing an
+		// otherwise-successful deploy on a URL-resolution error.
+		log.Debugf(ctx, "cannot resolve workspace URL for deploy summary: %v", err)
+	}
+	withURLs := err == nil
+
+	// Populate the URL field on every live resource in config so it can be read
+	// back below. Deleted resources are gone from config, so their URLs are built
+	// from the base URL directly.
+	if withURLs {
+		for _, group := range b.Config.Resources.AllResources() {
+			for _, r := range group.Resources {
+				r.InitializeURL(baseURL)
+			}
+		}
+	}
+
+	type line struct{ label, url string }
+	var lines []line
+	labelWidth := 0
+	for _, action := range plan.GetActions() {
+		if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
+			continue
+		}
+		label := action.ActionType.StringShort() + "d " + strings.TrimPrefix(action.ResourceKey, "resources.")
+		l := line{label: label}
+		if withURLs {
+			l.url = resourceURL(b, baseURL, action)
+		}
+		lines = append(lines, l)
+		labelWidth = max(labelWidth, len(label))
+	}
+
+	for _, l := range lines {
+		if l.url == "" {
+			cmdio.LogString(ctx, l.label)
+		} else {
+			cmdio.LogString(ctx, fmt.Sprintf("%-*s  %s", labelWidth, l.label, l.url))
+		}
+	}
+
+	if len(lines) > 0 {
+		cmdio.LogString(ctx, "")
+	}
+}
+
+// resourceURL returns the workspace URL for an applied action, or "" when none
+// is available (child nodes like grants/permissions, resource types without a
+// URL, or a delete whose ID could not be recovered).
+func resourceURL(b *bundle.Bundle, baseURL url.URL, action deployplan.Action) string {
+	if action.IsChildResource() {
+		return ""
+	}
+
+	if action.ActionType == deployplan.Delete {
+		// A deleted resource is gone from config; build its URL from the ID
+		// captured at plan time. The link points at a now-deleted resource, but
+		// it identifies what was removed.
+		resourceType := config.GetResourceTypeFromKey(action.ResourceKey)
+		return workspaceurls.ResourceURL(baseURL, resourceType, action.ID)
+	}
+
+	// action.ResourceKey is "resources.<type>.<name>"; Lookup keys on "<type>.<name>".
+	key := strings.TrimPrefix(action.ResourceKey, "resources.")
+	ref, err := resources.Lookup(b, key)
+	if err != nil {
+		return ""
+	}
+	u := ref.Resource.GetURL()
+	// Some resources derive their URL from a name that is still an unresolved
+	// "${...}" reference at this point (e.g. synced tables keyed by
+	// "${resources.catalog.name}...."). Such a URL is not a usable link and its
+	// rendering differs by engine, so omit it.
+	if strings.Contains(u, "$%7B") || strings.Contains(u, "${") {
+		return ""
+	}
+	return u
 }
 
 // uploadLibraries uploads libraries to the workspace.

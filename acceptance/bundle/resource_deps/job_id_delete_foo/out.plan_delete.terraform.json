@@ -5,6 +5,7 @@
       "action": "skip"
     },
     "resources.jobs.foo": {
+      "id": "[FOO_ID]",
       "action": "delete"
     }
   }

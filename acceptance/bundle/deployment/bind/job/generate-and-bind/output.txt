@@ -22,7 +22,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]/files...
-updated jobs.test_job_key
+updated jobs.test_job_key  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

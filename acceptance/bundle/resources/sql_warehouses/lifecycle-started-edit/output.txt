@@ -2,7 +2,7 @@
 === Deploy with started=false: warehouse created and then stopped
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created sql_warehouses.mywarehouse
+created sql_warehouses.mywarehouse  [DATABRICKS_URL]/sql/warehouses/[WAREHOUSE_ID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -33,7 +33,7 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated sql_warehouses.mywarehouse
+updated sql_warehouses.mywarehouse  [DATABRICKS_URL]/sql/warehouses/[WAREHOUSE_ID]?w=[NUMID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

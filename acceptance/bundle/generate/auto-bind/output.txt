@@ -21,7 +21,7 @@ test.py
 === Deploy the bound job:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]/files...
-updated jobs.test_job
+updated jobs.test_job  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

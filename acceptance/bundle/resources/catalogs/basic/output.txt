@@ -2,7 +2,7 @@
 === Deploy bundle with catalog
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created catalogs.test_catalog
+created catalogs.test_catalog  [DATABRICKS_URL]/explore/data/test_catalog_[UNIQUE_NAME]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -20,7 +20,7 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 === Redeploy with updated comment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated catalogs.test_catalog
+updated catalogs.test_catalog  [DATABRICKS_URL]/explore/data/test_catalog_[UNIQUE_NAME]?w=[NUMID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

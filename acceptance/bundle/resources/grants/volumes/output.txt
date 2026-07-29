@@ -3,8 +3,8 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
-created schemas.grants_schema
-created volumes.grants_volume
+created schemas.grants_schema         [DATABRICKS_URL]/explore/data/main/schema_grants_[UNIQUE_NAME]?w=[NUMID]
+created volumes.grants_volume         [DATABRICKS_URL]/explore/data/volumes/main/schema_grants_[UNIQUE_NAME]/volume_name?w=[NUMID]
 created volumes.grants_volume.grants
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.

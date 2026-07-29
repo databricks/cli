@@ -33,8 +33,8 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
-created job_runs.my_run
-created jobs.my_job
+created job_runs.my_run  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[NUMID]
+created jobs.my_job      [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

@@ -2,7 +2,7 @@
 === Deploy with started=true: cluster created and running
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created clusters.mycluster
+created clusters.mycluster  [DATABRICKS_URL]/compute/clusters/[UUID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -34,7 +34,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 === Deploy fixes the drift: cluster restarted
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated clusters.mycluster
+updated clusters.mycluster  [DATABRICKS_URL]/compute/clusters/[UUID]?w=[NUMID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
@@ -84,7 +84,7 @@ Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated clusters.mycluster
+updated clusters.mycluster  [DATABRICKS_URL]/compute/clusters/[UUID]?w=[NUMID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

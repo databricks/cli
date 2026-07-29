@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.bar
-created schemas.schema
-created volumes.foo
+created jobs.bar        [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created schemas.schema  [DATABRICKS_URL]/explore/data/main/schema?w=[NUMID]
+created volumes.foo     [DATABRICKS_URL]/explore/data/volumes/main/schema/volume?w=[NUMID]
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 

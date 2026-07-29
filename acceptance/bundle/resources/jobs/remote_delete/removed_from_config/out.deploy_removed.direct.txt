@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-deleted jobs.foo
-deleted pipelines.bar
+deleted jobs.foo       [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+deleted pipelines.bar  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 Deploy: 0 created, 0 changed, 2 deleted, 0 unchanged.

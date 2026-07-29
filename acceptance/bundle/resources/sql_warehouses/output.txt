@@ -36,7 +36,7 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
-created sql_warehouses.test_sql_warehouse
+created sql_warehouses.test_sql_warehouse  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -74,7 +74,7 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
-updated sql_warehouses.test_sql_warehouse
+updated sql_warehouses.test_sql_warehouse  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

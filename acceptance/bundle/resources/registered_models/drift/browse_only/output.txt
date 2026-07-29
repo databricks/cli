@@ -2,7 +2,7 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created registered_models.model1
+created registered_models.model1  [DATABRICKS_URL]/explore/data/models/main/default/model_browse_only?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

@@ -2,8 +2,8 @@
 === Deploy bundle 1 with terraform
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/snapshot-test-1-[UNIQUE_NAME]/default/files...
-created jobs.test_job
-created pipelines.test_pipeline
+created jobs.test_job            [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created pipelines.test_pipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -21,8 +21,8 @@ To undo the migration, remove [TEST_TMP_DIR]/bundle1/.databricks/bundle/default/
 === Deploy bundle 2 with terraform and YamlSync
 >>> DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC=true DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/snapshot-test-2-[UNIQUE_NAME]/default/files...
-created jobs.test_job
-created pipelines.test_pipeline
+created jobs.test_job            [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created pipelines.test_pipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

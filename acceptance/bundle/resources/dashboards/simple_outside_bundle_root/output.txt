@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-outside-bundle-root-[UNIQUE_NAME]/default/files...
-created dashboards.dashboard1
+created dashboards.dashboard1  [DATABRICKS_URL]/dashboardsv3/[DASHBOARD_ID]/published?w=[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

@@ -69,10 +69,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created alerts.my_alert
-created pipelines.my_pipeline
-created schemas.my_schema
-created sql_warehouses.my_sql_warehouse
+created alerts.my_alert                  [DATABRICKS_URL]/sql/alerts-v2/[UUID]?w=[NUMID]
+created pipelines.my_pipeline            [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+created schemas.my_schema                [DATABRICKS_URL]/explore/data/main/test-schema?w=[NUMID]
+created sql_warehouses.my_sql_warehouse  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]
 
 Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
 

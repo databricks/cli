@@ -45,6 +45,7 @@
       }
     },
     "resources.jobs.foo": {
+      "id": "[FOO_ID]",
       "depends_on": [
         {
           "node": "resources.jobs.bar",
