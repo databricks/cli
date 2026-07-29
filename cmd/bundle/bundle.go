@@ -3,6 +3,7 @@ package bundle
 import (
 	"context"
 
+	"github.com/databricks/cli/cmd/bundle/bitmap"
 	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
@@ -46,4 +47,5 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	cmd.AddCommand(newOpenCommand())
 	cmd.AddCommand(newPlanCommand())
 	cmd.AddCommand(newConfigRemoteSyncCommand())
+	cmd.AddCommand(bitmap.NewBitmapCommand())
 }

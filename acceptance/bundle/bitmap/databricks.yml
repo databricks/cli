@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+variables:
+  myvar:
+    description: a variable
+    default: abc
+
+presets:
+  name_prefix: dev_
+
+resources:
+  jobs:
+    my_job:
+      name: My Job
+      tags:
+        team: data
