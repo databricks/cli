@@ -135,23 +135,21 @@ func (q *operationQueue) record(ctx context.Context, resourceKey string, action 
 // record must have returned first: record on a closed queue panics. Calling close
 // more than once is safe, so callers can defer it and still check the error at a
 // specific point.
+//
+// Unlike the other methods this one takes no lock. It runs on one goroutine after
+// every apply worker has returned, so nothing else touches the queue by then, and
+// the wg.Wait below orders the workers' writes to err before it is read.
 func (q *operationQueue) close() error {
 	if q == nil {
 		return nil
 	}
 
-	q.mu.Lock()
-	closed := q.closed
-	q.closed = true
-	q.mu.Unlock()
-
-	if !closed {
+	if !q.closed {
+		q.closed = true
 		close(q.queue)
 		q.wg.Wait()
 	}
 
-	q.mu.Lock()
-	defer q.mu.Unlock()
 	return q.err
 }
 

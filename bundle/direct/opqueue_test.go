@@ -130,6 +130,16 @@ func TestOperationQueueCoalescingKeepsLatestOperation(t *testing.T) {
 	close(f.block)
 	require.NoError(t, q.close())
 
+	// One upload, not two: the second operation replaced the first while every
+	// worker was busy, so the extra CreateOperation round trip never happens.
+	var uploadsForFoo int
+	for _, u := range f.recorded() {
+		if strings.HasPrefix(u, "resources.jobs.foo=") {
+			uploadsForFoo++
+		}
+	}
+	assert.Equal(t, 1, uploadsForFoo, "the two operations should coalesce into one upload")
+
 	// Everything comes from the newest operation: it carries the resource's full
 	// state, and the ID it learned after the create.
 	assert.Contains(t, f.recorded(), `resources.jobs.foo={"state":{"name":"updated"}}`)
