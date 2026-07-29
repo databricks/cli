@@ -49,7 +49,7 @@ func (r *ResourceInstancePool) DoRead(ctx context.Context, id string) (*compute.
 	return r.client.InstancePools.GetByInstancePoolId(ctx, id)
 }
 
-func (r *ResourceInstancePool) DoCreate(ctx context.Context, config *compute.CreateInstancePool) (string, *compute.GetInstancePool, error) {
+func (r *ResourceInstancePool) DoCreate(ctx context.Context, _ *StateSaver, config *compute.CreateInstancePool) (string, *compute.GetInstancePool, error) {
 	resp, err := r.client.InstancePools.Create(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -57,7 +57,7 @@ func (r *ResourceInstancePool) DoCreate(ctx context.Context, config *compute.Cre
 	return resp.InstancePoolId, nil, nil
 }
 
-func (r *ResourceInstancePool) DoUpdate(ctx context.Context, id string, config *compute.CreateInstancePool, _ *PlanEntry) (*compute.GetInstancePool, error) {
+func (r *ResourceInstancePool) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *compute.CreateInstancePool, _ *PlanEntry) (*compute.GetInstancePool, error) {
 	return nil, r.client.InstancePools.Edit(ctx, compute.EditInstancePool{
 		InstancePoolId:                     id,
 		InstancePoolName:                   config.InstancePoolName,

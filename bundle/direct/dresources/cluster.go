@@ -272,7 +272,7 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *Clust
 	}
 
 	// Cluster is not running; fall back to the full clusters/edit path.
-	// DoUpdate ignores its Engine argument, so passing nil here is safe.
+	// DoUpdate ignores its StateSaver argument, so passing nil here is safe.
 	log.Debugf(ctx, "cluster %s: resize returned INVALID_STATE (%s), falling back to edit", id, err)
 	_, err = r.DoUpdate(ctx, nil, id, config, entry)
 	return err
