@@ -1,8 +1,12 @@
 package phases
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -74,4 +78,55 @@ func TestUploadFileSizeHistogramUnknownSizeOmitsHistogram(t *testing.T) {
 
 func TestUploadFileSizeHistogramEmpty(t *testing.T) {
 	assert.Nil(t, uploadFileSizeHistogram(nil))
+}
+
+// isResourceCountField reports whether a BundleDeployEvent field is a
+// per-resource-type count. ResourceCount is the total across all types and is
+// computed in LogDeployTelemetry, so it is not one of them.
+func isResourceCountField(name string) bool {
+	return name != "ResourceCount" &&
+		strings.HasPrefix(name, "Resource") &&
+		strings.HasSuffix(name, "Count")
+}
+
+// Every resource type in config.Resources needs its own resource_*_count field:
+// a type without one reports zero adoption forever, which is invisible until
+// someone reads the dashboard and concludes nobody uses it.
+//
+// Putting one resource in every map and asserting each count comes back as 1
+// catches both halves of the mistake: a type with no proto field at all (the
+// field totals diverge) and a field that was declared but never assigned in
+// setResourceCounts (its count stays 0).
+func TestSetResourceCountsCoversAllResourceTypes(t *testing.T) {
+	var resources config.Resources
+	rv := reflect.ValueOf(&resources).Elem()
+	rt := rv.Type()
+
+	// Resource fields are all map[string]*T; TestCustomMarshallerIsImplemented in
+	// bundle/config enforces that shape.
+	for i := range rt.NumField() {
+		mapType := rt.Field(i).Type
+		m := reflect.MakeMap(mapType)
+		m.SetMapIndex(reflect.ValueOf("my_resource"), reflect.New(mapType.Elem().Elem()))
+		rv.Field(i).Set(m)
+	}
+
+	event := &protos.BundleDeployEvent{}
+	setResourceCounts(event, &resources)
+
+	ev := reflect.ValueOf(event).Elem()
+	et := ev.Type()
+	var countFields []string
+	for i := range et.NumField() {
+		name := et.Field(i).Name
+		if !isResourceCountField(name) {
+			continue
+		}
+		countFields = append(countFields, name)
+		assert.Equal(t, int64(1), ev.Field(i).Int(), "%s is declared in BundleDeployEvent but not set by setResourceCounts", name)
+	}
+
+	assert.Len(t, countFields, rt.NumField(),
+		"every resource type in config.Resources needs a resource_<singular>_count field in protos.BundleDeployEvent and a line in setResourceCounts; found %d count fields for %d resource types",
+		len(countFields), rt.NumField())
 }

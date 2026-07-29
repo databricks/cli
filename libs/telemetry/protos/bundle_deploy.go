@@ -10,19 +10,44 @@ type BundleDeployEvent struct {
 	// Error message encountered during the bundle deploy command, if any.
 	ErrorMessage string `json:"error_message,omitempty"`
 
-	ResourceCount                     int64 `json:"resource_count"`
+	// Total number of resources in the bundle configuration.
+	ResourceCount int64 `json:"resource_count"`
+
+	// Number of resources of each type in the bundle configuration. Every resource
+	// type in bundle/config.Resources has a field here; see setResourceCounts in
+	// bundle/phases/telemetry.go, which is what populates them.
 	ResourceJobCount                  int64 `json:"resource_job_count"`
+	ResourceJobRunCount               int64 `json:"resource_job_run_count"`
 	ResourcePipelineCount             int64 `json:"resource_pipeline_count"`
 	ResourceModelCount                int64 `json:"resource_model_count"`
 	ResourceExperimentCount           int64 `json:"resource_experiment_count"`
 	ResourceModelServingEndpointCount int64 `json:"resource_model_serving_endpoint_count"`
 	ResourceRegisteredModelCount      int64 `json:"resource_registered_model_count"`
 	ResourceQualityMonitorCount       int64 `json:"resource_quality_monitor_count"`
+	ResourceCatalogCount              int64 `json:"resource_catalog_count"`
 	ResourceSchemaCount               int64 `json:"resource_schema_count"`
 	ResourceVolumeCount               int64 `json:"resource_volume_count"`
+	ResourceExternalLocationCount     int64 `json:"resource_external_location_count"`
 	ResourceClusterCount              int64 `json:"resource_cluster_count"`
 	ResourceDashboardCount            int64 `json:"resource_dashboard_count"`
+	ResourceGenieSpaceCount           int64 `json:"resource_genie_space_count"`
 	ResourceAppCount                  int64 `json:"resource_app_count"`
+	ResourceSecretScopeCount          int64 `json:"resource_secret_scope_count"`
+	ResourceAlertCount                int64 `json:"resource_alert_count"`
+	ResourceSqlWarehouseCount         int64 `json:"resource_sql_warehouse_count"`
+	ResourceDatabaseInstanceCount     int64 `json:"resource_database_instance_count"`
+	ResourceDatabaseCatalogCount      int64 `json:"resource_database_catalog_count"`
+	ResourceSyncedDatabaseTableCount  int64 `json:"resource_synced_database_table_count"`
+	ResourcePostgresProjectCount      int64 `json:"resource_postgres_project_count"`
+	ResourcePostgresBranchCount       int64 `json:"resource_postgres_branch_count"`
+	ResourcePostgresEndpointCount     int64 `json:"resource_postgres_endpoint_count"`
+	ResourcePostgresCatalogCount      int64 `json:"resource_postgres_catalog_count"`
+	ResourcePostgresDatabaseCount     int64 `json:"resource_postgres_database_count"`
+	ResourcePostgresRoleCount         int64 `json:"resource_postgres_role_count"`
+	ResourcePostgresSyncedTableCount  int64 `json:"resource_postgres_synced_table_count"`
+	ResourceVectorSearchEndpointCount int64 `json:"resource_vector_search_endpoint_count"`
+	ResourceVectorSearchIndexCount    int64 `json:"resource_vector_search_index_count"`
+	ResourceInstancePoolCount         int64 `json:"resource_instance_pool_count"`
 
 	// IDs of resources managed by the bundle. Some resources like volumes or schemas
 	// do not expose a numerical or UUID identifier and are tracked by name. Those

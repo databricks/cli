@@ -107,6 +107,45 @@ func uploadFileSizeHistogram(files []sizer) []int64 {
 	return hist
 }
 
+// setResourceCounts records the number of resources of each type in the bundle.
+// Every resource type in config.Resources must be counted here so that adoption
+// of a new type is visible in telemetry from the moment it ships;
+// TestSetResourceCountsCoversAllResourceTypes fails when one is missing.
+func setResourceCounts(event *protos.BundleDeployEvent, r *config.Resources) {
+	event.ResourceJobCount = int64(len(r.Jobs))
+	event.ResourceJobRunCount = int64(len(r.JobRuns))
+	event.ResourcePipelineCount = int64(len(r.Pipelines))
+	event.ResourceModelCount = int64(len(r.Models))
+	event.ResourceExperimentCount = int64(len(r.Experiments))
+	event.ResourceModelServingEndpointCount = int64(len(r.ModelServingEndpoints))
+	event.ResourceRegisteredModelCount = int64(len(r.RegisteredModels))
+	event.ResourceQualityMonitorCount = int64(len(r.QualityMonitors))
+	event.ResourceCatalogCount = int64(len(r.Catalogs))
+	event.ResourceSchemaCount = int64(len(r.Schemas))
+	event.ResourceVolumeCount = int64(len(r.Volumes))
+	event.ResourceExternalLocationCount = int64(len(r.ExternalLocations))
+	event.ResourceClusterCount = int64(len(r.Clusters))
+	event.ResourceDashboardCount = int64(len(r.Dashboards))
+	event.ResourceGenieSpaceCount = int64(len(r.GenieSpaces))
+	event.ResourceAppCount = int64(len(r.Apps))
+	event.ResourceSecretScopeCount = int64(len(r.SecretScopes))
+	event.ResourceAlertCount = int64(len(r.Alerts))
+	event.ResourceSqlWarehouseCount = int64(len(r.SqlWarehouses))
+	event.ResourceDatabaseInstanceCount = int64(len(r.DatabaseInstances))
+	event.ResourceDatabaseCatalogCount = int64(len(r.DatabaseCatalogs))
+	event.ResourceSyncedDatabaseTableCount = int64(len(r.SyncedDatabaseTables))
+	event.ResourcePostgresProjectCount = int64(len(r.PostgresProjects))
+	event.ResourcePostgresBranchCount = int64(len(r.PostgresBranches))
+	event.ResourcePostgresEndpointCount = int64(len(r.PostgresEndpoints))
+	event.ResourcePostgresCatalogCount = int64(len(r.PostgresCatalogs))
+	event.ResourcePostgresDatabaseCount = int64(len(r.PostgresDatabases))
+	event.ResourcePostgresRoleCount = int64(len(r.PostgresRoles))
+	event.ResourcePostgresSyncedTableCount = int64(len(r.PostgresSyncedTables))
+	event.ResourceVectorSearchEndpointCount = int64(len(r.VectorSearchEndpoints))
+	event.ResourceVectorSearchIndexCount = int64(len(r.VectorSearchIndexes))
+	event.ResourceInstancePoolCount = int64(len(r.InstancePools))
+}
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
@@ -248,51 +287,41 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		uploadFileSizers[i] = f
 	}
 
-	telemetry.Log(ctx, protos.DatabricksCliLog{
-		BundleDeployEvent: &protos.BundleDeployEvent{
-			BundleUuid:   bundleUuid,
-			DeploymentId: b.Metrics.DeploymentId.String(),
-			ErrorMessage: errMsg,
+	event := &protos.BundleDeployEvent{
+		BundleUuid:   bundleUuid,
+		DeploymentId: b.Metrics.DeploymentId.String(),
+		ErrorMessage: errMsg,
 
-			ResourceCount:                     resourcesCount,
-			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
-			ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
-			ResourceModelCount:                int64(len(b.Config.Resources.Models)),
-			ResourceExperimentCount:           int64(len(b.Config.Resources.Experiments)),
-			ResourceModelServingEndpointCount: int64(len(b.Config.Resources.ModelServingEndpoints)),
-			ResourceRegisteredModelCount:      int64(len(b.Config.Resources.RegisteredModels)),
-			ResourceQualityMonitorCount:       int64(len(b.Config.Resources.QualityMonitors)),
-			ResourceSchemaCount:               int64(len(b.Config.Resources.Schemas)),
-			ResourceVolumeCount:               int64(len(b.Config.Resources.Volumes)),
-			ResourceClusterCount:              int64(len(b.Config.Resources.Clusters)),
-			ResourceDashboardCount:            int64(len(b.Config.Resources.Dashboards)),
-			ResourceAppCount:                  int64(len(b.Config.Resources.Apps)),
+		ResourceCount: resourcesCount,
 
-			ResourceJobIDs:       jobsIds,
-			ResourcePipelineIDs:  pipelineIds,
-			ResourceClusterIDs:   clusterIds,
-			ResourceDashboardIDs: dashboardIds,
+		ResourceJobIDs:       jobsIds,
+		ResourcePipelineIDs:  pipelineIds,
+		ResourceClusterIDs:   clusterIds,
+		ResourceDashboardIDs: dashboardIds,
 
-			ResourcesMetadata: collectResourcesMetadata(ctx, b),
+		ResourcesMetadata: collectResourcesMetadata(ctx, b),
 
-			Experimental: &protos.BundleDeployExperimental{
-				BundleMode:                   mode,
-				ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
-				UploadFileCount:              int64(len(b.Files)),
-				UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
-				TargetCount:                  b.Metrics.TargetCount,
-				WorkspaceArtifactPathType:    artifactPathType,
-				BoolValues:                   b.Metrics.BoolValues,
-				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
-				PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
-				PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,
-				PythonResourceLoadersCount:   int64(len(experimentalConfig.Python.Resources)),
-				PythonResourceMutatorsCount:  int64(len(experimentalConfig.Python.Mutators)),
-				VariableCount:                int64(variableCount),
-				ComplexVariableCount:         complexVariableCount,
-				LookupVariableCount:          lookupVariableCount,
-				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
-			},
+		Experimental: &protos.BundleDeployExperimental{
+			BundleMode:                   mode,
+			ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
+			UploadFileCount:              int64(len(b.Files)),
+			UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
+			TargetCount:                  b.Metrics.TargetCount,
+			WorkspaceArtifactPathType:    artifactPathType,
+			BoolValues:                   b.Metrics.BoolValues,
+			LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
+			PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
+			PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,
+			PythonResourceLoadersCount:   int64(len(experimentalConfig.Python.Resources)),
+			PythonResourceMutatorsCount:  int64(len(experimentalConfig.Python.Mutators)),
+			VariableCount:                int64(variableCount),
+			ComplexVariableCount:         complexVariableCount,
+			LookupVariableCount:          lookupVariableCount,
+			BundleMutatorExecutionTimeMs: getExecutionTimes(b),
 		},
-	})
+	}
+
+	setResourceCounts(event, &b.Config.Resources)
+
+	telemetry.Log(ctx, protos.DatabricksCliLog{BundleDeployEvent: event})
 }
