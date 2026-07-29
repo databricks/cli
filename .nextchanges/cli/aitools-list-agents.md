@@ -1,1 +1,0 @@
-`aitools list --output json` now reports every supported coding agent (not just those with a recorded install), each with whether it was detected on the system and its per-scope databricks plugin installation. The text output is unchanged.
