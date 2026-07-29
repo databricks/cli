@@ -10,6 +10,12 @@ type BundleDeployEvent struct {
 	// Error message encountered during the bundle deploy command, if any.
 	ErrorMessage string `json:"error_message,omitempty"`
 
+	// Deprecated: per-resource-type counts, superseded by
+	// ResourcesMetadata.Resources[*].Count, which covers every resource type
+	// instead of the subset that happens to have a field here. Both are populated
+	// during the transition. Do not add fields here for new resource types; the
+	// counts in ResourcesMetadata are derived from the bundle configuration and
+	// pick new types up automatically.
 	ResourceCount                     int64 `json:"resource_count"`
 	ResourceJobCount                  int64 `json:"resource_job_count"`
 	ResourcePipelineCount             int64 `json:"resource_pipeline_count"`
@@ -112,21 +118,26 @@ type BundleDeployExperimental struct {
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
 }
 
-// BundleResourcesMetadata mirrors the universe proto. Per-resource-type
-// state-size metadata for one bundle deployment.
+// BundleResourcesMetadata mirrors the universe proto. Per-resource-type counts
+// and state-size metadata for one bundle deployment.
 //
-// Only direct deploys are measured: the direct engine persists each resource's
-// state as a JSON blob in resources.json, so sizes are read off directly as
-// len(state) — no serialization happens at telemetry time. Terraform stores
-// state in a different shape and is not collected (the field is absent there).
+// Counts are reported for both engines. State sizes are only measured for direct
+// deploys: the direct engine persists each resource's state as a JSON blob in
+// resources.json, so sizes are read off directly as len(state) — no
+// serialization happens at telemetry time. Terraform stores state in a different
+// shape and is not sized per resource, so its entries carry counts only.
 type BundleResourcesMetadata struct {
-	// Always "direct"; terraform deploys do not populate this message.
+	// Engine that ran the deploy: "direct" or "terraform".
 	StateEngine string `json:"state_engine,omitempty"`
 
 	// Size in bytes of the direct engine's resources.json state file on disk.
+	// Absent for terraform deploys, which report the whole-file size as
+	// BundleDeployExperimental.TerraformStateSizeBytes instead.
 	StateFileSizeBytes int64 `json:"state_file_size_bytes,omitempty"`
 
-	// One entry per resource type present in the deployment state.
+	// One entry per resource type declared in the bundle configuration, plus any
+	// type present only in the deployment state (sub-resources such as
+	// "jobs.permissions", or a type being removed from the bundle).
 	Resources []ResourceMetadata `json:"resources,omitempty"`
 }
 
@@ -136,11 +147,15 @@ type ResourceMetadata struct {
 	// Resource type name: "jobs", "pipelines", "schemas", ...
 	ResourceType string `json:"resource_type,omitempty"`
 
-	// Number of resources of this type tracked in the deployment state.
+	// Number of resources of this type declared in the bundle configuration.
+	// Replaces the deprecated BundleDeployEvent.Resource*Count fields. For a type
+	// that appears only in the deployment state, this is the number of state
+	// entries instead, since the configuration declares none.
 	Count int64 `json:"count,omitempty"`
 
 	// State-size statistics across resources of this type, each measured as
-	// len(state) of the JSON blob stored in resources.json.
+	// len(state) of the JSON blob stored in resources.json. Zero when the type has
+	// no state: a terraform deploy, or a resource declared but not yet deployed.
 	StateSizeMaxBytes    int64 `json:"state_size_max_bytes,omitempty"`
 	StateSizeMeanBytes   int64 `json:"state_size_mean_bytes,omitempty"`
 	StateSizeMedianBytes int64 `json:"state_size_median_bytes,omitempty"`

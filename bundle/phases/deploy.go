@@ -88,6 +88,9 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		state statemgmt.ExportedResourcesMap
 		err   error
 	)
+	// Resolve before recording so telemetry reports the engine that actually ran
+	// rather than an empty value when the engine was left unset.
+	b.Metrics.StateEngine = stateEngine.ThisOrDefault()
 	if stateEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
