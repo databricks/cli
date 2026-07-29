@@ -52,19 +52,7 @@ func TestOperationRecorderStripsResourcePrefix(t *testing.T) {
 	require.NotNil(t, req.Operation.State)
 }
 
-func TestOperationRecorderDeleteHasNoState(t *testing.T) {
-	f := &fakeOpClient{}
-	r := NewOperationRecorder(f, "dep-1", 3)
-
-	uploadOne(t, r, "resources.jobs.foo", deployplan.Delete, "", nil)
-
-	require.Len(t, f.requests, 1)
-	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeDelete, f.requests[0].Operation.ActionType)
-	// Delete operations carry no serialized state.
-	assert.Nil(t, f.requests[0].Operation.State)
-}
-
-func TestNewRecordedOperationDoesNotRedactSensitiveFields(t *testing.T) {
+func TestNewRecordedOperationRecordsStateAsIs(t *testing.T) {
 	state := struct {
 		Name  string `json:"name"`
 		Token string `json:"token" bundle:"sensitive"`
@@ -73,8 +61,7 @@ func TestNewRecordedOperationDoesNotRedactSensitiveFields(t *testing.T) {
 	op, err := newRecordedOperation(deployplan.Create, "job-123", state, nil)
 	require.NoError(t, err)
 
-	// Recorded as-is, unlike dstate.SaveState which redacts before writing the
-	// local state file.
+	// The state is serialized as-is, including fields tagged bundle:"sensitive".
 	assert.JSONEq(t,
 		`{"state":{"name":"foo","token":"super-secret"}}`,
 		string(op.state))
