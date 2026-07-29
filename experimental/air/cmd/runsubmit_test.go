@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"encoding/json"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -271,6 +272,97 @@ code_source:
 	at := got.Tasks[0].AiRuntimeTask
 	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/.internal/")
 	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
+}
+
+// A plain-tar (working-tree) snapshot is uploaded under a unique, timestamped name so
+// two concurrent submissions of the same root_path don't clobber each other's upload.
+func TestSubmitWorkloadPlainTarNameIsUnique(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	// A plain working-tree directory named "src": the old code named the tarball
+	// after the dir alone (src.tar.gz), so any two submissions collided.
+	repo := filepath.Join(t.TempDir(), "src")
+	writeRepoFile(t, repo, "train.py", "print()")
+
+	cfg := minimalConfig + `
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ` + repo + `
+`
+	cfgPath := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	// The uploaded name carries a discriminator (timestamp), not the bare dir name.
+	ctx := cmdio.MockDiscard(t.Context())
+	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath)
+	require.NoError(t, err)
+	base := path.Base(snap.CodeSourcePath)
+	assert.NotEqual(t, "src.tar.gz", base, "plain-tar name must be unique, not the bare dir name")
+	assert.Regexp(t, `^src_\d{8}_\d{6}\.tar\.gz$`, base)
+}
+
+// A git_archive snapshot is content-addressed by (commit, include_paths): submitting
+// the same commit twice reuses the already-uploaded tarball and skips the second
+// upload (cache hit), while resolving to the identical remote path.
+func TestSubmitWorkloadGitArchiveCaching(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	// Track which snapshot tarballs get uploaded, preserving fake-workspace
+	// persistence so the second submit's cache-existence Stat sees the first upload.
+	// Dedupe by path: the DABs uploader mkdirs-and-retries the import on a missing
+	// parent dir, so one logical upload can hit this route more than once.
+	uploaded := map[string]bool{}
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		p := req.Vars["path"]
+		if strings.Contains(p, "/.air/repo_snapshots/") {
+			uploaded[p] = true
+		}
+		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
+	})
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "train.py", "print()")
+	sha := commitAll(t, repo, "init")
+
+	cfg := minimalConfig + `
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ` + repo + `
+    git:
+      commit: ` + sha + `
+`
+	cfgPath := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath)
+	require.NoError(t, err)
+	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath)
+	require.NoError(t, err)
+
+	// Same pinned commit → identical content-addressed remote path, uploaded once
+	// (the second submit is a cache hit and moves no bytes).
+	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
+	assert.Len(t, uploaded, 1, "git_archive cache hit should skip the second upload")
 }
 
 // remote_volume uploads the snapshot to a UC Volume: DABs' artifact uploader handles
