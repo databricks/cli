@@ -203,12 +203,16 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	}
 
 	// Record whether the deprecated terraform engine was explicitly opted into,
-	// separately per source. An invalid env value has already failed the command
+	// separately per source. Only emitted when true; absence means "not opted in
+	// via this source". An invalid env value has already failed the command
 	// upstream via ResolveEngineSetting, so treating the FromEnv error as
 	// "not terraform" here cannot mask a real terraform opt-in.
-	envEngine, _ := engine.FromEnv(ctx)
-	b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, b.Config.Bundle.Engine == engine.EngineTerraform)
-	b.Metrics.SetBoolValue(metrics.EngineTerraformEnv, envEngine == engine.EngineTerraform)
+	if b.Config.Bundle.Engine == engine.EngineTerraform {
+		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
+	}
+	if envEngine, _ := engine.FromEnv(ctx); envEngine == engine.EngineTerraform {
+		b.Metrics.SetBoolValue(metrics.EngineTerraformEnv, true)
+	}
 
 	// If the bundle UUID is not set, we use a default 0 value.
 	bundleUuid := "00000000-0000-0000-0000-000000000000"
