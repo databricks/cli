@@ -30,11 +30,6 @@ Ignore = [".databricks.backup"]
 # generate = build from the schema; mutate = perturb a curated config. See emit_fuzz_config.py.
 EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
 
-# mutate + migrate only rediscovers what ../migrate/test.toml already excludes: three mutate
-# bases are direct-only or permanently drift (catalog, external_location, sql_warehouse), and
-# emptying a grants list reproduces no_empty_grants. Re-enable once databricks/cli#6039 lands.
-EnvMatrixExclude.no_mutate_on_migrate = ["FUZZ_MODE=mutate", "FUZZ_TARGET=migrate"]
-
 # The already-gone delete path is selected by resource type, and ../delete_idempotent and
 # ../destroy_idempotent already run every type in the INPUT_CONFIG matrix. Generate mode adds
 # no axis on top: it pins name/display_name, so it cannot vary the identifier the delete call
