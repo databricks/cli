@@ -445,8 +445,7 @@
             "health": null,
             "id": "[UUID]",
             "ingestion_definition": [],
-            "last_modified": [UNIX_TIME_MILLIS
-            ],
+            "last_modified": [UNIX_TIME_MILLIS],
             "latest_updates": null,
             "library": [
               {
