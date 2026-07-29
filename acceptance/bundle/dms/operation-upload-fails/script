@@ -1,0 +1,6 @@
+title "An operation upload failure fails the deploy instead of reporting only at the end"
+# Which resources get refused depends on how far apply got before a background
+# upload failed, so the per-resource errors go to a LOG file rather than the diff.
+errcode $CLI bundle deploy &> LOG.deploy
+contains.py 'recording operation for' '!panic' < LOG.deploy > /dev/null
+trace grep -c "^Error:" LOG.deploy > /dev/null && echo "deploy reported errors"

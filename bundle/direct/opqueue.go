@@ -226,8 +226,12 @@ func (q *operationQueue) setErr(err error) {
 }
 
 // firstErr returns the first upload error, or nil if every upload so far
-// succeeded.
+// succeeded. A nil queue (recording disabled) never errors.
 func (q *operationQueue) firstErr() error {
+	if q == nil {
+		return nil
+	}
+
 	q.mu.Lock()
 	defer q.mu.Unlock()
 

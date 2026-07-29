@@ -69,6 +69,17 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
+		// Stop before touching the workspace once recording an operation has failed.
+		// A completed version makes DMS the source of truth for resource state (see
+		// dstate.readDMSState), so continuing would create resources it has no record
+		// of and the next deploy would create them a second time. Checked here rather
+		// than only where operations are recorded, which is after the resource has
+		// already been modified.
+		if err := opQueue.firstErr(); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			return false
+		}
+
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if adapter == nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot get adapter: %w", errorPrefix, err))

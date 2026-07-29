@@ -5,7 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/d
 Deploying resources...
 Deployment complete!
 
->>> print_requests.py //api/2.0/bundle --sort --get
+>>> print_requests.py //api/2.0/bundle --get
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
@@ -46,14 +46,14 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/d
 Deploying resources...
 Deployment complete!
 
->>> print_requests.py //api/2.0/bundle --sort --get
-{
-  "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
-}
+>>> print_requests.py //api/2.0/bundle --get
 {
   "method": "GET",
   "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
 }
 {
   "method": "POST",
