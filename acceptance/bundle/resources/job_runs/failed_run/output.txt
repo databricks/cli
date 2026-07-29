@@ -4,7 +4,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/files...
 Deploying resources...
 job run [MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[MY_RUN_ID]?o=[NUMID]
-job run [MY_RUN_ID]: [TIMESTAMP] "my-job" RUNNING
 job run [MY_RUN_ID]: [TIMESTAMP] "my-job" TERMINATED FAILED task main failed
 Error: cannot create resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID]: run did not succeed: FAILED: task main failed
 task "main": spark python task execution failed: exit status 1

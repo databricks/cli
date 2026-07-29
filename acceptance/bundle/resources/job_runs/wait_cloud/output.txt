@@ -1,10 +1,15 @@
 
 === the deploy waits for the run to finish
->>> grep -c Run URL:  deploy.log
-1
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+job run [MY_RUN_ID]: Run URL: [RUN_URL]
+job run [MY_RUN_ID]: [TIMESTAMP] "test-job-[UNIQUE_NAME]" TERMINATED SUCCESS
+Updating deployment state...
+Deployment complete!
 
->>> grep -o TERMINATED SUCCESS deploy.log
-TERMINATED SUCCESS
+>>> read_id.py my_run
+[MY_RUN_ID]
 
 === the downstream job was created with the run's result_state
 >>> [CLI] jobs get [DOWNSTREAM_JOB_ID] -o json
