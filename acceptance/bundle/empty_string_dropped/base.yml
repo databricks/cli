@@ -21,6 +21,9 @@ resources:
   clusters:
     my_cluster:
       num_workers: 1
+      # spark_version is tagged omitempty in the SDK but required by terraform's
+      # schema and the backend, so it must have a real value or the deploy fails.
+      spark_version: 13.3.x-scala2.12
       aws_attributes:
         availability: SPOT
       cluster_log_conf:
@@ -38,6 +41,7 @@ resources:
         - job_cluster_key: main
           new_cluster:
             num_workers: 1
+            spark_version: 13.3.x-scala2.12
             aws_attributes:
               availability: SPOT
             cluster_log_conf:

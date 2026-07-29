@@ -5,11 +5,8 @@
     "no_compute": "true"
   },
   "body": {
-    "budget_policy_id": "",
     "description": "",
-    "name": "test-app-tf",
-    "space": "",
-    "usage_policy_id": ""
+    "name": "test-app-tf"
   }
 }
 {
@@ -17,8 +14,7 @@
   "path": "/api/2.0/database/instances",
   "body": {
     "capacity": "CU_1",
-    "name": "test-db-instance",
-    "usage_policy_id": ""
+    "name": "test-db-instance"
   }
 }
 {
@@ -90,7 +86,7 @@
       }
     },
     "num_workers": 1,
-    "spark_version": ""
+    "spark_version": "13.3.x-scala2.12"
   }
 }
 {
@@ -147,11 +143,13 @@
               "destination": "s3://test-bucket/logs"
             }
           },
-          "num_workers": 1
+          "num_workers": 1,
+          "spark_version": "13.3.x-scala2.12"
         }
       }
     ],
     "max_concurrent_runs": 1,
+    "name": "Untitled",
     "queue": {
       "enabled": true
     }
