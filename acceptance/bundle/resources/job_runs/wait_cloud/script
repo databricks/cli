@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# A real run reports a variable number of intermediate states (PENDING while
+# serverless compute starts), so keep the deploy's progress stream out of the
+# golden and assert on the terminal state it waited for.
+title "the deploy waits for the run to finish"
+if ! $CLI bundle deploy > deploy.log 2>&1; then
+    cat deploy.log
+fi
+trace grep -c "Run URL: " deploy.log
+trace grep -o "TERMINATED SUCCESS" deploy.log
+
+title "the downstream job was created with the run's result_state"
+downstream_id=$(read_id.py downstream_job)
+trace $CLI jobs get $downstream_id -o json | jq -r ".settings.tags.run_result"
