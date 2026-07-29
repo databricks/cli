@@ -1,9 +1,5 @@
 
 >>> [CLI] bundle deploy
-Warning: unknown field: code_source_path
-  at resources.jobs.job.tasks[0].ai_runtime_task
-  in databricks.yml:35:13
-
 Building code_source...
 Uploading code.tgz...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -14,6 +10,7 @@ Deployment complete!
 === Expecting code_source_path rewritten to the uploaded artifact remote path
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[].ai_runtime_task out.requests.txt
 {
+  "code_source_path": "/Workspace/foo/bar/artifacts/.internal/code.tgz",
   "deployments": [
     {
       "command_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/command.sh",
