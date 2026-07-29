@@ -64,7 +64,7 @@ Deployment complete!
 }
 
 === The deployment ID is the ID of the workspace node the service registered under initial_parent_path; the CLI stores nothing locally
->>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json
 {
   "object_type": "FILE",
   "path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json"

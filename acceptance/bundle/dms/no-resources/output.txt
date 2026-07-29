@@ -34,7 +34,7 @@ Deployment complete!
   }
 }
 
->>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/state/resources.deployment.json
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/state/resources.deployment.json
 {
   "object_type": "FILE",
   "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/state/resources.deployment.json"
