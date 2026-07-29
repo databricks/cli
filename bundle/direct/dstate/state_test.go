@@ -154,16 +154,7 @@ func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
 	require.NoError(t, migrateState(empty))
 	assert.Equal(t, featureStateVersion, empty.StateVersion, "v3 + no features keeps its on-disk version, not flipped to v2")
 
-	// v3 recording a feature this CLI implements is accepted.
-	known := &Database{Header: Header{
-		StateVersion: featureStateVersion,
-		Features:     map[string]struct{}{FeatureDeploymentHistory: {}},
-	}}
-	require.NoError(t, migrateState(known))
-	assert.Equal(t, featureStateVersion, known.StateVersion)
-
-	// v3 recording a feature this CLI does not know is refused: its resources may
-	// live somewhere this CLI cannot see.
+	// v3 that records a feature is refused: this CLI does not understand features.
 	withFeature := &Database{Header: Header{
 		StateVersion: featureStateVersion,
 		Features:     map[string]struct{}{"future_feature": {}},
@@ -174,16 +165,6 @@ func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
 	assert.Contains(t, err.Error(), "future_feature")
 	assert.Contains(t, err.Error(), "upgrade to the latest CLI version")
 	assert.Contains(t, err.Error(), featuresDocURL)
-
-	// Only the unknown feature is named, so the message tells the user what to do.
-	mixed := &Database{Header: Header{
-		StateVersion: featureStateVersion,
-		Features:     map[string]struct{}{FeatureDeploymentHistory: {}, "future_feature": {}},
-	}}
-	err = migrateState(mixed)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "future_feature")
-	assert.NotContains(t, err.Error(), FeatureDeploymentHistory)
 }
 
 func TestDeleteState(t *testing.T) {

@@ -229,7 +229,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				dmsSource = &dstate.DMSSource{
 					Client:       w.BundleDeployments,
 					DeploymentID: deploymentID,
-					TargetName:   b.Config.Bundle.Target,
 				}
 			}
 			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsSource); err != nil {

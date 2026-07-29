@@ -1,0 +1,10 @@
+bundle:
+  name: dms-not-supported
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    one:
+      name: one

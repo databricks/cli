@@ -12,7 +12,7 @@ Deployment complete!
 >>> update_file.py databricks.yml record_deployment_history: false record_deployment_history: true
 
 >>> musterr [CLI] bundle deploy
-Error: target "default" was deployed without experimental.record_deployment_history and cannot be migrated to it: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json tracks resources this deployment recorded before the feature was enabled. Use a new target, destroy this one and deploy it again, or unset experimental.record_deployment_history
+Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded. Remove experimental.record_deployment_history, or destroy the bundle and deploy it again
 
 
 === No deployment was created in DMS
@@ -20,7 +20,7 @@ Error: target "default" was deployed without experimental.record_deployment_hist
 
 === Still an error after wiping the local cache: deploy pulls the state file back from the workspace, so the resources are still tracked
 >>> musterr [CLI] bundle deploy
-Error: target "default" was deployed without experimental.record_deployment_history and cannot be migrated to it: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json tracks resources this deployment recorded before the feature was enabled. Use a new target, destroy this one and deploy it again, or unset experimental.record_deployment_history
+Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded. Remove experimental.record_deployment_history, or destroy the bundle and deploy it again
 
 
 >>> print_requests.py //api/2.0/bundle --sort --oneline

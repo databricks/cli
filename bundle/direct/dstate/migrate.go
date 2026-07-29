@@ -12,34 +12,25 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
-// knownFeatures lists the state feature flags this CLI implements. A state that
-// records anything outside this set is refused by migrateState.
-var knownFeatures = map[string]bool{
-	FeatureDeploymentHistory: true,
-}
-
 // migrateState runs all necessary migrations on the database.
 // It is called after loading state from disk.
 func migrateState(db *Database) error {
-	// featureStateVersion states carry a feature list (see the featureStateVersion
-	// doc comment). A featureStateVersion state with no features is equivalent to
-	// currentStateVersion, so accept it and return without running the migrations
-	// below, leaving the on-disk version at featureStateVersion rather than flipping
-	// it down. Same for a state whose features this CLI implements. One that records
-	// a feature this CLI does not know depends on capabilities it lacks, so refuse it
-	// and tell the user to upgrade.
+	// featureStateVersion states carry a feature list this CLI does not yet write or
+	// understand (see the featureStateVersion doc comment). A featureStateVersion
+	// state with no features is equivalent to currentStateVersion, so accept it and
+	// return without running the migrations below, leaving the on-disk version at
+	// featureStateVersion rather than flipping it down. One that records any feature
+	// depends on capabilities this CLI lacks, so refuse it and tell the user to upgrade.
 	if db.StateVersion == featureStateVersion {
-		unknown := make([]string, 0, len(db.Features))
-		for name := range db.Features {
-			if !knownFeatures[name] {
-				unknown = append(unknown, name)
-			}
-		}
-		if len(unknown) == 0 {
+		if len(db.Features) == 0 {
 			return nil
 		}
-		slices.Sort(unknown)
-		return fmt.Errorf("the deployment state requires features this CLI does not support: %s; upgrade to the latest CLI version and see %s for more information", strings.Join(unknown, ", "), featuresDocURL)
+		features := make([]string, 0, len(db.Features))
+		for name := range db.Features {
+			features = append(features, name)
+		}
+		slices.Sort(features)
+		return fmt.Errorf("the deployment state requires features this CLI does not support: %s; upgrade to the latest CLI version and see %s for more information", strings.Join(features, ", "), featuresDocURL)
 	}
 
 	if db.StateVersion == currentStateVersion {
