@@ -18,10 +18,19 @@ const (
 	// IncludeMissingFields causes the normalization to include fields that defined on the given
 	// type but are missing in the source value. They are included with their zero values.
 	IncludeMissingFields NormalizeOption = iota
+
+	// DropEmptyStrings drops struct fields whose value is an empty string, unless
+	// the field is tagged without omitempty (i.e. its zero value must be sent).
+	// This mirrors JSON serialization, where an omitempty string field set to ""
+	// is omitted from the request. Without this, an explicitly-set "" reaches
+	// ToTyped, which force-sends it, and the backend rejects it (e.g.
+	// "'' is not a valid cluster policy ID").
+	DropEmptyStrings
 )
 
 type normalizeOptions struct {
 	includeMissingFields bool
+	dropEmptyStrings     bool
 }
 
 func Normalize(dst any, src dyn.Value, opts ...NormalizeOption) (dyn.Value, diag.Diagnostics) {
@@ -30,6 +39,8 @@ func Normalize(dst any, src dyn.Value, opts ...NormalizeOption) (dyn.Value, diag
 		switch opt {
 		case IncludeMissingFields:
 			n.includeMissingFields = true
+		case DropEmptyStrings:
+			n.dropEmptyStrings = true
 		}
 	}
 
@@ -162,6 +173,15 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
 				if !nv.IsValid() {
+					continue
+				}
+			}
+
+			// Drop an empty string on an omitempty field so it is not force-sent
+			// to the backend (see DropEmptyStrings). ForceEmpty marks fields whose
+			// zero value must be kept, so those are left in place.
+			if n.dropEmptyStrings && !info.ForceEmpty[fieldName] {
+				if s, ok := nv.AsString(); ok && s == "" {
 					continue
 				}
 			}

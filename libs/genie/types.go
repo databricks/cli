@@ -7,6 +7,15 @@ type GenieRequest struct {
 	// Tag is camelCase (conversationId), unlike the response's snake_case
 	// conversation_id; the server does not read the snake_case form on input.
 	ConversationID string `json:"conversationId,omitempty"`
+	// Source identifies this client to the OneChat backend so CLI traffic is
+	// attributed distinctly from webapp/Slack/MCP. Always SourceDatabricksCLI;
+	// the server matches it case-insensitively against a fixed allowlist.
+	Source string `json:"source,omitempty"`
+	// EnableViz is a pointer so it always serializes (a plain false would be
+	// dropped by omitempty). The CLI sends false: a terminal cannot render the
+	// chart/plot items, so we tell the agent to skip registering visualization
+	// tools. Nil would let the backend default (viz on) apply.
+	EnableViz *bool `json:"enable_viz,omitempty"`
 }
 
 // InputItem is a message in the input array.

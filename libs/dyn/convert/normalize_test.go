@@ -974,3 +974,40 @@ func TestNormalizeAnyFromTime(t *testing.T) {
 	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)
 }
+
+func TestNormalizeStructDropEmptyStrings(t *testing.T) {
+	type Tmp struct {
+		// Optional: dropped when empty.
+		Opt string `json:"opt,omitempty"`
+		// Required (no omitempty): kept even when empty.
+		Req string `json:"req"`
+	}
+
+	vin := dyn.V(map[string]dyn.Value{
+		"opt": dyn.V(""),
+		"req": dyn.V(""),
+	})
+
+	vout, diags := Normalize(Tmp{}, vin, DropEmptyStrings)
+	assert.Empty(t, diags)
+
+	_, hasOpt := vout.MustMap().Get(dyn.V("opt"))
+	assert.False(t, hasOpt, "empty omitempty string should be dropped")
+	req, hasReq := vout.MustMap().Get(dyn.V("req"))
+	assert.True(t, hasReq, "empty non-omitempty string should be kept")
+	assert.Empty(t, req.MustString())
+}
+
+func TestNormalizeStructDropEmptyStringsKeepsNonEmpty(t *testing.T) {
+	type Tmp struct {
+		Opt string `json:"opt,omitempty"`
+	}
+
+	vin := dyn.V(map[string]dyn.Value{"opt": dyn.V("value")})
+
+	vout, diags := Normalize(Tmp{}, vin, DropEmptyStrings)
+	assert.Empty(t, diags)
+	opt, ok := vout.MustMap().Get(dyn.V("opt"))
+	assert.True(t, ok)
+	assert.Equal(t, "value", opt.MustString())
+}
