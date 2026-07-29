@@ -1,0 +1,19 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# A traceback from a real task is words we do not control, so keep the deploy's
+# output out of the golden and assert the parts the CLI is responsible for.
+title "a run that fails on a real workspace fails the deploy"
+musterr $CLI bundle deploy > deploy.log 2>&1
+trace contains.py 'run did not succeed: FAILED' 'run page: http' '!task "main": FAILED' < deploy.log > /dev/null
+
+# The message comes from the task, not from our fallback to the states the run
+# itself reports, which is what the last assertion above rules out.
+trace grep -cE 'task "main": .+' deploy.log
+
+title "the failed run is recorded, so it is destroyed rather than left behind"
+trace read_id.py my_run
