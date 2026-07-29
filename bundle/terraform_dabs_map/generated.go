@@ -6,13 +6,13 @@ package terraform_dabs_map
 // alerts / databricks_alert_v2: 3 tf-only
 // apps / databricks_app: 16 dabs-only
 // apps / databricks_app: 1 tf-only
-// clusters / databricks_cluster: 25 tf-only
+// clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 16 dabs-only
-// jobs / databricks_job: 258 tf-only
+// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 259 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
@@ -118,14 +118,6 @@ var DABsOnlyFields = map[string]FieldSet{
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
 			},
 		},
-		"parent_path": {},
-		"schedule": {
-			"sql_condition": {
-				"sql_query_id": {}, // jobs.*.schedule.sql_condition.sql_query_id
-				"trigger_mode": {}, // jobs.*.schedule.sql_condition.trigger_mode
-				"warehouse_id": {}, // jobs.*.schedule.sql_condition.warehouse_id
-			},
-		},
 		"tasks": {
 			"for_each_task": {
 				"task": {
@@ -141,13 +133,6 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
-			},
-		},
-		"trigger": {
-			"sql_condition": {
-				"sql_query_id": {}, // jobs.*.trigger.sql_condition.sql_query_id
-				"trigger_mode": {}, // jobs.*.trigger.sql_condition.trigger_mode
-				"warehouse_id": {}, // jobs.*.trigger.sql_condition.warehouse_id
 			},
 		},
 	},
@@ -183,6 +168,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"no_compute": {},
 	},
 	"clusters": {
+		"clear_cloud_attributes_on_remove": {},
 		"cluster_mount_info": {
 			"local_mount_dir_path": {}, // databricks_cluster.*.cluster_mount_info.local_mount_dir_path
 			"network_filesystem_info": {
@@ -352,6 +338,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 				"*": {}, // databricks_job.*.new_cluster.custom_tags.*
 			},
 			"data_security_mode": {}, // databricks_job.*.new_cluster.data_security_mode
+			"dependency_mode":    {}, // databricks_job.*.new_cluster.dependency_mode
 			"docker_image": {
 				"basic_auth": {
 					"password": {}, // databricks_job.*.new_cluster.docker_image.basic_auth.password
@@ -690,6 +677,7 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"branch":                             {},
 		"create_database_objects_if_missing": {},
 		"existing_pipeline_id":               {},
+		"extra_columns":                      {},
 		"new_pipeline_spec":                  {},
 		"postgres_database":                  {},
 		"primary_key_columns":                {},

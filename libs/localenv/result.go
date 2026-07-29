@@ -1,16 +1,23 @@
 package localenv
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // Command path components, defined once so a rename touches a single place
-// (spec §0 / invariant 8 / scenario 21). The cmd layer builds the Cobra
-// command tree from CommandGroup/CommandSubgroup/CommandVerb; the --json
-// "command" field uses CommandName. No other string re-spells the command path.
+// (spec §0 / invariant 8 / scenario 21). The verb is a subcommand of the
+// generated "environments" group; the --json "command" field uses CommandName.
+// No other string re-spells the command path.
+//
+// P0 is Python-only and takes no language selector: the verb is bare
+// "setup-local" (spec §naming). A language axis (setup-local python / scala) is
+// the preferred shape only if more languages are ever added, and nothing is
+// reserved for it here.
 const (
-	CommandGroup    = "local-env"
-	CommandSubgroup = "python"
-	CommandVerb     = "sync"
-	CommandName     = CommandGroup + " " + CommandSubgroup + " " + CommandVerb
+	CommandGroup = "environments"
+	CommandVerb  = "setup-local"
+	CommandName  = CommandGroup + " " + CommandVerb
 
 	// SchemaVersion is the version of the --json output contract (spec §6).
 	// Bump it on any breaking change to the JSON shape.
@@ -57,27 +64,36 @@ const (
 // ErrorCode is a stable failure-class identifier surfaced in --json error.code
 // (spec §7). Values are compared via the ErrorCode constants, never by
 // string-matching messages, and are defined once here.
+//
+// This set is the source of truth for the spec's error-code table; each code is
+// annotated with the phase that emits it. Two codes from the spec are
+// intentionally not defined because the CLI never emits them: E_PYTHON_POLICY
+// (a policy-gated failure whose signal source does not yet exist) and E_AUTH
+// (the shared workspace-client preflight, MustWorkspaceClient, surfaces the
+// standard CLI auth error before a command JSON object is ever built).
 type ErrorCode string
 
 const (
-	ErrNoTarget           ErrorCode = "E_NO_TARGET"
-	ErrManagerUnsupported ErrorCode = "E_MANAGER_UNSUPPORTED"
-	ErrUvMissing          ErrorCode = "E_UV_MISSING"
-	ErrNotWritable        ErrorCode = "E_NOT_WRITABLE"
-	ErrResolve            ErrorCode = "E_RESOLVE"
-	ErrEnvUnsupported     ErrorCode = "E_ENV_UNSUPPORTED"
-	ErrFetch              ErrorCode = "E_FETCH"
-	ErrWrite              ErrorCode = "E_WRITE"
-	ErrMerge              ErrorCode = "E_MERGE"
-	ErrPythonInstall      ErrorCode = "E_PYTHON_INSTALL"
-	ErrProvision          ErrorCode = "E_PROVISION"
-	ErrValidate           ErrorCode = "E_VALIDATE"
+	ErrUsage              ErrorCode = "E_USAGE"               // preflight: incompatible flags; resolve: --job-task names a job but no task
+	ErrManagerUnsupported ErrorCode = "E_MANAGER_UNSUPPORTED" // preflight: manager is not uv
+	ErrNotWritable        ErrorCode = "E_NOT_WRITABLE"        // preflight: project dir not writable
+	ErrUvMissing          ErrorCode = "E_UV_MISSING"          // preflight: uv not found / install failed
+	ErrNoTarget           ErrorCode = "E_NO_TARGET"           // resolve: no target from any source
+	ErrResolve            ErrorCode = "E_RESOLVE"             // resolve: target read failed / ambiguous name
+	ErrEnvUnsupported     ErrorCode = "E_ENV_UNSUPPORTED"     // fetch: no published env key
+	ErrFetch              ErrorCode = "E_FETCH"               // fetch: repo unreachable, no usable cache
+	ErrWrite              ErrorCode = "E_WRITE"               // merge: greenfield write failed
+	ErrMerge              ErrorCode = "E_MERGE"               // merge: existing-project merge failed
+	ErrPythonInstall      ErrorCode = "E_PYTHON_INSTALL"      // provision: uv python install failed
+	ErrProvision          ErrorCode = "E_PROVISION"           // provision: uv sync failed
+	ErrValidate           ErrorCode = "E_VALIDATE"            // validate: post-provision version mismatch
 )
 
 // PipelineError is a failure carrying a stable code, the phase at which it
 // occurred, and whether disk was mutated before the failure. It marshals to the
 // --json error object (spec §6.2). Code and FailurePhase are the stable
-// contract; Err holds the wrapped cause for errors.Is/As and is not serialized.
+// contract; Err holds the wrapped cause for errors.Is/As and is not serialized
+// directly (its text is folded into the "message" field — see MarshalJSON).
 type PipelineError struct {
 	Code         ErrorCode `json:"code"`
 	FailurePhase PhaseName `json:"failurePhase"`
@@ -97,6 +113,21 @@ func (e *PipelineError) Unwrap() error {
 	return e.Err
 }
 
+// MarshalJSON serializes the full message (Error(), i.e. Msg plus any wrapped
+// cause) into the "message" field. Without this the --json error object would
+// carry only Msg and drop the cause (Err is json:"-"), so a JSON consumer would
+// get strictly less detail than the text output — e.g. "resolving cluster name"
+// without the "ambiguous"/"not found" reason. Text and JSON must agree.
+func (e *PipelineError) MarshalJSON() ([]byte, error) {
+	type alias PipelineError // avoid recursing into this method
+	return json.Marshal((*alias)(&PipelineError{
+		Code:         e.Code,
+		FailurePhase: e.FailurePhase,
+		Msg:          e.Error(),
+		DiskMutated:  e.DiskMutated,
+	}))
+}
+
 // NewError creates a PipelineError with a code and message. FailurePhase and
 // DiskMutated are filled in by the pipeline when it records the failure. The
 // message is formatted with fmt.Sprintf(format, args...); err may be nil.
@@ -109,9 +140,10 @@ func NewError(code ErrorCode, err error, format string, args ...any) *PipelineEr
 }
 
 // TargetInfo is the resolved compute target (spec §6 "target"). Source records
-// which of the four precedence sources was used. SparkVersion is the raw cluster
-// runtime string the resolver read; it is folded into EnvKey (dbr/<SparkVersion>)
-// and is not part of the JSON contract, kept only as intermediate resolver state.
+// which precedence source was used ("cluster", "serverless", "job", or
+// "bundle"). SparkVersion is the raw cluster runtime string the resolver read;
+// it is folded into EnvKey (dbr/<SparkVersion>) and is not part of the JSON
+// contract, kept only as intermediate resolver state.
 type TargetInfo struct {
 	Source            string `json:"source"`
 	ClusterID         string `json:"clusterId,omitempty"`
@@ -129,7 +161,7 @@ type ResolvedInfo struct {
 	ArtifactSource   string `json:"artifactSource"`
 }
 
-// Plan describes the changes a --check run would apply (spec §6.3).
+// Plan describes the changes a --dry-run run would apply (spec §6.3).
 // ChangedRegions is retained for text output only and is not serialized.
 type Plan struct {
 	WouldWrite         string `json:"wouldWrite"`

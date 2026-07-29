@@ -1,2 +1,1 @@
-$CLI local-env python --help
-$CLI local-env python sync --help
+$CLI environments setup-local --help

@@ -10,7 +10,7 @@ from dataclasses import dataclass, replace
 import subprocess
 import time
 import json
-from github import Github, Repository, InputGitTreeElement, InputGitAuthor
+from github import Auth, Github, Repository, InputGitTreeElement, InputGitAuthor
 from datetime import datetime, timezone
 
 NEXT_CHANGELOG_FILE_NAME = "NEXT_CHANGELOG.md"
@@ -135,12 +135,26 @@ def _read_local_head_sha() -> str:
     return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
 
 
+def _release_branch() -> str:
+    """
+    Returns the branch this release is being cut from.
+
+    The tagging workflow sets ``DECO_TAGGING_REF`` to the branch it was
+    dispatched on (``github.ref_name``) so a release can be cut from a
+    branch other than main. It is unset for local runs and the historical
+    main-only release path, so we default to ``main`` and every existing
+    caller is unaffected.
+    """
+    return os.environ.get("DECO_TAGGING_REF", "").strip() or "main"
+
+
 class MainAdvancedError(Exception):
     """
-    Raised when ``origin/main`` has advanced since the workflow's
-    checkout — i.e., another commit landed during this run. The local
-    working tree is now stale, so any commit produced from it would
-    silently revert whatever the concurrent push added.
+    Raised when the release branch (``origin/main`` by default; see
+    ``_release_branch``) has advanced since the workflow's checkout —
+    i.e., another commit landed during this run. The local working tree
+    is now stale, so any commit produced from it would silently revert
+    whatever the concurrent push added.
     """
 
 
@@ -151,7 +165,10 @@ class GitHubRepo:
     def __init__(self, repo: Repository):
         self.repo = repo
         self.changed_files: list[InputGitTreeElement] = []
-        self.ref = "heads/main"
+        # Branch the changelog-bump commit + tag land on. Defaults to
+        # ``heads/main``; ``DECO_TAGGING_REF`` overrides it for a branch
+        # release. See ``_release_branch``.
+        self.ref = f"heads/{_release_branch()}"
         # Anchor ``self.sha`` to the **local checkout** rather than a
         # live API call. ``actions/checkout`` populates the working tree
         # at this SHA, and every subsequent file read in this run is
@@ -167,12 +184,19 @@ class GitHubRepo:
         element = InputGitTreeElement(path=local_path, mode="100644", type="blob", sha=blob.sha)
         self.changed_files.append(element)
 
+    # Replaces "git rm file"
+    def delete_file(self, loc: str):
+        """``git rm`` equivalent for GitHubRepo: stage a tree deletion (sha=None)."""
+        local_path = os.path.relpath(loc, os.getcwd())
+        print(f"Deleting file {local_path}")
+        self.changed_files.append(InputGitTreeElement(path=local_path, mode="100644", type="blob", sha=None))
+
     # Replaces "git commit && git push"
     def commit_and_push(self, message: str):
         head_ref = self.repo.get_git_ref(self.ref)
         if head_ref.object.sha != self.sha:
             raise MainAdvancedError(
-                f"origin/main advanced from {self.sha} to {head_ref.object.sha} "
+                f"{self.ref} advanced from {self.sha} to {head_ref.object.sha} "
                 f"during this run. Local working tree is stale; aborting before "
                 f"the commit would silently revert the new content. Re-run the "
                 f"workflow."
@@ -754,8 +778,10 @@ def reset_repository(hash: Optional[str] = None) -> None:
     # Fetch the latest changes from the remote repository.
     subprocess.run(["git", "fetch"])
 
-    # Determine the commit hash (default to origin/main if none is provided).
-    commit_hash = hash or "origin/main"
+    # Determine the commit hash (default to the release branch's remote
+    # head if none is provided). ``_release_branch`` is ``main`` unless
+    # ``DECO_TAGGING_REF`` selects a branch release.
+    commit_hash = hash or f"origin/{_release_branch()}"
 
     # ``git reset --hard`` must land before ``gh.reset(None)``, since
     # ``gh.reset(None)`` reads ``git rev-parse HEAD`` to anchor
@@ -983,7 +1009,7 @@ def get_packages_from_args() -> List[str]:
 def init_github():
     token = os.environ["GITHUB_TOKEN"]
     repo_name = os.environ["GITHUB_REPOSITORY"]
-    g = Github(token)
+    g = Github(auth=Auth.Token(token))
     repo = g.get_repo(repo_name)
     global gh
     gh = GitHubRepo(repo)
@@ -1050,7 +1076,11 @@ def validate_git_root():
         raise Exception("Please run this script from the root of the repository.")
 
 
-if __name__ == "__main__":
+def main():
     validate_git_root()
     init_github()
     process()
+
+
+if __name__ == "__main__":
+    main()

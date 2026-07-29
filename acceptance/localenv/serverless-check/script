@@ -1,1 +1,1 @@
-trace $CLI local-env python sync --serverless v4 --check
+trace $CLI environments setup-local --serverless-version 4 --dry-run

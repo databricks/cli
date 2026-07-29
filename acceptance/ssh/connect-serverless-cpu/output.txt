@@ -26,6 +26,7 @@
             "serverless": "true",
             "sessionId": "[CPU_CONN]",
             "shutdownDelay": "10m0s",
+            "usagePolicyId": "",
             "version": "[CLI_VERSION]"
           },
           "notebook_path": "/Workspace/Users/[USERNAME]/.databricks/ssh-tunnel/[CLI_VERSION]/[CPU_CONN]/ssh-server-bootstrap"

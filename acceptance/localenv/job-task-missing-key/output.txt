@@ -1,0 +1,7 @@
+preflight  ok  check
+resolve    error  specify a job task: job 12345 has multiple tasks; specify one: --job-task 12345.<task-key> (available: ingest, transform)
+fetch      pending
+merge      pending
+provision  pending
+validate   pending
+For more detail, re-run with --debug, or --output json to share a structured report.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "command": "local-env python sync",
+  "command": "environments setup-local",
   "ok": false,
   "mode": "default",
   "dryRun": false,
@@ -35,7 +35,7 @@
   "error": {
     "code": "E_NO_TARGET",
     "failurePhase": "resolve",
-    "message": "No compute target is selected. Select a cluster or serverless target, or pass --cluster / --serverless / --job",
+    "message": "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --cluster-name / --serverless-version / --job-task",
     "diskMutated": false
   },
   "durationMs": 0

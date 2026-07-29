@@ -71,6 +71,9 @@ __all__ = [
     "GoogleAdsConfig",
     "GoogleAdsConfigDict",
     "GoogleAdsConfigParam",
+    "GoogleAdsCustomReportOptions",
+    "GoogleAdsCustomReportOptionsDict",
+    "GoogleAdsCustomReportOptionsParam",
     "GoogleAdsOptions",
     "GoogleAdsOptionsDict",
     "GoogleAdsOptionsParam",
@@ -87,6 +90,9 @@ __all__ = [
     "IngestionGatewayPipelineDefinitionParam",
     "IngestionPipelineDefinition",
     "IngestionPipelineDefinitionDict",
+    "IngestionPipelineDefinitionFanoutOptions",
+    "IngestionPipelineDefinitionFanoutOptionsDict",
+    "IngestionPipelineDefinitionFanoutOptionsParam",
     "IngestionPipelineDefinitionParam",
     "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig",
     "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict",
@@ -120,6 +126,9 @@ __all__ = [
     "MavenLibraryParam",
     "MetaMarketingOptions",
     "MetaMarketingOptionsDict",
+    "MetaMarketingOptionsMetaMarketingCustomReportOptions",
+    "MetaMarketingOptionsMetaMarketingCustomReportOptionsDict",
+    "MetaMarketingOptionsMetaMarketingCustomReportOptionsParam",
     "MetaMarketingOptionsParam",
     "NotebookLibrary",
     "NotebookLibraryDict",
@@ -168,6 +177,12 @@ __all__ = [
     "PostgresSlotConfig",
     "PostgresSlotConfigDict",
     "PostgresSlotConfigParam",
+    "RedditAdsOptions",
+    "RedditAdsOptionsDict",
+    "RedditAdsOptionsParam",
+    "RedditAdsOptionsRedditAdsCustomReportOptions",
+    "RedditAdsOptionsRedditAdsCustomReportOptionsDict",
+    "RedditAdsOptionsRedditAdsCustomReportOptionsParam",
     "ReportSpec",
     "ReportSpecDict",
     "ReportSpecParam",
@@ -208,6 +223,13 @@ __all__ = [
     "TikTokAdsOptions",
     "TikTokAdsOptionsDict",
     "TikTokAdsOptionsParam",
+    "TikTokAdsOptionsTikTokAdsCustomReportOptions",
+    "TikTokAdsOptionsTikTokAdsCustomReportOptionsDict",
+    "TikTokAdsOptionsTikTokAdsCustomReportOptionsParam",
+    "TikTokAdsOptionsTikTokDataLevel",
+    "TikTokAdsOptionsTikTokDataLevelParam",
+    "TikTokAdsOptionsTikTokReportType",
+    "TikTokAdsOptionsTikTokReportTypeParam",
     "Transformer",
     "TransformerDict",
     "TransformerFormat",
@@ -348,6 +370,11 @@ from databricks.bundles.pipelines._models.google_ads_config import (
     GoogleAdsConfigDict,
     GoogleAdsConfigParam,
 )
+from databricks.bundles.pipelines._models.google_ads_custom_report_options import (
+    GoogleAdsCustomReportOptions,
+    GoogleAdsCustomReportOptionsDict,
+    GoogleAdsCustomReportOptionsParam,
+)
 from databricks.bundles.pipelines._models.google_ads_options import (
     GoogleAdsOptions,
     GoogleAdsOptionsDict,
@@ -376,6 +403,11 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinition,
     IngestionPipelineDefinitionDict,
     IngestionPipelineDefinitionParam,
+)
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_fanout_options import (
+    IngestionPipelineDefinitionFanoutOptions,
+    IngestionPipelineDefinitionFanoutOptionsDict,
+    IngestionPipelineDefinitionFanoutOptionsParam,
 )
 from databricks.bundles.pipelines._models.ingestion_pipeline_definition_table_specific_config_query_based_connector_config import (
     IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig,
@@ -431,6 +463,11 @@ from databricks.bundles.pipelines._models.meta_marketing_options import (
     MetaMarketingOptions,
     MetaMarketingOptionsDict,
     MetaMarketingOptionsParam,
+)
+from databricks.bundles.pipelines._models.meta_marketing_options_meta_marketing_custom_report_options import (
+    MetaMarketingOptionsMetaMarketingCustomReportOptions,
+    MetaMarketingOptionsMetaMarketingCustomReportOptionsDict,
+    MetaMarketingOptionsMetaMarketingCustomReportOptionsParam,
 )
 from databricks.bundles.pipelines._models.notebook_library import (
     NotebookLibrary,
@@ -513,6 +550,16 @@ from databricks.bundles.pipelines._models.postgres_slot_config import (
     PostgresSlotConfigDict,
     PostgresSlotConfigParam,
 )
+from databricks.bundles.pipelines._models.reddit_ads_options import (
+    RedditAdsOptions,
+    RedditAdsOptionsDict,
+    RedditAdsOptionsParam,
+)
+from databricks.bundles.pipelines._models.reddit_ads_options_reddit_ads_custom_report_options import (
+    RedditAdsOptionsRedditAdsCustomReportOptions,
+    RedditAdsOptionsRedditAdsCustomReportOptionsDict,
+    RedditAdsOptionsRedditAdsCustomReportOptionsParam,
+)
 from databricks.bundles.pipelines._models.report_spec import (
     ReportSpec,
     ReportSpecDict,
@@ -576,6 +623,19 @@ from databricks.bundles.pipelines._models.tik_tok_ads_options import (
     TikTokAdsOptions,
     TikTokAdsOptionsDict,
     TikTokAdsOptionsParam,
+)
+from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_ads_custom_report_options import (
+    TikTokAdsOptionsTikTokAdsCustomReportOptions,
+    TikTokAdsOptionsTikTokAdsCustomReportOptionsDict,
+    TikTokAdsOptionsTikTokAdsCustomReportOptionsParam,
+)
+from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_data_level import (
+    TikTokAdsOptionsTikTokDataLevel,
+    TikTokAdsOptionsTikTokDataLevelParam,
+)
+from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_report_type import (
+    TikTokAdsOptionsTikTokReportType,
+    TikTokAdsOptionsTikTokReportTypeParam,
 )
 from databricks.bundles.pipelines._models.transformer import (
     Transformer,

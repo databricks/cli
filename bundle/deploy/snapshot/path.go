@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -24,11 +25,25 @@ import (
 // the zip was built or the file's mtime.
 var zipEpoch = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 
+// metadataFileName is the name of the metadata file embedded in every snapshot zip.
+// It captures a hash of the ACL so that a change to top-level permissions always produces
+// a different snapshot ID — necessary because immutable snapshots cannot be re-permissioned
+// after creation. The hash avoids embedding principal names in the stored artifact.
+const metadataFileName = ".databricks/snapshot-metadata.json"
+
+// snapshotMetadata is the structure written to metadataFileName inside the zip.
+type snapshotMetadata struct {
+	// PermissionsHash is the SHA-256 hex digest of the JSON-serialized ACL.
+	PermissionsHash string `json:"permissions_hash"`
+}
+
 // BundleZip builds the zip that is uploaded to the snapshot API.
 // It contains:
 //   - all files from the bundle sync root under the "files/" prefix,
 //     selected with the same git-aware + include/exclude logic as files.Upload
 //   - all built artifact files under the "artifacts/.internal/" prefix
+//   - a metadata file at metadataFileName that embeds the ACL so that any
+//     change to top-level permissions forces a new snapshot ID
 //
 // The snapshot ID is always IDFromContent(BundleZip(b)), ensuring the
 // pre-calculated path and the uploaded path are derived from the same content.
@@ -44,11 +59,38 @@ func BundleZip(ctx context.Context, b *bundle.Bundle) ([]byte, int, error) {
 	if err := addArtifactsToZip(zw, b); err != nil {
 		return nil, 0, err
 	}
+	if err := addMetadataToZip(zw, BuildACL(b)); err != nil {
+		return nil, 0, err
+	}
 
 	if err := zw.Close(); err != nil {
 		return nil, 0, err
 	}
 	return buf.Bytes(), fileCount, nil
+}
+
+// addMetadataToZip writes the snapshot metadata file into the zip so that
+// any change to the ACL changes the snapshot hash and forces a new snapshot.
+func addMetadataToZip(zw *zip.Writer, acl []ACLEntry) error {
+	aclJSON, err := json.Marshal(acl)
+	if err != nil {
+		return fmt.Errorf("marshal ACL for permissions hash: %w", err)
+	}
+	data, err := json.Marshal(snapshotMetadata{PermissionsHash: IDFromContent(aclJSON)})
+	if err != nil {
+		return fmt.Errorf("marshal snapshot metadata: %w", err)
+	}
+	h := &zip.FileHeader{
+		Name:     metadataFileName,
+		Method:   zip.Deflate,
+		Modified: zipEpoch,
+	}
+	w, err := zw.CreateHeader(h)
+	if err != nil {
+		return fmt.Errorf("zip entry for %s: %w", metadataFileName, err)
+	}
+	_, err = w.Write(data)
+	return err
 }
 
 // IDFromContent returns the SHA-256 hex digest of content.

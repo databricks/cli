@@ -1,0 +1,2 @@
+title "the deprecated experimental alias still runs but prints a move notice"
+trace $CLI experimental genie ask "What are total sales by franchise?"

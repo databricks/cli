@@ -33,6 +33,7 @@ var resourceURLPatterns = map[string]string{
 	"vector_search_indexes":   "explore/data/%s",
 	"volumes":                 "explore/data/volumes/%s",
 	"warehouses":              "sql/warehouses/%s",
+	"instance_pools":          "compute/instance-pools/%s",
 }
 
 // resourceAliases lets callers use bundle-config plural names as synonyms for

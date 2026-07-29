@@ -126,7 +126,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
-	bundle.ApplyContext(ctx, b, lock.Acquire())
+	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalDestroy))
 	if logdiag.HasError(ctx) {
 		return
 	}

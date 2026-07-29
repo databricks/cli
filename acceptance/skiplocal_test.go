@@ -1,10 +1,12 @@
 package acceptance_test
 
 import (
+	"errors"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"testing"
 )
 
 // DATABRICKS_TEST_SKIPLOCAL controls skipping of Local acceptance tests.
@@ -61,8 +63,19 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 // committed. The three-dot form origin/main...HEAD only covers committed
 // changes and misses unstaged edits, which breaks the "touch a config, run
 // the test" local dev workflow (same reason lintdiff.py uses --merge-base).
-func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
-	out, _ := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
+func selectChangedLocalTests(t *testing.T, testDirs map[string]bool) map[string][]string {
+	out, err := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
+	if err != nil {
+		// A failed diff (most commonly a missing origin/main in a shallow CI
+		// checkout) must not be silently treated as "nothing changed": that
+		// disables change detection and lets newly added tests skip. Fail loudly.
+		// Every caller (push.yml PR cells, integration runs) now fetches origin/main.
+		stderr := ""
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
+			stderr = strings.TrimSpace(string(exitErr.Stderr))
+		}
+		t.Fatalf("git diff --merge-base origin/main failed: %v\n%s", err, stderr)
+	}
 	diff := strings.TrimSpace(string(out))
 
 	// result accumulates dirs with their filters; added tracks brand-new dirs.

@@ -47,14 +47,9 @@ class AiRuntimeTask:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional workspace or UC volume path of the uploaded code-source
-    archive. The CLI packages the user's local code directory into an
-    archive and populates this. Customers calling the Jobs API directly
-    should upload their archive to the workspace or a UC volume first and
-    supply the resulting path here.
-    
-    When set, the training node exposes the value via the `$CODE_SOURCE`
-    environment variable.
+    [Private Preview] Workspace or UC volume path of the code-source archive, unpacked on
+    each node and exposed through `$CODE_SOURCE`. Set by first-party
+    tooling; not for direct callers.
     """
 
     deployments: VariableOrList[DeploymentSpec] = field(default_factory=list)
@@ -112,14 +107,9 @@ class AiRuntimeTaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional workspace or UC volume path of the uploaded code-source
-    archive. The CLI packages the user's local code directory into an
-    archive and populates this. Customers calling the Jobs API directly
-    should upload their archive to the workspace or a UC volume first and
-    supply the resulting path here.
-    
-    When set, the training node exposes the value via the `$CODE_SOURCE`
-    environment variable.
+    [Private Preview] Workspace or UC volume path of the code-source archive, unpacked on
+    each node and exposed through `$CODE_SOURCE`. Set by first-party
+    tooling; not for direct callers.
     """
 
     deployments: VariableOrList[DeploymentSpecParam]

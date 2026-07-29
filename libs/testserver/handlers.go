@@ -55,6 +55,12 @@ func AddDefaultHandlers(server *Server) {
 			},
 		}
 	})
+	server.Handle("POST", "/api/2.0/instance-pools/create", func(req Request) any { return req.Workspace.InstancePoolsCreate(req) })
+	server.Handle("POST", "/api/2.0/instance-pools/edit", func(req Request) any { return req.Workspace.InstancePoolsEdit(req) })
+	server.Handle("POST", "/api/2.0/instance-pools/delete", func(req Request) any { return req.Workspace.InstancePoolsDelete(req) })
+	server.Handle("GET", "/api/2.0/instance-pools/get", func(req Request) any {
+		return req.Workspace.InstancePoolsGet(req, req.URL.Query().Get("instance_pool_id"))
+	})
 
 	server.Handle("GET", "/api/2.1/clusters/list", func(req Request) any {
 		return compute.ListClustersResponse{
@@ -218,6 +224,15 @@ func AddDefaultHandlers(server *Server) {
 		}
 
 		defer req.Workspace.LockUnlock()()
+
+		// The API rejects creating a directory where a file already exists; it is
+		// idempotent only over directories. Mirror that so callers observe the 409.
+		if _, isFile := req.Workspace.files[dirPath]; isFile {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": "The given path points to an existing file. This API does not support operations on files."},
+			}
+		}
 
 		// Create directory and all parent directories.
 		for dir := dirPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
@@ -464,7 +479,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Apps, req.Vars["name"])
+		return req.Workspace.AppsGet(req.Vars["name"])
 	})
 
 	server.Handle("POST", "/api/2.0/apps", func(req Request) any {
@@ -476,7 +491,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/apps/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Apps, req.Vars["name"])
+		return req.Workspace.AppsDelete(req.Vars["name"])
 	})
 
 	// Schemas:

@@ -57,6 +57,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
 		"resources.vector_search_indexes.test_vector_search_index":      {ID: "vs-index-1"},
+		"resources.instance_pools.test_instance_pool":                   {ID: "1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -148,6 +149,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "vs-index-1", config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.InstancePools["test_instance_pool"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.InstancePools["test_instance_pool"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -378,6 +382,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			InstancePools: map[string]*resources.InstancePool{
+				"test_instance_pool": {
+					CreateInstancePool: compute.CreateInstancePool{
+						InstancePoolName: "test_instance_pool",
+					},
+				},
+			},
 		},
 	}
 
@@ -476,6 +487,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.InstancePools["test_instance_pool"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.InstancePools["test_instance_pool"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -856,6 +870,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			InstancePools: map[string]*resources.InstancePool{
+				"test_instance_pool": {
+					CreateInstancePool: compute.CreateInstancePool{
+						InstancePoolName: "test_instance_pool",
+					},
+				},
+				"test_instance_pool_new": {
+					CreateInstancePool: compute.CreateInstancePool{
+						InstancePoolName: "test_instance_pool_new",
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
@@ -913,6 +939,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.vector_search_endpoints.test_vector_search_endpoint_old": {ID: "vs-endpoint-old"},
 		"resources.vector_search_indexes.test_vector_search_index":          {ID: "vs-index-1"},
 		"resources.vector_search_indexes.test_vector_search_index_old":      {ID: "vs-index-old"},
+		"resources.instance_pools.test_instance_pool":                       {ID: "1"},
+		"resources.instance_pools.test_instance_pool_old":                   {ID: "2"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -1107,6 +1135,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchIndexes["test_vector_search_index_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchIndexes["test_vector_search_index_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.InstancePools["test_instance_pool"].ID)
+	assert.Empty(t, config.Resources.InstancePools["test_instance_pool"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.InstancePools["test_instance_pool_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.InstancePools["test_instance_pool_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.InstancePools["test_instance_pool_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.InstancePools["test_instance_pool_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }

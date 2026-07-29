@@ -111,12 +111,6 @@ const (
 
 var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
 
-// IsPullRequest is true when the test run was triggered by a GitHub pull_request
-// event. GitHub Actions sets GITHUB_EVENT_NAME automatically. On pull requests we
-// additionally apply each test's GOOSOnPR filter, so OS-independent tests can be
-// skipped on windows/macOS for PRs while still running on every OS on push to main.
-var IsPullRequest = os.Getenv("GITHUB_EVENT_NAME") == "pull_request"
-
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
 		return ".exe"
@@ -241,10 +235,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// signal because os.LookupEnv reports them as present.
 	// Keep this list in sync with listKnownAgents() in
 	// github.com/databricks/databricks-sdk-go/useragent/agent.go
-	// plus the AGENT and AI_AGENT generic fallbacks.
+	// plus the AGENT and AI_AGENT generic fallbacks and the CLI's own
+	// AIDEVKIT_HOME detection override.
 	for _, v := range []string{
 		"AGENT",
 		"AI_AGENT",
+		"AIDEVKIT_HOME",
 		"AMP_CURRENT_THREAD_ID",
 		"ANTIGRAVITY_AGENT",
 		"AUGMENT_AGENT",
@@ -434,21 +430,29 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
+	testDirsSet := make(map[string]bool, len(testDirs))
+	for _, d := range testDirs {
+		testDirsSet[d] = true
+	}
+
 	skipLocalMode := os.Getenv(SkipLocalEnvVar)
-	// changedTests maps test dir to extra env filters to apply for that dir.
-	// nil value means all variants run; a non-nil slice restricts to matching variants.
-	var changedTests map[string][]string
+	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun)
+
 	switch skipLocalMode {
-	case "", SkipLocalAll:
-	case SkipLocalWithChanged:
-		testDirsSet := make(map[string]bool, len(testDirs))
-		for _, d := range testDirs {
-			testDirsSet[d] = true
-		}
-		changedTests = selectChangedLocalTests(testDirsSet)
+	case "", SkipLocalAll, SkipLocalWithChanged:
 	default:
 		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, skipLocalMode, SkipLocalAll, SkipLocalWithChanged)
 	}
+	skipLocalWithChanged := skipLocalMode == SkipLocalWithChanged
+
+	// changedTests maps test dir to extra env filters for added/modified tests; nil
+	// filters means all variants of that dir changed. Both SkipLocalWithChanged and the
+	// subset selector keep these tests, so detect them at most once here.
+	var changedTests map[string][]string
+	if skipLocalWithChanged || subset.enabled {
+		changedTests = selectChangedLocalTests(t, testDirsSet)
+	}
+	subset.changed = changedTests
 
 	if singleTest != "" {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
@@ -547,6 +551,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			// If the matrix expands to a single empty envset, run the test directly
 			// without creating a subtest (avoids the "#00" dummy subtest name).
 			if len(expanded) == 1 && len(expanded[0]) == 0 {
+				if reason := subset.skipReason(dir, nil); reason != "" {
+					t.Skip(reason)
+				}
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters, sandboxProxyURL)
 			} else {
 				for ind, envset := range expanded {
@@ -555,10 +562,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if runParallel {
 							t.Parallel()
 						}
-						// For invariant dirs re-enabled by a specific config change,
-						// skip variants not matching that config.
-						if variantFilters := changedTests[dir]; variantFilters != nil {
-							checkEnvFilters(t, envset, variantFilters)
+						// Under SkipLocalWithChanged, an invariant dir re-enabled by a
+						// specific config change runs only its matching variants.
+						if skipLocalWithChanged {
+							if variantFilters := changedTests[dir]; variantFilters != nil {
+								checkEnvFilters(t, envset, variantFilters)
+							}
+						}
+						if reason := subset.skipReason(dir, envset); reason != "" {
+							t.Skip(reason)
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
@@ -659,13 +671,6 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
-	}
-
-	if IsPullRequest {
-		isEnabled, isPresent := config.GOOSOnPR[runtime.GOOS]
-		if isPresent && !isEnabled {
-			return fmt.Sprintf("Disabled via GOOSOnPR.%s setting in %s", runtime.GOOS, configPath)
-		}
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")

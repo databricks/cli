@@ -1,0 +1,41 @@
+# Invariant to test: bundle destroy is idempotent.
+# After destroy succeeds, restoring the pre-destroy state and running destroy again
+# must succeed even though the resources are already gone on the server.
+
+invariant_setup
+
+# All configs use `test-bundle-$UNIQUE_NAME`; workspace root path follows the
+# default `~/.bundle/<name>/<target>` template with target=default.
+bundle_name=test-bundle-$UNIQUE_NAME
+ROOT_PATH=/Workspace/Users/$CURRENT_USER_NAME/.bundle/$bundle_name/default
+
+# Initial deploy of the resources. Only pre-plan when READPLAN=1 exercises the
+# saved-plan deploy path; otherwise `bundle deploy` plans on its own.
+if [[ -n "$READPLAN" ]]; then
+    $CLI bundle plan -o json > plan_initial.json 2>LOG.plan_initial.err
+    cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
+fi
+
+invariant_deploy LOG.deploy_initial $CLI bundle deploy $(readplanarg plan_initial.json)
+
+# Snapshot the deploy state before we destroy anything.
+cp -r .databricks .databricks.backup
+
+trace $CLI bundle destroy --auto-approve &> LOG.destroy1
+cat LOG.destroy1 | contains.py '!panic:' '!internal error' > /dev/null
+
+# Restore the pre-destroy state; the resources are already gone from the server,
+# so the next destroy must handle "resource already gone" idempotently.
+rm -rf .databricks
+mv .databricks.backup .databricks
+
+# Recreate the workspace root path deleted by destroy1 so destroy2 proceeds
+# past the "no active deployment" check and actually re-runs resource deletions.
+# MSYS_NO_PATHCONV=1 stops Git Bash on Windows from rewriting the leading-slash
+# workspace path into C:/Program Files/Git/...; it is scoped to this command so
+# the Python helpers (which need their own paths converted) are unaffected.
+MSYS_NO_PATHCONV=1 $CLI workspace mkdirs "$ROOT_PATH" &> LOG.mkdirs
+cat LOG.mkdirs | contains.py '!panic:' '!internal error' > /dev/null
+
+trace $CLI bundle destroy --auto-approve &> LOG.destroy2
+cat LOG.destroy2 | contains.py '!panic:' '!internal error' > /dev/null

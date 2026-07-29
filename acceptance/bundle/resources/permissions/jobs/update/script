@@ -42,7 +42,7 @@ trace print_requests.py //jobs/ > out.requests_restore_original.json
 trace $CLI bundle plan
 
 title "Set permissions: []\n"
-grep -v '(PERMISSIONS|DELETE_ONE)' databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+grep -vE '(PERMISSIONS|DELETE_ONE)' databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 update_file.py databricks.yml '# permissions: [] # EXPLICIT_EMPTY' 'permissions: [] # EXPLICIT_EMPTY'
 trace $CLI bundle plan -o json > out.plan_set_empty.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
