@@ -99,36 +99,6 @@ func TestNewRecordedOperationRejectsUnsupportedAction(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestMergeAction(t *testing.T) {
-	const (
-		create   = bundledeployments.OperationActionTypeOperationActionTypeCreate
-		recreate = bundledeployments.OperationActionTypeOperationActionTypeRecreate
-		update   = bundledeployments.OperationActionTypeOperationActionTypeUpdate
-		resize   = bundledeployments.OperationActionTypeOperationActionTypeResize
-		del      = bundledeployments.OperationActionTypeOperationActionTypeDelete
-	)
-
-	cases := []struct {
-		queued, next, want bundledeployments.OperationActionType
-	}{
-		// A queued create is not downgraded: the resource is still new.
-		{create, update, create},
-		{create, resize, create},
-		{recreate, update, recreate},
-		{create, create, create},
-		// A delete wins: the resource is gone, so the earlier action is moot.
-		{create, del, del},
-		{update, del, del},
-		// Neither side is a create, so the later action stands.
-		{update, resize, resize},
-		{resize, update, update},
-		{del, create, create},
-	}
-	for _, c := range cases {
-		assert.Equal(t, c.want, mergeAction(c.queued, c.next), "queued %s, next %s", c.queued, c.next)
-	}
-}
-
 func TestDeployActionToSDK(t *testing.T) {
 	cases := []struct {
 		action deployplan.ActionType

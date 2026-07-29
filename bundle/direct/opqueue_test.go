@@ -22,9 +22,10 @@ type fakeUploader struct {
 	started chan string
 	err     error
 
-	mu      sync.Mutex
-	uploads []string
-	actions map[string]bundledeployments.OperationActionType
+	mu          sync.Mutex
+	uploads     []string
+	actions     map[string]bundledeployments.OperationActionType
+	resourceIDs map[string]string
 }
 
 func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
@@ -40,8 +41,10 @@ func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op record
 	f.uploads = append(f.uploads, resourceKey+"="+string(op.state))
 	if f.actions == nil {
 		f.actions = map[string]bundledeployments.OperationActionType{}
+		f.resourceIDs = map[string]string{}
 	}
 	f.actions[resourceKey] = op.action
+	f.resourceIDs[resourceKey] = op.resourceID
 	return f.err
 }
 
@@ -55,6 +58,12 @@ func (f *fakeUploader) actionFor(resourceKey string) bundledeployments.Operation
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.actions[resourceKey]
+}
+
+func (f *fakeUploader) resourceIDFor(resourceKey string) string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.resourceIDs[resourceKey]
 }
 
 func recordState(t *testing.T, q *operationQueue, resourceKey, name string) {
@@ -99,9 +108,8 @@ func TestOperationQueueCoalescesQueuedOperationsForSameResource(t *testing.T) {
 	}, f.recorded())
 }
 
-func TestOperationQueueCoalescingKeepsCreateAction(t *testing.T) {
-	// Hold the first upload so the create below stays queued and the update
-	// coalesces into it.
+func TestOperationQueueCoalescingKeepsLatestOperation(t *testing.T) {
+	// Hold the first upload so the operations below stay queued and coalesce.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 1)}
 	q := newOperationQueue(t.Context(), f)
 
@@ -114,15 +122,18 @@ func TestOperationQueueCoalescingKeepsCreateAction(t *testing.T) {
 		assert.Equal(t, "resources.jobs.hold"+strconv.Itoa(i), <-f.started)
 	}
 
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "created"}, nil))
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Update, "id-1", map[string]string{"name": "updated"}, nil))
+	// A resource whose ID is only known after it was created: the first operation
+	// has no ID, the second fills it in.
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "", map[string]string{"name": "created"}, nil))
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "updated"}, nil))
 
 	close(f.block)
 	require.NoError(t, q.close())
 
-	// The state is the later one, but the action stays CREATE: recording an update
-	// would tell DMS the resource already existed before this deploy.
+	// Everything comes from the newest operation: it carries the resource's full
+	// state, and the ID it learned after the create.
 	assert.Contains(t, f.recorded(), `resources.jobs.foo={"state":{"name":"updated"}}`)
+	assert.Equal(t, "id-1", f.resourceIDFor("resources.jobs.foo"))
 	assert.Equal(t,
 		bundledeployments.OperationActionTypeOperationActionTypeCreate,
 		f.actionFor("resources.jobs.foo"))
@@ -239,7 +250,7 @@ func TestOperationQueueUploadsOneResourceAtATime(t *testing.T) {
 	// Every distinct key was recorded, and close drained all of them.
 	assert.Len(t, u.last, distinctKeyMod)
 	assert.Empty(t, q.pending)
-	assert.Empty(t, q.owned)
+	assert.Empty(t, q.queuedOrUploading)
 }
 
 func TestNilOperationQueueIsNoOp(t *testing.T) {
