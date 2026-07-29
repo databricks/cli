@@ -23,3 +23,11 @@ func fromContext(ctx context.Context) *logger {
 
 	return v.(*logger)
 }
+
+// loggerFromContext returns the telemetry logger, or false if none was
+// installed. Unlike fromContext it does not panic, so callers on paths that may
+// run without telemetry setup can drop events instead of crashing.
+func loggerFromContext(ctx context.Context) (*logger, bool) {
+	v, ok := ctx.Value(telemetryLoggerKey).(*logger)
+	return v, ok
+}

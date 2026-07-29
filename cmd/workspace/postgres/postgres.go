@@ -3,6 +3,8 @@
 package postgres
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -11,7 +13,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/experimental/api"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/spf13/cobra"
@@ -50,6 +54,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	// Add methods
 	cmd.AddCommand(newCreateBranch())
 	cmd.AddCommand(newCreateCatalog())
+	cmd.AddCommand(newCreateCdfConfig())
 	cmd.AddCommand(newCreateDataApi())
 	cmd.AddCommand(newCreateDatabase())
 	cmd.AddCommand(newCreateEndpoint())
@@ -58,6 +63,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newCreateSyncedTable())
 	cmd.AddCommand(newDeleteBranch())
 	cmd.AddCommand(newDeleteCatalog())
+	cmd.AddCommand(newDeleteCdfConfig())
 	cmd.AddCommand(newDeleteDataApi())
 	cmd.AddCommand(newDeleteDatabase())
 	cmd.AddCommand(newDeleteEndpoint())
@@ -67,6 +73,8 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newGenerateDatabaseCredential())
 	cmd.AddCommand(newGetBranch())
 	cmd.AddCommand(newGetCatalog())
+	cmd.AddCommand(newGetCdfConfig())
+	cmd.AddCommand(newGetCdfStatus())
 	cmd.AddCommand(newGetDataApi())
 	cmd.AddCommand(newGetDatabase())
 	cmd.AddCommand(newGetEndpoint())
@@ -75,6 +83,8 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newGetRole())
 	cmd.AddCommand(newGetSyncedTable())
 	cmd.AddCommand(newListBranches())
+	cmd.AddCommand(newListCdfConfigs())
+	cmd.AddCommand(newListCdfStatuses())
 	cmd.AddCommand(newListDatabases())
 	cmd.AddCommand(newListEndpoints())
 	cmd.AddCommand(newListProjects())
@@ -344,6 +354,153 @@ Register a Database in UC.
 	// Apply optional overrides to this command.
 	for _, fn := range createCatalogOverrides {
 		fn(cmd, &createCatalogReq)
+	}
+
+	return cmd
+}
+
+// start create-cdf-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createCdfConfigOverrides []func(
+	*cobra.Command,
+	*postgres.CreateCdfConfigRequest,
+)
+
+func newCreateCdfConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createCdfConfigReq postgres.CreateCdfConfigRequest
+	createCdfConfigReq.CdfConfig = postgres.CdfConfig{}
+	var createCdfConfigJson flags.JsonFlag
+
+	var createCdfConfigSkipWait bool
+	var createCdfConfigTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createCdfConfigSkipWait, "no-wait", createCdfConfigSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&createCdfConfigTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&createCdfConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createCdfConfigReq.CdfConfigId, "cdf-config-id", createCdfConfigReq.CdfConfigId, `The user-specified id for the CdfConfig, forming the final segment of its resource name.`)
+	cmd.Flags().StringVar(&createCdfConfigReq.CdfConfig.Name, "name", createCdfConfigReq.CdfConfig.Name, `Output only.`)
+
+	cmd.Use = "create-cdf-config PARENT CATALOG SCHEMA POSTGRES_SCHEMA"
+	cmd.Short = `*Beta* Create a Lakebase CDF configuration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a Lakebase CDF configuration.
+
+  Create a Lakebase CDF configuration (CdfConfig). Replicates the tables of a
+  Postgres schema into a Unity Catalog schema. Returns ALREADY_EXISTS if a
+  config with the requested id exists, or if another config already replicates
+  the target Postgres schema.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    PARENT: The parent database under which to create the CdfConfig. Format:
+      projects/{project}/branches/{branch}/databases/{database}
+    CATALOG: The Unity Catalog catalog that replicated tables are written into. Set at
+      creation; the CdfConfig is immutable.
+    SCHEMA: The Unity Catalog schema that replicated tables are written into. Set at
+      creation; the CdfConfig is immutable.
+    POSTGRES_SCHEMA: The Postgres schema this CdfConfig replicates from. Unique within the
+      parent database. Set at creation; the CdfConfig is immutable.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'catalog', 'schema', 'postgres_schema' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createCdfConfigJson.Unmarshal(&createCdfConfigReq.CdfConfig)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createCdfConfigReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			createCdfConfigReq.CdfConfig.Catalog = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			createCdfConfigReq.CdfConfig.Schema = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
+			createCdfConfigReq.CdfConfig.PostgresSchema = args[3]
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case createCdfConfigSkipWait:
+			wait, err := w.Postgres.CreateCdfConfig(ctx, createCdfConfigReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.CreateCdfConfig(ctx, createCdfConfigReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for create-cdf-config to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(createCdfConfigTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createCdfConfigOverrides {
+		fn(cmd, &createCdfConfigReq)
 	}
 
 	return cmd
@@ -1324,6 +1481,114 @@ Delete a Database Catalog.
 	return cmd
 }
 
+// start delete-cdf-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteCdfConfigOverrides []func(
+	*cobra.Command,
+	*postgres.DeleteCdfConfigRequest,
+)
+
+func newDeleteCdfConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteCdfConfigReq postgres.DeleteCdfConfigRequest
+
+	var deleteCdfConfigSkipWait bool
+	var deleteCdfConfigTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deleteCdfConfigSkipWait, "no-wait", deleteCdfConfigSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&deleteCdfConfigTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().BoolVar(&deleteCdfConfigReq.Force, "force", deleteCdfConfigReq.Force, `When true, also drops the replicated Delta tables in Unity Catalog.`)
+
+	cmd.Use = "delete-cdf-config NAME"
+	cmd.Short = `*Beta* Delete a Lakebase CDF configuration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a Lakebase CDF configuration.
+
+  Delete a Lakebase CDF configuration (CdfConfig). Stops replication and removes
+  the config. When force is true, also drops the replicated Delta tables in
+  Unity Catalog.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: The resource name of the CdfConfig to delete. Format:
+      projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteCdfConfigReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case deleteCdfConfigSkipWait:
+			wait, err := w.Postgres.DeleteCdfConfig(ctx, deleteCdfConfigReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.DeleteCdfConfig(ctx, deleteCdfConfigReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for delete-cdf-config to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(deleteCdfConfigTimeout)
+
+			err = wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return nil
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteCdfConfigOverrides {
+		fn(cmd, &deleteCdfConfigReq)
+	}
+
+	return cmd
+}
+
 // start delete-data-api command
 
 // Slice with functions to override default command behavior.
@@ -1968,6 +2233,10 @@ func newGenerateDatabaseCredential() *cobra.Command {
 	cmd.Flags().Var(&generateDatabaseCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: claims
+	var expireTimeParam string
+	cmd.Flags().StringVar(&expireTimeParam, "expire-time", expireTimeParam, `Timestamp in UTC of when this credential should expire.`)
+	var ttlParam string
+	cmd.Flags().StringVar(&ttlParam, "ttl", ttlParam, `The requested time-to-live for the generated credential token.`)
 
 	cmd.Use = "generate-database-credential ENDPOINT"
 	cmd.Short = `*Beta* Generate OAuth credentials for a Postgres database.`
@@ -1987,7 +2256,7 @@ Generate OAuth credentials for a Postgres database.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'endpoint' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'endpoint' in your JSON input")
 			}
 			return nil
 		}
@@ -2014,6 +2283,26 @@ Generate OAuth credentials for a Postgres database.
 		}
 		if !cmd.Flags().Changed("json") {
 			generateDatabaseCredentialReq.Endpoint = args[0]
+		}
+
+		if expireTimeParam != "" {
+			expireTimeBytes := []byte(fmt.Sprintf("\"%s\"", expireTimeParam))
+			var expireTimeField sdktime.Time
+			err = json.Unmarshal(expireTimeBytes, &expireTimeField)
+			if err != nil {
+				return fmt.Errorf("invalid EXPIRE_TIME: %s", expireTimeParam)
+			}
+			generateDatabaseCredentialReq.ExpireTime = &expireTimeField
+		}
+
+		if ttlParam != "" {
+			ttlBytes := []byte(fmt.Sprintf("\"%s\"", ttlParam))
+			var ttlField duration.Duration
+			err = json.Unmarshal(ttlBytes, &ttlField)
+			if err != nil {
+				return fmt.Errorf("invalid TTL: %s", ttlParam)
+			}
+			generateDatabaseCredentialReq.Ttl = &ttlField
 		}
 
 		response, err := w.Postgres.GenerateDatabaseCredential(ctx, generateDatabaseCredentialReq)
@@ -2154,6 +2443,131 @@ Get a Database Catalog.
 	// Apply optional overrides to this command.
 	for _, fn := range getCatalogOverrides {
 		fn(cmd, &getCatalogReq)
+	}
+
+	return cmd
+}
+
+// start get-cdf-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getCdfConfigOverrides []func(
+	*cobra.Command,
+	*postgres.GetCdfConfigRequest,
+)
+
+func newGetCdfConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getCdfConfigReq postgres.GetCdfConfigRequest
+
+	cmd.Use = "get-cdf-config NAME"
+	cmd.Short = `*Beta* Get a Lakebase CDF configuration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a Lakebase CDF configuration.
+
+  Get a single Lakebase CDF configuration (CdfConfig).
+
+  Arguments:
+    NAME: The resource name of the CdfConfig to retrieve. Format:
+      projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getCdfConfigReq.Name = args[0]
+
+		response, err := w.Postgres.GetCdfConfig(ctx, getCdfConfigReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getCdfConfigOverrides {
+		fn(cmd, &getCdfConfigReq)
+	}
+
+	return cmd
+}
+
+// start get-cdf-status command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getCdfStatusOverrides []func(
+	*cobra.Command,
+	*postgres.GetCdfStatusRequest,
+)
+
+func newGetCdfStatus() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getCdfStatusReq postgres.GetCdfStatusRequest
+
+	cmd.Use = "get-cdf-status NAME"
+	cmd.Short = `*Beta* Get the replication status of a replicated table.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get the replication status of a replicated table.
+
+  Get the replication status of a single replicated table within a Lakebase CDF
+  configuration.
+
+  Arguments:
+    NAME: The resource name of the CdfStatus to retrieve. Format:
+      projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}/cdf-statuses/{cdf_status}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getCdfStatusReq.Name = args[0]
+
+		response, err := w.Postgres.GetCdfStatus(ctx, getCdfStatusReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getCdfStatusOverrides {
+		fn(cmd, &getCdfStatusReq)
 	}
 
 	return cmd
@@ -2668,6 +3082,163 @@ List Branches.
 	// Apply optional overrides to this command.
 	for _, fn := range listBranchesOverrides {
 		fn(cmd, &listBranchesReq)
+	}
+
+	return cmd
+}
+
+// start list-cdf-configs command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listCdfConfigsOverrides []func(
+	*cobra.Command,
+	*postgres.ListCdfConfigsRequest,
+)
+
+func newListCdfConfigs() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listCdfConfigsReq postgres.ListCdfConfigsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listCdfConfigsLimit int
+
+	cmd.Flags().IntVar(&listCdfConfigsReq.PageSize, "page-size", listCdfConfigsReq.PageSize, `Maximum number of CdfConfigs to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listCdfConfigsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listCdfConfigsReq.PageToken, "page-token", listCdfConfigsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-cdf-configs PARENT"
+	cmd.Short = `*Beta* List Lakebase CDF configurations.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List Lakebase CDF configurations.
+
+  List the Lakebase CDF configurations (CdfConfigs) under a database.
+
+  Arguments:
+    PARENT: The parent database to list CdfConfigs for. Format:
+      projects/{project}/branches/{branch}/databases/{database}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listCdfConfigsReq.Parent = args[0]
+
+		response := w.Postgres.ListCdfConfigs(ctx, listCdfConfigsReq)
+		if listCdfConfigsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listCdfConfigsLimit)
+		}
+		if listCdfConfigsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listCdfConfigsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listCdfConfigsOverrides {
+		fn(cmd, &listCdfConfigsReq)
+	}
+
+	return cmd
+}
+
+// start list-cdf-statuses command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listCdfStatusesOverrides []func(
+	*cobra.Command,
+	*postgres.ListCdfStatusesRequest,
+)
+
+func newListCdfStatuses() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listCdfStatusesReq postgres.ListCdfStatusesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listCdfStatusesLimit int
+
+	cmd.Flags().IntVar(&listCdfStatusesReq.PageSize, "page-size", listCdfStatusesReq.PageSize, `Maximum number of CdfStatuses to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listCdfStatusesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listCdfStatusesReq.PageToken, "page-token", listCdfStatusesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-cdf-statuses PARENT"
+	cmd.Short = `*Beta* List the replication statuses of replicated tables.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List the replication statuses of replicated tables.
+
+  List the replication statuses of all tables replicated under a Lakebase CDF
+  configuration.
+
+  Arguments:
+    PARENT: The parent CdfConfig to list CdfStatuses for. Format:
+      projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listCdfStatusesReq.Parent = args[0]
+
+		response := w.Postgres.ListCdfStatuses(ctx, listCdfStatusesReq)
+		if listCdfStatusesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listCdfStatusesLimit)
+		}
+		if listCdfStatusesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listCdfStatusesLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listCdfStatusesOverrides {
+		fn(cmd, &listCdfStatusesReq)
 	}
 
 	return cmd

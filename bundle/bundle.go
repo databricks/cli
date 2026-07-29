@@ -116,6 +116,12 @@ type Bundle struct {
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
 
+	// includePatterns holds the raw (unexpanded) 'include' patterns from the root
+	// databricks.yml. ProcessRootIncludes overwrites Config.Include with the
+	// expanded list of loaded files, so this preserves the original patterns for
+	// IsFileIncluded. Set via SetIncludePatterns.
+	includePatterns []string
+
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
 
@@ -191,9 +197,11 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 // MustLoad returns a bundle configuration.
 // The errors are recorded by logdiag, check with logdiag.HasError().
 func MustLoad(ctx context.Context) *Bundle {
-	root, err := mustGetRoot(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
+	root, diags := mustGetRoot(ctx)
+	if diags.HasError() {
+		for _, d := range diags {
+			logdiag.LogDiag(ctx, d)
+		}
 		return nil
 	}
 
@@ -211,9 +219,11 @@ func MustLoad(ctx context.Context) *Bundle {
 // The errors are recorded by logdiag, check with logdiag.HasError().
 // It returns a `nil` bundle if a bundle was not found.
 func TryLoad(ctx context.Context) *Bundle {
-	root, err := tryGetRoot(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
+	root, diags := tryGetRoot(ctx)
+	if diags.HasError() {
+		for _, d := range diags {
+			logdiag.LogDiag(ctx, d)
+		}
 		return nil
 	}
 

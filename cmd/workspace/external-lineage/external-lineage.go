@@ -3,6 +3,7 @@
 package external_lineage
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -94,7 +95,7 @@ Create an external lineage relationship.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'source', 'target' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'source', 'target' in your JSON input")
 			}
 			return nil
 		}
@@ -201,7 +202,7 @@ Delete an external lineage relationship.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		err = w.ExternalLineage.DeleteExternalLineageRelationship(ctx, deleteExternalLineageRelationshipReq)
@@ -283,7 +284,7 @@ List external lineage relationships.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response := w.ExternalLineage.ListExternalLineageRelationships(ctx, listExternalLineageRelationshipsReq)
@@ -362,7 +363,7 @@ Update an external lineage relationship.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'source', 'target' in your JSON input")
+				return errors.New("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'source', 'target' in your JSON input")
 			}
 			return nil
 		}

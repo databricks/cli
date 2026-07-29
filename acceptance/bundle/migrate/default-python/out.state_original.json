@@ -116,6 +116,7 @@
                 "name": "schema"
               }
             ],
+            "parent_path": null,
             "performance_target": null,
             "pipeline_task": [],
             "provider_config": [
@@ -374,6 +375,7 @@
                     "unit": "DAYS"
                   }
                 ],
+                "sql_condition": [],
                 "table_update": []
               }
             ],

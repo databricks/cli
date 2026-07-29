@@ -1,0 +1,40 @@
+
+=== CLI ssh connect (local sshd)
+
+>>> print_requests.py //api/2.2/jobs/runs/submit
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/submit",
+  "body": {
+    "environments": [
+      {
+        "environment_key": "ssh_tunnel_serverless",
+        "spec": {
+          "environment_version": "4"
+        }
+      }
+    ],
+    "run_name": "ssh-server-bootstrap-[CPU_CONN]",
+    "tasks": [
+      {
+        "environment_key": "ssh_tunnel_serverless",
+        "notebook_task": {
+          "base_parameters": {
+            "authorizedKeySecretName": "client-public-key",
+            "maxClients": "10",
+            "secretScopeName": "[USERNAME]-[CPU_CONN]-ssh-tunnel-keys",
+            "serverless": "true",
+            "sessionId": "[CPU_CONN]",
+            "shutdownDelay": "10m0s",
+            "usagePolicyId": "",
+            "version": "[CLI_VERSION]"
+          },
+          "notebook_path": "/Workspace/Users/[USERNAME]/.databricks/ssh-tunnel/[CLI_VERSION]/[CPU_CONN]/ssh-server-bootstrap"
+        },
+        "task_key": "start_ssh_server",
+        "timeout_seconds": 86400
+      }
+    ],
+    "timeout_seconds": 86400
+  }
+}

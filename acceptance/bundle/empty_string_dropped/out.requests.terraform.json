@@ -1,0 +1,157 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
+  "body": {
+    "description": "",
+    "name": "test-app-tf"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/database/instances",
+  "body": {
+    "capacity": "CU_1",
+    "name": "test-db-instance"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/mlflow/experiments/create",
+  "body": {
+    "name": "/Users/[USERNAME]/test-experiment"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/mlflow/registered-models/create",
+  "body": {
+    "name": "test-model"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "channel": "CURRENT",
+    "clusters": [
+      {
+        "aws_attributes": {
+          "availability": "SPOT"
+        },
+        "label": "default"
+      }
+    ],
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/files/pipeline.py"
+        }
+      }
+    ],
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses",
+  "body": {
+    "auto_stop_mins": 10,
+    "cluster_size": "2X-Small",
+    "enable_photon": true,
+    "max_num_clusters": 1,
+    "min_num_clusters": 1,
+    "name": "test-warehouse",
+    "spot_instance_policy": "COST_OPTIMIZED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/create",
+  "body": {
+    "autotermination_minutes": 60,
+    "aws_attributes": {
+      "availability": "SPOT"
+    },
+    "cluster_log_conf": {
+      "s3": {
+        "destination": "s3://test-bucket/logs"
+      }
+    },
+    "num_workers": 1,
+    "spark_version": "13.3.x-scala2.12"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/models",
+  "body": {
+    "catalog_name": "main",
+    "name": "test-registered-model",
+    "schema_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "name": "test-schema"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "main",
+    "name": "test-volume",
+    "schema_name": "default",
+    "volume_type": "MANAGED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "git_source": {
+      "git_branch": "main",
+      "git_provider": "gitHub",
+      "git_url": "https://example.com/repo"
+    },
+    "job_clusters": [
+      {
+        "job_cluster_key": "main",
+        "new_cluster": {
+          "aws_attributes": {
+            "availability": "SPOT"
+          },
+          "cluster_log_conf": {
+            "s3": {
+              "destination": "s3://test-bucket/logs"
+            }
+          },
+          "num_workers": 1,
+          "spark_version": "13.3.x-scala2.12"
+        }
+      }
+    ],
+    "max_concurrent_runs": 1,
+    "name": "Untitled",
+    "queue": {
+      "enabled": true
+    }
+  }
+}

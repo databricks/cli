@@ -38,7 +38,7 @@ print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id
 title "Fetch new project ID"
 project_id_2=`read_id.py my_project`
 # Get output differs between engines (different project IDs)
-$CLI postgres get-project $project_id_2 > out.get_project.txt
+$CLI postgres get-project $project_id_2 | project_fields > out.get_project.txt
 
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve

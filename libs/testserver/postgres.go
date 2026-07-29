@@ -150,8 +150,6 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 				project.Status.DefaultEndpointSettings.SuspendTimeoutDuration = project.Spec.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
 		}
-		// Clear spec so it's not returned in response (API only returns status)
-		project.Spec = nil
 	}
 
 	s.PostgresProjects[name] = project
@@ -213,22 +211,32 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		}
 	}
 
-	// Apply updates from spec to status
+	// Apply updates to both spec and status. GET echoes the spec verbatim, so
+	// the stored spec must track updates alongside the materialized status.
 	if updateProject.Spec != nil {
+		if project.Spec == nil {
+			project.Spec = &postgres.ProjectSpec{}
+		}
 		if project.Status == nil {
 			project.Status = &postgres.ProjectStatus{}
 		}
 		if updateProject.Spec.DisplayName != "" {
+			project.Spec.DisplayName = updateProject.Spec.DisplayName
 			project.Status.DisplayName = updateProject.Spec.DisplayName
 		}
 		if updateProject.Spec.DefaultEndpointSettings != nil {
+			if project.Spec.DefaultEndpointSettings == nil {
+				project.Spec.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{}
+			}
 			if project.Status.DefaultEndpointSettings == nil {
 				project.Status.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{}
 			}
 			if updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu != 0 {
+				project.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu
 				project.Status.DefaultEndpointSettings.AutoscalingLimitMinCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu
 			}
 			if updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu != 0 {
+				project.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu
 				project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu
 			}
 		}
@@ -350,12 +358,10 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 	}
 
 	// Apply user-provided spec fields to status (where input fields are surfaced).
+	// The spec itself is preserved and echoed verbatim on GET.
 	if branch.Spec != nil {
 		branch.Status.IsProtected = branch.Spec.IsProtected
 	}
-
-	// Clear spec - API only returns status
-	branch.Spec = nil
 
 	s.PostgresBranches[name] = branch
 
@@ -436,11 +442,16 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 		}
 	}
 
-	// Apply updates from spec to status
+	// Apply updates to both spec and status. GET echoes the spec verbatim, so
+	// the stored spec must track updates alongside the materialized status.
 	if updateBranch.Spec != nil {
+		if branch.Spec == nil {
+			branch.Spec = &postgres.BranchSpec{}
+		}
 		if branch.Status == nil {
 			branch.Status = &postgres.BranchStatus{}
 		}
+		branch.Spec.IsProtected = updateBranch.Spec.IsProtected
 		branch.Status.IsProtected = updateBranch.Spec.IsProtected
 	}
 
@@ -452,7 +463,10 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 	}
 }
 
-// PostgresBranchDelete deletes a postgres branch.
+// PostgresBranchDelete deletes a postgres branch. The `purge` query parameter
+// is ignored: acceptance tests assert on the recorded HTTP request rather than
+// on retention semantics, so a single "remove from map" action serves both
+// hard- and soft-delete paths.
 func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 	defer s.LockUnlock()()
 
@@ -584,9 +598,6 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 		endpoint.Status.Disabled = endpoint.Spec.Disabled
 	}
 
-	// Clear spec - API only returns status
-	endpoint.Spec = nil
-
 	s.PostgresEndpoints[name] = endpoint
 
 	return Response{
@@ -669,20 +680,28 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 		}
 	}
 
-	// Apply updates from spec to status
+	// Apply updates to both spec and status. GET echoes the spec verbatim, so
+	// the stored spec must track updates alongside the materialized status.
 	if updateEndpoint.Spec != nil {
+		if endpoint.Spec == nil {
+			endpoint.Spec = &postgres.EndpointSpec{}
+		}
 		if endpoint.Status == nil {
 			endpoint.Status = &postgres.EndpointStatus{}
 		}
 		if updateEndpoint.Spec.AutoscalingLimitMinCu != 0 {
+			endpoint.Spec.AutoscalingLimitMinCu = updateEndpoint.Spec.AutoscalingLimitMinCu
 			endpoint.Status.AutoscalingLimitMinCu = updateEndpoint.Spec.AutoscalingLimitMinCu
 		}
 		if updateEndpoint.Spec.AutoscalingLimitMaxCu != 0 {
+			endpoint.Spec.AutoscalingLimitMaxCu = updateEndpoint.Spec.AutoscalingLimitMaxCu
 			endpoint.Status.AutoscalingLimitMaxCu = updateEndpoint.Spec.AutoscalingLimitMaxCu
 		}
 		if updateEndpoint.Spec.SuspendTimeoutDuration != nil {
+			endpoint.Spec.SuspendTimeoutDuration = updateEndpoint.Spec.SuspendTimeoutDuration
 			endpoint.Status.SuspendTimeoutDuration = updateEndpoint.Spec.SuspendTimeoutDuration
 		}
+		endpoint.Spec.Disabled = updateEndpoint.Spec.Disabled
 		endpoint.Status.Disabled = updateEndpoint.Spec.Disabled
 	}
 
@@ -719,7 +738,11 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 }
 
 // PostgresDatabaseCreate creates a new postgres database.
-func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID string) Response {
+//
+// When replaceExisting is true, an existing database with the same ID is updated
+// in place instead of returning ALREADY_EXISTS. This mirrors the backend behavior
+// that lets users bring an already-existing database under management.
+func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID string, replaceExisting bool) Response {
 	defer s.LockUnlock()()
 
 	if databaseID == "" {
@@ -742,15 +765,16 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	}
 
 	// The real Lakebase API requires the owning role on create and rejects an empty
-	// one with this exact error (verified on e2-dogfood 2026-06-16). The fake does
+	// one with this exact error (verified on aws-ucws 2026-07-13). The fake does
 	// not synthesize a default, matching that behavior.
 	if database.Spec == nil || database.Spec.Role == "" {
-		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'spec.role' cannot be empty")
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'database.spec.role' is required, expected non-default value (not "")!`)
 	}
 
 	name := fmt.Sprintf("%s/databases/%s", parent, databaseID)
 
-	if _, exists := s.PostgresDatabases[name]; exists {
+	existing, exists := s.PostgresDatabases[name]
+	if exists && !replaceExisting {
 		// The real Lakebase API returns 400 BAD_REQUEST (not 409) for a duplicate
 		// create, the same as postgres_roles. Match it so the conflict a bundle hits
 		// on a pre-existing database looks the same.
@@ -758,20 +782,36 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	}
 
 	now := nowTime()
+	if exists {
+		// Preserve identifying / output-only fields; apply incoming spec to status.
+		status := &postgres.DatabaseDatabaseStatus{
+			DatabaseId:       databaseID,
+			PostgresDatabase: database.Spec.PostgresDatabase,
+			Role:             database.Spec.Role,
+		}
+		existing.UpdateTime = now
+		existing.Status = status
+		existing.Spec = database.Spec
+		s.PostgresDatabases[name] = existing
+
+		return Response{
+			Body: s.createOperationLocked(existing.Name, existing),
+		}
+	}
+
 	database.Name = name
 	database.DatabaseId = databaseID
 	database.Parent = parent
 	database.CreateTime = now
 	database.UpdateTime = now
 
-	// Mirror spec onto status; the real API only echoes Status on GET.
+	// Mirror spec onto status; GET echoes both the spec (verbatim) and status.
 	status := &postgres.DatabaseDatabaseStatus{
 		DatabaseId:       databaseID,
 		PostgresDatabase: database.Spec.PostgresDatabase,
 		Role:             database.Spec.Role,
 	}
 	database.Status = status
-	database.Spec = nil
 
 	s.PostgresDatabases[name] = database
 
@@ -865,6 +905,13 @@ func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Respons
 		}
 		database.Status = applyDatabaseSpecMask(database.Status, databaseStatusFromSpec(updateDatabase.Spec), paths)
 		database.Status.DatabaseId = databaseID
+
+		// GET echoes the spec verbatim, so keep the stored spec in sync with the
+		// masked status update.
+		database.Spec = &postgres.DatabaseDatabaseSpec{
+			PostgresDatabase: database.Status.PostgresDatabase,
+			Role:             database.Status.Role,
+		}
 	}
 
 	database.UpdateTime = nowTime()
@@ -1047,7 +1094,11 @@ func roleStatusFromSpec(spec *postgres.RoleRoleSpec) *postgres.RoleRoleStatus {
 }
 
 // PostgresRoleCreate creates a new postgres role.
-func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) Response {
+//
+// When replaceExisting is true, an existing role with the same ID is updated in
+// place instead of returning ALREADY_EXISTS. This mirrors the backend behavior
+// that lets users bring an inherited/pre-existing role under management.
+func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, replaceExisting bool) Response {
 	defer s.LockUnlock()()
 
 	// Check if parent branch exists
@@ -1077,7 +1128,8 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) R
 
 	name := fmt.Sprintf("%s/roles/%s", parent, roleID)
 
-	if _, exists := s.PostgresRoles[name]; exists {
+	existing, exists := s.PostgresRoles[name]
+	if exists && !replaceExisting {
 		// The real Lakebase API returns 400 BAD_REQUEST (not 409) for a duplicate
 		// role, with this message (verified on dogfood 2026-06-10). Match it so the
 		// conflict a bundle hits on an inherited/pre-existing role looks the same.
@@ -1085,6 +1137,19 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) R
 	}
 
 	now := nowTime()
+	if exists {
+		// Preserve identifying / output-only fields; apply incoming spec to status.
+		existing.UpdateTime = now
+		existing.Status = roleStatusFromSpec(role.Spec)
+		existing.Status.RoleId = roleID
+		existing.Spec = role.Spec
+		s.PostgresRoles[name] = existing
+
+		return Response{
+			Body: s.createOperationLocked(existing.Name, existing),
+		}
+	}
+
 	role.Name = name
 	role.RoleId = roleID
 	role.Parent = parent
@@ -1093,7 +1158,6 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) R
 
 	role.Status = roleStatusFromSpec(role.Spec)
 	role.Status.RoleId = roleID
-	role.Spec = nil
 
 	s.PostgresRoles[name] = role
 
@@ -1190,6 +1254,11 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 		}
 		role.Status = applyRoleSpecMask(role.Status, roleStatusFromSpec(updateRole.Spec), paths)
 		role.Status.RoleId = roleID
+
+		// GET echoes the spec verbatim, so keep the stored spec in sync while
+		// respecting the update_mask: only masked fields are taken from the
+		// request, so out-of-mask body values don't leak into the echoed spec.
+		role.Spec = applyRoleSpecMaskToSpec(role.Spec, updateRole.Spec, paths)
 	}
 
 	role.UpdateTime = nowTime()
@@ -1212,6 +1281,36 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 // attributes untouched), but the direct engine always sends the full spec in the
 // request body, so the collapsed result is identical for the requests it makes.
 func applyRoleSpecMask(existing, desired *postgres.RoleRoleStatus, paths []string) *postgres.RoleRoleStatus {
+	if len(paths) == 0 || existing == nil {
+		return desired
+	}
+	result := *existing
+	for _, p := range paths {
+		field, _, _ := strings.Cut(strings.TrimPrefix(p, "spec."), ".")
+		switch field {
+		case "spec":
+			result = *desired
+		case "postgres_role":
+			result.PostgresRole = desired.PostgresRole
+		case "auth_method":
+			result.AuthMethod = desired.AuthMethod
+		case "identity_type":
+			result.IdentityType = desired.IdentityType
+		case "membership_roles":
+			result.MembershipRoles = desired.MembershipRoles
+		case "attributes":
+			result.Attributes = desired.Attributes
+		}
+	}
+	return &result
+}
+
+// applyRoleSpecMaskToSpec applies the masked fields from desired onto existing at
+// the spec level, so the spec echoed on GET tracks exactly the fields the
+// update_mask named (out-of-mask body values are ignored). It mirrors
+// [applyRoleSpecMask] but preserves the verbatim spec shape rather than the
+// materialized status. An empty paths slice replaces everything.
+func applyRoleSpecMaskToSpec(existing, desired *postgres.RoleRoleSpec, paths []string) *postgres.RoleRoleSpec {
 	if len(paths) == 0 || existing == nil {
 		return desired
 	}

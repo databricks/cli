@@ -3,6 +3,7 @@
 package alerts_v2
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -19,18 +20,16 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "alerts-v2",
-		Short: `*Public Preview* New version of SQL Alerts.`,
-		Long: `This command is in Public Preview and may change without notice.
-
-New version of SQL Alerts`,
+		Use:     "alerts-v2",
+		Short:   `New version of SQL Alerts.`,
+		Long:    `New version of SQL Alerts`,
 		GroupID: "sql",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateAlert())
@@ -73,10 +72,8 @@ func newCreateAlert() *cobra.Command {
 	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
 
 	cmd.Use = "create-alert DISPLAY_NAME QUERY_TEXT WAREHOUSE_ID EVALUATION SCHEDULE"
-	cmd.Short = `*Public Preview* Create an alert.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create an alert.
+	cmd.Short = `Create an alert.`
+	cmd.Long = `Create an alert.
 
   Create Alert
 
@@ -88,14 +85,14 @@ Create an alert.
     SCHEDULE: `
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
 			}
 			return nil
 		}
@@ -179,16 +176,14 @@ func newGetAlert() *cobra.Command {
 	var getAlertReq sql.GetAlertV2Request
 
 	cmd.Use = "get-alert ID"
-	cmd.Short = `*Public Preview* Get an alert.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get an alert.
+	cmd.Short = `Get an alert.`
+	cmd.Long = `Get an alert.
 
   Gets an alert.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -210,7 +205,7 @@ Get an alert.
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getAlertReq.Id = args[0]
 
@@ -262,16 +257,14 @@ func newListAlerts() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-alerts"
-	cmd.Short = `*Public Preview* List alerts.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List alerts.
+	cmd.Short = `List alerts.`
+	cmd.Long = `List alerts.
 
   Gets a list of alerts accessible to the user, ordered by creation time.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -323,18 +316,16 @@ func newTrashAlert() *cobra.Command {
 	cmd.Flags().BoolVar(&trashAlertReq.Purge, "purge", trashAlertReq.Purge, `Whether to permanently delete the alert.`)
 
 	cmd.Use = "trash-alert ID"
-	cmd.Short = `*Public Preview* Delete an alert (legacy TrashAlert).`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Delete an alert (legacy TrashAlert).
+	cmd.Short = `Delete an alert (legacy TrashAlert).`
+	cmd.Long = `Delete an alert (legacy TrashAlert).
 
   Moves an alert to the trash. Trashed alerts immediately disappear from list
   views, and can no longer trigger. You can restore a trashed alert through the
   UI. A trashed alert is permanently deleted after 30 days.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -356,7 +347,7 @@ Delete an alert (legacy TrashAlert).
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		trashAlertReq.Id = args[0]
 
@@ -405,10 +396,8 @@ func newUpdateAlert() *cobra.Command {
 	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
 
 	cmd.Use = "update-alert ID UPDATE_MASK DISPLAY_NAME QUERY_TEXT WAREHOUSE_ID EVALUATION SCHEDULE"
-	cmd.Short = `*Public Preview* Update an alert.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Update an alert.
+	cmd.Short = `Update an alert.`
+	cmd.Long = `Update an alert.
 
   Update alert
 
@@ -432,14 +421,14 @@ Update an alert.
     SCHEDULE: `
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only ID, UPDATE_MASK as positional arguments. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
+				return errors.New("when --json flag is specified, provide only ID, UPDATE_MASK as positional arguments. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
 			}
 			return nil
 		}

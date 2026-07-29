@@ -83,6 +83,13 @@ type IResource interface {
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
 	KeyedSlices() map[string]any
+
+	// [Optional] IsGone reports whether a remote resource should be treated as
+	// already-deleted when planning a delete. Use for backends whose DELETE is
+	// asynchronous and leaves the resource in a transient terminal-teardown state
+	// (returned by GET, not 404) that rejects a second DELETE.
+	// Example: func (*ResourceApp) IsGone(remote *AppRemote) bool
+	IsGone(remoteState any) bool
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -103,6 +110,7 @@ type Adapter struct {
 	waitAfterDelete    *calladapt.BoundCaller
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
+	isGone             *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
@@ -135,6 +143,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		waitAfterUpdate:         nil,
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
+		isGone:                  nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -231,6 +240,11 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.isGone, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IsGone")
+	if err != nil {
+		return err
+	}
+
 	keyedSlicesCall, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "KeyedSlices")
 	if err != nil {
 		return err
@@ -310,6 +324,10 @@ func (a *Adapter) validate() error {
 
 	if a.doResize != nil {
 		validations = append(validations, "DoResize newState", a.doResize.InTypes[2], stateType)
+	}
+
+	if a.isGone != nil {
+		validations = append(validations, "IsGone remoteState", a.isGone.InTypes[0], remoteType)
 	}
 
 	if a.doUpdateWithID != nil {
@@ -562,6 +580,19 @@ func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathN
 // If the resource doesn't implement KeyedSlices, returns nil.
 func (a *Adapter) KeyedSlices() map[string]any {
 	return a.keyedSlices
+}
+
+// IsGone reports whether the remote state represents an already-deleted resource
+// for planning purposes. Resources that don't implement IsGone are never gone.
+func (a *Adapter) IsGone(remoteState any) bool {
+	if a.isGone == nil {
+		return false
+	}
+	outs, err := a.isGone.Call(remoteState)
+	if err != nil {
+		return false
+	}
+	return outs[0].(bool)
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

@@ -1,6 +1,6 @@
 {
   "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 5,
   "plan": {
@@ -78,7 +78,7 @@
           "label": "${resources.jobs.job_with_permissions.id}"
         }
       ],
-      "action": "skip",
+      "action": "delete",
       "remote_state": {
         "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
         "__embed__": [

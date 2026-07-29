@@ -3,6 +3,7 @@
 package clean_room_assets
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -68,6 +69,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.Asset.CleanRoomName, "clean-room-name", createReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to.`)
 	// TODO: complex arg: foreign_table
 	// TODO: complex arg: foreign_table_local_details
+	// TODO: complex arg: jar_analysis
 	// TODO: complex arg: notebook
 	// TODO: complex arg: table
 	// TODO: complex arg: table_local_details
@@ -97,7 +99,14 @@ func newCreate() *cobra.Command {
       For notebooks, the name is the notebook file name. For jar analyses, the
       name is the jar analysis name.
     ASSET_TYPE: The type of the asset.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -107,7 +116,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only CLEAN_ROOM_NAME as positional arguments. Provide 'name', 'asset_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only CLEAN_ROOM_NAME as positional arguments. Provide 'name', 'asset_type' in your JSON input")
 			}
 			return nil
 		}
@@ -181,6 +190,7 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 
 	cmd.Flags().Var(&createCleanRoomAssetReviewJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: jar_analysis_review
 	// TODO: complex arg: notebook_review
 
 	cmd.Use = "create-clean-room-asset-review CLEAN_ROOM_NAME ASSET_TYPE NAME"
@@ -194,7 +204,14 @@ Create a review (e.g. approval) for an asset.
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room
     ASSET_TYPE: Asset type. Can either be NOTEBOOK_FILE or JAR_ANALYSIS.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]
     NAME: Name of the asset`
 
 	cmd.Annotations = make(map[string]string)
@@ -274,7 +291,14 @@ func newDelete() *cobra.Command {
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
     ASSET_TYPE: The type of the asset.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]
     NAME: The fully qualified name of the asset, it is same as the name field in
       CleanRoomAsset.`
 
@@ -342,7 +366,14 @@ func newGet() *cobra.Command {
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
     ASSET_TYPE: The type of the asset.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]
     NAME: The fully qualified name of the asset, it is same as the name field in
       CleanRoomAsset.`
 
@@ -480,6 +511,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Asset.CleanRoomName, "clean-room-name", updateReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to.`)
 	// TODO: complex arg: foreign_table
 	// TODO: complex arg: foreign_table_local_details
+	// TODO: complex arg: jar_analysis
 	// TODO: complex arg: notebook
 	// TODO: complex arg: table
 	// TODO: complex arg: table_local_details
@@ -497,7 +529,14 @@ func newUpdate() *cobra.Command {
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
     ASSET_TYPE: The type of the asset.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]
     NAME: A fully qualified name that uniquely identifies the asset within the clean
       room. This is also the name displayed in the clean room UI.
 

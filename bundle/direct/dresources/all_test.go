@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -76,6 +77,13 @@ var testConfig map[string]any = map[string]any{
 	"database_instances": &resources.DatabaseInstance{
 		DatabaseInstance: database.DatabaseInstance{
 			Name: "mydbinstance",
+		},
+	},
+
+	"instance_pools": &resources.InstancePool{
+		CreateInstancePool: compute.CreateInstancePool{
+			InstancePoolName: "my-instance-pool",
+			NodeTypeId:       "i3.xlarge",
 		},
 	},
 
@@ -322,6 +330,30 @@ var testDeps = map[string]prepareWorkspace{
 		return testConfig["vector_search_indexes"], nil
 	},
 
+	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// A run can only be triggered against an existing job, so create one first.
+		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
+			Name: "job-for-run",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "t",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.JobRun{
+			RunNow: jobs.RunNow{
+				JobId: resp.JobId,
+			},
+		}, nil
+	},
+
 	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-permissions",
@@ -358,7 +390,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/pipelines/" + resp.PipelineId,
 			EmbeddedSlice: []StatePermission{{
-				Level:    "CAN_MANAGE",
+				// Pipelines require exactly one owner, like jobs.
+				Level:    "IS_OWNER",
 				UserName: "user@example.com",
 			}},
 		}, nil
@@ -402,6 +435,16 @@ var testDeps = map[string]prepareWorkspace{
 	"clusters.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"instance_pools.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/instance-pools/pool-permissions",
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -1033,11 +1076,28 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// Apps DoDelete is fire-and-forget: the API returns success while the app
+	// sits in DELETING state for up to ~20 minutes before the record is removed.
+	// A GET on the DELETING app returns the app, not 404 -- the testserver
+	// mirrors that in libs/testserver/apps.go. DoRead therefore still succeeds
+	// here; the planner treats this transient state as gone via ResourceApp.IsGone
+	// so delete/destroy stay idempotent (acceptance/bundle/invariant/{delete,destroy}_idempotent).
+	deleteLeavesDeleting := group == "apps"
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
-	if deleteIsNoop {
+	switch {
+	case deleteIsNoop:
 		require.NoError(t, err)
-	} else {
+		// The resource genuinely still exists, so it must not report as gone.
+		assert.False(t, adapter.IsGone(remoteAfterDelete))
+	case deleteLeavesDeleting:
+		require.NoError(t, err)
+		require.NotNil(t, remoteAfterDelete)
+		// IsGone lets the planner short-circuit the second delete on this
+		// transient DELETING state; this is what keeps the delete/destroy
+		// invariant tests idempotent, so assert the contract directly.
+		assert.True(t, adapter.IsGone(remoteAfterDelete))
+	default:
 		require.Error(t, err)
 		require.Nil(t, remoteAfterDelete)
 	}
@@ -1124,7 +1184,9 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 
 		// A user change is only neutralized by recreate_on_changes,
 		// provided_id_fields, or ignore_local_changes; output-only fields are
-		// covered by ignore_remote_changes since the user never sets them.
+		// covered by ignore_remote_changes since the user never sets them. A
+		// root rule (omitted field) records the empty path "", which stops the
+		// walk below at the root node and thus covers every field at once.
 		covered := map[string]bool{}
 		for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 			if cfg == nil {
@@ -1148,9 +1210,6 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 
 		t.Run(resourceType, func(t *testing.T) {
 			err := structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
-				if path.IsRoot() {
-					return true
-				}
 				if covered[path.String()] {
 					// This field (or its enclosing object) is classified; the
 					// whole subtree is covered, so stop descending.

@@ -10,22 +10,55 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/google/uuid"
 )
 
 const (
+	// currentStateVersion is the schema version written for deployments that record
+	// no feature flags, and the version legacy states are migrated up to on load.
 	currentStateVersion = 2
 	initialBufferSize   = 64 * 1024
 	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
+
+	// featureStateVersion is the schema version a future CLI will write once it
+	// records deployment state "feature flags" (see Header.Features). This CLI does
+	// not write it and records no features; it exists now only so this CLI reads
+	// such states correctly (see migrateState):
+	//   - featureStateVersion with no features  -> accept and leave the version as-is
+	//   - featureStateVersion with any feature   -> refuse, tell the user to upgrade
+	//
+	// A featureStateVersion state with no features is equivalent to
+	// currentStateVersion, but we deliberately do not flip the on-disk version down
+	// to currentStateVersion: a state written at featureStateVersion stays at
+	// featureStateVersion. This is forward-compat scaffolding so that a later release
+	// can start writing featureStateVersion + features without older CLIs (with this
+	// change) either mishandling a feature they lack or rejecting a featureless state
+	// outright. featureStateVersion is always 3.
+	featureStateVersion = 3
+
+	// supportedStateVersion is the highest schema version this CLI can read. It is
+	// normally equal to currentStateVersion — the version this CLI reads is the
+	// version it writes — and exceeds it only during a two-phase version bump like
+	// the current feature-flag scaffolding, where this CLI reads (but does not
+	// write) featureStateVersion. A state newer than this is rejected as too new.
+	supportedStateVersion = featureStateVersion
 )
+
+// featuresDocURL is the single documentation page describing deployment state
+// feature flags. It is shown when a state records a feature this CLI does not
+// support; it is a fixed link for all features. The #state-features anchor points
+// at the feature table; if it ever breaks, the user still lands on the page.
+const featuresDocURL = "https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features"
 
 // errStaleWAL is returned when the WAL serial is behind the expected serial.
 // The caller should delete the stale WAL and proceed normally.
@@ -46,6 +79,13 @@ type Header struct {
 	CLIVersion   string `json:"cli_version"`
 	Lineage      string `json:"lineage"`
 	Serial       int    `json:"serial"`
+
+	// Features maps each feature flag this state depends on to a (currently empty)
+	// value. This CLI writes no features; it only reads the field to detect a state
+	// that depends on features it lacks and refuse it (see migrateState). It is a
+	// map so a future CLI can attach per-feature data without reshaping the state.
+	// Empty/omitted for states that use no features.
+	Features map[string]struct{} `json:"features,omitempty"`
 }
 
 type Database struct {
@@ -89,8 +129,10 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
-	// don't indent so that every WAL entry remains on a single line
-	jsonMessage, err := json.Marshal(state)
+	// Redact sensitive fields before persisting: secrets must not appear on disk
+	// in plaintext. The original struct is not modified; the plan uses the
+	// unredacted in-memory value for API calls.
+	jsonMessage, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
 	if err != nil {
 		return err
 	}
@@ -462,6 +504,11 @@ func (db *DeploymentState) AssertOpenedForWrite() {
 func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range data.State {
+		// Match on the exact resource type, not a substring of the key, so a
+		// sub-resource entry like resources.<group>.<name>.permissions is not
+		// mistaken for the resource itself.
+		resourceType := config.GetResourceTypeFromKey(key)
+
 		var etag string
 		// Extract etag for resources that use it for drift detection
 		// (dashboards and genie_spaces). Both follow the same pattern of
@@ -470,7 +517,7 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 		// covered by test cases:
 		//   - bundle/deploy/dashboard/detect-change
 		//   - bundle/resources/genie_spaces/simple
-		if (strings.Contains(key, ".dashboards.") || strings.Contains(key, ".genie_spaces.")) && len(entry.State) > 0 {
+		if (resourceType == "dashboards" || resourceType == "genie_spaces") && len(entry.State) > 0 {
 			var holder struct {
 				Etag string `json:"etag"`
 			}
@@ -479,9 +526,22 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 			}
 		}
 
+		// Persist a run's resolved job_id so read-only commands can build its
+		// URL; in config it is a deploy-time-only ${resources.jobs.*.id} reference.
+		var jobID int64
+		if resourceType == "job_runs" && len(entry.State) > 0 {
+			var holder struct {
+				JobID int64 `json:"job_id"`
+			}
+			if err := json.Unmarshal(entry.State, &holder); err == nil {
+				jobID = holder.JobID
+			}
+		}
+
 		result[key] = resourcestate.ResourceState{
 			ID:             entry.ID,
 			ETag:           etag,
+			JobID:          jobID,
 			StateSizeBytes: len(entry.State),
 		}
 	}

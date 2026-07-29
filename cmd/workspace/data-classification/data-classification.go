@@ -69,6 +69,7 @@ func newCreateCatalogConfig() *cobra.Command {
 	cmd.Flags().Var(&createCatalogConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: auto_tag_configs
+	// TODO: complex arg: excluded_schemas
 	// TODO: complex arg: included_schemas
 	cmd.Flags().StringVar(&createCatalogConfigReq.CatalogConfig.Name, "name", createCatalogConfigReq.CatalogConfig.Name, `Resource name in the format: catalogs/{catalog_name}/config.`)
 
@@ -274,6 +275,7 @@ func newUpdateCatalogConfig() *cobra.Command {
 	cmd.Flags().Var(&updateCatalogConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: auto_tag_configs
+	// TODO: complex arg: excluded_schemas
 	// TODO: complex arg: included_schemas
 	cmd.Flags().StringVar(&updateCatalogConfigReq.CatalogConfig.Name, "name", updateCatalogConfigReq.CatalogConfig.Name, `Resource name in the format: catalogs/{catalog_name}/config.`)
 

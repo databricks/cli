@@ -187,15 +187,20 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		ref:     latestTag,
 	}
 
+	sp := cmdio.NewSpinner(ctx)
+	defer sp.Close()
+
 	fileRecords := map[string]FileRecord{}
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
+		sp.Update("Installing " + change.Name + "...")
 		records, err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params)
 		if err != nil {
 			return nil, err
 		}
 		maps.Copy(fileRecords, records)
 	}
+	sp.Close()
 
 	// Update state.
 	state.Release = latestTag

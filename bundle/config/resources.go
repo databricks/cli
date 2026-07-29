@@ -12,6 +12,7 @@ import (
 // Resources defines Databricks resources associated with the bundle.
 type Resources struct {
 	Jobs      map[string]*resources.Job      `json:"jobs,omitempty"`
+	JobRuns   map[string]*resources.JobRun   `json:"job_runs,omitempty"`
 	Pipelines map[string]*resources.Pipeline `json:"pipelines,omitempty"`
 
 	Models                map[string]*resources.MlflowModel          `json:"models,omitempty"`
@@ -42,6 +43,7 @@ type Resources struct {
 	PostgresSyncedTables  map[string]*resources.PostgresSyncedTable  `json:"postgres_synced_tables,omitempty"`
 	VectorSearchEndpoints map[string]*resources.VectorSearchEndpoint `json:"vector_search_endpoints,omitempty"`
 	VectorSearchIndexes   map[string]*resources.VectorSearchIndex    `json:"vector_search_indexes,omitempty"`
+	InstancePools         map[string]*resources.InstancePool         `json:"instance_pools,omitempty"`
 }
 
 type ConfigResource interface {
@@ -96,6 +98,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 	descriptions := SupportedResources()
 	return []ResourceGroup{
 		collectResourceMap(descriptions["jobs"], r.Jobs),
+		collectResourceMap(descriptions["job_runs"], r.JobRuns),
 		collectResourceMap(descriptions["pipelines"], r.Pipelines),
 		collectResourceMap(descriptions["models"], r.Models),
 		collectResourceMap(descriptions["experiments"], r.Experiments),
@@ -125,6 +128,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["postgres_synced_tables"], r.PostgresSyncedTables),
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
 		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
+		collectResourceMap(descriptions["instance_pools"], r.InstancePools),
 	}
 }
 
@@ -157,9 +161,11 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 func SupportedResources() map[string]resources.ResourceDescription {
 	return map[string]resources.ResourceDescription{
 		"jobs":                    (&resources.Job{}).ResourceDescription(),
+		"job_runs":                (&resources.JobRun{}).ResourceDescription(),
 		"pipelines":               (&resources.Pipeline{}).ResourceDescription(),
 		"models":                  (&resources.MlflowModel{}).ResourceDescription(),
 		"experiments":             (&resources.MlflowExperiment{}).ResourceDescription(),
+		"instance_pools":          (&resources.InstancePool{}).ResourceDescription(),
 		"model_serving_endpoints": (&resources.ModelServingEndpoint{}).ResourceDescription(),
 		"registered_models":       (&resources.RegisteredModel{}).ResourceDescription(),
 		"quality_monitors":        (&resources.QualityMonitor{}).ResourceDescription(),

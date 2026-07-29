@@ -3,6 +3,7 @@
 package genie
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -120,7 +121,7 @@ func newCreateMessage() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID as positional arguments. Provide 'content' in your JSON input")
+				return errors.New("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID as positional arguments. Provide 'content' in your JSON input")
 			}
 			return nil
 		}
@@ -222,7 +223,7 @@ Create message comment.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(3)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'content' in your JSON input")
+				return errors.New("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'content' in your JSON input")
 			}
 			return nil
 		}
@@ -317,7 +318,7 @@ func newCreateSpace() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'warehouse_id', 'serialized_space' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'warehouse_id', 'serialized_space' in your JSON input")
 			}
 			return nil
 		}
@@ -513,7 +514,8 @@ Download message attachment visualization.
 
   Download a rendered image of a message visualization attachment. The response
   body is the raw PNG image, not a JSON payload. This is only available if the
-  attachment is a visualization and the message status is COMPLETED.
+  attachment is a visualization and the message status is COMPLETED. This
+  endpoint is not supported for Private Link workspaces.
 
   Arguments:
     NAME: The resource name of the attachment to render, in the format
@@ -1897,7 +1899,7 @@ func newSendMessageFeedback() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(3)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'rating' in your JSON input")
+				return errors.New("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'rating' in your JSON input")
 			}
 			return nil
 		}
@@ -1996,7 +1998,7 @@ func newStartConversation() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID as positional arguments. Provide 'content' in your JSON input")
+				return errors.New("when --json flag is specified, provide only SPACE_ID as positional arguments. Provide 'content' in your JSON input")
 			}
 			return nil
 		}

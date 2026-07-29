@@ -13,6 +13,6 @@ jobs:
         if: "!contains(github.event.pull_request.labels.*.name, 'override-changelog-guard')"
         run: |-
           echo "::error::CHANGELOG.md should not be modified directly by PRs."
-          echo "The release workflow manages CHANGELOG.md automatically from NEXT_CHANGELOG.md."
+          echo "The release workflow manages CHANGELOG.md automatically from .nextchanges/ fragments."
           echo "If this is intentional, add the 'override-changelog-guard' label to this PR."
           exit 1

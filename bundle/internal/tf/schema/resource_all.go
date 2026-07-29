@@ -113,6 +113,7 @@ type AllResources struct {
 	PolicyInfo                                   ResourcePolicyInfo                                   `json:"databricks_policy_info,omitempty"`
 	PostgresBranch                               ResourcePostgresBranch                               `json:"databricks_postgres_branch,omitempty"`
 	PostgresCatalog                              ResourcePostgresCatalog                              `json:"databricks_postgres_catalog,omitempty"`
+	PostgresCdfConfig                            ResourcePostgresCdfConfig                            `json:"databricks_postgres_cdf_config,omitempty"`
 	PostgresDataApi                              ResourcePostgresDataApi                              `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                             ResourcePostgresDatabase                             `json:"databricks_postgres_database,omitempty"`
 	PostgresEndpoint                             ResourcePostgresEndpoint                             `json:"databricks_postgres_endpoint,omitempty"`

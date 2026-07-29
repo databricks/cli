@@ -1,0 +1,25 @@
+Provision (or update) a local Python environment matched to a Databricks compute target.
+
+Resolves the target to an environment key, fetches the pinned Python version,
+databricks-connect version, and dependency constraints published for that key,
+then provisions a matched .venv with uv. A project with no pyproject.toml is
+initialized from scratch; an existing pyproject.toml is merged in place (its
+env-owned sections are refreshed, user-owned content is preserved).
+
+Usage:
+  databricks environments setup-local [flags]
+
+Flags:
+      --cluster-id string           cluster ID to use as the compute target
+      --cluster-name string         cluster name to use as the compute target (resolved to an ID via the Clusters API)
+      --constraints-only            apply the Python version and constraints without adding the databricks-connect dependency
+      --dry-run                     compute the plan without writing files or provisioning
+  -h, --help                        help for setup-local
+      --job-task string             job task to use as the compute target, as <job-id>.<task-key> (the task key is required)
+      --serverless-version string   serverless version to use as the compute target (e.g. 5)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

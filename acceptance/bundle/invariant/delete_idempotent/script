@@ -1,0 +1,61 @@
+# Invariant to test: deleting resources by removing them from config is idempotent.
+# After a delete succeeds, restoring the pre-delete state and running deploy again
+# must succeed even though the resources are already gone on the server.
+
+invariant_setup
+
+# All configs use `test-bundle-$UNIQUE_NAME`; workspace root/state paths follow
+# the default `~/.bundle/<name>/<target>` template with target=default.
+bundle_name=test-bundle-$UNIQUE_NAME
+STATE_PATH=/Workspace/Users/$CURRENT_USER_NAME/.bundle/$bundle_name/default/state
+
+# Initial deploy of the resources. Only pre-plan when READPLAN=1 exercises the
+# saved-plan deploy path; otherwise `bundle deploy` plans on its own.
+if [[ -n "$READPLAN" ]]; then
+    $CLI bundle plan -o json > plan_initial.json 2>LOG.plan_initial.err
+    cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
+fi
+
+invariant_deploy LOG.deploy_initial $CLI bundle deploy $(readplanarg plan_initial.json)
+
+# Snapshot the deploy state before we delete anything.
+cp -r .databricks .databricks.backup
+
+# Replace the config with an empty resources map so the next deploy issues deletes.
+cat > databricks.yml <<EOF
+bundle:
+  name: $bundle_name
+
+resources: {}
+EOF
+
+if [[ -n "$READPLAN" ]]; then
+    $CLI bundle plan -o json > plan_delete.json 2>LOG.plan_delete.err
+    cat LOG.plan_delete.err | contains.py '!panic:' '!internal error' > /dev/null
+fi
+
+trace $CLI bundle deploy --auto-approve $(readplanarg plan_delete.json) &> LOG.deploy_delete
+cat LOG.deploy_delete | contains.py '!panic:' '!internal error' > /dev/null
+
+# Restore the pre-delete state; the resources are already gone from the server,
+# so the next delete-deploy must handle "resource already gone" idempotently.
+rm -rf .databricks
+mv .databricks.backup .databricks
+
+# Wipe the workspace state file the delete-deploy just wrote. With it present,
+# AlwaysPull=true would treat remote as newer and overwrite our restored local
+# state; nuking it leaves local as the sole state source, so the next plan
+# genuinely re-issues deletes for resources the server has already removed.
+# MSYS_NO_PATHCONV=1 stops Git Bash on Windows from rewriting the leading-slash
+# workspace path into C:/Program Files/Git/...; it is scoped to this command so
+# the Python helpers (which need their own paths converted) are unaffected.
+MSYS_NO_PATHCONV=1 $CLI workspace delete --recursive "$STATE_PATH" &> LOG.wipe_remote_state
+cat LOG.wipe_remote_state | contains.py '!panic:' '!internal error' > /dev/null
+
+if [[ -n "$READPLAN" ]]; then
+    $CLI bundle plan -o json > plan_delete2.json 2>LOG.plan_delete2.err
+    cat LOG.plan_delete2.err | contains.py '!panic:' '!internal error' > /dev/null
+fi
+
+trace $CLI bundle deploy --auto-approve $(readplanarg plan_delete2.json) &> LOG.deploy_delete2
+cat LOG.deploy_delete2 | contains.py '!panic:' '!internal error' > /dev/null

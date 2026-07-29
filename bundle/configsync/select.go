@@ -1,11 +1,13 @@
 package configsync
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/libs/log"
 )
 
 // ResolveResourceSelectors maps "<type>:<id>" selectors to their plan keys
@@ -21,11 +23,18 @@ import (
 // is also why selection is independent from `bundle deploy --select`, which
 // matches "type.name" keys.
 //
-// A selector that matches no deployed resource is an error: only deployed
-// resources have an id, so a selector matching nothing is a caller mistake.
+// A selector that matches no deployed resource is skipped rather than failing
+// the run — but only when at least one other selector did match. The workspace
+// UI batches every edited resource into one sync, so a single stale selector
+// (a resource deleted remotely, or whose deploy state has drifted) must not
+// drop the valid resources' edits. When NO selector matches, the error is
+// returned instead: silently reporting "no changes" would let the UI show a
+// success while nothing synced, hiding a real state problem. A malformed
+// selector (missing "<type>:<id>" shape) is always an error, because that is a
+// caller mistake rather than drift.
 // Duplicate selectors are deduplicated; the returned keys preserve the order in
 // which their selectors first appear.
-func ResolveResourceSelectors(state *dstate.DeploymentState, selectors []string) ([]string, error) {
+func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState, selectors []string) ([]string, error) {
 	// Index deployed resources by "<type>:<id>". State keys have the form
 	// "resources.<type>.<name>"; indexing by the <type> component means a
 	// selector can only ever match a resource of that exact type, never an id
@@ -48,6 +57,7 @@ func ResolveResourceSelectors(state *dstate.DeploymentState, selectors []string)
 	}
 
 	keys := make([]string, 0, len(selectors))
+	var missing []string
 	for _, selector := range selectors {
 		resourceType, id, ok := strings.Cut(selector, ":")
 		if !ok || resourceType == "" || id == "" {
@@ -55,11 +65,25 @@ func ResolveResourceSelectors(state *dstate.DeploymentState, selectors []string)
 		}
 		key, ok := byTypeID[selector]
 		if !ok {
-			return nil, fmt.Errorf("no deployed %s resource with id %s", resourceType, id)
+			missing = append(missing, selector)
+			continue
 		}
 		if !slices.Contains(keys, key) {
 			keys = append(keys, key)
 		}
+	}
+
+	// No selector matched a deployed resource: fail loudly instead of syncing
+	// nothing, so the caller does not report a spurious success.
+	if len(keys) == 0 {
+		resourceType, id, _ := strings.Cut(missing[0], ":")
+		return nil, fmt.Errorf("no deployed %s resource with id %s", resourceType, id)
+	}
+
+	// Some selectors matched: skip the stale ones so the matched resources still
+	// sync (the UI batches several resources into one run).
+	for _, selector := range missing {
+		log.Debugf(ctx, "config-remote-sync: skipping selector %q, no deployed resource with that id", selector)
 	}
 	return keys, nil
 }
