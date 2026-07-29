@@ -37,11 +37,18 @@ func jobRunServer(t *testing.T, getRun testserver.HandlerFunc) *databricks.Works
 	return jobRunClientFor(t, server)
 }
 
+// The Jobs API reports the run page in the legacy fragment form; errors and
+// progress lines carry the path form it converts to.
+const (
+	testRunPageURL  = "https://myworkspace.databricks.test/?o=900800700600#job/456/run/123"
+	testRunPageLink = "run page: https://myworkspace.databricks.test/jobs/456/runs/123?o=900800700600"
+)
+
 // jobRunClient returns a client whose GetRun always reports the given run state.
 func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClient {
 	t.Helper()
 	return jobRunServer(t, func(req testserver.Request) any {
-		return jobs.Run{RunId: 123, JobId: 456, State: state}
+		return jobs.Run{RunId: 123, JobId: 456, State: state, RunPageUrl: testRunPageURL}
 	})
 }
 
@@ -129,13 +136,12 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 
 	_, err := waitForTestRun(t, t.Context(), client)
 
-	// The SDK waiter errors on INTERNAL_ERROR, ahead of the result check, so the
-	// wrapping is all that names the run.
-	require.ErrorContains(t, err, "waiting for job run 123")
+	// The SDK waiter errors on INTERNAL_ERROR, ahead of the result check.
 	require.ErrorContains(t, err, "INTERNAL_ERROR")
+	require.ErrorContains(t, err, testRunPageLink)
 }
 
-func TestJobRunWaitAbandonedNamesTheRun(t *testing.T) {
+func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning})
 
 	ctx, cancel := context.WithTimeout(t.Context(), time.Millisecond)
@@ -143,8 +149,9 @@ func TestJobRunWaitAbandonedNamesTheRun(t *testing.T) {
 
 	_, err := waitForTestRun(t, ctx, client)
 
-	// Giving up on the wait does not stop the run, so the error has to name it.
-	require.ErrorContains(t, err, "waiting for job run 123")
+	// Giving up on the wait does not stop the run, so the error links to it.
+	require.Error(t, err)
+	require.ErrorContains(t, err, testRunPageLink)
 }
 
 // Reporting RUNNING for the first two polls exercises the poll loop; the other
@@ -169,5 +176,5 @@ func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	// SUCCESS is only reachable by polling past the RUNNING reads.
 	require.NotNil(t, remote.State)
 	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
-	assert.GreaterOrEqual(t, gets.Load(), int32(2), "expected the wait to poll more than once")
+	assert.Equal(t, int32(3), gets.Load(), "expected the wait to poll past both RUNNING reads")
 }
