@@ -73,8 +73,8 @@ func TestNewRecordedOperationDoesNotRedactSensitiveFields(t *testing.T) {
 	op, err := newRecordedOperation(deployplan.Create, "job-123", state, nil)
 	require.NoError(t, err)
 
-	// Recorded as-is for now, unlike dstate.SaveState which redacts before writing
-	// the local state file. See the TODO in newRecordedOperation.
+	// Recorded as-is, unlike dstate.SaveState which redacts before writing the
+	// local state file.
 	assert.JSONEq(t,
 		`{"state":{"name":"foo","token":"super-secret"}}`,
 		string(op.state))

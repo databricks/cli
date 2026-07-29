@@ -44,10 +44,6 @@ func newRecordedOperation(action deployplan.ActionType, resourceID string, state
 
 	// Operation.State carries the serialized state, which DMS serves back as
 	// resource state. Unset for delete: the resource is gone.
-	//
-	// TODO(DMS): fields marked bundle:"sensitive" are recorded in plaintext here,
-	// unlike dstate.SaveState which redacts them before writing the local state
-	// file. Redact them before this ships to users.
 	if state != nil {
 		config, err := json.Marshal(state)
 		if err != nil {
