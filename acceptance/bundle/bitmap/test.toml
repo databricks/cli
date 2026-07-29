@@ -1,0 +1,7 @@
+Local = true
+Cloud = false
+
+# The bitmap reflects config-field presence, which does not depend on the
+# deployment engine, so run once on direct instead of the inherited
+# terraform/direct matrix.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
