@@ -16,7 +16,7 @@ The deploy payload is declared twice: the proto in the universe repo (`proto/log
 
 **RULE: A new bundle resource type needs no telemetry change.** Per-type counts come from `resources_metadata.resources[*]`, which `resourceMetadata` in `bundle/phases/resources_metadata.go` derives from `Resources.AllResources()` — exhaustive by construction and guarded by `TestResourcesAllResourcesCompleteness`.
 
-**RULE: Do not add new `resource_<type>_count` fields to `BundleDeployEvent`.** The 13 that exist are `deprecated = true` in the universe proto, kept only for continuity of existing dashboards. Adding more re-creates what `resources_metadata` fixed: a hand-maintained field list that silently lags the resource types, making a new type indistinguishable from zero adoption. New dashboard panels should read `resources_metadata`.
+**RULE: Do not add new `resource_<type>_count` fields to `BundleDeployEvent`.** The 12 that exist, and the aggregate `resource_count`, are `deprecated = true` in the universe proto, kept only for continuity of existing dashboards. Adding more re-creates what `resources_metadata` fixed: a hand-maintained field list that silently lags the resource types, making a new type indistinguishable from zero adoption. New dashboard panels should read `resources_metadata`.
 
 ## Adding a new metric
 
