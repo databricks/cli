@@ -1,11 +1,39 @@
 package configsync
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestRestoreVariableReferencesFailsForUnresolvedSourceReference(t *testing.T) {
+	ctx := logdiag.InitContext(t.Context())
+	directory := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(directory, "databricks.yml"), []byte("bundle:\n  name: test\n"), 0o644))
+	b, err := bundle.Load(ctx, directory)
+	require.NoError(t, err)
+	mutator.DefaultMutators(ctx, b)
+
+	changes := []FieldChange{{
+		FilePath:        filepath.Join(directory, "databricks.yml"),
+		FieldCandidates: []string{"resources.jobs.test.name"},
+		Change: &ConfigChangeDesc{
+			Operation: OperationReplace,
+			Value:     "resolved value",
+		},
+		sourceValue: dyn.V("${var.missing}"),
+	}}
+
+	err = RestoreVariableReferences(ctx, b, changes, nil)
+	require.ErrorContains(t, err, "restoring references for resources.jobs.test.name")
+}
 
 // TestRestoreOriginalRefs_HardcodedFieldNotRewritten fences the Replace safety
 // invariant: a hardcoded leaf must never be rewritten to a variable reference
@@ -74,10 +102,12 @@ func TestRestoreFromSiblings_AmbiguousAcrossSiblings(t *testing.T) {
 func TestRestoreCompoundInterpolation(t *testing.T) {
 	resolved := dyn.V(map[string]dyn.Value{
 		"variables": dyn.V(map[string]dyn.Value{
-			"host": dyn.V(map[string]dyn.Value{"value": dyn.V("dev-sql.example.com")}),
-			"port": dyn.V(map[string]dyn.Value{"value": dyn.V("1433")}),
-			"db":   dyn.V(map[string]dyn.Value{"value": dyn.V("analytics_dev")}),
-			"acct": dyn.V(map[string]dyn.Value{"value": dyn.V("acct")}),
+			"host":      dyn.V(map[string]dyn.Value{"value": dyn.V("dev-sql.example.com")}),
+			"port":      dyn.V(map[string]dyn.Value{"value": dyn.V("1433")}),
+			"db":        dyn.V(map[string]dyn.Value{"value": dyn.V("analytics_dev")}),
+			"acct":      dyn.V(map[string]dyn.Value{"value": dyn.V("acct")}),
+			"fragment":  dyn.V(map[string]dyn.Value{"value": dyn.V("in")}),
+			"separator": dyn.V(map[string]dyn.Value{"value": dyn.V("-")}),
 		}),
 	})
 
@@ -104,6 +134,36 @@ func TestRestoreCompoundInterpolation(t *testing.T) {
 			template: "${var.acct}-phi-encryption-key",
 			remote:   "master-encryption-key-v2",
 			want:     "master-encryption-key-v2",
+		},
+		{
+			name:     "resolved value inside unrelated word stays hardcoded",
+			template: "${var.fragment}/foo",
+			remote:   "binoculars",
+			want:     "binoculars",
+		},
+		{
+			name:     "one literal anchor does not bind an unrelated word",
+			template: "prefix-${var.fragment}-suffix",
+			remote:   "prefix-inoculars",
+			want:     "prefix-inoculars",
+		},
+		{
+			name:     "left literal anchor requires a right token boundary",
+			template: "prefix-${var.fragment}",
+			remote:   "prefix-inoculars",
+			want:     "prefix-inoculars",
+		},
+		{
+			name:     "right literal anchor requires a left token boundary",
+			template: "${var.fragment}-suffix",
+			remote:   "bin-suffix",
+			want:     "bin-suffix",
+		},
+		{
+			name:     "punctuation value inside an unrelated word stays hardcoded",
+			template: "${var.separator}/foo",
+			remote:   "master-key",
+			want:     "master-key",
 		},
 	}
 	for _, tt := range tests {

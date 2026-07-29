@@ -66,3 +66,23 @@ func TestIsFileIncluded(t *testing.T) {
 		})
 	}
 }
+
+func TestMatchedIncludeFilesReflectsNewMatches(t *testing.T) {
+	root := t.TempDir()
+	resources := filepath.Join(root, "resources")
+	require.NoError(t, os.MkdirAll(resources, 0o755))
+	first := filepath.Join(resources, "first.yml")
+	require.NoError(t, os.WriteFile(first, []byte("{}"), 0o644))
+
+	b := &Bundle{BundleRootPath: root}
+	b.SetIncludePatterns([]string{"resources/*.yml"})
+	files, err := b.MatchedIncludeFiles()
+	require.NoError(t, err)
+	require.Equal(t, []string{first}, files)
+
+	second := filepath.Join(resources, "second.yml")
+	require.NoError(t, os.WriteFile(second, []byte("{}"), 0o644))
+	files, err = b.MatchedIncludeFiles()
+	require.NoError(t, err)
+	require.Equal(t, []string{first, second}, files)
+}

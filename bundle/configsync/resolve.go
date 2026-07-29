@@ -1,18 +1,15 @@
 package configsync
 
 import (
-	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
-	"maps"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
@@ -21,6 +18,10 @@ type FieldChange struct {
 	FilePath        string
 	Change          *ConfigChangeDesc
 	FieldCandidates []string
+
+	sourceValue         dyn.Value
+	sourceSiblings      []dyn.Value
+	originalFileContent []byte
 }
 
 // resolveSelectors converts key-value selectors to numeric indices that match
@@ -114,7 +115,7 @@ func yamlFileIndex(seq []dyn.Value, sortedIndex int) int {
 			continue
 		}
 		loc := elem.Location()
-		if loc.File == matchLocation.File && loc.Line < matchLocation.Line {
+		if loc.File == matchLocation.File && (loc.Line < matchLocation.Line || (loc.Line == matchLocation.Line && loc.Column < matchLocation.Column)) {
 			yamlIndex++
 		}
 	}
@@ -129,176 +130,22 @@ func pathDepth(pathStr string) int {
 	return len(node.AsSlice())
 }
 
-// adjustArrayIndex adjusts the index in a PatternNode based on previous operations.
-// When operations are applied sequentially, removals and additions shift array indices.
-// This function adjusts the index to account for those shifts.
-func adjustArrayIndex(path *structpath.PatternNode, operations map[string][]struct {
-	index     int
-	operation OperationType
-},
-) *structpath.PatternNode {
-	originalIndex, ok := path.Index()
-	if !ok {
-		return path
-	}
-
-	parentPath := path.Parent()
-	parentPathStr := parentPath.String()
-	ops := operations[parentPathStr]
-
-	adjustment := 0
-	for _, op := range ops {
-		if op.index < originalIndex {
-			switch op.operation {
-			case OperationRemove:
-				adjustment--
-			case OperationAdd:
-				adjustment++
-			default:
-			}
-		}
-	}
-
-	adjustedIndex := max(originalIndex+adjustment, 0)
-
-	return structpath.NewPatternIndex(parentPath, adjustedIndex)
-}
-
 // ResolveChanges resolves selectors and computes field path candidates for each change.
 func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, error) {
-	var result []FieldChange
-	targetName := b.Config.Bundle.Target
-
-	resourceKeys := slices.Sorted(maps.Keys(configChanges))
-
-	for _, resourceKey := range resourceKeys {
-		resourceChanges := configChanges[resourceKey]
-
-		fieldPaths := make([]string, 0, len(resourceChanges))
-		fieldPathsDepths := map[string]int{}
-		for fieldPath := range resourceChanges {
-			fieldPaths = append(fieldPaths, fieldPath)
-			fieldPathsDepths[fieldPath] = pathDepth(fieldPath)
-		}
-
-		// Sort field paths by depth (deeper first), then operation type (removals before adds), then alphabetically
-		slices.SortStableFunc(fieldPaths, func(a, b string) int {
-			depthA := fieldPathsDepths[a]
-			depthB := fieldPathsDepths[b]
-
-			if depthA != depthB {
-				return cmp.Compare(depthB, depthA)
-			}
-
-			opA := resourceChanges[a].Operation
-			opB := resourceChanges[b].Operation
-
-			if opA == OperationRemove && opB != OperationRemove {
-				return -1
-			}
-			if opA != OperationRemove && opB == OperationRemove {
-				return 1
-			}
-
-			return cmp.Compare(a, b)
-		})
-
-		// Create indices map for this resource, path -> indices, that we could use to replace with added elements
-		indicesToReplaceMap := make(map[string][]int)
-
-		indexOperations := make(map[string][]struct {
-			index     int
-			operation OperationType
-		})
-
-		for _, fieldPath := range fieldPaths {
-			configChange := resourceChanges[fieldPath]
-			fullPath := resourceKey + "." + fieldPath
-
-			resolvedPath, resolvedLocation, err := resolveSelectors(fullPath, b, configChange.Operation)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
-			}
-
-			// If the element is removed, we can use the index to replace it with added element
-			// That may improve the diff in cases when the task is recreated because of renaming
-			if configChange.Operation == OperationRemove {
-				freeIndex, ok := resolvedPath.Index()
-				if ok {
-					parentPath := resolvedPath.Parent().String()
-					indicesToReplaceMap[parentPath] = append(indicesToReplaceMap[parentPath], freeIndex)
-				}
-			}
-
-			if configChange.Operation == OperationAdd && resolvedPath.BracketStar() {
-				parentPath := resolvedPath.Parent().String()
-				indices, ok := indicesToReplaceMap[parentPath]
-				if ok && len(indices) > 0 {
-					index := indices[0]
-					indicesToReplaceMap[parentPath] = indices[1:]
-					resolvedPath = structpath.NewPatternIndex(resolvedPath.Parent(), index)
-				}
-			}
-
-			resolvedPath = adjustArrayIndex(resolvedPath, indexOperations)
-
-			// Track this operation for future index adjustments (only for array element operations)
-			if originalIndex, ok := resolvedPath.Index(); ok {
-				parentPath := resolvedPath.Parent().String()
-				indexOperations[parentPath] = append(indexOperations[parentPath], struct {
-					index     int
-					operation OperationType
-				}{originalIndex, configChange.Operation})
-			}
-
-			resolvedPathStr := resolvedPath.String()
-			candidates := []string{resolvedPathStr}
-			if targetName != "" {
-				targetPrefixedPath := "targets." + targetName + "." + resolvedPathStr
-				candidates = append(candidates, targetPrefixedPath)
-			}
-
-			filePath := resolvedLocation.File
-
-			isDefinedInConfig := filePath != ""
-			if !isDefinedInConfig {
-				if configChange.Operation == OperationRemove {
-					// If the field is not defined in the config and the operation is remove, it is more likely a CLI default
-					// in this case we skip the change
-					continue
-				}
-
-				if configChange.Operation == OperationReplace {
-					// If the field is not defined in the config and the operation is replace, it is more likely a CLI default
-					// in this case we add it explicitly to the resource location
-					configChange.Operation = OperationAdd
-				}
-
-				resourceLocation := b.Config.GetLocation(resourceKey)
-				filePath = resourceLocation.File
-				if filePath == "" {
-					return nil, fmt.Errorf("failed to find location for resource %s for a field %s", resourceKey, fieldPath)
-				}
-
-				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
-			}
-
-			if (configChange.Operation == OperationAdd || configChange.Operation == OperationReplace) && b.SyncRootPath != "" {
-				configChange = &ConfigChangeDesc{
-					Operation: configChange.Operation,
-					Value:     translateWorkspacePaths(configChange.Value, b.SyncRootPath, b.SyncRoot, filepath.Dir(filePath)),
-				}
-			}
-
-			result = append(result, FieldChange{
-				FilePath:        filePath,
-				Change:          configChange,
-				FieldCandidates: candidates,
-			})
-		}
+	snapshot, err := CaptureSourceSnapshot(ctx, b)
+	if err != nil {
+		return nil, err
 	}
+	return ResolveChangesFromSnapshot(ctx, b, configChanges, snapshot)
+}
 
-	return result, nil
+// ResolveChangesFromSnapshot resolves changes against source content captured
+// before the remote plan was calculated.
+func ResolveChangesFromSnapshot(ctx context.Context, b *bundle.Bundle, configChanges Changes, snapshot *SourceSnapshot) ([]FieldChange, error) {
+	if snapshot == nil || snapshot.index == nil {
+		return nil, errors.New("source snapshot unavailable")
+	}
+	return resolveChangesWithProvenance(ctx, b, configChanges, snapshot.index)
 }
 
 // translateWorkspacePaths recursively converts absolute workspace paths to relative
@@ -325,15 +172,17 @@ func translateWorkspacePaths(value any, syncRootPath string, syncRoot fs.FS, tar
 		}
 		return relPathSlash
 	case map[string]any:
+		result := make(map[string]any, len(v))
 		for key, val := range v {
-			v[key] = translateWorkspacePaths(val, syncRootPath, syncRoot, targetDir)
+			result[key] = translateWorkspacePaths(val, syncRootPath, syncRoot, targetDir)
 		}
-		return v
+		return result
 	case []any:
+		result := make([]any, len(v))
 		for i, val := range v {
-			v[i] = translateWorkspacePaths(val, syncRootPath, syncRoot, targetDir)
+			result[i] = translateWorkspacePaths(val, syncRootPath, syncRoot, targetDir)
 		}
-		return v
+		return result
 	default:
 		return value
 	}

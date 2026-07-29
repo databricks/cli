@@ -1,0 +1,89 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+
+field_edits_id="$(read_id.py -t dev s12_field_edits)"
+add_id="$(read_id.py -t dev s12_add_cluster)"
+remove_id="$(read_id.py -t dev s12_remove_cluster)"
+remove_top_edit_target_id="$(read_id.py -t dev s12_remove_top_edit_target)"
+single_block_variable_id="$(read_id.py -t dev s12_single_block_remove_preserve_variable)"
+remove_dependency_id="$(read_id.py -t dev s12_single_block_remove_dependency)"
+prepend_dependency_id="$(read_id.py -t dev s12_single_block_prepend_dependency)"
+s13_id="$(read_id.py -t dev s13_single_block)"
+
+title "S12a/b: edit top-level and target positional elements"
+edit_resource.py pipelines "$field_edits_id" <<'EOF'
+next(c for c in r["clusters"] if c["label"] == "default")["num_workers"] = 1201
+next(c for c in r["clusters"] if c["label"] == "maintenance")["num_workers"] = 1202
+EOF
+
+title "S12c: append a positional element after a target element"
+edit_resource.py pipelines "$add_id" <<'EOF'
+r["clusters"].append({"label": "extra", "num_workers": 1203, "custom_tags": {"role": "extra"}})
+EOF
+
+title "S12c: remove a target positional element"
+edit_resource.py pipelines "$remove_id" <<'EOF'
+r["clusters"] = [c for c in r["clusters"] if c.get("label") != "maintenance"]
+EOF
+
+title "S12c: remove a top-level element while editing the shifted target survivor"
+edit_resource.py pipelines "$remove_top_edit_target_id" <<'EOF'
+r["clusters"] = [c for c in r["clusters"] if c.get("label") != "default"]
+next(c for c in r["clusters"] if c.get("label") == "maintenance")["num_workers"] = 1204
+EOF
+
+title "S12c: remove a single-block element without resolving the shifted survivor"
+edit_resource.py pipelines "$single_block_variable_id" <<'EOF'
+r["clusters"] = [c for c in r["clusters"] if c.get("label") != "default"]
+EOF
+
+title "A variable reference survives a scalar-list removal before it"
+edit_resource.py pipelines "$remove_dependency_id" <<'EOF'
+r["environment"]["dependencies"] = r["environment"]["dependencies"][1:]
+EOF
+
+title "A variable reference survives a scalar-list prepend before it"
+edit_resource.py pipelines "$prepend_dependency_id" <<'EOF'
+r["environment"]["dependencies"].insert(0, "literal-prepend")
+EOF
+
+title "S13: edit, remove, rename, and add in a single-block keyed list"
+edit_resource.py jobs "$s13_id" <<'EOF'
+next(t for t in r["tasks"] if t["task_key"] == "a")["timeout_seconds"] = 1301
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "b"]
+next(t for t in r["tasks"] if t["task_key"] == "c")["task_key"] = "c_renamed"
+r["tasks"].append({
+    "task_key": "d_added",
+    "notebook_task": {"notebook_path": "/Workspace/s13-d"},
+})
+EOF
+
+title "Sync positional split lists and the single-block regression case"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync -t dev --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "The shifted survivor keeps its variable reference"
+echo
+trace grep -Fc 'num_workers: ${var.s12_single_block_workers}' databricks.yml
+trace grep -Fc -- '- ${var.s12_dependency}' databricks.yml
+
+title "Second sync is idempotent"
+echo
+cp databricks.yml databricks.yml.second-backup
+$CLI bundle config-remote-sync -t dev --save | contains.py "No changes detected."
+trace diff.py databricks.yml.second-backup databricks.yml
+rm databricks.yml.second-backup

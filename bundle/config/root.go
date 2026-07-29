@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -34,8 +35,9 @@ type Script struct {
 }
 
 type Root struct { //nolint:recvcheck // value receivers for read-only accessors, pointer for mutators
-	value dyn.Value
-	depth int
+	value       dyn.Value
+	depth       int
+	sourceFiles map[string][]byte
 
 	// Contains user defined variables
 	Variables map[string]*variable.Variable `json:"variables,omitempty"`
@@ -139,6 +141,7 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 		diags = diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
 		return nil, diags
 	}
+	r.sourceFiles = map[string][]byte{path: slices.Clone(raw)}
 	return &r, diags
 }
 
@@ -162,9 +165,13 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	// Hack: restore state; it may be cleared by [ToTyped] if
 	// the configuration equals nil (happens in tests).
 	depth := r.depth
+	// Loaded file bytes are provenance, not configuration fields, so ToTyped
+	// cannot reconstruct them from nv.
+	sourceFiles := r.sourceFiles
 
 	defer func() {
 		r.depth = depth
+		r.sourceFiles = sourceFiles
 	}()
 
 	// Convert normalized configuration tree to typed configuration.
@@ -296,9 +303,19 @@ func (r *Root) InitializeVariables(vars []string) error {
 
 func (r *Root) Merge(other *Root) error {
 	// Merge dynamic configuration values.
-	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err := r.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return merge.Merge(root, other.value)
 	})
+	if err != nil {
+		return err
+	}
+	if r.sourceFiles == nil {
+		r.sourceFiles = make(map[string][]byte, len(other.sourceFiles))
+	}
+	for path, content := range other.sourceFiles {
+		r.sourceFiles[path] = slices.Clone(content)
+	}
+	return nil
 }
 
 func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
@@ -685,4 +702,14 @@ func (r *Root) GetResourceConfig(path string) (any, error) {
 // is the source of truth and is kept in sync with values in the typed configuration.
 func (r Root) Value() dyn.Value {
 	return r.value
+}
+
+// SourceFileContents returns the exact configuration bytes used to build this
+// root. Callers use the copy to keep provenance tied to a single load.
+func (r Root) SourceFileContents() map[string][]byte {
+	result := make(map[string][]byte, len(r.sourceFiles))
+	for path, content := range r.sourceFiles {
+		result[path] = slices.Clone(content)
+	}
+	return result
 }

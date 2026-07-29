@@ -1,0 +1,173 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== S12a/b: edit top-level and target positional elements
+=== S12c: append a positional element after a target element
+=== S12c: remove a target positional element
+=== S12c: remove a top-level element while editing the shifted target survivor
+=== S12c: remove a single-block element without resolving the shifted survivor
+=== A variable reference survives a scalar-list removal before it
+=== A variable reference survives a scalar-list prepend before it
+=== S13: edit, remove, rename, and add in a single-block keyed list
+=== Sync positional split lists and the single-block regression case
+Detected changes in 8 resource(s):
+
+Resource: resources.jobs.s13_single_block
+  tasks[task_key='a'].timeout_seconds: replace
+  tasks[task_key='b']: remove
+  tasks[task_key='c']: remove
+  tasks[task_key='c_renamed']: add
+  tasks[task_key='d_added']: add
+
+Resource: resources.pipelines.s12_add_cluster
+  clusters: replace
+
+Resource: resources.pipelines.s12_field_edits
+  clusters[0].num_workers: replace
+  clusters[1].num_workers: replace
+
+Resource: resources.pipelines.s12_remove_cluster
+  clusters: replace
+
+Resource: resources.pipelines.s12_remove_top_edit_target
+  clusters: replace
+
+Resource: resources.pipelines.s12_single_block_prepend_dependency
+  environment.dependencies: replace
+
+Resource: resources.pipelines.s12_single_block_remove_dependency
+  environment.dependencies: replace
+
+Resource: resources.pipelines.s12_single_block_remove_preserve_variable
+  clusters: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -14,5 +14,5 @@
+       clusters:
+         - label: default
+-          num_workers: 1
++          num_workers: 1201
+       libraries:
+         - notebook:
+@@ -39,7 +39,5 @@
+     s12_remove_top_edit_target:
+       name: s12-remove-top-edit-target-[UNIQUE_NAME]
+-      clusters:
+-        - label: default
+-          num_workers: 7
++      clusters: []
+       libraries:
+         - notebook:
+@@ -49,6 +47,4 @@
+       name: s12-single-block-remove-preserve-variable-[UNIQUE_NAME]
+       clusters:
+-        - label: default
+-          num_workers: 10
+         - label: maintenance
+           num_workers: ${var.s12_single_block_workers}
+@@ -64,5 +60,4 @@
+       environment:
+         dependencies:
+-          - literal-to-remove
+           - ${var.s12_dependency}
+
+@@ -74,4 +69,5 @@
+       environment:
+         dependencies:
++          - literal-prepend
+           - ${var.s12_dependency}
+
+@@ -80,15 +76,14 @@
+       tasks:
+         - task_key: a
+-          timeout_seconds: 130
++          timeout_seconds: 1301
+           notebook_task:
+             notebook_path: /Workspace/s13-a
+-        - task_key: b
+-          timeout_seconds: 131
+-          notebook_task:
+-            notebook_path: /Workspace/s13-b
+-        - task_key: c
++        - task_key: c_renamed
+           timeout_seconds: 132
+           notebook_task:
+             notebook_path: /Workspace/s13-c
++        - notebook_task:
++            notebook_path: /Workspace/s13-d
++          task_key: d_added
+
+ targets:
+@@ -100,5 +95,5 @@
+           clusters:
+             - label: maintenance
+-              num_workers: 2
++              num_workers: 1202
+
+         s12_add_cluster:
+@@ -107,11 +102,12 @@
+               num_workers: 4
+
++            - custom_tags:
++                role: extra
++              label: extra
++              num_workers: 1203
+         s12_remove_cluster:
+-          clusters:
+-            - label: maintenance
+-              num_workers: 6
+-
++          clusters: []
+         s12_remove_top_edit_target:
+           clusters:
+             - label: maintenance
+-              num_workers: 8
++              num_workers: 1204
+
+=== The shifted survivor keeps its variable reference
+
+>>> grep -Fc num_workers: ${var.s12_single_block_workers} databricks.yml
+1
+
+>>> grep -Fc -- - ${var.s12_dependency} databricks.yml
+2
+
+=== Second sync is idempotent
+No changes detected.
+
+
+>>> diff.py databricks.yml.second-backup databricks.yml
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.s13_single_block
+  delete resources.pipelines.s12_add_cluster
+  delete resources.pipelines.s12_field_edits
+  delete resources.pipelines.s12_remove_cluster
+  delete resources.pipelines.s12_remove_top_edit_target
+  delete resources.pipelines.s12_single_block_prepend_dependency
+  delete resources.pipelines.s12_single_block_remove_dependency
+  delete resources.pipelines.s12_single_block_remove_preserve_variable
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.s12_add_cluster
+  delete resources.pipelines.s12_field_edits
+  delete resources.pipelines.s12_remove_cluster
+  delete resources.pipelines.s12_remove_top_edit_target
+  delete resources.pipelines.s12_single_block_prepend_dependency
+  delete resources.pipelines.s12_single_block_remove_dependency
+  delete resources.pipelines.s12_single_block_remove_preserve_variable
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!

@@ -1,0 +1,78 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    s4_target_rename:
+      tasks:
+        - task_key: top1
+          notebook_task:
+            notebook_path: /Workspace/s4-top
+
+    s5_rename_both_blocks:
+      tasks:
+        - task_key: m
+          notebook_task:
+            notebook_path: /Workspace/s5-top
+
+    s6_rename_and_add:
+      tasks:
+        - task_key: n
+          notebook_task:
+            notebook_path: /Workspace/s6-top
+
+    shifted_delete_rename:
+      tasks:
+        - task_key: m_top
+          timeout_seconds: 610
+          notebook_task:
+            notebook_path: /Workspace/shift-top
+
+    target_only_list:
+      timeout_seconds: 800
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        s4_target_rename:
+          tasks:
+            - task_key: t1
+              notebook_task:
+                notebook_path: /Workspace/s4-dev
+
+        s5_rename_both_blocks:
+          tasks:
+            - task_key: a
+              notebook_task:
+                notebook_path: /Workspace/s5-target
+
+        s6_rename_and_add:
+          tasks:
+            - task_key: t
+              notebook_task:
+                notebook_path: /Workspace/s6-target
+
+        shifted_delete_rename:
+          tasks:
+            - task_key: a_target
+              timeout_seconds: 620
+              notebook_task:
+                notebook_path: /Workspace/shift-target
+
+        target_only_list:
+          tasks:
+            - task_key: z_target
+              notebook_task:
+                notebook_path: /Workspace/target-only
+
+  prod:
+    mode: production
+    resources:
+      jobs:
+        s4_target_rename:
+          tasks:
+            - task_key: prod1
+              notebook_task:
+                notebook_path: /Workspace/s4-prod

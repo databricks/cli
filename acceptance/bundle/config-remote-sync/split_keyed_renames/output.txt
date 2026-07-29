@@ -1,0 +1,126 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== S4: rename a target-only element
+=== Rename matching is not confused by a preceding deletion
+=== A new keyed list element uses the broadest existing resource scope
+=== S5: rename elements in both blocks without swapping their provenance
+=== S6: keep a rename in target while placing a genuinely new element at top level
+=== Sync split keyed-list renames
+Detected changes in 5 resource(s):
+
+Resource: resources.jobs.s4_target_rename
+  tasks[task_key='t1']: remove
+  tasks[task_key='t1b']: add
+
+Resource: resources.jobs.s5_rename_both_blocks
+  tasks[task_key='a']: remove
+  tasks[task_key='a_new_target']: add
+  tasks[task_key='m']: remove
+  tasks[task_key='z_new_top']: add
+
+Resource: resources.jobs.s6_rename_and_add
+  tasks[task_key='a_brand_new']: add
+  tasks[task_key='t']: remove
+  tasks[task_key='t_new']: add
+
+Resource: resources.jobs.shifted_delete_rename
+  tasks[task_key='a_target']: remove
+  tasks[task_key='m_top']: remove
+  tasks[task_key='z_top_renamed']: add
+
+Resource: resources.jobs.target_only_list
+  tasks[task_key='a_brand_top']: add
+  tasks[task_key='b_brand_top']: add
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -12,5 +12,5 @@
+     s5_rename_both_blocks:
+       tasks:
+-        - task_key: m
++        - task_key: z_new_top
+           notebook_task:
+             notebook_path: /Workspace/s5-top
+@@ -22,7 +22,10 @@
+             notebook_path: /Workspace/s6-top
+
++        - notebook_task:
++            notebook_path: /Workspace/s6-brand-new
++          task_key: a_brand_new
+     shifted_delete_rename:
+       tasks:
+-        - task_key: m_top
++        - task_key: z_top_renamed
+           timeout_seconds: 610
+           notebook_task:
+@@ -31,4 +34,11 @@
+     target_only_list:
+       timeout_seconds: 800
++      tasks:
++        - notebook_task:
++            notebook_path: /Workspace/brand-top-a
++          task_key: a_brand_top
++        - notebook_task:
++            notebook_path: /Workspace/brand-top-b
++          task_key: b_brand_top
+
+ targets:
+@@ -39,5 +49,5 @@
+         s4_target_rename:
+           tasks:
+-            - task_key: t1
++            - task_key: t1b
+               notebook_task:
+                 notebook_path: /Workspace/s4-dev
+@@ -45,5 +55,5 @@
+         s5_rename_both_blocks:
+           tasks:
+-            - task_key: a
++            - task_key: a_new_target
+               notebook_task:
+                 notebook_path: /Workspace/s5-target
+@@ -51,15 +61,10 @@
+         s6_rename_and_add:
+           tasks:
+-            - task_key: t
++            - task_key: t_new
+               notebook_task:
+                 notebook_path: /Workspace/s6-target
+
+         shifted_delete_rename:
+-          tasks:
+-            - task_key: a_target
+-              timeout_seconds: 620
+-              notebook_task:
+-                notebook_path: /Workspace/shift-target
+-
++          tasks: []
+         target_only_list:
+           tasks:
+
+=== Second sync is idempotent
+No changes detected.
+
+
+>>> diff.py databricks.yml.second-backup databricks.yml
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.s4_target_rename
+  delete resources.jobs.s5_rename_both_blocks
+  delete resources.jobs.s6_rename_and_add
+  delete resources.jobs.shifted_delete_rename
+  delete resources.jobs.target_only_list
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!

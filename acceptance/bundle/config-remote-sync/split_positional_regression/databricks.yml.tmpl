@@ -1,0 +1,117 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  s12_single_block_workers:
+    default: 9
+  s12_dependency:
+    default: nonexistent-shifted-pkg==1.0
+
+resources:
+  pipelines:
+    s12_field_edits:
+      name: s12-field-edits-$UNIQUE_NAME
+      clusters:
+        - label: default
+          num_workers: 1
+      libraries:
+        - notebook:
+            path: /Workspace/s12-field-edits
+
+    s12_add_cluster:
+      name: s12-add-cluster-$UNIQUE_NAME
+      clusters:
+        - label: default
+          num_workers: 3
+      libraries:
+        - notebook:
+            path: /Workspace/s12-add
+
+    s12_remove_cluster:
+      name: s12-remove-cluster-$UNIQUE_NAME
+      clusters:
+        - label: default
+          num_workers: 5
+      libraries:
+        - notebook:
+            path: /Workspace/s12-remove
+
+    s12_remove_top_edit_target:
+      name: s12-remove-top-edit-target-$UNIQUE_NAME
+      clusters:
+        - label: default
+          num_workers: 7
+      libraries:
+        - notebook:
+            path: /Workspace/s12-remove-top-edit-target
+
+    s12_single_block_remove_preserve_variable:
+      name: s12-single-block-remove-preserve-variable-$UNIQUE_NAME
+      clusters:
+        - label: default
+          num_workers: 10
+        - label: maintenance
+          num_workers: ${var.s12_single_block_workers}
+      libraries:
+        - notebook:
+            path: /Workspace/s12-single-block-remove-preserve-variable
+
+    s12_single_block_remove_dependency:
+      name: s12-single-block-remove-dependency-$UNIQUE_NAME
+      libraries:
+        - notebook:
+            path: /Workspace/s12-single-block-remove-dependency
+      environment:
+        dependencies:
+          - literal-to-remove
+          - ${var.s12_dependency}
+
+    s12_single_block_prepend_dependency:
+      name: s12-single-block-prepend-dependency-$UNIQUE_NAME
+      libraries:
+        - notebook:
+            path: /Workspace/s12-single-block-prepend-dependency
+      environment:
+        dependencies:
+          - ${var.s12_dependency}
+
+  jobs:
+    s13_single_block:
+      tasks:
+        - task_key: a
+          timeout_seconds: 130
+          notebook_task:
+            notebook_path: /Workspace/s13-a
+        - task_key: b
+          timeout_seconds: 131
+          notebook_task:
+            notebook_path: /Workspace/s13-b
+        - task_key: c
+          timeout_seconds: 132
+          notebook_task:
+            notebook_path: /Workspace/s13-c
+
+targets:
+  dev:
+    mode: development
+    resources:
+      pipelines:
+        s12_field_edits:
+          clusters:
+            - label: maintenance
+              num_workers: 2
+
+        s12_add_cluster:
+          clusters:
+            - label: maintenance
+              num_workers: 4
+
+        s12_remove_cluster:
+          clusters:
+            - label: maintenance
+              num_workers: 6
+
+        s12_remove_top_edit_target:
+          clusters:
+            - label: maintenance
+              num_workers: 8

@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -42,6 +43,9 @@ type ConfigChangeDesc struct {
 	// deployed local edit. Telemetry-only; direct engine only (the terraform
 	// sync snapshot has no per-field base). Not part of the command output.
 	LocalEdit bool `json:"-"`
+
+	configValue        any
+	sequenceElementAdd bool
 }
 
 type ResourceChanges map[string]*ConfigChangeDesc
@@ -115,6 +119,16 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 	normalizedValue = filterEntityDefaults(path, normalizedValue)
 	normalizedValue = resetValueIfNeeded(path, normalizedValue)
 
+	var configValue any
+	if cd.New != nil {
+		configValue, err = normalizeValue(cd.New)
+		if err != nil {
+			return nil, fmt.Errorf("failed to normalize config value: %w", err)
+		}
+		configValue = filterEntityDefaults(path, configValue)
+		configValue = resetValueIfNeeded(path, configValue)
+	}
+
 	var op OperationType
 	if normalizedValue == nil && hasConfigValue {
 		op = OperationRemove
@@ -127,8 +141,9 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 	}
 
 	return &ConfigChangeDesc{
-		Operation: op,
-		Value:     normalizedValue,
+		Operation:   op,
+		Value:       normalizedValue,
+		configValue: configValue,
 	}, nil
 }
 
@@ -210,6 +225,10 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 					change.LocalEdit = true
 				}
 				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
+				change.configValue = stripNamePrefix(fullPath, change.configValue, b.Config.Presets.NamePrefix)
+				if change.Operation == OperationReplace && reflect.DeepEqual(change.Value, change.configValue) {
+					continue
+				}
 				resourceChanges[path] = change
 			}
 		}

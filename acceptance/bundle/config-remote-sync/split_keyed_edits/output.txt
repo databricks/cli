@@ -1,0 +1,179 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== S1: edit a non-first merged element from the top-level block
+=== S2: edit an element from the target block
+=== S3: edit a target sibling after an element defined in both blocks
+=== Flow-style list elements retain distinct physical positions
+=== S7: remove elements from both blocks
+=== S8: remove and edit in one physical block
+=== S10: rename and clone an element without resolving its variable-backed field
+=== S10: clone a variable-backed target element into a missing top-level list
+=== S11: edit a scalar on a resource that also has a split list
+=== A new element on a target-only resource stays in the target scope
+=== Sync split keyed-list edits
+Detected changes in 10 resource(s):
+
+Resource: resources.jobs.flow_style_provenance
+  tasks[task_key='beta'].timeout_seconds: replace
+
+Resource: resources.jobs.s10_preserve_variable
+  tasks[task_key='a_variable_clone']: add
+  tasks[task_key='variable_task']: remove
+  tasks[task_key='variable_task_renamed']: add
+
+Resource: resources.jobs.s10_target_only_variable_clone
+  tasks[task_key='cloned_to_top']: add
+
+Resource: resources.jobs.s11_scalar_with_split_list
+  timeout_seconds: replace
+
+Resource: resources.jobs.s1_non_first_top
+  tasks[task_key='beta'].timeout_seconds: replace
+
+Resource: resources.jobs.s2_target_only
+  tasks[task_key='alpha'].timeout_seconds: replace
+
+Resource: resources.jobs.s3_both_blocks_sibling
+  tasks[task_key='omega'].timeout_seconds: replace
+
+Resource: resources.jobs.s7_remove_both_blocks
+  tasks[task_key='b']: remove
+  tasks[task_key='e']: remove
+
+Resource: resources.jobs.s8_remove_and_edit
+  tasks[task_key='q']: remove
+  tasks[task_key='r'].timeout_seconds: replace
+
+Resource: resources.jobs.target_only_resource
+  tasks[task_key='beta']: add
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -11,5 +11,5 @@
+       tasks:
+         - task_key: beta
+-          timeout_seconds: 10
++          timeout_seconds: 101
+           notebook_task:
+             notebook_path: /Workspace/s1-beta
+@@ -34,11 +34,12 @@
+
+     flow_style_provenance:
+-      tasks: [{task_key: alpha, timeout_seconds: 701, notebook_task: {notebook_path: /Workspace/flow-alpha}}, {task_key: beta, timeout_seconds: 702, notebook_task: {notebook_path: /Workspace/flow-beta}}]
++      tasks:
++        - {task_key: alpha, timeout_seconds: 701, notebook_task: {notebook_path: /Workspace/flow-alpha}}
++        - task_key: beta
++          timeout_seconds: 799
++          notebook_task: {notebook_path: /Workspace/flow-beta}
+
+     s7_remove_both_blocks:
+       tasks:
+-        - task_key: b
+-          notebook_task:
+-            notebook_path: /Workspace/s7-b
+         - task_key: c
+           notebook_task:
+@@ -51,10 +52,6 @@
+           notebook_task:
+             notebook_path: /Workspace/s8-p
+-        - task_key: q
+-          timeout_seconds: 81
+-          notebook_task:
+-            notebook_path: /Workspace/s8-q
+         - task_key: r
+-          timeout_seconds: 82
++          timeout_seconds: 808
+           notebook_task:
+             notebook_path: /Workspace/s8-r
+@@ -66,9 +63,17 @@
+             notebook_path: /Workspace/s10-top
+
++        - notebook_task:
++            notebook_path: ${var.s10_notebook}
++          task_key: a_variable_clone
++          timeout_seconds: 1010
+     s10_target_only_variable_clone:
+       timeout_seconds: 100
+
++      tasks:
++        - notebook_task:
++            notebook_path: ${var.s10_notebook}
++          task_key: cloned_to_top
+     s11_scalar_with_split_list:
+-      timeout_seconds: 110
++      timeout_seconds: 1111
+       tasks:
+         - task_key: top_task
+@@ -91,5 +96,5 @@
+           tasks:
+             - task_key: alpha
+-              timeout_seconds: 21
++              timeout_seconds: 202
+               notebook_task:
+                 notebook_path: /Workspace/s2-alpha
+@@ -100,5 +105,5 @@
+               timeout_seconds: 31
+             - task_key: omega
+-              timeout_seconds: 32
++              timeout_seconds: 303
+               notebook_task:
+                 notebook_path: /Workspace/s3-omega
+@@ -112,8 +117,4 @@
+               notebook_task:
+                 notebook_path: /Workspace/s7-a
+-            - task_key: e
+-              notebook_task:
+-                notebook_path: /Workspace/s7-e
+-
+         s8_remove_and_edit:
+           tasks:
+@@ -125,5 +126,5 @@
+         s10_preserve_variable:
+           tasks:
+-            - task_key: variable_task
++            - task_key: variable_task_renamed
+               notebook_task:
+                 notebook_path: ${var.s10_notebook}
+@@ -146,2 +147,5 @@
+               notebook_task:
+                 notebook_path: /Workspace/target-only-alpha
++            - notebook_task:
++                notebook_path: /Workspace/target-only-beta
++              task_key: beta
+
+=== Variable references remain references
+
+>>> grep -Fc notebook_path: ${var.s10_notebook} databricks.yml
+4
+
+=== Second sync is idempotent
+No changes detected.
+
+
+>>> diff.py databricks.yml.second-backup databricks.yml
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.flow_style_provenance
+  delete resources.jobs.s10_preserve_variable
+  delete resources.jobs.s10_target_only_variable_clone
+  delete resources.jobs.s11_scalar_with_split_list
+  delete resources.jobs.s1_non_first_top
+  delete resources.jobs.s2_target_only
+  delete resources.jobs.s3_both_blocks_sibling
+  delete resources.jobs.s7_remove_both_blocks
+  delete resources.jobs.s8_remove_and_edit
+  delete resources.jobs.target_only_resource
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!

@@ -1,0 +1,50 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < overrides/10-first.yml.tmpl > overrides/10-first.yml
+envsubst < overrides/20-second.yml.tmpl > overrides/20-second.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+job_id="$(read_id.py -t dev s9_multifile_target)"
+
+title "S9: edit an element in the second file of a multi-file target override"
+edit_resource.py jobs "$job_id" <<'EOF'
+next(t for t in r["tasks"] if t["task_key"] == "second_b")["timeout_seconds"] = 909
+EOF
+
+title "Sync the multi-file target override"
+echo
+cp databricks.yml databricks.yml.backup
+cp overrides/10-first.yml overrides/10-first.backup
+cp overrides/20-second.yml overrides/20-second.backup
+$CLI bundle config-remote-sync -t dev --save
+
+title "Top-level file remains unchanged"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+
+title "First target file remains unchanged"
+echo
+trace diff.py overrides/10-first.backup overrides/10-first.yml
+
+title "Only the second target file changes"
+echo
+trace diff.py overrides/20-second.backup overrides/20-second.yml
+
+rm databricks.yml.backup overrides/10-first.backup overrides/20-second.backup
+
+title "Second sync is idempotent across every source file"
+echo
+cp databricks.yml databricks.yml.second-backup
+cp overrides/10-first.yml overrides/10-first.second.backup
+cp overrides/20-second.yml overrides/20-second.second.backup
+$CLI bundle config-remote-sync -t dev --save | contains.py "No changes detected."
+trace diff.py databricks.yml.second-backup databricks.yml
+trace diff.py overrides/10-first.second.backup overrides/10-first.yml
+trace diff.py overrides/20-second.second.backup overrides/20-second.yml
+rm databricks.yml.second-backup overrides/10-first.second.backup overrides/20-second.second.backup

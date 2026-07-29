@@ -2,17 +2,19 @@ package configsync
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"reflect"
+	"slices"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // varPrefix is the dyn.Path prefix for the ${var.X} shorthand.
@@ -45,20 +47,13 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // matches the leaf value. Non-sequence Adds (new map fields) are left
 // untouched.
 //
-// The pre-resolved config is obtained by re-loading the bundle from disk
-// through the standard loader mutators (entry point + includes + target
-// overrides) but skipping variable resolution. This gives a fully merged
-// view where ${var.X} and ${resources.X.Y.id} references are still literal
-// strings — enabling correct sibling lookup even for sequences split across
-// files via target overrides.
+// Source values and sibling candidates are captured with exact provenance
+// before changes are resolved. This preserves references from the physical
+// YAML source without loading files again after routing.
 // Restoration counts by mechanism are accumulated into stats (used for
 // telemetry); pass nil when counters are not needed (the counter methods are
 // nil-safe).
 func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange, stats *RestoreStats) error {
-	preResolved := loadPreResolvedConfig(ctx, b)
-	if !preResolved.IsValid() {
-		return errors.New("pre-resolved config unavailable; variable-backed fields will be hardcoded")
-	}
 	resolved := b.Config.Value()
 
 	// Mirror mutator.lookup's source-linked deployment override: when enabled,
@@ -79,7 +74,7 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 	// into b.Config.Value() (they live in the StateDB), so we inject them here
 	// to enable sibling-based restoration. Skipped entirely for bundles with
 	// no resource refs to avoid opening state DB files unnecessarily.
-	resourceRefs := collectResourceIDRefs(preResolved)
+	resourceRefs := collectResourceIDRefsFromChanges(fieldChanges)
 	if len(resourceRefs) > 0 {
 		if lookup := resourceIDLookup(ctx, b); lookup != nil {
 			resolved = injectResourceIDs(ctx, resolved, resourceRefs, lookup)
@@ -94,46 +89,34 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 		var newValue any
 		switch fc.Change.Operation {
 		case OperationReplace:
-			fieldValue, ok := preResolvedValueAt(preResolved, fc.FieldCandidates)
-			if !ok {
-				continue
+			if !fc.sourceValue.IsValid() {
+				return fmt.Errorf("source value unavailable for %s in %s", fc.FieldCandidates[0], fc.FilePath)
 			}
-			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, stats)
+			newValue = restoreOriginalRefs(fc.Change.Value, fc.sourceValue, resolved, stats)
+			if err := validateReferenceRestoration(fc.Change.Value, newValue, fc.sourceValue, resolved); err != nil {
+				return fmt.Errorf("restoring references for %s in %s: %w", fc.FieldCandidates[0], fc.FilePath, err)
+			}
 		case OperationAdd:
-			siblings, ok := sequenceSiblings(preResolved, fc.FieldCandidates)
-			if !ok {
+			if len(fc.sourceSiblings) == 0 {
 				continue
 			}
-			newValue = restoreFromSiblings(fc.Change.Value, siblings, resolved, stats)
+			if err := validateReferencesResolvable(fc.sourceSiblings, resolved); err != nil {
+				return fmt.Errorf("resolving sibling references for %s in %s: %w", fc.FieldCandidates[0], fc.FilePath, err)
+			}
+			if fc.Change.sequenceElementAdd {
+				newValue = restoreSequenceElementsFromSiblings(fc.Change.Value, fc.sourceSiblings, resolved, stats)
+			} else {
+				newValue = restoreFromSiblings(fc.Change.Value, fc.sourceSiblings, resolved, stats)
+			}
 		case OperationUnknown, OperationRemove, OperationSkip:
 			continue
 		}
 
-		fc.Change = &ConfigChangeDesc{
-			Operation: fc.Change.Operation,
-			Value:     newValue,
-		}
+		updated := *fc.Change
+		updated.Value = newValue
+		fc.Change = &updated
 	}
 	return nil
-}
-
-// loadPreResolvedConfig loads the bundle's configuration through the standard
-// loader mutators (entry point, includes, target overrides) but without
-// variable resolution. The resulting dyn.Value is fully merged across files
-// and targets, yet retains ${...} references as literal strings. Returns
-// InvalidValue if loading fails (restoration is then skipped).
-func loadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
-	fresh := &bundle.Bundle{
-		BundleRootPath: b.BundleRootPath,
-		BundleRoot:     b.BundleRoot,
-	}
-	mutator.DefaultMutators(ctx, fresh)
-	if target := b.Config.Bundle.Target; target != "" {
-		if _, ok := fresh.Config.Targets[target]; ok {
-			bundle.ApplyContext(ctx, fresh, mutator.SelectTarget(target))
-		}
-	}
-	return fresh.Config.Value()
 }
 
 // resourceIDLookup returns a function that resolves resource keys to their
@@ -178,6 +161,103 @@ func collectResourceIDRefs(preResolved dyn.Value) []dyn.Path {
 		return nil
 	})
 	return paths
+}
+
+func collectResourceIDRefsFromChanges(fieldChanges []FieldChange) []dyn.Path {
+	seen := make(map[string]struct{})
+	var result []dyn.Path
+	collect := func(value dyn.Value) {
+		if !value.IsValid() {
+			return
+		}
+		for _, path := range collectResourceIDRefs(value) {
+			key := path.String()
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			result = append(result, path)
+		}
+	}
+	for _, fieldChange := range fieldChanges {
+		collect(fieldChange.sourceValue)
+		for _, sibling := range fieldChange.sourceSiblings {
+			collect(sibling)
+		}
+	}
+	return result
+}
+
+func resolveSourceReferences(value, resolved dyn.Value) (dyn.Value, error) {
+	return dynvar.Resolve(value, func(path dyn.Path) (dyn.Value, error) {
+		if path.HasPrefix(varPrefix) && len(path) >= 2 {
+			path = dyn.NewPath(dyn.Key("variables"), path[1], dyn.Key("value")).Append(path[2:]...)
+		}
+		return dyn.GetByPath(resolved, path)
+	})
+}
+
+func validateReferencesResolvable(values []dyn.Value, resolved dyn.Value) error {
+	for _, value := range values {
+		if _, err := resolveSourceReferences(value, resolved); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateReferenceRestoration(remote, restored any, source, resolved dyn.Value) error {
+	switch source.Kind() {
+	case dyn.KindString:
+		template := source.MustString()
+		if !dynvar.ContainsVariableReference(template) {
+			return nil
+		}
+		resolvedSource, err := resolveSourceReferences(source, resolved)
+		if err != nil {
+			return err
+		}
+		if reflect.DeepEqual(resolvedSource.AsAny(), remote) && !reflect.DeepEqual(source.AsAny(), restored) {
+			return fmt.Errorf("unchanged reference %q would be replaced by a literal", template)
+		}
+		return nil
+
+	case dyn.KindMap:
+		remoteMap, remoteOK := remote.(map[string]any)
+		restoredMap, restoredOK := restored.(map[string]any)
+		if !remoteOK || !restoredOK {
+			return nil
+		}
+		for _, pair := range source.MustMap().Pairs() {
+			key := pair.Key.MustString()
+			remoteValue, remoteExists := remoteMap[key]
+			restoredValue, restoredExists := restoredMap[key]
+			if !remoteExists || !restoredExists {
+				continue
+			}
+			if err := validateReferenceRestoration(remoteValue, restoredValue, pair.Value, resolved); err != nil {
+				return err
+			}
+		}
+		return nil
+
+	case dyn.KindSequence:
+		remoteSequence, remoteOK := remote.([]any)
+		restoredSequence, restoredOK := restored.([]any)
+		if !remoteOK || !restoredOK {
+			return nil
+		}
+		for index, sourceValue := range source.MustSequence() {
+			if index >= len(remoteSequence) || index >= len(restoredSequence) {
+				break
+			}
+			if err := validateReferenceRestoration(remoteSequence[index], restoredSequence[index], sourceValue, resolved); err != nil {
+				return err
+			}
+		}
+	default:
+	}
+	return nil
 }
 
 // injectResourceIDs populates the resolved dyn.Value with IDs from state for
@@ -289,6 +369,17 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value, stats *Rest
 // different matching references are treated as ambiguous and skipped.
 func restoreFromSiblings(value any, siblings []dyn.Value, resolved dyn.Value, stats *RestoreStats) any {
 	return restoreFromSiblingsAt(value, siblings, resolved, dyn.EmptyPath, stats)
+}
+
+func restoreSequenceElementsFromSiblings(value any, siblings []dyn.Value, resolved dyn.Value, stats *RestoreStats) any {
+	sequence, ok := value.([]any)
+	if !ok {
+		return value
+	}
+	for index, element := range sequence {
+		sequence[index] = restoreFromSiblingsAt(element, siblings, resolved, dyn.EmptyPath, stats)
+	}
+	return sequence
 }
 
 func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, relPath dyn.Path, stats *RestoreStats) any {
@@ -444,17 +535,9 @@ func matchOriginalRef(remoteValue any, preResolved, resolved dyn.Value) (string,
 // restoreCompoundInterpolation handles strings with mixed variable references
 // and literal text, e.g., "/mnt/${var.account}/raw/landing".
 //
-// Algorithm: for each variable in the template, find the first occurrence of
-// its resolved value in the remote string and substitute it back to its raw
-// ${...} form. Variables whose resolved value no longer appears are dropped
-// (the user changed them); literal segments can grow, shrink, or disappear
-// freely. Returns false if no variable ends up in the result (e.g., the user
-// replaced everything with an unrelated string).
-//
-// Known limitation: substring-matching is unanchored. If ${var.X}="in" and the
-// new value contains "in" inside an unrelated word, that occurrence is still
-// rewritten to ${var.X}. Variables in the template are processed in order of
-// appearance, which is usually what the user expects.
+// A resolved value is restored only when it has one unique, ordered occurrence
+// next to an unchanged literal anchor or at complete token boundaries. This
+// prevents a short variable value from being inserted into an unrelated word.
 func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.Value) (string, bool) {
 	if !preResolved.IsValid() {
 		return "", false
@@ -469,22 +552,91 @@ func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.
 		return "", false
 	}
 
-	result := remoteValue
-	for _, seg := range segments {
+	type replacement struct {
+		start int
+		end   int
+		value string
+	}
+	var replacements []replacement
+	searchStart := 0
+	for index, seg := range segments {
 		if !seg.isVariable || seg.resolvedValue == "" {
 			continue
 		}
-		idx := strings.Index(result, seg.resolvedValue)
-		if idx < 0 {
+		leftLiteral, rightLiteral := "", ""
+		if index > 0 && !segments[index-1].isVariable {
+			leftLiteral = segments[index-1].raw
+		}
+		if index+1 < len(segments) && !segments[index+1].isVariable {
+			rightLiteral = segments[index+1].raw
+		}
+		start, ok := uniqueInterpolationOccurrence(remoteValue, seg.resolvedValue, leftLiteral, rightLiteral, searchStart)
+		if !ok {
 			continue
 		}
-		result = result[:idx] + seg.raw + result[idx+len(seg.resolvedValue):]
+		end := start + len(seg.resolvedValue)
+		replacements = append(replacements, replacement{start: start, end: end, value: seg.raw})
+		searchStart = end
 	}
 
-	if !dynvar.ContainsVariableReference(result) {
+	if len(replacements) == 0 {
 		return "", false
 	}
+	result := remoteValue
+	for _, replacement := range slices.Backward(replacements) {
+		result = result[:replacement.start] + replacement.value + result[replacement.end:]
+	}
 	return result, true
+}
+
+func uniqueInterpolationOccurrence(remote, value, leftLiteral, rightLiteral string, searchStart int) (int, bool) {
+	match := -1
+	for offset := searchStart; offset <= len(remote)-len(value); {
+		relative := strings.Index(remote[offset:], value)
+		if relative < 0 {
+			break
+		}
+		start := offset + relative
+		end := start + len(value)
+		leftAnchored := leftLiteral != "" && strings.HasSuffix(remote[:start], leftLiteral)
+		rightAnchored := rightLiteral != "" && strings.HasPrefix(remote[end:], rightLiteral)
+		leftDelimited, rightDelimited := interpolationTokenBoundaries(remote, start, end)
+		anchored := false
+		switch {
+		case leftLiteral != "" && rightLiteral != "":
+			anchored = leftAnchored && rightAnchored
+		case leftLiteral != "":
+			anchored = leftAnchored && rightDelimited
+		case rightLiteral != "":
+			anchored = rightAnchored && leftDelimited
+		}
+		if anchored || leftDelimited && rightDelimited {
+			if match >= 0 {
+				return 0, false
+			}
+			match = start
+		}
+		offset = start + 1
+	}
+	return match, match >= 0
+}
+
+func interpolationTokenBoundaries(value string, start, end int) (bool, bool) {
+	leftDelimited := start == 0
+	if !leftDelimited {
+		previous, _ := utf8.DecodeLastRuneInString(value[:start])
+		leftDelimited = !interpolationWordRune(previous)
+	}
+	rightDelimited := end == len(value)
+	if !rightDelimited {
+		next, _ := utf8.DecodeRuneInString(value[end:])
+		rightDelimited = !interpolationWordRune(next)
+	}
+	return leftDelimited, rightDelimited
+}
+
+func interpolationWordRune(value rune) bool {
+	return value == '_' || unicode.IsLetter(value) || unicode.IsDigit(value)
 }
 
 // templateSegment represents either a literal string or a variable reference
@@ -552,52 +704,4 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 	}
 
 	return segments
-}
-
-// preResolvedValueAt returns the pre-resolved dyn.Value at the field path,
-// if the field exists in the merged pre-resolved config.
-func preResolvedValueAt(preResolved dyn.Value, candidates []string) (dyn.Value, bool) {
-	for _, candidate := range candidates {
-		p, err := dyn.NewPathFromString(candidate)
-		if err != nil {
-			continue
-		}
-		v, err := dyn.GetByPath(preResolved, p)
-		if err == nil {
-			return v, true
-		}
-	}
-	return dyn.InvalidValue, false
-}
-
-// sequenceSiblings returns the sibling elements of the parent sequence when
-// the field change represents adding a new element to a sequence. The path's
-// last component must be an index ([*] or [N]) and the parent must resolve
-// to a sequence in the pre-resolved config. Returns false for non-sequence
-// Adds (e.g., new map fields).
-func sequenceSiblings(preResolved dyn.Value, candidates []string) ([]dyn.Value, bool) {
-	for _, candidate := range candidates {
-		node, err := structpath.ParsePattern(candidate)
-		if err != nil {
-			continue
-		}
-		_, hasIndex := node.Index()
-		if !hasIndex && !node.BracketStar() {
-			continue
-		}
-		p, err := dyn.NewPathFromString(node.Parent().String())
-		if err != nil {
-			continue
-		}
-		parentValue, err := dyn.GetByPath(preResolved, p)
-		if err != nil {
-			continue
-		}
-		seq, ok := parentValue.AsSequence()
-		if !ok {
-			continue
-		}
-		return seq, true
-	}
-	return nil, false
 }

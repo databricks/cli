@@ -1,0 +1,107 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+
+s1_id="$(read_id.py -t dev s1_non_first_top)"
+s2_id="$(read_id.py -t dev s2_target_only)"
+s3_id="$(read_id.py -t dev s3_both_blocks_sibling)"
+flow_id="$(read_id.py -t dev flow_style_provenance)"
+s7_id="$(read_id.py -t dev s7_remove_both_blocks)"
+s8_id="$(read_id.py -t dev s8_remove_and_edit)"
+s10_id="$(read_id.py -t dev s10_preserve_variable)"
+s10_target_only_id="$(read_id.py -t dev s10_target_only_variable_clone)"
+s11_id="$(read_id.py -t dev s11_scalar_with_split_list)"
+target_only_resource_id="$(read_id.py -t dev target_only_resource)"
+
+title "S1: edit a non-first merged element from the top-level block"
+edit_resource.py jobs "$s1_id" <<'EOF'
+next(t for t in r["tasks"] if t["task_key"] == "beta")["timeout_seconds"] = 101
+EOF
+
+title "S2: edit an element from the target block"
+edit_resource.py jobs "$s2_id" <<'EOF'
+next(t for t in r["tasks"] if t["task_key"] == "alpha")["timeout_seconds"] = 202
+EOF
+
+title "S3: edit a target sibling after an element defined in both blocks"
+edit_resource.py jobs "$s3_id" <<'EOF'
+next(t for t in r["tasks"] if t["task_key"] == "omega")["timeout_seconds"] = 303
+EOF
+
+title "Flow-style list elements retain distinct physical positions"
+edit_resource.py jobs "$flow_id" <<'EOF'
+next(t for t in r["tasks"] if t["task_key"] == "beta")["timeout_seconds"] = 799
+EOF
+
+title "S7: remove elements from both blocks"
+edit_resource.py jobs "$s7_id" <<'EOF'
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] not in {"b", "e"}]
+EOF
+
+title "S8: remove and edit in one physical block"
+edit_resource.py jobs "$s8_id" <<'EOF'
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "q"]
+next(t for t in r["tasks"] if t["task_key"] == "r")["timeout_seconds"] = 808
+EOF
+
+title "S10: rename and clone an element without resolving its variable-backed field"
+edit_resource.py jobs "$s10_id" <<'EOF'
+import copy
+
+source = next(t for t in r["tasks"] if t["task_key"] == "variable_task")
+source["task_key"] = "variable_task_renamed"
+clone = copy.deepcopy(source)
+clone["task_key"] = "a_variable_clone"
+clone["timeout_seconds"] = 1010
+r["tasks"].append(clone)
+EOF
+
+title "S10: clone a variable-backed target element into a missing top-level list"
+edit_resource.py jobs "$s10_target_only_id" <<'EOF'
+import copy
+
+clone = copy.deepcopy(r["tasks"][0])
+clone["task_key"] = "cloned_to_top"
+r["tasks"].append(clone)
+EOF
+
+title "S11: edit a scalar on a resource that also has a split list"
+edit_resource.py jobs "$s11_id" <<'EOF'
+r["timeout_seconds"] = 1111
+EOF
+
+title "A new element on a target-only resource stays in the target scope"
+edit_resource.py jobs "$target_only_resource_id" <<'EOF'
+r["tasks"].append({
+    "task_key": "beta",
+    "notebook_task": {"notebook_path": "/Workspace/target-only-beta"},
+})
+EOF
+
+title "Sync split keyed-list edits"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync -t dev --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Variable references remain references"
+echo
+trace grep -Fc 'notebook_path: ${var.s10_notebook}' databricks.yml
+
+title "Second sync is idempotent"
+echo
+cp databricks.yml databricks.yml.second-backup
+$CLI bundle config-remote-sync -t dev --save | contains.py "No changes detected."
+trace diff.py databricks.yml.second-backup databricks.yml
+rm databricks.yml.second-backup

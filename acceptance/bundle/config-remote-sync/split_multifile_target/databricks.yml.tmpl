@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+include:
+  - overrides/*.yml
+
+resources:
+  jobs:
+    s9_multifile_target:
+      tasks:
+        - task_key: top
+          timeout_seconds: 90
+          notebook_task:
+            notebook_path: /Workspace/s9-top

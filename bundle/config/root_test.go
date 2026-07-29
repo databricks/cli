@@ -31,6 +31,23 @@ func TestRootLoad(t *testing.T) {
 	assert.Equal(t, "basic", root.Bundle.Name)
 }
 
+func TestRootSourceFileContentsSurviveMerge(t *testing.T) {
+	firstContent := []byte("bundle:\n  name: first\n")
+	secondContent := []byte("workspace:\n  host: https://example.test\n")
+	first, diags := LoadFromBytes("first.yml", firstContent)
+	require.NoError(t, diags.Error())
+	second, diags := LoadFromBytes("second.yml", secondContent)
+	require.NoError(t, diags.Error())
+
+	require.NoError(t, first.Merge(second))
+	contents := first.SourceFileContents()
+	assert.Equal(t, firstContent, contents["first.yml"])
+	assert.Equal(t, secondContent, contents["second.yml"])
+
+	contents["first.yml"][0] = 'x'
+	assert.Equal(t, firstContent, first.SourceFileContents()["first.yml"])
+}
+
 func TestInitializeVariables(t *testing.T) {
 	fooDefault := "abc"
 	root := &Root{

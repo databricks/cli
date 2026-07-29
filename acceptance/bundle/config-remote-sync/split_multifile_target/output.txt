@@ -1,0 +1,53 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== S9: edit an element in the second file of a multi-file target override
+=== Sync the multi-file target override
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.s9_multifile_target
+  tasks[task_key='second_b'].timeout_seconds: replace
+
+
+
+=== Top-level file remains unchanged
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+=== First target file remains unchanged
+
+>>> diff.py overrides/10-first.backup overrides/10-first.yml
+
+=== Only the second target file changes
+
+>>> diff.py overrides/20-second.backup overrides/20-second.yml
+--- overrides/20-second.backup
++++ overrides/20-second.yml
+@@ -10,5 +10,5 @@
+                 notebook_path: /Workspace/s9-second-a
+             - task_key: second_b
+-              timeout_seconds: 94
++              timeout_seconds: 909
+               notebook_task:
+                 notebook_path: /Workspace/s9-second-b
+
+=== Second sync is idempotent across every source file
+No changes detected.
+
+
+>>> diff.py databricks.yml.second-backup databricks.yml
+
+>>> diff.py overrides/10-first.second.backup overrides/10-first.yml
+
+>>> diff.py overrides/20-second.second.backup overrides/20-second.yml
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.s9_multifile_target
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!
