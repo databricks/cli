@@ -5,14 +5,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# A traceback from a real task is words we do not control, so keep the deploy's
-# output out of the golden and assert the parts the CLI is responsible for.
+# A real task's traceback is text we do not control, so keep the deploy output out
+# of the golden and assert the parts the CLI produces.
 title "a run that fails on a real workspace fails the deploy"
 musterr $CLI bundle deploy > deploy.log 2>&1
 trace contains.py 'run did not succeed: FAILED' 'run page: http' '!task "main": FAILED' < deploy.log > /dev/null
 
-# The message comes from the task, not from our fallback to the states the run
-# itself reports, which is what the last assertion above rules out.
+# A non-empty message means the task reported one: the negative assertion above
+# rules out the fallback to the states the run itself reports.
 trace grep -cE 'task "main": .+' deploy.log
 
 title "the failed run is recorded, so it is destroyed rather than left behind"

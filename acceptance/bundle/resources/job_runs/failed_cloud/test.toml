@@ -2,9 +2,9 @@
 # equivalent, so restrict the matrix to direct.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-# The failure counterpart of wait_cloud: only a real workspace shows whether a
-# failed task reports a message the deploy can name, since the error the test
-# server reports is one it writes itself. Serverless needs Unity Catalog.
+# The failure counterpart of wait_cloud: the error the test server reports is one it
+# writes itself, so only a real workspace shows whether a failed task reports a
+# message the deploy can name. Serverless needs Unity Catalog.
 Cloud = true
 RequiresUnityCatalog = true
 
