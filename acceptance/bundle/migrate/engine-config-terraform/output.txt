@@ -3,6 +3,6 @@
 Warning: the terraform deployment engine is deprecated and will stop working in a future version of the CLI
   in databricks.yml:3:11
 
-Remove "engine: terraform" to use the direct deployment engine. Learn more at https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine
 
 Error: bundle.engine is set to "terraform". Migration requires "engine: direct" or no engine setting. Change the setting to "engine: direct" and retry

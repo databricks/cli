@@ -12,7 +12,7 @@ Validation OK!
 Warning: the terraform deployment engine is deprecated and will stop working in a future version of the CLI
   in databricks.yml:10:15
 
-Remove "engine: terraform" to use the direct deployment engine. Learn more at https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine
 
 Name: test-engine-config-valid
 Target: terraform-target
