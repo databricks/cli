@@ -4,7 +4,9 @@ import (
 	"io/fs"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFileAlreadyExistsError_Is(t *testing.T) {
@@ -93,4 +95,17 @@ func TestPermissionError_Is(t *testing.T) {
 func TestPermissionError_Error(t *testing.T) {
 	err := permissionError{path: "/test/path"}
 	assert.Equal(t, "access denied: /test/path", err.Error())
+}
+
+func TestPermissionError_Unwrap(t *testing.T) {
+	// A wrapped API error must remain matchable as fs.ErrPermission while also
+	// being reachable via errors.As so callers can inspect its error_code.
+	apiErr := &apierr.APIError{StatusCode: 403, ErrorCode: "MAX_CHILD_NODE_SIZE_EXCEEDED"}
+	err := permissionError{path: "/test/path", err: apiErr}
+
+	assert.ErrorIs(t, err, fs.ErrPermission)
+
+	var got *apierr.APIError
+	require.ErrorAs(t, err, &got)
+	assert.Equal(t, "MAX_CHILD_NODE_SIZE_EXCEEDED", got.ErrorCode)
 }
