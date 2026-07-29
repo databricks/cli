@@ -3016,7 +3016,7 @@
                       "$ref": "#/$defs/bool"
                     },
                     "record_deployment_history": {
-                      "description": "Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.\n\nOnly supported for a bundle with no deployed resources yet.",
+                      "description": "Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.",
                       "$ref": "#/$defs/bool"
                     },
                     "scripts": {

@@ -102,9 +102,12 @@ func (r *Recorder) CreateVersion(ctx context.Context) error {
 }
 
 // CompleteVersion finalizes the version created by CreateVersion. A nil
-// Recorder, or one whose CreateVersion never ran, is a no-op.
+// Recorder, or one whose CreateVersion never ran or failed, is a no-op: there is
+// no version on the server to complete. Callers defer it unconditionally, so this
+// is the check that keeps a cancelled or failed deploy from completing a version
+// that was never created.
 func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
-	if r == nil || r.stopHeartbeat == nil {
+	if r == nil || r.versionNum == 0 {
 		return nil
 	}
 
