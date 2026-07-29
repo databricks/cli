@@ -1243,6 +1243,6 @@ func buildSshTunnelEvent(opts ClientOptions, isSuccess, isReconnect bool, server
 		ServerStartTimeMs:  serverStartTimeMs,
 		IsSuccess:          isSuccess,
 		HasBaseEnvironment: opts.BaseEnvironment != "",
-    HasUsagePolicy:    opts.UsagePolicyID != "",
+		HasUsagePolicy:     opts.UsagePolicyID != "",
 	}
 }
