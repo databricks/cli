@@ -8,6 +8,11 @@ resources:
   jobs:
     my_job:
       name: test-job-$UNIQUE_NAME
+      parameters:
+        - name: env
+          default: dev
+        - name: region
+          default: us
       tasks:
         # Serverless keeps the run to about a minute; a job cluster would take
         # several.
@@ -37,3 +42,8 @@ resources:
   job_runs:
     my_run:
       job_id: ${resources.jobs.my_job.id}
+      # Override one of the job's two parameters. GetRun reports the full resolved
+      # set, including the region default this run does not override, so a real
+      # workspace is where the ignore_remote_changes for job_parameters can regress.
+      job_parameters:
+        env: prod
