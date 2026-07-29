@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/fs"
 	"maps"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"os/exec"
@@ -427,10 +428,19 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("NODE_TYPE_ID", nodeTypeID)
 	repls.Set(nodeTypeID, "[NODE_TYPE_ID]")
 
-	// On cloud, destroy every bundle this run deploys once all tests finish.
-	// Registered before the tests are spawned so it runs after they complete.
-	if !inprocessMode {
-		setupBundleCleanup(t, execPath, cloudEnv)
+	// The run id is embedded into every $UNIQUE_NAME (see ciUniqueName) so that
+	// resources can be attributed to a run and swept by prefix. On CI it is the
+	// GitHub run id; otherwise synthesize a random numeric id so a local cloud
+	// run (e.g. `deco env run`) is still sweepable. Empty off cloud, where names
+	// need no attribution.
+	if cloudEnv != "" {
+		bundleRunID = os.Getenv("GITHUB_RUN_ID")
+		if bundleRunID == "" {
+			bundleRunID = strconv.Itoa(rand.IntN(1_000_000_000))
+		}
+		// Destroy every bundle this run deploys once all tests finish. Registered
+		// before the tests are spawned so it runs after they complete.
+		setupBundleCleanup(t, execPath, bundleRunID)
 	}
 
 	testDirs := getTests(t)
@@ -729,6 +739,11 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 
 var ciRunID = regexp.MustCompile(`^[0-9]{1,16}$`)
 
+// bundleRunID identifies the current run for bundle attribution and cleanup. Set
+// once in testAccept on cloud (GitHub run id, or a random numeric id locally),
+// empty off cloud. Read by ciUniqueName to build the sweepable $UNIQUE_NAME prefix.
+var bundleRunID string
+
 // ciUniqueName embeds a CI run id into the random unique name as "ci<runID>x<random>".
 // The result stays purely lowercase-alphanumeric like the base32 name it replaces, so it
 // remains valid everywhere $UNIQUE_NAME is used: app names (no hyphens would be fine but
@@ -784,8 +799,8 @@ func runTest(t *testing.T,
 
 	id := uuid.New()
 	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
-	// Embed the CI run id, when present, so leaked resources can be attributed to a run and swept by prefix.
-	uniqueName = ciUniqueName(os.Getenv("GITHUB_RUN_ID"), uniqueName)
+	// Embed the run id, when present, so leaked resources can be attributed to a run and swept by prefix.
+	uniqueName = ciUniqueName(bundleRunID, uniqueName)
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string

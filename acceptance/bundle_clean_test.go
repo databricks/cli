@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -18,29 +17,15 @@ import (
 )
 
 // setupBundleCleanup arranges for every bundle deployed by this run to be
-// destroyed once the suite finishes. It is a cloud-only operation: all cloud
-// tests share one real workspace, whereas local tests each get a throwaway
-// in-memory fake workspace with nothing to clean up.
+// destroyed once the suite finishes. The caller invokes it only on cloud: all
+// cloud tests share one real workspace, whereas local tests each get a
+// throwaway in-memory fake workspace with nothing to clean up.
 //
-// It ensures a per-run id is present (synthesizing one for non-CI cloud runs)
-// so ciUniqueName stamps the "ci<runid>x" prefix onto every $UNIQUE_NAME. The
-// cleanup then sweeps exactly the deployments carrying this run's prefix and
-// nothing else, which is what makes destroying against the shared workspace
-// safe even while other runs deploy concurrently.
-func setupBundleCleanup(t *testing.T, execPath, cloudEnv string) {
-	if cloudEnv == "" {
-		return
-	}
-
-	runID := os.Getenv("GITHUB_RUN_ID")
-	if runID == "" {
-		// Non-CI cloud run (e.g. a developer using `deco env run`): mint a run id
-		// so deployed bundles are identifiable and sweepable. Milliseconds stay
-		// within ciUniqueName's 15-digit budget and are unique enough per run.
-		runID = strconv.FormatInt(time.Now().UnixMilli(), 10)
-		t.Setenv("GITHUB_RUN_ID", runID)
-	}
-
+// runID is the sweepable id that ciUniqueName stamps into every $UNIQUE_NAME as
+// the "ci<runID>x" prefix, so the cleanup sweeps exactly the deployments
+// carrying this run's prefix and nothing else. That is what makes destroying
+// against the shared workspace safe even while other runs deploy concurrently.
+func setupBundleCleanup(t *testing.T, execPath, runID string) {
 	prefix := "ci" + runID + "x"
 	// t.Context() is canceled once the test finishes, before cleanups run, so
 	// derive a context that survives cancellation for the cleanup's API calls.
