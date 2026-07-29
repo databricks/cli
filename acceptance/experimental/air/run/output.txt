@@ -33,11 +33,9 @@ Error: compute.num_accelerators must be positive, got 0
 
 Exit code: 1
 
-=== watch not yet supported
+=== watch is ignored with dry-run (nothing is submitted)
 >>> [CLI] experimental air run -f valid.yaml --dry-run --watch
-Error: --watch is not yet supported
-
-Exit code: 1
+Dry run: configuration for "smoke-test" is valid; not submitting.
 
 === code_source config passes validation
 >>> [CLI] experimental air run -f with-code-source.yaml --dry-run

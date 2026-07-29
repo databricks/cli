@@ -55,6 +55,10 @@ type logRequest struct {
 	// would poll forever waiting for the run (not the attempt) to finish.
 	staticView bool
 	jsonOutput bool
+	// onStatusChange, when set, is called on each lifecycle transition while
+	// following the run (current, previous display states). Used by
+	// `air run --watch -o json` to emit STATUS events.
+	onStatusChange func(current, previous string)
 }
 
 // logRunStatus is the subset of a run's state the log path needs, resolved once
@@ -192,12 +196,28 @@ type bricklensStreamer struct {
 	lastNano     int64
 	firstLogSeen bool
 	seen         *seenSet
+	// previousState is the last display state reported to onStatusChange.
+	previousState string
 	// onFirstLog, when set, is called once just before the first log line is
 	// emitted — used to stop the "waiting for run to start" spinner before any
 	// log byte reaches stdout.
 	onFirstLog func()
 	// updateSpinner, when set, refreshes the waiting-spinner text each poll.
 	updateSpinner func(string)
+}
+
+// reportStatusChange fires onStatusChange when the run's display state differs
+// from the last reported one.
+func (st *bricklensStreamer) reportStatusChange() {
+	if st.req.onStatusChange == nil {
+		return
+	}
+	current := st.status.displayState()
+	if current == st.previousState {
+		return
+	}
+	st.req.onStatusChange(current, st.previousState)
+	st.previousState = current
 }
 
 func (st *bricklensStreamer) run() (bool, error) {
@@ -243,6 +263,8 @@ func (st *bricklensStreamer) run() (bool, error) {
 			}
 			st.status = status
 		}
+
+		st.reportStatusChange()
 
 		terminal := st.status.terminal()
 		toSec := st.req.toSeconds(st.status)

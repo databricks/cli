@@ -4,6 +4,8 @@
 Submitted run 555
 View at: [DATABRICKS_URL]/jobs/runs/555
 
+Tip: use --watch to stream logs until the run completes.
+
 === the ai_runtime_task carries the code_source_path
 >>> print_requests.py //api/2.2/jobs/runs/submit
 {
