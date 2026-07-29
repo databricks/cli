@@ -428,19 +428,22 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("NODE_TYPE_ID", nodeTypeID)
 	repls.Set(nodeTypeID, "[NODE_TYPE_ID]")
 
-	// The run id is embedded into every $UNIQUE_NAME (see ciUniqueName) so that
-	// resources can be attributed to a run and swept by prefix. On CI it is the
-	// GitHub run id; otherwise synthesize a random numeric id so a local cloud
-	// run (e.g. `deco env run`) is still sweepable. Empty off cloud, where names
-	// need no attribution.
+	// The run id and leg suffix are embedded into every $UNIQUE_NAME (see
+	// ciUniqueName) so that resources can be attributed to this run and swept by
+	// prefix. On CI the run id is the GitHub run id; otherwise synthesize a random
+	// numeric id so a local cloud run (e.g. `deco env run`) is still sweepable. The
+	// leg suffix is fresh per test process, so this leg's cleanup destroys only its
+	// own bundles even when a sibling matrix leg shares the workspace. Empty off
+	// cloud, where names need no attribution.
 	if cloudEnv != "" {
 		bundleRunID = os.Getenv("GITHUB_RUN_ID")
 		if bundleRunID == "" {
 			bundleRunID = strconv.Itoa(rand.IntN(1_000_000_000))
 		}
-		// Destroy every bundle this run deploys once all tests finish. Registered
+		bundleLegSuffix = randomBundleLegSuffix()
+		// Destroy every bundle this leg deploys once all tests finish. Registered
 		// before the tests are spawned so it runs after they complete.
-		setupBundleCleanup(t, execPath, bundleRunID)
+		setupBundleCleanup(t, execPath, bundleNamePrefix(bundleRunID, bundleLegSuffix))
 	}
 
 	testDirs := getTests(t)
@@ -739,25 +742,58 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 
 var ciRunID = regexp.MustCompile(`^[0-9]{1,16}$`)
 
-// bundleRunID identifies the current run for bundle attribution and cleanup. Set
-// once in testAccept on cloud (GitHub run id, or a random numeric id locally),
-// empty off cloud. Read by ciUniqueName to build the sweepable $UNIQUE_NAME prefix.
-var bundleRunID string
+// bundleRunID and bundleLegSuffix identify this run and this specific test
+// process for bundle attribution and cleanup. Set once in testAccept on cloud
+// (bundleRunID is the GitHub run id or a random numeric id locally;
+// bundleLegSuffix is a fresh random suffix), empty off cloud. Read by
+// ciUniqueName to build the sweepable $UNIQUE_NAME prefix.
+//
+// All matrix legs of a CI run share one GitHub run id, and legs of different OSes
+// share a workspace, so a run-id-only prefix would let one leg's cleanup destroy
+// another leg's live bundles. The per-process bundleLegSuffix makes each leg's
+// prefix distinct so its cleanup sweeps only its own deployments, while the
+// run id stays a matchable substring for the run-wide sweeper (sweep_test_resources.py).
+var (
+	bundleRunID     string
+	bundleLegSuffix string
+)
 
-// ciUniqueName embeds a CI run id into the random unique name as "ci<runID>x<random>".
-// The result stays purely lowercase-alphanumeric like the base32 name it replaces, so it
-// remains valid everywhere $UNIQUE_NAME is used: app names (no hyphens would be fine but
-// underscores/uppercase are not), Python and Unity Catalog identifiers (no hyphens). No
-// punctuation separator works for all of them, so the run id (all digits) is delimited by
-// the letter "x", which also keeps the sweep prefix "ci<runID>x" collision-free between
-// runs whose ids share a prefix. Length is preserved ("app-$UNIQUE_NAME" is exactly the
-// 30-char app name maximum). Returns random unchanged when runID is absent, malformed, or
-// too long to leave at least 8 random characters.
-func ciUniqueName(runID, random string) string {
+// bundleLegSuffixAlphabet is lowercase-alphanumeric to satisfy the same identifier
+// constraints as the unique name itself (see ciUniqueName).
+const bundleLegSuffixAlphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+// randomBundleLegSuffix returns a 3-character lowercase-alphanumeric suffix. 36^3
+// values make a collision between the few legs sharing a workspace within one run
+// vanishingly unlikely.
+func randomBundleLegSuffix() string {
+	b := make([]byte, 3)
+	for i := range b {
+		b[i] = bundleLegSuffixAlphabet[rand.IntN(len(bundleLegSuffixAlphabet))]
+	}
+	return string(b)
+}
+
+// bundleNamePrefix is the sweepable prefix embedded into $UNIQUE_NAME:
+// "ci<runID>x<legSuffix>". The run id (all digits) is delimited by "x" so the
+// run-wide sweep prefix "ci<runID>x" stays collision-free between runs whose ids
+// share a prefix; legSuffix then isolates one leg from another within the run.
+func bundleNamePrefix(runID, legSuffix string) string {
+	return "ci" + runID + "x" + legSuffix
+}
+
+// ciUniqueName embeds the run id and leg suffix into the random unique name as
+// "ci<runID>x<legSuffix><random>". The result stays purely lowercase-alphanumeric
+// like the base32 name it replaces, so it remains valid everywhere $UNIQUE_NAME is
+// used: app names (no hyphens would be fine but underscores/uppercase are not),
+// Python and Unity Catalog identifiers (no hyphens). Length is preserved
+// ("app-$UNIQUE_NAME" is exactly the 30-char app name maximum). Returns random
+// unchanged when runID is absent, malformed, or too long to leave at least 8
+// random characters.
+func ciUniqueName(runID, legSuffix, random string) string {
 	if !ciRunID.MatchString(runID) {
 		return random
 	}
-	prefix := "ci" + runID + "x"
+	prefix := bundleNamePrefix(runID, legSuffix)
 	randLen := len(random) - len(prefix)
 	if randLen < 8 {
 		return random
@@ -799,8 +835,8 @@ func runTest(t *testing.T,
 
 	id := uuid.New()
 	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
-	// Embed the run id, when present, so leaked resources can be attributed to a run and swept by prefix.
-	uniqueName = ciUniqueName(bundleRunID, uniqueName)
+	// Embed the run id and leg suffix, when present, so leaked resources can be attributed to a run and swept by prefix.
+	uniqueName = ciUniqueName(bundleRunID, bundleLegSuffix, uniqueName)
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string

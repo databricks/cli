@@ -21,12 +21,12 @@ import (
 // cloud tests share one real workspace, whereas local tests each get a
 // throwaway in-memory fake workspace with nothing to clean up.
 //
-// runID is the sweepable id that ciUniqueName stamps into every $UNIQUE_NAME as
-// the "ci<runID>x" prefix, so the cleanup sweeps exactly the deployments
-// carrying this run's prefix and nothing else. That is what makes destroying
-// against the shared workspace safe even while other runs deploy concurrently.
-func setupBundleCleanup(t *testing.T, execPath, runID string) {
-	prefix := "ci" + runID + "x"
+// prefix is the leg-specific "ci<runID>x<legSuffix>" that ciUniqueName stamps
+// into every $UNIQUE_NAME, so the cleanup sweeps exactly the deployments this
+// leg created and nothing else. That is what makes destroying against the shared
+// workspace safe even while sibling matrix legs (which share the run id and may
+// share the workspace) deploy concurrently.
+func setupBundleCleanup(t *testing.T, execPath, prefix string) {
 	// t.Context() is canceled once the test finishes, before cleanups run, so
 	// derive a context that survives cancellation for the cleanup's API calls.
 	ctx := context.WithoutCancel(t.Context())
