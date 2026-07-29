@@ -1,0 +1,1 @@
+raise RuntimeError("intentional failure")
