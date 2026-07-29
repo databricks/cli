@@ -45,6 +45,60 @@ func TestWalkSchemaPrunesTargets(t *testing.T) {
 	assert.Contains(t, schema, "resources.jobs.*.name")
 }
 
+func TestWalkSchemaEmitsValueBitForBool(t *testing.T) {
+	schema, err := WalkSchema()
+	require.NoError(t, err)
+
+	// bundle.force is a bool: it gets both a presence entry and a #true value
+	// entry, and they are adjacent.
+	i := indexOf(schema, "bundle.force")
+	require.GreaterOrEqual(t, i, 0)
+	assert.Equal(t, "bundle.force"+valueSuffix, schema[i+1])
+}
+
+func TestBitsBoolTriState(t *testing.T) {
+	schema := []string{
+		"bundle.force",
+		"bundle.force" + valueSuffix,
+		"bundle.deployment.lock.enabled",
+		"bundle.deployment.lock.enabled" + valueSuffix,
+	}
+
+	// lock.enabled is a *bool: unset here, so both its bits stay 0.
+	// bundle.force is a plain bool set to true: presence and value both 1.
+	var cfg config.Root
+	cfg.Bundle.Force = true
+
+	bits, err := Bits(cfg, schema)
+	require.NoError(t, err)
+	assert.Equal(t, []bool{true, true, false, false}, bits)
+}
+
+func TestBitsPointerBoolFalse(t *testing.T) {
+	schema := []string{
+		"bundle.deployment.lock.enabled",
+		"bundle.deployment.lock.enabled" + valueSuffix,
+	}
+
+	// A *bool set to false: presence 1, value 0 (distinguishable from unset 0,0).
+	no := false
+	var cfg config.Root
+	cfg.Bundle.Deployment.Lock.Enabled = &no
+
+	bits, err := Bits(cfg, schema)
+	require.NoError(t, err)
+	assert.Equal(t, []bool{true, false}, bits)
+}
+
+func indexOf(s []string, v string) int {
+	for i, x := range s {
+		if x == v {
+			return i
+		}
+	}
+	return -1
+}
+
 func TestBitsSetsLeafAndPrefixes(t *testing.T) {
 	schema := []string{
 		"bundle",
