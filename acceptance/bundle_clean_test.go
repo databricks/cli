@@ -5,8 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -63,17 +65,32 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 
 	t.Logf("%s bundle cleanup: found %d deployment(s) with prefix %q", time.Now().Format(time.RFC3339), len(roots), prefix)
 
-	// Best-effort: attempt every deployment and report failures at the end, so
-	// one stuck bundle doesn't leave the rest leaked.
+	// Each destroy shells out to a separate `bundle destroy` (auth + state pull +
+	// deletes), so run them concurrently. Cap at 20 to stay well under the
+	// workspace API rate limit while still cutting wall-clock for large sweeps.
+	// This is best-effort, not fail-fast: a failed destroy is recorded and the
+	// rest still run, so a plain WaitGroup with a semaphore fits better than
+	// errgroup (whose error short-circuit we would not use).
+	sem := make(chan struct{}, min(runtime.GOMAXPROCS(0), 20))
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 	var failed []string
 	for _, root := range roots {
-		t.Logf("%s destroying %s", time.Now().Format(time.RFC3339), root)
-		if out, err := destroyBundle(execPath, root); err != nil {
-			t.Logf("%s destroy failed: %s\n%s", time.Now().Format(time.RFC3339), root, out)
-			failed = append(failed, root)
-		}
+		sem <- struct{}{}
+		wg.Go(func() {
+			defer func() { <-sem }()
+			t.Logf("%s destroying %s", time.Now().Format(time.RFC3339), root)
+			if out, err := destroyBundle(execPath, root); err != nil {
+				t.Logf("%s destroy failed: %s\n%s", time.Now().Format(time.RFC3339), root, out)
+				mu.Lock()
+				failed = append(failed, root)
+				mu.Unlock()
+			}
+		})
 	}
+	wg.Wait()
 
+	slices.Sort(failed)
 	t.Logf("%s bundle cleanup: destroyed %d/%d deployment(s) in %s", time.Now().Format(time.RFC3339), len(roots)-len(failed), len(roots), time.Since(start))
 	require.Empty(t, failed, "failed to destroy %d deployment(s): %s", len(failed), strings.Join(failed, ", "))
 }
