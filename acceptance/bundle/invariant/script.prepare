@@ -53,7 +53,9 @@ invariant_deploy() {
 # without reading remote state. Unset expands to nothing, so other callers are
 # unaffected.
 invariant_verify_no_drift() {
-    $CLI bundle plan $LOCAL_DIFF -o json > LOG.planjson 2>LOG.planjson.err
+    # ${LOCAL_DIFF:-} not $LOCAL_DIFF: the scripts run under `set -u`, and only the
+    # no_drift target defines LOCAL_DIFF; other callers leave it unset.
+    $CLI bundle plan ${LOCAL_DIFF:-} -o json > LOG.planjson 2>LOG.planjson.err
     cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
     verify_no_drift.py LOG.planjson
 }
