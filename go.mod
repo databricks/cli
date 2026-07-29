@@ -45,6 +45,14 @@ require (
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 
+require github.com/databricks/sdk-go/core v0.0.1-dev // Apache-2.0
+
+require (
+	github.com/databricks/sdk-go/auth v0.0.0-dev // Apache-2.0
+	github.com/databricks/sdk-go/files v0.0.0-dev.1 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.0.0-dev // Apache-2.0
+)
+
 require (
 	cloud.google.com/go/auth v0.18.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -102,8 +110,8 @@ require (
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.265.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
-	google.golang.org/grpc v1.79.3 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
+	google.golang.org/grpc v1.82.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

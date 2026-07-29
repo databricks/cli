@@ -2597,7 +2597,7 @@
                       },
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission",
                         "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "target_qps": {
@@ -2615,6 +2615,35 @@
                     "required": [
                       "endpoint_type",
                       "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.VectorSearchEndpointPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorSearchEndpointPermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
                     ]
                   },
                   {
@@ -13980,6 +14009,23 @@
                 }
               ]
             },
+            "vectorsearch.VectorSearchEndpointPermissionLevel": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Permission level",
+                  "enum": [
+                    "CAN_CREATE",
+                    "CAN_MANAGE",
+                    "CAN_USE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "oneOf": [
                 {
@@ -14806,6 +14852,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.VectorSearchEndpointPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
                       }
                     },
                     {
