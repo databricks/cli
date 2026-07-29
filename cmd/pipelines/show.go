@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -15,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultLimit = 100
+const defaultLimit = 10
 
 func showCommand() *cobra.Command {
 	var warehouseID string
@@ -31,7 +34,10 @@ schema.table (legacy Hive metastore).`,
 		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
+			// The CLI root doesn't cancel ctx on signals, so Ctrl-C / kill would
+			// otherwise leave Execute polling the warehouse until the query ends.
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
 			w := cmdctx.WorkspaceClient(ctx)
 
 			if limit <= 0 {
@@ -52,6 +58,10 @@ schema.table (legacy Hive metastore).`,
 			statement := fmt.Sprintf("SELECT * FROM %s LIMIT %d", quoted, limit)
 			result, err := client.Execute(ctx, statement)
 			if err != nil {
+				if ctx.Err() != nil {
+					fmt.Fprintln(cmd.ErrOrStderr(), "\nCancelled.")
+					return root.ErrAlreadyPrinted
+				}
 				return err
 			}
 

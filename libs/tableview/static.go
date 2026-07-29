@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	maxColumnWidth = 20
+	maxColumnWidth = 40
 	columnSep      = "  "
 	ellipsis       = "..."
 	separatorChar  = "-"

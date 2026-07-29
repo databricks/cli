@@ -58,7 +58,7 @@ func TestRenderSingleColumnNarrowNotCropped(t *testing.T) {
 }
 
 func TestRenderCapsColumnWidth(t *testing.T) {
-	long := strings.Repeat("x", 25)
+	long := strings.Repeat("x", maxColumnWidth+10)
 	out := renderString(t, []string{"c"}, [][]string{{long}}, 0)
 	assert.Contains(t, out, strings.Repeat("x", maxColumnWidth-cmdio.Width(ellipsis))+ellipsis)
 	assert.NotContains(t, out, long)
