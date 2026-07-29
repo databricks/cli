@@ -4,6 +4,5 @@
 >>> [CLI] bundle bitmap bitmap-text
 
 >>> [CLI] bundle bitmap bitmap
-cnEKcWJg4PFlYDjBIKfEwMLAzsDA0MD+gOEBtwIDgwIDGkjgYTBgGAW0AcwNCWAaEAAA//8=
 
 >>> [CLI] bundle bitmap update-schema --validate
