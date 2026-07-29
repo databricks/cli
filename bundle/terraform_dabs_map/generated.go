@@ -2,25 +2,22 @@
 
 package terraform_dabs_map
 
-// alerts / databricks_alert_v2: 5 dabs-only
-// alerts / databricks_alert_v2: 3 tf-only
+// alerts / databricks_alert_v2: 1 dabs-only
+// alerts / databricks_alert_v2: 7 tf-only
 // apps / databricks_app: 16 dabs-only
 // apps / databricks_app: 1 tf-only
-// clusters / databricks_cluster: 1 dabs-only
-// clusters / databricks_cluster: 26 tf-only
+// clusters / databricks_cluster: 27 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
-// experiments / databricks_mlflow_experiment: 1 dabs-only
-// experiments / databricks_mlflow_experiment: 1 tf-only
+// experiments / databricks_mlflow_experiment: 2 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 13 dabs-only
-// jobs / databricks_job: 258 tf-only
-// model_serving_endpoints / databricks_model_serving: 6 dabs-only
-// model_serving_endpoints / databricks_model_serving: 2 tf-only
+// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 265 tf-only
+// model_serving_endpoints / databricks_model_serving: 8 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 27 dabs-only
-// pipelines / databricks_pipeline: 2 tf-only
+// pipelines / databricks_pipeline: 5 dabs-only
+// pipelines / databricks_pipeline: 24 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
 // postgres_databases / databricks_postgres_database: 1 unwraps
@@ -28,8 +25,8 @@ package terraform_dabs_map
 // postgres_projects / databricks_postgres_project: 2 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
 // postgres_roles / databricks_postgres_role: 1 unwraps
-// postgres_synced_tables / databricks_postgres_synced_table: 5 dabs-only
-// postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
+// postgres_synced_tables / databricks_postgres_synced_table: 17 dabs-only
+// postgres_synced_tables / databricks_postgres_synced_table: 23 tf-only
 // schemas / databricks_schema: 1 dabs-only
 // schemas / databricks_schema: 1 tf-only
 // secret_scopes / databricks_secret_scope: 1 tf-only
@@ -227,11 +224,24 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 	},
 	"postgres_synced_tables": {
-		"extra_columns": {
-			"column_name": {}, // postgres_synced_tables.*.extra_columns.column_name
-			"column_type": {}, // postgres_synced_tables.*.extra_columns.column_type
-			"compute":     {}, // postgres_synced_tables.*.extra_columns.compute
-			"maintenance": {}, // postgres_synced_tables.*.extra_columns.maintenance
+		"accelerated_sync":                   {},
+		"branch":                             {},
+		"create_database_objects_if_missing": {},
+		"existing_pipeline_id":               {},
+		"new_pipeline_spec": {
+			"budget_policy_id": {}, // postgres_synced_tables.*.new_pipeline_spec.budget_policy_id
+			"storage_catalog":  {}, // postgres_synced_tables.*.new_pipeline_spec.storage_catalog
+			"storage_schema":   {}, // postgres_synced_tables.*.new_pipeline_spec.storage_schema
+		},
+		"postgres_database":      {},
+		"primary_key_columns":    {},
+		"scheduling_policy":      {},
+		"source_table_full_name": {},
+		"timeseries_key":         {},
+		"type_overrides": {
+			"column_name": {}, // postgres_synced_tables.*.type_overrides.column_name
+			"pg_type":     {}, // postgres_synced_tables.*.type_overrides.pg_type
+			"size":        {}, // postgres_synced_tables.*.type_overrides.size
 		},
 	},
 	"schemas": {
