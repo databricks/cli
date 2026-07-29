@@ -42,8 +42,8 @@ resources:
   job_runs:
     my_run:
       job_id: ${resources.jobs.my_job.id}
-      # Override one of the job's two parameters. GetRun reports the full resolved
-      # set, including the region default this run does not override, so a real
-      # workspace is where the ignore_remote_changes for job_parameters can regress.
+      # Override one of the job's two parameters: a real GetRun reports the full
+      # resolved set, including the region default, which ignore_remote_changes
+      # has to absorb to avoid perpetual drift.
       job_parameters:
         env: prod

@@ -6,8 +6,8 @@ resources:
     my_job:
       name: my-job
       tasks:
-        # The test server runs this locally; the script exits non-zero, which
-        # fails the task and with it the run.
+        # The test server runs this locally: it exits non-zero, failing the task
+        # and with it the run.
         - task_key: main
           spark_python_task:
             python_file: ./fail.py
