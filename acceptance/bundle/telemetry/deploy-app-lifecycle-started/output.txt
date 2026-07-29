@@ -92,6 +92,14 @@ Deployment complete!
     {
       "key": "app_lifecycle_started",
       "value": true
+    },
+    {
+      "key": "engine_terraform_config",
+      "value": false
+    },
+    {
+      "key": "engine_terraform_env",
+      "value": false
     }
   ]
 }

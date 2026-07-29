@@ -12,3 +12,4 @@ Deployment complete!
 true
 
 === Assert the dry-run migration to the direct engine is reported
+=== Assert the terraform engine opt-in is reported
