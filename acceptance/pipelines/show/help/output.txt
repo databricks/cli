@@ -11,7 +11,7 @@ Usage:
 
 Flags:
   -h, --help                  help for show
-  -n, --limit int             Maximum number of rows to fetch. (default 100)
+  -n, --limit int             Maximum number of rows to fetch. (default 10)
       --warehouse-id string   SQL warehouse to run the query on. Defaults to DATABRICKS_WAREHOUSE_ID or a workspace default.
 
 Global Flags:

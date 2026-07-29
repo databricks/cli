@@ -26,7 +26,7 @@ id  name
 === invalid table name
 
 >>> [CLI] pipelines show people
-Error: invalid table name "people": expected catalog.schema.table or schema.table
+Error: invalid table name "people": expected catalog.schema.table (Unity Catalog) or schema.table (legacy Hive metastore)
 
 === wire SQL pins quoting and default limit
 
@@ -38,7 +38,7 @@ Error: invalid table name "people": expected catalog.schema.table or schema.tabl
     "disposition": "INLINE",
     "format": "JSON_ARRAY",
     "on_wait_timeout": "CONTINUE",
-    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 100",
+    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 10",
     "wait_timeout": "10s",
     "warehouse_id": "wh-test"
   }
@@ -50,7 +50,7 @@ Error: invalid table name "people": expected catalog.schema.table or schema.tabl
     "disposition": "INLINE",
     "format": "JSON_ARRAY",
     "on_wait_timeout": "CONTINUE",
-    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 100",
+    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 10",
     "wait_timeout": "10s",
     "warehouse_id": "wh-test"
   }

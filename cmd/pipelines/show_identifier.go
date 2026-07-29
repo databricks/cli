@@ -11,7 +11,7 @@ import (
 func quoteTableName(name string) (string, error) {
 	parts := strings.Split(name, ".")
 	if len(parts) < 2 || len(parts) > 3 {
-		return "", fmt.Errorf("invalid table name %q: expected catalog.schema.table or schema.table", name)
+		return "", fmt.Errorf("invalid table name %q: expected catalog.schema.table (Unity Catalog) or schema.table (legacy Hive metastore)", name)
 	}
 
 	quoted := make([]string, len(parts))
