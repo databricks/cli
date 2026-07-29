@@ -74,7 +74,7 @@ func runPipeline(cmd *cobra.Command) error {
 	check, _ := cmd.Flags().GetBool("dry-run")
 	constraintSource, _ := cmd.Flags().GetString("constraint-source-url")
 
-	targetFlags := libslocalenv.TargetFlags{
+	computeFlags := libslocalenv.ComputeFlags{
 		Cluster:     cluster,
 		ClusterName: clusterName,
 		Serverless:  serverless,
@@ -102,7 +102,7 @@ func runPipeline(cmd *cobra.Command) error {
 	}
 	cacheDir = filepath.Join(cacheDir, "databricks", "localenv")
 
-	// The bundle is only a fallback: ResolveTarget consults it solely when no
+	// The bundle is only a fallback: ResolveCompute consults it solely when no
 	// explicit --cluster-id/--cluster-name/--serverless-version/--job-task flag is set. Skip the bundle load
 	// entirely when a flag is present — it would otherwise re-run TryConfigureBundle
 	// (a second full load) and re-print any bundle load-time diagnostics for nothing.
@@ -118,7 +118,7 @@ func runPipeline(cmd *cobra.Command) error {
 		ProjectDir:        projectDir,
 		ConstraintBaseURL: constraintBaseURL,
 		CacheDir:          cacheDir,
-		Flags:             targetFlags,
+		Flags:             computeFlags,
 		Compute:           sdkCompute{w: w},
 		Bundle:            bt,
 		PM:                libslocalenv.NewUvManager(),
