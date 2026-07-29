@@ -1,3 +1,6 @@
-# run.yaml's contents are uploaded verbatim as training_config.yaml, so its line
-# endings must stay \n on every OS — a Windows \r would change the recorded payload.
+# These YAML files' contents are uploaded verbatim (as training_config.yaml and
+# requirements.yaml), so their line endings must stay \n on every OS — a Windows
+# \r would change the recorded payload.
 run.yaml text eol=lf
+run-file.yaml text eol=lf
+reqs.yaml text eol=lf

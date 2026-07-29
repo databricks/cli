@@ -50,33 +50,33 @@ type requirementsDoc struct {
 	Dependencies []string `yaml:"dependencies"`
 }
 
-// readRequirementsDependencies reads the dependencies list out of a
+// readRequirementsDependencies reads the dependencies and version out of a
 // requirements.yaml file so file-form deps can be carried on the serverless
-// environment's inline spec.dependencies. Returns an empty list when the file
-// declares no dependencies.
-func readRequirementsDependencies(reqPath string) ([]string, error) {
+// environment's inline spec.dependencies and its version can select the runtime
+// image. Returns an empty list when the file declares no dependencies.
+func readRequirementsDependencies(reqPath string) ([]string, string, error) {
 	data, err := os.ReadFile(reqPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read requirements file %s: %w", reqPath, err)
+		return nil, "", fmt.Errorf("failed to read requirements file %s: %w", reqPath, err)
 	}
 	var doc requirementsDoc
 	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse requirements file %s: %w", reqPath, err)
+		return nil, "", fmt.Errorf("failed to parse requirements file %s: %w", reqPath, err)
 	}
 	for _, dep := range doc.Dependencies {
 		if fields := strings.Fields(dep); len(fields) > 0 && (fields[0] == "-r" || fields[0] == "--requirement") {
-			return nil, fmt.Errorf("requirements file dependency %q uses a requirements-file include (-r/--requirement), which is not supported; list the dependencies directly instead", dep)
+			return nil, "", fmt.Errorf("requirements file dependency %q uses a requirements-file include (-r/--requirement), which is not supported; list the dependencies directly instead", dep)
 		}
 	}
-	return doc.Dependencies, nil
+	return doc.Dependencies, doc.Version, nil
 }
 
 // buildArtifacts assembles the files to upload for a run: the merged config, the
 // inline command as a script, and hyperparameters. configPath is the local YAML
 // path.
 //
-// Dependencies are no longer uploaded as a requirements.yaml; they ride inline on
-// the serverless environment's spec.dependencies instead (see buildSubmitPayload).
+// Dependencies are not uploaded here; they ride inline on the serverless
+// environment's spec.dependencies (see buildSubmitPayload).
 func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 	// TODO(DABs): with no _bases_/overrides ported yet, the merged config is the
 	// file as-is; once those land, upload the re-serialized merged YAML instead.

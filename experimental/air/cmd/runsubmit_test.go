@@ -127,56 +127,60 @@ func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
 }
 
 // TestEnvironmentDependencies covers how declared deps are resolved to a flat list:
-// an inline list, a requirements file (path resolved against the config dir), none,
-// and a missing file.
+// an inline list (no file version), a requirements file (path resolved against the
+// config dir, version read from the file), none, and a missing file.
 func TestEnvironmentDependencies(t *testing.T) {
 	inline := &runConfig{Environment: &environmentConfig{
 		Dependencies: dependencies{set: true, isList: true, list: []string{"torch", "numpy"}},
 	}}
-	deps, err := environmentDependencies(inline, "run.yaml")
+	deps, version, err := environmentDependencies(inline, "run.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"torch", "numpy"}, deps)
+	assert.Empty(t, version)
 
 	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "reqs.yaml"), []byte("dependencies:\n  - pandas\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "reqs.yaml"), []byte("version: \"5\"\ndependencies:\n  - pandas\n"), 0o600))
 	fromFile := &runConfig{Environment: &environmentConfig{
 		Dependencies: dependencies{set: true, isList: false, path: "reqs.yaml"},
 	}}
-	deps, err = environmentDependencies(fromFile, filepath.Join(dir, "run.yaml"))
+	deps, version, err = environmentDependencies(fromFile, filepath.Join(dir, "run.yaml"))
 	require.NoError(t, err)
 	assert.Equal(t, []string{"pandas"}, deps)
+	assert.Equal(t, "5", version)
 
-	deps, err = environmentDependencies(&runConfig{}, "run.yaml")
+	deps, _, err = environmentDependencies(&runConfig{}, "run.yaml")
 	require.NoError(t, err)
 	assert.Nil(t, deps)
 
 	missing := &runConfig{Environment: &environmentConfig{
 		Dependencies: dependencies{set: true, isList: false, path: "nope.yaml"},
 	}}
-	_, err = environmentDependencies(missing, filepath.Join(dir, "run.yaml"))
+	_, _, err = environmentDependencies(missing, filepath.Join(dir, "run.yaml"))
 	require.ErrorContains(t, err, "failed to read requirements file")
 }
 
 // TestReadRequirementsDependencies covers reading a requirements file's dependency
-// list, with a missing key yielding an empty list and a -r include rejected.
+// list and version, with a missing key yielding an empty list and a -r include
+// rejected.
 func TestReadRequirementsDependencies(t *testing.T) {
 	dir := t.TempDir()
 
 	reqPath := filepath.Join(dir, "requirements.yaml")
-	require.NoError(t, os.WriteFile(reqPath, []byte("dependencies:\n  - torch==2.3.0\n  - numpy\n"), 0o600))
-	deps, err := readRequirementsDependencies(reqPath)
+	require.NoError(t, os.WriteFile(reqPath, []byte("version: \"5\"\ndependencies:\n  - torch==2.3.0\n  - numpy\n"), 0o600))
+	deps, version, err := readRequirementsDependencies(reqPath)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"torch==2.3.0", "numpy"}, deps)
+	assert.Equal(t, "5", version)
 
 	emptyPath := filepath.Join(dir, "empty.yaml")
 	require.NoError(t, os.WriteFile(emptyPath, []byte("version: \"5\"\n"), 0o600))
-	deps, err = readRequirementsDependencies(emptyPath)
+	deps, _, err = readRequirementsDependencies(emptyPath)
 	require.NoError(t, err)
 	assert.Empty(t, deps)
 
 	includePath := filepath.Join(dir, "include.yaml")
 	require.NoError(t, os.WriteFile(includePath, []byte("dependencies:\n  - -r other.txt\n"), 0o600))
-	_, err = readRequirementsDependencies(includePath)
+	_, _, err = readRequirementsDependencies(includePath)
 	require.ErrorContains(t, err, "requirements-file include")
 }
 
