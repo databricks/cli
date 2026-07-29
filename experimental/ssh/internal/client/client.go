@@ -1210,6 +1210,14 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 }
 
 func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isReconnect bool, serverStartTimeMs int64) {
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshTunnelEvent: buildSshTunnelEvent(opts, isSuccess, isReconnect, serverStartTimeMs),
+	})
+}
+
+// buildSshTunnelEvent maps the connection options and outcome onto the telemetry
+// event. It is separated from logSshTunnelEvent so the field mapping can be unit tested.
+func buildSshTunnelEvent(opts ClientOptions, isSuccess, isReconnect bool, serverStartTimeMs int64) *protos.SshTunnelEvent {
 	computeType := protos.SshTunnelComputeTypeDedicated
 	if opts.IsServerlessMode() {
 		computeType = protos.SshTunnelComputeTypeServerless
@@ -1225,17 +1233,16 @@ func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isRec
 		clientMode = protos.SshTunnelClientModeSSH
 	}
 
-	telemetry.Log(ctx, protos.DatabricksCliLog{
-		SshTunnelEvent: &protos.SshTunnelEvent{
-			ComputeType:       computeType,
-			AcceleratorType:   opts.Accelerator,
-			IdeType:           opts.IDE,
-			ClientMode:        clientMode,
-			IsReconnect:       isReconnect,
-			AutoStartCluster:  opts.AutoStartCluster,
-			ServerStartTimeMs: serverStartTimeMs,
-			IsSuccess:         isSuccess,
-			HasUsagePolicy:    opts.UsagePolicyID != "",
-		},
-	})
+	return &protos.SshTunnelEvent{
+		ComputeType:        computeType,
+		AcceleratorType:    opts.Accelerator,
+		IdeType:            opts.IDE,
+		ClientMode:         clientMode,
+		IsReconnect:        isReconnect,
+		AutoStartCluster:   opts.AutoStartCluster,
+		ServerStartTimeMs:  serverStartTimeMs,
+		IsSuccess:          isSuccess,
+		HasBaseEnvironment: opts.BaseEnvironment != "",
+		HasUsagePolicy:     opts.UsagePolicyID != "",
+	}
 }
