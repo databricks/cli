@@ -118,8 +118,10 @@
 1 presets.artifacts_dynamic_version
 1 presets.tags
 1 presets.tags.*
-1 artifacts.*.dynamic_version#true
-1 resources.jobs.*.queue.enabled#true
-1 resources.pipelines.*.development#true
-1 presets.pipelines_development#true
-1 presets.artifacts_dynamic_version#true
+1 telemetry.run_as_set_false
+1 telemetry.experimental.use_legacy_run_as_false
+1 telemetry.presets_name_prefix_is_set_true
+1 telemetry.artifact_build_command_is_set_true
+1 telemetry.artifact_files_is_set_false
+1 telemetry.local.cache.attempt
+1 telemetry.local.cache.hit

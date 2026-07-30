@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/bundle"
 	bundlebitmap "github.com/databricks/cli/bundle/bitmap"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -55,7 +57,7 @@ fields are kept so that bit positions stay stable.`,
 	var validate bool
 	cmd.Flags().BoolVar(&validate, "validate", false, "Fail if the embedded schema is missing fields instead of printing the merged schema")
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		fresh, err := bundlebitmap.WalkSchema()
+		fresh, err := bundlebitmap.WalkSchema(reflect.TypeFor[bundle.Telemetry]())
 		if err != nil {
 			return err
 		}
@@ -126,7 +128,7 @@ func loadBits(cmd *cobra.Command) ([]bool, []string, error) {
 		return nil, nil, errors.New("failed to load bundle")
 	}
 	schema := bundlebitmap.EmbeddedSchema()
-	bits, err := bundlebitmap.Bits(b.Config, schema)
+	bits, err := bundlebitmap.Bits(b.Config, b.Metrics.Telemetry, schema)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 	"uuid"
 
 	"github.com/databricks/cli/bundle/config"
@@ -70,9 +69,12 @@ type Metrics struct {
 	ConfigurationFileCount   int64
 	TargetCount              int64
 	DeploymentId             uuid.UUID
-	BoolValues               []protos.BoolMapEntry
 	ExecutionTimes           []protos.IntMapEntry
-	LocalCacheMeasurementsMs []protos.IntMapEntry // Local cache measurements stored as milliseconds
+
+	// Telemetry holds the boolean feature flags collected during the deploy.
+	// Its fields feed both the deploy telemetry wire (via BoolValues) and the
+	// bundle bitmap.
+	Telemetry Telemetry
 
 	// Number of resources added and updated by the Python mutator, keyed by resource type.
 	PythonAddedResources   map[string]int64
@@ -93,31 +95,6 @@ type Metrics struct {
 	// bytes so deploy telemetry can be derived without re-reading or re-parsing
 	// the state file.
 	ResourceState resourcestate.ExportedResourcesMap
-}
-
-// SetBoolValue sets the value of a boolean metric.
-// If the metric does not exist, it is created.
-// If the metric exists, it is updated.
-// Ensures that the metric is unique
-func (m *Metrics) SetBoolValue(key string, value bool) {
-	for i, v := range m.BoolValues {
-		if v.Key == key {
-			m.BoolValues[i].Value = value
-			return
-		}
-	}
-	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
-}
-
-func (m *Metrics) AddBoolValue(key string, value bool) {
-	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
-}
-
-// AddDurationValue sets the value of a duration metric in milliseconds.
-// The value is added to the list of measurements.
-func (m *Metrics) AddDurationValue(key string, value time.Duration) {
-	valueMs := value.Milliseconds()
-	m.LocalCacheMeasurementsMs = append(m.LocalCacheMeasurementsMs, protos.IntMapEntry{Key: key, Value: valueMs})
 }
 
 type Bundle struct {
