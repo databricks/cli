@@ -6,10 +6,10 @@ trace $CLI bundle deploy
 title "Plan is a no-op even though telemetry_config does not round-trip"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
-title "telemetry_config is skipped rather than planned as an update the API cannot make"
+title "telemetry_config is skipped (confirms the matched rules)"
 trace $CLI bundle plan --output json | jq '.plan[].changes'
 
-title "Changing telemetry_config does not plan an update: it can only be set at create time"
+title "Changing telemetry_config plans nothing: it is create-only"
 update_file.py databricks.yml "sampling_fraction: 0.5" "sampling_fraction: 0.9"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 

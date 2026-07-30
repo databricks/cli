@@ -285,9 +285,7 @@ resources:
       # Accepted on write but not returned by GET.
       - field: config.served_entities[*].burst_scaling_enabled
         reason: input_only
-      # Accepted by the create API but GET never echoes it back, so the remote
-      # always reports empty and every deploy would otherwise replan the same
-      # update forever.
+      # Remote always reads back empty, so without this it never converges.
       - field: telemetry_config
         reason: input_only
       # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
@@ -320,10 +318,7 @@ resources:
         reason: no_update_api
       - field: rate_limits
         reason: not_implemented
-      # telemetry_config can only be set at create time: there is no update API
-      # for it on ServingEndpointsAPI, and no update request body in the OpenAPI
-      # spec carries the field. Without this rule the plan promises an update
-      # that DoUpdate has no call to make, so the change is silently dropped.
+      # Only exists on CreateServingEndpoint; no update API accepts it.
       - field: telemetry_config
         reason: no_update_api
     backend_defaults:

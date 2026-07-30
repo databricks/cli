@@ -10,7 +10,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== telemetry_config is skipped rather than planned as an update the API cannot make
+=== telemetry_config is skipped (confirms the matched rules)
 >>> [CLI] bundle plan --output json
 {
   "config.served_entities[0].external_model.openai_config.openai_api_key_plaintext": {
@@ -46,7 +46,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   }
 }
 
-=== Changing telemetry_config does not plan an update: it can only be set at create time
+=== Changing telemetry_config plans nothing: it is create-only
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 

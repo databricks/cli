@@ -18,8 +18,6 @@ resources:
           routes:
             - served_model_name: prod
               traffic_percentage: 100
-      # Accepted by the create API, never returned on GET, and there is no
-      # update API for it.
       telemetry_config:
         inference_table_config:
           sampling_fraction: 0.5
