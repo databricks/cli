@@ -18,16 +18,16 @@ Resources:
   Vector Search Endpoints:
     my_endpoint:
       Name: vs-endpoint-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[WORKSPACE_ID]
   Vector Search Indexes:
     my_index:
       Name: main.default.vs_index_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
-created vector_search_endpoints.my_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
-created vector_search_indexes.my_index       [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[NUMID]
+created vector_search_endpoints.my_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created vector_search_indexes.my_index       [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -49,11 +49,11 @@ Resources:
   Vector Search Endpoints:
     my_endpoint:
       Name: vs-endpoint-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[WORKSPACE_ID]
   Vector Search Indexes:
     my_index:
       Name: main.default.vs_index_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 >>> print_requests.py //vector-search/indexes
 

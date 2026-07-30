@@ -1,7 +1,7 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created models.foo              [DATABRICKS_URL]/ml/models/test-model?w=[NUMID]
+created models.foo              [DATABRICKS_URL]/ml/models/test-model?w=[WORKSPACE_ID]
 created models.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

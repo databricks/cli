@@ -20,7 +20,7 @@ To get started, refer to the project README.md file and the documentation at htt
 Building python_artifact...
 Uploading .databricks/bundle/dev/patched_wheels/python_artifact_my_pydabs/my_pydabs-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_pydabs/dev/files...
-created jobs.sample_job          [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
-created pipelines.my_pydabs_etl  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+created jobs.sample_job          [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]?w=[WORKSPACE_ID]
+created pipelines.my_pydabs_etl  [DATABRICKS_URL]/pipelines/[MY_PYDABS_ETL_ID]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

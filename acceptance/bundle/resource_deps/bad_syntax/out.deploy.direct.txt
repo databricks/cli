@@ -1,5 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created volumes.bar  [DATABRICKS_URL]/explore/data/volumes/mycatalog/myschema/barname?w=[NUMID]
+created volumes.bar  [DATABRICKS_URL]/explore/data/volumes/mycatalog/myschema/barname?w=[WORKSPACE_ID]
 created volumes.foo
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

@@ -1,10 +1,10 @@
 
 === Create a pre-defined job:
-Created job with ID: [NUMID]
+Created job with ID: [FOO_ID]
 
 === Bind job:
->>> [CLI] bundle deployment bind foo [NUMID] --auto-approve
-Successfully bound job with an id '[NUMID]'
+>>> [CLI] bundle deployment bind foo [FOO_ID] --auto-approve
+Successfully bound job with an id '[FOO_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 === Remove .databricks directory to simulate fresh deployment:
@@ -13,14 +13,14 @@ Run 'bundle deploy' to deploy changes to your workspace
 === Deploy bundle:
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files...
-updated jobs.foo  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+updated jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 === Read the pre-defined job:
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [FOO_ID]
 {
-  "job_id": [NUMID],
+  "job_id": [FOO_ID],
   "settings": {
     "name": "test-job-basic-[UNIQUE_NAME]",
     "tasks": [
@@ -47,9 +47,9 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 0 deleted.
 
 === Read the pre-defined job again (expecting it still exists):
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [FOO_ID]
 {
-  "job_id": [NUMID],
+  "job_id": [FOO_ID],
   "settings": {
     "name": "test-job-basic-[UNIQUE_NAME]",
     "tasks": [
@@ -63,4 +63,4 @@ Destroy: 0 deleted.
   }
 }
 
-=== Delete the pre-defined job [NUMID]:0
+=== Delete the pre-defined job [FOO_ID]:0

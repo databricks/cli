@@ -26,7 +26,7 @@
 }
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/jobs/[NUMID]",
+  "path": "/api/2.0/permissions/jobs/[FOO_ID]",
   "body": {
     "access_control_list": [
       {

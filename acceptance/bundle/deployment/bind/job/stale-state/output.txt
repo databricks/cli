@@ -2,7 +2,7 @@
 === Step 1: Deploy with job_1 only
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/stale_state_test/default/files...
-created jobs.job_1  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.job_1  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -10,7 +10,7 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 === Step 3: Add job_2 to config and deploy again
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/stale_state_test/default/files...
-created jobs.job_2  [DATABRICKS_URL]/jobs/[JOB_2_ID]?w=[NUMID]
+created jobs.job_2  [DATABRICKS_URL]/jobs/[JOB_2_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 1 unchanged.
 

@@ -2,6 +2,7 @@ trace $CLI bundle validate -o json | jq .resources.jobs.some_other_job.tasks
 trace $CLI bundle summary -o json | jq .resources.jobs.some_other_job.tasks
 
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
 rm out.requests.txt

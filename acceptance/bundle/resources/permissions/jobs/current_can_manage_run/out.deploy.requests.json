@@ -17,7 +17,7 @@
 }
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/jobs/[NUMID]",
+  "path": "/api/2.0/permissions/jobs/[INTERIM_GOLD_LAYER_JOB_ID]",
   "body": {
     "access_control_list": [
       {

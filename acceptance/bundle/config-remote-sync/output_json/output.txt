@@ -1,5 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-created jobs.test_job  [DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[NUMID]
+created jobs.test_job  [DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

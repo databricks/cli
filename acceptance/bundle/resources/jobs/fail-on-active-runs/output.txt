@@ -11,7 +11,7 @@ Validation OK!
 === deploy empty bundle
 >>> [CLI] bundle deploy --fail-on-active-runs
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-active-runs-test-[UNIQUE_NAME]/default/files...
-created jobs.foo  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

@@ -44,7 +44,7 @@
             "format": "MULTI_TASK",
             "git_source": [],
             "health": [],
-            "id": "[NUMID]",
+            "id": "[TEST_JOB_ID]",
             "job_cluster": [],
             "library": [],
             "max_concurrent_runs": 1,
@@ -60,7 +60,7 @@
             "pipeline_task": [],
             "provider_config": [
               {
-                "workspace_id": "[NUMID]"
+                "workspace_id": "[WORKSPACE_ID]"
               }
             ],
             "python_wheel_task": [],
@@ -146,7 +146,7 @@
             "timeout_seconds": 0,
             "timeouts": null,
             "trigger": [],
-            "url": "[DATABRICKS_URL]/#job/[NUMID]",
+            "url": "[DATABRICKS_URL]/#job/[TEST_JOB_ID]",
             "usage_policy_id": null,
             "webhook_notifications": [
               {
@@ -198,7 +198,7 @@
             "filters": [],
             "gateway_definition": [],
             "health": null,
-            "id": "[UUID]",
+            "id": "[TEST_PIPELINE_ID]",
             "ingestion_definition": [],
             "last_modified": [UNIX_TIME_MILLIS],
             "latest_updates": null,
@@ -221,7 +221,7 @@
             "photon": false,
             "provider_config": [
               {
-                "workspace_id": "[NUMID]"
+                "workspace_id": "[WORKSPACE_ID]"
               }
             ],
             "restart_window": [],
@@ -232,19 +232,19 @@
             "serverless": false,
             "serverless_compute_id": null,
             "state": "IDLE",
-            "storage": "dbfs:/pipelines/[UUID]",
+            "storage": "dbfs:/pipelines/[TEST_PIPELINE_ID]",
             "tags": {
-              "myjob_id": "[NUMID]",
+              "myjob_id": "[TEST_JOB_ID]",
               "myjob_name": "Test Migration Job",
               "myjob_timeout": "0",
-              "myvolume_id": "mycat.myschema.myvol",
+              "myvolume_id": "[TEST_VOLUME_ID]",
               "volume_catalog_name": "mycat",
               "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
             },
             "target": null,
             "timeouts": null,
             "trigger": [],
-            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]",
+            "url": "[DATABRICKS_URL]/#joblist/pipelines/[TEST_PIPELINE_ID]",
             "usage_policy_id": null
           },
           "sensitive_attributes": [],
@@ -267,12 +267,12 @@
           "attributes": {
             "catalog_name": "mycat",
             "comment": null,
-            "id": "mycat.myschema.myvol",
+            "id": "[TEST_VOLUME_ID]",
             "name": "myvol",
             "owner": "[USERNAME]",
             "provider_config": [
               {
-                "workspace_id": "[NUMID]"
+                "workspace_id": "[WORKSPACE_ID]"
               }
             ],
             "schema_name": "myschema",

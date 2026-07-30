@@ -2,7 +2,7 @@
 === Initial deployment (no budget policy)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-budget-[UNIQUE_NAME]/default/files...
-created vector_search_endpoints.my_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
+created vector_search_endpoints.my_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -19,7 +19,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-budget-[UNIQUE_NAME]/default/files...
-updated vector_search_endpoints.my_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
+updated vector_search_endpoints.my_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

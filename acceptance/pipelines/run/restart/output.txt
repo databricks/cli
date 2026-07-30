@@ -1,10 +1,10 @@
 
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
-created pipelines.my_pipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+created pipelines.my_pipeline  [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
-View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]?w=[WORKSPACE_ID]
 
 === Running pipeline with --restart flag
 >>> [CLI] pipelines run --restart
@@ -12,7 +12,7 @@ Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[MY_PIPELINE_ID]/updates/[UUID]
 
 Update ID: [UUID]
 
@@ -24,10 +24,10 @@ Pipeline configurations for this update:
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/stop"
+  "path": "/api/2.0/pipelines/[MY_PIPELINE_ID]/stop"
 }
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[MY_PIPELINE_ID]/updates",
   "body": {}
 }

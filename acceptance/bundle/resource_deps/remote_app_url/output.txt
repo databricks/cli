@@ -26,7 +26,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 created apps.myapp
-created pipelines.mypipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+created pipelines.mypipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

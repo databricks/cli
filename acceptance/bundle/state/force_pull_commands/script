@@ -1,4 +1,5 @@
 trace $CLI bundle deploy > /dev/null
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 rm -f out.requests.txt
 
 title "Use a fake browser that just prints the URL it would have opened"

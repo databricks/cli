@@ -39,7 +39,7 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [NUMID],
+        "job_id": [TEST_JOB_ID],
         "max_concurrent_runs": 1,
         "name": "Test Migration Job",
         "queue": {
@@ -150,10 +150,10 @@
           ],
           "name": "Test Migrated Pipeline",
           "tags": {
-            "myjob_id": "[NUMID]",
+            "myjob_id": "[TEST_JOB_ID]",
             "myjob_name": "Test Migrated Job",
             "myjob_timeout": "${resources.jobs.test_job.timeout_seconds}",
-            "myvolume_id": "mycat.myschema.myvol",
+            "myvolume_id": "[TEST_VOLUME_ID]",
             "volume_catalog_name": "mycat",
             "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
           }
@@ -171,7 +171,7 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[TEST_PIPELINE_ID]",
         "last_modified": [UNIX_TIME_MILLIS][1],
         "libraries": [
           {
@@ -181,15 +181,15 @@
           }
         ],
         "name": "Test Migration Pipeline",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[TEST_PIPELINE_ID]",
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]",
+        "storage": "dbfs:/pipelines/[TEST_PIPELINE_ID]",
         "tags": {
-          "myjob_id": "[NUMID]",
+          "myjob_id": "[TEST_JOB_ID]",
           "myjob_name": "Test Migration Job",
           "myjob_timeout": "0",
-          "myvolume_id": "mycat.myschema.myvol",
+          "myvolume_id": "[TEST_VOLUME_ID]",
           "volume_catalog_name": "mycat",
           "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
         }
@@ -204,7 +204,7 @@
         "storage": {
           "action": "skip",
           "reason": "backend_default",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[TEST_PIPELINE_ID]"
         },
         "tags['myjob_name']": {
           "action": "update",
@@ -226,7 +226,7 @@
         "catalog_name": "mycat",
         "created_at": [UNIX_TIME_MILLIS][2],
         "created_by": "[USERNAME]",
-        "full_name": "mycat.myschema.myvol",
+        "full_name": "[TEST_VOLUME_ID]",
         "name": "myvol",
         "owner": "[USERNAME]",
         "schema_name": "myschema",

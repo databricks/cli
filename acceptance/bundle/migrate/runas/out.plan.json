@@ -16,7 +16,7 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[FOO_ID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "libraries": [
           {
@@ -26,7 +26,7 @@
           }
         ],
         "name": "DABs Revenue Pipeline",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[FOO_ID]",
         "run_as_user_name": "[USERNAME]",
         "serverless": true,
         "state": "IDLE",
@@ -54,7 +54,7 @@
       ],
       "action": "skip",
       "remote_state": {
-        "object_id": "/pipelines/[UUID]",
+        "object_id": "[PIPELINE_FOO_ID]",
         "__embed__": [
           {
             "level": "CAN_VIEW",

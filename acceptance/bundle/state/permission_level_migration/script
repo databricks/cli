@@ -13,6 +13,7 @@ trace $CLI bundle plan -o json > out.plan.direct.json
 
 title "Deploy (migrates state)"
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 title "Print state after deploy"
 trace print_state.py

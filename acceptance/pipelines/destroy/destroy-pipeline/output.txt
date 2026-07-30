@@ -2,10 +2,10 @@
 === Test basic pipelines destroy
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default/files...
-created pipelines.my_pipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+created pipelines.my_pipeline  [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
-View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]?w=[WORKSPACE_ID]
 
 >>> [CLI] pipelines destroy --auto-approve
 The following resources will be deleted:
@@ -20,7 +20,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted.
 
 === Assert pipeline is deleted
->>> errcode [CLI] pipelines get [UUID]
-Error: The specified pipeline [UUID] was not found.
+>>> errcode [CLI] pipelines get [MY_PIPELINE_ID]
+Error: The specified pipeline [MY_PIPELINE_ID] was not found.
 
 Exit code: 1

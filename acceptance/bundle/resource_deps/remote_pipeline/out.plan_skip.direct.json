@@ -15,19 +15,19 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[FOO1_ID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo1 name",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[FOO1_ID]",
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]"
+        "storage": "dbfs:/pipelines/[FOO1_ID]"
       },
       "changes": {
         "storage": {
           "action": "skip",
           "reason": "backend_default",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[FOO1_ID]"
         }
       }
     },
@@ -48,19 +48,19 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[FOO2_ID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo2 foo1.creator_user_name=[USERNAME]",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[FOO2_ID]",
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]"
+        "storage": "dbfs:/pipelines/[FOO2_ID]"
       },
       "changes": {
         "storage": {
           "action": "skip",
           "reason": "backend_default",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[FOO2_ID]"
         }
       }
     },
@@ -81,19 +81,19 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[FOO3_ID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo3 foo2.state=IDLE",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[FOO3_ID]",
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]"
+        "storage": "dbfs:/pipelines/[FOO3_ID]"
       },
       "changes": {
         "storage": {
           "action": "skip",
           "reason": "backend_default",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[FOO3_ID]"
         }
       }
     },
@@ -114,19 +114,19 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[FOO4_ID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo4 foo3.last_modified=[UNIX_TIME_MILLIS]",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[FOO4_ID]",
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]"
+        "storage": "dbfs:/pipelines/[FOO4_ID]"
       },
       "changes": {
         "storage": {
           "action": "skip",
           "reason": "backend_default",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[FOO4_ID]"
         }
       }
     }

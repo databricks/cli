@@ -1,8 +1,8 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
-created jobs.foo      [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
-created jobs.process  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
-created volumes.data  [DATABRICKS_URL]/explore/data/volumes/main/[USERNAME]@databricks/com/[USERNAME]@databricks/com?w=[NUMID]
+created jobs.foo      [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+created jobs.process  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+created volumes.data  [DATABRICKS_URL]/explore/data/volumes/main/[USERNAME]@databricks/com/[USERNAME]@databricks/com?w=[WORKSPACE_ID]
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.

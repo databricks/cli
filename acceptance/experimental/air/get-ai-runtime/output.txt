@@ -31,7 +31,7 @@
 │                                                                │
 ╰────────────────────────────────────────────────────────────────╯
 
-Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
+Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
 MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 
 === get (json)
@@ -46,7 +46,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
     "duration_seconds": 12,
     "attempt_number": 0,
     "experiment_name": "my-exp",
-    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[NUMID]",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
     "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/artifacts/logs/node_0"
   }
 }

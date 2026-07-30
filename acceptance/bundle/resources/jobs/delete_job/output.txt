@@ -1,13 +1,13 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.job  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.job  [DATABRICKS_URL]/jobs/[JOB_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-deleted jobs.job  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+deleted jobs.job  [DATABRICKS_URL]/jobs/[JOB_ID]?w=[WORKSPACE_ID]
 
 Deploy: 0 created, 0 changed, 1 deleted, 0 unchanged.
 {
@@ -65,6 +65,6 @@ Deploy: 0 created, 0 changed, 1 deleted, 0 unchanged.
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [JOB_ID]
   }
 }

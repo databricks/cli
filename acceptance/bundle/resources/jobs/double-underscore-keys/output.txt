@@ -10,8 +10,8 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-test-[UNIQUE_NAME]/default/files...
-created jobs.foo       [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
-created jobs.foo__bar  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.foo       [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
+created jobs.foo__bar  [DATABRICKS_URL]/jobs/[FOO__BAR_ID]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

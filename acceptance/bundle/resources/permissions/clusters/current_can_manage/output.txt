@@ -21,7 +21,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created clusters.foo              [DATABRICKS_URL]/compute/clusters/[UUID]?w=[NUMID]
+created clusters.foo              [DATABRICKS_URL]/compute/clusters/[UUID]?w=[WORKSPACE_ID]
 created clusters.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

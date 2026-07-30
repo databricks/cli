@@ -266,7 +266,7 @@
               "properties": null,
               "provider_config": [
                 {
-                  "workspace_id": "[NUMID]"
+                  "workspace_id": "[WORKSPACE_ID]"
                 }
               ],
               "schema_id": "[UUID]",

@@ -13,7 +13,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-perm-[UNIQUE_NAME]/default/files...
-created dashboards.foo              [DATABRICKS_URL]/dashboardsv3/[FOO_ID]/published?w=[NUMID]
+created dashboards.foo              [DATABRICKS_URL]/dashboardsv3/[FOO_ID]/published?w=[WORKSPACE_ID]
 created dashboards.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

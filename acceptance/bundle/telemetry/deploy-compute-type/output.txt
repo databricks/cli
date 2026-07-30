@@ -1,13 +1,13 @@
 
 >>> [CLI] bundle deploy -t one
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-compute-type/one/files...
-created jobs.my_job  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.my_job  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy -t two
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-compute-type/two/files...
-created jobs.my_job  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.my_job  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

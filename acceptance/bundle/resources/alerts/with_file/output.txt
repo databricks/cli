@@ -33,7 +33,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/files...
-created alerts.myalert  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]
+created alerts.myalert  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -88,7 +88,7 @@ Resources:
   Alerts:
     myalert:
       Name: myalert
-      URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]
+      URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]?w=[WORKSPACE_ID]
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

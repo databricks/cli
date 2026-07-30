@@ -1,8 +1,8 @@
 
 >>> errcode [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
-created pipelines.mypipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
-created volumes.bar           [DATABRICKS_URL]/explore/data/volumes/mycatalog/myschema/barname?w=[NUMID]
-created volumes.foo           [DATABRICKS_URL]/explore/data/volumes/mycatalog/myschema/myname?w=[NUMID]
+created pipelines.mypipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created volumes.bar           [DATABRICKS_URL]/explore/data/volumes/mycatalog/myschema/barname?w=[WORKSPACE_ID]
+created volumes.foo           [DATABRICKS_URL]/explore/data/volumes/mycatalog/myschema/myname?w=[WORKSPACE_ID]
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.

@@ -1,2 +1,3 @@
 trace errcode $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 rm -rf whl1 whl2

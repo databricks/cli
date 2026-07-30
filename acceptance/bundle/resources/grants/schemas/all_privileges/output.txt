@@ -1,5 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-dup-grants-[UNIQUE_NAME]/default/files...
-created schemas.apps_schema         [DATABRICKS_URL]/explore/data/main/schema_dup_grants_[UNIQUE_NAME]?w=[NUMID]
+created schemas.apps_schema         [DATABRICKS_URL]/explore/data/main/schema_dup_grants_[UNIQUE_NAME]?w=[WORKSPACE_ID]
 created schemas.apps_schema.grants
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

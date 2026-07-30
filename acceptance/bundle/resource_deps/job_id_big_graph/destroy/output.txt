@@ -1,18 +1,18 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.chain_bottom    [DATABRICKS_URL]/jobs/[CHAIN_BOTTOM_ID]?w=[NUMID]
-created jobs.chain_mid       [DATABRICKS_URL]/jobs/[CHAIN_MID_ID]?w=[NUMID]
-created jobs.chain_top       [DATABRICKS_URL]/jobs/[CHAIN_TOP_ID]?w=[NUMID]
-created jobs.diamond_bottom  [DATABRICKS_URL]/jobs/[DIAMOND_BOTTOM_ID]?w=[NUMID]
-created jobs.diamond_left    [DATABRICKS_URL]/jobs/[DIAMOND_LEFT_ID]?w=[NUMID]
-created jobs.diamond_right   [DATABRICKS_URL]/jobs/[DIAMOND_RIGHT_ID]?w=[NUMID]
-created jobs.diamond_top     [DATABRICKS_URL]/jobs/[DIAMOND_TOP_ID]?w=[NUMID]
-created jobs.independent1    [DATABRICKS_URL]/jobs/[INDEPENDENT1_ID]?w=[NUMID]
-created jobs.independent2    [DATABRICKS_URL]/jobs/[INDEPENDENT2_ID]?w=[NUMID]
-created jobs.multi_child     [DATABRICKS_URL]/jobs/[MULTI_CHILD_ID]?w=[NUMID]
-created jobs.multi_parent1   [DATABRICKS_URL]/jobs/[MULTI_PARENT1_ID]?w=[NUMID]
-created jobs.multi_parent2   [DATABRICKS_URL]/jobs/[MULTI_PARENT2_ID]?w=[NUMID]
+created jobs.chain_bottom    [DATABRICKS_URL]/jobs/[CHAIN_BOTTOM_ID]?w=[WORKSPACE_ID]
+created jobs.chain_mid       [DATABRICKS_URL]/jobs/[CHAIN_MID_ID]?w=[WORKSPACE_ID]
+created jobs.chain_top       [DATABRICKS_URL]/jobs/[CHAIN_TOP_ID]?w=[WORKSPACE_ID]
+created jobs.diamond_bottom  [DATABRICKS_URL]/jobs/[DIAMOND_BOTTOM_ID]?w=[WORKSPACE_ID]
+created jobs.diamond_left    [DATABRICKS_URL]/jobs/[DIAMOND_LEFT_ID]?w=[WORKSPACE_ID]
+created jobs.diamond_right   [DATABRICKS_URL]/jobs/[DIAMOND_RIGHT_ID]?w=[WORKSPACE_ID]
+created jobs.diamond_top     [DATABRICKS_URL]/jobs/[DIAMOND_TOP_ID]?w=[WORKSPACE_ID]
+created jobs.independent1    [DATABRICKS_URL]/jobs/[INDEPENDENT1_ID]?w=[WORKSPACE_ID]
+created jobs.independent2    [DATABRICKS_URL]/jobs/[INDEPENDENT2_ID]?w=[WORKSPACE_ID]
+created jobs.multi_child     [DATABRICKS_URL]/jobs/[MULTI_CHILD_ID]?w=[WORKSPACE_ID]
+created jobs.multi_parent1   [DATABRICKS_URL]/jobs/[MULTI_PARENT1_ID]?w=[WORKSPACE_ID]
+created jobs.multi_parent2   [DATABRICKS_URL]/jobs/[MULTI_PARENT2_ID]?w=[WORKSPACE_ID]
 
 Deploy: 12 created, 0 changed, 0 deleted, 0 unchanged.
 

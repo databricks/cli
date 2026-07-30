@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-genie-space-[UNIQUE_NAME]/default/files...
-created genie_spaces.update_target  [DATABRICKS_URL]/genie/rooms/[GENIE_SPACE_ID]?w=[NUMID]
+created genie_spaces.update_target  [DATABRICKS_URL]/genie/rooms/[GENIE_SPACE_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

@@ -5,7 +5,7 @@
  "serial": 7,
  "state": {
   "resources.jobs.test_job": {
-   "__id__": "[NUMID]",
+   "__id__": "[TEST_JOB_ID]",
    "state": {
     "deployment": {
      "kind": "BUNDLE",
@@ -29,9 +29,9 @@
    }
   },
   "resources.jobs.test_job.permissions": {
-   "__id__": "/jobs/[NUMID]",
+   "__id__": "/jobs/[TEST_JOB_ID]",
    "state": {
-    "object_id": "/jobs/[NUMID]",
+    "object_id": "/jobs/[TEST_JOB_ID]",
     "__embed__": [
      {
       "level": "CAN_VIEW",
@@ -51,7 +51,7 @@
    ]
   },
   "resources.pipelines.test_pipeline": {
-   "__id__": "[UUID]",
+   "__id__": "[TEST_PIPELINE_ID]",
    "state": {
     "channel": "CURRENT",
     "deployment": {
@@ -70,9 +70,9 @@
    }
   },
   "resources.pipelines.test_pipeline.permissions": {
-   "__id__": "/pipelines/[UUID]",
+   "__id__": "[PIPELINE_TEST_PIPELINE_ID]",
    "state": {
-    "object_id": "/pipelines/[UUID]",
+    "object_id": "[PIPELINE_TEST_PIPELINE_ID]",
     "__embed__": [
      {
       "level": "CAN_MANAGE",

@@ -37,17 +37,17 @@ Building python_artifact...
 >>> [CLI] bundle deploy
 Building python_artifact...
 Uploading immutable bundle snapshot...
-created jobs.my_job  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.my_job  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [MY_JOB_ID]
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [MY_JOB_ID]
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [MY_JOB_ID]
 [
   "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
 ]

@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-ssd-count-0-[UNIQUE_NAME]/default/files...
-created clusters.test_cluster  [DATABRICKS_URL]/compute/clusters/[TEST_CLUSTER_ID]?w=[NUMID]
+created clusters.test_cluster  [DATABRICKS_URL]/compute/clusters/[TEST_CLUSTER_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

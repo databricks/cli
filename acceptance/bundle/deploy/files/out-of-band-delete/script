@@ -4,6 +4,7 @@
 BUNDLE_PATH="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/out-of-band-delete/default"
 
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 title "After the initial deploy the python_file exists"
 trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'

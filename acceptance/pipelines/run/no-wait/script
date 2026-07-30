@@ -1,3 +1,4 @@
 trace $CLI pipelines deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 title "test --no-wait flag"
 trace $CLI pipelines run --no-wait

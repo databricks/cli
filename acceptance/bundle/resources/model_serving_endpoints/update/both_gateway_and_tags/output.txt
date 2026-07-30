@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created model_serving_endpoints.test_endpoint  [DATABRICKS_URL]/ml/endpoints/[ENDPOINT_ID]?w=[NUMID]
+created model_serving_endpoints.test_endpoint  [DATABRICKS_URL]/ml/endpoints/[ENDPOINT_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -39,7 +39,7 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated model_serving_endpoints.test_endpoint  [DATABRICKS_URL]/ml/endpoints/[ENDPOINT_ID]?w=[NUMID]
+updated model_serving_endpoints.test_endpoint  [DATABRICKS_URL]/ml/endpoints/[ENDPOINT_ID]?w=[WORKSPACE_ID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

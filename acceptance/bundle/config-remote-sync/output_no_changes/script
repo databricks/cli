@@ -9,6 +9,7 @@ trap cleanup EXIT
 
 touch dummy.whl
 $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 title "Check for changes immediately after deployment"
 echo

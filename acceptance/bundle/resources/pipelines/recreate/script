@@ -6,6 +6,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 title "Assert the pipeline is created with catalog"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')

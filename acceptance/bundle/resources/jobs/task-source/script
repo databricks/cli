@@ -1,4 +1,5 @@
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 # For terraform we expect the task source to be explicitly set always
 # For direct we do not expect it to be set unless explicitly specified in the bundle config

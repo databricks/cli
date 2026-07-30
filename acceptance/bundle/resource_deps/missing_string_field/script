@@ -3,4 +3,5 @@ errcode $CLI bundle plan
 trace print_requests.py //pipeline
 
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 trace print_requests.py //pipeline

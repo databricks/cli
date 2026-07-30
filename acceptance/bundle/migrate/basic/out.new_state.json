@@ -5,7 +5,7 @@
  "serial": 6,
  "state": {
   "resources.jobs.test_job": {
-   "__id__": "[NUMID]",
+   "__id__": "[TEST_JOB_ID]",
    "state": {
     "deployment": {
      "kind": "BUNDLE",
@@ -29,7 +29,7 @@
    }
   },
   "resources.pipelines.test_pipeline": {
-   "__id__": "[UUID]",
+   "__id__": "[TEST_PIPELINE_ID]",
    "state": {
     "channel": "CURRENT",
     "deployment": {
@@ -46,10 +46,10 @@
     ],
     "name": "Test Migration Pipeline",
     "tags": {
-     "myjob_id": "[NUMID]",
+     "myjob_id": "[TEST_JOB_ID]",
      "myjob_name": "Test Migration Job",
      "myjob_timeout": "0",
-     "myvolume_id": "mycat.myschema.myvol",
+     "myvolume_id": "[TEST_VOLUME_ID]",
      "volume_catalog_name": "mycat",
      "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
     }
@@ -82,7 +82,7 @@
    ]
   },
   "resources.volumes.test_volume": {
-   "__id__": "mycat.myschema.myvol",
+   "__id__": "[TEST_VOLUME_ID]",
    "state": {
     "catalog_name": "mycat",
     "name": "myvol",

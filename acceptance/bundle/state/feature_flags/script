@@ -8,4 +8,5 @@ title "a version-3 state with an empty features map is accepted, and a deploy ke
 cp resources.empty_features.json .databricks/bundle/default/resources.json
 trace $CLI bundle plan | contains.py "Plan:"
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 trace gron.py .databricks/bundle/default/resources.json | grep state_version

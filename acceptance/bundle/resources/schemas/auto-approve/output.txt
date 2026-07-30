@@ -1,20 +1,20 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created pipelines.foo  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
-created schemas.bar    [DATABRICKS_URL]/explore/data/main/test-schema-[UNIQUE_NAME]?w=[NUMID]
+created pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID]?w=[WORKSPACE_ID]
+created schemas.bar    [DATABRICKS_URL]/explore/data/main/test-schema-[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Assert the schema is created
->>> [CLI] schemas get main.test-schema-[UNIQUE_NAME]
+>>> [CLI] schemas get [BAR_ID]
 {
-  "full_name": "main.test-schema-[UNIQUE_NAME]",
+  "full_name": "[BAR_ID]",
   "comment": "This schema was created from DABs"
 }
 
 === Assert the pipeline is created and uses the schema
->>> [CLI] pipelines get [UUID]
+>>> [CLI] pipelines get [FOO_ID]
 {
   "spec": {
     "catalog": "main",
@@ -25,7 +25,7 @@ Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
     },
     "development": true,
     "edition": "ADVANCED",
-    "id": "[UUID]",
+    "id": "[FOO_ID]",
     "libraries": [
       {
         "notebook": {
@@ -43,7 +43,7 @@ Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
      terraform configuration has force_destroy set to true.
 >>> [CLI] volumes create main test-schema-[UNIQUE_NAME] test-volume-[UNIQUE_NAME] MANAGED
 {
-  "full_name": "main.test-schema-[UNIQUE_NAME].test-volume-[UNIQUE_NAME]"
+  "full_name": "[BAR_ID].test-volume-[UNIQUE_NAME]"
 }
 
 >>> [CLI] fs cp test-file-[UNIQUE_NAME].txt dbfs:/Volumes/main/test-schema-[UNIQUE_NAME]/test-volume-[UNIQUE_NAME]

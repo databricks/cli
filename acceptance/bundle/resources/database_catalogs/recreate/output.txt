@@ -1,8 +1,8 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-recreate-[UNIQUE_NAME]/default/files...
-created database_catalogs.my_catalog    [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]?w=[NUMID]
-created database_instances.my_instance  [DATABRICKS_URL]/compute/database-instances/test-db-catalog-recreate-[UNIQUE_NAME]?w=[NUMID]
+created database_catalogs.my_catalog    [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created database_instances.my_instance  [DATABRICKS_URL]/compute/database-instances/test-db-catalog-recreate-[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -14,7 +14,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-recreate-[UNIQUE_NAME]/default/files...
-recreated database_catalogs.my_catalog  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]?w=[NUMID]
+recreated database_catalogs.my_catalog  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 1 deleted, 1 unchanged.
 

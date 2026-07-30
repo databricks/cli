@@ -8,7 +8,7 @@ Authenticated with: pat
 -----
 Current configuration:
   ✓ host: [DATABRICKS_URL] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
-  ✓ workspace_id: [NUMID]
+  ✓ workspace_id: [WORKSPACE_ID]
   ✓ token: ******** (from [TEST_TMP_DIR]/home/.databrickscfg config file)
   ✓ profile: my-workspace (from --profile flag)
   ✓ databricks_cli_path: [CLI]
@@ -26,7 +26,7 @@ Authenticated with: pat
 -----
 Current configuration:
   ✓ host: [DATABRICKS_URL] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
-  ✓ workspace_id: [NUMID]
+  ✓ workspace_id: [WORKSPACE_ID]
   ✓ token: ******** (from DATABRICKS_TOKEN environment variable)
   ✓ profile: host-only (from --profile flag)
   ✓ databricks_cli_path: [CLI]

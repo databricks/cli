@@ -2,6 +2,7 @@ title "Initial view of resources without id and modified_status=created"
 trace $CLI bundle summary -o json | jq .resources
 
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 title "Post-deployment view of resources with id and without modified_status"
 trace $CLI bundle summary -o json | jq .resources

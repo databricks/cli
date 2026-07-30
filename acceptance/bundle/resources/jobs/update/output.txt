@@ -4,7 +4,7 @@ create jobs.foo
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[NUMID]
+created jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -27,7 +27,7 @@ update jobs.foo
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[NUMID]
+updated jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

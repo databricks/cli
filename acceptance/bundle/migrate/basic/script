@@ -3,6 +3,7 @@ export DATABRICKS_BUNDLE_ENGINE=
 trace musterr $CLI bundle deployment migrate
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 print_state.py -t dev > out.original_state.json
 
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 3 resources'

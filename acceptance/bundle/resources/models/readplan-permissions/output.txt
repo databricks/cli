@@ -2,7 +2,7 @@
 === Initial deploy: model created with permissions
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created models.mymodel              [DATABRICKS_URL]/ml/models/test-model?w=[NUMID]
+created models.mymodel              [DATABRICKS_URL]/ml/models/test-model?w=[WORKSPACE_ID]
 created models.mymodel.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
@@ -30,7 +30,7 @@ Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 }
 
 === Remove manager permission and description, deploy from planUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated models.mymodel              [DATABRICKS_URL]/ml/models/test-model?w=[NUMID]
+updated models.mymodel              [DATABRICKS_URL]/ml/models/test-model?w=[WORKSPACE_ID]
 updated models.mymodel.permissions
 
 Deploy: 0 created, 2 changed, 0 deleted, 0 unchanged.

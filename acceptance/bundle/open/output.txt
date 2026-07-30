@@ -13,15 +13,15 @@ Exit code: 1
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...
-created jobs.foo  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Use a fake browser that just prints the URL it would have opened
 === open after deployment
 >>> [CLI] bundle open foo
-Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
-[DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+Opening browser at [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
+[DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 === test auto-completion handler
 >>> [CLI] __complete bundle open ,

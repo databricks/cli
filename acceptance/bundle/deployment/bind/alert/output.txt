@@ -15,7 +15,7 @@ Resources:
   Alerts:
     my_alert:
       Name: test-alert
-      URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]
+      URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]?w=[WORKSPACE_ID]
 
 >>> [CLI] bundle deployment unbind my_alert
 

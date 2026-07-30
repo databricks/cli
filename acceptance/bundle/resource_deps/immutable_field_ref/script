@@ -1,4 +1,5 @@
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 trace update_file.py databricks.yml "comment1" "comment2"
 # Even though we have remote reference in jobs.bar (to volumes.foo.storage_location), since that field is immutable
 # we skip updating the job.

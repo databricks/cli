@@ -39,17 +39,17 @@
             "directory_id": null,
             "directory_path": null,
             "experiment_id": null,
-            "id": "/pipelines/[UUID]",
+            "id": "[PIPELINE_FOO_ID]",
             "instance_pool_id": null,
             "job_id": null,
             "knowledge_assistant_id": null,
             "notebook_id": null,
             "notebook_path": null,
             "object_type": "pipelines",
-            "pipeline_id": "[UUID]",
+            "pipeline_id": "[FOO_ID]",
             "provider_config": [
               {
-                "workspace_id": "[NUMID]"
+                "workspace_id": "[WORKSPACE_ID]"
               }
             ],
             "registered_model_id": null,
@@ -108,7 +108,7 @@
             "filters": [],
             "gateway_definition": [],
             "health": null,
-            "id": "[UUID]",
+            "id": "[FOO_ID]",
             "ingestion_definition": [],
             "last_modified": [UNIX_TIME_MILLIS],
             "latest_updates": null,
@@ -131,7 +131,7 @@
             "photon": false,
             "provider_config": [
               {
-                "workspace_id": "[NUMID]"
+                "workspace_id": "[WORKSPACE_ID]"
               }
             ],
             "restart_window": [],
@@ -152,7 +152,7 @@
             "target": "team_eng_deco",
             "timeouts": null,
             "trigger": [],
-            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]",
+            "url": "[DATABRICKS_URL]/#joblist[PIPELINE_FOO_ID]",
             "usage_policy_id": null
           },
           "sensitive_attributes": [],

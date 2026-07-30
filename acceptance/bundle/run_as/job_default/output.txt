@@ -2,7 +2,7 @@
 === Deploy with run_as
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
-created jobs.job_with_run_as  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.job_with_run_as  [DATABRICKS_URL]/jobs/[JOB_WITH_RUN_AS_ID]?w=[WORKSPACE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -41,7 +41,7 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
   }
 }
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [JOB_WITH_RUN_AS_ID]
 {
   "user_name": "deco-test-user@databricks.com"
 }
@@ -54,7 +54,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
-updated jobs.job_with_run_as  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+updated jobs.job_with_run_as  [DATABRICKS_URL]/jobs/[JOB_WITH_RUN_AS_ID]?w=[WORKSPACE_ID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
@@ -63,7 +63,7 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
   "method": "POST",
   "path": "/api/2.2/jobs/reset",
   "body": {
-    "job_id": [NUMID],
+    "job_id": [JOB_WITH_RUN_AS_ID],
     "new_settings": {
       "deployment": {
         "kind": "BUNDLE",
@@ -93,7 +93,7 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
   }
 }
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [JOB_WITH_RUN_AS_ID]
 {
   "user_name": "deco-test-user@databricks.com"
 }

@@ -2,6 +2,7 @@ echo "*" > .gitignore
 
 title "Initial deployment"
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 title "Plan is a no-op: pipeline parameters round-trip on read"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"

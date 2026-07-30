@@ -11,9 +11,9 @@ Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created schemas.schema_a         [DATABRICKS_URL]/explore/data/main/schema%20a?w=[NUMID]
+created schemas.schema_a         [DATABRICKS_URL]/explore/data/main/schema%20a?w=[WORKSPACE_ID]
 created schemas.schema_a.grants
-created schemas.schema_b         [DATABRICKS_URL]/explore/data/main/schema%20b?w=[NUMID]
+created schemas.schema_b         [DATABRICKS_URL]/explore/data/main/schema%20b?w=[WORKSPACE_ID]
 created schemas.schema_b.grants
 
 Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.

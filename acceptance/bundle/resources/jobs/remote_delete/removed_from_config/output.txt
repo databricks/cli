@@ -1,14 +1,14 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.foo       [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
-created pipelines.bar  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+created jobs.foo       [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
+created pipelines.bar  [DATABRICKS_URL]/pipelines/[BAR_ID]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
->>> [CLI] jobs delete [NUMID]
+>>> [CLI] jobs delete [FOO_ID]
 
->>> [CLI] pipelines delete [UUID]
+>>> [CLI] pipelines delete [BAR_ID]
 
 === Remove resources from config, plan and deploy
 === Plan and deploy again, then summary

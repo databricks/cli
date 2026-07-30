@@ -1,5 +1,6 @@
 title "Test --var flag usage"
 trace $CLI pipelines deploy --var="catalog=custom_catalog" --var="schema=custom_schema" --auto-approve
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 title "Verify: Check that variables were substituted correctly"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')

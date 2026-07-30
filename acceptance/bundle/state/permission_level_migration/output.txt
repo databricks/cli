@@ -5,7 +5,7 @@
 === Deploy (migrates state)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.my_job              [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.my_job              [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
 updated jobs.my_job.permissions
 
 Deploy: 1 created, 1 changed, 0 deleted, 0 unchanged.
@@ -19,7 +19,7 @@ Deploy: 1 created, 1 changed, 0 deleted, 0 unchanged.
  "serial": 2,
  "state": {
   "resources.jobs.my_job": {
-   "__id__": "[NUMID]",
+   "__id__": "[MY_JOB_ID]",
    "state": {
     "deployment": {
      "kind": "BUNDLE",
@@ -35,9 +35,9 @@ Deploy: 1 created, 1 changed, 0 deleted, 0 unchanged.
    }
   },
   "resources.jobs.my_job.permissions": {
-   "__id__": "/jobs/123",
+   "__id__": "[MY_JOB_ID_2]",
    "state": {
-    "object_id": "/jobs/[NUMID]",
+    "object_id": "/jobs/[MY_JOB_ID]",
     "__embed__": [
      {
       "level": "CAN_VIEW",

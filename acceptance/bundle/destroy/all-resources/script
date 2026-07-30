@@ -1,2 +1,3 @@
 trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 trace $CLI bundle destroy --auto-approve

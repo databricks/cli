@@ -8,7 +8,7 @@
       "Bearer [DATABRICKS_TOKEN]"
     ],
     "X-Databricks-Workspace-Id": [
-      "[NUMID]"
+      "[WORKSPACE_ID]"
     ]
   },
   "method": "POST",

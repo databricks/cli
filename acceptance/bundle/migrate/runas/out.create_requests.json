@@ -36,7 +36,7 @@
     ]
   },
   "method": "PUT",
-  "path": "/api/2.0/permissions/pipelines/[UUID]",
+  "path": "/api/2.0/permissions[PIPELINE_FOO_ID]",
   "body": {
     "access_control_list": [
       {

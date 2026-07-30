@@ -2,6 +2,7 @@ export DATABRICKS_BUNDLE_ENGINE=
 
 title "Initial deploy uses terraform engine"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 trace print_migration_telemetry
 rm -f out.requests.txt
 

@@ -1,14 +1,14 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created jobs.job_1              [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.job_1              [DATABRICKS_URL]/jobs/[JOB_1_ID]?w=[WORKSPACE_ID]
 created jobs.job_1.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle summary --output json
 
->>> [CLI] jobs get-permissions [NUMID] --output json
+>>> [CLI] jobs get-permissions [JOB_1_ID] --output json
 {
   "all_permissions": [
     {
@@ -23,13 +23,13 @@ Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created jobs.job_1              [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.job_1              [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
 created jobs.job_1.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Permissions should be the same as before unbind
->>> [CLI] jobs get-permissions [NUMID] --output json
+>>> [CLI] jobs get-permissions [JOB_1_ID] --output json
 {
   "all_permissions": [
     {
@@ -48,5 +48,5 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted.
 
->>> [CLI] jobs delete [NUMID]
+>>> [CLI] jobs delete [JOB_1_ID]
 0

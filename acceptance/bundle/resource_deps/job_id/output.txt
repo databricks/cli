@@ -9,8 +9,8 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.bar  [DATABRICKS_URL]/jobs/[BAR_ID]?w=[NUMID]
-created jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[NUMID]
+created jobs.bar  [DATABRICKS_URL]/jobs/[BAR_ID]?w=[WORKSPACE_ID]
+created jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -62,8 +62,8 @@ Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-deleted jobs.bar  [DATABRICKS_URL]/jobs/[BAR_ID]?w=[NUMID]
-deleted jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[NUMID]
+deleted jobs.bar  [DATABRICKS_URL]/jobs/[BAR_ID]?w=[WORKSPACE_ID]
+deleted jobs.foo  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 Deploy: 0 created, 0 changed, 2 deleted, 0 unchanged.
 

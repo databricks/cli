@@ -2,8 +2,8 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-orphaned-endpoint-[UNIQUE_NAME]/default/files...
-created vector_search_endpoints.vs_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
-created vector_search_indexes.my_index       [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[NUMID]
+created vector_search_endpoints.vs_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created vector_search_indexes.my_index       [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -25,8 +25,8 @@ This action will result in the deletion or recreation of the following Vector Se
 Recreating a Delta Sync index re-runs the full embedding pipeline; recreating a Direct Access
 index drops all upserted vectors. Both can be expensive to rebuild:
   recreate resources.vector_search_indexes.my_index
-created vector_search_endpoints.vs_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
-recreated vector_search_indexes.my_index     [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[NUMID]
+created vector_search_endpoints.vs_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+recreated vector_search_indexes.my_index     [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 1 deleted, 0 unchanged.
 

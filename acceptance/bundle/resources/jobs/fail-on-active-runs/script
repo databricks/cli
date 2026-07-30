@@ -9,6 +9,7 @@ trace $CLI bundle validate
 
 title "deploy empty bundle"
 trace $CLI bundle deploy --fail-on-active-runs
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 title "Remove .databricks directory to simulate a fresh deployment"
 rm -rf .databricks

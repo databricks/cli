@@ -3,6 +3,7 @@ trace $CLI bundle init default-python --config-file ./input.json
 cd my_default_python
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 trace print_state.py > ../out.state_original.json
 
 trace $CLI bundle deployment migrate

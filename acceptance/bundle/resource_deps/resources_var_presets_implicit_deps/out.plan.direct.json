@@ -27,7 +27,7 @@
           },
           "development": true,
           "edition": "ADVANCED",
-          "name": "[dev [USERNAME]] pipeline for mycatalog.dev_[USERNAME]_myschema.myname",
+          "name": "[dev [USERNAME]] pipeline for [BAR_ID].myname",
           "tags": {
             "dev": "[USERNAME]"
           }

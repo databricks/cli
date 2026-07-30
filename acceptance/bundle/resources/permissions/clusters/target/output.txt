@@ -59,7 +59,7 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
   in databricks.yml:9:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
-created clusters.cluster1              [DATABRICKS_URL]/compute/clusters/[UUID]?w=[NUMID]
+created clusters.cluster1              [DATABRICKS_URL]/compute/clusters/[UUID]?w=[WORKSPACE_ID]
 created clusters.cluster1.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

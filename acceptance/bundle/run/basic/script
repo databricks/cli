@@ -3,6 +3,7 @@ errcode trace $CLI bundle run
 
 title "deploy and run resource"
 errcode trace $CLI bundle deploy
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 errcode trace $CLI bundle run foo
 

@@ -21,7 +21,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created vector_search_endpoints.foo              [DATABRICKS_URL]/compute/vector-search/vs-permissions-endpoint?w=[NUMID]
+created vector_search_endpoints.foo              [DATABRICKS_URL]/compute/vector-search/vs-permissions-endpoint?w=[WORKSPACE_ID]
 created vector_search_endpoints.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

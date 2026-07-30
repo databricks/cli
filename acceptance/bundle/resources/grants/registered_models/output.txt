@@ -5,9 +5,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-created registered_models.my_registered_model         [DATABRICKS_URL]/explore/data/models/main/myschema_[UNIQUE_NAME]/mymodel?w=[NUMID]
+created registered_models.my_registered_model         [DATABRICKS_URL]/explore/data/models/main/myschema_[UNIQUE_NAME]/mymodel?w=[WORKSPACE_ID]
 created registered_models.my_registered_model.grants
-created schemas.my_schema                             [DATABRICKS_URL]/explore/data/main/myschema_[UNIQUE_NAME]?w=[NUMID]
+created schemas.my_schema                             [DATABRICKS_URL]/explore/data/main/myschema_[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 

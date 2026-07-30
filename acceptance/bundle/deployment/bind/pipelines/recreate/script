@@ -19,4 +19,5 @@ trace musterr $CLI bundle deploy
 
 rm -f out.requests.txt
 trace $CLI bundle deploy --auto-approve
+replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json

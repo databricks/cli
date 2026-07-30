@@ -1,32 +1,32 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created pipelines.foo              [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+created pipelines.foo              [DATABRICKS_URL]/pipelines/[FOO_ID]?w=[WORKSPACE_ID]
 created pipelines.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle plan
-Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
+Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[FOO_ID]
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> print_requests.py //api/2.0/permissions/pipelines --get --oneline
-2 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[UUID]"}
+2 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[FOO_ID]"}
 
 >>> [CLI] bundle plan
-Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
-Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
+Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[FOO_ID]
+Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[FOO_ID]
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-3 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[UUID]"}
+3 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[FOO_ID]"}
 
 >>> musterr [CLI] bundle plan
-Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
-Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
-Error: cannot plan resources.pipelines.foo.permissions: reading id="/pipelines/[UUID]": Fault injected by test. (504 INJECTED)
+Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[FOO_ID]
+Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[FOO_ID]
+Error: cannot plan resources.pipelines.foo.permissions: reading id="/pipelines/[FOO_ID]": Fault injected by test. (504 INJECTED)
 
-Endpoint: GET [DATABRICKS_URL]/api/2.0/permissions/pipelines/[UUID]?
+Endpoint: GET [DATABRICKS_URL]/api/2.0/permissions/pipelines/[FOO_ID]?
 HTTP Status: 504 Gateway Timeout
 API error_code: INJECTED
 API message: Fault injected by test.
 
 Error: planning failed
 
-3 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[UUID]"}
+3 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[FOO_ID]"}

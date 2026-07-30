@@ -2,7 +2,7 @@
   "cli_version": "[CLI_VERSION]",
   "plan": {
     "resources.jobs.job": {
-      "id": "[NUMID]",
+      "id": "[JOB_ID]",
       "action": "delete"
     }
   }

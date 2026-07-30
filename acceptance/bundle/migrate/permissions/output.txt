@@ -1,9 +1,9 @@
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
-created jobs.test_job                        [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+created jobs.test_job                        [DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[WORKSPACE_ID]
 created jobs.test_job.permissions
-created pipelines.test_pipeline              [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+created pipelines.test_pipeline              [DATABRICKS_URL][PIPELINE_TEST_PIPELINE_ID]?w=[WORKSPACE_ID]
 created pipelines.test_pipeline.permissions
 
 Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
@@ -34,7 +34,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
   "method": "GET",
   "path": "/api/2.2/jobs/get",
   "q": {
-    "job_id": "[NUMID]"
+    "job_id": "[TEST_JOB_ID]"
   }
 }
 {
@@ -46,7 +46,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
   "method": "GET",
   "path": "/api/2.2/jobs/get",
   "q": {
-    "job_id": "[NUMID]"
+    "job_id": "[TEST_JOB_ID]"
   }
 }
 

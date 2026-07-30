@@ -838,9 +838,11 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
+	cfg, user, workspaceID := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
+	// Normalize the workspace ID that appears in resource URLs as ?w=<id>.
+	repls.Set(workspaceID, "[WORKSPACE_ID]")
 
 	cmd.Env = auth.ProcessEnv(cfg)
 

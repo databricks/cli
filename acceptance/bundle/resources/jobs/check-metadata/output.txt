@@ -8,8 +8,8 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created jobs.bar  [DATABRICKS_URL]/jobs/[JOB_2_ID]
-created jobs.foo  [DATABRICKS_URL]/jobs/[JOB_1_ID]
+created jobs.bar  [DATABRICKS_URL]/jobs/[JOB_2_ID]?w=[WORKSPACE_ID]
+created jobs.foo  [DATABRICKS_URL]/jobs/[JOB_1_ID]?w=[WORKSPACE_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
