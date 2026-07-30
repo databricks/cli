@@ -778,11 +778,14 @@ func newBundleNamePrefix() string {
 // (app names, Python and Unity Catalog identifiers). Returns random unchanged
 // when prefix is empty or too long to leave at least 8 random characters.
 func ciUniqueName(prefix, random string) string {
-	randLen := len(random) - len(prefix)
-	if prefix == "" || randLen < 8 {
-		return random
+	// newBundleNamePrefix keeps the prefix short enough to leave at least this
+	// many random characters (empty prefix trivially fits); a longer one is a bug.
+	const minRandom = 8
+	cut := len(random) - len(prefix)
+	if cut < minRandom {
+		panic(fmt.Sprintf("bundle name prefix %q leaves only %d of %d random chars, need %d", prefix, cut, len(random), minRandom))
 	}
-	return prefix + random[:randLen]
+	return prefix + random[:cut]
 }
 
 func runTest(t *testing.T,
