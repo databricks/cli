@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -30,7 +29,7 @@ func (m *resolveSelect) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 		return nil
 	}
 
-	b.Metrics.SetBoolValue(metrics.SelectUsed, true)
+	b.Metrics.Telemetry.SelectUsed = true
 
 	// Build reverse index: unqualified name → []"type.name" matches.
 	byName := map[string][]string{}

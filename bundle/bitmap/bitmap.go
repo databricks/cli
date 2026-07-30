@@ -30,12 +30,6 @@ const magic = "DBTB"
 // context values are reserved for narrower bitmaps in the future.
 const ContextFullBundle uint16 = 0
 
-// valueSuffix marks the second of the two schema entries emitted for every bool
-// field. The first entry (the bare path) is the presence bit; this one is set
-// when the field's value is true. Together they encode a *bool tri-state:
-// unset -> 0,0; &false -> 1,0; &true -> 1,1.
-const valueSuffix = "#true"
-
 // headerSize is the size of the fixed header: magic (4) + size (4) + context (2).
 const headerSize = 10
 
@@ -44,40 +38,49 @@ func EmbeddedSchema() []string {
 	return splitLines(schemaBytes)
 }
 
-// WalkSchema reflects over config.Root and returns the ordered list of field
-// paths, one per field, with map keys rendered as ".*" and slice elements as
-// "[*]". Every bool field additionally gets a "#true" value entry right after
-// its presence entry (see valueSuffix). This is the freshly computed schema;
-// the committed schema.txt is a prefix of it plus any fields since removed from
-// config.Root.
-func WalkSchema() ([]string, error) {
+// telemetryPrefix namespaces the internal telemetry struct's fields in the
+// schema so they never collide with config.Root paths.
+const telemetryPrefix = "telemetry"
+
+// WalkSchema reflects over config.Root and the internal telemetry struct and
+// returns the ordered list of field paths, one per field, with map keys
+// rendered as ".*" and slice elements as "[*]". The telemetry struct's fields
+// are namespaced under "telemetry.". This is the freshly computed schema; the
+// committed schema.txt is a prefix of it plus any fields since removed.
+//
+// telemetryType is the internal telemetry struct type (bundle.Telemetry),
+// passed in so this package does not import the bundle package.
+func WalkSchema(telemetryType reflect.Type) ([]string, error) {
+	paths, err := walkTypePaths(reflect.TypeFor[config.Root](), "", isPruned)
+	if err != nil {
+		return nil, err
+	}
+	tmPaths, err := walkTypePaths(telemetryType, telemetryPrefix+".", nil)
+	if err != nil {
+		return nil, err
+	}
+	return append(paths, tmPaths...), nil
+}
+
+// walkTypePaths walks a struct type and returns each field path, prefixed and
+// with pruned subtrees removed. prune may be nil.
+func walkTypePaths(t reflect.Type, prefix string, prune func(string) bool) ([]string, error) {
 	var paths []string
-	err := structwalk.WalkType(reflect.TypeFor[config.Root](), func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
+	err := structwalk.WalkType(t, func(path *structpath.PatternNode, _ reflect.Type, _ *reflect.StructField) bool {
 		if path == nil {
 			return true
 		}
 		p := path.String()
-		if isPruned(p) {
+		if prune != nil && prune(p) {
 			return false
 		}
-		paths = append(paths, p)
-		if isBool(typ) {
-			paths = append(paths, p+valueSuffix)
-		}
+		paths = append(paths, prefix+p)
 		return true
 	})
 	if err != nil {
 		return nil, err
 	}
 	return paths, nil
-}
-
-// isBool reports whether typ is a bool or a pointer to one.
-func isBool(typ reflect.Type) bool {
-	for typ.Kind() == reflect.Pointer {
-		typ = typ.Elem()
-	}
-	return typ.Kind() == reflect.Bool
 }
 
 // isPruned reports whether a schema path should be excluded from the bitmap.
@@ -118,30 +121,33 @@ func Merge(old, fresh []string) (merged, added []string) {
 	return merged, added
 }
 
-// Bits walks the loaded configuration and returns a bit per schema entry: true
-// when the field (or any descendant of it) is set. A leaf value sets both its
-// own presence bit and every ancestor-prefix bit. A bool leaf that is true also
-// sets its "#true" value bit.
-func Bits(cfg config.Root, schema []string) ([]bool, error) {
+// Bits walks the loaded configuration and the internal telemetry struct and
+// returns a bit per schema entry: true when the field (or any descendant of it)
+// is set. A leaf value sets both its own presence bit and every ancestor-prefix
+// bit. The telemetry struct's paths are namespaced under "telemetry.".
+func Bits(cfg config.Root, telemetry any, schema []string) ([]bool, error) {
 	index := make(map[string]int, len(schema))
 	for i, p := range schema {
 		index[p] = i
 	}
 
 	bits := make([]bool, len(schema))
-	setBit := func(pattern string) {
-		if i, ok := index[pattern]; ok {
-			bits[i] = true
+	set := func(prefix string, path *structpath.PathNode) {
+		for _, pattern := range normalizePrefixes(path) {
+			if i, ok := index[prefix+pattern]; ok {
+				bits[i] = true
+			}
 		}
 	}
-	err := structwalk.Walk(cfg, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
-		prefixes := normalizePrefixes(path)
-		for _, pattern := range prefixes {
-			setBit(pattern)
-		}
-		if b, ok := val.(bool); ok && b {
-			setBit(prefixes[len(prefixes)-1] + valueSuffix)
-		}
+
+	err := structwalk.Walk(cfg, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
+		set("", path)
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = structwalk.Walk(telemetry, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
+		set(telemetryPrefix+".", path)
 	})
 	if err != nil {
 		return nil, err
