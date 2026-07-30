@@ -731,7 +731,11 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 	return ""
 }
 
-var ciRunID = regexp.MustCompile(`^[0-9]{1,16}$`)
+// Cap at 12 digits: the prefix "ci<runID>x<suffix>" plus the 8-char random
+// minimum must fit the 26-char unique name (26 - 8 - len("ci")-len("x") - 3 = 12),
+// so a longer GITHUB_RUN_ID falls through to a random id rather than building a
+// prefix ciUniqueName would silently drop.
+var ciRunID = regexp.MustCompile(`^[0-9]{1,12}$`)
 
 // bundleNamePrefix is the sweepable prefix embedded into every $UNIQUE_NAME on
 // cloud runs (see newBundleNamePrefix / ciUniqueName). Set once in testAccept,

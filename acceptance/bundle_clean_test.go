@@ -2,6 +2,7 @@ package acceptance_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
@@ -49,16 +51,24 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
-	bundleRoot := "/Workspace/Users/" + me.UserName + "/.bundle"
+	// Tests deploy under the user's home .bundle by default, but some set
+	// workspace.root_path under /Shared (e.g. resources/jobs/shared-root-path),
+	// so sweep both.
+	bundleRoots := []string{
+		"/Workspace/Users/" + me.UserName + "/.bundle",
+		"/Shared/" + me.UserName + "/.bundle",
+	}
 
 	// The run's prefix always appears in the first path segment under .bundle
 	// (the bundle name, or the leaf of a workspace.root_path override), so match
 	// there and only descend into this run's subtrees. This avoids walking the
 	// thousands of directories other runs may have leaked under .bundle.
 	var roots []string
-	for _, child := range listChildDirs(ctx, w, bundleRoot) {
-		if strings.Contains(path.Base(child), prefix) {
-			roots = append(roots, findDeploymentRoots(ctx, w, child)...)
+	for _, bundleRoot := range bundleRoots {
+		for _, child := range listChildDirs(ctx, t, w, bundleRoot) {
+			if strings.Contains(path.Base(child), prefix) {
+				roots = append(roots, findDeploymentRoots(ctx, t, w, child)...)
+			}
 		}
 	}
 	slices.Sort(roots)
@@ -100,9 +110,9 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 // a "state" or "files" child, which the bundle deploy writes beneath the
 // resolved workspace.root_path. This works regardless of whether the root is
 // the default ~/.bundle/<name>/<target> or a custom ~/.bundle/<...> override.
-func findDeploymentRoots(ctx context.Context, w *databricks.WorkspaceClient, dir string) []string {
+func findDeploymentRoots(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, dir string) []string {
 	var childDirs []string
-	for _, child := range listChildDirs(ctx, w, dir) {
+	for _, child := range listChildDirs(ctx, t, w, dir) {
 		if base := path.Base(child); base == "state" || base == "files" {
 			// dir is a deployment root; don't descend into its internals.
 			return []string{dir}
@@ -112,17 +122,21 @@ func findDeploymentRoots(ctx context.Context, w *databricks.WorkspaceClient, dir
 
 	var roots []string
 	for _, child := range childDirs {
-		roots = append(roots, findDeploymentRoots(ctx, w, child)...)
+		roots = append(roots, findDeploymentRoots(ctx, t, w, child)...)
 	}
 	return roots
 }
 
-// listChildDirs returns the immediate subdirectory paths of dir, or nil if dir
-// does not exist (nothing was deployed under it).
-func listChildDirs(ctx context.Context, w *databricks.WorkspaceClient, dir string) []string {
+// listChildDirs returns the immediate subdirectory paths of dir. A missing dir
+// (nothing was deployed under it) yields nil; any other listing error fails the
+// test, since silently treating it as empty would under-sweep and leak bundles.
+func listChildDirs(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, dir string) []string {
 	objects, err := w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{Path: dir})
 	if err != nil {
-		return nil
+		if errors.Is(err, apierr.ErrNotFound) {
+			return nil
+		}
+		require.NoError(t, err, "listing %s", dir)
 	}
 	var dirs []string
 	for _, o := range objects {
