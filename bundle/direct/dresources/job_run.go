@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -158,24 +159,37 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	}
 
 	// A run can take hours, so report progress like `bundle run` does. pageURL
-	// outlives the callback so an abandoned wait can still link the run.
+	// outlives the poll so an abandoned wait can still link the run.
 	var tracker progress.JobStateTracker
 	var pageURL string
-	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, jobRunTimeout, func(run *jobs.Run) {
+	// Polled here rather than through Jobs.WaitGetRunJobTerminatedOrSkipped: a run
+	// whose task failed reports the deprecated life_cycle_state as INTERNAL_ERROR
+	// (status.state is TERMINATED, termination code RUN_EXECUTION_ERROR), and the
+	// SDK waiter halts on it with an error of its own, which hides the task that
+	// failed.
+	run, err := retries.Poll(ctx, jobRunTimeout, func() (*jobs.Run, *retries.Err) {
+		var req jobs.GetRunRequest
+		req.RunId = runID
+		run, err := r.client.Jobs.GetRun(ctx, req)
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
 		pageURL = cmp.Or(pageURL, run.RunPageUrl)
 		logRunProgress(ctx, run, &tracker)
+		if !runIsTerminal(run.State.LifeCycleState) {
+			return nil, retries.Continues(run.State.StateMessage)
+		}
+		return run, nil
 	})
 	if err != nil {
 		// The wait can end with the run still going (timeout, interrupt), so link
 		// the run page: the next deploy triggers no second run, finished or not.
 		if ctx.Err() != nil {
-			// The waiter reports a cancelled context as a timeout.
+			// A cancelled context is reported as a timeout.
 			return nil, fmt.Errorf("interrupted while waiting for the run to finish: %w%s", ctx.Err(), runPageLine(pageURL))
 		}
 		return nil, fmt.Errorf("%w%s", err, runPageLine(pageURL))
 	}
-	// FAILED, TIMEDOUT, CANCELED, SUCCESS_WITH_FAILURES and SKIPPED all fail the
-	// deploy; the waiter already errored on INTERNAL_ERROR and on timeout.
 	if run.State.ResultState != jobs.RunResultStateSuccess {
 		return nil, r.runFailedError(ctx, run)
 	}
@@ -196,13 +210,36 @@ func (r *ResourceJobRun) runFailedError(ctx context.Context, run *jobs.Run) erro
 	if run.State.StateMessage != "" {
 		fmt.Fprintf(&msg, ": %s", run.State.StateMessage)
 	}
-	for _, task := range run.Tasks {
-		if taskFailed(task) {
-			fmt.Fprintf(&msg, "\ntask %q: %s", task.TaskKey, r.taskError(ctx, task))
-		}
+	for _, task := range lastFailedAttempts(run.Tasks) {
+		fmt.Fprintf(&msg, "\ntask %q: %s", task.TaskKey, r.taskError(ctx, task))
 	}
 	msg.WriteString(runPageLine(run.RunPageUrl))
 	return errors.New(msg.String())
+}
+
+// lastFailedAttempts returns the failed tasks in the order the run reports them,
+// one per task key: a task the Jobs API retried is reported once per attempt, and
+// only its last one says how the run ended up.
+func lastFailedAttempts(tasks []jobs.RunTask) []jobs.RunTask {
+	latest := make(map[string]jobs.RunTask)
+	var keys []string
+	for _, task := range tasks {
+		if !taskFailed(task) {
+			continue
+		}
+		previous, seen := latest[task.TaskKey]
+		if !seen {
+			keys = append(keys, task.TaskKey)
+		}
+		if !seen || task.AttemptNumber > previous.AttemptNumber {
+			latest[task.TaskKey] = task
+		}
+	}
+	result := make([]jobs.RunTask, 0, len(keys))
+	for _, key := range keys {
+		result = append(result, latest[key])
+	}
+	return result
 }
 
 // taskFailed reports whether a task is a cause of the run's failure. A task left

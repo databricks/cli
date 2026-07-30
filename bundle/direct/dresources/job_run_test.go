@@ -136,9 +136,71 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 
 	_, err := waitForTestRun(t, t.Context(), client)
 
-	// The SDK waiter errors on INTERNAL_ERROR, ahead of the result check.
-	require.ErrorContains(t, err, "INTERNAL_ERROR")
+	require.ErrorContains(t, err, "run did not succeed: INTERNAL_ERROR")
 	require.ErrorContains(t, err, testRunPageLink)
+}
+
+// A real workspace reports a run whose task failed as INTERNAL_ERROR in the
+// deprecated life_cycle_state, which the SDK waiter halts on with an error of its
+// own. The failing task still has to be named.
+func TestJobRunWaitReportsFailedTaskOfInternalErrorRun(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+		return jobs.Run{
+			RunId:      123,
+			JobId:      456,
+			RunPageUrl: testRunPageURL,
+			State: &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateInternalError,
+				ResultState:    jobs.RunResultStateFailed,
+				StateMessage:   "Task main failed with message: Workload failed, see run output for details.",
+			},
+			Tasks: []jobs.RunTask{
+				{TaskKey: "main", RunId: 999, State: &jobs.RunState{
+					LifeCycleState: jobs.RunLifeCycleStateTerminated,
+					ResultState:    jobs.RunResultStateFailed,
+				}},
+			},
+		}
+	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
+		return jobs.RunOutput{Error: "RuntimeError: intentional failure"}
+	})
+
+	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
+
+	require.ErrorContains(t, err, "run did not succeed: FAILED")
+	require.ErrorContains(t, err, `task "main": RuntimeError: intentional failure`)
+	require.ErrorContains(t, err, testRunPageLink)
+}
+
+func TestJobRunWaitReportsOnlyTheLastAttemptOfATask(t *testing.T) {
+	failed := &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateTerminated,
+		ResultState:    jobs.RunResultStateFailed,
+	}
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+		return jobs.Run{
+			RunId: 123,
+			JobId: 456,
+			State: failed,
+			Tasks: []jobs.RunTask{
+				{TaskKey: "main", RunId: 998, AttemptNumber: 0, State: failed},
+				{TaskKey: "main", RunId: 999, AttemptNumber: 1, State: failed},
+			},
+		}
+	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
+		return jobs.RunOutput{Error: "output of run " + req.URL.Query().Get("run_id")}
+	})
+
+	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
+
+	// The Jobs API reports a retried task once per attempt; only the last one says
+	// how the run ended up.
+	require.ErrorContains(t, err, `task "main": output of run 999`)
+	assert.NotContains(t, err.Error(), "output of run 998")
 }
 
 func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
