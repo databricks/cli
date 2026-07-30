@@ -49,17 +49,18 @@ func (*collectEscapeTelemetry) Apply(ctx context.Context, b *bundle.Bundle) diag
 		return diag.FromErr(err)
 	}
 
+	tm := &b.Metrics.Telemetry
 	if hasDoubleDollarBrace {
-		b.Metrics.SetBoolValue("config_has_double_dollar_brace", true)
+		tm.ConfigHasDoubleDollarBrace = true
 	}
 	if hasDoubleDollar {
-		b.Metrics.SetBoolValue("config_has_double_dollar", true)
+		tm.ConfigHasDoubleDollar = true
 	}
 	if hasBackslashDollarBrace {
-		b.Metrics.SetBoolValue("config_has_backslash_dollar_brace", true)
+		tm.ConfigHasBackslashDollarBrace = true
 	}
 	if hasBackslashDollar {
-		b.Metrics.SetBoolValue("config_has_backslash_dollar", true)
+		tm.ConfigHasBackslashDollar = true
 	}
 
 	return nil
