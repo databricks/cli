@@ -1,21 +1,14 @@
-from typing import Literal, Optional, TypedDict, ClassVar, TYPE_CHECKING
-from enum import Enum
-from dataclasses import dataclass, replace, field
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.core._resource import Resource
+from databricks.bundles.catalogs._models.privilege import Privilege, PrivilegeParam
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOr, VariableOrOptional, VariableOrList, VariableOrDict
-
-from databricks.bundles.catalogs._models.azure_encryption_settings import AzureEncryptionSettings, AzureEncryptionSettingsDict, AzureEncryptionSettingsParam
-from databricks.bundles.catalogs._models.encryption_settings import EncryptionSettings, EncryptionSettingsDict, EncryptionSettingsParam
-from databricks.bundles.catalogs._models.catalog import Catalog, CatalogDict, CatalogParam
-from databricks.bundles.catalogs._models.lifecycle import Lifecycle, LifecycleDict, LifecycleParam
-from databricks.bundles.catalogs._models.privilege import Privilege, PrivilegeParam
-
+from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
 
 if TYPE_CHECKING:
     from typing_extensions import Self
+
 
 @dataclass(kw_only=True)
 class PrivilegeAssignment:
@@ -33,12 +26,11 @@ class PrivilegeAssignment:
     """
 
     @classmethod
-    def from_dict(cls, value: 'PrivilegeAssignmentDict') -> 'Self':
+    def from_dict(cls, value: "PrivilegeAssignmentDict") -> "Self":
         return _transform(cls, value)
 
-    def as_dict(self) -> 'PrivilegeAssignmentDict':
-        return _transform_to_json_value(self) # type:ignore
-
+    def as_dict(self) -> "PrivilegeAssignmentDict":
+        return _transform_to_json_value(self)  # type:ignore
 
 
 class PrivilegeAssignmentDict(TypedDict, total=False):

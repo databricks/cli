@@ -1,19 +1,24 @@
-from typing import Literal, Optional, TypedDict, ClassVar, TYPE_CHECKING
-from enum import Enum
-from dataclasses import dataclass, replace, field
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOr, VariableOrOptional, VariableOrList, VariableOrDict
-
-from databricks.bundles.schemas._models.privilege_assignment import PrivilegeAssignment, PrivilegeAssignmentDict, PrivilegeAssignmentParam
-from databricks.bundles.schemas._models.lifecycle import Lifecycle, LifecycleDict, LifecycleParam
-from databricks.bundles.schemas._models.privilege import Privilege, PrivilegeParam
-
+from databricks.bundles.core._variable import (
+    VariableOr,
+    VariableOrDict,
+    VariableOrList,
+    VariableOrOptional,
+)
+from databricks.bundles.schemas._models.lifecycle import Lifecycle, LifecycleParam
+from databricks.bundles.schemas._models.privilege_assignment import (
+    PrivilegeAssignment,
+    PrivilegeAssignmentParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
+
 
 @dataclass(kw_only=True)
 class Schema(Resource):
@@ -60,12 +65,11 @@ class Schema(Resource):
     """
 
     @classmethod
-    def from_dict(cls, value: 'SchemaDict') -> 'Self':
+    def from_dict(cls, value: "SchemaDict") -> "Self":
         return _transform(cls, value)
 
-    def as_dict(self) -> 'SchemaDict':
-        return _transform_to_json_value(self) # type:ignore
-
+    def as_dict(self) -> "SchemaDict":
+        return _transform_to_json_value(self)  # type:ignore
 
 
 class SchemaDict(TypedDict, total=False):

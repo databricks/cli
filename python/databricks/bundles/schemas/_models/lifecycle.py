@@ -1,19 +1,13 @@
-from typing import Literal, Optional, TypedDict, ClassVar, TYPE_CHECKING
-from enum import Enum
-from dataclasses import dataclass, replace, field
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOr, VariableOrOptional, VariableOrList, VariableOrDict
-
-from databricks.bundles.schemas._models.privilege_assignment import PrivilegeAssignment, PrivilegeAssignmentDict, PrivilegeAssignmentParam
-from databricks.bundles.schemas._models.schema import Schema, SchemaDict, SchemaParam
-from databricks.bundles.schemas._models.privilege import Privilege, PrivilegeParam
-
+from databricks.bundles.core._variable import VariableOrOptional
 
 if TYPE_CHECKING:
     from typing_extensions import Self
+
 
 @dataclass(kw_only=True)
 class Lifecycle:
@@ -25,12 +19,11 @@ class Lifecycle:
     """
 
     @classmethod
-    def from_dict(cls, value: 'LifecycleDict') -> 'Self':
+    def from_dict(cls, value: "LifecycleDict") -> "Self":
         return _transform(cls, value)
 
-    def as_dict(self) -> 'LifecycleDict':
-        return _transform_to_json_value(self) # type:ignore
-
+    def as_dict(self) -> "LifecycleDict":
+        return _transform_to_json_value(self)  # type:ignore
 
 
 class LifecycleDict(TypedDict, total=False):
