@@ -1,10 +1,16 @@
 trace $CLI bundle bitmap schema > out.schema.txt
-trace $CLI bundle bitmap bitmap-text > out.bitmap-text.txt
+
+# bitmap-text and bitmap are separate invocations. The local user lookup is
+# cached to DATABRICKS_CACHE_DIR, so a warm second call would record a cache
+# hit instead of a miss and the two would disagree on the local.cache.* bits.
+# Give each a fresh cache dir so both observe a cold miss and produce identical
+# bitmaps, making the round-trip check deterministic.
+trace DATABRICKS_CACHE_DIR="$TEST_TMP_DIR/cache-text" $CLI bundle bitmap bitmap-text > out.bitmap-text.txt
 
 # The encoded bitmap must round-trip: decoding it against the schema reproduces
 # the bitmap-text output exactly. decoded.txt is a temp artifact (not an "out"
 # golden) since it must equal out.bitmap-text.txt.
-trace $CLI bundle bitmap bitmap > out.bitmap.b64
+trace DATABRICKS_CACHE_DIR="$TEST_TMP_DIR/cache-enc" $CLI bundle bitmap bitmap > out.bitmap.b64
 decode_bitmap.py out.schema.txt < out.bitmap.b64 > decoded.txt
 diff.py out.bitmap-text.txt decoded.txt
 
