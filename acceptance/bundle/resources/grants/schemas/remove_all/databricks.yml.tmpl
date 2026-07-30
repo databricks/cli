@@ -1,0 +1,10 @@
+bundle:
+  name: schema-grants-remove-all-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_remove_all_$UNIQUE_NAME
+      catalog_name: main
+      grants: # TO_EMPTY
+        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_EMPTY
