@@ -89,7 +89,7 @@ does not contact the workspace.`,
 			return err
 		}
 
-		printConvertNextSteps(ctx, dir, written)
+		printConvertNextSteps(ctx, dir, written, bundleResourceKey(cfg.ExperimentName))
 		return nil
 	}
 
@@ -402,22 +402,22 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, ov
 // whereas `bundle deploy` creates a *persistent* job that lingers until explicitly
 // destroyed — DABs has no automatic GC. A user migrating from `air run` will not
 // expect a durable resource, so we call out `bundle destroy` explicitly.
-func printConvertNextSteps(ctx context.Context, dir string, written []string) {
+func printConvertNextSteps(ctx context.Context, dir string, written []string, jobKey string) {
 	cmdio.LogString(ctx, fmt.Sprintf("Wrote a Databricks Asset Bundle to %s:", dir))
 	for _, w := range written {
 		cmdio.LogString(ctx, "  "+w)
 	}
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "To deploy this workload as a bundle:")
+	cmdio.LogString(ctx, "To deploy and run this workload as a bundle:")
 	cmdio.LogString(ctx, "  1. cd "+dir)
 	cmdio.LogString(ctx, "  2. databricks bundle validate")
 	cmdio.LogString(ctx, "  3. databricks bundle deploy")
+	cmdio.LogString(ctx, "  4. databricks bundle run "+jobKey)
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "bundle deploy uploads the code source and launch scripts automatically.")
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Unlike `air run` (which submits an ephemeral run), bundle deploy creates a")
-	cmdio.LogString(ctx, "persistent job that is not garbage-collected. To run it after deploying:")
-	cmdio.LogString(ctx, "  databricks bundle run")
-	cmdio.LogString(ctx, "When you are done, remove the job and its uploaded files with:")
+	cmdio.LogString(ctx, "persistent job that is not garbage-collected. When you are done, remove the")
+	cmdio.LogString(ctx, "job and its uploaded files with:")
 	cmdio.LogString(ctx, "  databricks bundle destroy")
 }

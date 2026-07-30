@@ -8,17 +8,17 @@ Wrote a Databricks Asset Bundle to generated:
   requirements.yaml
   code_source.tar.gz
 
-To deploy this workload as a bundle:
+To deploy and run this workload as a bundle:
   1. cd generated
   2. databricks bundle validate
   3. databricks bundle deploy
+  4. databricks bundle run torchrun-a10-smoke-test
 
 bundle deploy uploads the code source and launch scripts automatically.
 
 Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
-persistent job that is not garbage-collected. To run it after deploying:
-  databricks bundle run
-When you are done, remove the job and its uploaded files with:
+persistent job that is not garbage-collected. When you are done, remove the
+job and its uploaded files with:
   databricks bundle destroy
 
 === emitted databricks.yml
