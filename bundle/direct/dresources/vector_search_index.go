@@ -24,7 +24,7 @@ const deleteIndexTimeout = 15 * time.Minute
 // createIndexTimeout caps the wait for an index to become ready after creation.
 // Delta sync indexes do an initial sync from the source table, which can stretch
 // out for large tables. Matches the terraform provider's defaultIndexProvisionTimeout.
-// https://github.com/databricks/terraform-provider-databricks/blob/c61a32300445f84efb2bb6827dee35e6e523f4ff/vectorsearch/resource_vector_search_index.go#L19
+// https://github.com/databricks/terraform-provider-databricks/blob/c79d82d9582ab6670468bbff303199906d47905f/vectorsearch/resource_vector_search_index.go#L19
 const createIndexTimeout = 75 * time.Minute
 
 // VectorSearchIndexState tracks the UUID of the endpoint the index is attached

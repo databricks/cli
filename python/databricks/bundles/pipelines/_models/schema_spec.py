@@ -8,6 +8,10 @@ from databricks.bundles.pipelines._models.connector_options import (
     ConnectorOptions,
     ConnectorOptionsParam,
 )
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_fanout_options import (
+    IngestionPipelineDefinitionFanoutOptions,
+    IngestionPipelineDefinitionFanoutOptionsParam,
+)
 from databricks.bundles.pipelines._models.table_specific_config import (
     TableSpecificConfig,
     TableSpecificConfigParam,
@@ -39,6 +43,16 @@ class SchemaSpec:
     connector_options: VariableOrOptional[ConnectorOptions] = None
     """
     [Public Preview] (Optional) Source Specific Connector Options
+    """
+
+    fanout_options: VariableOrOptional[IngestionPipelineDefinitionFanoutOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Fanout options for multi-table routing from streaming sources.
+    When set, records are routed to destination tables based on a
+    per-record routing key. The key value becomes the table name:
+    {destination_catalog}.{destination_schema}.{key_value}.
     """
 
     source_catalog: VariableOrOptional[str] = None
@@ -80,6 +94,16 @@ class SchemaSpecDict(TypedDict, total=False):
     connector_options: VariableOrOptional[ConnectorOptionsParam]
     """
     [Public Preview] (Optional) Source Specific Connector Options
+    """
+
+    fanout_options: VariableOrOptional[IngestionPipelineDefinitionFanoutOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Fanout options for multi-table routing from streaming sources.
+    When set, records are routed to destination tables based on a
+    per-record routing key. The key value becomes the table name:
+    {destination_catalog}.{destination_schema}.{key_value}.
     """
 
     source_catalog: VariableOrOptional[str]

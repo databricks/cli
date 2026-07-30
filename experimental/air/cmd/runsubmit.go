@@ -57,11 +57,7 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapsh
 				AcceleratorCount: cfg.Compute.NumAccelerators,
 			},
 		}},
-		// TEMP: CodeSourcePath was removed from jobs.AiRuntimeTask in SDK v0.160.0 and
-		// is expected to return in a later SDK bump. Until then the snapshot path
-		// (snap.CodeSourcePath) cannot be carried on the typed task. Re-wire it here
-		// once the field is regenerated.
-		// CodeSourcePath: snap.CodeSourcePath,
+		CodeSourcePath: snap.CodeSourcePath,
 		// TEMP: git_state_path / git_diff_path are intentionally NOT sent. The typed
 		// jobs.AiRuntimeTask (and its source proto, ai_runtime_task.proto) has no such
 		// fields, so the typed SDK path cannot carry them. This is safe today because

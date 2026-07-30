@@ -63,7 +63,9 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: aws_vpc_endpoint_info
 	// TODO: complex arg: azure_private_endpoint_info
+	// TODO: complex arg: gcp_psc_endpoint_info
 
 	cmd.Use = "create-endpoint PARENT DISPLAY_NAME REGION"
 	cmd.Short = `Create a network endpoint.`
