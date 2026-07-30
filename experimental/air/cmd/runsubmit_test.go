@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -192,13 +193,12 @@ code_source:
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
-	require.NotNil(t, at)
-	// TEMP: CodeSourcePath was removed from jobs.AiRuntimeTask in SDK v0.160.0 and is
-	// expected to return in a later SDK bump. Until then the snapshot path cannot be
-	// carried on the typed task, so these assertions are disabled (see the TEMP note in
-	// buildSubmitPayload). The git_state sidecar upload is still covered by TestRunSnapshot.
-	// assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/"+filepath.Base(repo)+"/")
-	// assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
+	// The tarball path is under the user's repo_snapshots dir. git_state_path /
+	// git_diff_path are not asserted: the typed jobs.AiRuntimeTask has no such fields
+	// (see the TEMP note in buildSubmitPayload), so they aren't sent. The git_state
+	// sidecar file is still uploaded next to the tarball — covered by TestRunSnapshot.
+	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/"+filepath.Base(repo)+"/")
+	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
 }
 
 func TestSubmitWorkloadGuards(t *testing.T) {

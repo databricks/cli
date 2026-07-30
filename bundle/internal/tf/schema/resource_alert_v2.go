@@ -53,6 +53,12 @@ type ResourceAlertV2Evaluation struct {
 	Threshold          *ResourceAlertV2EvaluationThreshold    `json:"threshold,omitempty"`
 }
 
+type ResourceAlertV2Parameters struct {
+	Name  string `json:"name"`
+	Type  string `json:"type,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
 type ResourceAlertV2ProviderConfig struct {
 	WorkspaceId string `json:"workspace_id,omitempty"`
 }
@@ -78,6 +84,7 @@ type ResourceAlertV2 struct {
 	Id                string                         `json:"id,omitempty"`
 	LifecycleState    string                         `json:"lifecycle_state,omitempty"`
 	OwnerUserName     string                         `json:"owner_user_name,omitempty"`
+	Parameters        []ResourceAlertV2Parameters    `json:"parameters,omitempty"`
 	ParentPath        string                         `json:"parent_path,omitempty"`
 	ProviderConfig    *ResourceAlertV2ProviderConfig `json:"provider_config,omitempty"`
 	PurgeOnDelete     bool                           `json:"purge_on_delete,omitempty"`

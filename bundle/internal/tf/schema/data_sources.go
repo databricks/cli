@@ -121,6 +121,7 @@ type DataSources struct {
 	PostgresSyncedTable                         map[string]any `json:"databricks_postgres_synced_table,omitempty"`
 	QualityMonitorV2                            map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	QualityMonitorsV2                           map[string]any `json:"databricks_quality_monitors_v2,omitempty"`
+	Recipients                                  map[string]any `json:"databricks_recipients,omitempty"`
 	RegisteredModel                             map[string]any `json:"databricks_registered_model,omitempty"`
 	RegisteredModelVersions                     map[string]any `json:"databricks_registered_model_versions,omitempty"`
 	RfaAccessRequestDestinations                map[string]any `json:"databricks_rfa_access_request_destinations,omitempty"`
@@ -282,6 +283,7 @@ func NewDataSources() *DataSources {
 		PostgresSyncedTable:                         make(map[string]any),
 		QualityMonitorV2:                            make(map[string]any),
 		QualityMonitorsV2:                           make(map[string]any),
+		Recipients:                                  make(map[string]any),
 		RegisteredModel:                             make(map[string]any),
 		RegisteredModelVersions:                     make(map[string]any),
 		RfaAccessRequestDestinations:                make(map[string]any),

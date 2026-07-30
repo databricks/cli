@@ -97,6 +97,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 			ClusterName:                input.ClusterName,
 			CustomTags:                 input.CustomTags,
 			DataSecurityMode:           input.DataSecurityMode,
+			DependencyMode:             input.DependencyMode,
 			DockerImage:                input.DockerImage,
 			DriverInstancePoolId:       input.DriverInstancePoolId,
 			DriverNodeTypeId:           input.DriverNodeTypeId,
@@ -330,6 +331,7 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		CloneFrom:                  nil, // Not supported by DABs
 		CustomTags:                 config.CustomTags,
 		DataSecurityMode:           config.DataSecurityMode,
+		DependencyMode:             config.DependencyMode,
 		DockerImage:                config.DockerImage,
 		DriverInstancePoolId:       config.DriverInstancePoolId,
 		DriverNodeTypeId:           config.DriverNodeTypeId,
@@ -379,6 +381,7 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		ClusterName:                config.ClusterName,
 		CustomTags:                 config.CustomTags,
 		DataSecurityMode:           config.DataSecurityMode,
+		DependencyMode:             config.DependencyMode,
 		DockerImage:                config.DockerImage,
 		DriverInstancePoolId:       config.DriverInstancePoolId,
 		DriverNodeTypeId:           config.DriverNodeTypeId,

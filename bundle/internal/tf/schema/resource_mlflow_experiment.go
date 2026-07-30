@@ -12,9 +12,10 @@ type ResourceMlflowExperimentTags struct {
 }
 
 type ResourceMlflowExperimentTraceLocationUcTraceLocation struct {
-	Catalog     string `json:"catalog"`
-	Schema      string `json:"schema"`
-	TablePrefix string `json:"table_prefix,omitempty"`
+	Catalog              string `json:"catalog"`
+	EffectiveTablePrefix string `json:"effective_table_prefix,omitempty"`
+	Schema               string `json:"schema"`
+	TablePrefix          string `json:"table_prefix,omitempty"`
 }
 
 type ResourceMlflowExperimentTraceLocation struct {
