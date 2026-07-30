@@ -952,20 +952,28 @@ tasks:
   # embedded bitmap schema (see cmd/bundle/bitmap). The schema is append-only, so
   # update-schema reads the currently embedded schema and only appends. Output is
   # written to a temp file first so the redirect does not truncate schema.txt
-  # before `go run` embeds it at compile time.
+  # before `go run` embeds it at compile time. The acceptance goldens embed the
+  # schema (out.schema.txt) and depend on bit positions (out.bitmap-text.txt,
+  # the encoded bitmap), so regenerate them here too — otherwise they go stale
+  # whenever the schema changes.
   generate-bitmap-schema:
-    desc: Regenerate bundle/bitmap/schema.txt
+    desc: Regenerate bundle/bitmap/schema.txt and the bitmap acceptance goldens
     sources:
       - bundle/**/*.go
       - exclude: bundle/**/*_test.go
+      - acceptance/bundle/bitmap/script
+      - acceptance/bundle/bitmap/test.toml
+      - acceptance/bundle/bitmap/databricks.yml
       - go.mod
       - go.sum
       - "{{.EMBED_SOURCES}}"
     generates:
       - bundle/bitmap/schema.txt
+      - acceptance/bundle/bitmap/out.schema.txt
     cmds:
       - go run . bundle bitmap update-schema > bundle/bitmap/schema.txt.tmp
       - mv bundle/bitmap/schema.txt.tmp bundle/bitmap/schema.txt
+      - go test ./acceptance -run TestAccept/bundle/bitmap -update
 
   # Upstream field documentation comes from the checked-in .codegen/cli.json;
   # bundle/internal/schema/annotations.yml carries the CLI-owned docs and
