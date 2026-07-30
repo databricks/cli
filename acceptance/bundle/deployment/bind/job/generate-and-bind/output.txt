@@ -1,12 +1,12 @@
 
 === Create a pre-defined job:
-Created job with ID: [TEST_JOB_KEY_ID]
+Created job with ID: [NUMID]
 
 >>> [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]
 
 >>> [CLI] workspace import /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]/test --file test.py --language PYTHON
 
->>> [CLI] bundle generate job --key test_job_key --existing-job-id [TEST_JOB_KEY_ID] --config-dir resources --source-dir src
+>>> [CLI] bundle generate job --key test_job_key --existing-job-id [NUMID] --config-dir resources --source-dir src
 File successfully saved to src/test.py
 Job configuration successfully saved to resources/test_job_key.job.yml
 
@@ -16,13 +16,13 @@ test.py
 >>> cat resources/test_job_key.job.yml
       name: generate-job-[UNIQUE_NAME]
 
->>> [CLI] bundle deployment bind test_job_key [TEST_JOB_KEY_ID] --auto-approve
-Successfully bound job with an id '[TEST_JOB_KEY_ID]'
+>>> [CLI] bundle deployment bind test_job_key [NUMID] --auto-approve
+Successfully bound job with an id '[NUMID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]/files...
-updated jobs.test_job_key  [DATABRICKS_URL]/jobs/[TEST_JOB_KEY_ID]?w=[WORKSPACE_ID]
+updated jobs.test_job_key  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
@@ -35,8 +35,8 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted.
 
 === Check that job is bound and does not exist after bundle is destroyed:
->>> errcode [CLI] jobs get [TEST_JOB_KEY_ID] --output json
-Error: Job [TEST_JOB_KEY_ID] does not exist.
+>>> errcode [CLI] jobs get [NUMID] --output json
+Error: Job [NUMID] does not exist.
 
 Exit code: 1
 

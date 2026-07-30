@@ -8,7 +8,6 @@ trace $CLI workspace import /Workspace/Users/$username/.bundle/test-pipeline-for
 
 title "test deployment without force-lock (should fail)"
 trace errcode $CLI pipelines deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 title "test deployment with force-lock (should succeed)"
 trace $CLI pipelines deploy --force-lock

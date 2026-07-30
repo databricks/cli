@@ -6,7 +6,6 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
 
 title "Check that test file is in workspace"
 trace $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/test.py" | jq '{object_type,path}'
