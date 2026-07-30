@@ -912,6 +912,9 @@ type testIgnoreFilter struct {
 }
 
 // newTestIgnoreFilter creates a filter from the adapter's resource configs.
+// It also ignores fields that exist in StateType but not in RemoteType, because
+// those are automatically suppressed by the planner (reason: missing_in_remote)
+// and RemapState cannot populate them from remote state.
 func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 	ignoreFields := make(map[string]bool)
 	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
@@ -922,6 +925,17 @@ func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 			ignoreFields[p.Field.String()] = true
 		}
 	}
+	// Auto-include fields present in StateType but absent from RemoteType.
+	_ = structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
+		if path.IsRoot() {
+			return true
+		}
+		if structaccess.ValidatePattern(adapter.RemoteType(), path) != nil {
+			ignoreFields[path.String()] = true
+			return false
+		}
+		return true
+	})
 	return &testIgnoreFilter{ignoreFields: ignoreFields}
 }
 
