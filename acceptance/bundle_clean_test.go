@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/stretchr/testify/require"
 )
 
 // setupBundleCleanup arranges for every bundle deployed by this run to be
@@ -45,11 +44,19 @@ func setupBundleCleanup(t *testing.T, execPath, prefix string) {
 func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 	start := time.Now()
 
+	// Cleanup never fails the test (see the WARNING note below), so on any error
+	// that prevents sweeping, log loudly and return rather than require-failing.
 	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	if err != nil {
+		t.Logf("WARNING: bundle cleanup skipped, cannot create client: %s", err)
+		return
+	}
 
 	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
-	require.NoError(t, err)
+	if err != nil {
+		t.Logf("WARNING: bundle cleanup skipped, cannot resolve current user: %s", err)
+		return
+	}
 
 	// Tests deploy under the user's home .bundle by default, but some set
 	// workspace.root_path under /Shared (e.g. resources/jobs/shared-root-path),
@@ -105,7 +112,16 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 
 	slices.Sort(failed)
 	t.Logf("%s bundle cleanup: destroyed %d/%d deployment(s) in %s", time.Now().Format(time.RFC3339), len(roots)-len(failed), len(roots), time.Since(start))
-	require.Empty(t, failed, "failed to destroy %d deployment(s): %s", len(failed), strings.Join(failed, ", "))
+
+	// Do not fail the test on a cleanup failure: this runs in a t.Cleanup on the
+	// root TestAccept, so failing here marks the root test failed with no failed
+	// subtest, which makes gotestsum --rerun-fails (used by the integration task)
+	// rerun the entire cloud suite. Cleanup is best-effort housekeeping and the
+	// product tests already passed, so log loudly instead; leaked deployments are
+	// reclaimed by the periodic prefix sweep (sweep_test_resources.py).
+	if len(failed) > 0 {
+		t.Logf("WARNING: bundle cleanup failed to destroy %d deployment(s), leaked until swept: %s", len(failed), strings.Join(failed, ", "))
+	}
 }
 
 // findDeploymentRoots walks the workspace tree under dir and returns the paths
@@ -131,15 +147,16 @@ func findDeploymentRoots(ctx context.Context, t *testing.T, w *databricks.Worksp
 }
 
 // listChildDirs returns the immediate subdirectory paths of dir. A missing dir
-// (nothing was deployed under it) yields nil; any other listing error fails the
-// test, since silently treating it as empty would under-sweep and leak bundles.
+// (nothing was deployed under it) yields nil silently; any other listing error
+// is logged loudly (it means the sweep under dir is incomplete) but does not
+// fail the test, since cleanup runs in the root t.Cleanup.
 func listChildDirs(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, dir string) []string {
 	objects, err := w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{Path: dir})
 	if err != nil {
-		if errors.Is(err, apierr.ErrNotFound) {
-			return nil
+		if !errors.Is(err, apierr.ErrNotFound) {
+			t.Logf("WARNING: bundle cleanup incomplete, cannot list %s: %s", dir, err)
 		}
-		require.NoError(t, err, "listing %s", dir)
+		return nil
 	}
 	var dirs []string
 	for _, o := range objects {
