@@ -455,7 +455,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	return nil
 }
 
-func ignoreRemoteChanges(cfg1 *dresources.ResourceLifecycleConfig, cfg2 *dresources.ResourceLifecycleConfig, path *structpath.PathNode) bool {
+func ignoreRemoteChanges(cfg1, cfg2 *dresources.ResourceLifecycleConfig, path *structpath.PathNode) bool {
 	if _, ok := findMatchingRule(path, cfg1.IgnoreRemoteChanges); ok {
 		return true
 	}
