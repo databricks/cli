@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 """Refresh the vendored mlops-stacks acceptance template to upstream HEAD.
 
-The mlops-stacks acceptance test runs offline against a pinned, pruned copy of
-https://github.com/databricks/mlops-stacks. This upgrades that copy, preserving
-two local invariants: only already-vendored files are refreshed (pruning kept),
-and the upstream project directory (a backtick named-template that is an illegal
-Go module path) stays renamed to {{.input_project_name}}.
+The local test leg inits from the vendored copy; the cloud leg clones upstream.
+Only already-vendored files are refreshed, which preserves the pruning.
 """
 
 import os
@@ -20,7 +17,7 @@ REPO_URL = "https://github.com/databricks/mlops-stacks"
 TEMPLATE_DIR = "acceptance/bundle/deploy/mlops-stacks/template"
 REVISION_FILE = "acceptance/bundle/deploy/mlops-stacks/template.REVISION"
 
-# Upstream's project dir name is an illegal Go module path; vendored plainer.
+# Upstream's project dir name is an illegal Go module path, so we vendor it renamed.
 VENDORED_PROJECT_DIR = "{{.input_project_name}}"
 UPSTREAM_PROJECT_DIR = "{{template `project_name_alphanumeric_underscore` .}}"
 
@@ -59,14 +56,9 @@ def main():
             text=True,
         ).stdout.strip()
 
-        missing = []
-        for rel in vendored:
-            src = os.path.join(clone_dir, vendored_to_upstream(rel))
-            if not os.path.isfile(src):
-                missing.append(rel)
-                continue
-            shutil.copyfile(src, os.path.join(template_dir, rel))
-
+        # Resolve all sources first so a restructured upstream leaves the copy untouched.
+        sources = {rel: os.path.join(clone_dir, vendored_to_upstream(rel)) for rel in vendored}
+        missing = [rel for rel, src in sources.items() if not os.path.isfile(src)]
         if missing:
             listing = "\n".join(f"  {m}" for m in missing)
             sys.exit(
@@ -74,11 +66,15 @@ def main():
                 f"restructured); reconcile manually:\n{listing}"
             )
 
+        for rel, src in sources.items():
+            shutil.copyfile(src, os.path.join(template_dir, rel))
+
     with open(os.path.join(root, REVISION_FILE), "w") as f:
         f.write(sha + "\n")
 
     print(f"Refreshed {len(vendored)} files from {REPO_URL} @ {sha}")
-    print("Review the diff and run `./task test-update-templates` to update golden output.")
+    print("Review the diff, then update the golden output with:")
+    print("  go test ./acceptance -run TestAccept/bundle/deploy/mlops-stacks -update")
 
 
 if __name__ == "__main__":
