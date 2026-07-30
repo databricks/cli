@@ -50,9 +50,9 @@
         "serialized_dashboard": {
           "action": "skip",
           "reason": "etag_based",
-          "old": "sha256_hashed_in_state:9dc171d249749a592c717bb13f2d948d2f1fa5530b82ac308a3df0c48d347ef3",
-          "new": "sha256_hashed_in_state:9dc171d249749a592c717bb13f2d948d2f1fa5530b82ac308a3df0c48d347ef3",
-          "remote": "sha256_hashed_in_state:aae99d4284b3390b1b35974f7bd4c03603cacd6a5a4a838ca563f652257ab6a7"
+          "old": "sha256_hashed_in_state:[HASH][0]",
+          "new": "sha256_hashed_in_state:[HASH][0]",
+          "remote": "sha256_hashed_in_state:[HASH][1]"
         },
         "update_time": {
           "action": "skip",
