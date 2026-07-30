@@ -530,10 +530,6 @@ resources:
       - field: value
         reason: tracked_by_fingerprint
 
-    ignore_remote_changes:
-      - field: value
-        reason: input_only
-
   secret_scopes:
     backend_defaults:
       # The Secrets API defaults scope_backend_type to DATABRICKS when not specified.

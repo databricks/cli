@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
@@ -99,6 +98,7 @@ func (*ResourceSecret) RemapState(remote *catalog.Secret) *SecretState {
 			ForceSendFields: utils.FilterFields[catalog.Secret](remote.ForceSendFields),
 		},
 		Fingerprint: "",
+		SecretValue: "",
 	}
 }
 
@@ -166,5 +166,5 @@ func (s *SecretState) UnmarshalJSON(b []byte) error {
 // to make the algorithm explicit in the stored state.
 func fingerprintValue(v string) string {
 	sum := sha256.Sum256([]byte(v))
-	return fmt.Sprintf("sha256:%s", hex.EncodeToString(sum[:]))
+	return "sha256:" + hex.EncodeToString(sum[:])
 }
