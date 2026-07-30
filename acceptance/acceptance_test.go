@@ -731,11 +731,17 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 	return ""
 }
 
-// Cap at 12 digits: the prefix "ci<runID>x<suffix>" plus the 8-char random
-// minimum must fit the 26-char unique name (26 - 8 - len("ci")-len("x") - 3 = 12),
-// so a longer GITHUB_RUN_ID falls through to a random id rather than building a
-// prefix ciUniqueName would silently drop.
-var ciRunID = regexp.MustCompile(`^[0-9]{1,12}$`)
+// Cap at 11 digits: the prefix "ci<runID>x<suffix>" plus the 8-char random
+// minimum must fit the 26-char unique name (26 - 8 - len("ci")-len("x") -
+// bundleLegSuffixLen = 11), so a longer GITHUB_RUN_ID falls through to a random
+// id rather than building a prefix ciUniqueName would silently drop.
+var ciRunID = regexp.MustCompile(`^[0-9]{1,11}$`)
+
+// bundleLegSuffixLen is the length of the per-process random suffix. 36^4 values
+// keep an accidental collision between the few matrix legs that share a workspace
+// within one run (which would let one leg destroy another's live bundles)
+// negligible, while still leaving >=8 random characters after an 11-digit run id.
+const bundleLegSuffixLen = 4
 
 // bundleNamePrefix is the sweepable prefix embedded into every $UNIQUE_NAME on
 // cloud runs (see newBundleNamePrefix / ciUniqueName). Set once in testAccept,
@@ -748,18 +754,18 @@ var bundleNamePrefix string
 // runID is the GitHub run id, or a random numeric id when it is unset/malformed
 // (e.g. a local `deco env run`). All matrix legs of a CI run share one GitHub run
 // id and legs of different OSes share a workspace, so a run-id-only prefix would
-// let one leg's cleanup destroy another leg's live bundles; the random 3-char
-// lowercase-alphanumeric suffix (36^3 values) makes each leg's prefix distinct
-// while keeping "ci<runID>x" a matchable substring for the run-wide sweeper
-// (sweep_test_resources.py). The run id (all digits) is delimited by "x" so that
-// prefix stays collision-free between runs whose ids share a prefix.
+// let one leg's cleanup destroy another leg's live bundles; the random
+// lowercase-alphanumeric suffix (bundleLegSuffixLen chars) makes each leg's prefix
+// distinct while keeping "ci<runID>x" a matchable substring for the run-wide
+// sweeper (sweep_test_resources.py). The run id (all digits) is delimited by "x"
+// so that prefix stays collision-free between runs whose ids share a prefix.
 func newBundleNamePrefix() string {
 	runID := os.Getenv("GITHUB_RUN_ID")
 	if !ciRunID.MatchString(runID) {
 		runID = strconv.Itoa(rand.IntN(1_000_000_000))
 	}
 	const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
-	suffix := make([]byte, 3)
+	suffix := make([]byte, bundleLegSuffixLen)
 	for i := range suffix {
 		suffix[i] = alphabet[rand.IntN(len(alphabet))]
 	}

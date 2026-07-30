@@ -53,10 +53,11 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 
 	// Tests deploy under the user's home .bundle by default, but some set
 	// workspace.root_path under /Shared (e.g. resources/jobs/shared-root-path),
-	// so sweep both.
+	// so sweep both. A "/Shared/..." root_path is normalized to "/Workspace/Shared/..."
+	// by prependWorkspacePrefix, so the swept path uses that form.
 	bundleRoots := []string{
 		"/Workspace/Users/" + me.UserName + "/.bundle",
-		"/Shared/" + me.UserName + "/.bundle",
+		"/Workspace/Shared/" + me.UserName + "/.bundle",
 	}
 
 	// The run's prefix always appears in the first path segment under .bundle
