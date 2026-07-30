@@ -385,7 +385,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			return err
 		}
 
-		if structdiff.IsEqual(ch.Remote, ch.New) {
+		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
 		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
@@ -453,6 +453,18 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	}
 
 	return nil
+}
+
+func ignoreRemoteChanges(cfg1 *dresources.ResourceLifecycleConfig, cfg2 *dresources.ResourceLifecycleConfig, path *structpath.PathNode) bool {
+	if _, ok := findMatchingRule(path, cfg1.IgnoreRemoteChanges); ok {
+		return true
+	}
+
+	if _, ok := findMatchingRule(path, cfg2.IgnoreRemoteChanges); ok {
+		return true
+	}
+
+	return false
 }
 
 // isFieldMissingInRemote reports whether path exists in StateType but is absent from RemoteType.
