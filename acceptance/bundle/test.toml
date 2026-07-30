@@ -30,5 +30,5 @@ New = ''
 [[Repls]]
 Old = "sha256_hashed_in_state:[0-9a-f]{64}"
 New = "sha256_hashed_in_state:[HASH]"
-Order = -100
+Order = -1
 Distinct = true
