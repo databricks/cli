@@ -1,7 +1,7 @@
 RecordRequests = true
 
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [Env]
 DATABRICKS_WAREHOUSE_ID = "wh-test"
