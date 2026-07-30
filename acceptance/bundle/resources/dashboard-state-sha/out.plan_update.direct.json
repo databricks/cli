@@ -59,9 +59,9 @@
         },
         "serialized_dashboard": {
           "action": "update",
-          "old": "sha256_hashed_in_state:1a7a0b46514ad1d8a1b53e2c8bee5d37b39d5c40157b27f93058bf866d2bc41a",
-          "new": "sha256_hashed_in_state:37ad7625d69f4a6b4e119dc2f0a2ad415c752c22a58ddcc333f[NUMID]a5825",
-          "remote": "sha256_hashed_in_state:c14d4500f6b61da69067cbce0ac4e0b212f04c155dedad5d04b97bf461903ef5"
+          "old": "sha256_hashed_in_state:[HASH][0]",
+          "new": "sha256_hashed_in_state:[HASH][1]",
+          "remote": "sha256_hashed_in_state:[HASH][2]"
         },
         "update_time": {
           "action": "skip",

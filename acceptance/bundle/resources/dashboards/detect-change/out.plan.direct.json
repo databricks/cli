@@ -59,9 +59,9 @@
         "serialized_dashboard": {
           "action": "skip",
           "reason": "etag_based",
-          "old": "sha256_hashed_in_state:[ALPHANUMID]",
-          "new": "sha256_hashed_in_state:[ALPHANUMID]",
-          "remote": "sha256_hashed_in_state:[ALPHANUMID]"
+          "old": "sha256_hashed_in_state:[HASH][0]",
+          "new": "sha256_hashed_in_state:[HASH][0]",
+          "remote": "sha256_hashed_in_state:[HASH][1]"
         },
         "update_time": {
           "action": "skip",
