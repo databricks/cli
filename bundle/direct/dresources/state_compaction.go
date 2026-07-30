@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/libs/hash"
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // stateHashPrefix marks a state value that holds a content hash instead of the
@@ -67,6 +68,19 @@ func CompactState(cfg *ResourceLifecycleConfig, state any) (any, error) {
 	compacted := out.Interface()
 
 	for _, field := range cfg.HashedInState {
+		// The shallow copy above only isolates top-level fields: SetByString on a
+		// depth-1 path reassigns the field on the copy, but a nested path (e.g.
+		// "foo.bar") is reached through a pointer/slice/map still shared with the
+		// caller's value, so hashing it would mutate the value reused for the deploy
+		// API call. Reject nested paths loudly instead of corrupting state silently.
+		path, err := structpath.ParsePath(field)
+		if err != nil {
+			return nil, fmt.Errorf("compacting state field %q: %w", field, err)
+		}
+		if path.Len() != 1 {
+			return nil, fmt.Errorf("hashed_in_state field %q must be a top-level field", field)
+		}
+
 		current, err := structaccess.GetByString(compacted, field)
 		if err != nil {
 			if _, ok := errors.AsType[*structaccess.NotFoundError](err); ok {

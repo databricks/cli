@@ -5,9 +5,34 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// TestHashedInStateFieldsAreTopLevel guards the shallow-copy assumption in CompactState:
+// every hashed_in_state path declared in resources.yml must be a top-level field. A nested
+// path would be mutated through memory shared with the deploy value (see CompactState), so
+// this fails CI the moment such a declaration is added instead of corrupting state at runtime.
+func TestHashedInStateFieldsAreTopLevel(t *testing.T) {
+	for name, rc := range MustLoadConfig().Resources {
+		for _, field := range rc.HashedInState {
+			path, err := structpath.ParsePath(field)
+			require.NoError(t, err, "%s: hashed_in_state field %q", name, field)
+			assert.Equal(t, 1, path.Len(), "%s: hashed_in_state field %q must be a top-level field", name, field)
+		}
+	}
+}
+
+// TestCompactStateRejectsNestedField verifies CompactState errors on a nested
+// hashed_in_state path rather than mutating memory shared with the deploy value.
+func TestCompactStateRejectsNestedField(t *testing.T) {
+	cfg := &ResourceLifecycleConfig{HashedInState: []string{"foo.bar"}}
+	state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: `{"a":1}`}}
+
+	_, err := CompactState(cfg, state)
+	require.ErrorContains(t, err, "must be a top-level field")
+}
 
 // TestCompactStateNoDeclaredFields verifies CompactState is a no-op for a resource
 // type with no hashed_in_state declaration and for a nil config, returning the same
