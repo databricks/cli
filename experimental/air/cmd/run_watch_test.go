@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -102,6 +103,74 @@ func runWatchCmd(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL strin
 	cmd.SetContext(ctx)
 	cmd.SetOut(buf)
 	return cmd.RunE(cmd, nil)
+}
+
+// watchServerPending serves submit, then runs/get as PENDING → RUNNING →
+// TERMINATED/SUCCESS across polls (logs appear once RUNNING), exercising the
+// full `air run --watch` path over a run that isn't terminal at submit time.
+func watchServerPending(t *testing.T) *httptest.Server {
+	t.Helper()
+	states := []string{
+		`{"run_id":777,"start_time":1700000000000,"state":{"life_cycle_state":"PENDING"},"tasks":[{"run_id":778,"attempt_number":0}]}`,
+		`{"run_id":777,"start_time":1700000000000,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":778,"attempt_number":0}]}`,
+		`{"run_id":777,"start_time":1700000000000,"end_time":1700000012000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":778,"attempt_number":0}]}`,
+	}
+	var getCalls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/jobs/runs/submit"):
+			_, _ = w.Write([]byte(`{"run_id": 777}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			i := min(getCalls, len(states)-1)
+			getCalls++
+			_, _ = w.Write([]byte(states[i]))
+		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
+			if getCalls < 2 {
+				_, _ = w.Write([]byte(`{"log_records": []}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"log_records": [{"time_unix_nano": 1700000001000000000, "body": "hello", "node_index": 0}]}`))
+		default:
+			_, _ = w.Write([]byte(`{"userName": "u@example.com", "workspace_id": 1}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestRunWatchPendingRunStreamsToCompletion(t *testing.T) {
+	orig := retryCheckInterval
+	retryCheckInterval = time.Millisecond
+	t.Cleanup(func() { retryCheckInterval = orig })
+
+	var buf bytes.Buffer
+	err := runWatchCmd(t, flags.OutputText, &buf, watchServerPending(t).URL)
+	require.NoError(t, err)
+
+	out := buf.String()
+	assert.Contains(t, out, "Submitted run 777")
+	// The run starts PENDING, then streams once RUNNING and finishes SUCCESS.
+	assert.Contains(t, out, "hello")
+}
+
+func TestRunWatchJSONPendingRunTerminalEnvelope(t *testing.T) {
+	orig := retryCheckInterval
+	retryCheckInterval = time.Millisecond
+	t.Cleanup(func() { retryCheckInterval = orig })
+
+	var buf bytes.Buffer
+	err := runWatchCmd(t, flags.OutputJSON, &buf, watchServerPending(t).URL)
+	require.NoError(t, err)
+
+	all := buf.String()
+	lines := strings.Split(strings.TrimSpace(all), "\n")
+	assert.Contains(t, lines[0], `"type":"SUBMITTED"`)
+	// STATUS events fire on the PENDING -> RUNNING -> SUCCESS transitions.
+	assert.Contains(t, all, `"type":"STATUS"`)
+	assert.Contains(t, all, `"status":"PENDING"`)
+	assert.Contains(t, all, `"status":"RUNNING"`)
+	// The closing envelope reports the terminal status.
+	assert.Contains(t, lines[len(lines)-1], `"status":"SUCCESS"`)
 }
 
 func TestRunWatchStreamsLogs(t *testing.T) {

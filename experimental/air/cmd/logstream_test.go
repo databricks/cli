@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -400,4 +401,69 @@ func TestSleepOrCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	require.ErrorIs(t, sleepOrCancel(ctx, time.Hour), context.Canceled)
+}
+
+// pendingThenRunningServer serves runs/get as PENDING, then RUNNING, then
+// TERMINATED/SUCCESS across successive polls, with logs appearing only once the
+// run is RUNNING. It exercises the active-run poll loop through its transitions.
+func pendingThenRunningServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	states := []string{
+		`{"run_id":1,"start_time":1700000000000,"state":{"life_cycle_state":"PENDING"},"tasks":[{"run_id":2,"attempt_number":0}]}`,
+		`{"run_id":1,"start_time":1700000000000,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":2,"attempt_number":0}]}`,
+		`{"run_id":1,"start_time":1700000000000,"end_time":1700000012000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`,
+	}
+	var getCalls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			i := min(getCalls, len(states)-1)
+			getCalls++
+			_, _ = w.Write([]byte(states[i]))
+		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
+			// No logs until the run is RUNNING (after the 2nd runs/get).
+			if getCalls < 2 {
+				_, _ = w.Write([]byte(`{"log_records": []}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"log_records": [{"time_unix_nano": 1700000001000000000, "body": "hello", "node_index": 0}]}`))
+		default:
+			_, _ = w.Write([]byte(`{"userName":"u@example.com","workspace_id":1}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestStreamBricklensPendingThenRunningToTerminal(t *testing.T) {
+	orig := retryCheckInterval
+	retryCheckInterval = time.Millisecond
+	t.Cleanup(func() { retryCheckInterval = orig })
+
+	srv := pendingThenRunningServer(t)
+	w := newTestWorkspaceClient(t, srv.URL)
+
+	var buf bytes.Buffer
+	var transitions [][2]string
+	req := logRequest{
+		runID: 1, node: 0, attempt: -1, tailLines: -1,
+		onStatusChange: func(current, previous string) {
+			transitions = append(transitions, [2]string{previous, current})
+		},
+	}
+	// Initial status is PENDING; the loop polls through RUNNING to terminal.
+	// MockDiscard supplies a cmdIO so the waiting spinner has somewhere to render.
+	ctx := cmdio.MockDiscard(t.Context())
+	initial := logRunStatus{lifeCycleState: "PENDING", startTimeMs: 1700000000000}
+	success, err := streamBricklensLogs(ctx, w, &buf, req, initial)
+	require.NoError(t, err)
+	assert.True(t, success)
+
+	// Logs stream once the run is RUNNING.
+	assert.Contains(t, buf.String(), "hello")
+	// STATUS transitions are reported PENDING -> RUNNING -> SUCCESS.
+	require.GreaterOrEqual(t, len(transitions), 3)
+	assert.Equal(t, [2]string{"", "PENDING"}, transitions[0])
+	assert.Equal(t, "RUNNING", transitions[1][1])
+	assert.Equal(t, "SUCCESS", transitions[len(transitions)-1][1])
 }
