@@ -33,7 +33,7 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle bitmap bitmap -t dev
-cnEKcWJg4OlmYDjBIKfUbcfAzsDA0MD+/ukDbgUGBgUGhu8MDAwMHCCCQYCFIfkMgw0DBFxgIBnwMbCg8JkcmhgYGCQPwLgMDA7sDTBJCSS1jNkHGCgAkg0KDC4JDIMdMDfUQr3J1MjSwNgACAAA//8=
+cnEKcWJg4DnIwHCCQU6p246BnYGBoYH9/dMH3AoMDAoMDN8ZGBgYOEAEgwALQ/IZBhsGCLjAQDLgY2BB4TM5NDEwMEgegHEZGBzYG2CSEkhqGbMPMFAAJBsUGFwSGAY7YG6ohXqTqZGlgREWEoAAAAD//w==
 
 >>> [CLI] bundle plan -t dev
 Building python_artifact...
