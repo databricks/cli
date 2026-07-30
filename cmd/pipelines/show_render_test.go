@@ -85,9 +85,12 @@ func TestRenderTableCellAtCapNotTruncated(t *testing.T) {
 
 func TestRenderTableCropsColumns(t *testing.T) {
 	out := renderTableString(t, []string{"a", "b", "c", "d", "e"}, [][]string{{"1", "2", "3", "4", "5"}}, 10)
-	assert.Contains(t, out, ellipsis)
-	assert.Regexp(t, `\(showing \d of 5 columns\)`, out)
-	assert.Contains(t, out, "1 row")
+	assert.Equal(t, "a  b  ...\n-  -  ---\n1  2  ...\n\n(showing 2 of 5 columns)\n1 row\n", out)
+}
+
+func TestRenderTableCropsColumnsMultipleRows(t *testing.T) {
+	out := renderTableString(t, []string{"a", "b", "c"}, [][]string{{"1", "2", "3"}, {"4", "5", "6"}}, 4)
+	assert.Equal(t, "a  ...\n-  ---\n1  ...\n4  ...\n\n(showing 1 of 3 columns)\n2 rows\n", out)
 }
 
 func TestRenderTableSingleColumnNarrowNotCropped(t *testing.T) {
