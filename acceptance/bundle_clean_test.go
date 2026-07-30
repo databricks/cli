@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"runtime"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -77,12 +77,14 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 	t.Logf("%s bundle cleanup: found %d deployment(s) with prefix %q", time.Now().Format(time.RFC3339), len(roots), prefix)
 
 	// Each destroy shells out to a separate `bundle destroy` (auth + state pull +
-	// deletes), so run them concurrently. Cap at 20 to stay well under the
-	// workspace API rate limit while still cutting wall-clock for large sweeps.
-	// This is best-effort, not fail-fast: a failed destroy is recorded and the
-	// rest still run, so a plain WaitGroup with a semaphore fits better than
-	// errgroup (whose error short-circuit we would not use).
-	sem := make(chan struct{}, min(runtime.GOMAXPROCS(0), 20))
+	// deletes), so run them concurrently. Each is network-bound (not CPU-bound),
+	// so cap at a fixed 20 rather than by GOMAXPROCS: it parallelizes the API
+	// waits while staying well under the workspace rate limit. This is
+	// best-effort, not fail-fast: a failed destroy is recorded and the rest still
+	// run, so a plain WaitGroup with a semaphore fits better than errgroup (whose
+	// error short-circuit we would not use).
+	const maxConcurrentDestroys = 20
+	sem := make(chan struct{}, maxConcurrentDestroys)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var failed []string
@@ -164,7 +166,7 @@ func destroyBundle(execPath, rootPath string) ([]byte, error) {
 	defer os.RemoveAll(dir)
 
 	databricksYML := "bundle:\n  name: cleanup\nworkspace:\n  root_path: " + rootPath + "\ntargets:\n  default: {}\n"
-	if err := os.WriteFile(path.Join(dir, "databricks.yml"), []byte(databricksYML), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte(databricksYML), 0o644); err != nil {
 		return nil, err
 	}
 
