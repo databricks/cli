@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
@@ -23,6 +22,20 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
+
+// localCacheMeasurements converts the per-compute cache durations recorded by
+// libs/cache into telemetry entries, preserving the historical key.
+func localCacheMeasurements(b *bundle.Bundle) []protos.IntMapEntry {
+	durations := b.Metrics.Telemetry.ComputeDurationsMs
+	if len(durations) == 0 {
+		return nil
+	}
+	out := make([]protos.IntMapEntry, len(durations))
+	for i, ms := range durations {
+		out[i] = protos.IntMapEntry{Key: "local.cache.compute_duration", Value: ms}
+	}
+	return out
+}
 
 func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 	executionTimes := b.Metrics.ExecutionTimes
@@ -335,23 +348,24 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	slices.Sort(clusterIds)
 	slices.Sort(dashboardIds)
 
+	tm := &b.Metrics.Telemetry
 	for _, app := range b.Config.Resources.Apps {
 		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
+			tm.SetPaired(&tm.AppLifecycleStartedTrue, &tm.AppLifecycleStartedFalse, *app.Lifecycle.Started)
 			break
 		}
 	}
 
 	for _, cluster := range b.Config.Resources.Clusters {
 		if cluster != nil && cluster.Lifecycle != nil && cluster.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.ClusterLifecycleStarted, *cluster.Lifecycle.Started)
+			tm.SetPaired(&tm.ClusterLifecycleStartedTrue, &tm.ClusterLifecycleStartedFalse, *cluster.Lifecycle.Started)
 			break
 		}
 	}
 
 	for _, warehouse := range b.Config.Resources.SqlWarehouses {
 		if warehouse != nil && warehouse.Lifecycle != nil && warehouse.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
+			tm.SetPaired(&tm.SqlWarehouseLifecycleStartedTrue, &tm.SqlWarehouseLifecycleStartedFalse, *warehouse.Lifecycle.Started)
 			break
 		}
 	}
@@ -372,10 +386,10 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	// already failed the command upstream via ValidateEngineSetting, so treating the
 	// FromEnv error as "not terraform" here cannot mask a real terraform request.
 	if b.Config.Bundle.Engine == engine.EngineTerraform {
-		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
+		tm.EngineTerraformConfig = true
 	}
 	if envEngine, _ := engine.FromEnv(ctx); envEngine == engine.EngineTerraform {
-		b.Metrics.SetBoolValue(metrics.EngineTerraformEnv, true)
+		tm.EngineTerraformEnv = true
 	}
 
 	// If the bundle UUID is not set, we use a default 0 value.
@@ -467,8 +481,8 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
 				TargetCount:                  b.Metrics.TargetCount,
 				WorkspaceArtifactPathType:    artifactPathType,
-				BoolValues:                   b.Metrics.BoolValues,
-				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
+				BoolValues:                   b.Metrics.Telemetry.BoolValues(),
+				LocalCacheMeasurementsMs:     localCacheMeasurements(b),
 				VariableCount:                int64(variableCount),
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,
