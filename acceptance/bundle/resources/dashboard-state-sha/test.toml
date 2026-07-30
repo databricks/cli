@@ -11,10 +11,6 @@ Ignore = ["dashboard.lvdash.json"]
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.READPLAN = ["", "1"]
 
-[Env]
-# Prevent MSYS2 from rewriting /Users/... paths on Windows.
-MSYS_NO_PATHCONV = "1"
-
 # Etag can be both negative and positive.
 [[Repls]]
 Old = "\"[-0-9]{8,}\""
