@@ -3,7 +3,7 @@ Cloud = false
 
 # decoded.txt is a scratch artifact produced by the round-trip check; it must
 # equal out.bitmap-text.txt so there is no need to record it as a golden.
-Ignore = ["decoded.txt"]
+Ignore = ["decoded.txt", ".databricks"]
 
 # The bitmap reflects config-field presence, which does not depend on the
 # deployment engine, so run once on direct instead of the inherited
