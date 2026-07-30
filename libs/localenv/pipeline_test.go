@@ -78,7 +78,7 @@ func newTestServer(t *testing.T) *httptest.Server {
 	}))
 }
 
-func TestPipelineRejectsConflictingTargetFlagsAtPreflight(t *testing.T) {
+func TestPipelineRejectsConflictingComputeFlagsAtPreflight(t *testing.T) {
 	// Incompatible target flags are a usage error surfaced as E_USAGE at
 	// preflight, before any manager/writability/fetch work.
 	dir := writeProject(t)

@@ -38,15 +38,15 @@ env-owned sections are refreshed, user-owned content is preserved).`,
 	// silently ignoring them.
 	cmd.Args = cobra.NoArgs
 	cmd.PreRunE = root.MustWorkspaceClient
-	addTargetFlags(cmd)
+	addComputeFlags(cmd)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		return runPipeline(cmd)
 	}
 	return cmd
 }
 
-// addTargetFlags adds the shared target and mode flags to a command.
-func addTargetFlags(cmd *cobra.Command) {
+// addComputeFlags adds the shared compute and mode flags to a command.
+func addComputeFlags(cmd *cobra.Command) {
 	cmd.Flags().String("cluster-id", "", "cluster ID to use as the compute target")
 	cmd.Flags().String("cluster-name", "", "cluster name to use as the compute target (resolved to an ID via the Clusters API)")
 	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. 5)")

@@ -207,12 +207,12 @@ func TestResolveJobTaskUnknownKeyIsResolveError(t *testing.T) {
 	assert.Equal(t, ErrResolve, pe.Code)
 }
 
-func TestValidateTargetFlagsMutuallyExclusive(t *testing.T) {
+func TestValidateComputeFlagsMutuallyExclusive(t *testing.T) {
 	assert.Error(t, ValidateComputeFlags(ComputeFlags{Cluster: "a", Serverless: "v4"}))
 	assert.NoError(t, ValidateComputeFlags(ComputeFlags{Cluster: "a"}))
 }
 
-func TestResolveTargetRejectsConflictingFlags(t *testing.T) {
+func TestResolveComputeRejectsConflictingFlags(t *testing.T) {
 	// ResolveCompute must reject incompatible flags rather than silently taking
 	// the first precedence branch, so a library caller bypassing Cobra can't
 	// resolve a different target than it asked for.

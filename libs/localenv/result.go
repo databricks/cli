@@ -20,10 +20,7 @@ const (
 	CommandName  = CommandGroup + " " + CommandVerb
 
 	// SchemaVersion is the version of the --json output contract (spec §6).
-	// Bump it on any breaking change to the JSON shape once the command is
-	// unveiled and the payload has real consumers. The command is still hidden
-	// with no shipped JSON consumer, so the "target" → "compute" key rename does
-	// not bump this: there is no old payload in the wild to distinguish.
+	// Bump it on any breaking change to the JSON shape.
 	SchemaVersion = 1
 )
 
