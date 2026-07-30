@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle plan --planmode=offline
+Error: --planmode=offline is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+
+
+Exit code: 1
+
+>>> [CLI] bundle deploy --planmode=offline
+Error: --planmode=offline is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+
+
+Exit code: 1
+
+>>> [CLI] bundle plan --planmode=bogus
+Error: invalid --planmode "bogus" (want full or offline)
+
+Exit code: 1

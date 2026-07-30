@@ -197,6 +197,22 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 	}
 
 	desiredStarted := *config.Lifecycle.Started
+
+	if entry.RemoteState == nil {
+		// --planmode=offline: no live status. Fire the transition only when
+		// lifecycle.started changed in the config, and tolerate INVALID_STATE in
+		// case the cluster is already in the desired state.
+		if !offlineLifecycleTransition(entry) {
+			return nil, nil
+		}
+		if desiredStarted {
+			_, err := r.client.Clusters.Start(ctx, compute.StartCluster{ClusterId: id})
+			return nil, tolerateLifecycleRace(ctx, "clusters."+id, err)
+		}
+		_, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
+		return nil, tolerateLifecycleRace(ctx, "clusters."+id, err)
+	}
+
 	alreadyRunning := remoteClusterIsRunning(entry)
 	if desiredStarted && !alreadyRunning {
 		// lifecycle.started=true: fire Start; WaitAfterUpdate polls for RUNNING.
@@ -213,8 +229,14 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 }
 
 // WaitAfterUpdate waits for the cluster to reach the desired lifecycle state after DoUpdate.
-func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, id string, config *ClusterState) (*ClusterRemote, error) {
+func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
 	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
+		return nil, nil
+	}
+
+	// In --planmode=offline DoUpdate only fires a transition when lifecycle.started
+	// changed; if it did not, there is nothing to wait for.
+	if entry.RemoteState == nil && !offlineLifecycleTransition(entry) {
 		return nil, nil
 	}
 

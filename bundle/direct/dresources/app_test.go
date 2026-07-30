@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -168,5 +170,34 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 
 	for _, field := range UpdateMaskFields {
 		assert.Contains(t, allFields, field, "field %s is in UpdateMaskFields but not in apps.App struct", field)
+	}
+}
+
+func TestAppOverrideChangeDescActiveDeployment(t *testing.T) {
+	r := &ResourceApp{}
+
+	// The hook skips drift on the deploy-only fields (source_code_path, config,
+	// git_source) when the app has no active deployment. remote may be a typed
+	// nil (--planmode=offline or resource missing remotely); the hook must treat
+	// that as "no active deployment" without dereferencing.
+	tests := []struct {
+		name       string
+		path       *structpath.PathNode
+		remote     *AppRemote
+		wantAction deployplan.ActionType
+	}{
+		{"source_code_path skips when remote is nil", structpath.MustParsePath("source_code_path"), nil, deployplan.Skip},
+		{"config.command skips when remote is nil", structpath.MustParsePath("config.command"), nil, deployplan.Skip},
+		{"git_source skips when remote is nil", structpath.MustParsePath("git_source"), nil, deployplan.Skip},
+		{"source_code_path skips when ActiveDeployment is nil", structpath.MustParsePath("source_code_path"), &AppRemote{}, deployplan.Skip},
+		{"source_code_path untouched when ActiveDeployment is set", structpath.MustParsePath("source_code_path"), &AppRemote{App: apps.App{ActiveDeployment: &apps.AppDeployment{}}}, deployplan.Update},
+		{"name untouched (not a deploy-only field)", structpath.MustParsePath("name"), nil, deployplan.Update},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			change := &ChangeDesc{Action: deployplan.Update}
+			require.NoError(t, r.OverrideChangeDesc(t.Context(), tc.path, change, tc.remote))
+			assert.Equal(t, tc.wantAction, change.Action)
+		})
 	}
 }

@@ -1,16 +1,61 @@
 package dresources
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
 )
 
 type StateLifecycle struct {
 	Started *bool `json:"started,omitempty"`
+}
+
+// pathLifecycle is the change path of the synthetic lifecycle field. We match on
+// the parent (not lifecycle.started) because structdiff records a nil->non-nil
+// StateLifecycle pointer as a single change at "lifecycle", not "lifecycle.started"
+// (see diffValues nil-pointer handling). HasChange("lifecycle") matches both the
+// parent change and a nested "lifecycle.started" change; StateLifecycle has only
+// the Started field, so there is nothing else under lifecycle to over-trigger on.
+var pathLifecycle = structpath.MustParsePath("lifecycle")
+
+// offlineLifecycleTransition reports whether an offline (--planmode=offline)
+// DoUpdate should fire a lifecycle Start/Stop. Offline has no live remote status
+// to compare against, so the decision is driven purely by the local diff: fire
+// only when the lifecycle changed. This keeps offline from issuing a spurious
+// transition (and from saving a lifecycle value it never applied).
+func offlineLifecycleTransition(entry *PlanEntry) bool {
+	return entry.Changes.HasChange(pathLifecycle)
+}
+
+// isLifecycleRaceErr reports whether err is the backend's "already in that
+// state" rejection of a lifecycle Start/Stop/Delete. Offline (--planmode=offline)
+// fires a transition based on the config change alone, without reading remote, so
+// the resource may already be in the desired state; the backend then rejects the
+// call with INVALID_STATE. The same race is possible in full mode between the
+// remote read and the transition.
+func isLifecycleRaceErr(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.ErrorCode == "INVALID_STATE"
+}
+
+// tolerateLifecycleRace swallows an "already in that state" error (see
+// isLifecycleRaceErr) from a lifecycle Start/Stop/Delete, logging a warning and
+// continuing. Used by resources whose transition is a single call.
+func tolerateLifecycleRace(ctx context.Context, resourceKey string, err error) error {
+	if err == nil || isLifecycleRaceErr(err) {
+		if err != nil {
+			log.Warnf(ctx, "%s: lifecycle transition rejected as already in desired state: %v", resourceKey, err)
+		}
+		return nil
+	}
+	return err
 }
 
 // This is copied from the retries package of the databricks-sdk-go. It should be made public,

@@ -1,0 +1,6 @@
+# --planmode=offline is only supported by the direct engine; both plan and deploy reject it.
+errcode trace $CLI bundle plan --planmode=offline
+errcode trace $CLI bundle deploy --planmode=offline
+
+# Unknown --planmode values are rejected with an actionable error.
+errcode trace $CLI bundle plan --planmode=bogus

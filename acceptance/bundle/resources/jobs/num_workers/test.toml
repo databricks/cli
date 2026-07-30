@@ -1,0 +1,12 @@
+# Also run plan/deploy with --planmode=offline (direct engine only; rejected on terraform).
+# Deploy issues the same mutating requests with or without --planmode=offline — only the
+# remote reads (GETs, excluded from print_requests.py) differ — so the recorded
+# output is identical across variants. The " --planmode=offline" token is stripped from the
+# command echo so the >>> lines match the non-plan-mode variant.
+EnvMatrix.PLANMODE = ["", "--planmode=offline"]
+EnvMatrixExclude.no_local_on_terraform = ["PLANMODE=--planmode=offline", "DATABRICKS_BUNDLE_ENGINE=terraform"]
+EnvRepl.PLANMODE = false
+
+[[Repls]]
+Old = " --planmode=offline"
+New = ""

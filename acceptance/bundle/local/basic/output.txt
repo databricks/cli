@@ -1,0 +1,117 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan --planmode=offline
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Job reads during 'bundle plan --planmode=offline':
+
+>>> print_requests.py --get //jobs/get
+
+=== After out-of-band rename of bar: --planmode=offline plan still shows no drift:
+
+>>> [CLI] bundle plan --planmode=offline
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Job reads during --planmode=offline plan after drift:
+
+>>> print_requests.py --get //jobs/get
+
+=== Plan --planmode=offline as JSON:
+
+>>> [CLI] bundle plan --planmode=offline -o json
+{
+  "plan_version": 2,
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan_mode": "offline",
+  "plan": {
+    "resources.jobs.bar": {
+      "action": "skip",
+      "prior_state": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "bar-[UNIQUE_NAME]",
+        "queue": {
+          "enabled": true
+        }
+      }
+    },
+    "resources.jobs.foo": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.bar",
+          "label": "${resources.jobs.bar.id}"
+        }
+      ],
+      "action": "skip",
+      "prior_state": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "foo-[UNIQUE_NAME]",
+        "queue": {
+          "enabled": true
+        },
+        "tasks": [
+          {
+            "run_job_task": {
+              "job_id": [BAR_ID]
+            },
+            "task_key": "run_bar"
+          }
+        ]
+      }
+    }
+  }
+}
+
+=== Job reads during 'bundle plan --planmode=offline -o json':
+
+>>> print_requests.py --get //jobs/get
+
+=== Deploy --plan with --planmode=offline plan (warns):
+
+>>> [CLI] bundle deploy --planmode=offline
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Job reads during 'bundle deploy --planmode=offline':
+
+>>> print_requests.py --get //jobs/get --keep
+{
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[BAR_ID]"
+  }
+}
+
+=== Telemetry:
+plan_mode_used_offline true
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.bar
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+print_app_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps"))) | del(.body.url)' < out.requests.txt
+    rm out.requests.txt
+}
+
+title "Deploy with started=false: app created without compute (no_compute=true)"
+trace $CLI bundle deploy
+trace print_app_requests
+
+# Toggle started=false -> started=true under --planmode=offline. Offline has no
+# live status, but lifecycle.started changed in the config, so DoUpdate fires the
+# Start (and code deploy) based on the config change alone, without reading remote.
+title "Toggle started=false -> started=true under --planmode=offline: Start expected"
+trace update_file.py databricks.yml "started: false" "started: true"
+trace $CLI bundle deploy --planmode=offline
+trace print_app_requests
+
+# Redeploy offline with no change: lifecycle.started did not change, so no Start/Stop.
+title "No-op offline redeploy: no lifecycle requests"
+trace $CLI bundle deploy --planmode=offline
+trace print_app_requests

@@ -1026,7 +1026,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			remappedState = remappedStateFromUpdate
 		}
 
-		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, createdID, newState)
+		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, createdID, newState, &deployplan.PlanEntry{})
 		require.NoError(t, err)
 		if remoteStateFromWaitUpdate != nil {
 			remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)

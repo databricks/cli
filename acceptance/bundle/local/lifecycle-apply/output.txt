@@ -1,0 +1,44 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> update_file.py databricks.yml started: false started: true
+
+>>> errcode [CLI] bundle deploy --planmode=offline
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Cluster requests during 'bundle deploy --planmode=offline' (Start expected):
+
+>>> print_requests.py //clusters --sort
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/start",
+  "body": {
+    "cluster_id": "[UUID]"
+  }
+}
+
+>>> errcode [CLI] bundle deploy --planmode=offline
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Cluster requests during no-op offline redeploy (should be empty):
+
+>>> print_requests.py //clusters --sort
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.mycluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

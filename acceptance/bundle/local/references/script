@@ -1,0 +1,32 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy so that bar's ID is recorded in the local state and foo.notebook_path
+# resolves to /v1/<bar-id>.
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+# A --planmode=offline plan skips remote reads. foo.notebook_path references
+# bar.id, which is in bar's saved state, so the reference resolves offline and
+# the plan shows no drift.
+title "Offline plan resolves bar.id from saved state, no drift:\n"
+trace $CLI bundle plan --planmode=offline
+title "Job reads during offline plan (should be empty):\n"
+trace print_requests.py --get //jobs/get
+
+# Change only the literal prefix of the template (v1 -> v2). The reference is
+# unchanged. Offline resolution interpolates the *current* template, so it detects
+# the new prefix and plans an update — without reading remote.
+# The OLD/NEW args deliberately omit the leading slash: on Windows, Git Bash
+# rewrites a leading-slash argument into a C:\... path (MSYS path conversion),
+# which would corrupt the search string. "v1/${...}" is unique in the file.
+update_file.py databricks.yml "v1/\${resources.jobs.bar.id}" "v2/\${resources.jobs.bar.id}"
+title "Offline plan detects changed literal prefix (/v1 -> /v2):\n"
+trace $CLI bundle plan --planmode=offline
+title "Job reads during offline plan after prefix change (should be empty):\n"
+trace print_requests.py --get //jobs/get

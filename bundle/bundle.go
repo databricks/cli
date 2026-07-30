@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
@@ -161,6 +162,10 @@ type Bundle struct {
 	// Select contains resource selectors passed via --select flag.
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
+
+	// PlanMode is the plan-computation mode selected via --planmode. Empty is
+	// the default (full remote-aware planning). See deployplan.PlanMode.
+	PlanMode deployplan.PlanMode
 
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.

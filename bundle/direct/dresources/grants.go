@@ -164,13 +164,22 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removed
 	return changes
 }
 
-// removedGrantPrincipals returns principals present in the remote state but absent from the desired assignments.
+// removedGrantPrincipals returns principals present in the prior remote/saved
+// state but absent from the desired assignments. Grants has StateType ==
+// RemoteType == *GrantsState, so RemoteState (fresh remote, full mode) and
+// PriorState (saved state, populated in offline mode) are directly interchangeable:
+// we prefer the fresh remote when we have it, and fall back to saved state.
+// This makes --planmode=offline correctly remove principals that config no
+// longer declares, using the last-recorded set as the removal baseline.
 func removedGrantPrincipals(desiredAssignments []catalog.PrivilegeAssignment, entry *PlanEntry) []string {
 	if entry == nil {
 		return nil
 	}
-	remote, ok := entry.RemoteState.(*GrantsState)
-	if !ok || remote == nil {
+	prior, _ := entry.RemoteState.(*GrantsState)
+	if prior == nil {
+		prior, _ = entry.PriorState.(*GrantsState)
+	}
+	if prior == nil {
 		return nil
 	}
 
@@ -182,7 +191,7 @@ func removedGrantPrincipals(desiredAssignments []catalog.PrivilegeAssignment, en
 	}
 
 	var result []string
-	for _, a := range remote.EmbeddedSlice {
+	for _, a := range prior.EmbeddedSlice {
 		if _, ok := desired[a.Principal]; !ok {
 			result = append(result, a.Principal)
 		}

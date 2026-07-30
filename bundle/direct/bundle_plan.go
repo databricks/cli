@@ -72,13 +72,15 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	// Eagerly parse plan entries loaded from JSON:
 	// - NewState.Value contains raw JSON bytes; parse into typed structs and cache.
 	// - RemoteState is decoded as map[string]interface{}; round-trip through the
-	//   adapter's StateType to recover the correct typed struct so that type
-	//   assertions in resource adapters (e.g. entry.RemoteState.(*GrantsState))
+	//   adapter's RemoteType to recover the correct typed struct so that type
+	//   assertions in resource adapters (e.g. entry.RemoteState.(*AppRemote))
 	//   work identically whether the plan came from a file or from memory.
+	// - PriorState is likewise round-tripped through the adapter's StateType.
 	for resourceKey, entry := range plan.Plan {
 		hasNewState := entry.NewState != nil && len(entry.NewState.Value) > 0
 		hasRemoteState := entry.RemoteState != nil
-		if !hasNewState && !hasRemoteState {
+		hasPriorState := entry.PriorState != nil
+		if !hasNewState && !hasRemoteState && !hasPriorState {
 			continue
 		}
 
@@ -96,17 +98,19 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 		}
 
 		if hasRemoteState {
-			data, err := json.Marshal(entry.RemoteState)
+			typed, err := reMaterialize(entry.RemoteState, adapter.RemoteType())
 			if err != nil {
-				return fmt.Errorf("re-serializing remote state for %s: %w", resourceKey, err)
-			}
-			// RemoteType() returns a pointer type (e.g. *AppRemote); Elem() gives
-			// the struct type so reflect.New produces a single pointer, not double.
-			typed := reflect.New(adapter.RemoteType().Elem()).Interface()
-			if err := json.Unmarshal(data, typed); err != nil {
 				return fmt.Errorf("loading remote state for %s: %w", resourceKey, err)
 			}
 			entry.RemoteState = typed
+		}
+
+		if hasPriorState {
+			typed, err := reMaterialize(entry.PriorState, adapter.StateType())
+			if err != nil {
+				return fmt.Errorf("loading prior state for %s: %w", resourceKey, err)
+			}
+			entry.PriorState = typed
 		}
 	}
 
@@ -114,9 +118,27 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
+// reMaterialize round-trips a JSON-decoded map[string]interface{} through the
+// given typed pointer so subsequent type assertions on the value succeed.
+// ptrType must be a pointer type (e.g. *AppRemote); Elem() gives the struct
+// type so reflect.New produces a single pointer, not double.
+func reMaterialize(v any, ptrType reflect.Type) (any, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, fmt.Errorf("re-serializing: %w", err)
+	}
+	typed := reflect.New(ptrType.Elem()).Interface()
+	if err := json.Unmarshal(data, typed); err != nil {
+		return nil, err
+	}
+	return typed, nil
+}
+
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+//
+// mode controls how much of the remote state is consulted. See deployplan.PlanMode.
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, mode deployplan.PlanMode) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
 
 	err := b.init(client)
@@ -129,6 +151,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
+	plan.Mode = mode
+	offline := mode == deployplan.PlanModeOffline
 	b.Plan = plan
 
 	g, err := makeGraph(plan)
@@ -176,6 +200,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			if id == "" {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
 				return false
+			}
+
+			if offline {
+				// The resource is being deleted because it is absent from config;
+				// its remote status is irrelevant, so skip the remote read.
+				return true
 			}
 
 			remoteState, err := retryOnTransient(ctx, func() (any, error) {
@@ -242,33 +272,61 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		remoteState, err := retryOnTransient(ctx, func() (any, error) {
-			return adapter.DoRead(ctx, dbentry.ID)
-		})
-		if err != nil {
-			if apierr.IsMissing(err) {
-				remoteState = nil
-			} else {
-				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
-				return false
-			}
+		// PriorState is the last saved local state. It serves as the stand-in
+		// for remote when the planner does not read remote (--planmode=offline):
+		// apply-time consumers like removedGrantPrincipals fall back to it when
+		// entry.RemoteState is nil. In full mode a resource that reaches Update
+		// action has RemoteState populated by construction, so PriorState is
+		// unused; we skip writing it to keep the plan JSON compact.
+		if offline {
+			entry.PriorState = savedState
 		}
-
-		// We have a choice whether to include remoteState or remoteStateComparable from below.
-		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
-		entry.RemoteState = remoteState
 
 		var action deployplan.ActionType
 		var remoteDiff []structdiff.Change
-		var remoteStateComparable any
 
-		if remoteState != nil {
-			remoteStateComparable, err = adapter.RemapState(remoteState)
+		if !offline {
+			var remoteState any
+			remoteState, err = retryOnTransient(ctx, func() (any, error) {
+				return adapter.DoRead(ctx, dbentry.ID)
+			})
+			if err != nil {
+				if apierr.IsMissing(err) {
+					remoteState = nil
+				} else {
+					logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
+					return false
+				}
+			}
+
+			// entry.RemoteState carries the raw remote (RemoteType). Apply-time
+			// consumers type-assert on it for remote-only fields (cluster.State,
+			// app.ComputeStatus). Left nil in --planmode=offline — apply-time
+			// consumers must handle nil by skipping their remote-only paths.
+			entry.RemoteState = remoteState
+		}
+
+		// remoteStateComparable is the state-shaped remote used for drift
+		// classification. In full mode it comes from RemapState(remoteRead) —
+		// or is nil when the resource is missing remotely (a truthful signal
+		// that upstream drift-classification code needs to treat as "no remote").
+		// In modes that skip the remote read, use savedState as the stand-in.
+		var remoteStateComparable any
+		if offline {
+			remoteStateComparable = savedState
+		} else if entry.RemoteState != nil {
+			remoteStateComparable, err = adapter.RemapState(entry.RemoteState)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
 				return false
 			}
+		}
 
+		if remoteStateComparable != nil && !offline {
+			// In full mode with a live remote, compare the remapped remote
+			// against the desired state to detect out-of-band drift. In local
+			// mode remoteStateComparable is savedState which by construction
+			// matches the local diff, so there is nothing extra to detect.
 			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
@@ -282,23 +340,37 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
+		// In --local we pass nil as the raw remote param: it is typed as each
+		// resource's remote struct, which the saved state (a state-typed struct)
+		// is not. OverrideChangeDesc hooks read the reconciled value from
+		// ch.Remote (populated from saved state above) instead.
+		var rawRemote any
+		if !offline {
+			rawRemote = entry.RemoteState
+		}
+		err = addPerFieldActions(ctx, adapter, entry.Changes, rawRemote)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
 			return false
 		}
 
-		if remoteState == nil {
+		if entry.RemoteState == nil && !offline {
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
 			// because we know remote does not exist.
 			action = deployplan.Create
 		} else {
+			// In local-only mode the action is derived purely from the local diff
+			// (saved state vs config); remote existence is not consulted.
 			action = getMaxAction(entry.Changes)
 		}
 
-		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
-		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
-		b.RemoteStateCache.Store(resourceKey, remoteState)
+		// Note, remoteState may be updated post-deploy, so whether it can be used for
+		// variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy.
+		// In offline mode there is no remote read, so nothing is cached; reference
+		// resolution falls back to the target's saved state (see savedStateField).
+		if !offline {
+			b.RemoteStateCache.Store(resourceKey, entry.RemoteState)
+		}
 
 		// Validate that resources without DoUpdate don't have update actions
 		if action == deployplan.Update && !adapter.HasDoUpdate() {
@@ -780,9 +852,14 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 			remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 			if ok {
 				return structaccess.Get(remoteState, fieldPath)
-			} else {
-				return nil, fmt.Errorf("internal error: no entry in remote state cache for %q (remote-only)", targetResourceKey)
 			}
+			// --planmode=offline: fall back to the target's saved state.
+			// The field is remote-only, but state may carry the last observed
+			// value (state persists all fields the resource author declared).
+			if b.Plan.Mode == deployplan.PlanModeOffline {
+				return b.savedStateField(targetResourceKey, adapter, fieldPath)
+			}
+			return nil, fmt.Errorf("internal error: no entry in remote state cache for %q (remote-only)", targetResourceKey)
 		}
 		return nil, errDelayed
 	}
@@ -799,12 +876,88 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 		if ok {
 			return structaccess.Get(remoteState, fieldPath)
-		} else {
-			return nil, fmt.Errorf("internal error: no entry in remote state cache for %q", targetResourceKey)
 		}
+		// --planmode=offline: fall back to the target's saved state.
+		if b.Plan.Mode == deployplan.PlanModeOffline {
+			return b.savedStateField(targetResourceKey, adapter, fieldPath)
+		}
+		return nil, fmt.Errorf("internal error: no entry in remote state cache for %q", targetResourceKey)
 	}
 
 	return nil, errDelayed
+}
+
+// savedStateField reads a field from the target resource's last saved state
+// (state DB). Used in --planmode=offline as the fallback for reference
+// resolution when the cache has no remote entry. Returns errDelayed when the
+// target has no saved state (never deployed) or the field is absent — the
+// reference stays unresolved and will be resolved after apply.
+func (b *DeploymentBundle) savedStateField(targetResourceKey string, adapter *dresources.Adapter, fieldPath *structpath.PathNode) (any, error) {
+	dbentry, ok := b.StateDB.GetResourceEntry(targetResourceKey)
+	if !ok || len(dbentry.State) == 0 {
+		return nil, errDelayed
+	}
+	savedState, err := parseState(adapter.StateType(), dbentry.State)
+	if err != nil {
+		return nil, fmt.Errorf("parsing saved state for %q: %w", targetResourceKey, err)
+	}
+	value, err := structaccess.Get(savedState, fieldPath)
+	if err != nil || value == nil {
+		return nil, errDelayed
+	}
+	return value, nil
+}
+
+// resolveRefsFromOwnState is the offline-mode fallback for references that
+// per-reference interpolation could not resolve (typically a reference to a
+// remote-only target field, absent from the target's saved state). For each
+// still-unresolved field it looks up the field's own last-resolved value in
+// this resource's saved state, writes it into sv.Value, and drops the entry
+// from sv.Refs. Returns whether any field was resolved.
+//
+// originalRefs holds each field's ref string before interpolation ran. A field
+// is only eligible for the whole-field fallback if interpolation left its ref
+// completely untouched (current ref == original). If interpolation partially
+// resolved the field (e.g. resolved ${id} but not a remote-only ${x} in the
+// same value, or the literal template changed), its ref string differs, and
+// overwriting sv.Value with the old saved value would discard that work.
+func (b *DeploymentBundle) resolveRefsFromOwnState(ctx context.Context, resourceKey string, sv *structvar.StructVar, originalRefs map[string]string) bool {
+	dbentry, ok := b.StateDB.GetResourceEntry(resourceKey)
+	if !ok || len(dbentry.State) == 0 {
+		return false
+	}
+	adapter, err := b.getAdapterForKey(resourceKey)
+	if err != nil {
+		return false
+	}
+	savedState, err := parseState(adapter.StateType(), dbentry.State)
+	if err != nil {
+		log.Debugf(ctx, "offline: parsing saved state for %q failed: %v", resourceKey, err)
+		return false
+	}
+	resolved := false
+	for fieldPathStr, refString := range sv.Refs {
+		// Skip fields interpolation touched: only fall back for fields whose
+		// ref is still the original, untouched template.
+		if originalRefs[fieldPathStr] != refString {
+			continue
+		}
+		fieldPath, err := structpath.ParsePath(fieldPathStr)
+		if err != nil {
+			continue
+		}
+		value, err := structaccess.Get(savedState, fieldPath)
+		if err != nil || value == nil {
+			continue
+		}
+		if err := structaccess.Set(sv.Value, fieldPath, value); err != nil {
+			log.Debugf(ctx, "offline: setting %s.%s from saved state failed: %v", resourceKey, fieldPathStr, err)
+			continue
+		}
+		delete(sv.Refs, fieldPathStr)
+		resolved = true
+	}
+	return resolved
 }
 
 // resolveReferences processes all references in entry.NewState.Refs.
@@ -813,6 +966,14 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 	if !ok {
 		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no cache entry found for %q", errorPrefix, resourceKey))
 		return false
+	}
+
+	// Snapshot the original ref strings before interpolation so the offline
+	// own-state fallback below can tell which fields interpolation left
+	// completely untouched (see resolveRefsFromOwnState).
+	var originalRefs map[string]string
+	if isPreDeploy && b.Plan.Mode == deployplan.PlanModeOffline {
+		originalRefs = maps.Clone(sv.Refs)
 	}
 
 	var resolved bool
@@ -864,6 +1025,19 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 				logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s with value of %q: %w", errorPrefix, fieldPathStr, ref, err))
 				return false
 			}
+			resolved = true
+		}
+	}
+
+	// In offline mode, per-reference interpolation above cannot resolve a
+	// reference to a remote-only target field (e.g. object_id references the
+	// parent's endpoint_id, which is not stored in the parent's state). For any
+	// field still unresolved, fall back to the field's own last-resolved value
+	// from this resource's saved state. Interpolation runs first so that a
+	// changed literal template (e.g. /v1/${id} -> /v2/${id}) is honored; this
+	// only fills fields interpolation left behind.
+	if isPreDeploy && b.Plan.Mode == deployplan.PlanModeOffline && len(sv.Refs) > 0 {
+		if b.resolveRefsFromOwnState(ctx, resourceKey, sv, originalRefs) {
 			resolved = true
 		}
 	}

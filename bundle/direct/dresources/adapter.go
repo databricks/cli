@@ -72,7 +72,10 @@ type IResource interface {
 	WaitAfterCreate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
-	WaitAfterUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
+	// entry is the plan entry being applied; implementations may inspect
+	// entry.RemoteState (nil in --planmode=offline) to decide whether a wait
+	// that depends on live remote status should be skipped.
+	WaitAfterUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 
 	// [Optional] WaitAfterDelete waits for the resource to be fully removed after DoDelete returns.
 	// Useful for backends with asynchronous deletion: a follow-up create on the same name (recreate path)
@@ -541,12 +544,12 @@ func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) 
 // WaitAfterUpdate waits for the resource to become ready after update.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if available, otherwise returns nil.
-func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any) (any, error) {
+func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (any, error) {
 	if a.waitAfterUpdate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterUpdate.Call(ctx, id, newState)
+	outs, err := a.waitAfterUpdate.Call(ctx, id, newState, entry)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,9 @@
+Local = true
+Cloud = true
+RecordRequests = true
+# --planmode=offline skips the per-resource remote read, which only the direct engine performs.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# READPLAN=1 feeds the saved local plan to deploy --plan; the warning is asserted in script.
+EnvMatrix.READPLAN = ["", "1"]
+# databricks.yml is generated at runtime from the template.
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.local.json"]

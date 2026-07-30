@@ -1,0 +1,13 @@
+Local = true
+Cloud = true
+RecordRequests = true
+# --planmode=offline skips the per-resource remote read, which only the direct engine performs.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [".databricks", "databricks.yml"]
+
+# App deployment progress messages are non-deterministic on cloud (different status messages
+# per poll), so filter them out entirely.
+[[Repls]]
+Old = '(?m)^✓ [^\n]*\n'
+New = ""

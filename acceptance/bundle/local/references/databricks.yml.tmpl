@@ -1,0 +1,18 @@
+bundle:
+  name: local-references-$UNIQUE_NAME
+
+resources:
+  jobs:
+    bar:
+      name: bar-$UNIQUE_NAME
+
+    foo:
+      name: foo-$UNIQUE_NAME
+      tasks:
+        - task_key: run_bar
+          notebook_task:
+            # References bar.id, which is recorded in bar's saved state. Under
+            # --planmode=offline the id resolves from saved state (no remote read)
+            # and the *current* template is interpolated, so changing the literal
+            # prefix below is detected offline.
+            notebook_path: /v1/${resources.jobs.bar.id}

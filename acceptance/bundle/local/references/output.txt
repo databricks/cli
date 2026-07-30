@@ -1,0 +1,36 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-references-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Offline plan resolves bar.id from saved state, no drift:
+
+>>> [CLI] bundle plan --planmode=offline
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Job reads during offline plan (should be empty):
+
+>>> print_requests.py --get //jobs/get
+
+=== Offline plan detects changed literal prefix (/v1 -> /v2):
+
+>>> [CLI] bundle plan --planmode=offline
+update jobs.foo
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+=== Job reads during offline plan after prefix change (should be empty):
+
+>>> print_requests.py --get //jobs/get
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.bar
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/local-references-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -196,6 +197,18 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 	}
 
+	if entry.RemoteState == nil {
+		// --planmode=offline: no live status. Manage lifecycle only when
+		// lifecycle.started changed in the config; since it flipped, the prior
+		// state is the opposite of the desired one, so pass alreadyStarted =
+		// !desiredStarted. manageLifecycle tolerates the "already in that state"
+		// race on the Start/Stop call.
+		if !offlineLifecycleTransition(entry) {
+			return nil, nil
+		}
+		return nil, r.manageLifecycle(ctx, id, config, !*config.Lifecycle.Started)
+	}
+
 	return nil, r.manageLifecycle(ctx, id, config, remoteIsStarted(entry))
 }
 
@@ -210,14 +223,20 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 		if !alreadyStarted {
 			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
 			if err != nil {
-				return err
-			}
-			startedApp, err := startWaiter.Get()
-			if err != nil {
-				return err
-			}
-			if err := appdeploy.WaitForDeploymentToComplete(ctx, r.client, startedApp); err != nil {
-				return err
+				// The app may already be started (offline fires without a live read).
+				// Skip the wait and proceed to deploy the latest code.
+				if !isLifecycleRaceErr(err) {
+					return err
+				}
+				log.Warnf(ctx, "apps.%s: start rejected as already running: %v", id, err)
+			} else {
+				startedApp, err := startWaiter.Get()
+				if err != nil {
+					return err
+				}
+				if err := appdeploy.WaitForDeploymentToComplete(ctx, r.client, startedApp); err != nil {
+					return err
+				}
 			}
 		}
 		deployment := appdeploy.BuildDeployment(config.SourceCodePath, config.Config, config.GitSource)
@@ -229,7 +248,7 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 		if alreadyStarted {
 			stopWaiter, err := r.client.Apps.Stop(ctx, apps.StopAppRequest{Name: id})
 			if err != nil {
-				return err
+				return tolerateLifecycleRace(ctx, "apps."+id, err)
 			}
 			if _, err = stopWaiter.Get(); err != nil {
 				return err
@@ -250,11 +269,15 @@ func hasAppChanges(entry *PlanEntry) bool {
 // git_source) while the app has no active deployment. DoRead reads them only from the
 // active deployment, so before the first deploy (or once a stop clears it) the remote
 // side is empty and the diff is spurious; it applies on the next start (manageLifecycle).
+//
+// remote is nil in --planmode=offline (no plan-time DoRead) and when the resource
+// does not exist remotely; treat that as "no active deployment" so the skip fires
+// on the same path without a nil deref.
 func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
 	// Prefix(1) so a nested diff (e.g. config.command) matches its top-level field.
 	switch path.Prefix(1).String() {
 	case "source_code_path", "config", "git_source":
-		if remote.ActiveDeployment == nil {
+		if remote == nil || remote.ActiveDeployment == nil {
 			change.Action = deployplan.Skip
 			change.Reason = "no active deployment"
 		}

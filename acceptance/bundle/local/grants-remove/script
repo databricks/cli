@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Full-mode deploy: two principals granted.
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+# Remove the second principal by stripping lines marked "# TO_DELETE".
+# In offline mode entry.RemoteState is nil, so removedGrantPrincipals reads
+# from entry.PriorState to compute the removal set from the last saved state.
+grep -v '# TO_DELETE' databricks.yml > databricks.yml.new && mv databricks.yml.new databricks.yml
+
+trace $CLI bundle deploy --planmode=offline
+title "Permissions requests during 'bundle deploy --planmode=offline':\n"
+trace print_requests.py //permissions

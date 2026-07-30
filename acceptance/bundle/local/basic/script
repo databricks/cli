@@ -1,0 +1,62 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy both jobs so that they are recorded in the local state. foo references
+# ${resources.jobs.bar.id}.
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+BAR_ID=$(read_id.py bar)
+
+# A --planmode=offline plan reports no drift without reading the remote state of the jobs:
+# no GET is issued. The ${resources.jobs.bar.id} reference still resolves because
+# it comes from the local state, not a remote read.
+trace $CLI bundle plan --planmode=offline
+title "Job reads during 'bundle plan --planmode=offline':\n"
+trace print_requests.py --get //jobs/get
+
+# Rename bar out-of-band (simulates remote drift). --planmode=offline plan still shows
+# no changes: it never reads remote state, so the rename is invisible to it.
+edit_resource.py jobs $BAR_ID <<'EOF'
+r["name"] = r["name"] + "-drifted"
+EOF
+rm -f out.requests.txt
+
+title "After out-of-band rename of bar: --planmode=offline plan still shows no drift:\n"
+trace $CLI bundle plan --planmode=offline
+title "Job reads during --planmode=offline plan after drift:\n"
+trace print_requests.py --get //jobs/get
+
+# The JSON plan is self-describing: plan_mode is "offline", so deploy --plan can
+# warn before applying it. remote_state is absent (nothing was fetched); prior_state
+# carries the last saved local state and is what drift classification and reference
+# resolution read in offline mode.
+title "Plan --planmode=offline as JSON:\n"
+trace $CLI bundle plan --planmode=offline -o json | tee plan.local.json
+title "Job reads during 'bundle plan --planmode=offline -o json':\n"
+trace print_requests.py --get //jobs/get
+
+# deploy --plan with a --planmode=offline plan warns that the plan may miss out-of-band drift.
+# READPLAN matrix runs this twice: once applying the saved plan (warns), once without.
+title "Deploy --plan with --planmode=offline plan (warns):\n"
+$CLI bundle deploy $(readplanarg plan.local.json) > LOG.deploy_plan 2>&1
+# contains.py echoes stdin, so route its passthrough to a LOG file: the deploy
+# output (and the --planmode=offline warning, present only when READPLAN=1) must not leak
+# into output.txt or the two matrix variants would diverge.
+cat LOG.deploy_plan | contains.py '!panic' '!internal error' > LOG.contains
+if [[ -n "$READPLAN" ]]; then
+    cat LOG.deploy_plan | contains.py 'does not reflect the remote state' > LOG.contains
+fi
+rm -f out.requests.txt
+
+# A --planmode=offline deploy likewise does not read remote state up front and reports its use via telemetry.
+trace $CLI bundle deploy --planmode=offline
+title "Job reads during 'bundle deploy --planmode=offline':\n"
+trace print_requests.py --get //jobs/get --keep
+title "Telemetry:\n"
+print_telemetry_bool_values | grep '^plan_mode_used_offline '

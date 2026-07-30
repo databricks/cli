@@ -1,0 +1,14 @@
+bundle:
+  name: local-$UNIQUE_NAME
+
+resources:
+  jobs:
+    bar:
+      name: bar-$UNIQUE_NAME
+
+    foo:
+      name: foo-$UNIQUE_NAME
+      tasks:
+        - task_key: run_bar
+          run_job_task:
+            job_id: ${resources.jobs.bar.id}

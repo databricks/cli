@@ -12,7 +12,7 @@ cleanup() {
 trap cleanup EXIT
 
 title "Deploy bundle with catalog"
-trace $CLI bundle deploy
+trace $CLI bundle deploy $PLANMODE
 
 title "Assert the catalog is created"
 trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment, properties}" | normalize_uc_payload.py
@@ -21,7 +21,7 @@ title "Update catalog comment"
 update_file.py databricks.yml "This catalog was created from DABs" "Updated comment from DABs"
 
 title "Redeploy with updated comment"
-trace $CLI bundle deploy
+trace $CLI bundle deploy $PLANMODE
 
 title "Assert the catalog comment is updated"
 trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment}"
