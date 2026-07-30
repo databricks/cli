@@ -1,0 +1,3 @@
+# The command writes a bundle under generated/; those are generated artifacts,
+# not committed inputs, so exclude them from the repo-diff check.
+Ignore = ["generated", "generated-docker"]
