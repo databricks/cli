@@ -2,7 +2,6 @@ package configsync
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -46,10 +45,12 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // Source values and sibling candidates are captured with exact locations
 // before changes are resolved. This preserves references from the physical
 // YAML source without loading files again after routing.
+// Replacements without a source value are omitted so one restoration miss
+// cannot either hardcode a reference or block unrelated changes.
 // Restoration counts by mechanism are accumulated into stats (used for
 // telemetry); pass nil when counters are not needed (the counter methods are
 // nil-safe).
-func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange, stats *RestoreStats) error {
+func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange, stats *RestoreStats) []FieldChange {
 	resolved := b.Config.Value()
 
 	// Mirror mutator.lookup's source-linked deployment override: when enabled,
@@ -79,18 +80,21 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 		}
 	}
 
-	for i := range fieldChanges {
-		fc := &fieldChanges[i]
+	result := make([]FieldChange, 0, len(fieldChanges))
+	for _, fieldChange := range fieldChanges {
+		fc := &fieldChange
 
 		var newValue any
 		switch fc.Change.Operation {
 		case OperationReplace:
 			if !fc.sourceValue.IsValid() {
-				return fmt.Errorf("source value unavailable for %s in %s", fc.FieldCandidates[0], fc.FilePath)
+				log.Debugf(ctx, "variable restoration: skipping %s in %s because its source value is unavailable", fc.FieldCandidates[0], fc.FilePath)
+				continue
 			}
 			newValue = restoreOriginalRefs(fc.Change.Value, fc.sourceValue, resolved, stats)
 		case OperationAdd:
 			if len(fc.sourceSiblings) == 0 {
+				result = append(result, *fc)
 				continue
 			}
 			if fc.Change.sequenceElementAdd {
@@ -99,14 +103,16 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 				newValue = restoreFromSiblings(fc.Change.Value, fc.sourceSiblings, resolved, stats)
 			}
 		case OperationUnknown, OperationRemove, OperationSkip:
+			result = append(result, *fc)
 			continue
 		}
 
 		updated := *fc.Change
 		updated.Value = newValue
 		fc.Change = &updated
+		result = append(result, *fc)
 	}
-	return nil
+	return result
 }
 
 // resourceIDLookup returns a function that resolves resource keys to their

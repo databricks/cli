@@ -496,6 +496,9 @@ type renamePair struct {
 type unresolvedRenameGroup struct {
 	removePaths []string
 	addPaths    []string
+	key         string
+	oldKeys     []string
+	newKeys     []string
 }
 
 var errAmbiguousSource = errors.New("source location is ambiguous")
@@ -643,15 +646,17 @@ func pairRenames(changes ResourceChanges) (map[string]renamePair, map[string]str
 			}
 		}
 		if len(unmatchedRemoves) > 0 && len(unmatchedAdds) > 0 {
-			group := unresolvedRenameGroup{}
+			group := unresolvedRenameGroup{key: g.removes[unmatchedRemoves[0]].key}
 			for index, remove := range g.removes {
 				if !usedRemoves[index] {
 					group.removePaths = append(group.removePaths, remove.path)
+					group.oldKeys = append(group.oldKeys, remove.value)
 				}
 			}
 			for index, add := range g.adds {
 				if !usedAdds[index] {
 					group.addPaths = append(group.addPaths, add.path)
+					group.newKeys = append(group.newKeys, add.value)
 				}
 			}
 			unresolved = append(unresolved, group)
@@ -659,6 +664,53 @@ func pairRenames(changes ResourceChanges) (map[string]renamePair, map[string]str
 	}
 
 	return pairsByAdd, pairedRemoves, unresolved
+}
+
+func unresolvedRenameContainsKey(group unresolvedRenameGroup, key string) bool {
+	return slices.Contains(group.oldKeys, key) || slices.Contains(group.newKeys, key)
+}
+
+func valueUsesUnresolvedRename(value any, group unresolvedRenameGroup) bool {
+	switch value := value.(type) {
+	case map[string]any:
+		if key, ok := value[group.key].(string); ok && unresolvedRenameContainsKey(group, key) {
+			return true
+		}
+		for _, child := range value {
+			if valueUsesUnresolvedRename(child, group) {
+				return true
+			}
+		}
+	case []any:
+		for _, child := range value {
+			if valueUsesUnresolvedRename(child, group) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func changeUsesUnresolvedRename(fieldPath string, change *ConfigChangeDesc, group unresolvedRenameGroup) bool {
+	path, err := structpath.ParsePath(fieldPath)
+	if err != nil {
+		return false
+	}
+	for _, component := range path.AsSlice() {
+		key, value, ok := component.KeyValue()
+		if ok && key == group.key && unresolvedRenameContainsKey(group, value) {
+			return true
+		}
+	}
+
+	if key, ok := path.StringKey(); ok && key == group.key {
+		for _, value := range []any{change.configValue, change.Value} {
+			if value, ok := value.(string); ok && unresolvedRenameContainsKey(group, value) {
+				return true
+			}
+		}
+	}
+	return valueUsesUnresolvedRename(change.configValue, group) || valueUsesUnresolvedRename(change.Value, group)
 }
 
 func fieldChangeSequenceBlock(fieldChange FieldChange) (string, error) {
@@ -814,6 +866,48 @@ func positionalIdentity(value any, field string) (string, bool) {
 		text = strings.ToLower(text)
 	}
 	return text, true
+}
+
+func sequencePairCanApplyIndependently(fieldPath string, oldValues, newValues []any, pair sequencePair) bool {
+	identityField := positionalIdentityField(fieldPath)
+	if identityField == "" {
+		// Deferring structural edits must not leave either side of this replacement
+		// indistinguishable from another element in the old or desired sequence.
+		oldValue := oldValues[pair.oldIndex]
+		newValue := newValues[pair.newIndex]
+		for index, value := range oldValues {
+			if index != pair.oldIndex && (structdiff.IsEqual(value, oldValue) || structdiff.IsEqual(value, newValue)) {
+				return false
+			}
+		}
+		for index, value := range newValues {
+			if index != pair.newIndex && (structdiff.IsEqual(value, oldValue) || structdiff.IsEqual(value, newValue)) {
+				return false
+			}
+		}
+		return true
+	}
+
+	oldIdentity, oldOK := positionalIdentity(oldValues[pair.oldIndex], identityField)
+	newIdentity, newOK := positionalIdentity(newValues[pair.newIndex], identityField)
+	if !oldOK || !newOK || oldIdentity != newIdentity {
+		return false
+	}
+
+	oldCount, newCount := 0, 0
+	for _, value := range oldValues {
+		identity, ok := positionalIdentity(value, identityField)
+		if ok && identity == oldIdentity {
+			oldCount++
+		}
+	}
+	for _, value := range newValues {
+		identity, ok := positionalIdentity(value, identityField)
+		if ok && identity == newIdentity {
+			newCount++
+		}
+	}
+	return oldCount == 1 && newCount == 1
 }
 
 func planSequenceChanges(fieldPath string, oldValues, newValues []any) (sequencePlan, error) {
@@ -1074,9 +1168,6 @@ func chooseSequenceBlock(
 	// cannot distinguish a rename from an independent remove and add.
 	replacementBlocks := map[string]struct{}{selected.file + "\x00" + selected.parent.String(): {}}
 	for _, oldIndex := range plan.removals {
-		if oldIndex <= previousOld || oldIndex >= nextOld {
-			continue
-		}
 		for _, ref := range elementRefs[oldIndex] {
 			block := blockForRef(ref)
 			replacementBlocks[block.file+"\x00"+block.parent.String()] = struct{}{}
@@ -1177,7 +1268,7 @@ func expandSequenceReplacement(
 		}
 	}
 
-	var result []FieldChange
+	var result, independentResult []FieldChange
 	fieldPattern, err := structpath.ParsePattern(fieldPath)
 	if err != nil {
 		return nil, true, err
@@ -1187,6 +1278,7 @@ func expandSequenceReplacement(
 			continue
 		}
 		elementPath := structpath.NewPatternIndex(fieldPattern, pair.oldIndex).String()
+		var pairChanges []FieldChange
 		for _, valueChange := range diffValues(oldValues[pair.oldIndex], newValues[pair.newIndex]) {
 			syntheticPath, err := appendRelativePath(elementPath, valueChange.path)
 			if err != nil {
@@ -1201,13 +1293,16 @@ func expandSequenceReplacement(
 			if err != nil {
 				return nil, true, err
 			}
-			result = append(result, routed...)
+			pairChanges = append(pairChanges, routed...)
+		}
+		result = append(result, pairChanges...)
+		if sequencePairCanApplyIndependently(fieldPath, oldValues, newValues, pair) {
+			independentResult = append(independentResult, pairChanges...)
 		}
 	}
 	if ambiguousPlan {
-		// Every pair in an ambiguous plan is shared by all valid matches. Its
-		// field edits are safe, but the unmatched structural edits are not.
-		return result, true, nil
+		// Independently identifiable pairs cannot collide with the deferred structural edits.
+		return independentResult, true, nil
 	}
 
 	var additions []FieldChange
@@ -1215,9 +1310,8 @@ func expandSequenceReplacement(
 		block, err := chooseSequenceBlock(newIndex, plan, elementRefs, parentRefs, b.Config.Bundle.Target)
 		if err != nil {
 			if errors.Is(err, errAmbiguousSource) {
-				// Matched elements have independent source locations. Keep their
-				// edits while deferring the inseparable removals and additions.
-				return result, true, nil
+				// Only pairs that cannot collide with deferred elements can proceed.
+				return independentResult, true, nil
 			}
 			return nil, true, fmt.Errorf("placing new element in %s: %w", fullPath, err)
 		}
@@ -1342,64 +1436,5 @@ func coalesceSequenceElementAdds(fieldChanges []FieldChange) ([]FieldChange, err
 		change.Value = append(slices.Clone(existingValues), values...)
 		existing.Change = &change
 	}
-	return result, nil
-}
-
-func resolveChangesWithSourceMapping(b *bundle.Bundle, configChanges Changes, sources *sourceIndex) ([]FieldChange, error) {
-	var result []FieldChange
-	for _, resourceKey := range slices.Sorted(maps.Keys(configChanges)) {
-		resourceChanges := configChanges[resourceKey]
-		pairsByAdd, pairedRemoves, unresolvedGroups := pairRenames(resourceChanges)
-		ambiguousPaths := make(map[string]struct{})
-		for _, group := range unresolvedGroups {
-			if err := validateUnresolvedRenameGroup(b, sources, resourceKey, resourceChanges, group); err != nil {
-				if errors.Is(err, errAmbiguousSource) {
-					// Keep both sides of an unresolved rename together while allowing
-					// unrelated changes in the same unattended sync to proceed.
-					for _, path := range group.removePaths {
-						ambiguousPaths[path] = struct{}{}
-					}
-					for _, path := range group.addPaths {
-						ambiguousPaths[path] = struct{}{}
-					}
-					continue
-				}
-				return nil, fmt.Errorf("routing changes for %s: %w", resourceKey, err)
-			}
-		}
-
-		for _, fieldPath := range slices.Sorted(maps.Keys(resourceChanges)) {
-			change := resourceChanges[fieldPath]
-			if _, ambiguous := ambiguousPaths[fieldPath]; ambiguous {
-				continue
-			}
-			if _, paired := pairedRemoves[fieldPath]; paired {
-				continue
-			}
-			if pair, paired := pairsByAdd[fieldPath]; paired {
-				routed, err := routeRename(b, sources, resourceKey, pair, resourceChanges[pair.removePath], change)
-				if err != nil {
-					return nil, err
-				}
-				result = append(result, routed...)
-				continue
-			}
-
-			routed, err := routeChange(b, sources, resourceKey, fieldPath, change)
-			if err != nil {
-				if errors.Is(err, errAmbiguousSource) {
-					continue
-				}
-				return nil, err
-			}
-			result = append(result, routed...)
-		}
-	}
-
-	result, err := coalesceSequenceElementAdds(result)
-	if err != nil {
-		return nil, err
-	}
-	sortFieldChanges(result)
 	return result, nil
 }

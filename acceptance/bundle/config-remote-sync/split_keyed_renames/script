@@ -27,6 +27,7 @@ r["tasks"].append({
     "timeout_seconds": 200,
     "notebook_task": {"notebook_path": "/Workspace/shared-task"},
 })
+next(t for t in r["tasks"] if t["task_key"] == "consumer")["depends_on"][0]["task_key"] = "etl_new"
 EOF
 
 echo
@@ -43,6 +44,7 @@ edit_resource.py jobs "$independent_replacement_id" <<'EOF'
 task = next(t for t in r["tasks"] if t["task_key"] == "etl_new")
 task["task_key"] = "etl"
 task["timeout_seconds"] = 100
+next(t for t in r["tasks"] if t["task_key"] == "consumer")["depends_on"][0]["task_key"] = "etl"
 EOF
 
 title "Rename a target-only task"

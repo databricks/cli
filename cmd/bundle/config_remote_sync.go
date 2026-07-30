@@ -116,10 +116,7 @@ Examples:
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
 
-				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, &stats.Restore); err != nil {
-					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResolveFailed
-					return fmt.Errorf("failed to restore variable references: %w", err)
-				}
+				fieldChanges = configsync.RestoreVariableReferences(ctx, b, fieldChanges, &stats.Restore)
 
 				files, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
 				if err != nil {

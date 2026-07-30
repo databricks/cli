@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRestoreVariableReferencesFailsWithoutSourceValue(t *testing.T) {
+func TestRestoreVariableReferencesSkipsOnlyChangeWithoutSourceValue(t *testing.T) {
 	changes := []FieldChange{{
 		FilePath:        "databricks.yml",
 		FieldCandidates: []string{"resources.jobs.test.name"},
@@ -17,10 +17,17 @@ func TestRestoreVariableReferencesFailsWithoutSourceValue(t *testing.T) {
 			Operation: OperationReplace,
 			Value:     "resolved value",
 		},
+	}, {
+		FilePath:        "databricks.yml",
+		FieldCandidates: []string{"resources.jobs.test.timeout_seconds"},
+		Change: &ConfigChangeDesc{
+			Operation: OperationRemove,
+		},
 	}}
 
-	err := RestoreVariableReferences(t.Context(), &bundle.Bundle{}, changes, nil)
-	require.ErrorContains(t, err, "source value unavailable for resources.jobs.test.name")
+	result := RestoreVariableReferences(t.Context(), &bundle.Bundle{}, changes, nil)
+	require.Len(t, result, 1)
+	assert.Equal(t, "resources.jobs.test.timeout_seconds", result[0].FieldCandidates[0])
 }
 
 // TestRestoreOriginalRefs_HardcodedFieldNotRewritten fences the Replace safety

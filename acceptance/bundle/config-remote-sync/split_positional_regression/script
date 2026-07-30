@@ -13,7 +13,7 @@ edit_clusters_id="$(read_id.py -t dev edit_clusters_in_both_scopes)"
 append_cluster_id="$(read_id.py -t dev append_cluster_after_target)"
 remove_target_cluster_id="$(read_id.py -t dev remove_target_cluster)"
 remove_top_edit_target_id="$(read_id.py -t dev remove_top_cluster_and_edit_target)"
-remove_duplicate_edit_stable_id="$(read_id.py -t dev remove_duplicate_and_edit_stable)"
+cross_block_renames_id="$(read_id.py -t dev cross_block_renames_with_stable_edit)"
 remove_shared_survivor_id="$(read_id.py -t dev remove_target_cluster_with_shared_survivor)"
 replace_cluster_list_id="$(read_id.py -t dev replace_cluster_list)"
 insert_between_repeated_id="$(read_id.py -t dev insert_between_repeated_target_entries)"
@@ -70,24 +70,30 @@ r["clusters"].insert(0, {"label": "default", "num_workers": 7})
 EOF
 mv databricks.yml.ambiguous-backup databricks.yml
 
-title "Sync a stable edit alongside an ambiguous duplicate removal"
-edit_resource.py pipelines "$remove_duplicate_edit_stable_id" <<'EOF'
-next(c for c in r["clusters"] if c.get("label") == "stable")["num_workers"] = 99
-r["clusters"].pop()
+title "Sync a stable cluster edit alongside cross-block renames"
+edit_resource.py pipelines "$cross_block_renames_id" <<'EOF'
+r["clusters"] = [
+    {"label": "renamed", "num_workers": 18},
+    {"label": "top_renamed", "num_workers": 7},
+    {"label": "stable", "num_workers": 99},
+]
 EOF
 
 echo
 cp databricks.yml databricks.yml.ambiguous-backup
-$CLI bundle config-remote-sync -t dev --save --select-ids "pipelines:$remove_duplicate_edit_stable_id"
+$CLI bundle config-remote-sync -t dev --save --select-ids "pipelines:$cross_block_renames_id"
 
-title "The independently matched cluster edit changes"
+title "Only the stable target cluster changes"
 echo
 trace diff.py databricks.yml.ambiguous-backup databricks.yml
 
 # Restore the remote and local resource for the remaining independent scenarios.
-edit_resource.py pipelines "$remove_duplicate_edit_stable_id" <<'EOF'
-next(c for c in r["clusters"] if c.get("label") == "stable")["num_workers"] = 15
-r["clusters"].append({"label": "duplicate", "num_workers": 1})
+edit_resource.py pipelines "$cross_block_renames_id" <<'EOF'
+r["clusters"] = [
+    {"label": "default", "num_workers": 7},
+    {"label": "maintenance", "num_workers": 18},
+    {"label": "stable", "num_workers": 15},
+]
 EOF
 mv databricks.yml.ambiguous-backup databricks.yml
 

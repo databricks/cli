@@ -45,16 +45,14 @@ resources:
         - notebook:
             path: /Workspace/remove-top-cluster-and-edit-target
 
-    remove_duplicate_and_edit_stable:
-      name: remove-duplicate-and-edit-stable-$UNIQUE_NAME
+    cross_block_renames_with_stable_edit:
+      name: cross-block-renames-with-stable-edit-$UNIQUE_NAME
       clusters:
-        - label: stable
-          num_workers: 15
-        - label: duplicate
-          num_workers: 1
+        - label: default
+          num_workers: 7
       libraries:
         - notebook:
-            path: /Workspace/remove-duplicate-and-edit-stable
+            path: /Workspace/cross-block-renames-with-stable-edit
 
     remove_target_cluster_with_shared_survivor:
       name: remove-target-cluster-with-shared-survivor-$UNIQUE_NAME
@@ -159,10 +157,12 @@ targets:
             - label: stable
               num_workers: 15
 
-        remove_duplicate_and_edit_stable:
+        cross_block_renames_with_stable_edit:
           clusters:
-            - label: duplicate
-              num_workers: 1
+            - label: maintenance
+              num_workers: 18
+            - label: stable
+              num_workers: 15
 
         remove_target_cluster_with_shared_survivor:
           clusters:

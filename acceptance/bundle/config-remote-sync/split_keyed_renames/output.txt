@@ -7,6 +7,8 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.independent_task_replacement
+  tasks[task_key='consumer'].depends_on[task_key='etl']: remove
+  tasks[task_key='consumer'].depends_on[task_key='etl_new']: add
   tasks[task_key='etl']: remove
   tasks[task_key='etl_new']: add
   timeout_seconds: replace
@@ -80,14 +82,14 @@ Resource: resources.jobs.target_only_list
 +          task_key: a_brand_new
      independent_task_replacement:
        timeout_seconds: 201
-@@ -38,5 +41,5 @@
+@@ -44,5 +47,5 @@
      shifted_delete_rename:
        tasks:
 -        - task_key: m_top
 +        - task_key: z_top_renamed
            timeout_seconds: 610
            notebook_task:
-@@ -45,4 +48,11 @@
+@@ -51,4 +54,11 @@
      target_only_list:
        timeout_seconds: 800
 +      tasks:
@@ -99,28 +101,28 @@ Resource: resources.jobs.target_only_list
 +          task_key: b_brand_top
 
  targets:
-@@ -53,5 +63,5 @@
+@@ -59,5 +69,5 @@
          rename_target_task:
            tasks:
 -            - task_key: t1
 +            - task_key: t1b
                timeout_seconds: 40
                notebook_task:
-@@ -60,5 +70,5 @@
+@@ -66,5 +76,5 @@
          rename_tasks_in_both_blocks:
            tasks:
 -            - task_key: a
 +            - task_key: a_new_target
                notebook_task:
                  notebook_path: /Workspace/rename-both-target
-@@ -66,5 +76,5 @@
+@@ -72,5 +82,5 @@
          rename_target_and_add_top_level:
            tasks:
 -            - task_key: t
 +            - task_key: t_new
                notebook_task:
                  notebook_path: /Workspace/rename-and-add-target
-@@ -80,10 +90,5 @@
+@@ -86,10 +96,5 @@
 
          shifted_delete_rename:
 -          tasks:

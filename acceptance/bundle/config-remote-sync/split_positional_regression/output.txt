@@ -1,262 +1,317 @@
-go: downloading github.com/spf13/cobra v1.10.2
-go: downloading github.com/databricks/databricks-sdk-go v0.160.0
-go: downloading golang.org/x/sync v0.22.0
-go: downloading github.com/spf13/pflag v1.0.10
-go: downloading golang.org/x/oauth2 v0.36.0
-go: downloading gopkg.in/ini.v1 v1.67.3
-go: downloading github.com/google/uuid v1.6.0
-go: downloading github.com/charmbracelet/huh v1.0.0
-go: downloading golang.org/x/mod v0.38.0
-go: downloading github.com/pkg/browser v0.0.0-[NUMID]-5ac0b6a4141c
-go: downloading github.com/charmbracelet/bubbles v1.0.0
-go: downloading github.com/charmbracelet/bubbletea v1.3.10
-go: downloading github.com/hashicorp/terraform-exec v0.25.2
-go: downloading github.com/charmbracelet/lipgloss v1.1.0
-go: downloading github.com/muesli/termenv v0.16.0
-go: downloading github.com/sabhiram/go-gitignore v0.0.0-[NUMID]-525f6e181f06
-go: downloading github.com/mattn/go-isatty v0.0.22
-go: downloading github.com/zalando/go-keyring v0.2.8
-go: downloading go.yaml.in/yaml/v3 v3.0.4
-go: downloading github.com/jackc/pgx/v5 v5.10.0
-go: downloading github.com/palantir/pkg/yamlpatch v1.5.0
-go: downloading golang.org/x/text v0.40.0
-go: downloading github.com/Masterminds/semver/v3 v3.5.0
-go: downloading github.com/hashicorp/terraform-json v0.28.0
-go: downloading github.com/gorilla/websocket v1.5.3
-go: downloading golang.org/x/net v0.57.0
-go: downloading github.com/hashicorp/go-version v1.9.0
-go: downloading github.com/hashicorp/hc-install v0.9.5
-go: downloading golang.org/x/crypto v0.54.0
-go: downloading github.com/tailscale/hujson v0.0.0-[NUMID]-992244df8c5a
-go: downloading github.com/hexops/gotextdiff v1.0.3
-go: downloading github.com/BurntSushi/toml v1.6.0
-libs/env/loader.go:6:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/log/sdk.go:10:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/alerts.go:9:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/catalog.go:8:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/alerts.go:10:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/apps.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/catalog.go:10:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/clusters.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/dashboard.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/database_catalog.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/permission_types.go:6:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/job.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/mlflow_experiment.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/permission_types.go:9:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/postgres_branch.go:10:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/model_serving_endpoint.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/alerts.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/vector_search_endpoint.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/secret_scope.go:9:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/variable/resolve_service_principal.go:8:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/variable/resolve_notification_destination.go:8:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/databrickscfg/loader.go:12:2: gopkg.in/ini.v1@v1.67.3: Get "https://proxy.golang.org/gopkg.in/ini.v1/@v/v1.67.3.zip": Bad Request
-libs/auth/storage/cache.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/auth/storage/cache.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/auth/storage/keyring.go:10:2: github.com/google/uuid@v1.6.0: Get "https://proxy.golang.org/github.com/google/uuid/@v/v1.6.0.zip": Bad Request
-libs/auth/storage/keyring.go:11:2: github.com/zalando/go-keyring@v0.2.8: Get "https://proxy.golang.org/github.com/zalando/go-keyring/@v/v0.2.8.zip": Bad Request
-libs/auth/storage/dual_writing_cache.go:6:2: golang.org/x/oauth2@v0.36.0: Get "https://proxy.golang.org/golang.org/x/oauth2/@v/v0.36.0.zip": Bad Request
-libs/auth/credentials.go:9:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/auth/credentials.go:10:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/auth/credentials.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/dyn/convert/sdk_native_types.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/dyn/convert/sdk_native_types.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/dyn/convert/sdk_native_types.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/dyn/yamlloader/loader.go:10:2: go.yaml.in/yaml/v3@v3.0.4: Get "https://proxy.golang.org/go.yaml.in/yaml/v3/@v/v3.0.4.zip": Bad Request
-internal/build/info.go:11:2: golang.org/x/mod@v0.38.0: Get "https://proxy.golang.org/golang.org/x/mod/@v/v0.38.0.zip": Bad Request
-libs/cmdio/pager.go:9:2: github.com/charmbracelet/bubbles@v1.0.0: Get "https://proxy.golang.org/github.com/charmbracelet/bubbles/@v/v1.0.0.zip": Bad Request
-libs/cmdio/io.go:10:2: github.com/charmbracelet/bubbletea@v1.3.10: Get "https://proxy.golang.org/github.com/charmbracelet/bubbletea/@v/v1.3.10.zip": Bad Request
-libs/cmdio/color.go:10:2: github.com/charmbracelet/lipgloss@v1.1.0: Get "https://proxy.golang.org/github.com/charmbracelet/lipgloss/@v/v1.1.0.zip": Bad Request
-libs/flags/log_file_flag.go:8:2: github.com/spf13/cobra@v1.10.2: Get "https://proxy.golang.org/github.com/spf13/cobra/@v/v1.10.2.zip": Bad Request
-libs/cmdio/tty.go:7:2: github.com/mattn/go-isatty@v0.0.22: Get "https://proxy.golang.org/github.com/mattn/go-isatty/@v/v0.0.22.zip": Bad Request
-libs/cmdio/color.go:11:2: github.com/muesli/termenv@v0.16.0: Get "https://proxy.golang.org/github.com/muesli/termenv/@v/v0.16.0.zip": Bad Request
-bundle/direct/dresources/app.go:17:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/direct/dresources/dashboard.go:20:2: golang.org/x/sync@v0.22.0: Get "https://proxy.golang.org/golang.org/x/sync/@v/v0.22.0.zip": Bad Request
-libs/filer/files_client.go:21:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/filer/dbfs_client.go:17:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/fileset/ignorer.go:4:2: github.com/sabhiram/go-gitignore@v0.0.0-[NUMID]-525f6e181f06: Get "https://proxy.golang.org/github.com/sabhiram/go-gitignore/@v/v0.0.0-[NUMID]-525f6e181f06.zip": Bad Request
-libs/textutil/transform.go:7:2: golang.org/x/text@v0.40.0: Get "https://proxy.golang.org/golang.org/x/text/@v/v0.40.0.zip": Bad Request
-libs/textutil/transform.go:8:2: golang.org/x/text@v0.40.0: Get "https://proxy.golang.org/golang.org/x/text/@v/v0.40.0.zip": Bad Request
-libs/textutil/transform.go:9:2: golang.org/x/text@v0.40.0: Get "https://proxy.golang.org/golang.org/x/text/@v/v0.40.0.zip": Bad Request
-libs/tags/aws.go:9:2: golang.org/x/text@v0.40.0: Get "https://proxy.golang.org/golang.org/x/text/@v/v0.40.0.zip": Bad Request
-bundle/bundle.go:34:2: github.com/hashicorp/terraform-exec@v0.25.2: Get "https://proxy.golang.org/github.com/hashicorp/terraform-exec/@v/v0.25.2.zip": Bad Request
-bundle/config/mutator/verify_cli_version.go:8:2: github.com/Masterminds/semver/v3@v3.5.0: Get "https://proxy.golang.org/github.com/%21masterminds/semver/v3/@v/v3.5.0.zip": Bad Request
-libs/agent/agent_notice.go:6:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/deploy/terraform/install.go:7:2: github.com/hashicorp/go-version@v1.9.0: Get "https://proxy.golang.org/github.com/hashicorp/go-version/@v/v1.9.0.zip": Bad Request
-bundle/deploy/terraform/init.go:23:2: github.com/hashicorp/hc-install@v0.9.5: Get "https://proxy.golang.org/github.com/hashicorp/hc-install/@v/v0.9.5.zip": Bad Request
-bundle/deploy/terraform/install.go:9:2: github.com/hashicorp/hc-install@v0.9.5: Get "https://proxy.golang.org/github.com/hashicorp/hc-install/@v/v0.9.5.zip": Bad Request
-bundle/deploy/terraform/showplanfile.go:10:2: github.com/hashicorp/terraform-json@v0.28.0: Get "https://proxy.golang.org/github.com/hashicorp/terraform-json/@v/v0.28.0.zip": Bad Request
-cmd/root/flag_suggestions.go:9:2: github.com/spf13/pflag@v1.0.10: Get "https://proxy.golang.org/github.com/spf13/pflag/@v/v1.0.10.zip": Bad Request
-cmd/account/billable-usage/billable-usage.go:9:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/credentials/credentials.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/custom-app-integration/custom-app-integration.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/disaster-recovery/disaster-recovery.go:15:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/endpoints/endpoints.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/iam-v2/iam-v2.go:15:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/settings-v2/settings-v2.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/aitools/install.go:9:2: github.com/charmbracelet/huh@v1.0.0: Get "https://proxy.golang.org/github.com/charmbracelet/huh/@v/v1.0.0.zip": Bad Request
-libs/browser/browser.go:15:2: github.com/pkg/browser@v0.0.0-[NUMID]-5ac0b6a4141c: Get "https://proxy.golang.org/github.com/pkg/browser/@v/v0.0.0-[NUMID]-5ac0b6a4141c.zip": Bad Request
-libs/databrickscfg/cfgpickers/warehouses.go:16:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/configsync/patch.go:18:2: github.com/palantir/pkg/yamlpatch@v1.5.0: Get "https://proxy.golang.org/github.com/palantir/pkg/yamlpatch/@v/v1.5.0.zip": Bad Request
-bundle/configsync/patch.go:19:2: github.com/palantir/pkg/yamlpatch@v1.5.0: Get "https://proxy.golang.org/github.com/palantir/pkg/yamlpatch/@v/v1.5.0.zip": Bad Request
-libs/tableview/tableview.go:11:2: github.com/charmbracelet/bubbles@v1.0.0: Get "https://proxy.golang.org/github.com/charmbracelet/bubbles/@v/v1.0.0.zip": Bad Request
-experimental/postgres/cmd/connect.go:14:2: github.com/jackc/pgx/v5@v5.10.0: Get "https://proxy.golang.org/github.com/jackc/pgx/v5/@v/v5.10.0.zip": Bad Request
-experimental/postgres/cmd/connect.go:15:2: github.com/jackc/pgx/v5@v5.10.0: Get "https://proxy.golang.org/github.com/jackc/pgx/v5/@v/v5.10.0.zip": Bad Request
-experimental/postgres/cmd/connect.go:16:2: github.com/jackc/pgx/v5@v5.10.0: Get "https://proxy.golang.org/github.com/jackc/pgx/v5/@v/v5.10.0.zip": Bad Request
-experimental/postgres/cmd/value.go:13:2: github.com/jackc/pgx/v5@v5.10.0: Get "https://proxy.golang.org/github.com/jackc/pgx/v5/@v/v5.10.0.zip": Bad Request
-cmd/workspace/agent-bricks/agent-bricks.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/ai-search/ai-search.go:15:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/apps/logstream/streamer.go:16:2: github.com/gorilla/websocket@v1.5.3: Get "https://proxy.golang.org/github.com/gorilla/websocket/@v/v1.5.3.zip": Bad Request
-cmd/workspace/apps/apps.go:16:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/bundle-deployments/bundle-deployments.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/clean-room-asset-revisions/clean-room-asset-revisions.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/consumer-fulfillments/consumer-fulfillments.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/data-classification/data-classification.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/data-quality/data-quality.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/localenv/constraints.go:17:2: github.com/BurntSushi/toml@v1.6.0: Get "https://proxy.golang.org/github.com/%21burnt%21sushi/toml/@v/v1.6.0.zip": Bad Request
-libs/localenv/pipeline.go:13:2: github.com/hexops/gotextdiff@v1.0.3: Get "https://proxy.golang.org/github.com/hexops/gotextdiff/@v/v1.0.3.zip": Bad Request
-libs/localenv/pipeline.go:14:2: github.com/hexops/gotextdiff@v1.0.3: Get "https://proxy.golang.org/github.com/hexops/gotextdiff/@v/v1.0.3.zip": Bad Request
-libs/localenv/pipeline.go:15:2: github.com/hexops/gotextdiff@v1.0.3: Get "https://proxy.golang.org/github.com/hexops/gotextdiff/@v/v1.0.3.zip": Bad Request
-cmd/workspace/environments/environments.go:17:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/knowledge-assistants/knowledge-assistants.go:15:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/providers/providers.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/quality-monitor-v2/quality-monitor-v2.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/supervisor-agents/supervisor-agents.go:15:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/tag-policies/tag-policies.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-experimental/ssh/internal/keys/keys.go:15:2: golang.org/x/crypto@v0.54.0: Get "https://proxy.golang.org/golang.org/x/crypto/@v/v0.54.0.zip": Bad Request
-experimental/ssh/internal/vscode/settings.go:18:2: github.com/tailscale/hujson@v0.0.0-[NUMID]-992244df8c5a: Get "https://proxy.golang.org/github.com/tailscale/hujson/@v/v0.0.0-[NUMID]-992244df8c5a.zip": Bad Request
-experimental/ssh/internal/client/releases.go:24:2: golang.org/x/net@v0.57.0: Get "https://proxy.golang.org/golang.org/x/net/@v/v0.57.0.zip": Bad Request
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Remove a top-level cluster and rename a target cluster
+Detected changes in 1 resource(s):
+
+Resource: resources.pipelines.remove_top_cluster_and_edit_target
+  clusters: replace
+
+
+
+=== The rename stays in its target source block
+
+>>> diff.py databricks.yml.ambiguous-backup databricks.yml
+--- databricks.yml.ambiguous-backup
++++ databricks.yml
+@@ -39,7 +39,5 @@
+     remove_top_cluster_and_edit_target:
+       name: remove-top-cluster-and-edit-target-[UNIQUE_NAME]
+-      clusters:
+-        - label: default
+-          num_workers: 7
++      clusters: []
+       libraries:
+         - notebook:
+@@ -153,5 +151,5 @@
+         remove_top_cluster_and_edit_target:
+           clusters:
+-            - label: maintenance
++            - label: renamed
+               num_workers: 8
+             - label: stable
+
+=== Sync an unambiguous cluster edit alongside an ambiguous replacement
+Detected changes in 1 resource(s):
+
+Resource: resources.pipelines.remove_top_cluster_and_edit_target
+  clusters: replace
+
+
+
+=== Only the independently routable cluster edit changes
+
+>>> diff.py databricks.yml.ambiguous-backup databricks.yml
+--- databricks.yml.ambiguous-backup
++++ databricks.yml
+@@ -156,5 +156,5 @@
+               num_workers: 8
+             - label: stable
+-              num_workers: 15
++              num_workers: 99
+
+         cross_block_renames_with_stable_edit:
+
+=== Sync a stable cluster edit alongside cross-block renames
+Detected changes in 1 resource(s):
+
+Resource: resources.pipelines.cross_block_renames_with_stable_edit
+  clusters[0].label: replace
+  clusters[0].num_workers: replace
+  clusters[1].label: replace
+  clusters[1].num_workers: replace
+  clusters[2].num_workers: replace
+
+
+
+=== Only the stable target cluster changes
+
+>>> diff.py databricks.yml.ambiguous-backup databricks.yml
+--- databricks.yml.ambiguous-backup
++++ databricks.yml
+@@ -49,6 +49,6 @@
+       name: cross-block-renames-with-stable-edit-[UNIQUE_NAME]
+       clusters:
+-        - label: default
+-          num_workers: 7
++        - label: renamed
++          num_workers: 18
+       libraries:
+         - notebook:
+@@ -160,8 +160,8 @@
+         cross_block_renames_with_stable_edit:
+           clusters:
+-            - label: maintenance
+-              num_workers: 18
++            - label: top_renamed
++              num_workers: 7
+             - label: stable
+-              num_workers: 15
++              num_workers: 99
+
+         remove_target_cluster_with_shared_survivor:
+
+=== Edit clusters in top-level and target blocks
+=== Append a cluster after a target cluster
+=== Remove a target cluster
+=== Remove a top-level cluster while editing the shifted target cluster
+=== Remove a target cluster next to a cluster defined in both scopes
+=== Replace a cluster list with clusters that have new labels
+=== Insert between repeated target entries for the same cluster
+=== Remove a cluster without resolving a variable in the shifted cluster
+=== A variable reference survives a scalar-list removal before it
+=== A variable reference survives a scalar-list prepend before it
+=== Edit, remove, rename, and add tasks in one source block
+=== Sync positional split lists and the single-block regression case
+Detected changes in 11 resource(s):
+
+Resource: resources.jobs.single_block_task_changes
+  tasks[task_key='a'].timeout_seconds: replace
+  tasks[task_key='b']: remove
+  tasks[task_key='c']: remove
+  tasks[task_key='c_renamed']: add
+  tasks[task_key='d_added']: add
+
+Resource: resources.pipelines.append_cluster_after_target
+  clusters: replace
+
+Resource: resources.pipelines.edit_clusters_in_both_scopes
+  clusters[0].label: replace
+  clusters[0].num_workers: replace
+  clusters[1].num_workers: replace
+
+Resource: resources.pipelines.insert_between_repeated_target_entries
+  clusters: replace
+
+Resource: resources.pipelines.prepend_dependency_preserve_variable
+  environment.dependencies: replace
+
+Resource: resources.pipelines.remove_cluster_preserve_variable
+  clusters: replace
+
+Resource: resources.pipelines.remove_dependency_preserve_variable
+  environment.dependencies: replace
+
+Resource: resources.pipelines.remove_target_cluster
+  clusters: replace
+
+Resource: resources.pipelines.remove_target_cluster_with_shared_survivor
+  clusters: replace
+
+Resource: resources.pipelines.remove_top_cluster_and_edit_target
+  clusters: replace
+
+Resource: resources.pipelines.replace_cluster_list
+  clusters: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -13,6 +13,6 @@
+       name: edit-clusters-in-both-scopes-[UNIQUE_NAME]
+       clusters:
+-        - label: default
+-          num_workers: 1
++        - label: renamed
++          num_workers: 1201
+       libraries:
+         - notebook:
+@@ -39,7 +39,5 @@
+     remove_top_cluster_and_edit_target:
+       name: remove-top-cluster-and-edit-target-[UNIQUE_NAME]
+-      clusters:
+-        - label: default
+-          num_workers: 7
++      clusters: []
+       libraries:
+         - notebook:
+@@ -67,6 +65,8 @@
+       name: replace-cluster-list-[UNIQUE_NAME]
+       clusters:
+-        - label: default
+-          num_workers: 12
++        - label: maintenance
++          num_workers: 1205
++        - label: extra
++          num_workers: 1206
+       libraries:
+         - notebook:
+@@ -82,6 +82,4 @@
+       name: remove-cluster-preserve-variable-[UNIQUE_NAME]
+       clusters:
+-        - label: default
+-          num_workers: 10
+         - label: maintenance
+           num_workers: ${var.cluster_workers}
+@@ -97,5 +95,4 @@
+       environment:
+         dependencies:
+-          - literal-to-remove
+           - ${var.dependency}
+
+@@ -107,4 +104,5 @@
+       environment:
+         dependencies:
++          - literal-prepend
+           - ${var.dependency}
+
+@@ -113,15 +111,14 @@
+       tasks:
+         - task_key: a
+-          timeout_seconds: 130
++          timeout_seconds: 1301
+           notebook_task:
+             notebook_path: /Workspace/single-block-a
+-        - task_key: b
+-          timeout_seconds: 131
+-          notebook_task:
+-            notebook_path: /Workspace/single-block-b
+-        - task_key: c
++        - task_key: c_renamed
+           timeout_seconds: 132
+           notebook_task:
+             notebook_path: /Workspace/single-block-c
++        - notebook_task:
++            notebook_path: /Workspace/single-block-d
++          task_key: d_added
+
+ targets:
+@@ -132,8 +129,8 @@
+         edit_clusters_in_both_scopes:
+           clusters:
+-            - label: default
++            - label: renamed
+               node_type_id: [NODE_TYPE_ID]
+             - label: maintenance
+-              num_workers: 2
++              num_workers: 1202
+
+         append_cluster_after_target:
+@@ -146,13 +143,14 @@
+               num_workers: 4
+
++            - custom_tags:
++                role: extra
++              label: extra
++              num_workers: 1203
+         remove_target_cluster:
+-          clusters:
+-            - label: maintenance
+-              num_workers: 6
+-
++          clusters: []
+         remove_top_cluster_and_edit_target:
+           clusters:
+             - label: maintenance
+-              num_workers: 8
++              num_workers: 1204
+             - label: stable
+               num_workers: 15
+@@ -169,11 +167,10 @@
+             - label: default
+               num_workers: 10
+-            - label: maintenance
+-              num_workers: 11
+-
+         insert_between_repeated_target_entries:
+           clusters:
+             - label: default
+               node_type_id: [NODE_TYPE_ID]
++            - label: extra
++              num_workers: 1207
+             - label: maintenance
+               num_workers: 13
+
+=== The shifted survivor keeps its variable reference
+
+>>> grep -Fc num_workers: ${var.cluster_workers} databricks.yml
+1
+
+>>> grep -Fc -- - ${var.dependency} databricks.yml
+2
+
+=== Second sync is idempotent
+No changes detected.
+
+
+>>> diff.py databricks.yml.second-backup databricks.yml
 
 >>> [CLI] bundle destroy --auto-approve -t dev
-go: downloading github.com/spf13/cobra v1.10.2
-go: downloading github.com/databricks/databricks-sdk-go v0.160.0
-go: downloading github.com/spf13/pflag v1.0.10
-go: downloading golang.org/x/mod v0.38.0
-go: downloading github.com/charmbracelet/huh v1.0.0
-go: downloading golang.org/x/sync v0.22.0
-go: downloading github.com/google/uuid v1.6.0
-go: downloading golang.org/x/oauth2 v0.36.0
-go: downloading gopkg.in/ini.v1 v1.67.3
-go: downloading github.com/charmbracelet/bubbles v1.0.0
-go: downloading github.com/charmbracelet/bubbletea v1.3.10
-go: downloading github.com/charmbracelet/lipgloss v1.1.0
-go: downloading github.com/mattn/go-isatty v0.0.22
-go: downloading github.com/muesli/termenv v0.16.0
-go: downloading github.com/gorilla/websocket v1.5.3
-go: downloading golang.org/x/net v0.57.0
-go: downloading github.com/pkg/browser v0.0.0-[NUMID]-5ac0b6a4141c
-go: downloading github.com/hashicorp/terraform-exec v0.25.2
-go: downloading go.yaml.in/yaml/v3 v3.0.4
-go: downloading github.com/sabhiram/go-gitignore v0.0.0-[NUMID]-525f6e181f06
-go: downloading github.com/jackc/pgx/v5 v5.10.0
-go: downloading github.com/Masterminds/semver/v3 v3.5.0
-go: downloading github.com/palantir/pkg/yamlpatch v1.5.0
-go: downloading github.com/zalando/go-keyring v0.2.8
-go: downloading golang.org/x/crypto v0.54.0
-go: downloading github.com/tailscale/hujson v0.0.0-[NUMID]-992244df8c5a
-go: downloading golang.org/x/text v0.40.0
-go: downloading github.com/hashicorp/go-version v1.9.0
-go: downloading github.com/hashicorp/terraform-json v0.28.0
-go: downloading github.com/hashicorp/hc-install v0.9.5
-go: downloading github.com/BurntSushi/toml v1.6.0
-go: downloading github.com/hexops/gotextdiff v1.0.3
-libs/env/loader.go:6:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/log/sdk.go:10:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/alerts.go:9:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/catalog.go:8:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/alerts.go:10:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/apps.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/catalog.go:10:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/clusters.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/dashboard.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/database_catalog.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/permission_types.go:6:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/job.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/mlflow_experiment.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/permission_types.go:9:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/postgres_branch.go:10:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/model_serving_endpoint.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/alerts.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/vector_search_endpoint.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/resources/secret_scope.go:9:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/variable/resolve_service_principal.go:8:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/config/variable/resolve_notification_destination.go:8:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/databrickscfg/loader.go:12:2: gopkg.in/ini.v1@v1.67.3: Get "https://proxy.golang.org/gopkg.in/ini.v1/@v/v1.67.3.zip": Bad Request
-libs/auth/storage/cache.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/auth/storage/cache.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/auth/storage/keyring.go:10:2: github.com/google/uuid@v1.6.0: Get "https://proxy.golang.org/github.com/google/uuid/@v/v1.6.0.zip": Bad Request
-libs/auth/storage/keyring.go:11:2: github.com/zalando/go-keyring@v0.2.8: Get "https://proxy.golang.org/github.com/zalando/go-keyring/@v/v0.2.8.zip": Bad Request
-libs/auth/storage/dual_writing_cache.go:6:2: golang.org/x/oauth2@v0.36.0: Get "https://proxy.golang.org/golang.org/x/oauth2/@v/v0.36.0.zip": Bad Request
-libs/auth/credentials.go:9:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/auth/credentials.go:10:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/auth/credentials.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/dyn/convert/sdk_native_types.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/dyn/convert/sdk_native_types.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/dyn/convert/sdk_native_types.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/dyn/yamlloader/loader.go:10:2: go.yaml.in/yaml/v3@v3.0.4: Get "https://proxy.golang.org/go.yaml.in/yaml/v3/@v/v3.0.4.zip": Bad Request
-internal/build/info.go:11:2: golang.org/x/mod@v0.38.0: Get "https://proxy.golang.org/golang.org/x/mod/@v/v0.38.0.zip": Bad Request
-libs/cmdio/pager.go:9:2: github.com/charmbracelet/bubbles@v1.0.0: Get "https://proxy.golang.org/github.com/charmbracelet/bubbles/@v/v1.0.0.zip": Bad Request
-libs/cmdio/io.go:10:2: github.com/charmbracelet/bubbletea@v1.3.10: Get "https://proxy.golang.org/github.com/charmbracelet/bubbletea/@v/v1.3.10.zip": Bad Request
-libs/cmdio/color.go:10:2: github.com/charmbracelet/lipgloss@v1.1.0: Get "https://proxy.golang.org/github.com/charmbracelet/lipgloss/@v/v1.1.0.zip": Bad Request
-libs/flags/log_file_flag.go:8:2: github.com/spf13/cobra@v1.10.2: Get "https://proxy.golang.org/github.com/spf13/cobra/@v/v1.10.2.zip": Bad Request
-libs/cmdio/tty.go:7:2: github.com/mattn/go-isatty@v0.0.22: Get "https://proxy.golang.org/github.com/mattn/go-isatty/@v/v0.0.22.zip": Bad Request
-libs/cmdio/color.go:11:2: github.com/muesli/termenv@v0.16.0: Get "https://proxy.golang.org/github.com/muesli/termenv/@v/v0.16.0.zip": Bad Request
-bundle/direct/dresources/app.go:17:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/direct/dresources/dashboard.go:20:2: golang.org/x/sync@v0.22.0: Get "https://proxy.golang.org/golang.org/x/sync/@v/v0.22.0.zip": Bad Request
-libs/filer/files_client.go:21:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/filer/dbfs_client.go:17:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/fileset/ignorer.go:4:2: github.com/sabhiram/go-gitignore@v0.0.0-[NUMID]-525f6e181f06: Get "https://proxy.golang.org/github.com/sabhiram/go-gitignore/@v/v0.0.0-[NUMID]-525f6e181f06.zip": Bad Request
-libs/textutil/transform.go:7:2: golang.org/x/text@v0.40.0: Get "https://proxy.golang.org/golang.org/x/text/@v/v0.40.0.zip": Bad Request
-libs/textutil/transform.go:8:2: golang.org/x/text@v0.40.0: Get "https://proxy.golang.org/golang.org/x/text/@v/v0.40.0.zip": Bad Request
-libs/textutil/transform.go:9:2: golang.org/x/text@v0.40.0: Get "https://proxy.golang.org/golang.org/x/text/@v/v0.40.0.zip": Bad Request
-libs/tags/aws.go:9:2: golang.org/x/text@v0.40.0: Get "https://proxy.golang.org/golang.org/x/text/@v/v0.40.0.zip": Bad Request
-bundle/bundle.go:34:2: github.com/hashicorp/terraform-exec@v0.25.2: Get "https://proxy.golang.org/github.com/hashicorp/terraform-exec/@v/v0.25.2.zip": Bad Request
-bundle/config/mutator/verify_cli_version.go:8:2: github.com/Masterminds/semver/v3@v3.5.0: Get "https://proxy.golang.org/github.com/%21masterminds/semver/v3/@v/v3.5.0.zip": Bad Request
-libs/agent/agent_notice.go:6:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/deploy/terraform/install.go:7:2: github.com/hashicorp/go-version@v1.9.0: Get "https://proxy.golang.org/github.com/hashicorp/go-version/@v/v1.9.0.zip": Bad Request
-bundle/deploy/terraform/init.go:23:2: github.com/hashicorp/hc-install@v0.9.5: Get "https://proxy.golang.org/github.com/hashicorp/hc-install/@v/v0.9.5.zip": Bad Request
-bundle/deploy/terraform/install.go:9:2: github.com/hashicorp/hc-install@v0.9.5: Get "https://proxy.golang.org/github.com/hashicorp/hc-install/@v/v0.9.5.zip": Bad Request
-bundle/deploy/terraform/showplanfile.go:10:2: github.com/hashicorp/terraform-json@v0.28.0: Get "https://proxy.golang.org/github.com/hashicorp/terraform-json/@v/v0.28.0.zip": Bad Request
-cmd/root/flag_suggestions.go:9:2: github.com/spf13/pflag@v1.0.10: Get "https://proxy.golang.org/github.com/spf13/pflag/@v/v1.0.10.zip": Bad Request
-cmd/account/billable-usage/billable-usage.go:9:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/credentials/credentials.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/custom-app-integration/custom-app-integration.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/disaster-recovery/disaster-recovery.go:15:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/endpoints/endpoints.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/iam-v2/iam-v2.go:15:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/account/settings-v2/settings-v2.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/aitools/install.go:9:2: github.com/charmbracelet/huh@v1.0.0: Get "https://proxy.golang.org/github.com/charmbracelet/huh/@v/v1.0.0.zip": Bad Request
-libs/browser/browser.go:15:2: github.com/pkg/browser@v0.0.0-[NUMID]-5ac0b6a4141c: Get "https://proxy.golang.org/github.com/pkg/browser/@v/v0.0.0-[NUMID]-5ac0b6a4141c.zip": Bad Request
-libs/databrickscfg/cfgpickers/warehouses.go:16:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-bundle/configsync/patch.go:18:2: github.com/palantir/pkg/yamlpatch@v1.5.0: Get "https://proxy.golang.org/github.com/palantir/pkg/yamlpatch/@v/v1.5.0.zip": Bad Request
-bundle/configsync/patch.go:19:2: github.com/palantir/pkg/yamlpatch@v1.5.0: Get "https://proxy.golang.org/github.com/palantir/pkg/yamlpatch/@v/v1.5.0.zip": Bad Request
-libs/tableview/tableview.go:11:2: github.com/charmbracelet/bubbles@v1.0.0: Get "https://proxy.golang.org/github.com/charmbracelet/bubbles/@v/v1.0.0.zip": Bad Request
-experimental/postgres/cmd/connect.go:14:2: github.com/jackc/pgx/v5@v5.10.0: Get "https://proxy.golang.org/github.com/jackc/pgx/v5/@v/v5.10.0.zip": Bad Request
-experimental/postgres/cmd/connect.go:15:2: github.com/jackc/pgx/v5@v5.10.0: Get "https://proxy.golang.org/github.com/jackc/pgx/v5/@v/v5.10.0.zip": Bad Request
-experimental/postgres/cmd/connect.go:16:2: github.com/jackc/pgx/v5@v5.10.0: Get "https://proxy.golang.org/github.com/jackc/pgx/v5/@v/v5.10.0.zip": Bad Request
-experimental/postgres/cmd/value.go:13:2: github.com/jackc/pgx/v5@v5.10.0: Get "https://proxy.golang.org/github.com/jackc/pgx/v5/@v/v5.10.0.zip": Bad Request
-cmd/workspace/agent-bricks/agent-bricks.go:12:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/ai-search/ai-search.go:15:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/apps/logstream/streamer.go:16:2: github.com/gorilla/websocket@v1.5.3: Get "https://proxy.golang.org/github.com/gorilla/websocket/@v/v1.5.3.zip": Bad Request
-cmd/workspace/apps/apps.go:16:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/bundle-deployments/bundle-deployments.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/clean-room-asset-revisions/clean-room-asset-revisions.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/consumer-fulfillments/consumer-fulfillments.go:11:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/data-classification/data-classification.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/data-quality/data-quality.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-libs/localenv/constraints.go:17:2: github.com/BurntSushi/toml@v1.6.0: Get "https://proxy.golang.org/github.com/%21burnt%21sushi/toml/@v/v1.6.0.zip": Bad Request
-libs/localenv/pipeline.go:13:2: github.com/hexops/gotextdiff@v1.0.3: Get "https://proxy.golang.org/github.com/hexops/gotextdiff/@v/v1.0.3.zip": Bad Request
-libs/localenv/pipeline.go:14:2: github.com/hexops/gotextdiff@v1.0.3: Get "https://proxy.golang.org/github.com/hexops/gotextdiff/@v/v1.0.3.zip": Bad Request
-libs/localenv/pipeline.go:15:2: github.com/hexops/gotextdiff@v1.0.3: Get "https://proxy.golang.org/github.com/hexops/gotextdiff/@v/v1.0.3.zip": Bad Request
-cmd/workspace/environments/environments.go:17:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/knowledge-assistants/knowledge-assistants.go:15:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/providers/providers.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/quality-monitor-v2/quality-monitor-v2.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/supervisor-agents/supervisor-agents.go:15:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-cmd/workspace/tag-policies/tag-policies.go:13:2: github.com/databricks/databricks-sdk-go@v0.160.0: Get "https://proxy.golang.org/github.com/databricks/databricks-sdk-go/@v/v0.160.0.zip": Bad Request
-experimental/ssh/internal/keys/keys.go:15:2: golang.org/x/crypto@v0.54.0: Get "https://proxy.golang.org/golang.org/x/crypto/@v/v0.54.0.zip": Bad Request
-experimental/ssh/internal/vscode/settings.go:18:2: github.com/tailscale/hujson@v0.0.0-[NUMID]-992244df8c5a: Get "https://proxy.golang.org/github.com/tailscale/hujson/@v/v0.0.0-[NUMID]-992244df8c5a.zip": Bad Request
-experimental/ssh/internal/client/releases.go:24:2: golang.org/x/net@v0.57.0: Get "https://proxy.golang.org/golang.org/x/net/@v/v0.57.0.zip": Bad Request
+The following resources will be deleted:
+  delete resources.jobs.single_block_task_changes
+  delete resources.pipelines.append_cluster_after_target
+  delete resources.pipelines.cross_block_renames_with_stable_edit
+  delete resources.pipelines.edit_clusters_in_both_scopes
+  delete resources.pipelines.insert_between_repeated_target_entries
+  delete resources.pipelines.prepend_dependency_preserve_variable
+  delete resources.pipelines.remove_cluster_preserve_variable
+  delete resources.pipelines.remove_dependency_preserve_variable
+  delete resources.pipelines.remove_target_cluster
+  delete resources.pipelines.remove_target_cluster_with_shared_survivor
+  delete resources.pipelines.remove_top_cluster_and_edit_target
+  delete resources.pipelines.replace_cluster_list
 
-Exit code: 1
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.append_cluster_after_target
+  delete resources.pipelines.cross_block_renames_with_stable_edit
+  delete resources.pipelines.edit_clusters_in_both_scopes
+  delete resources.pipelines.insert_between_repeated_target_entries
+  delete resources.pipelines.prepend_dependency_preserve_variable
+  delete resources.pipelines.remove_cluster_preserve_variable
+  delete resources.pipelines.remove_dependency_preserve_variable
+  delete resources.pipelines.remove_target_cluster
+  delete resources.pipelines.remove_target_cluster_with_shared_survivor
+  delete resources.pipelines.remove_top_cluster_and_edit_target
+  delete resources.pipelines.replace_cluster_list
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!

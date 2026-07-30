@@ -166,6 +166,69 @@ func TestPairRenamesReportsAmbiguousRemoveAndAddWithSharedNestedFields(t *testin
 	assert.Equal(t, []string{"tasks[task_key='added']"}, unresolved[0].addPaths)
 }
 
+func TestChangeUsesUnresolvedRename(t *testing.T) {
+	taskRename := unresolvedRenameGroup{
+		key:     "task_key",
+		oldKeys: []string{"etl"},
+		newKeys: []string{"etl_new"},
+	}
+
+	tests := []struct {
+		name   string
+		path   string
+		change *ConfigChangeDesc
+		group  unresolvedRenameGroup
+		want   bool
+	}{
+		{
+			name:   "dependency selector",
+			path:   "tasks[task_key='consumer'].depends_on[task_key='etl']",
+			change: &ConfigChangeDesc{Operation: OperationRemove},
+			group:  taskRename,
+			want:   true,
+		},
+		{
+			name: "nested keyed value",
+			path: "tasks[task_key='consumer'].depends_on[task_key='etl_new']",
+			change: &ConfigChangeDesc{
+				Operation: OperationAdd,
+				Value:     map[string]any{"task_key": "etl_new"},
+			},
+			group: taskRename,
+			want:  true,
+		},
+		{
+			name:   "scalar keyed reference",
+			path:   "tasks[task_key='consumer'].job_cluster_key",
+			change: &ConfigChangeDesc{Operation: OperationReplace, configValue: "etl", Value: "etl_new"},
+			group: unresolvedRenameGroup{
+				key:     "job_cluster_key",
+				oldKeys: []string{"etl"},
+				newKeys: []string{"etl_new"},
+			},
+			want: true,
+		},
+		{
+			name:   "unrelated scalar",
+			path:   "timeout_seconds",
+			change: &ConfigChangeDesc{Operation: OperationReplace, configValue: int64(10), Value: int64(20)},
+			group:  taskRename,
+		},
+		{
+			name:   "unrelated matching string",
+			path:   "name",
+			change: &ConfigChangeDesc{Operation: OperationReplace, configValue: "old", Value: "etl_new"},
+			group:  taskRename,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.want, changeUsesUnresolvedRename(test.path, test.change, test.group))
+		})
+	}
+}
+
 func TestPlanSequenceChangesPreservesSurvivorsAcrossLengthChanges(t *testing.T) {
 	oldValues := []any{
 		map[string]any{"label": "default"},
@@ -295,20 +358,63 @@ func TestPlanSequenceChangesRejectsAmbiguousDuplicateScalar(t *testing.T) {
 
 func TestPlanSequenceChangesKeepsPairSharedByAmbiguousMatches(t *testing.T) {
 	oldValues := []any{
-		map[string]any{"label": "stable", "num_workers": int64(15)},
-		map[string]any{"label": "duplicate", "num_workers": int64(1)},
-		map[string]any{"label": "duplicate", "num_workers": int64(1)},
+		"before",
+		"stable-old",
+		"middle",
+		"duplicate",
+		"duplicate",
+		"after",
 	}
 	newValues := []any{
-		map[string]any{"label": "stable", "num_workers": int64(99)},
-		map[string]any{"label": "duplicate", "num_workers": int64(1)},
+		"before",
+		"stable-new",
+		"middle",
+		"duplicate",
+		"after",
 	}
 
-	plan, err := planSequenceChanges("clusters", oldValues, newValues)
+	plan, err := planSequenceChanges("dependencies", oldValues, newValues)
 	require.ErrorContains(t, err, "sequence elements cannot be matched uniquely")
-	assert.Equal(t, []sequencePair{{oldIndex: 0, newIndex: 0}}, plan.pairs)
+	assert.Equal(t, []sequencePair{
+		{oldIndex: 0, newIndex: 0, equal: true},
+		{oldIndex: 1, newIndex: 1},
+		{oldIndex: 2, newIndex: 2, equal: true},
+		{oldIndex: 5, newIndex: 4, equal: true},
+	}, plan.pairs)
 	assert.Empty(t, plan.removals)
 	assert.Empty(t, plan.adds)
+}
+
+func TestSequencePairCanApplyIndependently(t *testing.T) {
+	oldValues := []any{
+		map[string]any{"label": "renamed", "num_workers": int64(1)},
+		map[string]any{"label": "stable", "num_workers": int64(2)},
+	}
+	newValues := []any{
+		map[string]any{"label": "replacement", "num_workers": int64(1)},
+		map[string]any{"label": "stable", "num_workers": int64(20)},
+	}
+
+	assert.False(t, sequencePairCanApplyIndependently("clusters", oldValues, newValues, sequencePair{oldIndex: 0, newIndex: 0}))
+	assert.True(t, sequencePairCanApplyIndependently("clusters", oldValues, newValues, sequencePair{oldIndex: 1, newIndex: 1}))
+
+	oldDependencies := []any{"A", "A", "B"}
+	newDependencies := []any{"B", "B", "A", "C"}
+	assert.False(t, sequencePairCanApplyIndependently(
+		"dependencies",
+		oldDependencies,
+		newDependencies,
+		sequencePair{oldIndex: 2, newIndex: 3},
+	))
+
+	oldDependencies = []any{"before", "stable-old", "duplicate", "duplicate", "after"}
+	newDependencies = []any{"before", "stable-new", "duplicate", "after"}
+	assert.True(t, sequencePairCanApplyIndependently(
+		"dependencies",
+		oldDependencies,
+		newDependencies,
+		sequencePair{oldIndex: 1, newIndex: 1},
+	))
 }
 
 func TestPlanSequenceChangesBoundsAmbiguousDuplicateMatches(t *testing.T) {
@@ -340,6 +446,19 @@ func TestChooseSequenceBlockRejectsReplacementAcrossBlocksWithSurvivor(t *testin
 	plan := sequencePlan{
 		pairs:    []sequencePair{{oldIndex: 2, newIndex: 1}},
 		removals: []int{0, 1},
+		adds:     []int{0},
+	}
+
+	_, err := chooseSequenceBlock(0, plan, map[int][]sourceRef{0: {top}, 1: {target}, 2: {target}}, nil, "dev")
+	require.ErrorContains(t, err, "replacement spans multiple physical source blocks")
+}
+
+func TestChooseSequenceBlockRejectsReplacementMovedPastMatchedElement(t *testing.T) {
+	top := sourceRef{file: "databricks.yml", path: dyn.NewPath(dyn.Key("resources"), dyn.Key("pipelines"), dyn.Key("example"), dyn.Key("clusters"), dyn.Index(0))}
+	target := sourceRef{file: "databricks.yml", path: dyn.NewPath(dyn.Key("targets"), dyn.Key("dev"), dyn.Key("resources"), dyn.Key("pipelines"), dyn.Key("example"), dyn.Key("clusters"), dyn.Index(0))}
+	plan := sequencePlan{
+		pairs:    []sequencePair{{oldIndex: 0, newIndex: 1}, {oldIndex: 2, newIndex: 2}},
+		removals: []int{1},
 		adds:     []int{0},
 	}
 

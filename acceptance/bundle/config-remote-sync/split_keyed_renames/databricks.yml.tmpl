@@ -34,6 +34,12 @@ resources:
           job_cluster_key: shared_cluster
           notebook_task:
             notebook_path: /Workspace/surviving-task
+        - task_key: consumer
+          depends_on:
+            - task_key: etl
+          job_cluster_key: shared_cluster
+          notebook_task:
+            notebook_path: /Workspace/consumer-task
 
     shifted_delete_rename:
       tasks:

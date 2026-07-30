@@ -2,9 +2,12 @@ package configsync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -134,7 +137,75 @@ func ResolveChanges(_ context.Context, b *bundle.Bundle, configChanges Changes) 
 	if err != nil {
 		return nil, err
 	}
-	return resolveChangesWithSourceMapping(b, configChanges, sources)
+
+	var result []FieldChange
+	for _, resourceKey := range slices.Sorted(maps.Keys(configChanges)) {
+		resourceChanges := configChanges[resourceKey]
+		pairsByAdd, pairedRemoves, unresolvedGroups := pairRenames(resourceChanges)
+		ambiguousPaths := make(map[string]struct{})
+		var ambiguousGroups []unresolvedRenameGroup
+		for _, group := range unresolvedGroups {
+			if err := validateUnresolvedRenameGroup(b, sources, resourceKey, resourceChanges, group); err != nil {
+				if errors.Is(err, errAmbiguousSource) {
+					// Keep both sides of an unresolved rename together while allowing
+					// unrelated changes in the same unattended sync to proceed.
+					for _, path := range group.removePaths {
+						ambiguousPaths[path] = struct{}{}
+					}
+					for _, path := range group.addPaths {
+						ambiguousPaths[path] = struct{}{}
+					}
+					ambiguousGroups = append(ambiguousGroups, group)
+					continue
+				}
+				return nil, fmt.Errorf("routing changes for %s: %w", resourceKey, err)
+			}
+		}
+		for path, change := range resourceChanges {
+			for _, group := range ambiguousGroups {
+				// A reference update must stay with the unresolved rename or the
+				// source can point to a key that was deliberately not written.
+				if changeUsesUnresolvedRename(path, change, group) {
+					ambiguousPaths[path] = struct{}{}
+					break
+				}
+			}
+		}
+
+		for _, fieldPath := range slices.Sorted(maps.Keys(resourceChanges)) {
+			change := resourceChanges[fieldPath]
+			if _, ambiguous := ambiguousPaths[fieldPath]; ambiguous {
+				continue
+			}
+			if _, paired := pairedRemoves[fieldPath]; paired {
+				continue
+			}
+			if pair, paired := pairsByAdd[fieldPath]; paired {
+				routed, err := routeRename(b, sources, resourceKey, pair, resourceChanges[pair.removePath], change)
+				if err != nil {
+					return nil, err
+				}
+				result = append(result, routed...)
+				continue
+			}
+
+			routed, err := routeChange(b, sources, resourceKey, fieldPath, change)
+			if err != nil {
+				if errors.Is(err, errAmbiguousSource) {
+					continue
+				}
+				return nil, err
+			}
+			result = append(result, routed...)
+		}
+	}
+
+	result, err = coalesceSequenceElementAdds(result)
+	if err != nil {
+		return nil, err
+	}
+	sortFieldChanges(result)
+	return result, nil
 }
 
 // translateWorkspacePaths recursively converts absolute workspace paths to relative
