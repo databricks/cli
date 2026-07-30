@@ -58,15 +58,6 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapsh
 			},
 		}},
 		CodeSourcePath: snap.CodeSourcePath,
-		// TEMP: git_state_path / git_diff_path are intentionally NOT sent. The typed
-		// jobs.AiRuntimeTask (and its source proto, ai_runtime_task.proto) has no such
-		// fields, so the typed SDK path cannot carry them. This is safe today because
-		// nothing in the backend consumes those fields — the AI Runtime task proto
-		// never declared them, so even the Python CLI's raw-JSON values were dropped
-		// on deserialization. The git_state.json / git_diff.patch sidecars are still
-		// uploaded next to the tarball (see snapshot.go) for human inspection.
-		// If the backend later adds these fields to the proto, regenerate the SDK and
-		// wire snap.GitStatePath / snap.GitDiffPath back in here.
 	}
 	if cfg.MLflowRunName != nil {
 		task.MlflowRun = *cfg.MLflowRunName
@@ -163,13 +154,13 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
-	// Package and upload the code snapshot, if any. The resulting paths ride on the
-	// ai_runtime_task; a run with no code_source leaves them empty. Snapshot is the
-	// only code_source type; guard against a nil block so snapshotCodeSource never
-	// dereferences a missing snapshot.
+	// Package and upload the code snapshot, if any, via DABs' artifact-upload
+	// plumbing; the remote code_source_path rides the ai_runtime_task. A run with no
+	// code_source leaves it empty. Snapshot is the only code_source type.
 	var snap snapshotResult
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
-		snap, err = snapshotCodeSource(ctx, w, cfg.CodeSource.Snapshot, configPath, base, funcDir)
+		// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
+		snap, err = snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, fc, funcDir)
 		if err != nil {
 			return 0, "", err
 		}
