@@ -4,5 +4,6 @@
 >>> [CLI] bundle bitmap bitmap-text
 
 >>> [CLI] bundle bitmap bitmap
+script: line 182: [TESTROOT]/bin/decode_bitmap.py: Permission denied
 
->>> [CLI] bundle bitmap update-schema --validate
+Exit code: 126
