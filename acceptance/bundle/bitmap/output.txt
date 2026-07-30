@@ -1,9 +1,8 @@
 
 >>> [CLI] bundle bitmap schema
 
->>> [CLI] bundle bitmap bitmap-text
+>>> DATABRICKS_CACHE_DIR=[TEST_TMP_DIR]/cache-text [CLI] bundle bitmap bitmap-text
 
->>> [CLI] bundle bitmap bitmap
-script: line 182: [TESTROOT]/bin/decode_bitmap.py: Permission denied
+>>> DATABRICKS_CACHE_DIR=[TEST_TMP_DIR]/cache-enc [CLI] bundle bitmap bitmap
 
-Exit code: 126
+>>> [CLI] bundle bitmap update-schema --validate
