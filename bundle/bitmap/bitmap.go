@@ -246,7 +246,11 @@ func Decode(encoded string) (bits []bool, context uint16, err error) {
 
 // splitLines splits embedded schema bytes into non-empty lines.
 func splitLines(b []byte) []string {
-	s := strings.TrimRight(string(b), "\n")
+	// Strip CR so a CRLF checkout of the embedded schema.txt (Windows) parses to
+	// the same clean field paths as WalkType produces; otherwise Merge's dedup
+	// never matches and the schema doubles.
+	s := strings.ReplaceAll(string(b), "\r\n", "\n")
+	s = strings.TrimRight(s, "\n")
 	if s == "" {
 		return nil
 	}
