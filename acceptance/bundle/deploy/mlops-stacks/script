@@ -29,6 +29,7 @@ trap cleanup EXIT
 
 trace $CLI schemas create "${SCHEMA_NAME}" main | jq '{full_name}'
 
+# Local runs must not reach the network; cloud runs clone to keep that path covered.
 if [ -z "$CLOUD_ENV" ]; then
   trace $CLI bundle init "$TESTDIR/template" --config-file config.json
 else

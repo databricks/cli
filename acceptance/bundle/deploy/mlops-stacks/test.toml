@@ -17,8 +17,7 @@ Ignore = [
 Old = "aws|azure|gcp"
 New = "[CLOUD_ENV_BASE]"
 
-# $TESTDIR uses backslashes on Windows, so match either separator to normalize
-# the local template path to the cloud template name "mlops-stacks".
+# $TESTDIR uses backslashes on Windows, hence the either-separator match.
 [[Repls]]
 Old = 'bundle init .*[\\/]mlops-stacks/template'
 New = "bundle init mlops-stacks"
