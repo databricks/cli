@@ -6,7 +6,7 @@
   "ok": true,
   "mode": "default",
   "dryRun": true,
-  "target": {
+  "compute": {
     "source": "serverless",
     "serverlessVersion": "v4",
     "envKey": "serverless/serverless-v4"

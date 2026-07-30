@@ -31,7 +31,7 @@ type ComputeClient interface {
 }
 
 // ErrTaskKeyRequired is returned by JobTaskEnvironment when --job-task names a
-// job but no task, so ResolveTarget can classify it as E_USAGE (the user must
+// job but no task, so ResolveCompute can classify it as E_USAGE (the user must
 // pick a task) rather than E_RESOLVE. It carries the job's task keys so the
 // error message can list them.
 type ErrTaskKeyRequired struct {
@@ -44,8 +44,8 @@ func (e *ErrTaskKeyRequired) Error() string {
 		e.JobID, e.JobID, strings.Join(e.TaskKeys, ", "))
 }
 
-// TargetFlags holds the mutually-exclusive compute target flags from the CLI.
-type TargetFlags struct {
+// ComputeFlags holds the mutually-exclusive compute target flags from the CLI.
+type ComputeFlags struct {
 	Cluster     string
 	ClusterName string
 	Serverless  string
@@ -67,9 +67,9 @@ type BundleTarget struct {
 // matching spec §2.3.
 const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --cluster-name / --serverless-version / --job-task"
 
-// ValidateTargetFlags returns an error if more than one of the target flags is set.
+// ValidateComputeFlags returns an error if more than one of the target flags is set.
 // Cobra marks them mutually exclusive too; this guards the library path.
-func ValidateTargetFlags(f TargetFlags) error {
+func ValidateComputeFlags(f ComputeFlags) error {
 	var set []string
 	if f.Cluster != "" {
 		set = append(set, "--cluster-id")
@@ -89,7 +89,7 @@ func ValidateTargetFlags(f TargetFlags) error {
 	return nil
 }
 
-// ResolveTarget resolves the compute target using ordered precedence:
+// ResolveCompute resolves the compute target using ordered precedence:
 // --cluster-id → --cluster-name → --serverless-version → --job-task → bundle target.
 // PythonVersion is left empty; it is filled later from constraint data.
 //
@@ -97,8 +97,8 @@ func ValidateTargetFlags(f TargetFlags) error {
 // bypasses Cobra (which also marks the flags mutually exclusive) and passes more
 // than one target flag would have all but the first precedence branch silently
 // ignored, resolving a different target than requested.
-func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt BundleTarget) (*TargetInfo, error) {
-	if err := ValidateTargetFlags(f); err != nil {
+func ResolveCompute(ctx context.Context, f ComputeFlags, c ComputeClient, bt BundleTarget) (*ComputeInfo, error) {
+	if err := ValidateComputeFlags(f); err != nil {
 		return nil, NewError(ErrResolve, err, "invalid compute target flags")
 	}
 
@@ -107,7 +107,7 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 		if err != nil {
 			return nil, NewError(ErrResolve, err, "resolving cluster %s", f.Cluster)
 		}
-		return &TargetInfo{
+		return &ComputeInfo{
 			Source:       "cluster",
 			ClusterID:    f.Cluster,
 			SparkVersion: v,
@@ -123,7 +123,7 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 		if err != nil {
 			return nil, NewError(ErrResolve, err, "resolving cluster name %q", f.ClusterName)
 		}
-		return &TargetInfo{
+		return &ComputeInfo{
 			Source:       "cluster",
 			ClusterID:    id,
 			SparkVersion: v,
@@ -135,7 +135,7 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 		if !ValidServerlessVersion(f.Serverless) {
 			return nil, NewError(ErrResolve, nil, "invalid --serverless-version %q: expected a version number like 5", f.Serverless)
 		}
-		return &TargetInfo{
+		return &ComputeInfo{
 			Source:            "serverless",
 			ServerlessVersion: NormalizeServerless(f.Serverless),
 			EnvKey:            EnvKeyForServerless(f.Serverless),
@@ -161,14 +161,14 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 			// The task's serverless environment version is read directly from its
 			// bound environment, so there is no version to guess: unlike the bundle
 			// path, the job-task path never applies the serverless-vN fallback.
-			return &TargetInfo{
+			return &ComputeInfo{
 				Source:            "job",
 				ServerlessVersion: NormalizeServerless(version),
 				EnvKey:            EnvKeyForServerless(version),
 			}, nil
 		}
 		// Classic compute: sparkVersion is the task cluster's runtime.
-		return &TargetInfo{
+		return &ComputeInfo{
 			Source:       "job",
 			SparkVersion: sparkVersion,
 			EnvKey:       EnvKeyForSparkVersion(sparkVersion),
@@ -183,7 +183,7 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 	if bt.Serverless {
 		// The bundle records that the target is serverless but not which version,
 		// so use the default stand-in (spec §4.3).
-		return &TargetInfo{
+		return &ComputeInfo{
 			Source:            "bundle",
 			ServerlessVersion: NormalizeServerless(defaultServerlessVersion),
 			EnvKey:            EnvKeyForServerless(defaultServerlessVersion),
@@ -195,7 +195,7 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 		if err != nil {
 			return nil, NewError(ErrResolve, err, "resolving bundle cluster %s", bt.ClusterID)
 		}
-		return &TargetInfo{
+		return &ComputeInfo{
 			Source:       "bundle",
 			ClusterID:    bt.ClusterID,
 			SparkVersion: v,

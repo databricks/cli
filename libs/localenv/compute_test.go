@@ -30,7 +30,7 @@ func (s stubCompute) JobTaskEnvironment(_ context.Context, _, _ string) (string,
 }
 
 func TestResolveServerlessFlag(t *testing.T) {
-	ti, err := ResolveTarget(t.Context(), TargetFlags{Serverless: "v4"}, stubCompute{}, BundleTarget{})
+	ti, err := ResolveCompute(t.Context(), ComputeFlags{Serverless: "v4"}, stubCompute{}, BundleTarget{})
 	require.NoError(t, err)
 	assert.Equal(t, "serverless", ti.Source)
 	assert.Equal(t, "v4", ti.ServerlessVersion)
@@ -39,7 +39,7 @@ func TestResolveServerlessFlag(t *testing.T) {
 
 func TestResolveServerlessFlagBareNumber(t *testing.T) {
 	// The documented input is a bare number; it normalizes to the vN env key.
-	ti, err := ResolveTarget(t.Context(), TargetFlags{Serverless: "5"}, stubCompute{}, BundleTarget{})
+	ti, err := ResolveCompute(t.Context(), ComputeFlags{Serverless: "5"}, stubCompute{}, BundleTarget{})
 	require.NoError(t, err)
 	assert.Equal(t, "serverless/serverless-v5", ti.EnvKey)
 }
@@ -48,7 +48,7 @@ func TestResolveServerlessFlagRejectsMalformed(t *testing.T) {
 	// Malformed values fail fast at resolve (E_RESOLVE) rather than resolving to
 	// a bogus env key that only 404s at fetch.
 	for _, bad := range []string{"vv5", "v", " 5", "5x", "latest"} {
-		_, err := ResolveTarget(t.Context(), TargetFlags{Serverless: bad}, stubCompute{}, BundleTarget{})
+		_, err := ResolveCompute(t.Context(), ComputeFlags{Serverless: bad}, stubCompute{}, BundleTarget{})
 		var pe *PipelineError
 		require.ErrorAs(t, err, &pe, "input %q should error", bad)
 		assert.Equal(t, ErrResolve, pe.Code, "input %q", bad)
@@ -57,7 +57,7 @@ func TestResolveServerlessFlagRejectsMalformed(t *testing.T) {
 
 func TestResolveClusterFlag(t *testing.T) {
 	c := stubCompute{clusterVersion: "15.4.x-scala2.12"}
-	ti, err := ResolveTarget(t.Context(), TargetFlags{Cluster: "abc"}, c, BundleTarget{})
+	ti, err := ResolveCompute(t.Context(), ComputeFlags{Cluster: "abc"}, c, BundleTarget{})
 	require.NoError(t, err)
 	assert.Equal(t, "cluster", ti.Source)
 	assert.Equal(t, "15.4.x-scala2.12", ti.SparkVersion)
@@ -67,7 +67,7 @@ func TestResolveClusterFlag(t *testing.T) {
 
 func TestResolveClusterFlagError(t *testing.T) {
 	c := stubCompute{clusterErr: errors.New("cluster not found")}
-	_, err := ResolveTarget(t.Context(), TargetFlags{Cluster: "abc"}, c, BundleTarget{})
+	_, err := ResolveCompute(t.Context(), ComputeFlags{Cluster: "abc"}, c, BundleTarget{})
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrResolve, pe.Code)
@@ -78,7 +78,7 @@ func TestResolveClusterNameFlag(t *testing.T) {
 	// --cluster-id: source=cluster, the resolved ID is reported, and the env key
 	// derives from the resolved cluster's Spark version.
 	c := stubCompute{byNameID: "cid-123", byNameVersion: "15.4.x-scala2.12"}
-	ti, err := ResolveTarget(t.Context(), TargetFlags{ClusterName: "my-cluster"}, c, BundleTarget{})
+	ti, err := ResolveCompute(t.Context(), ComputeFlags{ClusterName: "my-cluster"}, c, BundleTarget{})
 	require.NoError(t, err)
 	assert.Equal(t, "cluster", ti.Source)
 	assert.Equal(t, "cid-123", ti.ClusterID)
@@ -89,7 +89,7 @@ func TestResolveClusterNameFlag(t *testing.T) {
 func TestResolveClusterNameFlagError(t *testing.T) {
 	// An unknown or ambiguous name surfaces as E_RESOLVE.
 	c := stubCompute{byNameErr: errors.New("there are 2 instances of ClusterDetails named 'dup'")}
-	_, err := ResolveTarget(t.Context(), TargetFlags{ClusterName: "dup"}, c, BundleTarget{})
+	_, err := ResolveCompute(t.Context(), ComputeFlags{ClusterName: "dup"}, c, BundleTarget{})
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrResolve, pe.Code)
@@ -97,14 +97,14 @@ func TestResolveClusterNameFlagError(t *testing.T) {
 
 func TestResolveClusterIdAndNameMutuallyExclusive(t *testing.T) {
 	// The library path rejects setting both --cluster-id and --cluster-name.
-	_, err := ResolveTarget(t.Context(), TargetFlags{Cluster: "abc", ClusterName: "xyz"}, stubCompute{}, BundleTarget{})
+	_, err := ResolveCompute(t.Context(), ComputeFlags{Cluster: "abc", ClusterName: "xyz"}, stubCompute{}, BundleTarget{})
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrResolve, pe.Code)
 }
 
 func TestResolveBundleNothingSelected(t *testing.T) {
-	_, err := ResolveTarget(t.Context(), TargetFlags{}, stubCompute{}, BundleTarget{Selected: false})
+	_, err := ResolveCompute(t.Context(), ComputeFlags{}, stubCompute{}, BundleTarget{Selected: false})
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrNoTarget, pe.Code)
@@ -112,7 +112,7 @@ func TestResolveBundleNothingSelected(t *testing.T) {
 
 func TestResolveBundleServerless(t *testing.T) {
 	// The bundle records serverless but no version, so the default stand-in applies.
-	ti, err := ResolveTarget(t.Context(), TargetFlags{}, stubCompute{}, BundleTarget{Selected: true, Serverless: true})
+	ti, err := ResolveCompute(t.Context(), ComputeFlags{}, stubCompute{}, BundleTarget{Selected: true, Serverless: true})
 	require.NoError(t, err)
 	assert.Equal(t, "bundle", ti.Source)
 	// Concrete literal, not "serverless-"+defaultServerlessVersion: the default
@@ -155,7 +155,7 @@ func (s *jobStubCompute) JobTaskEnvironment(_ context.Context, jobID, taskKey st
 func TestResolveJobTaskClassicUsesSparkVersion(t *testing.T) {
 	// A classic task resolves to its cluster's Spark version → dbr/ env key.
 	c := &jobStubCompute{sparkVersion: "15.4.x-scala2.12"}
-	ti, err := ResolveTarget(t.Context(), TargetFlags{JobTask: "42.ingest"}, c, BundleTarget{})
+	ti, err := ResolveCompute(t.Context(), ComputeFlags{JobTask: "42.ingest"}, c, BundleTarget{})
 	require.NoError(t, err)
 	assert.Equal(t, "job", ti.Source)
 	assert.Equal(t, "15.4.x-scala2.12", ti.SparkVersion)
@@ -169,7 +169,7 @@ func TestResolveJobTaskSplitsOnFirstDot(t *testing.T) {
 	// Task keys may themselves contain dots, so only the first dot separates the
 	// job ID from the task key.
 	c := &jobStubCompute{sparkVersion: "15.4.x-scala2.12"}
-	_, err := ResolveTarget(t.Context(), TargetFlags{JobTask: "42.a.b.c"}, c, BundleTarget{})
+	_, err := ResolveCompute(t.Context(), ComputeFlags{JobTask: "42.a.b.c"}, c, BundleTarget{})
 	require.NoError(t, err)
 	assert.Equal(t, "42", c.gotJobID)
 	assert.Equal(t, "a.b.c", c.gotTaskKey)
@@ -179,7 +179,7 @@ func TestResolveJobTaskServerlessUsesTaskVersion(t *testing.T) {
 	// A serverless task's environment version is read directly (no fallback):
 	// it maps to the matching serverless-vN, not the classic dbr path.
 	c := &jobStubCompute{isServerless: true, version: "3"}
-	ti, err := ResolveTarget(t.Context(), TargetFlags{JobTask: "42.transform"}, c, BundleTarget{})
+	ti, err := ResolveCompute(t.Context(), ComputeFlags{JobTask: "42.transform"}, c, BundleTarget{})
 	require.NoError(t, err)
 	assert.Equal(t, "job", ti.Source)
 	assert.Empty(t, ti.SparkVersion)
@@ -190,7 +190,7 @@ func TestResolveJobTaskMissingKeyIsUsageError(t *testing.T) {
 	// A bare "<job-id>" (no task key) is E_USAGE, not E_RESOLVE: the user must
 	// pick a task. The stub reports the enumerate request via ErrTaskKeyRequired.
 	c := &jobStubCompute{err: &ErrTaskKeyRequired{JobID: "42", TaskKeys: []string{"ingest", "transform"}}}
-	_, err := ResolveTarget(t.Context(), TargetFlags{JobTask: "42"}, c, BundleTarget{})
+	_, err := ResolveCompute(t.Context(), ComputeFlags{JobTask: "42"}, c, BundleTarget{})
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrUsage, pe.Code)
@@ -201,22 +201,22 @@ func TestResolveJobTaskUnknownKeyIsResolveError(t *testing.T) {
 	// An unknown task key is a genuine resolve failure (E_RESOLVE), distinct from
 	// the missing-key usage error above.
 	c := &jobStubCompute{err: errors.New(`job 42 has no task "nope" (available: ingest)`)}
-	_, err := ResolveTarget(t.Context(), TargetFlags{JobTask: "42.nope"}, c, BundleTarget{})
+	_, err := ResolveCompute(t.Context(), ComputeFlags{JobTask: "42.nope"}, c, BundleTarget{})
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrResolve, pe.Code)
 }
 
-func TestValidateTargetFlagsMutuallyExclusive(t *testing.T) {
-	assert.Error(t, ValidateTargetFlags(TargetFlags{Cluster: "a", Serverless: "v4"}))
-	assert.NoError(t, ValidateTargetFlags(TargetFlags{Cluster: "a"}))
+func TestValidateComputeFlagsMutuallyExclusive(t *testing.T) {
+	assert.Error(t, ValidateComputeFlags(ComputeFlags{Cluster: "a", Serverless: "v4"}))
+	assert.NoError(t, ValidateComputeFlags(ComputeFlags{Cluster: "a"}))
 }
 
-func TestResolveTargetRejectsConflictingFlags(t *testing.T) {
-	// ResolveTarget must reject incompatible flags rather than silently taking
+func TestResolveComputeRejectsConflictingFlags(t *testing.T) {
+	// ResolveCompute must reject incompatible flags rather than silently taking
 	// the first precedence branch, so a library caller bypassing Cobra can't
 	// resolve a different target than it asked for.
-	_, err := ResolveTarget(t.Context(), TargetFlags{Cluster: "c", Serverless: "v4"}, stubCompute{}, BundleTarget{})
+	_, err := ResolveCompute(t.Context(), ComputeFlags{Cluster: "c", Serverless: "v4"}, stubCompute{}, BundleTarget{})
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrResolve, pe.Code)
