@@ -107,6 +107,7 @@ func newCreateExperiment() *cobra.Command {
 
 	cmd.Flags().StringVar(&createExperimentReq.ArtifactLocation, "artifact-location", createExperimentReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
 	// TODO: array: tags
+	// TODO: complex arg: trace_location
 
 	cmd.Use = "create-experiment NAME"
 	cmd.Short = `Create experiment.`

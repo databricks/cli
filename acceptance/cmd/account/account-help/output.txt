@@ -55,7 +55,7 @@ OAuth
   service-principal-secrets           These APIs enable administrators to manage service principal secrets.
 
 Disaster Recovery
-  disaster-recovery                   *Public Preview* Manage disaster recovery configurations and execute failover operations.
+  disaster-recovery                   Manage disaster recovery configurations and execute failover operations.
 
 Flags:
   -h, --help   help for account

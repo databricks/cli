@@ -105,6 +105,10 @@ type DataSources struct {
 	PostgresBranch                              map[string]any `json:"databricks_postgres_branch,omitempty"`
 	PostgresBranches                            map[string]any `json:"databricks_postgres_branches,omitempty"`
 	PostgresCatalog                             map[string]any `json:"databricks_postgres_catalog,omitempty"`
+	PostgresCdfConfig                           map[string]any `json:"databricks_postgres_cdf_config,omitempty"`
+	PostgresCdfConfigs                          map[string]any `json:"databricks_postgres_cdf_configs,omitempty"`
+	PostgresCdfStatus                           map[string]any `json:"databricks_postgres_cdf_status,omitempty"`
+	PostgresCdfStatuses                         map[string]any `json:"databricks_postgres_cdf_statuses,omitempty"`
 	PostgresDataApi                             map[string]any `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                            map[string]any `json:"databricks_postgres_database,omitempty"`
 	PostgresDatabases                           map[string]any `json:"databricks_postgres_databases,omitempty"`
@@ -117,6 +121,7 @@ type DataSources struct {
 	PostgresSyncedTable                         map[string]any `json:"databricks_postgres_synced_table,omitempty"`
 	QualityMonitorV2                            map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	QualityMonitorsV2                           map[string]any `json:"databricks_quality_monitors_v2,omitempty"`
+	Recipients                                  map[string]any `json:"databricks_recipients,omitempty"`
 	RegisteredModel                             map[string]any `json:"databricks_registered_model,omitempty"`
 	RegisteredModelVersions                     map[string]any `json:"databricks_registered_model_versions,omitempty"`
 	RfaAccessRequestDestinations                map[string]any `json:"databricks_rfa_access_request_destinations,omitempty"`
@@ -262,6 +267,10 @@ func NewDataSources() *DataSources {
 		PostgresBranch:                              make(map[string]any),
 		PostgresBranches:                            make(map[string]any),
 		PostgresCatalog:                             make(map[string]any),
+		PostgresCdfConfig:                           make(map[string]any),
+		PostgresCdfConfigs:                          make(map[string]any),
+		PostgresCdfStatus:                           make(map[string]any),
+		PostgresCdfStatuses:                         make(map[string]any),
 		PostgresDataApi:                             make(map[string]any),
 		PostgresDatabase:                            make(map[string]any),
 		PostgresDatabases:                           make(map[string]any),
@@ -274,6 +283,7 @@ func NewDataSources() *DataSources {
 		PostgresSyncedTable:                         make(map[string]any),
 		QualityMonitorV2:                            make(map[string]any),
 		QualityMonitorsV2:                           make(map[string]any),
+		Recipients:                                  make(map[string]any),
 		RegisteredModel:                             make(map[string]any),
 		RegisteredModelVersions:                     make(map[string]any),
 		RfaAccessRequestDestinations:                make(map[string]any),

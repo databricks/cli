@@ -32,6 +32,10 @@ from databricks.bundles.pipelines._models.outlook_options import (
     OutlookOptions,
     OutlookOptionsParam,
 )
+from databricks.bundles.pipelines._models.reddit_ads_options import (
+    RedditAdsOptions,
+    RedditAdsOptionsParam,
+)
 from databricks.bundles.pipelines._models.sharepoint_options import (
     SharepointOptions,
     SharepointOptionsParam,
@@ -87,9 +91,7 @@ class ConnectorOptions:
 
     kafka_options: VariableOrOptional[KafkaOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview]
+    [Beta]
     """
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptions] = None
@@ -102,6 +104,13 @@ class ConnectorOptions:
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Outlook specific options for ingestion
+    """
+
+    reddit_ads_options: VariableOrOptional[RedditAdsOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Reddit Ads specific options for ingestion
     """
 
     sharepoint_options: VariableOrOptional[SharepointOptions] = None
@@ -171,9 +180,7 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     kafka_options: VariableOrOptional[KafkaOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview]
+    [Beta]
     """
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptionsParam]
@@ -186,6 +193,13 @@ class ConnectorOptionsDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Outlook specific options for ingestion
+    """
+
+    reddit_ads_options: VariableOrOptional[RedditAdsOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Reddit Ads specific options for ingestion
     """
 
     sharepoint_options: VariableOrOptional[SharepointOptionsParam]

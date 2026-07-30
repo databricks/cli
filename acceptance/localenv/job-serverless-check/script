@@ -1,1 +1,1 @@
-trace $CLI local-env python sync --job 12345 --check
+trace $CLI environments setup-local --job-task 12345.transform --dry-run

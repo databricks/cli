@@ -121,6 +121,14 @@ class TableSpecificConfig:
     [Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
     """
 
+    source_metadata_column: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Name of the struct column added to each ingested record to hold per row source
+    metadata.
+    """
+
     table_properties: VariableOrDict[str] = field(default_factory=dict)
     """
     [Beta] Table properties to set on the destination table.
@@ -235,6 +243,14 @@ class TableSpecificConfigDict(TypedDict, total=False):
     sequence_by: VariableOrList[str]
     """
     [Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
+    """
+
+    source_metadata_column: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Name of the struct column added to each ingested record to hold per row source
+    metadata.
     """
 
     table_properties: VariableOrDict[str]

@@ -49,9 +49,8 @@ func TestCreateGitArchiveSnapshot(t *testing.T) {
 	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, nil))
 
 	entries := tarballEntries(t, out)
-	// Every real entry is prefixed with the directory name; the tracked files are
-	// present. git archive also emits a `pax_global_header` pseudo-entry carrying
-	// the commit SHA — it has no prefix and tar ignores it on extraction.
+	// Every real entry is prefixed with the directory name. git archive also emits a
+	// `pax_global_header` pseudo-entry (no prefix) that tar ignores on extraction.
 	assert.Contains(t, entries, dirName+"/a.txt")
 	assert.Contains(t, entries, dirName+"/src/model.py")
 	for _, e := range entries {
@@ -75,18 +74,17 @@ func TestCreateGitArchiveSnapshot_IncludePaths(t *testing.T) {
 
 	entries := tarballEntries(t, out)
 	assert.Contains(t, entries, dirName+"/src/model.py")
-	// a.txt is outside the include path, so it must not appear.
 	assert.NotContains(t, entries, dirName+"/a.txt")
 }
 
 func TestCreatePlainTarball(t *testing.T) {
 	ctx := t.Context()
-	repo := newTestRepo(t)
+	repo := t.TempDir()
 	writeRepoFile(t, repo, "a.txt", "1")
 	writeRepoFile(t, repo, "src/model.py", "print()")
-	commitAll(t, repo, "init")
-	// Uncommitted file must be included in a plain tar.
 	writeRepoFile(t, repo, "dirty.txt", "wip")
+	// A .git dir must never be shipped.
+	writeRepoFile(t, repo, ".git/config", "x")
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	require.NoError(t, createPlainTarball(ctx, repo, out, nil))
@@ -103,7 +101,7 @@ func TestCreatePlainTarball(t *testing.T) {
 
 func TestCreatePlainTarball_HonorsGitignore(t *testing.T) {
 	ctx := t.Context()
-	repo := newTestRepo(t)
+	repo := t.TempDir()
 	writeRepoFile(t, repo, "keep.txt", "1")
 	writeRepoFile(t, repo, "junk.log", "noise")
 	writeRepoFile(t, repo, ".gitignore", "*.log\n")
@@ -119,7 +117,7 @@ func TestCreatePlainTarball_HonorsGitignore(t *testing.T) {
 
 func TestCreatePlainTarball_IncludePaths(t *testing.T) {
 	ctx := t.Context()
-	repo := newTestRepo(t)
+	repo := t.TempDir()
 	writeRepoFile(t, repo, "a.txt", "1")
 	writeRepoFile(t, repo, "src/model.py", "print()")
 

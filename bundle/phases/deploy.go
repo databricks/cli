@@ -152,7 +152,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// mutators need informed consent if they are potentially destructive.
 	bundle.ApplySeqContext(ctx, b,
 		scripts.Execute(config.ScriptPreDeploy),
-		lock.Acquire(),
+		lock.Acquire(lock.GoalDeploy),
 	)
 
 	if logdiag.HasError(ctx) {

@@ -63,13 +63,15 @@
             "order": 6
         },
         "personal_schemas": {
+            "//": "Always 'yes' for default-minimal: development uses a personal schema based on the current user name",
+            "skip_prompt_if": {},
             "type": "string",
-            "description": "Use a personal schema for each user working on this project\n(this is recommended, your personal schema will be '{{.default_catalog}}.{{short_name}}')",
             "default": "yes",
             "enum": [
                 "yes",
                 "no, I will customize the schema configuration later in databricks.yml"
             ],
+            "description": "Use a personal schema for each user working on this project",
             "order": 7
         },
         "language_choice": {
@@ -79,15 +81,15 @@
             "enum": [
                 "python",
                 "sql",
-                "other"
+                "skip"
             ],
             "order": 8
         },
         "language": {
-            "//": "Derived from language_choice: for Python, pyproject.toml and tests are included; for others they are excluded",
+            "//": "Mirrors language_choice: 'python' includes pyproject.toml and tests, 'sql' includes SQL sources, 'skip' includes neither",
             "skip_prompt_if": {},
             "type": "string",
-            "default": "{{if eq .language_choice \"python\"}}python{{else}}sql{{end}}",
+            "default": "{{.language_choice}}",
             "description": "Derived language property for template logic",
             "order": 9
         },

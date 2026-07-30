@@ -2,6 +2,7 @@ package localenv
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -10,16 +11,48 @@ import (
 type ComputeClient interface {
 	// GetClusterSparkVersion returns the Spark version string for a cluster.
 	GetClusterSparkVersion(ctx context.Context, clusterID string) (string, error)
-	// GetJobSparkVersion returns either a Spark version (isServerless=false) or a
-	// serverless marker (isServerless=true) for a job, plus a recorded version string.
-	GetJobSparkVersion(ctx context.Context, jobID string) (sparkVersion string, isServerless bool, version string, err error)
+	// GetClusterByName resolves a cluster name to its ID and Spark version. It
+	// errors when the name is unknown or ambiguous (more than one cluster shares
+	// the name), so the caller can surface an actionable E_RESOLVE.
+	GetClusterByName(ctx context.Context, name string) (clusterID, sparkVersion string, err error)
+	// JobTaskEnvironment resolves a single job task's compute to an environment.
+	//
+	// A job can bind multiple tasks to different environment versions, so the
+	// target is a specific task, not the whole job. taskKey selects it; an empty
+	// taskKey is a request to enumerate — the method returns ErrTaskKeyRequired
+	// wrapping the job's task keys so the caller can prompt for one. An unknown
+	// taskKey returns an error naming the available keys.
+	//
+	// For a serverless task, isServerless is true and version is the task's
+	// recorded serverless environment version (read directly — no fallback). For
+	// a classic task, isServerless is false and sparkVersion is the task cluster's
+	// runtime.
+	JobTaskEnvironment(ctx context.Context, jobID, taskKey string) (sparkVersion string, isServerless bool, version string, err error)
+}
+
+// ErrTaskKeyRequired is returned by JobTaskEnvironment when --job-task names a
+// job but no task, so ResolveTarget can classify it as E_USAGE (the user must
+// pick a task) rather than E_RESOLVE. It carries the job's task keys so the
+// error message can list them.
+type ErrTaskKeyRequired struct {
+	JobID    string
+	TaskKeys []string
+}
+
+func (e *ErrTaskKeyRequired) Error() string {
+	return fmt.Sprintf("job %s has multiple tasks; specify one: --job-task %s.<task-key> (available: %s)",
+		e.JobID, e.JobID, strings.Join(e.TaskKeys, ", "))
 }
 
 // TargetFlags holds the mutually-exclusive compute target flags from the CLI.
 type TargetFlags struct {
-	Cluster    string
-	Serverless string
-	Job        string
+	Cluster     string
+	ClusterName string
+	Serverless  string
+	// JobTask is "<job-id>.<task-key>" (or a bare "<job-id>", which resolves to
+	// an E_USAGE listing the job's task keys). A job can bind tasks to different
+	// environment versions, so the target is a specific task, not the whole job.
+	JobTask string
 }
 
 // BundleTarget is the three-state result of reading the bundle's configured
@@ -32,20 +65,23 @@ type BundleTarget struct {
 
 // noTargetMessage is the actionable message shown when no target is selected,
 // matching spec §2.3.
-const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster / --serverless / --job"
+const noTargetMessage = "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --cluster-name / --serverless-version / --job-task"
 
-// ValidateTargetFlags returns an error if more than one of the three flags is set.
+// ValidateTargetFlags returns an error if more than one of the target flags is set.
 // Cobra marks them mutually exclusive too; this guards the library path.
 func ValidateTargetFlags(f TargetFlags) error {
 	var set []string
 	if f.Cluster != "" {
-		set = append(set, "--cluster")
+		set = append(set, "--cluster-id")
+	}
+	if f.ClusterName != "" {
+		set = append(set, "--cluster-name")
 	}
 	if f.Serverless != "" {
-		set = append(set, "--serverless")
+		set = append(set, "--serverless-version")
 	}
-	if f.Job != "" {
-		set = append(set, "--job")
+	if f.JobTask != "" {
+		set = append(set, "--job-task")
 	}
 	if len(set) > 1 {
 		return fmt.Errorf("flags %s are mutually exclusive; specify at most one", strings.Join(set, " and "))
@@ -54,7 +90,7 @@ func ValidateTargetFlags(f TargetFlags) error {
 }
 
 // ResolveTarget resolves the compute target using ordered precedence:
-// --cluster flag → --serverless flag → --job flag → bundle target.
+// --cluster-id → --cluster-name → --serverless-version → --job-task → bundle target.
 // PythonVersion is left empty; it is filled later from constraint data.
 //
 // Incompatible flags are rejected up front: without this a library caller that
@@ -79,7 +115,26 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 		}, nil
 	}
 
+	if f.ClusterName != "" {
+		// Resolve the name to an ID via the Clusters API; from there it is
+		// identical to --cluster-id. An unknown or ambiguous name (two clusters
+		// sharing it) yields an actionable E_RESOLVE.
+		id, v, err := c.GetClusterByName(ctx, f.ClusterName)
+		if err != nil {
+			return nil, NewError(ErrResolve, err, "resolving cluster name %q", f.ClusterName)
+		}
+		return &TargetInfo{
+			Source:       "cluster",
+			ClusterID:    id,
+			SparkVersion: v,
+			EnvKey:       EnvKeyForSparkVersion(v),
+		}, nil
+	}
+
 	if f.Serverless != "" {
+		if !ValidServerlessVersion(f.Serverless) {
+			return nil, NewError(ErrResolve, nil, "invalid --serverless-version %q: expected a version number like 5", f.Serverless)
+		}
 		return &TargetInfo{
 			Source:            "serverless",
 			ServerlessVersion: NormalizeServerless(f.Serverless),
@@ -87,27 +142,32 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 		}, nil
 	}
 
-	if f.Job != "" {
-		sparkVersion, isServerless, version, err := c.GetJobSparkVersion(ctx, f.Job)
+	if f.JobTask != "" {
+		// Split "<job-id>.<task-key>" on the FIRST dot: task keys may themselves
+		// contain dots, so everything after the first separator is the task key.
+		// A bare "<job-id>" (no dot) leaves taskKey empty, which JobTaskEnvironment
+		// treats as an enumerate request and reports back via ErrTaskKeyRequired.
+		jobID, taskKey, _ := strings.Cut(f.JobTask, ".")
+		sparkVersion, isServerless, version, err := c.JobTaskEnvironment(ctx, jobID, taskKey)
 		if err != nil {
-			return nil, NewError(ErrResolve, err, "resolving job %s", f.Job)
+			// A missing task key is a usage error (the user must pick a task),
+			// distinct from a genuine resolve failure (unknown key, API error).
+			if _, ok := errors.AsType[*ErrTaskKeyRequired](err); ok {
+				return nil, NewError(ErrUsage, err, "specify a job task")
+			}
+			return nil, NewError(ErrResolve, err, "resolving job task %s", f.JobTask)
 		}
 		if isServerless {
-			// Use the job's recorded serverless environment version when present;
-			// fall back to v4 when the job did not pin one (documented stand-in from
-			// the original script, spec §4.3).
-			v := version
-			if v == "" {
-				v = "v4"
-			}
+			// The task's serverless environment version is read directly from its
+			// bound environment, so there is no version to guess: unlike the bundle
+			// path, the job-task path never applies the serverless-vN fallback.
 			return &TargetInfo{
 				Source:            "job",
-				ServerlessVersion: NormalizeServerless(v),
-				EnvKey:            EnvKeyForServerless(v),
+				ServerlessVersion: NormalizeServerless(version),
+				EnvKey:            EnvKeyForServerless(version),
 			}, nil
 		}
-		// Classic compute: the Spark version is the first return per the
-		// GetJobSparkVersion contract, not the recorded-version third return.
+		// Classic compute: sparkVersion is the task cluster's runtime.
 		return &TargetInfo{
 			Source:       "job",
 			SparkVersion: sparkVersion,
@@ -121,12 +181,12 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 	}
 
 	if bt.Serverless {
-		// Default to serverless-v4: the serverless env version is not recorded
-		// in the bundle/project (documented stand-in from the original script).
+		// The bundle records that the target is serverless but not which version,
+		// so use the default stand-in (spec §4.3).
 		return &TargetInfo{
 			Source:            "bundle",
-			ServerlessVersion: "v4",
-			EnvKey:            EnvKeyForServerless("v4"),
+			ServerlessVersion: NormalizeServerless(defaultServerlessVersion),
+			EnvKey:            EnvKeyForServerless(defaultServerlessVersion),
 		}, nil
 	}
 

@@ -1,1 +1,7 @@
-Error: if any flags in the group [cluster serverless job] are set none of the others can be; [cluster serverless] were all set
+preflight  error  invalid compute target flags: flags --cluster-id and --serverless-version are mutually exclusive; specify at most one
+resolve    pending
+fetch      pending
+merge      pending
+provision  pending
+validate   pending
+For more detail, re-run with --debug, or --output json to share a structured report.

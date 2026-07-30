@@ -13,8 +13,8 @@ errcode trace $CLI experimental air run -f valid.yaml --dry-run --override bogus
 title "override still runs schema validation"
 errcode trace $CLI experimental air run -f valid.yaml --dry-run --override compute.num_accelerators=0
 
-title "watch not yet supported"
-errcode trace $CLI experimental air run -f valid.yaml --dry-run --watch
+title "watch is ignored with dry-run (nothing is submitted)"
+trace $CLI experimental air run -f valid.yaml --dry-run --watch
 
 title "code_source config passes validation"
 trace $CLI experimental air run -f with-code-source.yaml --dry-run
