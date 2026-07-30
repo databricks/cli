@@ -284,8 +284,8 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-// compactAndSaveState compacts the state (replacing fields declared hashed_in_state
-// with content hashes, see dresources.CompactState) before persisting it
+// compactAndSaveState compacts the state (replacing fields declared in hashed_in_state
+// with content hashes, see dresources.CompactState) before persisting it.
 func (d *DeploymentUnit) compactAndSaveState(db *dstate.DeploymentState, id string, newState any) error {
 	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), newState)
 	if err != nil {
