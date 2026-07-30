@@ -285,6 +285,11 @@ resources:
       # Accepted on write but not returned by GET.
       - field: config.served_entities[*].burst_scaling_enabled
         reason: input_only
+      # Accepted by the create API but GET never echoes it back, so the remote
+      # always reports empty and every deploy would otherwise replan the same
+      # update forever.
+      - field: telemetry_config
+        reason: input_only
       # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
       - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
         reason: input_only
@@ -315,6 +320,12 @@ resources:
         reason: no_update_api
       - field: rate_limits
         reason: not_implemented
+      # telemetry_config can only be set at create time: there is no update API
+      # for it on ServingEndpointsAPI, and no update request body in the OpenAPI
+      # spec carries the field. Without this rule the plan promises an update
+      # that DoUpdate has no call to make, so the change is silently dropped.
+      - field: telemetry_config
+        reason: no_update_api
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
       # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()

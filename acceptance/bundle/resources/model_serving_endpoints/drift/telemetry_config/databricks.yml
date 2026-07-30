@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle
+
+resources:
+  model_serving_endpoints:
+    endpoint1:
+      name: test-endpoint
+      config:
+        served_entities:
+          - name: prod
+            external_model:
+              name: gpt-4o-mini
+              provider: openai
+              task: llm/v1/chat
+              openai_config:
+                openai_api_key_plaintext: sk-test-plaintext-key
+        traffic_config:
+          routes:
+            - served_model_name: prod
+              traffic_percentage: 100
+      # Accepted by the create API, never returned on GET, and there is no
+      # update API for it.
+      telemetry_config:
+        inference_table_config:
+          sampling_fraction: 0.5
