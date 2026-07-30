@@ -3,23 +3,37 @@ bundle:
 
 resources:
   jobs:
-    s4_target_rename:
+    rename_target_task:
       tasks:
         - task_key: top1
           notebook_task:
-            notebook_path: /Workspace/s4-top
+            notebook_path: /Workspace/rename-target-top
 
-    s5_rename_both_blocks:
+    rename_tasks_in_both_blocks:
       tasks:
         - task_key: m
           notebook_task:
-            notebook_path: /Workspace/s5-top
+            notebook_path: /Workspace/rename-both-top
 
-    s6_rename_and_add:
+    rename_target_and_add_top_level:
       tasks:
         - task_key: n
           notebook_task:
-            notebook_path: /Workspace/s6-top
+            notebook_path: /Workspace/rename-and-add-top
+
+    independent_task_replacement:
+      timeout_seconds: 50
+      job_clusters:
+        - job_cluster_key: shared_cluster
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      tasks:
+        - task_key: survivor
+          job_cluster_key: shared_cluster
+          notebook_task:
+            notebook_path: /Workspace/surviving-task
 
     shifted_delete_rename:
       tasks:
@@ -36,23 +50,33 @@ targets:
     mode: development
     resources:
       jobs:
-        s4_target_rename:
+        rename_target_task:
           tasks:
             - task_key: t1
+              timeout_seconds: 40
               notebook_task:
-                notebook_path: /Workspace/s4-dev
+                notebook_path: /Workspace/rename-target-dev
 
-        s5_rename_both_blocks:
+        rename_tasks_in_both_blocks:
           tasks:
             - task_key: a
               notebook_task:
-                notebook_path: /Workspace/s5-target
+                notebook_path: /Workspace/rename-both-target
 
-        s6_rename_and_add:
+        rename_target_and_add_top_level:
           tasks:
             - task_key: t
               notebook_task:
-                notebook_path: /Workspace/s6-target
+                notebook_path: /Workspace/rename-and-add-target
+
+        independent_task_replacement:
+          tasks:
+            - task_key: etl
+              # This note belongs only to the task that is removed.
+              job_cluster_key: shared_cluster
+              timeout_seconds: 100
+              notebook_task:
+                notebook_path: /Workspace/shared-task
 
         shifted_delete_rename:
           tasks:
@@ -71,8 +95,8 @@ targets:
     mode: production
     resources:
       jobs:
-        s4_target_rename:
+        rename_target_task:
           tasks:
             - task_key: prod1
               notebook_task:
-                notebook_path: /Workspace/s4-prod
+                notebook_path: /Workspace/rename-target-prod

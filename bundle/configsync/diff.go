@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -226,7 +225,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 				}
 				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
 				change.configValue = stripNamePrefix(fullPath, change.configValue, b.Config.Presets.NamePrefix)
-				if change.Operation == OperationReplace && reflect.DeepEqual(change.Value, change.configValue) {
+				if change.Operation == OperationReplace && structdiff.IsEqual(change.Value, change.configValue) {
 					continue
 				}
 				resourceChanges[path] = change

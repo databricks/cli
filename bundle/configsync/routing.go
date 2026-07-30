@@ -2,17 +2,16 @@ package configsync
 
 import (
 	"cmp"
-	"context"
 	"errors"
 	"fmt"
 	"maps"
 	"path/filepath"
-	"reflect"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -176,36 +175,6 @@ func sourceSiblingsForSelection(sources *sourceIndex, selection mergedSelection,
 	return nil
 }
 
-func sourceRefsSpanScopes(refs []sourceRef, target string) bool {
-	if target == "" || len(refs) < 2 {
-		return false
-	}
-	hasTop, hasTarget := false, false
-	for _, ref := range refs {
-		if sourceRefIsTarget(ref, target) {
-			hasTarget = true
-		} else {
-			hasTop = true
-		}
-	}
-	return hasTop && hasTarget
-}
-
-func sourceRefForScope(refs []sourceRef, target string, wantTarget bool) (sourceRef, bool, error) {
-	var match sourceRef
-	count := 0
-	for _, ref := range refs {
-		if sourceRefIsTarget(ref, target) == wantTarget {
-			match = ref
-			count++
-		}
-	}
-	if count > 1 {
-		return sourceRef{}, false, errors.New("multiple physical source blocks match the destination scope")
-	}
-	return match, count == 1, nil
-}
-
 func normalizeSequenceAdd(
 	sources *sourceIndex,
 	ref sourceRef,
@@ -221,11 +190,11 @@ func normalizeSequenceAdd(
 	if !ok {
 		return path, change
 	}
-	source := sources.files[ref.file]
-	if source == nil {
+	source, ok := sources.files[ref.file]
+	if !ok {
 		return path, change
 	}
-	if value, err := dyn.GetByPath(source.root, concrete); err == nil && value.Kind() == dyn.KindSequence {
+	if value, err := dyn.GetByPath(source, concrete); err == nil && value.Kind() == dyn.KindSequence {
 		return path, change
 	}
 	copy := *change
@@ -268,17 +237,61 @@ func makeFieldChange(
 		FieldCandidates: []string{path.String()},
 		sourceSiblings:  slices.Clone(siblings),
 	}
-	if source := sources.files[ref.file]; source != nil {
-		fieldChange.originalFileContent = slices.Clone(source.content)
+	if source, ok := sources.files[ref.file]; ok {
 		if concrete, ok := concretePath(path); ok {
-			fieldChange.sourceValue, _ = dyn.GetByPath(source.root, concrete)
+			fieldChange.sourceValue, _ = dyn.GetByPath(source, concrete)
 		}
 	}
 	return fieldChange
 }
 
+func routePositionalIdentityChange(
+	b *bundle.Bundle,
+	sources *sourceIndex,
+	selection mergedSelection,
+	change *ConfigChangeDesc,
+) ([]FieldChange, bool, error) {
+	field, ok := selection.path.StringKey()
+	if !ok {
+		return nil, false, nil
+	}
+	elementPath := selection.path.Parent()
+	if _, ok := elementPath.Index(); !ok || positionalIdentityField(elementPath.Parent().String()) != field {
+		return nil, false, nil
+	}
+
+	concrete, ok := concretePath(elementPath)
+	if !ok {
+		return nil, true, fmt.Errorf("invalid positional element path %s", elementPath.String())
+	}
+	element, err := dyn.GetByPath(b.Config.Value(), concrete)
+	if err != nil {
+		return nil, true, fmt.Errorf("finding positional element %s: %w", elementPath.String(), err)
+	}
+	refs := sources.refsFor(element, elementPath, b.Config.Bundle.Target)
+	if len(refs) == 0 {
+		return nil, true, fmt.Errorf("failed to find source location for %s", elementPath.String())
+	}
+
+	result := make([]FieldChange, 0, len(refs))
+	for _, ref := range refs {
+		physicalPath := structpath.NewPatternStringKey(patternFromDynPath(ref.path), field)
+		_, err := dyn.GetByPath(sources.files[ref.file], ref.path.Append(dyn.Key(field)))
+		operation := change.Operation
+		if err != nil {
+			if operation == OperationRemove {
+				continue
+			}
+			operation = OperationAdd
+		} else if operation == OperationAdd {
+			operation = OperationReplace
+		}
+		result = append(result, makeFieldChange(b, sources, ref, physicalPath, cloneChangeWithOperation(change, operation), nil))
+	}
+	return result, true, nil
+}
+
 func routeFieldChange(
-	ctx context.Context,
 	b *bundle.Bundle,
 	sources *sourceIndex,
 	resourceKey string,
@@ -292,6 +305,9 @@ func routeFieldChange(
 		return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
 	}
 	target := b.Config.Bundle.Target
+	if routed, handled, err := routePositionalIdentityChange(b, sources, selection, change); handled {
+		return routed, err
+	}
 
 	if change.Operation == OperationRemove {
 		if !selection.value.IsValid() {
@@ -301,9 +317,6 @@ func routeFieldChange(
 		if len(refs) == 0 {
 			// Values injected by mutators or presets have no source node to remove.
 			return nil, nil
-		}
-		if sourceRefsSpanScopes(refs, target) {
-			return nil, fmt.Errorf("cannot remove %s because it is defined in both top-level and target scopes", fullPath)
 		}
 		result := make([]FieldChange, 0, len(refs))
 		for _, ref := range refs {
@@ -360,34 +373,37 @@ func routeFieldChange(
 		return nil, fmt.Errorf("failed to find source location for %s", fullPath)
 	}
 
-	// A genuinely new sequence element defaults to the broadest (top-level)
-	// scope. Search all ancestors for that scope before considering the target.
-	passes := []bool{false}
-	if target != "" {
-		passes = append(passes, true)
-	}
-	for _, wantTarget := range passes {
-		for _, ancestor := range slices.Backward(selection.ancestors) {
-			if ancestor.path == nil || ancestor.path.Len() < resourceDepth {
-				continue
+	// A new resource-level list element defaults to the broadest resource scope.
+	// A nested element stays with its existing physical sequence so it cannot
+	// escape a target override on an owner that also exists at top level.
+	var anchorPath *structpath.PatternNode
+	for _, component := range selection.path.AsSlice() {
+		if component.BracketStar() {
+			sequencePath := component.Parent()
+			ownerPath := sequencePath.Parent()
+			anchorPath = sequencePath
+			if ownerPath.Len() == resourceDepth {
+				anchorPath = ownerPath
 			}
-
-			refs := sources.refsFor(ancestor.value, ancestor.path, target)
-			ref, ok, err := sourceRefForScope(refs, target, wantTarget)
-			if err != nil {
-				return nil, fmt.Errorf("cannot place %s: %w", fullPath, err)
-			}
-			if !ok {
-				continue
-			}
-			physicalPath, err := appendPatternSuffix(ref.path, selection.path, ancestor.path)
-			if err != nil {
-				return nil, err
-			}
-			updatedChange := cloneChangeWithOperation(change, operation)
-			physicalPath, updatedChange = normalizeSequenceAdd(sources, ref, physicalPath, updatedChange)
-			return []FieldChange{makeFieldChange(b, sources, ref, physicalPath, updatedChange, siblings)}, nil
+			break
 		}
+	}
+	for _, ancestor := range slices.Backward(selection.ancestors) {
+		if anchorPath == nil || ancestor.path == nil || ancestor.path.String() != anchorPath.String() {
+			continue
+		}
+		refs := sources.refsFor(ancestor.value, ancestor.path, target)
+		if len(refs) == 0 {
+			break
+		}
+		ref, _ := chooseSourceRef(refs, target, false)
+		physicalPath, err := appendPatternSuffix(ref.path, selection.path, ancestor.path)
+		if err != nil {
+			return nil, err
+		}
+		updatedChange := cloneChangeWithOperation(change, operation)
+		physicalPath, updatedChange = normalizeSequenceAdd(sources, ref, physicalPath, updatedChange)
+		return []FieldChange{makeFieldChange(b, sources, ref, physicalPath, updatedChange, siblings)}, nil
 	}
 
 	return nil, fmt.Errorf("failed to find source location for %s", fullPath)
@@ -422,7 +438,7 @@ func diffValues(oldValue, newValue any) []valueChange {
 }
 
 func diffValuesAt(oldValue, newValue any, path dyn.Path, result *[]valueChange) {
-	if reflect.DeepEqual(oldValue, newValue) {
+	if structdiff.IsEqual(oldValue, newValue) {
 		return
 	}
 
@@ -481,6 +497,8 @@ type unresolvedRenameGroup struct {
 	removePaths []string
 	addPaths    []string
 }
+
+var errAmbiguousSource = errors.New("source location is ambiguous")
 
 func keyedElementPath(path string) (parent, key, value string, ok bool) {
 	node, err := structpath.ParsePath(path)
@@ -577,7 +595,7 @@ func pairRenames(changes ResourceChanges) (map[string]renamePair, map[string]str
 					if usedAdds[addIndex] {
 						continue
 					}
-					if reflect.DeepEqual(
+					if structdiff.IsEqual(
 						valueWithoutKey(remove.change.configValue, remove.key),
 						valueWithoutKey(add.change.Value, add.key),
 					) {
@@ -595,7 +613,7 @@ func pairRenames(changes ResourceChanges) (map[string]renamePair, map[string]str
 					if usedRemoves[otherRemoveIndex] {
 						continue
 					}
-					if reflect.DeepEqual(
+					if structdiff.IsEqual(
 						valueWithoutKey(otherRemove.change.configValue, otherRemove.key),
 						valueWithoutKey(add.change.Value, add.key),
 					) {
@@ -613,18 +631,18 @@ func pairRenames(changes ResourceChanges) (map[string]renamePair, map[string]str
 			}
 		}
 
-		unmatchedRemoves, unmatchedAdds := 0, 0
-		for _, used := range usedRemoves {
+		var unmatchedRemoves, unmatchedAdds []int
+		for index, used := range usedRemoves {
 			if !used {
-				unmatchedRemoves++
+				unmatchedRemoves = append(unmatchedRemoves, index)
 			}
 		}
-		for _, used := range usedAdds {
+		for index, used := range usedAdds {
 			if !used {
-				unmatchedAdds++
+				unmatchedAdds = append(unmatchedAdds, index)
 			}
 		}
-		if unmatchedRemoves > 0 && unmatchedAdds > 0 {
+		if len(unmatchedRemoves) > 0 && len(unmatchedAdds) > 0 {
 			group := unresolvedRenameGroup{}
 			for index, remove := range g.removes {
 				if !usedRemoves[index] {
@@ -655,7 +673,6 @@ func fieldChangeSequenceBlock(fieldChange FieldChange) (string, error) {
 }
 
 func validateUnresolvedRenameGroup(
-	ctx context.Context,
 	b *bundle.Bundle,
 	sources *sourceIndex,
 	resourceKey string,
@@ -665,7 +682,7 @@ func validateUnresolvedRenameGroup(
 	blocks := make(map[string]struct{})
 	paths := append(slices.Clone(group.removePaths), group.addPaths...)
 	for _, path := range paths {
-		fieldChanges, err := routeFieldChange(ctx, b, sources, resourceKey, path, changes[path])
+		fieldChanges, err := routeFieldChange(b, sources, resourceKey, path, changes[path])
 		if err != nil {
 			return err
 		}
@@ -686,14 +703,14 @@ func validateUnresolvedRenameGroup(
 
 	parent, key, _, _ := keyedElementPath(group.removePaths[0])
 	return fmt.Errorf(
-		"cannot distinguish renames from independent additions and removals in %s by %s across different source blocks",
+		"%w: cannot distinguish renames from independent additions and removals in %s by %s across different source blocks",
+		errAmbiguousSource,
 		parent,
 		key,
 	)
 }
 
 func routeRename(
-	ctx context.Context,
 	b *bundle.Bundle,
 	sources *sourceIndex,
 	resourceKey string,
@@ -713,10 +730,6 @@ func routeRename(
 	if len(refs) == 0 {
 		return nil, fmt.Errorf("failed to find source location for renamed element %s", oldFullPath)
 	}
-	if sourceRefsSpanScopes(refs, b.Config.Bundle.Target) {
-		return nil, fmt.Errorf("cannot rename %s because it is defined in both top-level and target scopes", oldFullPath)
-	}
-
 	result := make([]FieldChange, 0, len(refs))
 	for _, ref := range refs {
 		keyPath := structpath.NewPatternStringKey(patternFromDynPath(ref.path), pair.key)
@@ -747,7 +760,7 @@ func routeRename(
 			Value:       valueChange.newValue,
 			configValue: valueChange.oldValue,
 		}
-		routed, err := routeChange(ctx, b, sources, resourceKey, syntheticPath, synthetic)
+		routed, err := routeChange(b, sources, resourceKey, syntheticPath, synthetic)
 		if err != nil {
 			return nil, err
 		}
@@ -821,10 +834,22 @@ func planSequenceChanges(fieldPath string, oldValues, newValues []any) (sequence
 			newIdentityCount[identity]++
 		}
 	}
+	oldContentMatches := make([]int, len(oldValues))
+	newContentMatches := make([]int, len(newValues))
+	if identityField != "" {
+		for oldIndex, oldValue := range oldValues {
+			for newIndex, newValue := range newValues {
+				if structdiff.IsEqual(valueWithoutKey(oldValue, identityField), valueWithoutKey(newValue, identityField)) {
+					oldContentMatches[oldIndex]++
+					newContentMatches[newIndex]++
+				}
+			}
+		}
+	}
 
-	const impossible = int(^uint(0)>>1) / 4
-	pairCost := func(oldIndex, newIndex int) int {
-		if reflect.DeepEqual(oldValues[oldIndex], newValues[newIndex]) {
+	const cannotMatch = int(^uint(0)>>1) / 4
+	matchEdits := func(oldIndex, newIndex int) int {
+		if structdiff.IsEqual(oldValues[oldIndex], newValues[newIndex]) {
 			return 0
 		}
 		if identityField == "" {
@@ -834,32 +859,66 @@ func planSequenceChanges(fieldPath string, oldValues, newValues []any) (sequence
 		if identity != "" && identity == newIdentities[newIndex] && oldIdentityCount[identity] == 1 && newIdentityCount[identity] == 1 {
 			return 1
 		}
-		return impossible
+		// A label rename is recoverable when the remaining cluster content has
+		// exactly one match on each side.
+		if oldContentMatches[oldIndex] == 1 && newContentMatches[newIndex] == 1 && structdiff.IsEqual(
+			valueWithoutKey(oldValues[oldIndex], identityField),
+			valueWithoutKey(newValues[newIndex], identityField),
+		) {
+			return 1
+		}
+		return cannotMatch
 	}
 
 	type cell struct {
-		cost int
-		ways int
+		edits       int
+		matches     []string
+		commonPairs []sequencePair
 	}
 	dp := make([][]cell, len(oldValues)+1)
 	for index := range dp {
 		dp[index] = make([]cell, len(newValues)+1)
 		for other := range dp[index] {
-			dp[index][other].cost = impossible
+			dp[index][other].edits = cannotMatch
 		}
 	}
-	dp[len(oldValues)][len(newValues)] = cell{ways: 1}
-	addCandidate := func(best *cell, cost, ways int) {
-		if ways == 0 || cost >= impossible {
+	dp[len(oldValues)][len(newValues)] = cell{matches: []string{""}}
+	// Count distinct old-to-new element matches, not the interchangeable ordering of
+	// adjacent removals and additions that produce the same matches.
+	addCandidate := func(best *cell, edits int, matches []string, pair *sequencePair, commonPairs []sequencePair) {
+		if len(matches) == 0 || edits >= cannotMatch {
 			return
 		}
-		if cost < best.cost {
-			best.cost = cost
-			best.ways = min(ways, 2)
+		candidateCommonPairs := slices.Clone(commonPairs)
+		prefix := ""
+		if pair != nil {
+			candidateCommonPairs = append(candidateCommonPairs, *pair)
+			prefix = fmt.Sprintf("%d:%d;", pair.oldIndex, pair.newIndex)
+		}
+		if edits < best.edits {
+			best.edits = edits
+			best.matches = nil
+			best.commonPairs = candidateCommonPairs
+		}
+		if edits != best.edits {
 			return
 		}
-		if cost == best.cost {
-			best.ways = min(best.ways+ways, 2)
+		if best.matches != nil {
+			best.commonPairs = slices.DeleteFunc(best.commonPairs, func(existing sequencePair) bool {
+				return !slices.Contains(candidateCommonPairs, existing)
+			})
+		}
+		if len(best.matches) >= 2 {
+			return
+		}
+		for _, match := range matches {
+			candidate := prefix + match
+			if !slices.Contains(best.matches, candidate) {
+				best.matches = append(best.matches, candidate)
+				if len(best.matches) >= 2 {
+					return
+				}
+			}
 		}
 	}
 
@@ -868,25 +927,37 @@ func planSequenceChanges(fieldPath string, oldValues, newValues []any) (sequence
 			if oldIndex == len(oldValues) && newIndex == len(newValues) {
 				continue
 			}
-			best := cell{cost: impossible}
+			best := cell{edits: cannotMatch}
 			if oldIndex < len(oldValues) {
 				next := dp[oldIndex+1][newIndex]
-				addCandidate(&best, next.cost+1, next.ways)
+				addCandidate(&best, next.edits+1, next.matches, nil, next.commonPairs)
 			}
 			if newIndex < len(newValues) {
 				next := dp[oldIndex][newIndex+1]
-				addCandidate(&best, next.cost+1, next.ways)
+				addCandidate(&best, next.edits+1, next.matches, nil, next.commonPairs)
 			}
 			if oldIndex < len(oldValues) && newIndex < len(newValues) {
 				next := dp[oldIndex+1][newIndex+1]
-				addCandidate(&best, next.cost+pairCost(oldIndex, newIndex), next.ways)
+				pair := sequencePair{
+					oldIndex: oldIndex,
+					newIndex: newIndex,
+					equal:    structdiff.IsEqual(oldValues[oldIndex], newValues[newIndex]),
+				}
+				addCandidate(&best, next.edits+matchEdits(oldIndex, newIndex), next.matches, &pair, next.commonPairs)
 			}
 			dp[oldIndex][newIndex] = best
 		}
 	}
 
-	if dp[0][0].ways != 1 {
-		return sequencePlan{}, errors.New("sequence correspondence is ambiguous after its length changed")
+	if len(dp[0][0].matches) != 1 {
+		commonPairs := dp[0][0].commonPairs
+		slices.SortFunc(commonPairs, func(a, b sequencePair) int {
+			if order := cmp.Compare(a.oldIndex, b.oldIndex); order != 0 {
+				return order
+			}
+			return cmp.Compare(a.newIndex, b.newIndex)
+		})
+		return sequencePlan{pairs: commonPairs}, fmt.Errorf("%w: sequence elements cannot be matched uniquely after the length changed", errAmbiguousSource)
 	}
 
 	plan := sequencePlan{}
@@ -894,11 +965,11 @@ func planSequenceChanges(fieldPath string, oldValues, newValues []any) (sequence
 		current := dp[oldIndex][newIndex]
 		if oldIndex < len(oldValues) && newIndex < len(newValues) {
 			next := dp[oldIndex+1][newIndex+1]
-			if next.ways > 0 && current.cost == next.cost+pairCost(oldIndex, newIndex) {
+			if len(next.matches) > 0 && current.edits == next.edits+matchEdits(oldIndex, newIndex) {
 				plan.pairs = append(plan.pairs, sequencePair{
 					oldIndex: oldIndex,
 					newIndex: newIndex,
-					equal:    reflect.DeepEqual(oldValues[oldIndex], newValues[newIndex]),
+					equal:    structdiff.IsEqual(oldValues[oldIndex], newValues[newIndex]),
 				})
 				oldIndex++
 				newIndex++
@@ -907,7 +978,7 @@ func planSequenceChanges(fieldPath string, oldValues, newValues []any) (sequence
 		}
 		if oldIndex < len(oldValues) {
 			next := dp[oldIndex+1][newIndex]
-			if next.ways > 0 && current.cost == next.cost+1 {
+			if len(next.matches) > 0 && current.edits == next.edits+1 {
 				plan.removals = append(plan.removals, oldIndex)
 				oldIndex++
 				continue
@@ -936,8 +1007,9 @@ func sameBlock(a, b sourceBlock) bool {
 func chooseSequenceBlock(
 	newIndex int,
 	plan sequencePlan,
-	elementRefs map[int]sourceRef,
+	elementRefs map[int][]sourceRef,
 	parentRefs []sourceRef,
+	target string,
 ) (sourceBlock, error) {
 	previousOld := -1
 	nextOld := len(elementRefs)
@@ -950,41 +1022,110 @@ func chooseSequenceBlock(
 		}
 	}
 
-	candidates := make(map[string]sourceBlock)
+	var candidates []sourceBlock
+	seen := make(map[string]struct{})
 	addCandidate := func(ref sourceRef, element bool) {
 		block := sourceBlock{file: ref.file, parent: ref.path}
 		if element {
 			block = blockForRef(ref)
 		}
-		candidates[block.file+"\x00"+block.parent.String()] = block
+		key := block.file + "\x00" + block.parent.String()
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = struct{}{}
+		candidates = append(candidates, block)
 	}
 	if previousOld >= 0 {
-		addCandidate(elementRefs[previousOld], true)
+		for _, ref := range elementRefs[previousOld] {
+			addCandidate(ref, true)
+		}
 	}
 	if nextOld < len(elementRefs) {
-		addCandidate(elementRefs[nextOld], true)
+		for _, ref := range elementRefs[nextOld] {
+			addCandidate(ref, true)
+		}
 	}
 	for oldIndex := previousOld + 1; oldIndex < nextOld; oldIndex++ {
-		addCandidate(elementRefs[oldIndex], true)
+		for _, ref := range elementRefs[oldIndex] {
+			addCandidate(ref, true)
+		}
 	}
-	if len(elementRefs) == 0 {
+	if len(candidates) == 0 {
 		for _, ref := range parentRefs {
 			addCandidate(ref, false)
 		}
 	}
 
-	if len(candidates) != 1 {
-		return sourceBlock{}, errors.New("sequence insertion has no unique physical source block")
+	if len(candidates) == 0 {
+		return sourceBlock{}, errors.New("sequence insertion has no physical source block")
 	}
-	var result sourceBlock
+	// A new element between multiple physical blocks has no prior owner. Keep
+	// it in the broadest existing scope, consistent with keyed-list additions.
+	selected := candidates[len(candidates)-1]
 	for _, block := range candidates {
-		result = block
+		if !sourceRefIsTarget(sourceRef{path: block.parent}, target) {
+			selected = block
+			break
+		}
 	}
-	return result, nil
+
+	// If an unmatched addition replaces elements from another block, the plan
+	// cannot distinguish a rename from an independent remove and add.
+	replacementBlocks := map[string]struct{}{selected.file + "\x00" + selected.parent.String(): {}}
+	for _, oldIndex := range plan.removals {
+		if oldIndex <= previousOld || oldIndex >= nextOld {
+			continue
+		}
+		for _, ref := range elementRefs[oldIndex] {
+			block := blockForRef(ref)
+			replacementBlocks[block.file+"\x00"+block.parent.String()] = struct{}{}
+		}
+	}
+	if len(replacementBlocks) > 1 {
+		return sourceBlock{}, fmt.Errorf("%w: sequence replacement spans multiple physical source blocks", errAmbiguousSource)
+	}
+	return selected, nil
+}
+
+func sequenceInsertionIndex(
+	newIndex int,
+	refsByNewIndex map[int][]sourceRef,
+	addedBlocks map[int]sourceBlock,
+	block sourceBlock,
+) int {
+	type physicalElement struct {
+		index    int
+		newIndex int
+	}
+	var elements []physicalElement
+	for elementNewIndex, refs := range refsByNewIndex {
+		for _, ref := range refs {
+			if !sameBlock(blockForRef(ref), block) {
+				continue
+			}
+			index := ref.path[len(ref.path)-1].Index()
+			elements = append(elements, physicalElement{index: index, newIndex: elementNewIndex})
+		}
+	}
+	slices.SortFunc(elements, func(a, b physicalElement) int { return cmp.Compare(a.index, b.index) })
+
+	physicalIndex := len(elements)
+	for index, element := range elements {
+		if element.newIndex > newIndex {
+			physicalIndex = index
+			break
+		}
+	}
+	for index, addedBlock := range addedBlocks {
+		if index < newIndex && sameBlock(addedBlock, block) {
+			physicalIndex++
+		}
+	}
+	return physicalIndex
 }
 
 func expandSequenceReplacement(
-	ctx context.Context,
 	b *bundle.Bundle,
 	sources *sourceIndex,
 	resourceKey, fieldPath string,
@@ -1006,28 +1147,34 @@ func expandSequenceReplacement(
 		return nil, true, fmt.Errorf("sequence %s does not match the current configuration", fullPath)
 	}
 
-	parentRefs := sources.refsFor(selection.value, selection.path, b.Config.Bundle.Target)
-	if len(parentRefs) == 0 {
-		return nil, false, nil
-	}
-	elementRefs := make(map[int]sourceRef, len(mergedValues))
-	for index, value := range mergedValues {
-		elementPath := structpath.NewPatternIndex(selection.path, index)
-		refs := sources.refsFor(value, elementPath, b.Config.Bundle.Target)
-		if len(refs) == 0 {
-			return nil, true, fmt.Errorf("sequence element %s[%d] has no source location", fullPath, index)
+	plan, err := planSequenceChanges(fieldPath, oldValues, newValues)
+	ambiguousPlan := errors.Is(err, errAmbiguousSource)
+	if err != nil {
+		if !ambiguousPlan {
+			return nil, true, fmt.Errorf("planning sequence changes for %s: %w", fullPath, err)
 		}
-		elementRefs[index] = refs[0]
 	}
 
-	plan, err := planSequenceChanges(fieldPath, oldValues, newValues)
-	if err != nil {
-		return nil, true, fmt.Errorf("planning sequence changes for %s: %w", fullPath, err)
-	}
-	siblings := sourceSiblingsForSelection(sources, selection, b.Config.Bundle.Target)
-	blocksByNew := make(map[int]sourceBlock, len(plan.pairs)+len(plan.adds))
-	for _, pair := range plan.pairs {
-		blocksByNew[pair.newIndex] = blockForRef(elementRefs[pair.oldIndex])
+	var parentRefs []sourceRef
+	var siblings []dyn.Value
+	elementRefs := make(map[int][]sourceRef)
+	refsByNewIndex := make(map[int][]sourceRef)
+	addedBlocks := make(map[int]sourceBlock)
+	if len(plan.adds) > 0 {
+		parentRefs = sources.refsFor(selection.value, selection.path, b.Config.Bundle.Target)
+		if len(parentRefs) == 0 {
+			return nil, false, nil
+		}
+		elementRefs = make(map[int][]sourceRef, len(mergedValues))
+		for index, value := range mergedValues {
+			elementPath := structpath.NewPatternIndex(selection.path, index)
+			elementRefs[index] = sources.refsFor(value, elementPath, b.Config.Bundle.Target)
+		}
+		siblings = sourceSiblingsForSelection(sources, selection, b.Config.Bundle.Target)
+		refsByNewIndex = make(map[int][]sourceRef, len(plan.pairs))
+		for _, pair := range plan.pairs {
+			refsByNewIndex[pair.newIndex] = elementRefs[pair.oldIndex]
+		}
 	}
 
 	var result []FieldChange
@@ -1050,61 +1197,67 @@ func expandSequenceReplacement(
 				Value:       valueChange.newValue,
 				configValue: valueChange.oldValue,
 			}
-			routed, err := routeChange(ctx, b, sources, resourceKey, syntheticPath, synthetic)
+			routed, err := routeChange(b, sources, resourceKey, syntheticPath, synthetic)
 			if err != nil {
 				return nil, true, err
 			}
 			result = append(result, routed...)
 		}
 	}
+	if ambiguousPlan {
+		// Every pair in an ambiguous plan is shared by all valid matches. Its
+		// field edits are safe, but the unmatched structural edits are not.
+		return result, true, nil
+	}
+
+	var additions []FieldChange
+	for _, newIndex := range plan.adds {
+		block, err := chooseSequenceBlock(newIndex, plan, elementRefs, parentRefs, b.Config.Bundle.Target)
+		if err != nil {
+			if errors.Is(err, errAmbiguousSource) {
+				// Matched elements have independent source locations. Keep their
+				// edits while deferring the inseparable removals and additions.
+				return result, true, nil
+			}
+			return nil, true, fmt.Errorf("placing new element in %s: %w", fullPath, err)
+		}
+		physicalIndex := sequenceInsertionIndex(newIndex, refsByNewIndex, addedBlocks, block)
+		addedBlocks[newIndex] = block
+		physicalPath := structpath.NewPatternIndex(patternFromDynPath(block.parent), physicalIndex)
+		ref := sourceRef{file: block.file, path: block.parent}
+		synthetic := &ConfigChangeDesc{Operation: OperationAdd, Value: newValues[newIndex]}
+		physicalPath, synthetic = normalizeSequenceAdd(sources, ref, physicalPath, synthetic)
+		additions = append(additions, makeFieldChange(b, sources, ref, physicalPath, synthetic, siblings))
+	}
 
 	for _, oldIndex := range plan.removals {
 		elementPath := structpath.NewPatternIndex(fieldPattern, oldIndex).String()
 		synthetic := &ConfigChangeDesc{Operation: OperationRemove, configValue: oldValues[oldIndex]}
-		routed, err := routeChange(ctx, b, sources, resourceKey, elementPath, synthetic)
+		routed, err := routeChange(b, sources, resourceKey, elementPath, synthetic)
 		if err != nil {
 			return nil, true, err
 		}
 		result = append(result, routed...)
 	}
-
-	for _, newIndex := range plan.adds {
-		block, err := chooseSequenceBlock(newIndex, plan, elementRefs, parentRefs)
-		if err != nil {
-			return nil, true, fmt.Errorf("placing new element in %s: %w", fullPath, err)
-		}
-		physicalIndex := 0
-		for index := range newIndex {
-			if prior, ok := blocksByNew[index]; ok && sameBlock(prior, block) {
-				physicalIndex++
-			}
-		}
-		blocksByNew[newIndex] = block
-		physicalPath := structpath.NewPatternIndex(patternFromDynPath(block.parent), physicalIndex)
-		ref := sourceRef{file: block.file, path: block.parent}
-		synthetic := &ConfigChangeDesc{Operation: OperationAdd, Value: newValues[newIndex]}
-		physicalPath, synthetic = normalizeSequenceAdd(sources, ref, physicalPath, synthetic)
-		result = append(result, makeFieldChange(b, sources, ref, physicalPath, synthetic, siblings))
-	}
+	result = append(result, additions...)
 
 	return result, true, nil
 }
 
 func routeChange(
-	ctx context.Context,
 	b *bundle.Bundle,
 	sources *sourceIndex,
 	resourceKey, fieldPath string,
 	change *ConfigChangeDesc,
 ) ([]FieldChange, error) {
-	routed, expanded, err := expandSequenceReplacement(ctx, b, sources, resourceKey, fieldPath, change)
+	routed, expanded, err := expandSequenceReplacement(b, sources, resourceKey, fieldPath, change)
 	if err != nil {
 		return nil, err
 	}
 	if expanded {
 		return routed, nil
 	}
-	return routeFieldChange(ctx, b, sources, resourceKey, fieldPath, change)
+	return routeFieldChange(b, sources, resourceKey, fieldPath, change)
 }
 
 func sortFieldChanges(fieldChanges []FieldChange) {
@@ -1192,40 +1345,39 @@ func coalesceSequenceElementAdds(fieldChanges []FieldChange) ([]FieldChange, err
 	return result, nil
 }
 
-func resolveChangesWithSourceMapping(ctx context.Context, b *bundle.Bundle, configChanges Changes, sources *sourceIndex) ([]FieldChange, error) {
+func resolveChangesWithSourceMapping(b *bundle.Bundle, configChanges Changes, sources *sourceIndex) ([]FieldChange, error) {
 	var result []FieldChange
 	for _, resourceKey := range slices.Sorted(maps.Keys(configChanges)) {
 		resourceChanges := configChanges[resourceKey]
 		pairsByAdd, pairedRemoves, unresolvedGroups := pairRenames(resourceChanges)
+		ambiguousPaths := make(map[string]struct{})
 		for _, group := range unresolvedGroups {
-			if err := validateUnresolvedRenameGroup(ctx, b, sources, resourceKey, resourceChanges, group); err != nil {
+			if err := validateUnresolvedRenameGroup(b, sources, resourceKey, resourceChanges, group); err != nil {
+				if errors.Is(err, errAmbiguousSource) {
+					// Keep both sides of an unresolved rename together while allowing
+					// unrelated changes in the same unattended sync to proceed.
+					for _, path := range group.removePaths {
+						ambiguousPaths[path] = struct{}{}
+					}
+					for _, path := range group.addPaths {
+						ambiguousPaths[path] = struct{}{}
+					}
+					continue
+				}
 				return nil, fmt.Errorf("routing changes for %s: %w", resourceKey, err)
 			}
 		}
 
-		fieldPaths := slices.Sorted(maps.Keys(resourceChanges))
-		slices.SortStableFunc(fieldPaths, func(a, b string) int {
-			depthA, depthB := pathDepth(a), pathDepth(b)
-			if depthA != depthB {
-				return cmp.Compare(depthB, depthA)
-			}
-			operationA, operationB := resourceChanges[a].Operation, resourceChanges[b].Operation
-			if operationA == OperationRemove && operationB != OperationRemove {
-				return -1
-			}
-			if operationA != OperationRemove && operationB == OperationRemove {
-				return 1
-			}
-			return cmp.Compare(a, b)
-		})
-
-		for _, fieldPath := range fieldPaths {
+		for _, fieldPath := range slices.Sorted(maps.Keys(resourceChanges)) {
 			change := resourceChanges[fieldPath]
+			if _, ambiguous := ambiguousPaths[fieldPath]; ambiguous {
+				continue
+			}
 			if _, paired := pairedRemoves[fieldPath]; paired {
 				continue
 			}
 			if pair, paired := pairsByAdd[fieldPath]; paired {
-				routed, err := routeRename(ctx, b, sources, resourceKey, pair, resourceChanges[pair.removePath], change)
+				routed, err := routeRename(b, sources, resourceKey, pair, resourceChanges[pair.removePath], change)
 				if err != nil {
 					return nil, err
 				}
@@ -1233,8 +1385,11 @@ func resolveChangesWithSourceMapping(ctx context.Context, b *bundle.Bundle, conf
 				continue
 			}
 
-			routed, err := routeChange(ctx, b, sources, resourceKey, fieldPath, change)
+			routed, err := routeChange(b, sources, resourceKey, fieldPath, change)
 			if err != nil {
+				if errors.Is(err, errAmbiguousSource) {
+					continue
+				}
 				return nil, err
 			}
 			result = append(result, routed...)

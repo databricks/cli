@@ -10,9 +10,9 @@ cleanup() {
 trap cleanup EXIT
 
 $CLI bundle deploy -t dev
-job_id="$(read_id.py -t dev s9_multifile_target)"
+job_id="$(read_id.py -t dev edit_second_target_file)"
 
-title "S9: edit an element in the second file of a multi-file target override"
+title "Edit a task in the second file of a multi-file target override"
 edit_resource.py jobs "$job_id" <<'EOF'
 next(t for t in r["tasks"] if t["task_key"] == "second_b")["timeout_seconds"] = 909
 EOF

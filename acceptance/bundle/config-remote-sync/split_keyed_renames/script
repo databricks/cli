@@ -10,15 +10,45 @@ trap cleanup EXIT
 
 $CLI bundle deploy -t dev
 
-s4_id="$(read_id.py -t dev s4_target_rename)"
-s5_id="$(read_id.py -t dev s5_rename_both_blocks)"
-s6_id="$(read_id.py -t dev s6_rename_and_add)"
+target_rename_id="$(read_id.py -t dev rename_target_task)"
+rename_both_id="$(read_id.py -t dev rename_tasks_in_both_blocks)"
+rename_and_add_id="$(read_id.py -t dev rename_target_and_add_top_level)"
+independent_replacement_id="$(read_id.py -t dev independent_task_replacement)"
 shifted_id="$(read_id.py -t dev shifted_delete_rename)"
 target_only_id="$(read_id.py -t dev target_only_list)"
 
-title "S4: rename a target-only element"
-edit_resource.py jobs "$s4_id" <<'EOF'
-next(t for t in r["tasks"] if t["task_key"] == "t1")["task_key"] = "t1b"
+title "Sync an independent field without relocating an ambiguous remove and add"
+edit_resource.py jobs "$independent_replacement_id" <<'EOF'
+r["timeout_seconds"] = 201
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "etl"]
+r["tasks"].append({
+    "task_key": "etl_new",
+    "job_cluster_key": "shared_cluster",
+    "timeout_seconds": 200,
+    "notebook_task": {"notebook_path": "/Workspace/shared-task"},
+})
+EOF
+
+echo
+cp databricks.yml databricks.yml.ambiguous-backup
+$CLI bundle config-remote-sync -t dev --save --select-ids "jobs:$independent_replacement_id"
+
+title "Only the unambiguous field changes"
+echo
+trace diff.py databricks.yml.ambiguous-backup databricks.yml
+rm databricks.yml.ambiguous-backup
+
+# Restore the remote resource so the remaining independent scenarios can sync.
+edit_resource.py jobs "$independent_replacement_id" <<'EOF'
+task = next(t for t in r["tasks"] if t["task_key"] == "etl_new")
+task["task_key"] = "etl"
+task["timeout_seconds"] = 100
+EOF
+
+title "Rename a target-only task"
+edit_resource.py jobs "$target_rename_id" <<'EOF'
+task = next(t for t in r["tasks"] if t["task_key"] == "t1")
+task["task_key"] = "t1b"
 EOF
 
 title "Rename matching is not confused by a preceding deletion"
@@ -41,18 +71,18 @@ r["tasks"].extend([
 ])
 EOF
 
-title "S5: rename elements in both blocks without swapping their source blocks"
-edit_resource.py jobs "$s5_id" <<'EOF'
+title "Rename tasks in both blocks without swapping their source blocks"
+edit_resource.py jobs "$rename_both_id" <<'EOF'
 next(t for t in r["tasks"] if t["task_key"] == "m")["task_key"] = "z_new_top"
 next(t for t in r["tasks"] if t["task_key"] == "a")["task_key"] = "a_new_target"
 EOF
 
-title "S6: keep a rename in target while placing a genuinely new element at top level"
-edit_resource.py jobs "$s6_id" <<'EOF'
+title "Keep a rename in target while placing a new task at top level"
+edit_resource.py jobs "$rename_and_add_id" <<'EOF'
 next(t for t in r["tasks"] if t["task_key"] == "t")["task_key"] = "t_new"
 r["tasks"].append({
     "task_key": "a_brand_new",
-    "notebook_task": {"notebook_path": "/Workspace/s6-brand-new"},
+    "notebook_task": {"notebook_path": "/Workspace/rename-and-add-brand-new"},
 })
 EOF
 

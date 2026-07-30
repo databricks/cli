@@ -30,18 +30,12 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		filePath := fieldChange.FilePath
 
 		if _, exists := modifiedFiles[filePath]; !exists {
-			content := slices.Clone(fieldChange.originalFileContent)
-			if content == nil {
-				var err error
-				content, err = os.ReadFile(filePath)
-				if err != nil {
-					return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
-				}
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
 			}
 			originalFiles[filePath] = content
 			modifiedFiles[filePath] = preserveBlankLines(content)
-		} else if fieldChange.originalFileContent != nil && !bytes.Equal(originalFiles[filePath], fieldChange.originalFileContent) {
-			return nil, fmt.Errorf("field changes for %s were resolved from different source snapshots", filePath)
 		}
 
 		modifiedContent, err := applyChange(ctx, modifiedFiles[filePath], fieldChange)

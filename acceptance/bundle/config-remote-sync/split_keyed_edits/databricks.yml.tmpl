@@ -2,143 +2,157 @@ bundle:
   name: test-bundle-$UNIQUE_NAME
 
 variables:
-  s10_notebook:
+  notebook_path:
     default: /Workspace/variable-backed-notebook
 
 resources:
   jobs:
-    s1_non_first_top:
+    edit_non_first_top_level_task:
       tasks:
         - task_key: beta
           timeout_seconds: 10
           notebook_task:
-            notebook_path: /Workspace/s1-beta
+            notebook_path: /Workspace/non-first-beta
         - task_key: gamma
           timeout_seconds: 11
           notebook_task:
-            notebook_path: /Workspace/s1-gamma
+            notebook_path: /Workspace/non-first-gamma
 
-    s2_target_only:
+    edit_target_task:
       tasks:
+        - task_key: yyy
+          timeout_seconds: 19
+          notebook_task:
+            notebook_path: /Workspace/edit-target-yyy
         - task_key: zzz
           timeout_seconds: 20
           notebook_task:
-            notebook_path: /Workspace/s2-zzz
+            notebook_path: /Workspace/edit-target-zzz
 
-    s3_both_blocks_sibling:
+    edit_target_sibling_after_shared_task:
       tasks:
+        - task_key: new_dep
+          notebook_task:
+            notebook_path: /Workspace/new-dependency
         - task_key: shared
           timeout_seconds: 30
           notebook_task:
-            notebook_path: /Workspace/s3-shared
+            notebook_path: /Workspace/shared-task
+        - task_key: target_dep
+          notebook_task:
+            notebook_path: /Workspace/target-dependency
 
     flow_style_mapping:
       tasks: [{task_key: alpha, timeout_seconds: 701, notebook_task: {notebook_path: /Workspace/flow-alpha}}, {task_key: beta, timeout_seconds: 702, notebook_task: {notebook_path: /Workspace/flow-beta}}]
 
-    s7_remove_both_blocks:
+    remove_tasks_from_both_blocks:
       tasks:
         - task_key: b
           notebook_task:
-            notebook_path: /Workspace/s7-b
+            notebook_path: /Workspace/remove-b
         - task_key: c
           notebook_task:
-            notebook_path: /Workspace/s7-c
+            notebook_path: /Workspace/remove-c
 
-    s8_remove_and_edit:
+    remove_and_edit_same_block:
       tasks:
         - task_key: p
           timeout_seconds: 80
           notebook_task:
-            notebook_path: /Workspace/s8-p
+            notebook_path: /Workspace/remove-edit-p
         - task_key: q
           timeout_seconds: 81
           notebook_task:
-            notebook_path: /Workspace/s8-q
+            notebook_path: /Workspace/remove-edit-q
         - task_key: r
           timeout_seconds: 82
           notebook_task:
-            notebook_path: /Workspace/s8-r
+            notebook_path: /Workspace/remove-edit-r
 
-    s10_preserve_variable:
+    preserve_variable_on_rename:
       tasks:
         - task_key: top_task
           notebook_task:
-            notebook_path: /Workspace/s10-top
+            notebook_path: /Workspace/preserve-variable-top
 
-    s10_target_only_variable_clone:
+    preserve_variable_on_clone:
       timeout_seconds: 100
 
-    s11_scalar_with_split_list:
+    edit_scalar_with_split_tasks:
       timeout_seconds: 110
       tasks:
         - task_key: top_task
           notebook_task:
-            notebook_path: /Workspace/s11-top
+            notebook_path: /Workspace/edit-scalar-top
 
 targets:
   dev:
     mode: development
     resources:
       jobs:
-        s1_non_first_top:
+        edit_non_first_top_level_task:
           tasks:
             - task_key: alpha
               timeout_seconds: 12
               notebook_task:
-                notebook_path: /Workspace/s1-alpha
+                notebook_path: /Workspace/non-first-alpha
 
-        s2_target_only:
+        edit_target_task:
           tasks:
             - task_key: alpha
               timeout_seconds: 21
+              depends_on:
+                - task_key: zzz
               notebook_task:
-                notebook_path: /Workspace/s2-alpha
+                notebook_path: /Workspace/edit-target-alpha
 
-        s3_both_blocks_sibling:
+        edit_target_sibling_after_shared_task:
           tasks:
             - task_key: shared
               timeout_seconds: 31
+              depends_on:
+                - task_key: target_dep
             - task_key: omega
               timeout_seconds: 32
               notebook_task:
-                notebook_path: /Workspace/s3-omega
+                notebook_path: /Workspace/target-sibling-omega
 
         flow_style_mapping:
           tasks: [{task_key: aardvark, timeout_seconds: 703, notebook_task: {notebook_path: /Workspace/flow-target}}]
 
-        s7_remove_both_blocks:
+        remove_tasks_from_both_blocks:
           tasks:
             - task_key: a
               notebook_task:
-                notebook_path: /Workspace/s7-a
+                notebook_path: /Workspace/remove-a
             - task_key: e
               notebook_task:
-                notebook_path: /Workspace/s7-e
+                notebook_path: /Workspace/remove-e
 
-        s8_remove_and_edit:
+        remove_and_edit_same_block:
           tasks:
             - task_key: a
               timeout_seconds: 83
               notebook_task:
-                notebook_path: /Workspace/s8-a
+                notebook_path: /Workspace/remove-edit-a
 
-        s10_preserve_variable:
+        preserve_variable_on_rename:
           tasks:
             - task_key: variable_task
               notebook_task:
-                notebook_path: ${var.s10_notebook}
+                notebook_path: ${var.notebook_path}
 
-        s10_target_only_variable_clone:
+        preserve_variable_on_clone:
           tasks:
             - task_key: variable_task
               notebook_task:
-                notebook_path: ${var.s10_notebook}
+                notebook_path: ${var.notebook_path}
 
-        s11_scalar_with_split_list:
+        edit_scalar_with_split_tasks:
           tasks:
             - task_key: target_task
               notebook_task:
-                notebook_path: /Workspace/s11-target
+                notebook_path: /Workspace/edit-scalar-target
 
         target_only_resource:
           tasks:

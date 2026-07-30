@@ -3,11 +3,7 @@ package configsync
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"slices"
 	"strings"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -93,15 +89,9 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 				return fmt.Errorf("source value unavailable for %s in %s", fc.FieldCandidates[0], fc.FilePath)
 			}
 			newValue = restoreOriginalRefs(fc.Change.Value, fc.sourceValue, resolved, stats)
-			if err := validateReferenceRestoration(fc.Change.Value, newValue, fc.sourceValue, resolved); err != nil {
-				return fmt.Errorf("restoring references for %s in %s: %w", fc.FieldCandidates[0], fc.FilePath, err)
-			}
 		case OperationAdd:
 			if len(fc.sourceSiblings) == 0 {
 				continue
-			}
-			if err := validateReferencesResolvable(fc.sourceSiblings, resolved); err != nil {
-				return fmt.Errorf("resolving sibling references for %s in %s: %w", fc.FieldCandidates[0], fc.FilePath, err)
 			}
 			if fc.Change.sequenceElementAdd {
 				newValue = restoreSequenceElementsFromSiblings(fc.Change.Value, fc.sourceSiblings, resolved, stats)
@@ -186,78 +176,6 @@ func collectResourceIDRefsFromChanges(fieldChanges []FieldChange) []dyn.Path {
 		}
 	}
 	return result
-}
-
-func resolveSourceReferences(value, resolved dyn.Value) (dyn.Value, error) {
-	return dynvar.Resolve(value, func(path dyn.Path) (dyn.Value, error) {
-		if path.HasPrefix(varPrefix) && len(path) >= 2 {
-			path = dyn.NewPath(dyn.Key("variables"), path[1], dyn.Key("value")).Append(path[2:]...)
-		}
-		return dyn.GetByPath(resolved, path)
-	})
-}
-
-func validateReferencesResolvable(values []dyn.Value, resolved dyn.Value) error {
-	for _, value := range values {
-		if _, err := resolveSourceReferences(value, resolved); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func validateReferenceRestoration(remote, restored any, source, resolved dyn.Value) error {
-	switch source.Kind() {
-	case dyn.KindString:
-		template := source.MustString()
-		if !dynvar.ContainsVariableReference(template) {
-			return nil
-		}
-		resolvedSource, err := resolveSourceReferences(source, resolved)
-		if err != nil {
-			return err
-		}
-		if reflect.DeepEqual(resolvedSource.AsAny(), remote) && !reflect.DeepEqual(source.AsAny(), restored) {
-			return fmt.Errorf("unchanged reference %q would be replaced by a literal", template)
-		}
-		return nil
-
-	case dyn.KindMap:
-		remoteMap, remoteOK := remote.(map[string]any)
-		restoredMap, restoredOK := restored.(map[string]any)
-		if !remoteOK || !restoredOK {
-			return nil
-		}
-		for _, pair := range source.MustMap().Pairs() {
-			key := pair.Key.MustString()
-			remoteValue, remoteExists := remoteMap[key]
-			restoredValue, restoredExists := restoredMap[key]
-			if !remoteExists || !restoredExists {
-				continue
-			}
-			if err := validateReferenceRestoration(remoteValue, restoredValue, pair.Value, resolved); err != nil {
-				return err
-			}
-		}
-		return nil
-
-	case dyn.KindSequence:
-		remoteSequence, remoteOK := remote.([]any)
-		restoredSequence, restoredOK := restored.([]any)
-		if !remoteOK || !restoredOK {
-			return nil
-		}
-		for index, sourceValue := range source.MustSequence() {
-			if index >= len(remoteSequence) || index >= len(restoredSequence) {
-				break
-			}
-			if err := validateReferenceRestoration(remoteSequence[index], restoredSequence[index], sourceValue, resolved); err != nil {
-				return err
-			}
-		}
-	default:
-	}
-	return nil
 }
 
 // injectResourceIDs populates the resolved dyn.Value with IDs from state for
@@ -535,9 +453,17 @@ func matchOriginalRef(remoteValue any, preResolved, resolved dyn.Value) (string,
 // restoreCompoundInterpolation handles strings with mixed variable references
 // and literal text, e.g., "/mnt/${var.account}/raw/landing".
 //
-// A resolved value is restored only when it has one unique, ordered occurrence
-// next to an unchanged literal anchor or at complete token boundaries. This
-// prevents a short variable value from being inserted into an unrelated word.
+// Algorithm: for each variable in the template, find the first occurrence of
+// its resolved value in the remote string and substitute it back to its raw
+// ${...} form. Variables whose resolved value no longer appears are dropped
+// (the user changed them); literal segments can grow, shrink, or disappear
+// freely. Returns false if no variable ends up in the result (e.g., the user
+// replaced everything with an unrelated string).
+//
+// Known limitation: substring-matching is unanchored. If ${var.X}="in" and the
+// new value contains "in" inside an unrelated word, that occurrence is still
+// rewritten to ${var.X}. Variables in the template are processed in order of
+// appearance, which is usually what the user expects.
 func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.Value) (string, bool) {
 	if !preResolved.IsValid() {
 		return "", false
@@ -552,91 +478,22 @@ func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.
 		return "", false
 	}
 
-	type replacement struct {
-		start int
-		end   int
-		value string
-	}
-	var replacements []replacement
-	searchStart := 0
-	for index, seg := range segments {
+	result := remoteValue
+	for _, seg := range segments {
 		if !seg.isVariable || seg.resolvedValue == "" {
 			continue
 		}
-		leftLiteral, rightLiteral := "", ""
-		if index > 0 && !segments[index-1].isVariable {
-			leftLiteral = segments[index-1].raw
-		}
-		if index+1 < len(segments) && !segments[index+1].isVariable {
-			rightLiteral = segments[index+1].raw
-		}
-		start, ok := uniqueInterpolationOccurrence(remoteValue, seg.resolvedValue, leftLiteral, rightLiteral, searchStart)
-		if !ok {
+		idx := strings.Index(result, seg.resolvedValue)
+		if idx < 0 {
 			continue
 		}
-		end := start + len(seg.resolvedValue)
-		replacements = append(replacements, replacement{start: start, end: end, value: seg.raw})
-		searchStart = end
+		result = result[:idx] + seg.raw + result[idx+len(seg.resolvedValue):]
 	}
 
-	if len(replacements) == 0 {
+	if !dynvar.ContainsVariableReference(result) {
 		return "", false
 	}
-	result := remoteValue
-	for _, replacement := range slices.Backward(replacements) {
-		result = result[:replacement.start] + replacement.value + result[replacement.end:]
-	}
 	return result, true
-}
-
-func uniqueInterpolationOccurrence(remote, value, leftLiteral, rightLiteral string, searchStart int) (int, bool) {
-	match := -1
-	for offset := searchStart; offset <= len(remote)-len(value); {
-		relative := strings.Index(remote[offset:], value)
-		if relative < 0 {
-			break
-		}
-		start := offset + relative
-		end := start + len(value)
-		leftAnchored := leftLiteral != "" && strings.HasSuffix(remote[:start], leftLiteral)
-		rightAnchored := rightLiteral != "" && strings.HasPrefix(remote[end:], rightLiteral)
-		leftDelimited, rightDelimited := interpolationTokenBoundaries(remote, start, end)
-		anchored := false
-		switch {
-		case leftLiteral != "" && rightLiteral != "":
-			anchored = leftAnchored && rightAnchored
-		case leftLiteral != "":
-			anchored = leftAnchored && rightDelimited
-		case rightLiteral != "":
-			anchored = rightAnchored && leftDelimited
-		}
-		if anchored || leftDelimited && rightDelimited {
-			if match >= 0 {
-				return 0, false
-			}
-			match = start
-		}
-		offset = start + 1
-	}
-	return match, match >= 0
-}
-
-func interpolationTokenBoundaries(value string, start, end int) (bool, bool) {
-	leftDelimited := start == 0
-	if !leftDelimited {
-		previous, _ := utf8.DecodeLastRuneInString(value[:start])
-		leftDelimited = !interpolationWordRune(previous)
-	}
-	rightDelimited := end == len(value)
-	if !rightDelimited {
-		next, _ := utf8.DecodeRuneInString(value[end:])
-		rightDelimited = !interpolationWordRune(next)
-	}
-	return leftDelimited, rightDelimited
-}
-
-func interpolationWordRune(value rune) bool {
-	return value == '_' || unicode.IsLetter(value) || unicode.IsDigit(value)
 }
 
 // templateSegment represents either a literal string or a variable reference

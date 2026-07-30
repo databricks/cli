@@ -1,11 +1,8 @@
 package configsync
 
 import (
-	"bytes"
-	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"maps"
 	"os"
 	"slices"
@@ -22,67 +19,9 @@ type sourceRef struct {
 	value dyn.Value
 }
 
-type sourceFile struct {
-	content []byte
-	root    dyn.Value
-}
-
 type sourceIndex struct {
 	byLocation map[dyn.Location][]sourceRef
-	files      map[string]*sourceFile
-}
-
-// SourceSnapshot binds physical YAML locations and file contents to the
-// configuration tree used to calculate a remote-change plan.
-type SourceSnapshot struct {
-	index        *sourceIndex
-	bundle       *bundle.Bundle
-	includeFiles []string
-}
-
-// CaptureSourceSnapshot reads the source mapping before remote planning.
-func CaptureSourceSnapshot(_ context.Context, b *bundle.Bundle) (*SourceSnapshot, error) {
-	index, err := loadSourceIndex(b)
-	if err != nil {
-		return nil, err
-	}
-	includeFiles, err := b.MatchedIncludeFiles()
-	if err != nil {
-		return nil, err
-	}
-	return &SourceSnapshot{
-		index:        index,
-		bundle:       b,
-		includeFiles: includeFiles,
-	}, nil
-}
-
-// Validate verifies that every loaded configuration file still matches this
-// snapshot, including files that do not receive a direct YAML patch.
-func (s *SourceSnapshot) Validate() error {
-	if s == nil {
-		return errors.New("source snapshot unavailable")
-	}
-	currentIncludes, err := s.bundle.MatchedIncludeFiles()
-	if err != nil {
-		return fmt.Errorf("matching current source includes: %w", err)
-	}
-	if !slices.Equal(currentIncludes, s.includeFiles) {
-		return fmt.Errorf("%w: source include matches changed while remote changes were being resolved", ErrSourceChanged)
-	}
-	for _, file := range slices.Sorted(maps.Keys(s.index.files)) {
-		content, err := os.ReadFile(file)
-		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				return fmt.Errorf("%w: source file %s disappeared while remote changes were being resolved", ErrSourceChanged, file)
-			}
-			return fmt.Errorf("reading current source file %s: %w", file, err)
-		}
-		if !bytes.Equal(content, s.index.files[file].content) {
-			return fmt.Errorf("%w: source file %s changed while remote changes were being resolved", ErrSourceChanged, file)
-		}
-	}
-	return nil
+	files      map[string]dyn.Value
 }
 
 func loadSourceIndex(b *bundle.Bundle) (*sourceIndex, error) {
@@ -93,7 +32,7 @@ func loadSourceIndex(b *bundle.Bundle) (*sourceIndex, error) {
 
 	index := &sourceIndex{
 		byLocation: make(map[dyn.Location][]sourceRef),
-		files:      make(map[string]*sourceFile),
+		files:      make(map[string]dyn.Value),
 	}
 
 	fileSet := make(map[string]struct{})
@@ -119,9 +58,9 @@ func loadSourceIndex(b *bundle.Bundle) (*sourceIndex, error) {
 			return nil, fmt.Errorf("parsing source configuration file %s: %w", file, diags.Error())
 		}
 
-		source := &sourceFile{content: content, root: parsed.Value()}
+		source := parsed.Value()
 		index.files[file] = source
-		_, err = dyn.Walk(source.root, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
+		_, err = dyn.Walk(source, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
 			for _, location := range value.Locations() {
 				if location.File != file {
 					continue
@@ -184,6 +123,8 @@ func sourcePathMatches(sourcePath dyn.Path, mergedPath *structpath.PatternNode, 
 			continue
 		}
 		if _, ok := node.Index(); ok {
+			// Merging and sorting can change an element's index. Its exact source
+			// entry is identified by location after the path shape matches.
 			if sourcePath[i].Key() != "" {
 				return false
 			}
@@ -212,7 +153,6 @@ func chooseSourceRef(refs []sourceRef, target string, preferTarget bool) (source
 	if len(refs) == 0 {
 		return sourceRef{}, false
 	}
-
 	for _, ref := range refs {
 		if sourceRefIsTarget(ref, target) == preferTarget {
 			return ref, true

@@ -9,29 +9,33 @@ trap cleanup EXIT
 
 $CLI bundle deploy -t dev
 
-s1_id="$(read_id.py -t dev s1_non_first_top)"
-s2_id="$(read_id.py -t dev s2_target_only)"
-s3_id="$(read_id.py -t dev s3_both_blocks_sibling)"
+non_first_top_id="$(read_id.py -t dev edit_non_first_top_level_task)"
+target_task_id="$(read_id.py -t dev edit_target_task)"
+target_sibling_id="$(read_id.py -t dev edit_target_sibling_after_shared_task)"
 flow_id="$(read_id.py -t dev flow_style_mapping)"
-s7_id="$(read_id.py -t dev s7_remove_both_blocks)"
-s8_id="$(read_id.py -t dev s8_remove_and_edit)"
-s10_id="$(read_id.py -t dev s10_preserve_variable)"
-s10_target_only_id="$(read_id.py -t dev s10_target_only_variable_clone)"
-s11_id="$(read_id.py -t dev s11_scalar_with_split_list)"
+remove_both_id="$(read_id.py -t dev remove_tasks_from_both_blocks)"
+remove_and_edit_id="$(read_id.py -t dev remove_and_edit_same_block)"
+rename_variable_id="$(read_id.py -t dev preserve_variable_on_rename)"
+clone_variable_id="$(read_id.py -t dev preserve_variable_on_clone)"
+scalar_id="$(read_id.py -t dev edit_scalar_with_split_tasks)"
 target_only_resource_id="$(read_id.py -t dev target_only_resource)"
 
-title "S1: edit a non-first merged element from the top-level block"
-edit_resource.py jobs "$s1_id" <<'EOF'
+title "Edit a non-first merged task from the top-level block"
+edit_resource.py jobs "$non_first_top_id" <<'EOF'
 next(t for t in r["tasks"] if t["task_key"] == "beta")["timeout_seconds"] = 101
 EOF
 
-title "S2: edit an element from the target block"
-edit_resource.py jobs "$s2_id" <<'EOF'
-next(t for t in r["tasks"] if t["task_key"] == "alpha")["timeout_seconds"] = 202
+title "Edit a task and add a dependency in the target block"
+edit_resource.py jobs "$target_task_id" <<'EOF'
+task = next(t for t in r["tasks"] if t["task_key"] == "alpha")
+task["timeout_seconds"] = 202
+task["depends_on"].append({"task_key": "yyy"})
 EOF
 
-title "S3: edit a target sibling after an element defined in both blocks"
-edit_resource.py jobs "$s3_id" <<'EOF'
+title "Edit a target sibling and nested list under a task defined in both blocks"
+edit_resource.py jobs "$target_sibling_id" <<'EOF'
+shared = next(t for t in r["tasks"] if t["task_key"] == "shared")
+shared["depends_on"].append({"task_key": "new_dep"})
 next(t for t in r["tasks"] if t["task_key"] == "omega")["timeout_seconds"] = 303
 EOF
 
@@ -40,19 +44,19 @@ edit_resource.py jobs "$flow_id" <<'EOF'
 next(t for t in r["tasks"] if t["task_key"] == "beta")["timeout_seconds"] = 799
 EOF
 
-title "S7: remove elements from both blocks"
-edit_resource.py jobs "$s7_id" <<'EOF'
+title "Remove tasks from both blocks"
+edit_resource.py jobs "$remove_both_id" <<'EOF'
 r["tasks"] = [t for t in r["tasks"] if t["task_key"] not in {"b", "e"}]
 EOF
 
-title "S8: remove and edit in one physical block"
-edit_resource.py jobs "$s8_id" <<'EOF'
+title "Remove and edit tasks in one source block"
+edit_resource.py jobs "$remove_and_edit_id" <<'EOF'
 r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "q"]
 next(t for t in r["tasks"] if t["task_key"] == "r")["timeout_seconds"] = 808
 EOF
 
-title "S10: rename and clone an element without resolving its variable-backed field"
-edit_resource.py jobs "$s10_id" <<'EOF'
+title "Rename and clone a task without resolving its variable-backed field"
+edit_resource.py jobs "$rename_variable_id" <<'EOF'
 import copy
 
 source = next(t for t in r["tasks"] if t["task_key"] == "variable_task")
@@ -63,8 +67,8 @@ clone["timeout_seconds"] = 1010
 r["tasks"].append(clone)
 EOF
 
-title "S10: clone a variable-backed target element into a missing top-level list"
-edit_resource.py jobs "$s10_target_only_id" <<'EOF'
+title "Clone a variable-backed target task into a missing top-level list"
+edit_resource.py jobs "$clone_variable_id" <<'EOF'
 import copy
 
 clone = copy.deepcopy(r["tasks"][0])
@@ -72,8 +76,8 @@ clone["task_key"] = "cloned_to_top"
 r["tasks"].append(clone)
 EOF
 
-title "S11: edit a scalar on a resource that also has a split list"
-edit_resource.py jobs "$s11_id" <<'EOF'
+title "Edit a scalar on a resource that also has split tasks"
+edit_resource.py jobs "$scalar_id" <<'EOF'
 r["timeout_seconds"] = 1111
 EOF
 
@@ -97,7 +101,7 @@ rm databricks.yml.backup
 
 title "Variable references remain references"
 echo
-trace grep -Fc 'notebook_path: ${var.s10_notebook}' databricks.yml
+trace grep -Fc 'notebook_path: ${var.notebook_path}' databricks.yml
 
 title "Second sync is idempotent"
 echo

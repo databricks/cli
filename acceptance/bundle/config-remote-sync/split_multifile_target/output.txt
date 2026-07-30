@@ -3,11 +3,11 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== S9: edit an element in the second file of a multi-file target override
+=== Edit a task in the second file of a multi-file target override
 === Sync the multi-file target override
 Detected changes in 1 resource(s):
 
-Resource: resources.jobs.s9_multifile_target
+Resource: resources.jobs.edit_second_target_file
   tasks[task_key='second_b'].timeout_seconds: replace
 
 
@@ -26,12 +26,12 @@ Resource: resources.jobs.s9_multifile_target
 --- overrides/20-second.backup
 +++ overrides/20-second.yml
 @@ -10,5 +10,5 @@
-                 notebook_path: /Workspace/s9-second-a
+                 notebook_path: /Workspace/multifile-second-a
              - task_key: second_b
 -              timeout_seconds: 94
 +              timeout_seconds: 909
                notebook_task:
-                 notebook_path: /Workspace/s9-second-b
+                 notebook_path: /Workspace/multifile-second-b
 
 === Second sync is idempotent across every source file
 No changes detected.
@@ -45,7 +45,7 @@ No changes detected.
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:
-  delete resources.jobs.s9_multifile_target
+  delete resources.jobs.edit_second_target_file
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
 

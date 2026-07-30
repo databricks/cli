@@ -2,116 +2,180 @@ bundle:
   name: test-bundle-$UNIQUE_NAME
 
 variables:
-  s12_single_block_workers:
+  cluster_workers:
     default: 9
-  s12_dependency:
+  dependency:
     default: nonexistent-shifted-pkg==1.0
 
 resources:
   pipelines:
-    s12_field_edits:
-      name: s12-field-edits-$UNIQUE_NAME
+    edit_clusters_in_both_scopes:
+      name: edit-clusters-in-both-scopes-$UNIQUE_NAME
       clusters:
         - label: default
           num_workers: 1
       libraries:
         - notebook:
-            path: /Workspace/s12-field-edits
+            path: /Workspace/edit-clusters-in-both-scopes
 
-    s12_add_cluster:
-      name: s12-add-cluster-$UNIQUE_NAME
+    append_cluster_after_target:
+      name: append-cluster-after-target-$UNIQUE_NAME
       clusters:
         - label: default
           num_workers: 3
       libraries:
         - notebook:
-            path: /Workspace/s12-add
+            path: /Workspace/append-cluster-after-target
 
-    s12_remove_cluster:
-      name: s12-remove-cluster-$UNIQUE_NAME
+    remove_target_cluster:
+      name: remove-target-cluster-$UNIQUE_NAME
       clusters:
         - label: default
           num_workers: 5
       libraries:
         - notebook:
-            path: /Workspace/s12-remove
+            path: /Workspace/remove-target-cluster
 
-    s12_remove_top_edit_target:
-      name: s12-remove-top-edit-target-$UNIQUE_NAME
+    remove_top_cluster_and_edit_target:
+      name: remove-top-cluster-and-edit-target-$UNIQUE_NAME
       clusters:
         - label: default
           num_workers: 7
       libraries:
         - notebook:
-            path: /Workspace/s12-remove-top-edit-target
+            path: /Workspace/remove-top-cluster-and-edit-target
 
-    s12_single_block_remove_preserve_variable:
-      name: s12-single-block-remove-preserve-variable-$UNIQUE_NAME
+    remove_duplicate_and_edit_stable:
+      name: remove-duplicate-and-edit-stable-$UNIQUE_NAME
+      clusters:
+        - label: stable
+          num_workers: 15
+        - label: duplicate
+          num_workers: 1
+      libraries:
+        - notebook:
+            path: /Workspace/remove-duplicate-and-edit-stable
+
+    remove_target_cluster_with_shared_survivor:
+      name: remove-target-cluster-with-shared-survivor-$UNIQUE_NAME
+      clusters:
+        - label: default
+          num_workers: 9
+      libraries:
+        - notebook:
+            path: /Workspace/remove-target-cluster-with-shared-survivor
+
+    replace_cluster_list:
+      name: replace-cluster-list-$UNIQUE_NAME
+      clusters:
+        - label: default
+          num_workers: 12
+      libraries:
+        - notebook:
+            path: /Workspace/replace-cluster-list
+
+    insert_between_repeated_target_entries:
+      name: insert-between-repeated-target-entries-$UNIQUE_NAME
+      libraries:
+        - notebook:
+            path: /Workspace/insert-between-repeated-target-entries
+
+    remove_cluster_preserve_variable:
+      name: remove-cluster-preserve-variable-$UNIQUE_NAME
       clusters:
         - label: default
           num_workers: 10
         - label: maintenance
-          num_workers: ${var.s12_single_block_workers}
+          num_workers: ${var.cluster_workers}
       libraries:
         - notebook:
-            path: /Workspace/s12-single-block-remove-preserve-variable
+            path: /Workspace/remove-cluster-preserve-variable
 
-    s12_single_block_remove_dependency:
-      name: s12-single-block-remove-dependency-$UNIQUE_NAME
+    remove_dependency_preserve_variable:
+      name: remove-dependency-preserve-variable-$UNIQUE_NAME
       libraries:
         - notebook:
-            path: /Workspace/s12-single-block-remove-dependency
+            path: /Workspace/remove-dependency-preserve-variable
       environment:
         dependencies:
           - literal-to-remove
-          - ${var.s12_dependency}
+          - ${var.dependency}
 
-    s12_single_block_prepend_dependency:
-      name: s12-single-block-prepend-dependency-$UNIQUE_NAME
+    prepend_dependency_preserve_variable:
+      name: prepend-dependency-preserve-variable-$UNIQUE_NAME
       libraries:
         - notebook:
-            path: /Workspace/s12-single-block-prepend-dependency
+            path: /Workspace/prepend-dependency-preserve-variable
       environment:
         dependencies:
-          - ${var.s12_dependency}
+          - ${var.dependency}
 
   jobs:
-    s13_single_block:
+    single_block_task_changes:
       tasks:
         - task_key: a
           timeout_seconds: 130
           notebook_task:
-            notebook_path: /Workspace/s13-a
+            notebook_path: /Workspace/single-block-a
         - task_key: b
           timeout_seconds: 131
           notebook_task:
-            notebook_path: /Workspace/s13-b
+            notebook_path: /Workspace/single-block-b
         - task_key: c
           timeout_seconds: 132
           notebook_task:
-            notebook_path: /Workspace/s13-c
+            notebook_path: /Workspace/single-block-c
 
 targets:
   dev:
     mode: development
     resources:
       pipelines:
-        s12_field_edits:
+        edit_clusters_in_both_scopes:
           clusters:
+            - label: default
+              node_type_id: i3.xlarge
             - label: maintenance
               num_workers: 2
 
-        s12_add_cluster:
+        append_cluster_after_target:
           clusters:
+            - label: default
+              node_type_id: i3.xlarge
+            - label: default
+              num_workers: 30
             - label: maintenance
               num_workers: 4
 
-        s12_remove_cluster:
+        remove_target_cluster:
           clusters:
             - label: maintenance
               num_workers: 6
 
-        s12_remove_top_edit_target:
+        remove_top_cluster_and_edit_target:
           clusters:
             - label: maintenance
               num_workers: 8
+            - label: stable
+              num_workers: 15
+
+        remove_duplicate_and_edit_stable:
+          clusters:
+            - label: duplicate
+              num_workers: 1
+
+        remove_target_cluster_with_shared_survivor:
+          clusters:
+            - label: default
+              num_workers: 10
+            - label: maintenance
+              num_workers: 11
+
+        insert_between_repeated_target_entries:
+          clusters:
+            - label: default
+              node_type_id: i3.xlarge
+            - label: maintenance
+              num_workers: 13
+            - label: default
+              num_workers: 14

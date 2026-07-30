@@ -3,49 +3,51 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== S1: edit a non-first merged element from the top-level block
-=== S2: edit an element from the target block
-=== S3: edit a target sibling after an element defined in both blocks
+=== Edit a non-first merged task from the top-level block
+=== Edit a task and add a dependency in the target block
+=== Edit a target sibling and nested list under a task defined in both blocks
 === Flow-style list elements retain distinct physical positions
-=== S7: remove elements from both blocks
-=== S8: remove and edit in one physical block
-=== S10: rename and clone an element without resolving its variable-backed field
-=== S10: clone a variable-backed target element into a missing top-level list
-=== S11: edit a scalar on a resource that also has a split list
+=== Remove tasks from both blocks
+=== Remove and edit tasks in one source block
+=== Rename and clone a task without resolving its variable-backed field
+=== Clone a variable-backed target task into a missing top-level list
+=== Edit a scalar on a resource that also has split tasks
 === A new element on a target-only resource stays in the target scope
 === Sync split keyed-list edits
 Detected changes in 10 resource(s):
 
+Resource: resources.jobs.edit_non_first_top_level_task
+  tasks[task_key='beta'].timeout_seconds: replace
+
+Resource: resources.jobs.edit_scalar_with_split_tasks
+  timeout_seconds: replace
+
+Resource: resources.jobs.edit_target_sibling_after_shared_task
+  tasks[task_key='omega'].timeout_seconds: replace
+  tasks[task_key='shared'].depends_on[task_key='new_dep']: add
+
+Resource: resources.jobs.edit_target_task
+  tasks[task_key='alpha'].depends_on[task_key='yyy']: add
+  tasks[task_key='alpha'].timeout_seconds: replace
+
 Resource: resources.jobs.flow_style_mapping
   tasks[task_key='beta'].timeout_seconds: replace
 
-Resource: resources.jobs.s10_preserve_variable
+Resource: resources.jobs.preserve_variable_on_clone
+  tasks[task_key='cloned_to_top']: add
+
+Resource: resources.jobs.preserve_variable_on_rename
   tasks[task_key='a_variable_clone']: add
   tasks[task_key='variable_task']: remove
   tasks[task_key='variable_task_renamed']: add
 
-Resource: resources.jobs.s10_target_only_variable_clone
-  tasks[task_key='cloned_to_top']: add
-
-Resource: resources.jobs.s11_scalar_with_split_list
-  timeout_seconds: replace
-
-Resource: resources.jobs.s1_non_first_top
-  tasks[task_key='beta'].timeout_seconds: replace
-
-Resource: resources.jobs.s2_target_only
-  tasks[task_key='alpha'].timeout_seconds: replace
-
-Resource: resources.jobs.s3_both_blocks_sibling
-  tasks[task_key='omega'].timeout_seconds: replace
-
-Resource: resources.jobs.s7_remove_both_blocks
-  tasks[task_key='b']: remove
-  tasks[task_key='e']: remove
-
-Resource: resources.jobs.s8_remove_and_edit
+Resource: resources.jobs.remove_and_edit_same_block
   tasks[task_key='q']: remove
   tasks[task_key='r'].timeout_seconds: replace
+
+Resource: resources.jobs.remove_tasks_from_both_blocks
+  tasks[task_key='b']: remove
+  tasks[task_key='e']: remove
 
 Resource: resources.jobs.target_only_resource
   tasks[task_key='beta']: add
@@ -63,8 +65,8 @@ Resource: resources.jobs.target_only_resource
 -          timeout_seconds: 10
 +          timeout_seconds: 101
            notebook_task:
-             notebook_path: /Workspace/s1-beta
-@@ -34,11 +34,12 @@
+             notebook_path: /Workspace/non-first-beta
+@@ -44,11 +44,12 @@
 
      flow_style_mapping:
 -      tasks: [{task_key: alpha, timeout_seconds: 701, notebook_task: {notebook_path: /Workspace/flow-alpha}}, {task_key: beta, timeout_seconds: 702, notebook_task: {notebook_path: /Workspace/flow-beta}}]
@@ -74,75 +76,80 @@ Resource: resources.jobs.target_only_resource
 +          timeout_seconds: 799
 +          notebook_task: {notebook_path: /Workspace/flow-beta}
 
-     s7_remove_both_blocks:
+     remove_tasks_from_both_blocks:
        tasks:
 -        - task_key: b
 -          notebook_task:
--            notebook_path: /Workspace/s7-b
+-            notebook_path: /Workspace/remove-b
          - task_key: c
            notebook_task:
-@@ -51,10 +52,6 @@
+@@ -61,10 +62,6 @@
            notebook_task:
-             notebook_path: /Workspace/s8-p
+             notebook_path: /Workspace/remove-edit-p
 -        - task_key: q
 -          timeout_seconds: 81
 -          notebook_task:
--            notebook_path: /Workspace/s8-q
+-            notebook_path: /Workspace/remove-edit-q
          - task_key: r
 -          timeout_seconds: 82
 +          timeout_seconds: 808
            notebook_task:
-             notebook_path: /Workspace/s8-r
-@@ -66,9 +63,17 @@
-             notebook_path: /Workspace/s10-top
+             notebook_path: /Workspace/remove-edit-r
+@@ -76,9 +73,17 @@
+             notebook_path: /Workspace/preserve-variable-top
 
 +        - notebook_task:
-+            notebook_path: ${var.s10_notebook}
++            notebook_path: ${var.notebook_path}
 +          task_key: a_variable_clone
 +          timeout_seconds: 1010
-     s10_target_only_variable_clone:
+     preserve_variable_on_clone:
        timeout_seconds: 100
 
 +      tasks:
 +        - notebook_task:
-+            notebook_path: ${var.s10_notebook}
++            notebook_path: ${var.notebook_path}
 +          task_key: cloned_to_top
-     s11_scalar_with_split_list:
+     edit_scalar_with_split_tasks:
 -      timeout_seconds: 110
 +      timeout_seconds: 1111
        tasks:
          - task_key: top_task
-@@ -91,5 +96,5 @@
+@@ -101,7 +106,8 @@
            tasks:
              - task_key: alpha
 -              timeout_seconds: 21
 +              timeout_seconds: 202
+               depends_on:
+                 - task_key: zzz
++                - task_key: yyy
                notebook_task:
-                 notebook_path: /Workspace/s2-alpha
-@@ -100,5 +105,5 @@
-               timeout_seconds: 31
+                 notebook_path: /Workspace/edit-target-alpha
+@@ -113,6 +119,7 @@
+               depends_on:
+                 - task_key: target_dep
++                - task_key: new_dep
              - task_key: omega
 -              timeout_seconds: 32
 +              timeout_seconds: 303
                notebook_task:
-                 notebook_path: /Workspace/s3-omega
-@@ -112,8 +117,4 @@
+                 notebook_path: /Workspace/target-sibling-omega
+@@ -126,8 +133,4 @@
                notebook_task:
-                 notebook_path: /Workspace/s7-a
+                 notebook_path: /Workspace/remove-a
 -            - task_key: e
 -              notebook_task:
--                notebook_path: /Workspace/s7-e
+-                notebook_path: /Workspace/remove-e
 -
-         s8_remove_and_edit:
+         remove_and_edit_same_block:
            tasks:
-@@ -125,5 +126,5 @@
-         s10_preserve_variable:
+@@ -139,5 +142,5 @@
+         preserve_variable_on_rename:
            tasks:
 -            - task_key: variable_task
 +            - task_key: variable_task_renamed
                notebook_task:
-                 notebook_path: ${var.s10_notebook}
-@@ -146,2 +147,5 @@
+                 notebook_path: ${var.notebook_path}
+@@ -160,2 +163,5 @@
                notebook_task:
                  notebook_path: /Workspace/target-only-alpha
 +            - notebook_task:
@@ -151,7 +158,7 @@ Resource: resources.jobs.target_only_resource
 
 === Variable references remain references
 
->>> grep -Fc notebook_path: ${var.s10_notebook} databricks.yml
+>>> grep -Fc notebook_path: ${var.notebook_path} databricks.yml
 4
 
 === Second sync is idempotent
@@ -162,15 +169,15 @@ No changes detected.
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:
+  delete resources.jobs.edit_non_first_top_level_task
+  delete resources.jobs.edit_scalar_with_split_tasks
+  delete resources.jobs.edit_target_sibling_after_shared_task
+  delete resources.jobs.edit_target_task
   delete resources.jobs.flow_style_mapping
-  delete resources.jobs.s10_preserve_variable
-  delete resources.jobs.s10_target_only_variable_clone
-  delete resources.jobs.s11_scalar_with_split_list
-  delete resources.jobs.s1_non_first_top
-  delete resources.jobs.s2_target_only
-  delete resources.jobs.s3_both_blocks_sibling
-  delete resources.jobs.s7_remove_both_blocks
-  delete resources.jobs.s8_remove_and_edit
+  delete resources.jobs.preserve_variable_on_clone
+  delete resources.jobs.preserve_variable_on_rename
+  delete resources.jobs.remove_and_edit_same_block
+  delete resources.jobs.remove_tasks_from_both_blocks
   delete resources.jobs.target_only_resource
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev

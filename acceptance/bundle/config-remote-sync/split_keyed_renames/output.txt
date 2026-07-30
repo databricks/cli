@@ -3,28 +3,51 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== S4: rename a target-only element
+=== Sync an independent field without relocating an ambiguous remove and add
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.independent_task_replacement
+  tasks[task_key='etl']: remove
+  tasks[task_key='etl_new']: add
+  timeout_seconds: replace
+
+
+
+=== Only the unambiguous field changes
+
+>>> diff.py databricks.yml.ambiguous-backup databricks.yml
+--- databricks.yml.ambiguous-backup
++++ databricks.yml
+@@ -23,5 +23,5 @@
+
+     independent_task_replacement:
+-      timeout_seconds: 50
++      timeout_seconds: 201
+       job_clusters:
+         - job_cluster_key: shared_cluster
+
+=== Rename a target-only task
 === Rename matching is not confused by a preceding deletion
 === A new keyed list element uses the broadest existing resource scope
-=== S5: rename elements in both blocks without swapping their source blocks
-=== S6: keep a rename in target while placing a genuinely new element at top level
+=== Rename tasks in both blocks without swapping their source blocks
+=== Keep a rename in target while placing a new task at top level
 === Sync split keyed-list renames
 Detected changes in 5 resource(s):
 
-Resource: resources.jobs.s4_target_rename
+Resource: resources.jobs.rename_target_and_add_top_level
+  tasks[task_key='a_brand_new']: add
+  tasks[task_key='t']: remove
+  tasks[task_key='t_new']: add
+
+Resource: resources.jobs.rename_target_task
   tasks[task_key='t1']: remove
   tasks[task_key='t1b']: add
 
-Resource: resources.jobs.s5_rename_both_blocks
+Resource: resources.jobs.rename_tasks_in_both_blocks
   tasks[task_key='a']: remove
   tasks[task_key='a_new_target']: add
   tasks[task_key='m']: remove
   tasks[task_key='z_new_top']: add
-
-Resource: resources.jobs.s6_rename_and_add
-  tasks[task_key='a_brand_new']: add
-  tasks[task_key='t']: remove
-  tasks[task_key='t_new']: add
 
 Resource: resources.jobs.shifted_delete_rename
   tasks[task_key='a_target']: remove
@@ -43,25 +66,28 @@ Resource: resources.jobs.target_only_list
 --- databricks.yml.backup
 +++ databricks.yml
 @@ -12,5 +12,5 @@
-     s5_rename_both_blocks:
+     rename_tasks_in_both_blocks:
        tasks:
 -        - task_key: m
 +        - task_key: z_new_top
            notebook_task:
-             notebook_path: /Workspace/s5-top
-@@ -22,7 +22,10 @@
-             notebook_path: /Workspace/s6-top
+             notebook_path: /Workspace/rename-both-top
+@@ -22,4 +22,7 @@
+             notebook_path: /Workspace/rename-and-add-top
 
 +        - notebook_task:
-+            notebook_path: /Workspace/s6-brand-new
++            notebook_path: /Workspace/rename-and-add-brand-new
 +          task_key: a_brand_new
+     independent_task_replacement:
+       timeout_seconds: 201
+@@ -38,5 +41,5 @@
      shifted_delete_rename:
        tasks:
 -        - task_key: m_top
 +        - task_key: z_top_renamed
            timeout_seconds: 610
            notebook_task:
-@@ -31,4 +34,11 @@
+@@ -45,4 +48,11 @@
      target_only_list:
        timeout_seconds: 800
 +      tasks:
@@ -73,27 +99,28 @@ Resource: resources.jobs.target_only_list
 +          task_key: b_brand_top
 
  targets:
-@@ -39,5 +49,5 @@
-         s4_target_rename:
+@@ -53,5 +63,5 @@
+         rename_target_task:
            tasks:
 -            - task_key: t1
 +            - task_key: t1b
+               timeout_seconds: 40
                notebook_task:
-                 notebook_path: /Workspace/s4-dev
-@@ -45,5 +55,5 @@
-         s5_rename_both_blocks:
+@@ -60,5 +70,5 @@
+         rename_tasks_in_both_blocks:
            tasks:
 -            - task_key: a
 +            - task_key: a_new_target
                notebook_task:
-                 notebook_path: /Workspace/s5-target
-@@ -51,15 +61,10 @@
-         s6_rename_and_add:
+                 notebook_path: /Workspace/rename-both-target
+@@ -66,5 +76,5 @@
+         rename_target_and_add_top_level:
            tasks:
 -            - task_key: t
 +            - task_key: t_new
                notebook_task:
-                 notebook_path: /Workspace/s6-target
+                 notebook_path: /Workspace/rename-and-add-target
+@@ -80,10 +90,5 @@
 
          shifted_delete_rename:
 -          tasks:
@@ -114,9 +141,10 @@ No changes detected.
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:
-  delete resources.jobs.s4_target_rename
-  delete resources.jobs.s5_rename_both_blocks
-  delete resources.jobs.s6_rename_and_add
+  delete resources.jobs.independent_task_replacement
+  delete resources.jobs.rename_target_and_add_top_level
+  delete resources.jobs.rename_target_task
+  delete resources.jobs.rename_tasks_in_both_blocks
   delete resources.jobs.shifted_delete_rename
   delete resources.jobs.target_only_list
 

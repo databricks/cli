@@ -9,39 +9,133 @@ trap cleanup EXIT
 
 $CLI bundle deploy -t dev
 
-field_edits_id="$(read_id.py -t dev s12_field_edits)"
-add_id="$(read_id.py -t dev s12_add_cluster)"
-remove_id="$(read_id.py -t dev s12_remove_cluster)"
-remove_top_edit_target_id="$(read_id.py -t dev s12_remove_top_edit_target)"
-single_block_variable_id="$(read_id.py -t dev s12_single_block_remove_preserve_variable)"
-remove_dependency_id="$(read_id.py -t dev s12_single_block_remove_dependency)"
-prepend_dependency_id="$(read_id.py -t dev s12_single_block_prepend_dependency)"
-s13_id="$(read_id.py -t dev s13_single_block)"
+edit_clusters_id="$(read_id.py -t dev edit_clusters_in_both_scopes)"
+append_cluster_id="$(read_id.py -t dev append_cluster_after_target)"
+remove_target_cluster_id="$(read_id.py -t dev remove_target_cluster)"
+remove_top_edit_target_id="$(read_id.py -t dev remove_top_cluster_and_edit_target)"
+remove_duplicate_edit_stable_id="$(read_id.py -t dev remove_duplicate_and_edit_stable)"
+remove_shared_survivor_id="$(read_id.py -t dev remove_target_cluster_with_shared_survivor)"
+replace_cluster_list_id="$(read_id.py -t dev replace_cluster_list)"
+insert_between_repeated_id="$(read_id.py -t dev insert_between_repeated_target_entries)"
+remove_cluster_preserve_variable_id="$(read_id.py -t dev remove_cluster_preserve_variable)"
+remove_dependency_id="$(read_id.py -t dev remove_dependency_preserve_variable)"
+prepend_dependency_id="$(read_id.py -t dev prepend_dependency_preserve_variable)"
+single_block_id="$(read_id.py -t dev single_block_task_changes)"
 
-title "S12a/b: edit top-level and target positional elements"
-edit_resource.py pipelines "$field_edits_id" <<'EOF'
-next(c for c in r["clusters"] if c["label"] == "default")["num_workers"] = 1201
+title "Remove a top-level cluster and rename a target cluster"
+edit_resource.py pipelines "$remove_top_edit_target_id" <<'EOF'
+r["clusters"] = [c for c in r["clusters"] if c.get("label") != "default"]
+next(c for c in r["clusters"] if c.get("label") == "maintenance")["label"] = "renamed"
+EOF
+
+echo
+cp databricks.yml databricks.yml.ambiguous-backup
+$CLI bundle config-remote-sync -t dev --save --select-ids "pipelines:$remove_top_edit_target_id"
+
+title "The rename stays in its target source block"
+echo
+trace diff.py databricks.yml.ambiguous-backup databricks.yml
+
+# Restore the remote resource so the remaining independent scenarios can sync.
+edit_resource.py pipelines "$remove_top_edit_target_id" <<'EOF'
+next(c for c in r["clusters"] if c.get("label") == "renamed")["label"] = "maintenance"
+r["clusters"].insert(0, {"label": "default", "num_workers": 7})
+EOF
+mv databricks.yml.ambiguous-backup databricks.yml
+
+title "Sync an unambiguous cluster edit alongside an ambiguous replacement"
+edit_resource.py pipelines "$remove_top_edit_target_id" <<'EOF'
+r["clusters"] = [c for c in r["clusters"] if c.get("label") != "default"]
+renamed = next(c for c in r["clusters"] if c.get("label") == "maintenance")
+renamed["label"] = "renamed"
+renamed["num_workers"] = 18
+next(c for c in r["clusters"] if c.get("label") == "stable")["num_workers"] = 99
+EOF
+
+echo
+cp databricks.yml databricks.yml.ambiguous-backup
+$CLI bundle config-remote-sync -t dev --save --select-ids "pipelines:$remove_top_edit_target_id"
+
+title "Only the independently routable cluster edit changes"
+echo
+trace diff.py databricks.yml.ambiguous-backup databricks.yml
+
+# Restore the remote and local resource for the remaining independent scenarios.
+edit_resource.py pipelines "$remove_top_edit_target_id" <<'EOF'
+renamed = next(c for c in r["clusters"] if c.get("label") == "renamed")
+renamed["label"] = "maintenance"
+renamed["num_workers"] = 8
+next(c for c in r["clusters"] if c.get("label") == "stable")["num_workers"] = 15
+r["clusters"].insert(0, {"label": "default", "num_workers": 7})
+EOF
+mv databricks.yml.ambiguous-backup databricks.yml
+
+title "Sync a stable edit alongside an ambiguous duplicate removal"
+edit_resource.py pipelines "$remove_duplicate_edit_stable_id" <<'EOF'
+next(c for c in r["clusters"] if c.get("label") == "stable")["num_workers"] = 99
+r["clusters"].pop()
+EOF
+
+echo
+cp databricks.yml databricks.yml.ambiguous-backup
+$CLI bundle config-remote-sync -t dev --save --select-ids "pipelines:$remove_duplicate_edit_stable_id"
+
+title "The independently matched cluster edit changes"
+echo
+trace diff.py databricks.yml.ambiguous-backup databricks.yml
+
+# Restore the remote and local resource for the remaining independent scenarios.
+edit_resource.py pipelines "$remove_duplicate_edit_stable_id" <<'EOF'
+next(c for c in r["clusters"] if c.get("label") == "stable")["num_workers"] = 15
+r["clusters"].append({"label": "duplicate", "num_workers": 1})
+EOF
+mv databricks.yml.ambiguous-backup databricks.yml
+
+title "Edit clusters in top-level and target blocks"
+edit_resource.py pipelines "$edit_clusters_id" <<'EOF'
+default = next(c for c in r["clusters"] if c["label"] == "default")
+default["label"] = "renamed"
+default["num_workers"] = 1201
 next(c for c in r["clusters"] if c["label"] == "maintenance")["num_workers"] = 1202
 EOF
 
-title "S12c: append a positional element after a target element"
-edit_resource.py pipelines "$add_id" <<'EOF'
+title "Append a cluster after a target cluster"
+edit_resource.py pipelines "$append_cluster_id" <<'EOF'
 r["clusters"].append({"label": "extra", "num_workers": 1203, "custom_tags": {"role": "extra"}})
 EOF
 
-title "S12c: remove a target positional element"
-edit_resource.py pipelines "$remove_id" <<'EOF'
+title "Remove a target cluster"
+edit_resource.py pipelines "$remove_target_cluster_id" <<'EOF'
 r["clusters"] = [c for c in r["clusters"] if c.get("label") != "maintenance"]
 EOF
 
-title "S12c: remove a top-level element while editing the shifted target survivor"
+title "Remove a top-level cluster while editing the shifted target cluster"
 edit_resource.py pipelines "$remove_top_edit_target_id" <<'EOF'
 r["clusters"] = [c for c in r["clusters"] if c.get("label") != "default"]
 next(c for c in r["clusters"] if c.get("label") == "maintenance")["num_workers"] = 1204
 EOF
 
-title "S12c: remove a single-block element without resolving the shifted survivor"
-edit_resource.py pipelines "$single_block_variable_id" <<'EOF'
+title "Remove a target cluster next to a cluster defined in both scopes"
+edit_resource.py pipelines "$remove_shared_survivor_id" <<'EOF'
+r["clusters"] = [c for c in r["clusters"] if c.get("label") != "maintenance"]
+EOF
+
+title "Replace a cluster list with clusters that have new labels"
+edit_resource.py pipelines "$replace_cluster_list_id" <<'EOF'
+r["clusters"] = [
+    {"label": "maintenance", "num_workers": 1205},
+    {"label": "extra", "num_workers": 1206},
+]
+EOF
+
+title "Insert between repeated target entries for the same cluster"
+edit_resource.py pipelines "$insert_between_repeated_id" <<'EOF'
+maintenance = next(i for i, c in enumerate(r["clusters"]) if c["label"] == "maintenance")
+r["clusters"].insert(maintenance, {"label": "extra", "num_workers": 1207})
+EOF
+
+title "Remove a cluster without resolving a variable in the shifted cluster"
+edit_resource.py pipelines "$remove_cluster_preserve_variable_id" <<'EOF'
 r["clusters"] = [c for c in r["clusters"] if c.get("label") != "default"]
 EOF
 
@@ -55,14 +149,14 @@ edit_resource.py pipelines "$prepend_dependency_id" <<'EOF'
 r["environment"]["dependencies"].insert(0, "literal-prepend")
 EOF
 
-title "S13: edit, remove, rename, and add in a single-block keyed list"
-edit_resource.py jobs "$s13_id" <<'EOF'
+title "Edit, remove, rename, and add tasks in one source block"
+edit_resource.py jobs "$single_block_id" <<'EOF'
 next(t for t in r["tasks"] if t["task_key"] == "a")["timeout_seconds"] = 1301
 r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "b"]
 next(t for t in r["tasks"] if t["task_key"] == "c")["task_key"] = "c_renamed"
 r["tasks"].append({
     "task_key": "d_added",
-    "notebook_task": {"notebook_path": "/Workspace/s13-d"},
+    "notebook_task": {"notebook_path": "/Workspace/single-block-d"},
 })
 EOF
 
@@ -78,8 +172,8 @@ rm databricks.yml.backup
 
 title "The shifted survivor keeps its variable reference"
 echo
-trace grep -Fc 'num_workers: ${var.s12_single_block_workers}' databricks.yml
-trace grep -Fc -- '- ${var.s12_dependency}' databricks.yml
+trace grep -Fc 'num_workers: ${var.cluster_workers}' databricks.yml
+trace grep -Fc -- '- ${var.dependency}' databricks.yml
 
 title "Second sync is idempotent"
 echo

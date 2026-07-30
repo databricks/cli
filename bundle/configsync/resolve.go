@@ -2,7 +2,6 @@ package configsync
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
@@ -19,9 +18,8 @@ type FieldChange struct {
 	Change          *ConfigChangeDesc
 	FieldCandidates []string
 
-	sourceValue         dyn.Value
-	sourceSiblings      []dyn.Value
-	originalFileContent []byte
+	sourceValue    dyn.Value
+	sourceSiblings []dyn.Value
 }
 
 // resolveSelectors converts key-value selectors to numeric indices that match
@@ -115,7 +113,7 @@ func yamlFileIndex(seq []dyn.Value, sortedIndex int) int {
 			continue
 		}
 		loc := elem.Location()
-		if loc.File == matchLocation.File && (loc.Line < matchLocation.Line || (loc.Line == matchLocation.Line && loc.Column < matchLocation.Column)) {
+		if loc.File == matchLocation.File && loc.Line < matchLocation.Line {
 			yamlIndex++
 		}
 	}
@@ -131,21 +129,12 @@ func pathDepth(pathStr string) int {
 }
 
 // ResolveChanges resolves selectors and computes field path candidates for each change.
-func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, error) {
-	snapshot, err := CaptureSourceSnapshot(ctx, b)
+func ResolveChanges(_ context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, error) {
+	sources, err := loadSourceIndex(b)
 	if err != nil {
 		return nil, err
 	}
-	return ResolveChangesFromSnapshot(ctx, b, configChanges, snapshot)
-}
-
-// ResolveChangesFromSnapshot resolves changes against source content captured
-// before the remote plan was calculated.
-func ResolveChangesFromSnapshot(ctx context.Context, b *bundle.Bundle, configChanges Changes, snapshot *SourceSnapshot) ([]FieldChange, error) {
-	if snapshot == nil || snapshot.index == nil {
-		return nil, errors.New("source snapshot unavailable")
-	}
-	return resolveChangesWithSourceMapping(ctx, b, configChanges, snapshot.index)
+	return resolveChangesWithSourceMapping(b, configChanges, sources)
 }
 
 // translateWorkspacePaths recursively converts absolute workspace paths to relative
@@ -172,17 +161,15 @@ func translateWorkspacePaths(value any, syncRootPath string, syncRoot fs.FS, tar
 		}
 		return relPathSlash
 	case map[string]any:
-		result := make(map[string]any, len(v))
 		for key, val := range v {
-			result[key] = translateWorkspacePaths(val, syncRootPath, syncRoot, targetDir)
+			v[key] = translateWorkspacePaths(val, syncRootPath, syncRoot, targetDir)
 		}
-		return result
+		return v
 	case []any:
-		result := make([]any, len(v))
 		for i, val := range v {
-			result[i] = translateWorkspacePaths(val, syncRootPath, syncRoot, targetDir)
+			v[i] = translateWorkspacePaths(val, syncRootPath, syncRoot, targetDir)
 		}
-		return result
+		return v
 	default:
 		return value
 	}

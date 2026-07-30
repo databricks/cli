@@ -2,13 +2,13 @@ targets:
   dev:
     resources:
       jobs:
-        s9_multifile_target:
+        edit_second_target_file:
           tasks:
             - task_key: second_a
               timeout_seconds: 93
               notebook_task:
-                notebook_path: /Workspace/s9-second-a
+                notebook_path: /Workspace/multifile-second-a
             - task_key: second_b
               timeout_seconds: 94
               notebook_task:
-                notebook_path: /Workspace/s9-second-b
+                notebook_path: /Workspace/multifile-second-b
