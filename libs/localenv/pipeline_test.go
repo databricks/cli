@@ -60,6 +60,22 @@ func (uvMissingPM) EnsureAvailable(context.Context) (string, error) {
 	return "", errors.New("uv not found and install failed")
 }
 
+// cancelPM simulates uv being interrupted: Provision closes entered (so the test
+// knows the pipeline reached this phase), blocks until the context is cancelled,
+// then returns a process-style error (NOT context.Canceled), exactly as a real
+// `uv sync` does when it exits on SIGTERM. This is the shape that made the
+// pipeline mislabel an interrupt as E_PROVISION before the ctx.Err() check.
+type cancelPM struct {
+	fakePM
+	entered chan struct{}
+}
+
+func (c cancelPM) Provision(ctx context.Context, _, _ string) error {
+	close(c.entered)
+	<-ctx.Done()
+	return errors.New("sh -c ...: signal: terminated")
+}
+
 func writeProject(t *testing.T) string {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(`[project]
@@ -123,6 +139,42 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	entries, err := os.ReadDir(cacheDir)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
+}
+
+func TestPipelineReportsCancellationNotProvisionFailure(t *testing.T) {
+	// When the context is cancelled mid-provision (a Ctrl-C / SIGTERM), the run
+	// must surface E_CANCELED, not E_PROVISION — the provision phase's own error
+	// ("signal: terminated") would otherwise imply something broke.
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	pm := cancelPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}, entered: make(chan struct{})}
+	p := &Pipeline{
+		Mode: ModeDefault, Check: false, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: pm,
+	}
+
+	// Cancel once Provision is running, so the run unblocks and returns through the
+	// interrupt path (mirrors a Ctrl-C landing mid-`uv sync`).
+	go func() {
+		<-pm.entered
+		cancel()
+	}()
+
+	res, err := p.Run(ctx)
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrCanceled, pe.Code)
+	assert.Equal(t, PhaseProvision, pe.FailurePhase, "should still record where it stopped")
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrCanceled, res.Error.Code)
+	assert.False(t, res.OK)
+	// The wrapped cause is the context error, so errors.Is works upstream.
+	assert.ErrorIs(t, pe, context.Canceled)
 }
 
 func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {

@@ -82,6 +82,19 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	p.res.Phases = initialPhases()
 
 	if err := p.run(ctx); err != nil {
+		// A cancelled context means the user or parent interrupted us (SIGINT/
+		// SIGTERM). The phase that was running reports its own failure (e.g. uv
+		// sync exiting on the signal surfaces as E_PROVISION with "signal:
+		// terminated"), which misleads a --json consumer into thinking something
+		// broke. Reclassify to E_CANCELED here — the single funnel where ctx is in
+		// scope — keeping the recorded FailurePhase and diskMutated so the consumer
+		// still knows where we stopped and whether disk was touched.
+		if ctx.Err() != nil && p.res.Error != nil {
+			p.res.Error.Code = ErrCanceled
+			p.res.Error.Msg = "interrupted"
+			p.res.Error.Err = ctx.Err()
+			return p.res, p.res.Error
+		}
 		return p.res, err
 	}
 	p.res.OK = true

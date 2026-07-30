@@ -1,8 +1,11 @@
 package environments
 
 import (
+	"context"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -53,7 +56,28 @@ func addComputeFlags(cmd *cobra.Command) {
 
 // runPipeline builds and runs the setup-local Pipeline.
 func runPipeline(cmd *cobra.Command) error {
-	ctx := cmd.Context()
+	// The CLI root doesn't cancel ctx on signals, so handle them here: the first
+	// SIGINT (Ctrl-C) or SIGTERM (how a supervisor, CI timeout, or VS Code stops
+	// the child) cancels ctx, which propagates to the uv subprocesses the pipeline
+	// spawns so they are reaped instead of orphaned mid-provision.
+	//
+	// We use signal.Notify + cancel() rather than signal.NotifyContext on purpose:
+	// NotifyContext suppresses the default signal disposition for the rest of the
+	// process, so a second Ctrl-C would do nothing during the group's SIGKILL grace
+	// window (WithProcessGroup also moves uv out of the foreground process group, so
+	// the tty no longer delivers Ctrl-C to it directly — this handler is the only
+	// path). Leaving the default disposition intact means a second signal still
+	// terminates the CLI immediately, preserving the user's escape hatch. Mirrors
+	// experimental/ssh/internal/client and cmd/apps/run_local.
+	ctx, cancel := context.WithCancel(cmd.Context())
+	defer cancel()
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigCh)
+	go func() {
+		<-sigCh
+		cancel()
+	}()
 
 	cluster, _ := cmd.Flags().GetString("cluster-id")
 	clusterName, _ := cmd.Flags().GetString("cluster-name")
