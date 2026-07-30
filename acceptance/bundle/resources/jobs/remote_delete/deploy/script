@@ -1,6 +1,6 @@
 trace $CLI bundle plan
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 job_id=`$CLI bundle summary -o json | jq -r .resources.jobs.foo.id`
 trace $CLI jobs delete $job_id
 trace $CLI bundle plan

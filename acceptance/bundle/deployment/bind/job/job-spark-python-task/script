@@ -39,7 +39,7 @@ trace rm -rf .databricks
 
 title "Deploy bundle:"
 trace $CLI bundle deploy --force-lock --auto-approve
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 title "Read the pre-defined job:"
 trace $CLI jobs get $JOB_ID | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: {python_file: .spark_python_task.python_file}}]}}'

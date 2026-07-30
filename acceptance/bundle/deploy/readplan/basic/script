@@ -4,7 +4,7 @@ trace print_requests.py --get //jobs | contains.py "!GET" "!POST"
 
 # First deploy to create the resource
 trace $CLI bundle deploy --plan out.plan_create.json
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 trace print_requests.py --get //jobs | contains.py "!GET" "POST"
 
 # Generate a plan (should show "skip" since nothing changed)

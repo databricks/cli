@@ -1,6 +1,6 @@
 # Deploy first so the permissions resource exists; plan reads it on subsequent runs.
 $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 rm -f out.requests.txt
 
 fault.py "GET /api/2.0/permissions/pipelines/*" 504 0 1

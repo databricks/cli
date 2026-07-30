@@ -1,5 +1,5 @@
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 trace find.py --expect 1 whl
 

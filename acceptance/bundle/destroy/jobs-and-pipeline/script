@@ -36,7 +36,7 @@ else
 fi
 
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 title "Assert the snapshot file exists"
 trace find.py --expect 1 '^.databricks/bundle/default/sync-snapshots/[a-z0-9]+\.json' > /dev/null

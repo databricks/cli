@@ -1,6 +1,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 trace print_requests.py //jobs
 
 trace $CLI bundle plan

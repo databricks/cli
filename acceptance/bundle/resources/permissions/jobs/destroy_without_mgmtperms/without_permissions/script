@@ -21,7 +21,7 @@ cleanup() {
 cleanup EXIT
 
 trace as-test-sp $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 job_id=$($CLI bundle summary --output json | jq -r '.resources.jobs.foo.id')
 

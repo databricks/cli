@@ -1,7 +1,7 @@
 trace find.py --expect 2 whl
 
 trace $CLI bundle deploy 2>&1
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 title "Expecting to find 2 wheels, same as initially provided"
 trace find.py --expect 2 whl

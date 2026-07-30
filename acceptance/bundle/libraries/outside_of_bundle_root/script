@@ -4,7 +4,7 @@ trace $CLI bundle validate -o json | jq '.resources.jobs.test.tasks[0].libraries
 trace $CLI bundle validate -o json | jq '.resources.jobs.test.environments[0].spec.dependencies'
 trace $CLI bundle validate -o json | jq '.resources.pipelines.pipeline.environment.dependencies'
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 cd ..
 

@@ -7,4 +7,4 @@ trap cleanup EXIT
 
 trace $CLI bundle validate
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py

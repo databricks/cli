@@ -2,7 +2,7 @@ trace $CLI bundle validate
 trace $CLI bundle validate -o json | jq .resources
 trace $CLI bundle plan
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 trace print_requests.py //jobs
 trace $CLI bundle summary
 trace $CLI bundle destroy --auto-approve

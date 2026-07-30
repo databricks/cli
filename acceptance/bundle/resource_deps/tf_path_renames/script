@@ -1,4 +1,4 @@
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 print_requests.py //jobs | jq -rs '[.[].body.name] | sort[]'

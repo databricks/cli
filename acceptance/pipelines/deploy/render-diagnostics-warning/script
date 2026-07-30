@@ -1,4 +1,4 @@
 trace $CLI pipelines deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 # print newline to comply with whitespace linter
 printf "<EOL>\n"

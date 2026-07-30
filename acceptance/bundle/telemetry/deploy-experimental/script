@@ -1,5 +1,5 @@
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 # Common bool_values are engine-agnostic; the terraform-only direct_drymigrate_*
 # entries go to a per-engine file so output.txt stays shared.

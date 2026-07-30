@@ -6,7 +6,7 @@ echo "test wheel content 3" > whl/source3.whl
 echo "test wheel content 4" > whl/source4.whl
 
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 title "Expecting 5 wheels in libraries section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt

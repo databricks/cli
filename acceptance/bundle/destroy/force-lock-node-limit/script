@@ -5,7 +5,7 @@
 
 title "Deploy (creates the job and the deployment)"
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 title "destroy without --force-lock (lock write hits the node limit: aborts)"
 fault.py "POST /api/2.0/workspace-files/import-file/*" 403 0 1 MAX_CHILD_NODE_SIZE_EXCEEDED

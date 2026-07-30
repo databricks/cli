@@ -1,5 +1,5 @@
 trace $CLI pipelines deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 rm out.requests.txt
 title "Dry running pipeline, should have validate_only set to true"
 trace $CLI pipelines dry-run

@@ -1,5 +1,5 @@
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 # Edit the job name locally (not deployed) so the local config diverges from the
 # deployed state. config-remote-sync --save then overwrites that pending edit,

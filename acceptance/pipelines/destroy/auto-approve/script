@@ -1,6 +1,6 @@
 title "Test auto-approve pipelines destroy"
 trace $CLI pipelines deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 # Should fail without auto-approve
 trace errcode $CLI pipelines destroy
 # Should succeed with auto-approve

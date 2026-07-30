@@ -1,6 +1,6 @@
 title "Test basic pipelines destroy"
 trace $CLI pipelines deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.my_pipeline.id')
 # --auto-approve is required because the test environment cannot provide interactive confirmation
 trace $CLI pipelines destroy --auto-approve

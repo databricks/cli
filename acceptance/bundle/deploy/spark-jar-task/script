@@ -1,5 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 trace $CLI bundle run jar_job

@@ -2,7 +2,7 @@ export DATABRICKS_BUNDLE_ENGINE=terraform
 
 # Deploy with terraform (only job_a; job_b is commented out)
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 # Uncomment job_b (add it to config without deploying)
 update_file.py databricks.yml "#job_b" "job_b"

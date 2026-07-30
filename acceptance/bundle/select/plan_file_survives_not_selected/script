@@ -14,4 +14,4 @@ $CLI bundle plan --select jobs.foo -o json > plan.json
 # not from the flag. This is the regression guard for that wiring.
 title "bundle deploy --plan (no --select)\n"
 trace $CLI bundle deploy --plan plan.json
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py

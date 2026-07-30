@@ -1,7 +1,7 @@
 trace $CLI bundle validate
 
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 trace errcode $CLI bundle plan
 trace musterr $CLI bundle destroy --auto-approve >>out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1

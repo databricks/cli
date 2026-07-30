@@ -6,7 +6,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 title "Cluster should exist after bundle deployment:\n"
 CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_cluster.id')

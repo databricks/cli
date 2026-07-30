@@ -7,7 +7,7 @@ trap cleanup EXIT
 
 title "Deploy without permissions"
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
 SNAPSHOT_PATH_1=$($CLI jobs get "$JOB_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')

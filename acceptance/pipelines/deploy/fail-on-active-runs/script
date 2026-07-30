@@ -1,5 +1,5 @@
 trace $CLI pipelines deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 # We deploy the bundle again to check that the deploy is failing if the job is running
 errcode trace $CLI pipelines deploy --fail-on-active-runs

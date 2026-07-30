@@ -1,6 +1,6 @@
 # We deploy the bundle first to create a job
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 # We deploy the bundle again to check that the deploy is failing if the job is running
 trace errcode $CLI bundle deploy --fail-on-active-runs

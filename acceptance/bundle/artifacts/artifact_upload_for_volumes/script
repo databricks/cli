@@ -3,7 +3,7 @@ mkdir -p whl
 echo "test wheel content" > whl/source.whl
 
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 title "Expecting 2 wheels in libraries section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt

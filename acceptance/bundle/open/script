@@ -5,7 +5,7 @@ title "not deployed yet"
 errcode trace $CLI bundle open foo
 
 errcode trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 title "Use a fake browser that just prints the URL it would have opened"
 export BROWSER="echo_browser.py"

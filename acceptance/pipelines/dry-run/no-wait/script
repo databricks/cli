@@ -1,4 +1,4 @@
 trace $CLI pipelines deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 title "Dry running pipeline with --no-wait flag"
 trace $CLI pipelines dry-run --no-wait

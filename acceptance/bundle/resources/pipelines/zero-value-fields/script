@@ -1,5 +1,5 @@
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 print_requests.py //api/2.0/pipelines > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
 if [ -f .databricks/bundle/default/terraform/bundle.tf.json ]; then

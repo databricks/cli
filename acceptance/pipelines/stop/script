@@ -1,5 +1,5 @@
 trace $CLI pipelines deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 trace $CLI pipelines run
 rm out.requests.txt
 

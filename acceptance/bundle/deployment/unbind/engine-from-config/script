@@ -6,7 +6,7 @@
 unset DATABRICKS_BUNDLE_ENGINE
 
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 echo "=== State files after deploy ==="
 find.py 'resources\.json|terraform\.tfstate$'

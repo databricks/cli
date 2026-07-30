@@ -41,7 +41,7 @@ rm out.bind-result.txt
 
 title "Deploy bundle:"
 trace $CLI bundle deploy --force-lock
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 title "Check that job is not bound and not updated with config from bundle:"
 trace $CLI jobs get $JOB_ID | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: .spark_python_task}]}}'

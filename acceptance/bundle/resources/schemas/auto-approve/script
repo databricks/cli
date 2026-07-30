@@ -15,7 +15,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 title "Assert the schema is created"
 trace $CLI schemas get "${CATALOG_NAME}.${SCHEMA_NAME}" | jq "{full_name, comment}"

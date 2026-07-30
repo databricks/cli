@@ -1,6 +1,6 @@
 trace musterr $CLI bundle run foo
 trace $CLI bundle deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 trace $CLI bundle run foo
 

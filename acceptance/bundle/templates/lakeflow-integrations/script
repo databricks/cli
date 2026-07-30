@@ -31,7 +31,7 @@ trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
 
 trace $CLI bundle deploy -t dev
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 
 # FIXME: debug why no artifacts are uploaded on Windows
 # title "artifacts uploaded to .internal"

@@ -1,4 +1,4 @@
 trace $CLI pipelines deploy
-replace_ids.py  # normalize resource IDs shown in deploy-summary URLs
+replace_ids.py
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
 trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
