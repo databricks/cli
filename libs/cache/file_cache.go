@@ -15,10 +15,19 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-// Metrics is a local interface for tracking cache telemetry.
-type Metrics interface {
-	SetBoolValue(key string, value bool)
-	AddDurationValue(key string, value time.Duration)
+// Metrics tracks local-cache telemetry. It is embedded into the bundle's
+// telemetry struct, so the bool fields become part of the bundle bitmap; the
+// json tags are the telemetry keys. ComputeDurationsMs is tagged "-" because
+// durations are values, not presence bits, and are reported separately.
+type Metrics struct {
+	Attempt bool `json:"local.cache.attempt,omitempty"`
+	Hit     bool `json:"local.cache.hit,omitempty"`
+	Miss    bool `json:"local.cache.miss,omitempty"`
+	Error   bool `json:"local.cache.error,omitempty"`
+
+	// ComputeDurationsMs holds one entry per cache miss: how long the compute
+	// took, in milliseconds.
+	ComputeDurationsMs []int64 `json:"-"`
 }
 
 // fileCache implements the cacheImpl interface using local disk storage.
@@ -26,7 +35,7 @@ type fileCache struct {
 	baseDir      string
 	expiry       time.Duration
 	mu           sync.Mutex
-	metrics      Metrics
+	metrics      *Metrics
 	cacheEnabled bool // If true, cached values are returned; if false, cache is only used for measurement
 }
 
@@ -124,7 +133,7 @@ func getCacheBaseDir(ctx context.Context) (string, error) {
 // - Emit metrics about potential savings
 // - Always compute the value (never actually use the cache)
 // The returned cache can handle multiple types through the generic GetOrCompute function.
-func NewCache(ctx context.Context, component string, expiry time.Duration, metrics Metrics) *Cache {
+func NewCache(ctx context.Context, component string, expiry time.Duration, metrics *Metrics) *Cache {
 	cacheBaseDir, err := getCacheBaseDir(ctx)
 	if err != nil {
 		return &Cache{impl: &noopFileCache{}}
@@ -179,12 +188,6 @@ func (fc *fileCache) getJSON(ctx context.Context, fingerprint any) ([]byte, bool
 	return fc.readFromCacheJSON(ctx, fc.getCachePath(cacheKey))
 }
 
-func (fc *fileCache) addTelemetryMetric(key string) {
-	if fc.metrics != nil {
-		fc.metrics.SetBoolValue(key, true)
-	}
-}
-
 // getOrComputeJSON retrieves cached content or computes it using the provided function.
 // Cache operations fail open: if caching fails, the compute function is still called.
 // When cacheEnabled is false, the cache checks if values exist and measures potential time savings,
@@ -199,7 +202,9 @@ func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, comp
 	}
 
 	log.Debugf(ctx, "[Local Cache] using cache key: %s", cacheKey)
-	fc.addTelemetryMetric("local.cache.attempt")
+	if fc.metrics != nil {
+		fc.metrics.Attempt = true
+	}
 
 	cachePath := fc.getCachePath(cacheKey)
 
@@ -213,7 +218,9 @@ func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, comp
 	// Record metrics
 	if cacheExists {
 		log.Debugf(ctx, "[Local Cache] cache hit")
-		fc.addTelemetryMetric("local.cache.hit")
+		if fc.metrics != nil {
+			fc.metrics.Hit = true
+		}
 
 		// If cache is enabled, return the cached value
 		if fc.cacheEnabled {
@@ -221,7 +228,9 @@ func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, comp
 		}
 	} else {
 		log.Debugf(ctx, "[Local Cache] cache miss, computing")
-		fc.addTelemetryMetric("local.cache.miss")
+		if fc.metrics != nil {
+			fc.metrics.Miss = true
+		}
 	}
 
 	// Compute the value and measure timing
@@ -229,14 +238,16 @@ func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, comp
 	result, err := compute(ctx)
 	if err != nil {
 		log.Debugf(ctx, "[Local Cache] error while computing: %v", err)
-		fc.addTelemetryMetric("local.cache.error")
+		if fc.metrics != nil {
+			fc.metrics.Error = true
+		}
 		return result, err
 	}
 
 	// Record duration metrics
 	if fc.metrics != nil {
 		computeDuration := time.Since(start)
-		fc.metrics.AddDurationValue("local.cache.compute_duration", computeDuration)
+		fc.metrics.ComputeDurationsMs = append(fc.metrics.ComputeDurationsMs, computeDuration.Milliseconds())
 	}
 
 	log.Debugf(ctx, "[Local Cache] computed and stored result")

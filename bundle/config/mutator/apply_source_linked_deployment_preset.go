@@ -50,7 +50,8 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 			return diags
 		}
 
-		b.Metrics.AddBoolValue("source_linked_set_for_non_development", b.Config.Bundle.Mode != config.Development)
+		tm := &b.Metrics.Telemetry
+		tm.SetPaired(&tm.SourceLinkedSetForNonDevelopmentTrue, &tm.SourceLinkedSetForNonDevelopmentFalse, b.Config.Bundle.Mode != config.Development)
 
 		if b.Config.Bundle.Mode != config.Development {
 			path := dyn.NewPath(dyn.Key("targets"), dyn.Key(target), dyn.Key("presets"), dyn.Key("source_linked_deployment"))

@@ -1,6 +1,7 @@
 package bitmap
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -9,6 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// testTelemetry stands in for bundle.Telemetry so this package's tests stay
+// decoupled from the bundle package.
+type testTelemetry struct {
+	SelectUsed bool `json:"select_used"`
+}
 
 func TestMergeAppendOnly(t *testing.T) {
 	old := []string{"a", "b", "c"}
@@ -30,7 +37,7 @@ func TestMergeNoChange(t *testing.T) {
 }
 
 func TestWalkSchemaPrunesTargets(t *testing.T) {
-	schema, err := WalkSchema()
+	schema, err := WalkSchema(reflect.TypeFor[testTelemetry]())
 	require.NoError(t, err)
 	require.NotEmpty(t, schema)
 
@@ -43,60 +50,8 @@ func TestWalkSchemaPrunesTargets(t *testing.T) {
 
 	assert.Contains(t, schema, "bundle.name")
 	assert.Contains(t, schema, "resources.jobs.*.name")
-}
-
-func TestWalkSchemaEmitsValueBitForBool(t *testing.T) {
-	schema, err := WalkSchema()
-	require.NoError(t, err)
-
-	// bundle.force is a bool: it gets both a presence entry and a #true value
-	// entry, and they are adjacent.
-	i := indexOf(schema, "bundle.force")
-	require.GreaterOrEqual(t, i, 0)
-	assert.Equal(t, "bundle.force"+valueSuffix, schema[i+1])
-}
-
-func TestBitsBoolTriState(t *testing.T) {
-	schema := []string{
-		"bundle.force",
-		"bundle.force" + valueSuffix,
-		"bundle.deployment.lock.enabled",
-		"bundle.deployment.lock.enabled" + valueSuffix,
-	}
-
-	// lock.enabled is a *bool: unset here, so both its bits stay 0.
-	// bundle.force is a plain bool set to true: presence and value both 1.
-	var cfg config.Root
-	cfg.Bundle.Force = true
-
-	bits, err := Bits(cfg, schema)
-	require.NoError(t, err)
-	assert.Equal(t, []bool{true, true, false, false}, bits)
-}
-
-func TestBitsPointerBoolFalse(t *testing.T) {
-	schema := []string{
-		"bundle.deployment.lock.enabled",
-		"bundle.deployment.lock.enabled" + valueSuffix,
-	}
-
-	// A *bool set to false: presence 1, value 0 (distinguishable from unset 0,0).
-	no := false
-	var cfg config.Root
-	cfg.Bundle.Deployment.Lock.Enabled = &no
-
-	bits, err := Bits(cfg, schema)
-	require.NoError(t, err)
-	assert.Equal(t, []bool{true, false}, bits)
-}
-
-func indexOf(s []string, v string) int {
-	for i, x := range s {
-		if x == v {
-			return i
-		}
-	}
-	return -1
+	// Telemetry fields are namespaced under "telemetry.".
+	assert.Contains(t, schema, "telemetry.select_used")
 }
 
 func TestBitsSetsLeafAndPrefixes(t *testing.T) {
@@ -123,7 +78,7 @@ func TestBitsSetsLeafAndPrefixes(t *testing.T) {
 		},
 	}
 
-	bits, err := Bits(cfg, schema)
+	bits, err := Bits(cfg, testTelemetry{}, schema)
 	require.NoError(t, err)
 
 	set := map[string]bool{}
@@ -142,6 +97,13 @@ func TestBitsSetsLeafAndPrefixes(t *testing.T) {
 
 	// Not set in the config.
 	assert.False(t, set["workspace.host"])
+}
+
+func TestBitsSetsTelemetryField(t *testing.T) {
+	schema := []string{"telemetry.select_used"}
+	bits, err := Bits(config.Root{}, testTelemetry{SelectUsed: true}, schema)
+	require.NoError(t, err)
+	assert.Equal(t, []bool{true}, bits)
 }
 
 func TestEncodeDecodeRoundTrip(t *testing.T) {
