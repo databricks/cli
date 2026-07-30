@@ -180,6 +180,10 @@ resources:
         reason: "!drop"
       - field: run_as
         reason: input_only
+      # Carried by CreatePipeline/EditPipeline but never returned by GET, so remote
+      # always reads back false and a config value of true never converges.
+      - field: allow_duplicate_names
+        reason: input_only
 
     ignore_local_changes:
       - field: deployment.version_id
