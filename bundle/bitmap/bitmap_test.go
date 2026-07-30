@@ -99,6 +99,13 @@ func TestBitsSetsLeafAndPrefixes(t *testing.T) {
 	assert.False(t, set["workspace.host"])
 }
 
+func TestSplitLinesStripsCRLF(t *testing.T) {
+	// A CRLF checkout of schema.txt (Windows) must parse to the same clean field
+	// paths as an LF one, so Merge's dedup matches and the schema does not double.
+	assert.Equal(t, []string{"variables", "bundle.name"}, splitLines([]byte("variables\r\nbundle.name\r\n")))
+	assert.Equal(t, []string{"variables", "bundle.name"}, splitLines([]byte("variables\nbundle.name\n")))
+}
+
 func TestBitsSetsTelemetryField(t *testing.T) {
 	schema := []string{"telemetry.select_used"}
 	bits, err := Bits(config.Root{}, testTelemetry{SelectUsed: true}, schema)
