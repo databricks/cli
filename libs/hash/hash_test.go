@@ -83,6 +83,6 @@ func TestOfJSONUnsupportedTypes(t *testing.T) {
 	}
 
 	hash, err := OfJSON(v)
-	require.Equal(t, "", hash)
+	require.Empty(t, hash)
 	assert.Error(t, err)
 }
