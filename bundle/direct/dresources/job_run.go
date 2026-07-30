@@ -162,12 +162,16 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	var tracker progress.JobStateTracker
 	var pageURL string
 	run, err := r.client.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, runID, jobRunTimeout, func(run *jobs.Run) {
-		pageURL = run.RunPageUrl
+		pageURL = cmp.Or(pageURL, run.RunPageUrl)
 		logRunProgress(ctx, run, &tracker)
 	})
 	if err != nil {
 		// The wait can end with the run still going (timeout, interrupt), so link
-		// the run page.
+		// the run page: the next deploy triggers no second run, finished or not.
+		if ctx.Err() != nil {
+			// The waiter reports a cancelled context as a timeout.
+			return nil, fmt.Errorf("interrupted while waiting for the run to finish: %w%s", ctx.Err(), runPageLine(pageURL))
+		}
 		return nil, fmt.Errorf("%w%s", err, runPageLine(pageURL))
 	}
 	// FAILED, TIMEDOUT, CANCELED, SUCCESS_WITH_FAILURES and SKIPPED all fail the
@@ -273,14 +277,38 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // so any change recreates it (delete + a fresh RunNow).
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the
-// recreate path. The API rejects a still-active run; WaitAfterCreate leaves it
-// terminal, so that error only surfaces when a wait was interrupted.
+// recreate path. The API rejects a still-active run, which an interrupted wait
+// leaves behind, so cancel it first.
 func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *JobRunState) error {
 	runID, err := parseRunID(id)
 	if err != nil {
 		return err
 	}
+	remote, err := r.DoRead(ctx, id)
+	if err != nil {
+		return err
+	}
+	if !runIsTerminal(remote.State.LifeCycleState) {
+		err = r.cancelRun(ctx, runID)
+		if err != nil {
+			return err
+		}
+	}
 	return r.client.Jobs.DeleteRunByRunId(ctx, runID)
+}
+
+// cancelRun cancels a run and waits for it to settle. Cancellation is
+// asynchronous, so a delete issued right after would still be rejected.
+func (r *ResourceJobRun) cancelRun(ctx context.Context, runID int64) error {
+	waiter, err := r.client.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID})
+	if err != nil {
+		return fmt.Errorf("cancelling run %d before deleting it: %w", runID, err)
+	}
+	_, err = waiter.Get()
+	if err != nil {
+		return fmt.Errorf("waiting for run %d to be cancelled: %w", runID, err)
+	}
+	return nil
 }
 
 func parseRunID(id string) (int64, error) {
