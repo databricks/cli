@@ -225,6 +225,18 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		// Compact the saved state so hashed_in_state fields are hashes, matching the
+		// local and remote sides below. The state read from disk may still hold the full
+		// contents (written by an older CLI, or the field was only just added to
+		// hashed_in_state); hashing it on read lines the sides up so an unchanged resource
+		// shows no change. This only affects the in-memory copy used for the diff; the
+		// on-disk entry keeps its full contents until the resource is next saved.
+		savedState, err = dresources.CompactState(adapter.ResourceConfig(), savedState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
+			return false
+		}
+
 		// Note, currently we're diffing static structs, not dynamic value.
 		// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
 		// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
@@ -236,7 +248,14 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
 			return false
 		}
-		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
+		// Compact a copy for comparison only; sv.Value keeps the full contents, which
+		// the deploy sends to the API.
+		localState, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
+			return false
+		}
+		localDiff, err := structdiff.GetStructDiff(savedState, localState, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
@@ -269,7 +288,21 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+			// Compact the remapped remote on the same fields, so a hashed_in_state field
+			// is a hash on all three sides of the diff (saved, local, remote). Once the
+			// saved value is a hash, every comparison must be hash-vs-hash to be meaningful,
+			// including remote drift. This keeps hashed_in_state orthogonal to
+			// ignore_remote_changes: remote drift is still detected as hash != hash, so a
+			// field can be hashed without being ignored. serialized_dashboard is also
+			// ignore_remote_changes, but for the independent reason that the server
+			// normalizes it (see resources.yml).
+			remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+
+			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
 				return false

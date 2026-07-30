@@ -233,7 +233,16 @@ func BuildStateFromTF(
 			}
 		}
 
-		if err := stateDB.SaveState(node, id, sv.Value, dependsOn); err != nil {
+		// Compact hashed_in_state fields (e.g. a dashboard's serialized_dashboard) so the
+		// migrated state matches what a native deploy writes; otherwise the first plan
+		// after migrating from Terraform would compare this raw value against the hashed
+		// config side and report a spurious change.
+		compacted, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
+		if err != nil {
+			return warningsSeen, fmt.Errorf("%s: compacting state: %w", node, err)
+		}
+
+		if err := stateDB.SaveState(node, id, compacted, dependsOn); err != nil {
 			return warningsSeen, fmt.Errorf("%s: SaveState: %w", node, err)
 		}
 	}
