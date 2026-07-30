@@ -1,6 +1,17 @@
+from typing import Literal, Optional, TypedDict, ClassVar, TYPE_CHECKING
 from enum import Enum
-from typing import Literal
+from dataclasses import dataclass, replace, field
 
+from databricks.bundles.core._resource import Resource
+from databricks.bundles.core._transform import _transform
+from databricks.bundles.core._transform_to_json import _transform_to_json_value
+from databricks.bundles.core._variable import VariableOr, VariableOrOptional, VariableOrList, VariableOrDict
+
+from databricks.bundles.catalogs._models.azure_encryption_settings import AzureEncryptionSettings, AzureEncryptionSettingsDict, AzureEncryptionSettingsParam
+from databricks.bundles.catalogs._models.encryption_settings import EncryptionSettings, EncryptionSettingsDict, EncryptionSettingsParam
+from databricks.bundles.catalogs._models.privilege_assignment import PrivilegeAssignment, PrivilegeAssignmentDict, PrivilegeAssignmentParam
+from databricks.bundles.catalogs._models.catalog import Catalog, CatalogDict, CatalogParam
+from databricks.bundles.catalogs._models.lifecycle import Lifecycle, LifecycleDict, LifecycleParam
 
 class Privilege(Enum):
     SELECT = "SELECT"
@@ -55,60 +66,4 @@ class Privilege(Enum):
     EXTERNAL_USE_SCHEMA = "EXTERNAL_USE_SCHEMA"
     READ_METADATA = "READ_METADATA"
 
-
-PrivilegeParam = (
-    Literal[
-        "SELECT",
-        "READ_PRIVATE_FILES",
-        "WRITE_PRIVATE_FILES",
-        "CREATE",
-        "USAGE",
-        "USE_CATALOG",
-        "USE_SCHEMA",
-        "CREATE_SCHEMA",
-        "CREATE_VIEW",
-        "CREATE_EXTERNAL_TABLE",
-        "CREATE_MATERIALIZED_VIEW",
-        "CREATE_FUNCTION",
-        "CREATE_MODEL",
-        "CREATE_CATALOG",
-        "CREATE_MANAGED_STORAGE",
-        "CREATE_EXTERNAL_LOCATION",
-        "CREATE_STORAGE_CREDENTIAL",
-        "CREATE_SERVICE_CREDENTIAL",
-        "ACCESS",
-        "CREATE_SHARE",
-        "CREATE_RECIPIENT",
-        "CREATE_PROVIDER",
-        "USE_SHARE",
-        "USE_RECIPIENT",
-        "USE_PROVIDER",
-        "USE_MARKETPLACE_ASSETS",
-        "SET_SHARE_PERMISSION",
-        "MODIFY",
-        "REFRESH",
-        "EXECUTE",
-        "READ_FILES",
-        "WRITE_FILES",
-        "CREATE_TABLE",
-        "ALL_PRIVILEGES",
-        "CREATE_CONNECTION",
-        "USE_CONNECTION",
-        "APPLY_TAG",
-        "CREATE_FOREIGN_CATALOG",
-        "CREATE_FOREIGN_SECURABLE",
-        "MANAGE_ALLOWLIST",
-        "CREATE_VOLUME",
-        "CREATE_EXTERNAL_VOLUME",
-        "READ_VOLUME",
-        "WRITE_VOLUME",
-        "MANAGE",
-        "BROWSE",
-        "CREATE_CLEAN_ROOM",
-        "MODIFY_CLEAN_ROOM",
-        "EXECUTE_CLEAN_ROOM_TASK",
-        "EXTERNAL_USE_SCHEMA",
-        "READ_METADATA",
-    ]
-    | Privilege
-)
+PrivilegeParam = Literal["SELECT", "READ_PRIVATE_FILES", "WRITE_PRIVATE_FILES", "CREATE", "USAGE", "USE_CATALOG", "USE_SCHEMA", "CREATE_SCHEMA", "CREATE_VIEW", "CREATE_EXTERNAL_TABLE", "CREATE_MATERIALIZED_VIEW", "CREATE_FUNCTION", "CREATE_MODEL", "CREATE_CATALOG", "CREATE_MANAGED_STORAGE", "CREATE_EXTERNAL_LOCATION", "CREATE_STORAGE_CREDENTIAL", "CREATE_SERVICE_CREDENTIAL", "ACCESS", "CREATE_SHARE", "CREATE_RECIPIENT", "CREATE_PROVIDER", "USE_SHARE", "USE_RECIPIENT", "USE_PROVIDER", "USE_MARKETPLACE_ASSETS", "SET_SHARE_PERMISSION", "MODIFY", "REFRESH", "EXECUTE", "READ_FILES", "WRITE_FILES", "CREATE_TABLE", "ALL_PRIVILEGES", "CREATE_CONNECTION", "USE_CONNECTION", "APPLY_TAG", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "MANAGE_ALLOWLIST", "CREATE_VOLUME", "CREATE_EXTERNAL_VOLUME", "READ_VOLUME", "WRITE_VOLUME", "MANAGE", "BROWSE", "CREATE_CLEAN_ROOM", "MODIFY_CLEAN_ROOM", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "READ_METADATA"] | Privilege

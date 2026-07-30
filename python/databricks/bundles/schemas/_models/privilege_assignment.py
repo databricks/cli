@@ -1,14 +1,19 @@
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, TypedDict
+from typing import Literal, Optional, TypedDict, ClassVar, TYPE_CHECKING
+from enum import Enum
+from dataclasses import dataclass, replace, field
 
+from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.core._variable import VariableOr, VariableOrOptional, VariableOrList, VariableOrDict
+
+from databricks.bundles.schemas._models.lifecycle import Lifecycle, LifecycleDict, LifecycleParam
+from databricks.bundles.schemas._models.schema import Schema, SchemaDict, SchemaParam
 from databricks.bundles.schemas._models.privilege import Privilege, PrivilegeParam
+
 
 if TYPE_CHECKING:
     from typing_extensions import Self
-
 
 @dataclass(kw_only=True)
 class PrivilegeAssignment:
@@ -26,11 +31,12 @@ class PrivilegeAssignment:
     """
 
     @classmethod
-    def from_dict(cls, value: "PrivilegeAssignmentDict") -> "Self":
+    def from_dict(cls, value: 'PrivilegeAssignmentDict') -> 'Self':
         return _transform(cls, value)
 
-    def as_dict(self) -> "PrivilegeAssignmentDict":
-        return _transform_to_json_value(self)  # type:ignore
+    def as_dict(self) -> 'PrivilegeAssignmentDict':
+        return _transform_to_json_value(self) # type:ignore
+
 
 
 class PrivilegeAssignmentDict(TypedDict, total=False):
