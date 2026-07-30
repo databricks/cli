@@ -80,9 +80,10 @@ type ResourceLifecycleConfig struct {
 	// When old and new are nil but remote is set, and the remote value matches allowed values (if specified), the change is skipped.
 	BackendDefaults []BackendDefaultRule `yaml:"backend_defaults,omitempty"`
 
-	// HashedInState: field paths persisted to state as a content hash ("sha256:<hex>")
-	// instead of the raw value. This is only valid for large, equality-only fields that
-	// are never read back from state (e.g. serialized dashboards)
+	// HashedInState: field paths persisted to state as a content hash
+	// ("sha256_hashed_in_state:<hex>") instead of the raw value. This is only valid
+	// for large, equality-only fields that are never read back from state
+	// (e.g. serialized dashboards).
 	HashedInState []string `yaml:"hashed_in_state,omitempty"`
 }
 
