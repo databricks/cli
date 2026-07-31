@@ -8,6 +8,7 @@ Exit code: 1
 {
   "engine": "terraform",
   "state_source": "local",
+  "states_available_count": 0,
   "error_message": "state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found",
   "error_category": "STATE_NOT_FOUND"
 }
