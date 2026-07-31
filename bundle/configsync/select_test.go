@@ -1,6 +1,7 @@
 package configsync
 
 import (
+	"fmt"
 	"maps"
 	"slices"
 	"testing"
@@ -91,4 +92,59 @@ func TestFilterChanges(t *testing.T) {
 
 	// The input map is never mutated.
 	assert.Len(t, changes, 7)
+}
+
+func TestDescribeStateIDs(t *testing.T) {
+	tests := []struct {
+		name         string
+		byTypeID     map[string]string
+		resourceType string
+		want         string
+	}{
+		{
+			name:         "empty state is called out explicitly",
+			byTypeID:     map[string]string{},
+			resourceType: "jobs",
+			want:         "the deployment state contains no resources with ids (the bundle may not be deployed, or its resource state is missing)",
+		},
+		{
+			name: "state holds other types only",
+			byTypeID: map[string]string{
+				"pipelines:abc-123": "resources.pipelines.p",
+				"schemas:99":        "resources.schemas.s",
+				"pipelines:def-456": "resources.pipelines.q",
+			},
+			resourceType: "jobs",
+			want:         "the deployment state contains no jobs resources (deployed resources by type: pipelines=2, schemas=1)",
+		},
+		{
+			name: "ids of the requested type are listed sorted",
+			byTypeID: map[string]string{
+				"jobs:222":  "resources.jobs.b",
+				"jobs:111":  "resources.jobs.a",
+				"schemas:7": "resources.schemas.s",
+			},
+			resourceType: "jobs",
+			want:         "deployed jobs ids in state: 111, 222",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, describeStateIDs(tt.byTypeID, tt.resourceType))
+		})
+	}
+}
+
+func TestDescribeStateIDsTruncatesLongLists(t *testing.T) {
+	byTypeID := make(map[string]string)
+	for i := range maxReportedIDs + 3 {
+		// Ids are zero-padded so lexical sort order is also numeric order,
+		// keeping the assertion independent of id formatting.
+		id := fmt.Sprintf("%03d", i)
+		byTypeID["jobs:"+id] = "resources.jobs.j" + id
+	}
+
+	got := describeStateIDs(byTypeID, "jobs")
+	assert.Equal(t, "deployed jobs ids in state: 000, 001, 002, 003, 004, 005, 006, 007, 008, 009 (and 3 more)", got)
 }

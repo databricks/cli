@@ -77,7 +77,7 @@ func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState
 	// nothing, so the caller does not report a spurious success.
 	if len(keys) == 0 {
 		resourceType, id, _ := strings.Cut(missing[0], ":")
-		return nil, fmt.Errorf("no deployed %s resource with id %s", resourceType, id)
+		return nil, fmt.Errorf("no deployed %s resource with id %s; %s", resourceType, id, describeStateIDs(byTypeID, resourceType))
 	}
 
 	// Some selectors matched: skip the stale ones so the matched resources still
@@ -86,6 +86,57 @@ func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState
 		log.Debugf(ctx, "config-remote-sync: skipping selector %q, no deployed resource with that id", selector)
 	}
 	return keys, nil
+}
+
+// maxReportedIDs bounds how many ids describeStateIDs lists, so the message
+// stays readable (and within the 500-char error_message telemetry limit) for
+// bundles with many resources of one type.
+const maxReportedIDs = 10
+
+// describeStateIDs summarizes the ids present in the deployment state index so
+// a failed selector lookup says what the state DID contain, not just what was
+// missing. Without this, "no deployed jobs resource with id X" cannot be told
+// apart from an empty state, a state for a different bundle, or a genuinely
+// stale id — the three have very different fixes.
+//
+// byTypeID is keyed "<type>:<id>" as built by ResolveResourceSelectors. Only
+// resource types and ids are reported: ids are opaque workspace identifiers,
+// while resource keys/names come from user configuration and are never included.
+func describeStateIDs(byTypeID map[string]string, resourceType string) string {
+	if len(byTypeID) == 0 {
+		return "the deployment state contains no resources with ids (the bundle may not be deployed, or its resource state is missing)"
+	}
+
+	countsByType := make(map[string]int)
+	var sameTypeIDs []string
+	for typeAndID := range byTypeID {
+		t, id, ok := strings.Cut(typeAndID, ":")
+		if !ok {
+			continue
+		}
+		countsByType[t]++
+		if t == resourceType {
+			sameTypeIDs = append(sameTypeIDs, id)
+		}
+	}
+
+	if len(sameTypeIDs) == 0 {
+		types := make([]string, 0, len(countsByType))
+		for t, n := range countsByType {
+			types = append(types, fmt.Sprintf("%s=%d", t, n))
+		}
+		slices.Sort(types)
+		return fmt.Sprintf("the deployment state contains no %s resources (deployed resources by type: %s)", resourceType, strings.Join(types, ", "))
+	}
+
+	slices.Sort(sameTypeIDs)
+	listed := sameTypeIDs
+	suffix := ""
+	if len(listed) > maxReportedIDs {
+		listed = listed[:maxReportedIDs]
+		suffix = fmt.Sprintf(" (and %d more)", len(sameTypeIDs)-maxReportedIDs)
+	}
+	return fmt.Sprintf("deployed %s ids in state: %s%s", resourceType, strings.Join(listed, ", "), suffix)
 }
 
 // FilterChanges returns the subset of changes that belong to the resources in
