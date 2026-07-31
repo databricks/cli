@@ -60,7 +60,7 @@ upload step is required. This command performs a purely local translation and
 does not contact the workspace.`,
 	}
 
-	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the bundle into (default: an ephemeral temp directory keyed on the experiment name)")
+	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the bundle into (default: a <experiment>-bundle folder next to the input YAML). Accepts an absolute or relative path.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -71,25 +71,21 @@ does not contact the workspace.`,
 			return err
 		}
 
-		// Default to an ephemeral, deterministic scratch dir so repeated runs are
-		// idempotent (no leftover bundle to clear) and the user's project stays
-		// clean. It's cleared and rewritten each run. An explicit --output-dir is
-		// treated as a location the user owns and is only created, not wiped.
+		// Default the bundle next to the input YAML (a <experiment>-bundle subfolder
+		// so the generated files don't scatter across the user's project dir). An
+		// explicit --output-dir — absolute or relative — overrides. We never write to
+		// a temp dir: the bundle is the user's artifact to keep, deploy, and manage.
 		dir := outputDir
-		ephemeral := dir == ""
-		if ephemeral {
-			dir = filepath.Join(os.TempDir(), "databricks-air-dabs", cfg.ExperimentName)
-			if err := os.RemoveAll(dir); err != nil {
-				return fmt.Errorf("failed to reset %s: %w", dir, err)
-			}
+		if dir == "" {
+			dir = filepath.Join(filepath.Dir(yamlPath), cfg.ExperimentName+"-bundle")
 		}
 
-		written, err := writeBundle(ctx, cfg, yamlPath, dir, ephemeral)
+		written, err := writeBundle(ctx, cfg, yamlPath, dir)
 		if err != nil {
 			return err
 		}
 
-		printConvertNextSteps(ctx, dir, written, bundleResourceKey(cfg.ExperimentName))
+		printConvertNextSteps(ctx, dir, written, bundleResourceKey(cfg.ExperimentName), conversionNotes(cfg))
 		return nil
 	}
 
@@ -306,31 +302,27 @@ func buildPermissionsValue(perms []permission) dyn.Value {
 // writeBundle writes the bundle into dir: databricks.yml, the loose launch
 // artifacts (command.sh + env/secret/param sidecars), and — when the config has a
 // code_source — a code_source.tar.gz of the resolved root_path. All the referenced
-// files are bundle-local so `bundle deploy` uploads them. force allows overwriting
-// an existing dir (used for the ephemeral scratch dir, which is reset each run).
+// files are bundle-local so `bundle deploy` uploads them. It refuses to overwrite
+// existing files so a re-run can't silently clobber a bundle the user has edited.
 // Returns the relative paths written, for the next-steps message.
-func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, overwrite bool) ([]string, error) {
+func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string) ([]string, error) {
 	root, artifacts, err := convertToDabs(ctx, cfg, configPath)
 	if err != nil {
 		return nil, err
 	}
 
-	// Restrict perms: the bundle carries env_vars.json (literal env var values) and
-	// lands in a predictable location (the ephemeral /tmp path or a user dir), so
-	// keep it owner-only rather than world-readable.
+	// Restrict perms: the bundle carries env_vars.json (literal env var values), so
+	// keep the dir owner-only rather than world-readable.
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
 	}
 
-	// checkCollision guards every emitted file with one consistent message. On the
-	// ephemeral path force is true (the dir was just wiped, so nothing collides);
-	// for an explicit --output-dir we refuse to clobber files the user owns.
+	// Refuse to clobber an existing file, with one consistent message. A user
+	// re-running convert into the same dir gets a clear error rather than a silent
+	// overwrite of edits they may have made.
 	checkCollision := func(name string) error {
-		if overwrite {
-			return nil
-		}
 		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
-			return fmt.Errorf("%s already exists in %s; use a different --output-dir or remove it", name, dir)
+			return fmt.Errorf("%s already exists in %s; use --output-dir or remove it", name, dir)
 		}
 		return nil
 	}
@@ -346,7 +338,7 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, ov
 	}
 	bundlePath := filepath.Join(dir, "databricks.yml")
 	// force=true: we've already run the collision check above, so SaveAsYAML's own
-	// (stale, --force-referencing) guard must not fire.
+	// guard (which references a --force flag this command doesn't have) can't fire.
 	if err := yamlsaver.NewSaver().SaveAsYAML(root, bundlePath, true); err != nil {
 		return nil, err
 	}
@@ -402,11 +394,23 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, ov
 // whereas `bundle deploy` creates a *persistent* job that lingers until explicitly
 // destroyed — DABs has no automatic GC. A user migrating from `air run` will not
 // expect a durable resource, so we call out `bundle destroy` explicitly.
-func printConvertNextSteps(ctx context.Context, dir string, written []string, jobKey string) {
+func printConvertNextSteps(ctx context.Context, dir string, written []string, jobKey string, notes []string) {
 	cmdio.LogString(ctx, fmt.Sprintf("Wrote a Databricks Asset Bundle to %s:", dir))
 	for _, w := range written {
 		cmdio.LogString(ctx, "  "+w)
 	}
+
+	// Notes surface anything the user should know: fields we transformed or dropped,
+	// and values they may need to fill in. Migrating users otherwise can't tell what
+	// silently changed between their run YAML and the bundle.
+	if len(notes) > 0 {
+		cmdio.LogString(ctx, "")
+		cmdio.LogString(ctx, "Notes:")
+		for _, n := range notes {
+			cmdio.LogString(ctx, "  - "+n)
+		}
+	}
+
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "To deploy and run this workload as a bundle:")
 	cmdio.LogString(ctx, "  1. cd "+dir)
@@ -420,4 +424,36 @@ func printConvertNextSteps(ctx context.Context, dir string, written []string, jo
 	cmdio.LogString(ctx, "persistent job that is not garbage-collected. When you are done, remove the")
 	cmdio.LogString(ctx, "job and its uploaded files with:")
 	cmdio.LogString(ctx, "  databricks bundle destroy")
+}
+
+// conversionNotes lists what the conversion transformed, staged out-of-band, or
+// could not represent natively — so a user migrating from `air run` can see what
+// changed between their run YAML and the emitted bundle, and what they may still
+// need to fill in. Best-effort: git resolution errors are ignored here (writeBundle
+// surfaces them), so a note is only emitted when the state is unambiguous.
+func conversionNotes(cfg *runConfig) []string {
+	var notes []string
+
+	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
+		snap := cfg.CodeSource.Snapshot
+		if snap.Git != nil {
+			notes = append(notes, "code_source.git is pinned in the run YAML, but the bundle packages a "+
+				"code_source.tar.gz snapshot at convert time; edit code_source_path if you need a different revision.")
+		}
+		notes = append(notes, "code_source was packaged into code_source.tar.gz; re-run convert-to-dabs to re-snapshot after code changes.")
+	}
+
+	// env vars / secrets have no native ai_runtime_task field yet, so they ride as
+	// sidecar files the server-side launcher reads (same as `air run`).
+	if len(cfg.EnvVariables) > 0 {
+		notes = append(notes, "env_variables were written to env_vars.json (no native bundle field yet); they are uploaded with the code and applied at run time.")
+	}
+	if len(cfg.Secrets) > 0 {
+		notes = append(notes, "secrets were written to secret_env_vars.json (no native bundle field yet); they are resolved at run time.")
+	}
+	if len(cfg.Parameters) > 0 {
+		notes = append(notes, "parameters were written to hyperparameters.yaml; they are not a native bundle field and are passed through to the workload.")
+	}
+
+	return notes
 }

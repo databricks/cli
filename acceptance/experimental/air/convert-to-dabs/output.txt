@@ -8,6 +8,9 @@ Wrote a Databricks Asset Bundle to generated:
   requirements.yaml
   code_source.tar.gz
 
+Notes:
+  - code_source was packaged into code_source.tar.gz; re-run convert-to-dabs to re-snapshot after code changes.
+
 To deploy and run this workload as a bundle:
   1. cd generated
   2. databricks bundle validate
