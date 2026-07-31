@@ -38,8 +38,8 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 	path := parts[1]
 	w := cmdctx.WorkspaceClient(ctx)
 
-	// If the specified path has the "Volumes" prefix, use the Files API.
-	if strings.HasPrefix(path, "/Volumes/") {
+	// If the specified path has the "Volumes" or "Skills" prefix, use the Files API.
+	if strings.HasPrefix(path, "/Volumes/") || strings.HasPrefix(path, "/Skills/") {
 		f, err := filer.NewFilesClient(ctx, w, "/")
 		return f, path, err
 	}
