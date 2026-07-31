@@ -1,0 +1,13 @@
+CATALOG_NAME="main"
+SCHEMA_NAME="default"
+SKILL_NAME="fs-cp-test-${UNIQUE_NAME}"
+
+# Create target directory. UC Skills are served by the Files API, so unlike the
+# Volumes tests there is no catalog object to create first.
+$CLI fs mkdir dbfs:/Skills/${CATALOG_NAME}/${SCHEMA_NAME}/${SKILL_NAME}
+
+# Upload a local file into the skill bundle.
+trace $CLI fs cp local.txt dbfs:/Skills/${CATALOG_NAME}/${SCHEMA_NAME}/${SKILL_NAME}/README.md
+
+# Verify file was uploaded correctly.
+trace $CLI fs cat dbfs:/Skills/${CATALOG_NAME}/${SCHEMA_NAME}/${SKILL_NAME}/README.md

@@ -1,0 +1,6 @@
+
+>>> [CLI] fs cp local.txt dbfs:/Skills/main/default/fs-cp-test-[UNIQUE_NAME]/README.md
+local.txt -> dbfs:/Skills/main/default/fs-cp-test-[UNIQUE_NAME]/README.md
+
+>>> [CLI] fs cat dbfs:/Skills/main/default/fs-cp-test-[UNIQUE_NAME]/README.md
+hello world!
