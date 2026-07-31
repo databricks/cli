@@ -1,6 +1,10 @@
 package aircmd
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -46,4 +50,56 @@ func TestResolveNodeCount(t *testing.T) {
 	// A run with no AI runtime compute errors.
 	_, err := resolveNodeCount(&jobs.Run{RunId: 1})
 	require.Error(t, err)
+}
+
+// downloadServer serves the MLflow artifact chain used by the download path:
+// artifacts/list (logs dir + per-node chunk), credentials-for-read (a pre-signed
+// URL pointing back at itself), and the chunk bytes.
+func downloadServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	var base string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.0/mlflow/artifacts/list":
+			if r.URL.Query().Get("path") == "logs" {
+				_, _ = w.Write([]byte(`{"files": [{"path": "logs/node_0", "is_dir": true}, {"path": "logs/node_1", "is_dir": true}]}`))
+			} else {
+				_, _ = w.Write([]byte(`{"files": [{"path": "` + r.URL.Query().Get("path") + `/logs-0.chunk.txt", "file_size": 12}]}`))
+			}
+		case "/api/2.0/mlflow/artifacts/credentials-for-read":
+			_, _ = w.Write([]byte(`{"credential_infos": [{"signed_uri": "` + base + `/presigned"}]}`))
+		case "/presigned":
+			_, _ = w.Write([]byte("line one\nline two\n"))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	base = srv.URL
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestDownloadNodeLogWritesConcatenatedChunks(t *testing.T) {
+	w := newTestWorkspaceClient(t, downloadServer(t).URL)
+	dir := t.TempDir()
+
+	path, err := downloadNodeLog(t.Context(), w, "run1", 0, 0, false, dir)
+	require.NoError(t, err)
+	require.NotEmpty(t, path)
+
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "line one\nline two\n", string(got))
+	assert.Equal(t, filepath.Join(dir, "logs", "node_0.log"), path)
+}
+
+func TestDownloadAllNodeLogs(t *testing.T) {
+	w := newTestWorkspaceClient(t, downloadServer(t).URL)
+	dir := t.TempDir()
+
+	nodeLogs, err := downloadAllNodeLogs(t.Context(), w, "run1", dir, []int{0, 1}, -1)
+	require.NoError(t, err)
+	require.Len(t, nodeLogs, 2)
+	assert.FileExists(t, nodeLogs[0])
+	assert.FileExists(t, nodeLogs[1])
 }
