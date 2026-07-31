@@ -2,6 +2,9 @@ RecordRequests = true
 
 Ignore = [
     '.databricks',
+    # The mutator writes the content-addressed code snapshot here; bundle file sync
+    # uploads it. It is a generated build artifact, not a fixture.
+    '.air_snapshots',
 ]
 
 # The archive is content-addressed: <dir>_<sha256[:16]>.tar.gz. The hash is stable

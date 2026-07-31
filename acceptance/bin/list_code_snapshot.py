@@ -39,8 +39,8 @@ for req in requests:
 if not code_source_path:
     sys.exit("no jobs/create request with code_source_path in out.requests.txt")
 
-# code_source_path is recorded de-prefixed (/Users/...); export needs /Workspace.
-remote = "/Workspace" + code_source_path
+# code_source_path is an absolute workspace path (/Workspace/Users/.../files/...).
+remote = code_source_path
 cli = os.environ["CLI"]
 local = "code_snapshot.tar.gz"
 # MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the /Workspace path.

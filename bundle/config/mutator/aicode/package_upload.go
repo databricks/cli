@@ -1,19 +1,30 @@
 // Package aicode packages a local code directory referenced by an AI Runtime
-// task's code_source_path and uploads it to the workspace during deploy.
+// task's code_source_path so the deployed job runs against the packaged code.
 //
-// The SDK jobs.AiRuntimeTask.code_source_path field expects a workspace or UC
-// volume path to an uploaded code archive; its doc comment states that the CLI
-// is responsible for packaging the user's local code directory into that
-// archive. This mutator implements that contract for DABs: when a user points
-// code_source_path at a local directory, it packages the directory into a
-// reproducible tarball (.git and gitignored files excluded), uploads the archive
-// to the user's workspace code snapshot directory, and rewrites the field to the
-// resulting remote path so the deployed job runs against the uploaded code. Values
-// that are already remote are left untouched.
+// The SDK jobs.AiRuntimeTask.code_source_path field expects a workspace path to an
+// uploaded code archive; its doc comment states that the CLI is responsible for
+// packaging the user's local code directory into that archive. This mutator
+// implements that contract for DABs: when a user points code_source_path at a local
+// directory, it packages the directory into a reproducible tarball (.git and
+// gitignored files excluded) written into the bundle's sync tree, and rewrites
+// code_source_path to the workspace path the tarball will occupy once synced. The
+// tarball is uploaded by the normal bundle file sync during the deploy phase — this
+// mutator performs no workspace writes itself, so it is safe to run in the build
+// phase (before `bundle plan`). Values that are already remote are left untouched.
 //
-// The archive is content-addressed: its name embeds the SHA-256 of the
-// (reproducible) tarball, so an unchanged code directory resolves to the same
-// remote path across deploys and re-uploads are skipped (see snapshot_package.go).
+// Placing the archive in the bundle (rather than a separate cache) means
+// `bundle destroy` removes it like any other bundle file, and bundle file sync is
+// incremental so an unchanged archive is not re-uploaded. The archive is
+// content-addressed: its name embeds the SHA-256 of the (reproducible) tarball, so
+// unchanged code keeps the same name and the same synced path across deploys (see
+// snapshot_package.go).
+//
+// Note for reviewers: code_source_path could alternatively be translated to its
+// synced workspace path by mutator.TranslatePaths (like command_path is). That
+// runs in the initialize phase, which also runs on `bundle validate`, so the
+// archive would have to be materialized there too — writing files during validate.
+// Keeping materialization in the build phase (deploy-only) and computing the synced
+// path here avoids that.
 package aicode
 
 import (
@@ -25,14 +36,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
 	libsync "github.com/databricks/cli/libs/sync"
@@ -76,16 +85,12 @@ func (m *packageAndUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 		return diags
 	}
 
-	// The current user is resolved during the initialize phase, which runs before
-	// this build-phase mutator, so it is always set here.
-	userDir := "/Workspace/Users/" + b.Config.Workspace.CurrentUser.UserName
-
-	// remotePaths maps each config location to the remote archive path it should
-	// point to after upload. Built outside the Mutate closure so upload failures
-	// are reported before any config is rewritten.
+	// remotePaths maps each config location to the synced workspace path its archive
+	// will occupy. Built outside the Mutate closure so packaging failures are
+	// reported before any config is rewritten.
 	remotePaths := make(map[string]string, len(sources))
 	for _, cs := range sources {
-		remote, err := packageOne(ctx, b, cs, userDir)
+		remote, err := packageOne(ctx, b, cs)
 		if err != nil {
 			diags = diags.Extend(diag.FromErr(err))
 			return diags
@@ -111,17 +116,19 @@ func (m *packageAndUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	return diags
 }
 
-// repoSnapshotsSubdir is the per-user workspace location for code snapshots,
-// under the user's home. It matches the Python air CLI (and PR #5897) and is
-// deliberately NOT <artifact_path>/.internal, which artifacts.CleanUp() deletes at
-// the start of every deploy.
-const repoSnapshotsSubdir = ".air/repo_snapshots"
+// snapshotSubdir is the bundle-local directory (relative to the sync root) that
+// code snapshots are written into. It is a dedicated folder — not the user's source
+// tree — so a snapshot is never nested inside the directory it snapshots, and the
+// generated archives are grouped in one predictable place. It is synced to the
+// workspace like the rest of the bundle and removed by `bundle destroy`.
+const snapshotSubdir = ".air_snapshots"
 
 // packageOne packages the local directory for a single code source into a
-// reproducible tarball, uploads it to the user's repo_snapshots dir (skipping the
-// upload when a content-identical archive already exists there), and returns the
-// remote path the config should point to.
-func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource, userDir string) (string, error) {
+// reproducible, content-addressed tarball written under the bundle's snapshot
+// subdir, and returns the workspace path that archive will occupy once bundle file
+// sync uploads it. No workspace write happens here — the file is placed locally and
+// carried by the deploy-phase file sync.
+func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource) (string, error) {
 	localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(cs.value))
 	dirName := filepath.Base(localDir)
 
@@ -138,40 +145,30 @@ func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource, userDir st
 		return "", fmt.Errorf("failed to list files for code_source_path %q: %w", cs.value, err)
 	}
 
-	uploadPath := path.Join(userDir, repoSnapshotsSubdir, dirName)
-	client, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), uploadPath)
-	if err != nil {
-		return "", err
-	}
-
-	// Build the archive in memory so its content hash can name the upload; the hash
-	// is computed while gzipping, so this adds no extra pass over the files.
+	// Build the archive in memory so its content hash can name the file; the hash is
+	// computed while gzipping, so this adds no extra pass over the files.
 	var buf bytes.Buffer
 	sha, err := buildCodeSnapshot(b.SyncRoot, relBase, files, dirName, &buf)
 	if err != nil {
 		return "", fmt.Errorf("failed to package code_source_path %q: %w", cs.value, err)
 	}
-
 	archiveName := fmt.Sprintf("%s_%s.tar.gz", dirName, sha[:16])
-	// The AI Runtime snapshot fetcher expects code_source_path in the legacy
-	// "/Users/..." form (no "/Workspace" prefix), matching the Python air CLI. The
-	// filer needs the "/Workspace/Users/..." form to upload, so upload to uploadPath
-	// but record the de-prefixed path on the task.
-	remotePath := strings.TrimPrefix(path.Join(uploadPath, archiveName), "/Workspace")
 
-	// The archive is reproducible, so a matching name means identical content is
-	// already uploaded: skip the upload and just point the config at it.
-	if _, err := client.Stat(ctx, archiveName); err == nil {
-		log.Debugf(ctx, "code snapshot already present at %s, skipping upload", remotePath)
-		return remotePath, nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return "", fmt.Errorf("failed to check for existing code snapshot %q: %w", remotePath, err)
+	// Write the archive into the bundle's snapshot subdir. Content-addressed name +
+	// incremental file sync means an unchanged archive is not re-uploaded.
+	relArchive := path.Join(snapshotSubdir, archiveName)
+	localArchive := filepath.Join(b.SyncRootPath, filepath.FromSlash(relArchive))
+	if err := os.MkdirAll(filepath.Dir(localArchive), 0o755); err != nil {
+		return "", fmt.Errorf("failed to create snapshot dir for code_source_path %q: %w", cs.value, err)
 	}
+	if err := os.WriteFile(localArchive, buf.Bytes(), 0o644); err != nil {
+		return "", fmt.Errorf("failed to write code snapshot for code_source_path %q: %w", cs.value, err)
+	}
+	log.Debugf(ctx, "wrote code snapshot %s for code_source_path %q", relArchive, cs.value)
 
-	if err := client.Write(ctx, archiveName, &buf, filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
-		return "", fmt.Errorf("failed to upload code snapshot %q: %w", remotePath, err)
-	}
-	return remotePath, nil
+	// The workspace path the archive occupies once file sync uploads it. Matches how
+	// command_path is translated (workspace.file_path + sync-relative path).
+	return path.Join(b.Config.Workspace.FilePath, relArchive), nil
 }
 
 // codeSourceFiles returns the files under the code directory (relBase, relative to
