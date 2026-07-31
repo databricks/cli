@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/aicode"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
@@ -26,6 +27,17 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		scripts.Execute(config.ScriptPreBuild),
 		artifacts.Build(),
 		scripts.Execute(config.ScriptPostBuild),
+
+		// Package any AI Runtime task code_source_path that points at a local
+		// directory into a tarball, upload it, and rewrite the field to the remote
+		// path. Runs before ExpandGlobReferences/ReplaceWithRemotePath below so those
+		// see an already-remote code_source_path (a directory would otherwise be
+		// collected as a local "library" and fail to upload as a file).
+		aicode.PackageAndUpload(),
+		// Write requirements.yaml next to the (already translated) command_path,
+		// derived from the job's serverless environment, so the AI Runtime harness
+		// can set up the workload environment.
+		aicode.SynthesizeRequirements(),
 
 		mutator.ResolveVariableReferencesWithoutResources(
 			"artifacts",
