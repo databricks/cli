@@ -74,6 +74,9 @@ type Stats struct {
 // CollectStateStats records which resource state the run read. Only the
 // state's identity is recorded (serial, system-generated lineage UUID,
 // local/remote origin, candidate count) — never a path or a target name.
+//
+// None of these can contain PII: the lineage is an opaque random UUID minted by
+// the state layer, and the source is one of two fixed literals assigned here.
 func (s *Stats) CollectStateStats(desc *statemgmt.StateDesc) {
 	if desc == nil {
 		return
