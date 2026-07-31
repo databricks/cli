@@ -75,6 +75,7 @@ Examples:
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 				stats.Engine = stateDesc.Engine
+				stats.CollectStateStats(stateDesc)
 
 				// Open the deployment state once and reuse it for both planning and
 				// selector resolution (avoids reading the terraform snapshot twice).
@@ -101,6 +102,7 @@ Examples:
 				stats.CollectChangeStats(ctx, changes)
 
 				if len(selectIDs) > 0 {
+					stats.SelectorCount = int64(len(selectIDs))
 					// Filter after planning, never before: the plan must cover every
 					// resource so ${resources.*} references resolve; only the emitted
 					// changes are restricted to the selected resources.
@@ -108,6 +110,9 @@ Examples:
 					if err != nil {
 						return err
 					}
+					// Selectors resolve to plan keys and are deduplicated, so this is
+					// the number of distinct resources that matched, not of selectors.
+					stats.SelectorMatchedCount = int64(len(selected))
 					changes = configsync.FilterChanges(changes, selected)
 				}
 

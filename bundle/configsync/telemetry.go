@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/telemetry"
@@ -51,8 +52,39 @@ type Stats struct {
 
 	Restore RestoreStats
 
+	// Identity of the resource state the run actually read. Without these, a
+	// "no deployed <type> resource with id" failure cannot be told apart from
+	// reading a stale local cache, another target's state, or no state at all.
+	StateSerial          int64
+	StateLineage         string
+	StateSource          string
+	StatesAvailableCount int64
+
+	// Number of --select-ids selectors passed in, and how many resolved to a
+	// deployed resource. matched=0 with selectors>0 is the hard-fail case.
+	SelectorCount        int64
+	SelectorMatchedCount int64
+
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
+}
+
+// CollectStateStats records which resource state the run read. Only the
+// state's identity is recorded (serial, system-generated lineage UUID,
+// local/remote origin, candidate count) — never a path or a target name.
+func (s *Stats) CollectStateStats(desc *statemgmt.StateDesc) {
+	if desc == nil {
+		return
+	}
+	s.StateSerial = int64(desc.Serial)
+	s.StateLineage = desc.Lineage
+	s.StateSource = "remote"
+	if desc.IsLocal {
+		s.StateSource = "local"
+	}
+	// AllStates is only populated when at least one state was found; a
+	// synthesized empty state descriptor leaves it nil.
+	s.StatesAvailableCount = int64(len(desc.AllStates))
 }
 
 // RestoreStats counts the variable-reference restorations that can leak a
@@ -180,6 +212,12 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 			FilesWrittenCount:      s.FilesWrittenCount,
 			RefsRetargeted:         s.Restore.Retargeted,
 			RefsFromSiblings:       s.Restore.FromSiblings,
+			StateSerial:            s.StateSerial,
+			StateLineage:           s.StateLineage,
+			StateSource:            s.StateSource,
+			StatesAvailableCount:   s.StatesAvailableCount,
+			SelectorCount:          s.SelectorCount,
+			SelectorMatchedCount:   s.SelectorMatchedCount,
 			ErrorMessage:           s.ErrorMessage,
 			ErrorCategory:          s.ErrorCategory,
 		},

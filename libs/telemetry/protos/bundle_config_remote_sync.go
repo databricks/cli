@@ -60,6 +60,28 @@ type BundleConfigRemoteSyncEvent struct {
 	RefsRetargeted   int64 `json:"refs_retargeted,omitempty"`
 	RefsFromSiblings int64 `json:"refs_from_siblings,omitempty"`
 
+	// Identity of the resource state this run read, so a selector that matched
+	// nothing can be attributed: a stale local cache, a different target's or
+	// bundle's state, and no state at all are otherwise indistinguishable.
+	//
+	// StateSerial and StateLineage are the state file's own monotonic counter
+	// and its system-generated lineage UUID (uuid.New(), never user input).
+	// StateSource is "local" or "remote". StatesAvailableCount is how many of
+	// the four candidate state files (direct/terraform x local/remote) were
+	// found; 0 means the run proceeded against a synthesized empty state.
+	// No state paths and no target names are recorded.
+	StateSerial          int64  `json:"state_serial,omitempty"`
+	StateLineage         string `json:"state_lineage,omitempty"`
+	StateSource          string `json:"state_source,omitempty"`
+	StatesAvailableCount int64  `json:"states_available_count,omitempty"`
+
+	// Number of --select-ids selectors passed in, and how many resolved to a
+	// deployed resource in the state above. Zero matched with a non-zero count
+	// is the hard-failure case; a shortfall between them means some selectors
+	// were skipped as stale.
+	SelectorCount        int64 `json:"selector_count,omitempty"`
+	SelectorMatchedCount int64 `json:"selector_matched_count,omitempty"`
+
 	// Scrubbed, truncated summary of the failure when the command exits with an
 	// error. Privileged free-text (DATA_LABEL_USER_COMMANDS_RESPONSE, LPP-5543);
 	// stays in-region and is stripped from centralized logfood. Unset on success.
