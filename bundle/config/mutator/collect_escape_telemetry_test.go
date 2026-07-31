@@ -93,7 +93,7 @@ func TestCollectEscapeTelemetry(t *testing.T) {
 
 			diags := bundle.Apply(t.Context(), b, mutator.CollectEscapeTelemetry())
 			require.Empty(t, diags)
-			assert.Equal(t, tt.expected, b.Metrics.Telemetry.BoolValues())
+			assert.Equal(t, tt.expected, b.Metrics.BoolValues)
 		})
 	}
 }

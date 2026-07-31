@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/paths"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -162,17 +163,21 @@ func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPe
 	isShared := libraries.IsWorkspaceSharedPath(statePath)
 	owner, underUserHome := userHomeOwner(statePath)
 
-	tm := &b.Metrics.Telemetry
-	tm.StatePathIsShared = isShared
-	tm.SetPaired(&tm.PermissionsSectionSetTrue, &tm.PermissionsSectionSetFalse, len(b.Config.Permissions) > 0)
+	b.Metrics.SetBoolValue(metrics.StatePathIsShared, isShared)
+	b.Metrics.SetBoolValue(metrics.PermissionsSectionSet, len(b.Config.Permissions) > 0)
+	b.Telemetry.StatePathIsShared = isShared
+	b.Telemetry.SetPaired(&b.Telemetry.PermissionsSectionSetTrue, &b.Telemetry.PermissionsSectionSetFalse, len(b.Config.Permissions) > 0)
 
 	// userHomeOwner yields a non-empty owner whenever underUserHome is true, so the two
 	// home flags are exact complements: an unresolved deployer ("") never equals the
 	// owner and falls into the other-user bucket. StatePathOther covers any /Workspace
 	// folder that is neither shared nor a user home.
-	tm.StatePathInDeployerHome = underUserHome && owner == deployer
-	tm.StatePathInOtherUserHome = underUserHome && owner != deployer
-	tm.StatePathOther = !isShared && !underUserHome
+	b.Metrics.SetBoolValue(metrics.StatePathInDeployerHome, underUserHome && owner == deployer)
+	b.Metrics.SetBoolValue(metrics.StatePathInOtherUserHome, underUserHome && owner != deployer)
+	b.Metrics.SetBoolValue(metrics.StatePathOther, !isShared && !underUserHome)
+	b.Telemetry.StatePathInDeployerHome = underUserHome && owner == deployer
+	b.Telemetry.StatePathInOtherUserHome = underUserHome && owner != deployer
+	b.Telemetry.StatePathOther = !isShared && !underUserHome
 
 	// stateFolderPerms is nil when no permissions are declared, in which case there are
 	// no undeclared writers (the migration mirrors the folder's ACLs).
@@ -181,26 +186,38 @@ func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPe
 		undeclared = stateFolderPerms.UndeclaredWriters(b.Config.Permissions)
 	}
 	self, otherUser, servicePrincipal, group := undeclaredWriterTypes(undeclared, deployer)
-	tm.DMSUndeclaredDeployingUser = self
-	tm.DMSUndeclaredOtherUser = otherUser
-	tm.DMSUndeclaredServicePrincipal = servicePrincipal
-	tm.DMSUndeclaredGroup = group
+	b.Metrics.SetBoolValue(metrics.DMSUndeclaredDeployingUser, self)
+	b.Metrics.SetBoolValue(metrics.DMSUndeclaredOtherUser, otherUser)
+	b.Metrics.SetBoolValue(metrics.DMSUndeclaredServicePrincipal, servicePrincipal)
+	b.Metrics.SetBoolValue(metrics.DMSUndeclaredGroup, group)
+	b.Telemetry.DMSUndeclaredDeployingUser = self
+	b.Telemetry.DMSUndeclaredOtherUser = otherUser
+	b.Telemetry.DMSUndeclaredServicePrincipal = servicePrincipal
+	b.Telemetry.DMSUndeclaredGroup = group
 
-	// Set exactly one of the auto-migration verdict flags.
-	setAutoMigrationVerdict(b, tm, stateFolderPerms, undeclared)
+	// Emit exactly one of the auto-migration verdict keys.
+	verdict := autoMigrationVerdict(b, stateFolderPerms, undeclared)
+	b.Metrics.SetBoolValue(verdict, true)
+	switch verdict {
+	case metrics.DMSCompatAuto:
+		b.Telemetry.DMSCompatAuto = true
+	case metrics.DMSCompatOnlySelfUndeclared:
+		b.Telemetry.DMSCompatOnlySelfUndeclared = true
+	case metrics.DMSCompatNot:
+		b.Telemetry.DMSCompatNot = true
+	}
 }
 
 // autoMigrationVerdict returns the metric key describing whether this deploy is
 // compatible with an automatic migration of the deployment state to a dedicated
 // state storage service. undeclared is the state folder's undeclared writers (empty
-// when no permissions are declared). See Telemetry.DMSCompatAuto.
-func setAutoMigrationVerdict(b *bundle.Bundle, tm *bundle.Telemetry, stateFolderPerms *WorkspacePathPermissions, undeclared []resources.Permission) {
+// when no permissions are declared). See metrics.DMSCompatAuto.
+func autoMigrationVerdict(b *bundle.Bundle, stateFolderPerms *WorkspacePathPermissions, undeclared []resources.Permission) string {
 	// No permissions section: the migration mirrors the state folder's ACLs onto the
 	// deployment (CAN_EDIT -> CAN_EDIT, CAN_MANAGE -> CAN_MANAGE), preserving
 	// everyone's access wherever the state lives.
 	if len(b.Config.Permissions) == 0 {
-		tm.DMSCompatAuto = true
-		return
+		return metrics.DMSCompatAuto
 	}
 
 	// A permissions section is set. The state folder is always one of the synced bundle
@@ -208,8 +225,7 @@ func setAutoMigrationVerdict(b *bundle.Bundle, tm *bundle.Telemetry, stateFolder
 	// stateFolderPerms is non-nil here. Guard against nil regardless so a telemetry
 	// computation can never panic the deploy.
 	if stateFolderPerms == nil {
-		tm.DMSCompatNot = true
-		return
+		return metrics.DMSCompatNot
 	}
 
 	// The migration applies exactly the declared permissions to the deployment, so
@@ -217,14 +233,14 @@ func setAutoMigrationVerdict(b *bundle.Bundle, tm *bundle.Telemetry, stateFolder
 	// ability to deploy.
 	switch {
 	case len(undeclared) == 0:
-		tm.DMSCompatAuto = true
+		return metrics.DMSCompatAuto
 	case len(undeclared) == 1 && isDeployingUser(b, undeclared[0]):
 		// The deploying user is the only undeclared writer. The migration grants the
 		// deploying user CAN_MANAGE on the deployment object, so this deploy is
 		// auto-migratable if we choose to preserve that grant on future deploys.
-		tm.DMSCompatOnlySelfUndeclared = true
+		return metrics.DMSCompatOnlySelfUndeclared
 	default:
-		tm.DMSCompatNot = true
+		return metrics.DMSCompatNot
 	}
 }
 
