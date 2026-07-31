@@ -1,0 +1,18 @@
+
+=== Provenance read from the on-disk .git
+
+>>> [CLI] bundle validate -o json
+{
+  "actual_branch": "main",
+  "branch": "main",
+  "bundle_root_path": ".",
+  "commit": "4fa481d6502eb6104d62c33a693ef8a134e765e0",
+  "origin_url": "https://github.com/databricks/bundle-examples.git"
+}
+
+=== No .git: provenance degrades to empty without failing
+
+>>> [CLI] bundle validate -o json
+{
+  "bundle_root_path": "."
+}

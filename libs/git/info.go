@@ -49,7 +49,7 @@ type response struct {
 func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
 	var info RepositoryInfo
 	var err error
-	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
+	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) && !hasDotGit(path) {
 		info, err = fetchRepositoryInfoAPI(ctx, path, w)
 	} else {
 		info, err = fetchRepositoryInfoDotGit(ctx, path)
@@ -113,6 +113,20 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 	}
 
 	return result, nil
+}
+
+// hasDotGit reports whether a .git directory is reachable from path, walking up
+// to the filesystem root the same way fetchRepositoryInfoDotGit does.
+//
+// The new type of in-workspace Git folder exposes a real .git on the /Workspace
+// FUSE mount, and get-status returns only id+path for it, omitting the origin URL,
+// branch and commit. Reading .git recovers all three, and is much cheaper than the
+// API: these stat calls cost fractions of a millisecond against ~80ms for
+// get-status. Classic Repos and older Git folders have no .git on the mount and
+// still go through the API, which returns their git info inline.
+func hasDotGit(path string) bool {
+	_, err := folders.FindDirWithLeaf(path, GitDirectoryName)
+	return err == nil
 }
 
 func ensureWorkspacePrefix(p string) string {

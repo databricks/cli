@@ -1,0 +1,18 @@
+# A .git written by hand rather than by `git init`: git cannot operate on the
+# /Workspace FUSE mount ("detected dubious ownership"), but libs/git reads these
+# files directly, so this is what the new in-workspace Git folders look like to it.
+origin_url=https://github.com/databricks/bundle-examples.git
+commit=4fa481d6502eb6104d62c33a693ef8a134e765e0
+
+mkdir -p .git/refs/heads
+printf 'ref: refs/heads/main\n' > .git/HEAD
+printf '[core]\n\trepositoryformatversion = 1\n[remote "origin"]\n\turl = %s\n' "$origin_url" > .git/config
+printf '%s\n' "$commit" > .git/refs/heads/main
+
+title "Provenance read from the on-disk .git\n"
+trace $CLI bundle validate -o json | jq '.bundle.git'
+
+rm -rf .git
+
+title "No .git: provenance degrades to empty without failing\n"
+trace $CLI bundle validate -o json | jq '.bundle.git'

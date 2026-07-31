@@ -1,0 +1,25 @@
+# Covers bundle git provenance (bundle.git) as recorded by libs/git.FetchRepositoryInfo.
+#
+# The bundle root here carries a hand-built .git, which is readable both locally and on
+# the /Workspace FUSE mount of a DBR session. That makes the on-disk path the one under
+# test in both environments, so the assertions and output are identical:
+#
+#   - Local / non-DBR: fetchRepositoryInfoDotGit reads .git, as it always has.
+#   - On DBR: the new type of in-workspace Git folder exposes a real .git on the FUSE
+#     mount, so FetchRepositoryInfo prefers it over get-status, which returns only
+#     id+path for these folders. This is what the hasDotGit check selects.
+#
+# The API path itself (classic Repos and older Git folders, which have no .git on the
+# mount) cannot be provisioned from a test: those folder types are created by the
+# control plane, not by writing files. It is covered by unit tests in
+# libs/git/info_test.go.
+#
+# Cloud=true is required because RunsOnDbr tests also run in the cloud suite.
+Local = true
+Cloud = true
+RunsOnDbr = true
+
+# RunsOnDbr is incompatible with RecordRequests (serverless can't reach the proxy).
+RecordRequests = false
+
+Ignore = [".git"]
