@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/snapshot"
 )
@@ -39,15 +39,16 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		}
 	}
 
-	bundleID := b.DeploymentBundle.StateDB.GetOrInitLineage()
-	input := &dresources.SnapshotConfig{
-		BundleID: bundleID,
-		ACL:      BuildACL(b),
+	if b.Config.Resources.Snapshot == nil {
+		b.Config.Resources.Snapshot = make(map[string]*resources.Snapshot)
 	}
-	snapshotRootPath, err := uploader.GetSnapshotRootPath(ctx)
-	if err != nil {
-		return diag.FromErr(err)
+	if _, ok := b.Config.Resources.Snapshot["immutable"]; !ok {
+		b.Config.Resources.Snapshot["immutable"] = &resources.Snapshot{
+			BundleID: b.DeploymentBundle.StateDB.GetOrInitLineage(),
+			ACL:      BuildACL(b),
+		}
 	}
+
 	var diags diag.Diagnostics
 	if !m.skipZip {
 		zipContent, fileCount, err := BundleZip(ctx, b)
@@ -62,11 +63,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			)...)
 		}
 
-		input.ZipContent = zipContent
-	}
-	instance := (*dresources.Snapshot)(nil).New(uploader, snapshotRootPath)
-	if err := b.DeploymentBundle.RegisterInternalResource("internal.snapshot", instance, input); err != nil {
-		return diag.FromErr(err)
+		b.Config.Resources.Snapshot["immutable"].ZipContent = string(zipContent)
 	}
 
 	return diags

@@ -65,6 +65,9 @@ var SupportedResources = map[string]any{
 	"volumes.grants":               (*ResourceGrants)(nil),
 	"registered_models.grants":     (*ResourceGrants)(nil),
 	"vector_search_indexes.grants": (*ResourceGrants)(nil),
+
+	// Internal resources
+	"snapshot": (*ResourceSnapshot)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

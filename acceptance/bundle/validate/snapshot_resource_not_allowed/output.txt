@@ -1,0 +1,12 @@
+
+>>> [CLI] bundle validate
+Error: snapshot is an internal resource and cannot be set in bundle configuration
+  at resources.snapshot
+  in databricks.yml:6:5
+
+Name: snapshot_resource_not_allowed
+Target: default
+
+Found 1 error
+
+Exit code: 1

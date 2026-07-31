@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
@@ -160,38 +159,6 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		return nil, err
 	}
 
-	return adapter, nil
-}
-
-// NewAdapterFromInstance creates an Adapter from an already-initialized resource
-// instance. Use this for internal resources whose New() method doesn't take a
-// workspace client.
-func NewAdapterFromInstance(instance any, resourceType string) (*Adapter, error) {
-	resourceType = strings.TrimPrefix(resourceType, "internal.")
-	adapter := &Adapter{
-		prepareState:            nil,
-		remapState:              nil,
-		doRefresh:               nil,
-		doDelete:                nil,
-		doCreate:                nil,
-		doUpdate:                nil,
-		doUpdateWithID:          nil,
-		doResize:                nil,
-		waitAfterCreate:         nil,
-		waitAfterUpdate:         nil,
-		waitAfterDelete:         nil,
-		overrideChangeDesc:      nil,
-		keyedSlices:             nil,
-		isGone:                  nil,
-		resourceConfig:          GetResourceConfig(resourceType),
-		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
-	}
-	if err := adapter.initMethods(instance); err != nil {
-		return nil, err
-	}
-	if err := adapter.validate(); err != nil {
-		return nil, err
-	}
 	return adapter, nil
 }
 

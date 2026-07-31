@@ -84,7 +84,6 @@ type ResourceLifecycleConfig struct {
 // Config is the root configuration structure for resource lifecycle behavior.
 type Config struct {
 	Resources map[string]ResourceLifecycleConfig `yaml:"resources"`
-	Internal  map[string]ResourceLifecycleConfig `yaml:"internal"`
 }
 
 //go:embed resources.yml
@@ -105,7 +104,7 @@ var empty = ResourceLifecycleConfig{
 
 func mustParseConfig(data []byte) func() *Config {
 	return sync.OnceValue(func() *Config {
-		c := &Config{Resources: nil, Internal: nil}
+		c := &Config{Resources: nil}
 		if err := yaml.Unmarshal(data, c); err != nil {
 			panic(err)
 		}
@@ -132,9 +131,6 @@ func MustLoadGeneratedConfig() *Config {
 func GetResourceConfig(resourceType string) *ResourceLifecycleConfig {
 	cfg := MustLoadConfig()
 	if rc, ok := cfg.Resources[resourceType]; ok {
-		return &rc
-	}
-	if rc, ok := cfg.Internal[resourceType]; ok {
 		return &rc
 	}
 	return &empty

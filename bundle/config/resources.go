@@ -44,6 +44,9 @@ type Resources struct {
 	VectorSearchEndpoints map[string]*resources.VectorSearchEndpoint `json:"vector_search_endpoints,omitempty"`
 	VectorSearchIndexes   map[string]*resources.VectorSearchIndex    `json:"vector_search_indexes,omitempty"`
 	InstancePools         map[string]*resources.InstancePool         `json:"instance_pools,omitempty"`
+
+	// Internal resources
+	Snapshot map[string]*resources.Snapshot `json:"snapshot,omitempty" bundle:"internal"`
 }
 
 type ConfigResource interface {

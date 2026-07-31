@@ -5,19 +5,15 @@ import (
 	"errors"
 	"path"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/snapshot"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
-type Snapshot struct {
+type ResourceSnapshot struct {
 	remoteRoot string
 	uploader   snapshot.SnapshotUploader
-}
-
-type SnapshotConfig struct {
-	BundleID   string
-	ACL        []snapshot.ACLEntry
-	ZipContent []byte
 }
 
 type SnapshotState struct {
@@ -25,7 +21,7 @@ type SnapshotState struct {
 	FullPath     string              `json:"full_path"`
 	BundleID     string              `json:"bundle_id"`
 	ACL          []snapshot.ACLEntry `json:"acl"`
-	ZipContent   []byte              `json:"-"`
+	ZipContent   string              `json:"-"`
 }
 
 type SnapshotRemote struct {
@@ -33,22 +29,29 @@ type SnapshotRemote struct {
 	FullPath     string `json:"full_path"`
 }
 
-func (s *SnapshotConfig) RelativePath() string {
-	return path.Join(s.BundleID, snapshot.HashFromContent(s.ZipContent))
-}
+func (s *ResourceSnapshot) New(client *databricks.WorkspaceClient) *ResourceSnapshot {
+	// Return a zero-value instance when client is nil (e.g. refschema introspection).
+	if client == nil {
+		return &ResourceSnapshot{}
+	}
 
-func (s *SnapshotConfig) FullPath(remoteRoot string) string {
-	return path.Join(remoteRoot, s.RelativePath())
-}
+	uploader, err := snapshot.NewSnapshotUploader(client)
+	if err != nil {
+		panic(err)
+	}
 
-func (s *Snapshot) New(uploader snapshot.SnapshotUploader, remoteRoot string) *Snapshot {
-	return &Snapshot{
-		remoteRoot: remoteRoot,
+	snapshotRootPath, err := uploader.GetSnapshotRootPath(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	return &ResourceSnapshot{
+		remoteRoot: snapshotRootPath,
 		uploader:   uploader,
 	}
 }
 
-func (s *Snapshot) PrepareState(input *SnapshotConfig) *SnapshotState {
+func (s *ResourceSnapshot) PrepareState(input *resources.Snapshot) *SnapshotState {
 	return &SnapshotState{
 		RelativePath: input.RelativePath(),
 		FullPath:     input.FullPath(s.remoteRoot),
@@ -58,17 +61,17 @@ func (s *Snapshot) PrepareState(input *SnapshotConfig) *SnapshotState {
 	}
 }
 
-func (s *Snapshot) RemapState(remote *SnapshotRemote) *SnapshotState {
+func (s *ResourceSnapshot) RemapState(remote *SnapshotRemote) *SnapshotState {
 	return &SnapshotState{
 		RelativePath: remote.RelativePath,
 		FullPath:     remote.FullPath,
 		BundleID:     "",
 		ACL:          nil,
-		ZipContent:   nil,
+		ZipContent:   "",
 	}
 }
 
-func (s *Snapshot) DoRead(ctx context.Context, id string) (*SnapshotRemote, error) {
+func (s *ResourceSnapshot) DoRead(ctx context.Context, id string) (*SnapshotRemote, error) {
 	fullPath := path.Join(s.remoteRoot, id)
 	_, err := s.uploader.Get(ctx, fullPath)
 	if err != nil {
@@ -86,19 +89,19 @@ func (s *Snapshot) DoRead(ctx context.Context, id string) (*SnapshotRemote, erro
 	}, nil
 }
 
-func (s *Snapshot) DoCreate(ctx context.Context, state *SnapshotState) (string, *SnapshotRemote, error) {
+func (s *ResourceSnapshot) DoCreate(ctx context.Context, state *SnapshotState) (string, *SnapshotRemote, error) {
 	path := state.RelativePath
-	info, err := s.uploader.Upload(ctx, path, state.BundleID, state.ACL, state.ZipContent)
+	info, err := s.uploader.Upload(ctx, path, state.BundleID, state.ACL, []byte(state.ZipContent))
 	if err != nil {
 		return "", nil, err
 	}
 	return path, &SnapshotRemote{RelativePath: path, FullPath: info.Path}, nil
 }
 
-func (s *Snapshot) DoUpdate(ctx context.Context, id string, newState *SnapshotState, entry *PlanEntry) (*SnapshotRemote, error) {
+func (s *ResourceSnapshot) DoUpdate(ctx context.Context, id string, newState *SnapshotState, entry *PlanEntry) (*SnapshotRemote, error) {
 	return nil, nil
 }
 
-func (s *Snapshot) DoDelete(ctx context.Context, id string, state *SnapshotState) error {
+func (s *ResourceSnapshot) DoDelete(ctx context.Context, id string, state *SnapshotState) error {
 	return nil
 }
