@@ -22,7 +22,9 @@ def iter_state_files(target):
     if target:
         target_dirs = [f".databricks/bundle/{target}"]
     else:
-        target_dirs = glob.glob(".databricks/bundle/*")
+        # Sort so the [<NAME>_ID] / [<NAME>_ID_2] labels assigned to identical
+        # resource keys across targets are deterministic, not glob-order dependent.
+        target_dirs = sorted(glob.glob(".databricks/bundle/*"))
     for d in target_dirs:
         for name in (f"{d}/terraform/terraform.tfstate", f"{d}/resources.json"):
             if os.path.exists(name):

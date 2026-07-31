@@ -23,7 +23,6 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
-	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
@@ -167,13 +166,16 @@ func logResourceActions(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	}
 	withURLs := err == nil
 
-	// Populate the URL field on every live resource in config so it can be read
-	// back below. Deleted resources are gone from config, so their URLs are built
-	// from the base URL directly.
+	// Populate each live resource's URL field (read back below via GetURL) and index
+	// it by its full plan key ("resources.<type>.<name>") so per-action lookup is a
+	// map hit. Deleted resources are gone from config; their URLs are built from the
+	// base URL directly. Skip the work entirely when the workspace URL is unavailable.
+	byKey := map[string]config.ConfigResource{}
 	if withURLs {
 		for _, group := range b.Config.Resources.AllResources() {
-			for _, r := range group.Resources {
+			for name, r := range group.Resources {
 				r.InitializeURL(baseURL)
+				byKey["resources."+group.Description.PluralName+"."+name] = r
 			}
 		}
 	}
@@ -188,17 +190,17 @@ func logResourceActions(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		label := action.ActionType.StringShort() + "d " + strings.TrimPrefix(action.ResourceKey, "resources.")
 		l := line{label: label}
 		if withURLs {
-			l.url = resourceURL(b, baseURL, action)
+			l.url = resourceURL(byKey, baseURL, action)
 		}
 		lines = append(lines, l)
-		labelWidth = max(labelWidth, len(label))
+		labelWidth = max(labelWidth, cmdio.Width(label))
 	}
 
 	for _, l := range lines {
 		if l.url == "" {
 			cmdio.LogString(ctx, l.label)
 		} else {
-			cmdio.LogString(ctx, fmt.Sprintf("%-*s  %s", labelWidth, l.label, l.url))
+			cmdio.LogString(ctx, cmdio.PadRight(l.label, labelWidth)+"  "+l.url)
 		}
 	}
 
@@ -209,8 +211,9 @@ func logResourceActions(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 
 // resourceURL returns the workspace URL for an applied action, or "" when none
 // is available (child nodes like grants/permissions, resource types without a
-// URL, or a delete whose ID could not be recovered).
-func resourceURL(b *bundle.Bundle, baseURL url.URL, action deployplan.Action) string {
+// URL, or a delete whose ID could not be recovered). byKey maps full plan keys
+// ("resources.<type>.<name>") to their live config resource.
+func resourceURL(byKey map[string]config.ConfigResource, baseURL url.URL, action deployplan.Action) string {
 	if action.IsChildResource() {
 		return ""
 	}
@@ -218,18 +221,20 @@ func resourceURL(b *bundle.Bundle, baseURL url.URL, action deployplan.Action) st
 	if action.ActionType == deployplan.Delete {
 		// A deleted resource is gone from config; build its URL from the ID
 		// captured at plan time. The link points at a now-deleted resource, but
-		// it identifies what was removed.
+		// it identifies what was removed. Older plans may not carry the ID; skip
+		// the URL rather than emit a bogus collection link like "/jobs/".
+		if action.ID == "" {
+			return ""
+		}
 		resourceType := config.GetResourceTypeFromKey(action.ResourceKey)
 		return workspaceurls.ResourceURL(baseURL, resourceType, action.ID)
 	}
 
-	// action.ResourceKey is "resources.<type>.<name>"; Lookup keys on "<type>.<name>".
-	key := strings.TrimPrefix(action.ResourceKey, "resources.")
-	ref, err := resources.Lookup(b, key)
-	if err != nil {
+	r, ok := byKey[action.ResourceKey]
+	if !ok {
 		return ""
 	}
-	u := ref.Resource.GetURL()
+	u := r.GetURL()
 	// Some resources derive their URL from a name that is still an unresolved
 	// "${...}" reference at this point (e.g. synced tables keyed by
 	// "${resources.catalog.name}...."). Such a URL is not a usable link and its
