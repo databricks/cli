@@ -27,22 +27,13 @@
         ],
         "name": "DABs Revenue Pipeline",
         "pipeline_id": "[UUID]",
+        "run_as": {
+          "service_principal_name": "[UUID]"
+        },
         "run_as_user_name": "[USERNAME]",
         "serverless": true,
         "state": "IDLE",
         "target": "team_eng_deco"
-      },
-      "changes": {
-        "run_as": {
-          "action": "skip",
-          "reason": "input_only",
-          "old": {
-            "service_principal_name": "[UUID]"
-          },
-          "new": {
-            "service_principal_name": "[UUID]"
-          }
-        }
       }
     },
     "resources.pipelines.foo.permissions": {
