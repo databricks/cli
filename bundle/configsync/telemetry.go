@@ -64,8 +64,8 @@ type Stats struct {
 
 	// Resource ids present in the state that was read, and the ids the run was
 	// asked to sync. Comparing the two classifies a selector miss.
-	StateResourceIDs    *protos.BundleConfigRemoteSyncResourceIDs
-	SelectedResourceIDs *protos.BundleConfigRemoteSyncResourceIDs
+	StateResourceIDs    *protos.BundleConfigRemoteSyncResourceIds
+	SelectedResourceIDs *protos.BundleConfigRemoteSyncResourceIds
 
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
@@ -196,8 +196,8 @@ const resourceIDLimit = 1000
 
 // collectResourceIDs groups "<type>:<id>" pairs into the per-type id lists.
 // Returns nil when nothing was collected so the field is omitted entirely.
-func collectResourceIDs(typeAndIDs []string) *protos.BundleConfigRemoteSyncResourceIDs {
-	out := &protos.BundleConfigRemoteSyncResourceIDs{}
+func collectResourceIDs(typeAndIDs []string) *protos.BundleConfigRemoteSyncResourceIds {
+	out := &protos.BundleConfigRemoteSyncResourceIds{}
 	any := false
 	for _, typeAndID := range typeAndIDs {
 		resourceType, id, ok := strings.Cut(typeAndID, ":")

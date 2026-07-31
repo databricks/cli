@@ -84,8 +84,8 @@ type BundleConfigRemoteSyncEvent struct {
 	// classifies a selector miss; the counts are intentionally not sent
 	// separately since they are len() of these lists, and the matched set is
 	// their intersection.
-	StateResourceIDs    *BundleConfigRemoteSyncResourceIDs `json:"state_resource_ids,omitempty"`
-	SelectedResourceIDs *BundleConfigRemoteSyncResourceIDs `json:"selected_resource_ids,omitempty"`
+	StateResourceIDs    *BundleConfigRemoteSyncResourceIds `json:"state_resource_ids,omitempty"`
+	SelectedResourceIDs *BundleConfigRemoteSyncResourceIds `json:"selected_resource_ids,omitempty"`
 
 	// Scrubbed, truncated summary of the failure when the command exits with an
 	// error. Privileged free-text (DATA_LABEL_USER_COMMANDS_RESPONSE, LPP-5543);
@@ -97,14 +97,14 @@ type BundleConfigRemoteSyncEvent struct {
 	ErrorCategory BundleConfigRemoteSyncErrorCategory `json:"error_category,omitempty"`
 }
 
-// BundleConfigRemoteSyncResourceIDs holds resource IDs grouped by type. The
+// BundleConfigRemoteSyncResourceIds holds resource IDs grouped by type. The
 // same shape is used for the state's IDs and for the selected IDs so the two
 // can be compared directly.
 //
 // IDs of resources managed by the bundle. Some resources like volumes or schemas
 // do not expose a numerical or UUID identifier and are tracked by name. Those
 // resources are not tracked here since the names are PII.
-type BundleConfigRemoteSyncResourceIDs struct {
+type BundleConfigRemoteSyncResourceIds struct {
 	ResourceJobIDs       []string `json:"resource_job_ids,omitempty"`
 	ResourcePipelineIDs  []string `json:"resource_pipeline_ids,omitempty"`
 	ResourceClusterIDs   []string `json:"resource_cluster_ids,omitempty"`
