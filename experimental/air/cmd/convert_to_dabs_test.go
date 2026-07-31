@@ -1,6 +1,8 @@
 package aircmd
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"os"
 	"path/filepath"
 	"strings"
@@ -354,6 +356,70 @@ func TestConvertToDabsGitPinnedRelativeOutputDir(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(work, "out", codeSourceDirName, "train.py"))
+}
+
+// writeTarball writes a gzipped tar of the given entries to path. Each entry is
+// either a regular file (typeflag defaults to file) or, when linkname != "", a
+// symlink. Used to exercise extractTarball directly.
+func writeTarball(t *testing.T, path string, entries []tar.Header) {
+	t.Helper()
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	gz := gzip.NewWriter(f)
+	tw := tar.NewWriter(gz)
+	for _, h := range entries {
+		require.NoError(t, tw.WriteHeader(&h))
+		if h.Typeflag == tar.TypeReg {
+			_, err := tw.Write([]byte("data-" + h.Name))
+			require.NoError(t, err)
+		}
+	}
+	require.NoError(t, tw.Close())
+	require.NoError(t, gz.Close())
+	require.NoError(t, f.Close())
+}
+
+// extractTarball unpacks a well-formed archive (files, nested dirs, in-tree
+// symlink) into destDir.
+func TestExtractTarballHappyPath(t *testing.T) {
+	src := filepath.Join(t.TempDir(), "a.tar.gz")
+	writeTarball(t, src, []tar.Header{
+		{Name: "code/", Typeflag: tar.TypeDir, Mode: 0o755},
+		{Name: "code/train.py", Typeflag: tar.TypeReg, Mode: 0o644, Size: int64(len("data-code/train.py"))},
+		{Name: "code/pkg/", Typeflag: tar.TypeDir, Mode: 0o755},
+		{Name: "code/pkg/util.py", Typeflag: tar.TypeReg, Mode: 0o644, Size: int64(len("data-code/pkg/util.py"))},
+		{Name: "code/link.py", Typeflag: tar.TypeSymlink, Linkname: "train.py"},
+	})
+
+	dest := t.TempDir()
+	require.NoError(t, extractTarball(src, dest))
+	assert.FileExists(t, filepath.Join(dest, "code", "train.py"))
+	assert.FileExists(t, filepath.Join(dest, "code", "pkg", "util.py"))
+	if info, err := os.Lstat(filepath.Join(dest, "code", "link.py")); assert.NoError(t, err) {
+		assert.NotZero(t, info.Mode()&os.ModeSymlink, "link.py should be a symlink")
+	}
+}
+
+// A path-traversal entry or an escaping symlink is rejected rather than written
+// outside destDir.
+func TestExtractTarballRejectsEscape(t *testing.T) {
+	t.Run("traversal path", func(t *testing.T) {
+		src := filepath.Join(t.TempDir(), "evil.tar.gz")
+		writeTarball(t, src, []tar.Header{
+			{Name: "../escape.py", Typeflag: tar.TypeReg, Mode: 0o644, Size: int64(len("data-../escape.py"))},
+		})
+		err := extractTarball(src, t.TempDir())
+		require.ErrorContains(t, err, "escapes the destination directory")
+	})
+
+	t.Run("escaping symlink", func(t *testing.T) {
+		src := filepath.Join(t.TempDir(), "evil-link.tar.gz")
+		writeTarball(t, src, []tar.Header{
+			{Name: "link", Typeflag: tar.TypeSymlink, Linkname: "../../etc/passwd"},
+		})
+		err := extractTarball(src, t.TempDir())
+		require.ErrorContains(t, err, "escapes the destination directory")
+	})
 }
 
 // A numeric or reserved-word experiment_name would be an unquoted YAML map key

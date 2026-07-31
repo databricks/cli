@@ -1,12 +1,13 @@
 package aircmd
 
 import (
-	"bytes"
+	"archive/tar"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -480,7 +481,7 @@ func materializeCodeSource(ctx context.Context, repoPath string, plan snapshotPl
 	if err := os.MkdirAll(extractDir, 0o700); err != nil {
 		return err
 	}
-	if err := extractTarball(ctx, tarball, extractDir); err != nil {
+	if err := extractTarball(tarball, extractDir); err != nil {
 		return err
 	}
 	entries, err := os.ReadDir(extractDir)
@@ -496,18 +497,91 @@ func materializeCodeSource(ctx context.Context, repoPath string, plan snapshotPl
 	return nil
 }
 
-// extractTarball unpacks a gzipped tarball into destDir via `tar`, mirroring the
-// snapshot packagers' reliance on the system tar (so symlink/permission handling is
-// identical to what the run path produced when it built the archive).
-func extractTarball(ctx context.Context, tarball, destDir string) error {
-	cmd := exec.CommandContext(ctx, "tar", "-xzf", tarball, "-C", destDir)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		if msg := strings.TrimSpace(stderr.String()); msg != "" {
-			return fmt.Errorf("failed to extract code_source archive: %w: %s", err, msg)
+// extractTarball unpacks a gzipped tarball into destDir in pure Go (no `tar`
+// subprocess), so extraction is portable — notably on Windows, where handing a
+// `C:\...` path to the system tar makes it read the drive letter as a remote host.
+// Entries that would escape destDir (path traversal, absolute or escaping symlinks)
+// are rejected; unusual entry types are skipped.
+func extractTarball(tarball, destDir string) error {
+	f, err := os.Open(tarball)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		return fmt.Errorf("failed to read code_source archive: %w", err)
+	}
+	defer gz.Close()
+
+	// destDir is the boundary every extracted entry must stay within: a malicious or
+	// malformed archive entry ("../x", an absolute path, a symlink escaping the tree)
+	// must not write outside it. destAbs is compared against each resolved target.
+	destAbs, err := filepath.Abs(destDir)
+	if err != nil {
+		return err
+	}
+
+	tr := tar.NewReader(gz)
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break
 		}
-		return fmt.Errorf("failed to extract code_source archive: %w", err)
+		if err != nil {
+			return fmt.Errorf("failed to read code_source archive: %w", err)
+		}
+
+		// Reject path traversal: the cleaned target must stay under destAbs.
+		target := filepath.Join(destAbs, filepath.FromSlash(hdr.Name))
+		if target != destAbs && !strings.HasPrefix(target, destAbs+string(os.PathSeparator)) {
+			return fmt.Errorf("code_source archive entry %q escapes the destination directory", hdr.Name)
+		}
+
+		switch hdr.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, 0o700); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil {
+				return err
+			}
+			out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(hdr.Mode)&0o777)
+			if err != nil {
+				return err
+			}
+			// Bounded copy: cap the number of bytes written to the size the header
+			// declares, so a corrupt/oversized entry can't write unbounded data.
+			if _, err := io.CopyN(out, tr, hdr.Size); err != nil && !errors.Is(err, io.EOF) {
+				out.Close()
+				return err
+			}
+			if err := out.Close(); err != nil {
+				return err
+			}
+		case tar.TypeSymlink:
+			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil {
+				return err
+			}
+			// A symlink whose resolved target escapes destAbs is rejected: it could be
+			// followed on a later write to reach outside the staged code directory.
+			linkTarget := hdr.Linkname
+			resolved := linkTarget
+			if !filepath.IsAbs(resolved) {
+				resolved = filepath.Join(filepath.Dir(target), filepath.FromSlash(linkTarget))
+			}
+			if resolved != destAbs && !strings.HasPrefix(resolved, destAbs+string(os.PathSeparator)) {
+				return fmt.Errorf("code_source archive symlink %q -> %q escapes the destination directory", hdr.Name, linkTarget)
+			}
+			if err := os.Symlink(linkTarget, target); err != nil {
+				return err
+			}
+		default:
+			// Skip other entry types (devices, fifos, etc.): code source is regular
+			// files, dirs, and symlinks; anything else is not meaningful to a workload.
+		}
 	}
 	return nil
 }
