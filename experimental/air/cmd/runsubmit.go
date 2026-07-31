@@ -47,7 +47,7 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 // omitempty so the wire form matches the Python CLI (which never emits a bare
 // "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
 // workload.
-func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapshotResult) jobs.SubmitRun {
+func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, deps []string, snap snapshotResult) jobs.SubmitRun {
 	task := jobs.AiRuntimeTask{
 		Experiment: cfg.ExperimentName,
 		Deployments: []jobs.DeploymentSpec{{
@@ -86,7 +86,9 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapsh
 		Tasks:          []jobs.SubmitTask{st},
 		Environments: []jobs.JobEnvironment{{
 			EnvironmentKey: aiRuntimeEnvironmentKey,
-			Spec:           &compute.Environment{EnvironmentVersion: dlImage},
+			// Dependencies ride the serverless environment spec (the modern Jobs mechanism);
+			// the server installs them the same way it did the co-located requirements.yaml.
+			Spec: &compute.Environment{EnvironmentVersion: dlImage, Dependencies: deps},
 		}},
 	}
 }
@@ -150,6 +152,10 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
+	deps, err := resolveDependencies(cfg, configPath)
+	if err != nil {
+		return 0, "", err
+	}
 	if err := uploadArtifacts(ctx, fc, items); err != nil {
 		return 0, "", err
 	}
@@ -167,7 +173,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	}
 
 	runtimeVersion, _ := cfg.runtimeVersion()
-	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), snap)
+	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), deps, snap)
 	payload.IdempotencyToken = token
 
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
