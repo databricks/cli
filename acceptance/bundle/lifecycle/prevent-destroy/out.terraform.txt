@@ -127,8 +127,8 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   recreate resources.pipelines.my_pipelines
-recreated pipelines.my_pipelines  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
-recreated schemas.my_schema       [DATABRICKS_URL]/explore/data/test-catalog/test-schema-new?w=[WORKSPACE_ID]
+recreated pipelines.my_pipelines  [DATABRICKS_URL]/pipelines/[UUID]
+recreated schemas.my_schema       [DATABRICKS_URL]/explore/data/test-catalog/test-schema-new
 
 Deploy: 2 created, 0 changed, 2 deleted, 0 unchanged.
 
@@ -149,7 +149,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   delete resources.pipelines.my_pipelines
-deleted pipelines.my_pipelines  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
-deleted schemas.my_schema       [DATABRICKS_URL]/explore/data/test-catalog/test-schema-new?w=[WORKSPACE_ID]
+deleted pipelines.my_pipelines  [DATABRICKS_URL]/pipelines/[UUID]
+deleted schemas.my_schema       [DATABRICKS_URL]/explore/data/test-catalog/test-schema-new
 
 Deploy: 0 created, 0 changed, 2 deleted, 0 unchanged.

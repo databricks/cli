@@ -51,7 +51,7 @@ Terraform will perform the following actions:
         }
 
       - provider_config {
-          - workspace_id = "[WORKSPACE_ID]" -> null
+          - workspace_id = "[NUMID]" -> null
         }
     }
 

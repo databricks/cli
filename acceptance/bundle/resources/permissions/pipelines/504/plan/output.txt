@@ -1,5 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created pipelines.foo              [DATABRICKS_URL]/pipelines/[FOO_ID]?w=[WORKSPACE_ID]
+created pipelines.foo              [DATABRICKS_URL]/pipelines/[FOO_ID]
 created pipelines.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

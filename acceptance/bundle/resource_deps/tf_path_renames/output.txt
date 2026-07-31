@@ -3,12 +3,12 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.dst_git            [DATABRICKS_URL]/jobs/[DST_GIT_ID]?w=[WORKSPACE_ID]
-created jobs.dst_pipeline       [DATABRICKS_URL]/jobs/[DST_PIPELINE_ID]?w=[WORKSPACE_ID]
-created jobs.dst_tasks          [DATABRICKS_URL]/jobs/[DST_TASKS_ID]?w=[WORKSPACE_ID]
-created jobs.src_git            [DATABRICKS_URL]/jobs/[SRC_GIT_ID]?w=[WORKSPACE_ID]
-created jobs.src_tasks          [DATABRICKS_URL]/jobs/[SRC_TASKS_ID]?w=[WORKSPACE_ID]
-created pipelines.src_pipeline  [DATABRICKS_URL]/pipelines/[SRC_PIPELINE_ID]?w=[WORKSPACE_ID]
+created jobs.dst_git            [DATABRICKS_URL]/jobs/[DST_GIT_ID]
+created jobs.dst_pipeline       [DATABRICKS_URL]/jobs/[DST_PIPELINE_ID]
+created jobs.dst_tasks          [DATABRICKS_URL]/jobs/[DST_TASKS_ID]
+created jobs.src_git            [DATABRICKS_URL]/jobs/[SRC_GIT_ID]
+created jobs.src_tasks          [DATABRICKS_URL]/jobs/[SRC_TASKS_ID]
+created pipelines.src_pipeline  [DATABRICKS_URL]/pipelines/[SRC_PIPELINE_ID]
 
 Deploy: 6 created, 0 changed, 0 deleted, 0 unchanged.
 /path/to/wheel.whl

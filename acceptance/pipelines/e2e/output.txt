@@ -17,12 +17,12 @@ Please refer to the README.md file for "getting started" instructions.
 === Deploy pipeline
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
-created jobs.sample_job                 [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]?w=[WORKSPACE_ID]
-created pipelines.lakeflow_project_etl  [DATABRICKS_URL]/pipelines/[LAKEFLOW_PROJECT_ETL_ID]?w=[WORKSPACE_ID]
+created jobs.sample_job                 [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]
+created pipelines.lakeflow_project_etl  [DATABRICKS_URL]/pipelines/[LAKEFLOW_PROJECT_ETL_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
-View your job sample_job here: [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]?w=[WORKSPACE_ID]
-View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[LAKEFLOW_PROJECT_ETL_ID]?w=[WORKSPACE_ID]
+View your job sample_job here: [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]
+View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[LAKEFLOW_PROJECT_ETL_ID]
 
 === Run pipeline
 >>> [CLI] pipelines run
@@ -42,12 +42,12 @@ Pipeline configurations for this update:
 === Edit project by creating and running a new second pipeline
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
-created pipelines.lakeflow_project_etl_2  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created pipelines.lakeflow_project_etl_2  [DATABRICKS_URL]/pipelines/[UUID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 2 unchanged.
-View your job sample_job here: [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]?w=[WORKSPACE_ID]
-View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[LAKEFLOW_PROJECT_ETL_ID]?w=[WORKSPACE_ID]
-View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+View your job sample_job here: [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]
+View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[LAKEFLOW_PROJECT_ETL_ID]
+View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]
 
 === Assert the second pipeline is created
 >>> [CLI] pipelines get [UUID]

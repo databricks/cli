@@ -2,31 +2,31 @@
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy -t tf
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/files...
 created apps.my_app
-created clusters.my_cluster                    [DATABRICKS_URL]/compute/clusters/[UUID]?w=[WORKSPACE_ID]
-created database_instances.my_db_instance      [DATABRICKS_URL]/compute/database-instances/test-db-instance?w=[WORKSPACE_ID]
-created experiments.my_experiment              [DATABRICKS_URL]/ml/experiments/[NUMID]?w=[WORKSPACE_ID]
-created jobs.my_job                            [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
-created models.my_model                        [DATABRICKS_URL]/ml/models/test-model?w=[WORKSPACE_ID]
-created pipelines.my_pipeline                  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
-created registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/main/default/test-registered-model?w=[WORKSPACE_ID]
-created schemas.my_schema                      [DATABRICKS_URL]/explore/data/main/test-schema?w=[WORKSPACE_ID]
-created sql_warehouses.my_warehouse            [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[WORKSPACE_ID]
-created volumes.my_volume                      [DATABRICKS_URL]/explore/data/volumes/main/default/test-volume?w=[WORKSPACE_ID]
+created clusters.my_cluster                    [DATABRICKS_URL]/compute/clusters/[UUID]
+created database_instances.my_db_instance      [DATABRICKS_URL]/compute/database-instances/test-db-instance
+created experiments.my_experiment              [DATABRICKS_URL]/ml/experiments/[NUMID]
+created jobs.my_job                            [DATABRICKS_URL]/jobs/[NUMID]
+created models.my_model                        [DATABRICKS_URL]/ml/models/test-model
+created pipelines.my_pipeline                  [DATABRICKS_URL]/pipelines/[UUID]
+created registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/main/default/test-registered-model
+created schemas.my_schema                      [DATABRICKS_URL]/explore/data/main/test-schema
+created sql_warehouses.my_warehouse            [DATABRICKS_URL]/sql/warehouses/[UUID]
+created volumes.my_volume                      [DATABRICKS_URL]/explore/data/volumes/main/default/test-volume
 
 Deploy: 11 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy -t direct
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files...
 created apps.my_app
-created clusters.my_cluster                    [DATABRICKS_URL]/compute/clusters/[UUID]?w=[WORKSPACE_ID]
-created database_instances.my_db_instance      [DATABRICKS_URL]/compute/database-instances/test-db-instance?w=[WORKSPACE_ID]
-created experiments.my_experiment              [DATABRICKS_URL]/ml/experiments/[NUMID]?w=[WORKSPACE_ID]
-created jobs.my_job                            [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
-created models.my_model                        [DATABRICKS_URL]/ml/models/test-model?w=[WORKSPACE_ID]
-created pipelines.my_pipeline                  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
-created registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/main/default/test-registered-model?w=[WORKSPACE_ID]
-created schemas.my_schema                      [DATABRICKS_URL]/explore/data/main/test-schema?w=[WORKSPACE_ID]
-created sql_warehouses.my_warehouse            [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[WORKSPACE_ID]
-created volumes.my_volume                      [DATABRICKS_URL]/explore/data/volumes/main/default/test-volume?w=[WORKSPACE_ID]
+created clusters.my_cluster                    [DATABRICKS_URL]/compute/clusters/[UUID]
+created database_instances.my_db_instance      [DATABRICKS_URL]/compute/database-instances/test-db-instance
+created experiments.my_experiment              [DATABRICKS_URL]/ml/experiments/[NUMID]
+created jobs.my_job                            [DATABRICKS_URL]/jobs/[NUMID]
+created models.my_model                        [DATABRICKS_URL]/ml/models/test-model
+created pipelines.my_pipeline                  [DATABRICKS_URL]/pipelines/[UUID]
+created registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/main/default/test-registered-model
+created schemas.my_schema                      [DATABRICKS_URL]/explore/data/main/test-schema
+created sql_warehouses.my_warehouse            [DATABRICKS_URL]/sql/warehouses/[UUID]
+created volumes.my_volume                      [DATABRICKS_URL]/explore/data/volumes/main/default/test-volume
 
 Deploy: 11 created, 0 changed, 0 deleted, 0 unchanged.

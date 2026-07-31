@@ -2,8 +2,8 @@
 === Initial deploy creates two endpoints with distinct names
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-create-fails-[UNIQUE_NAME]/default/files...
-created vector_search_endpoints.blocker_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-b-[UNIQUE_NAME]?w=[WORKSPACE_ID]
-created vector_search_endpoints.my_endpoint       [DATABRICKS_URL]/compute/vector-search/vs-endpoint-a-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created vector_search_endpoints.blocker_endpoint  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-b-[UNIQUE_NAME]
+created vector_search_endpoints.my_endpoint       [DATABRICKS_URL]/compute/vector-search/vs-endpoint-a-[UNIQUE_NAME]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

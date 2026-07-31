@@ -60,7 +60,7 @@
             "pipeline_task": [],
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "python_wheel_task": [],
@@ -221,7 +221,7 @@
             "photon": false,
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "restart_window": [],
@@ -272,7 +272,7 @@
             "owner": "[USERNAME]",
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "schema_name": "myschema",

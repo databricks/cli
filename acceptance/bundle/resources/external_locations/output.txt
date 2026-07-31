@@ -10,7 +10,7 @@ Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created catalogs.test_catalog                    [DATABRICKS_URL]/explore/data/test_catalog_[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created catalogs.test_catalog                    [DATABRICKS_URL]/explore/data/test_catalog_[UNIQUE_NAME]
 created catalogs.test_catalog.grants
 created external_locations.test_location
 created external_locations.test_location.grants
@@ -91,7 +91,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated catalogs.test_catalog  [DATABRICKS_URL]/explore/data/test_catalog_[UNIQUE_NAME]?w=[WORKSPACE_ID]
+updated catalogs.test_catalog  [DATABRICKS_URL]/explore/data/test_catalog_[UNIQUE_NAME]
 
 Deploy: 0 created, 1 changed, 0 deleted, 3 unchanged.
 

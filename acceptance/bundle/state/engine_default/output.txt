@@ -3,7 +3,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-engine-default/default/files...
-created schemas.foo  [DATABRICKS_URL]/explore/data/bar/foo?w=[WORKSPACE_ID]
+created schemas.foo  [DATABRICKS_URL]/explore/data/bar/foo
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

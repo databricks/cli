@@ -2,7 +2,7 @@
 === Deploy without permissions
 >>> [CLI] bundle deploy
 Uploading immutable bundle snapshot...
-created jobs.my_job  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
+created jobs.my_job  [DATABRICKS_URL]/jobs/[MY_JOB_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 First snapshot path: /Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py
@@ -22,7 +22,7 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
   in databricks.yml:22:3
 
 Uploading immutable bundle snapshot...
-updated jobs.my_job              [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
+updated jobs.my_job              [DATABRICKS_URL]/jobs/[MY_JOB_ID]
 created jobs.my_job.permissions
 
 Deploy: 1 created, 1 changed, 0 deleted, 0 unchanged.

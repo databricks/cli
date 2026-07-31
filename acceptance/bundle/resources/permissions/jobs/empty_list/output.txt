@@ -4,7 +4,7 @@ null
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.foo  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+created jobs.foo  [DATABRICKS_URL]/jobs/[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

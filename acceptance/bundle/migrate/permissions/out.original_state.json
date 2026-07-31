@@ -60,7 +60,7 @@
             "pipeline_task": [],
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "python_wheel_task": [],
@@ -207,7 +207,7 @@
             "pipeline_id": null,
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "registered_model_id": null,
@@ -275,7 +275,7 @@
             "pipeline_id": "[TEST_PIPELINE_ID]",
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "registered_model_id": null,
@@ -357,7 +357,7 @@
             "photon": false,
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "restart_window": [],

@@ -1,6 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.foo         [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
-created pipelines.my     [DATABRICKS_URL]/pipelines/[MY_ID]?w=[WORKSPACE_ID]
-created volumes.volume1  [DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[WORKSPACE_ID]
+created jobs.foo         [DATABRICKS_URL]/jobs/[FOO_ID]
+created pipelines.my     [DATABRICKS_URL]/pipelines/[MY_ID]
+created volumes.volume1  [DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.

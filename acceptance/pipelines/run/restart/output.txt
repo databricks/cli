@@ -1,10 +1,10 @@
 
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
-created pipelines.my_pipeline  [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]?w=[WORKSPACE_ID]
+created pipelines.my_pipeline  [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
-View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]?w=[WORKSPACE_ID]
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]
 
 === Running pipeline with --restart flag
 >>> [CLI] pipelines run --restart

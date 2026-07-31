@@ -6,9 +6,9 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-created jobs.test_job            [DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[WORKSPACE_ID]
-created pipelines.test_pipeline  [DATABRICKS_URL]/pipelines/[TEST_PIPELINE_ID]?w=[WORKSPACE_ID]
-created volumes.test_volume      [DATABRICKS_URL]/explore/data/volumes/mycat/myschema/myvol?w=[WORKSPACE_ID]
+created jobs.test_job            [DATABRICKS_URL]/jobs/[TEST_JOB_ID]
+created pipelines.test_pipeline  [DATABRICKS_URL]/pipelines/[TEST_PIPELINE_ID]
+created volumes.test_volume      [DATABRICKS_URL]/explore/data/volumes/mycat/myschema/myvol
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -108,18 +108,18 @@ Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-updated jobs.test_job            [DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[WORKSPACE_ID]
-updated pipelines.test_pipeline  [DATABRICKS_URL]/pipelines/[TEST_PIPELINE_ID]?w=[WORKSPACE_ID]
+updated jobs.test_job            [DATABRICKS_URL]/jobs/[TEST_JOB_ID]
+updated pipelines.test_pipeline  [DATABRICKS_URL]/pipelines/[TEST_PIPELINE_ID]
 
 Deploy: 0 created, 2 changed, 0 deleted, 1 unchanged.
 
 === Different target, still on terraform
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...
-created jobs.test_job            [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
-created pipelines.test_pipeline  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
-created schemas.test_schema      [DATABRICKS_URL]/explore/data/mycat/myschema?w=[WORKSPACE_ID]
-created volumes.test_volume      [DATABRICKS_URL]/explore/data/volumes/mycat/myschema/myvol?w=[WORKSPACE_ID]
+created jobs.test_job            [DATABRICKS_URL]/jobs/[NUMID]
+created pipelines.test_pipeline  [DATABRICKS_URL]/pipelines/[UUID]
+created schemas.test_schema      [DATABRICKS_URL]/explore/data/mycat/myschema
+created volumes.test_volume      [DATABRICKS_URL]/explore/data/volumes/mycat/myschema/myvol
 
 Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
 

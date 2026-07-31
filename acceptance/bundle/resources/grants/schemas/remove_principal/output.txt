@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...
-created schemas.grants_schema         [DATABRICKS_URL]/explore/data/main/schema_remove_principal_[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created schemas.grants_schema         [DATABRICKS_URL]/explore/data/main/schema_remove_principal_[UNIQUE_NAME]
 created schemas.grants_schema.grants
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

@@ -10,8 +10,8 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created pipelines.my_pipeline  [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]?w=[WORKSPACE_ID]
-created schemas.my_schema      [DATABRICKS_URL]/explore/data/main/test-schema?w=[WORKSPACE_ID]
+created pipelines.my_pipeline  [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]
+created schemas.my_schema      [DATABRICKS_URL]/explore/data/main/test-schema
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

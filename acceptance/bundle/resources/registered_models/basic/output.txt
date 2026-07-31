@@ -26,7 +26,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-created registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/main/default/my-registered-model-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/main/default/my-registered-model-[UNIQUE_NAME]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -46,7 +46,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-updated registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/main/default/my-registered-model-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+updated registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/main/default/my-registered-model-[UNIQUE_NAME]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
@@ -66,7 +66,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-recreated registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/main/default/my-registered-model-updated-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+recreated registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/main/default/my-registered-model-updated-[UNIQUE_NAME]
 
 Deploy: 1 created, 0 changed, 1 deleted, 0 unchanged.
 
@@ -86,7 +86,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-recreated registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/mycatalog-[UNIQUE_NAME]/default/my-registered-model-updated-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+recreated registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/mycatalog-[UNIQUE_NAME]/default/my-registered-model-updated-[UNIQUE_NAME]
 
 Deploy: 1 created, 0 changed, 1 deleted, 0 unchanged.
 
@@ -106,7 +106,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-recreated registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/mycatalog-[UNIQUE_NAME]/myschema-[UNIQUE_NAME]/my-registered-model-updated-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+recreated registered_models.my_registered_model  [DATABRICKS_URL]/explore/data/models/mycatalog-[UNIQUE_NAME]/myschema-[UNIQUE_NAME]/my-registered-model-updated-[UNIQUE_NAME]
 
 Deploy: 1 created, 0 changed, 1 deleted, 0 unchanged.
 

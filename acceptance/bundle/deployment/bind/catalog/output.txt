@@ -12,7 +12,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 === Deploy bundle
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-updated catalogs.foo  [DATABRICKS_URL]/explore/data/test-catalog-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+updated catalogs.foo  [DATABRICKS_URL]/explore/data/test-catalog-[UNIQUE_NAME]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

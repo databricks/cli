@@ -1,11 +1,11 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-created clusters.test_cluster          [DATABRICKS_URL]/compute/clusters/[TEST_CLUSTER_ID]?w=[WORKSPACE_ID]
-created experiments.test_experiment    [DATABRICKS_URL]/ml/experiments/[TEST_EXPERIMENT_ID]?w=[WORKSPACE_ID]
-created jobs.job_one                   [DATABRICKS_URL]/jobs/[JOB_ONE_ID]?w=[WORKSPACE_ID]
-created jobs.job_two                   [DATABRICKS_URL]/jobs/[JOB_TWO_ID]?w=[WORKSPACE_ID]
-created registered_models.test_model   [DATABRICKS_URL]/explore/data/models/main/default/dev_[USERNAME]_model_[UNIQUE_NAME]?w=[WORKSPACE_ID]
-created sql_warehouses.test_warehouse  [DATABRICKS_URL]/sql/warehouses/[TEST_WAREHOUSE_ID]?w=[WORKSPACE_ID]
-created volumes.test_volume            [DATABRICKS_URL]/explore/data/volumes/main/default/volume_[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created clusters.test_cluster          [DATABRICKS_URL]/compute/clusters/[TEST_CLUSTER_ID]
+created experiments.test_experiment    [DATABRICKS_URL]/ml/experiments/[TEST_EXPERIMENT_ID]
+created jobs.job_one                   [DATABRICKS_URL]/jobs/[JOB_ONE_ID]
+created jobs.job_two                   [DATABRICKS_URL]/jobs/[JOB_TWO_ID]
+created registered_models.test_model   [DATABRICKS_URL]/explore/data/models/main/default/dev_[USERNAME]_model_[UNIQUE_NAME]
+created sql_warehouses.test_warehouse  [DATABRICKS_URL]/sql/warehouses/[TEST_WAREHOUSE_ID]
+created volumes.test_volume            [DATABRICKS_URL]/explore/data/volumes/main/default/volume_[UNIQUE_NAME]
 
 Deploy: 7 created, 0 changed, 0 deleted, 0 unchanged.
 

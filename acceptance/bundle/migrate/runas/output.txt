@@ -31,7 +31,7 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
   in databricks.yml:5:3
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files...
-created pipelines.foo              [DATABRICKS_URL][PIPELINE_FOO_ID]?w=[WORKSPACE_ID]
+created pipelines.foo              [DATABRICKS_URL][PIPELINE_FOO_ID]
 created pipelines.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

@@ -1,11 +1,11 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.job_one            [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
-created jobs.job_three          [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
-created jobs.job_two            [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
-created pipelines.pipeline_one  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
-created pipelines.pipeline_two  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created jobs.job_one            [DATABRICKS_URL]/jobs/[NUMID]
+created jobs.job_three          [DATABRICKS_URL]/jobs/[NUMID]
+created jobs.job_two            [DATABRICKS_URL]/jobs/[NUMID]
+created pipelines.pipeline_one  [DATABRICKS_URL]/pipelines/[UUID]
+created pipelines.pipeline_two  [DATABRICKS_URL]/pipelines/[UUID]
 
 Deploy: 5 created, 0 changed, 0 deleted, 0 unchanged.
 

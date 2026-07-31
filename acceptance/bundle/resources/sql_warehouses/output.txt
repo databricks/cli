@@ -36,7 +36,7 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
-created sql_warehouses.test_sql_warehouse  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[WORKSPACE_ID]
+created sql_warehouses.test_sql_warehouse  [DATABRICKS_URL]/sql/warehouses/[UUID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -67,14 +67,14 @@ Resources:
   SQL Warehouses:
     test_sql_warehouse:
       Name: sql_warehouse_name
-      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[WORKSPACE_ID]
+      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]
 
 === Update the warehouse name
 >>> update_file.py databricks.yml sql_warehouse_name sql_warehouse_name_2
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
-updated sql_warehouses.test_sql_warehouse  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[WORKSPACE_ID]
+updated sql_warehouses.test_sql_warehouse  [DATABRICKS_URL]/sql/warehouses/[UUID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
@@ -105,7 +105,7 @@ Resources:
   SQL Warehouses:
     test_sql_warehouse:
       Name: sql_warehouse_name_2
-      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[WORKSPACE_ID]
+      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]
 
 === Destroy the warehouse
 >>> [CLI] bundle destroy --auto-approve

@@ -9,8 +9,8 @@
 Warn: Skipping corrupted WAL entry at [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal:4: unexpected end of JSON input
 Warn: Saved 1 corrupted WAL entries to [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal.corrupted
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-test/default/files...
-created jobs.another_valid  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
-created jobs.valid_job      [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+created jobs.another_valid  [DATABRICKS_URL]/jobs/[NUMID]
+created jobs.valid_job      [DATABRICKS_URL]/jobs/[NUMID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -24,10 +24,10 @@ Resources:
   Jobs:
     another_valid:
       Name: another-valid
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]
     valid_job:
       Name: valid-job
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]
 
 >>> cat .databricks/bundle/default/resources.json.wal.corrupted
 {"k":"resources.jobs.partial_write","v":{"__id__":"33","state":{"name":"partial-

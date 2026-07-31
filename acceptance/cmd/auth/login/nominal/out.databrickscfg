@@ -3,7 +3,7 @@
 
 [test]
 host         = [DATABRICKS_URL]
-workspace_id = [WORKSPACE_ID]
+workspace_id = [NUMID]
 auth_type    = databricks-cli
 
 [__settings__]

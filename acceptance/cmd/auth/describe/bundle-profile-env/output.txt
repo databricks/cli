@@ -8,7 +8,7 @@ Authenticated with: pat
 -----
 Current configuration:
   ✓ host: [DATABRICKS_URL] (from bundle)
-  ✓ workspace_id: [WORKSPACE_ID]
+  ✓ workspace_id: [NUMID]
   ✓ token: ******** (from .databrickscfg config file)
   ✓ profile: env-profile (from DATABRICKS_CONFIG_PROFILE environment variable)
   ✓ config_file: .databrickscfg (from DATABRICKS_CONFIG_FILE environment variable)

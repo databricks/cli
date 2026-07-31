@@ -2,7 +2,7 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created schemas.schema1  [DATABRICKS_URL]/explore/data/main/schema_managed_defaults?w=[WORKSPACE_ID]
+created schemas.schema1  [DATABRICKS_URL]/explore/data/main/schema_managed_defaults
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

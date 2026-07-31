@@ -33,7 +33,7 @@
             "pipeline": null,
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "recipient": null,
@@ -81,7 +81,7 @@
             "pipeline": null,
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "recipient": null,
@@ -128,7 +128,7 @@
             "pipeline": null,
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "recipient": null,
@@ -169,7 +169,7 @@
             "owner": "[USERNAME]",
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "schema_name": "schema_grants",
@@ -205,7 +205,7 @@
             "properties": null,
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "schema_id": "[UUID]",
@@ -232,7 +232,7 @@
             "owner": "[USERNAME]",
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "schema_name": "schema_grants",

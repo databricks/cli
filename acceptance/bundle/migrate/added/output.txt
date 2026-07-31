@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-added-test/default/files...
-created jobs.job_a  [DATABRICKS_URL]/jobs/[JOB_A_ID]?w=[WORKSPACE_ID]
+created jobs.job_a  [DATABRICKS_URL]/jobs/[JOB_A_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -22,7 +22,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-added-test/default/files...
-created jobs.job_b  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+created jobs.job_b  [DATABRICKS_URL]/jobs/[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 1 unchanged.
 

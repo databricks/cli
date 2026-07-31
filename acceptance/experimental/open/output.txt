@@ -1,11 +1,11 @@
 
 === print URL for a job
 >>> [CLI] experimental open --url jobs 123
-[DATABRICKS_URL]/jobs/123?w=[WORKSPACE_ID]
+[DATABRICKS_URL]/jobs/123
 
 === print URL for a notebook
 >>> [CLI] experimental open --url notebooks 12345
-[DATABRICKS_URL]/?w=[WORKSPACE_ID]#notebook/12345
+[DATABRICKS_URL]/#notebook/12345
 
 === unknown resource type
 >>> [CLI] experimental open --url unknown 123

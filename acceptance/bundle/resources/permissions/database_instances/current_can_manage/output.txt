@@ -45,7 +45,7 @@ Warning: unknown field: instance_profile_arn
   in databricks.yml:9:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created database_instances.foo              [DATABRICKS_URL]/compute/database-instances/test-db-instance?w=[WORKSPACE_ID]
+created database_instances.foo              [DATABRICKS_URL]/compute/database-instances/test-db-instance
 created database_instances.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

@@ -7,8 +7,8 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.bar       [DATABRICKS_URL]/jobs/[BAR_ID]?w=[WORKSPACE_ID]
-created pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID]?w=[WORKSPACE_ID]
+created jobs.bar       [DATABRICKS_URL]/jobs/[BAR_ID]
+created pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -34,8 +34,8 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   recreate resources.pipelines.foo
-updated jobs.bar         [DATABRICKS_URL]/jobs/[BAR_ID]?w=[WORKSPACE_ID]
-recreated pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID_2]?w=[WORKSPACE_ID]
+updated jobs.bar         [DATABRICKS_URL]/jobs/[BAR_ID]
+recreated pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID_2]
 
 Deploy: 1 created, 1 changed, 1 deleted, 0 unchanged.
 

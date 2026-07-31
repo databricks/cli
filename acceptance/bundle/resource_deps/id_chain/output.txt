@@ -14,11 +14,11 @@ Plan: 5 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.a  [DATABRICKS_URL]/jobs/[A_ID]?w=[WORKSPACE_ID]
-created jobs.b  [DATABRICKS_URL]/jobs/[B_ID]?w=[WORKSPACE_ID]
-created jobs.c  [DATABRICKS_URL]/jobs/[C_ID]?w=[WORKSPACE_ID]
-created jobs.d  [DATABRICKS_URL]/jobs/[D_ID]?w=[WORKSPACE_ID]
-created jobs.e  [DATABRICKS_URL]/jobs/[E_ID]?w=[WORKSPACE_ID]
+created jobs.a  [DATABRICKS_URL]/jobs/[A_ID]
+created jobs.b  [DATABRICKS_URL]/jobs/[B_ID]
+created jobs.c  [DATABRICKS_URL]/jobs/[C_ID]
+created jobs.d  [DATABRICKS_URL]/jobs/[D_ID]
+created jobs.e  [DATABRICKS_URL]/jobs/[E_ID]
 
 Deploy: 5 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -48,11 +48,11 @@ Plan: 0 to add, 5 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated jobs.a  [DATABRICKS_URL]/jobs/[A_ID]?w=[WORKSPACE_ID]
-updated jobs.b  [DATABRICKS_URL]/jobs/[B_ID]?w=[WORKSPACE_ID]
-updated jobs.c  [DATABRICKS_URL]/jobs/[C_ID]?w=[WORKSPACE_ID]
-updated jobs.d  [DATABRICKS_URL]/jobs/[D_ID]?w=[WORKSPACE_ID]
-updated jobs.e  [DATABRICKS_URL]/jobs/[E_ID]?w=[WORKSPACE_ID]
+updated jobs.a  [DATABRICKS_URL]/jobs/[A_ID]
+updated jobs.b  [DATABRICKS_URL]/jobs/[B_ID]
+updated jobs.c  [DATABRICKS_URL]/jobs/[C_ID]
+updated jobs.d  [DATABRICKS_URL]/jobs/[D_ID]
+updated jobs.e  [DATABRICKS_URL]/jobs/[E_ID]
 
 Deploy: 0 created, 5 changed, 0 deleted, 0 unchanged.
 

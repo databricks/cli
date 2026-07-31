@@ -5,7 +5,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-stale-test/default/files...
-updated jobs.test_job  [DATABRICKS_URL]/jobs/1001?w=[WORKSPACE_ID]
+updated jobs.test_job  [DATABRICKS_URL]/jobs/1001
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 === Checking WAL file after deploy ===

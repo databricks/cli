@@ -1,8 +1,8 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID]?w=[WORKSPACE_ID]
-created schemas.bar    [DATABRICKS_URL]/explore/data/main/test-schema-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID]
+created schemas.bar    [DATABRICKS_URL]/explore/data/main/test-schema-[UNIQUE_NAME]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

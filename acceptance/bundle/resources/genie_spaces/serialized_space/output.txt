@@ -1,8 +1,8 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/genie-serialized-space-[UNIQUE_NAME]/default/files...
-created genie_spaces.from_file    [DATABRICKS_URL]/genie/rooms/[GENIE_SPACE_ID_FILE]?w=[WORKSPACE_ID]
-created genie_spaces.from_inline  [DATABRICKS_URL]/genie/rooms/[GENIE_SPACE_ID_INLINE]?w=[WORKSPACE_ID]
+created genie_spaces.from_file    [DATABRICKS_URL]/genie/rooms/[GENIE_SPACE_ID_FILE]
+created genie_spaces.from_inline  [DATABRICKS_URL]/genie/rooms/[GENIE_SPACE_ID_INLINE]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 

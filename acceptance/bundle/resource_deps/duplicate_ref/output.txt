@@ -41,9 +41,9 @@ Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created pipelines.bar  [DATABRICKS_URL]/pipelines/[BAR_ID]?w=[WORKSPACE_ID]
-created pipelines.baz  [DATABRICKS_URL]/pipelines/[BAZ_ID]?w=[WORKSPACE_ID]
-created pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID]?w=[WORKSPACE_ID]
+created pipelines.bar  [DATABRICKS_URL]/pipelines/[BAR_ID]
+created pipelines.baz  [DATABRICKS_URL]/pipelines/[BAZ_ID]
+created pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID]
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 

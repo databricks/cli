@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created schemas.schema_1         [DATABRICKS_URL]/explore/data/main/test-schema-[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created schemas.schema_1         [DATABRICKS_URL]/explore/data/main/test-schema-[UNIQUE_NAME]
 created schemas.schema_1.grants
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
@@ -19,7 +19,7 @@ Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy --var suffix=another
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created schemas.schema_1         [DATABRICKS_URL]/explore/data/main/test-schema-[UNIQUE_NAME]another?w=[WORKSPACE_ID]
+created schemas.schema_1         [DATABRICKS_URL]/explore/data/main/test-schema-[UNIQUE_NAME]another
 created schemas.schema_1.grants
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

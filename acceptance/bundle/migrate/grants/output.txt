@@ -1,11 +1,11 @@
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created registered_models.my_registered_model         [DATABRICKS_URL]/explore/data/models/main/schema_grants/mymodel?w=[WORKSPACE_ID]
+created registered_models.my_registered_model         [DATABRICKS_URL]/explore/data/models/main/schema_grants/mymodel
 created registered_models.my_registered_model.grants
-created schemas.my_schema                             [DATABRICKS_URL]/explore/data/main/schema_grants?w=[WORKSPACE_ID]
+created schemas.my_schema                             [DATABRICKS_URL]/explore/data/main/schema_grants
 created schemas.my_schema.grants
-created volumes.my_volume                             [DATABRICKS_URL]/explore/data/volumes/main/schema_grants/volume_name?w=[WORKSPACE_ID]
+created volumes.my_volume                             [DATABRICKS_URL]/explore/data/volumes/main/schema_grants/volume_name
 created volumes.my_volume.grants
 
 Deploy: 6 created, 0 changed, 0 deleted, 0 unchanged.

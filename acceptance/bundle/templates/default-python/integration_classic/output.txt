@@ -32,8 +32,8 @@ Building python_artifact...
 Building python_artifact...
 Uploading .databricks/bundle/dev/patched_wheels/python_artifact_project_name_[UNIQUE_NAME]/project_name_[UNIQUE_NAME]-0.0.1+[NUMID]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
-created jobs.sample_job                                        [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
-created pipelines.project_name_[UNIQUE_NAME]_etl  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created jobs.sample_job                                        [DATABRICKS_URL]/jobs/[NUMID]
+created pipelines.project_name_[UNIQUE_NAME]_etl  [DATABRICKS_URL]/pipelines/[UUID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -48,11 +48,11 @@ Resources:
   Jobs:
     sample_job:
       Name: [dev [USERNAME]] sample_job
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]
   Pipelines:
     project_name_[UNIQUE_NAME]_etl:
       Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_etl
-      URL:  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]
 
 >>> [CLI] bundle summary -t dev -o json
 
@@ -70,7 +70,7 @@ Resources:
            }
 -        }
 +        },
-+        "url": "[DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]"
++        "url": "[DATABRICKS_URL]/jobs/[NUMID]"
        }
      },
 @@ -155,4 +157,5 @@
@@ -84,7 +84,7 @@ Resources:
            "dev": "[USERNAME]"
 -        }
 +        },
-+        "url": "[DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]"
++        "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
      }
 
@@ -290,9 +290,9 @@ Building python_artifact...
 Building python_artifact...
 Uploading dist/project_name_[UNIQUE_NAME]-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files...
-created jobs.sample_job                                                    [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+created jobs.sample_job                                                    [DATABRICKS_URL]/jobs/[NUMID]
 created jobs.sample_job.permissions
-created pipelines.project_name_[UNIQUE_NAME]_etl              [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created pipelines.project_name_[UNIQUE_NAME]_etl              [DATABRICKS_URL]/pipelines/[UUID]
 created pipelines.project_name_[UNIQUE_NAME]_etl.permissions
 
 Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
@@ -308,11 +308,11 @@ Resources:
   Jobs:
     sample_job:
       Name: sample_job
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]
   Pipelines:
     project_name_[UNIQUE_NAME]_etl:
       Name: project_name_[UNIQUE_NAME]_etl
-      URL:  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]
 
 >>> [CLI] bundle summary -t prod -o json
 
@@ -461,7 +461,7 @@ Resources:
 +        ],
 +        "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/project_name_[UNIQUE_NAME]_etl",
 +        "schema": "prod",
-         "url": "[DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]"
+         "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
 @@ -187,16 +182,16 @@
      },

@@ -1,7 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-created jobs.my_job           [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
-created jobs.no_tasks_job     [DATABRICKS_URL]/jobs/[NO_TASKS_JOB_ID]?w=[WORKSPACE_ID]
-created jobs.rename_task_job  [DATABRICKS_URL]/jobs/[RENAME_TASK_JOB_ID]?w=[WORKSPACE_ID]
+created jobs.my_job           [DATABRICKS_URL]/jobs/[MY_JOB_ID]
+created jobs.no_tasks_job     [DATABRICKS_URL]/jobs/[NO_TASKS_JOB_ID]
+created jobs.rename_task_job  [DATABRICKS_URL]/jobs/[RENAME_TASK_JOB_ID]
 
 Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 

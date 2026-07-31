@@ -4,7 +4,7 @@
 [discovery-test]
 host         = [DATABRICKS_URL]
 account_id   = test-account-123
-workspace_id = [WORKSPACE_ID]
+workspace_id = [NUMID]
 auth_type    = databricks-cli
 
 [__settings__]

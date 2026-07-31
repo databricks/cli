@@ -3,12 +3,12 @@
 Building my_java_code...
 Uploading myjar/PrintArgs.jar...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/spark-jar-task-[UNIQUE_NAME]/default/files...
-created jobs.jar_job  [DATABRICKS_URL]/jobs/[JAR_JOB_ID]?w=[WORKSPACE_ID]
+created jobs.jar_job  [DATABRICKS_URL]/jobs/[JAR_JOB_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle run jar_job
-Run URL: [DATABRICKS_URL]/jobs/[JAR_JOB_ID]/runs/[NUMID]?o=[WORKSPACE_ID]
+Run URL: [DATABRICKS_URL]/jobs/[JAR_JOB_ID]/runs/[NUMID]
 
 [TIMESTAMP] "[default] Test Spark Jar Job [UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "[default] Test Spark Jar Job [UNIQUE_NAME]" TERMINATED SUCCESS

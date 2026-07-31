@@ -33,7 +33,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created schemas.foo  [DATABRICKS_URL]/explore/data/mycatalog/myschema?w=[WORKSPACE_ID]
+created schemas.foo  [DATABRICKS_URL]/explore/data/mycatalog/myschema
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

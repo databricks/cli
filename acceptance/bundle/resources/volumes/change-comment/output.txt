@@ -17,7 +17,7 @@ Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created volumes.volume1  [DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[WORKSPACE_ID]
+created volumes.volume1  [DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -36,7 +36,7 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Summary should now show id and url
 "main.myschema.myvolume"
-"[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[WORKSPACE_ID]"
+"[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume"
 
 === Verify deployment
 >>> [CLI] volumes read main.myschema.myvolume
@@ -65,14 +65,14 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
   "id": "main.myschema.myvolume",
   "name": "myvolume",
   "schema_name": "myschema",
-  "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[WORKSPACE_ID]",
+  "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume",
   "volume_path": "/Volumes/main/myschema/myvolume",
   "volume_type": "MANAGED"
 }
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated volumes.volume1  [DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[WORKSPACE_ID]
+updated volumes.volume1  [DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

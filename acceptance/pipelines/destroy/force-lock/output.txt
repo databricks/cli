@@ -1,10 +1,10 @@
 
 >>> errcode [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/files...
-created pipelines.foo  [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created pipelines.foo  [DATABRICKS_URL]/pipelines/[UUID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
-View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]
 
 === upload lock file
 >>> [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/state/deploy.lock --format AUTO --file ./deploy.lock

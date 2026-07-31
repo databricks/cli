@@ -13,7 +13,7 @@ Resources:
   Database instances:
     database_instance1:
       Name: test-instance-02
-      URL:  [DATABRICKS_URL]/compute/database-instances/test-instance-02?w=[WORKSPACE_ID]
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-instance-02
 
 >>> [CLI] bundle deployment unbind database_instance1
 

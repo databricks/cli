@@ -18,7 +18,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_user_name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name/files...
-created pipelines.nyc_taxi_pipeline              [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created pipelines.nyc_taxi_pipeline              [DATABRICKS_URL]/pipelines/[UUID]
 created pipelines.nyc_taxi_pipeline.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
@@ -41,7 +41,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_user_name_different
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name_different/files...
-created pipelines.nyc_taxi_pipeline              [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created pipelines.nyc_taxi_pipeline              [DATABRICKS_URL]/pipelines/[UUID]
 created pipelines.nyc_taxi_pipeline.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
@@ -64,7 +64,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_service_principal_name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name/files...
-created pipelines.nyc_taxi_pipeline              [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created pipelines.nyc_taxi_pipeline              [DATABRICKS_URL]/pipelines/[UUID]
 created pipelines.nyc_taxi_pipeline.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
@@ -87,7 +87,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_service_principal_name_different
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name_different/files...
-created pipelines.nyc_taxi_pipeline              [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created pipelines.nyc_taxi_pipeline              [DATABRICKS_URL]/pipelines/[UUID]
 created pipelines.nyc_taxi_pipeline.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

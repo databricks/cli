@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-created pipelines.my  [DATABRICKS_URL]/pipelines/[MY_ID]?w=[WORKSPACE_ID]
+created pipelines.my  [DATABRICKS_URL]/pipelines/[MY_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -32,7 +32,7 @@ pipelines my id='[MY_ID]' name='test-pipeline-[UNIQUE_NAME]'
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-updated pipelines.my  [DATABRICKS_URL]/pipelines/[MY_ID]?w=[WORKSPACE_ID]
+updated pipelines.my  [DATABRICKS_URL]/pipelines/[MY_ID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/engine-from-config/default/files...
-created jobs.job_1  [DATABRICKS_URL]/jobs/[JOB_1_ID]?w=[WORKSPACE_ID]
+created jobs.job_1  [DATABRICKS_URL]/jobs/[JOB_1_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 === State files after deploy ===

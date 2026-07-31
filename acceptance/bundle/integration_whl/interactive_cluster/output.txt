@@ -34,13 +34,13 @@ resources:
 Building python_artifact...
 Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created clusters.test_cluster  [DATABRICKS_URL]/compute/clusters/[TEST_CLUSTER_ID]?w=[WORKSPACE_ID]
-created jobs.some_other_job    [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]?w=[WORKSPACE_ID]
+created clusters.test_cluster  [DATABRICKS_URL]/compute/clusters/[TEST_CLUSTER_ID]
+created jobs.some_other_job    [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle run some_other_job
-Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[WORKSPACE_ID]
+Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]
 
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS
@@ -56,7 +56,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 Deploy: 0 created, 0 changed, 0 deleted, 2 unchanged.
 
 >>> [CLI] bundle run some_other_job
-Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[WORKSPACE_ID]
+Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]
 
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS

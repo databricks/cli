@@ -1,13 +1,13 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.job  [DATABRICKS_URL]/jobs/[JOB_ID]?w=[WORKSPACE_ID]
+created jobs.job  [DATABRICKS_URL]/jobs/[JOB_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-deleted jobs.job  [DATABRICKS_URL]/jobs/[JOB_ID]?w=[WORKSPACE_ID]
+deleted jobs.job  [DATABRICKS_URL]/jobs/[JOB_ID]
 
 Deploy: 0 created, 0 changed, 1 deleted, 0 unchanged.
 {

@@ -13,7 +13,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created pipelines.foo              [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+created pipelines.foo              [DATABRICKS_URL]/pipelines/[UUID]
 created pipelines.foo.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

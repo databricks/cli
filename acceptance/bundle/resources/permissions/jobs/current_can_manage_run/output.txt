@@ -26,7 +26,7 @@
 
 >>> errcode [CLI] bundle deploy -t green
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/files...
-created jobs.interim_gold_layer_job              [DATABRICKS_URL]/jobs/[INTERIM_GOLD_LAYER_JOB_ID]?w=[WORKSPACE_ID]
+created jobs.interim_gold_layer_job              [DATABRICKS_URL]/jobs/[INTERIM_GOLD_LAYER_JOB_ID]
 created jobs.interim_gold_layer_job.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

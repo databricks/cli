@@ -16,7 +16,7 @@
       "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/selftest_send-telemetry cmd-exec-id/[CMD-EXEC-ID] interactive/none auth/pat"
     ],
     "X-Databricks-Workspace-Id": [
-      "[WORKSPACE_ID]"
+      "[NUMID]"
     ]
   },
   "method": "POST",

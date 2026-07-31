@@ -5,7 +5,7 @@
 === deploy initial dashboard
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard update inplace/default/files...
-created dashboards.test_dashboard  [DATABRICKS_URL]/dashboardsv3/[DASHBOARD_ID]/published?w=[WORKSPACE_ID]
+created dashboards.test_dashboard  [DATABRICKS_URL]/dashboardsv3/[DASHBOARD_ID]/published
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

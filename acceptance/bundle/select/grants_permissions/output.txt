@@ -21,14 +21,14 @@ Error: no such resource: schemas.my_schema.grants
 
 === bundle deploy --select jobs.my_job
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default/files...
-created jobs.my_job              [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+created jobs.my_job              [DATABRICKS_URL]/jobs/[NUMID]
 created jobs.my_job.permissions
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected.
 
 === bundle deploy --select schemas.my_schema
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default/files...
-created schemas.my_schema         [DATABRICKS_URL]/explore/data/main/my_schema_[UNIQUE_NAME]?w=[WORKSPACE_ID]
+created schemas.my_schema         [DATABRICKS_URL]/explore/data/main/my_schema_[UNIQUE_NAME]
 created schemas.my_schema.grants
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected.

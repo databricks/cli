@@ -82,13 +82,13 @@ Warning: unknown field: description
   in resources/ml-artifacts-resource.yml:28:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
-created experiments.experiment                [DATABRICKS_URL]/ml/experiments/[NUMID]?w=[WORKSPACE_ID]
+created experiments.experiment                [DATABRICKS_URL]/ml/experiments/[NUMID]
 created experiments.experiment.permissions
-created jobs.batch_inference_job              [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+created jobs.batch_inference_job              [DATABRICKS_URL]/jobs/[NUMID]
 created jobs.batch_inference_job.permissions
-created jobs.model_training_job               [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+created jobs.model_training_job               [DATABRICKS_URL]/jobs/[NUMID]
 created jobs.model_training_job.permissions
-created registered_models.model               [DATABRICKS_URL]/explore/data/models/main/project_name_[UNIQUE_NAME]/dev_[USERNAME]_project_name_[UNIQUE_NAME]-model?w=[WORKSPACE_ID]
+created registered_models.model               [DATABRICKS_URL]/explore/data/models/main/project_name_[UNIQUE_NAME]/dev_[USERNAME]_project_name_[UNIQUE_NAME]-model
 created registered_models.model.grants
 
 Deploy: 8 created, 0 changed, 0 deleted, 0 unchanged.

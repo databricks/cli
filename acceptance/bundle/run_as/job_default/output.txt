@@ -2,7 +2,7 @@
 === Deploy with run_as
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
-created jobs.job_with_run_as  [DATABRICKS_URL]/jobs/[JOB_WITH_RUN_AS_ID]?w=[WORKSPACE_ID]
+created jobs.job_with_run_as  [DATABRICKS_URL]/jobs/[JOB_WITH_RUN_AS_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -54,7 +54,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
-updated jobs.job_with_run_as  [DATABRICKS_URL]/jobs/[JOB_WITH_RUN_AS_ID]?w=[WORKSPACE_ID]
+updated jobs.job_with_run_as  [DATABRICKS_URL]/jobs/[JOB_WITH_RUN_AS_ID]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

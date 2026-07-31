@@ -838,11 +838,14 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user, workspaceID := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
-	// Normalize the workspace ID that appears in resource URLs as ?w=<id>.
-	repls.Set(workspaceID, "[WORKSPACE_ID]")
+	// Strip the ?w=<id>/?o=<id> suffix from resource URLs. Whether it is present
+	// depends on the workspace host: classic hosts (and the fake server) append it,
+	// but unified hosts that carry the workspace ID in the subdomain omit it. Drop
+	// it so a single golden matches every cloud.
+	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile(`\?[ow]=\d+`), New: ""})
 
 	cmd.Env = auth.ProcessEnv(cfg)
 

@@ -109,7 +109,7 @@
             "pipeline_task": [],
             "provider_config": [
               {
-                "workspace_id": "[WORKSPACE_ID]"
+                "workspace_id": "[NUMID]"
               }
             ],
             "python_wheel_task": [],

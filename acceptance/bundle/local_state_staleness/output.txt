@@ -2,7 +2,7 @@
 === Step 1: Deploy bundle A
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
-created jobs.test_job  [DATABRICKS_URL]/jobs/[NUMID]?w=[WORKSPACE_ID]
+created jobs.test_job  [DATABRICKS_URL]/jobs/[NUMID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

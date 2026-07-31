@@ -2,7 +2,7 @@
 === Initial deploy uses terraform engine
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.test_job  [DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[WORKSPACE_ID]
+created jobs.test_job  [DATABRICKS_URL]/jobs/[TEST_JOB_ID]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
