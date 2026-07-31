@@ -2,13 +2,14 @@ package aicode
 
 import (
 	"context"
-	"os"
+	"fmt"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // Validate checks AI Runtime tasks that reference a local code_source_path so
@@ -38,14 +39,14 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			}
 			codePath := jobPath.Append(dyn.Key("tasks"), dyn.Index(i),
 				dyn.Key("ai_runtime_task"), dyn.Key("code_source_path"))
-			diags = diags.Extend(v.validateTask(b, job.GitSource != nil, task.AiRuntimeTask.CodeSourcePath, codePath))
+			diags = diags.Extend(v.validateTask(b, job.GitSource, task.AiRuntimeTask.CodeSourcePath, codePath))
 		}
 	}
 
 	return diags
 }
 
-func (v *validate) validateTask(b *bundle.Bundle, jobHasGitSource bool, codeSourcePath string, codePath dyn.Path) diag.Diagnostics {
+func (v *validate) validateTask(b *bundle.Bundle, gitSource *jobs.GitSource, codeSourcePath string, codePath dyn.Path) diag.Diagnostics {
 	// Only local code_source_path values are packaged at deploy; remote values
 	// are used as-is and need no validation here.
 	if codeSourcePath == "" || !libraries.IsLocalPath(codeSourcePath) {
@@ -57,10 +58,19 @@ func (v *validate) validateTask(b *bundle.Bundle, jobHasGitSource bool, codeSour
 	// a pre-built tarball delivered via an `artifacts` block is produced during the
 	// build phase (so it does not exist yet at validate time) and is uploaded as a
 	// file, not packaged here. Only when the path is an existing directory do the
-	// packaging-specific constraints below apply.
+	// packaging-specific constraints below apply. A stat failure other than not-exist
+	// (e.g. unreadable parent) is surfaced rather than silently skipped.
 	localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(codeSourcePath))
-	info, statErr := os.Stat(localDir)
-	if statErr != nil || !info.IsDir() {
+	isDir, err := isExistingDir(localDir)
+	if err != nil {
+		return diag.Diagnostics{{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("failed to inspect code_source_path %q: %v", codeSourcePath, err),
+			Locations: b.Config.GetLocations(codePath.String()),
+			Paths:     []dyn.Path{codePath},
+		}}
+	}
+	if !isDir {
 		return nil
 	}
 
@@ -68,7 +78,7 @@ func (v *validate) validateTask(b *bundle.Bundle, jobHasGitSource bool, codeSour
 
 	// The deploy engine retrieves task files from git when git_source is set, so
 	// packaging a local directory would be silently ignored. Reject the combination.
-	if jobHasGitSource {
+	if gitSource != nil {
 		return diag.Diagnostics{{
 			Severity:  diag.Error,
 			Summary:   "ai_runtime_task with a local code_source_path cannot be combined with git_source",

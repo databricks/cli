@@ -38,21 +38,16 @@ import (
 	libsync "github.com/databricks/cli/libs/sync"
 )
 
-// codeSourcePatterns are the config locations of an AI Runtime task's
-// code_source_path, both as a direct task and nested under a for_each_task.
-var codeSourcePatterns = []dyn.Pattern{
-	dyn.NewPattern(
-		dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
-		dyn.Key("tasks"), dyn.AnyIndex(),
-		dyn.Key("ai_runtime_task"), dyn.Key("code_source_path"),
-	),
-	dyn.NewPattern(
-		dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
-		dyn.Key("tasks"), dyn.AnyIndex(),
-		dyn.Key("for_each_task"), dyn.Key("task"),
-		dyn.Key("ai_runtime_task"), dyn.Key("code_source_path"),
-	),
-}
+// codeSourcePattern is the config location of an AI Runtime task's
+// code_source_path. It matches a direct task only — the same scope aicode.Validate
+// and aicode.SynthesizeRequirements operate on. ai_runtime_task nested under a
+// for_each_task is not a supported combination yet; when it is, all three mutators
+// should gain it together.
+var codeSourcePattern = dyn.NewPattern(
+	dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
+	dyn.Key("tasks"), dyn.AnyIndex(),
+	dyn.Key("ai_runtime_task"), dyn.Key("code_source_path"),
+)
 
 // codeSource is a single local code_source_path occurrence to package.
 type codeSource struct {
@@ -66,12 +61,7 @@ func PackageAndUpload() bundle.Mutator {
 	return &packageAndUpload{}
 }
 
-type packageAndUpload struct {
-	// client is the filer used for uploads. When nil (the normal case) a filer
-	// rooted at the code snapshot cache is built per code source. It is only set
-	// in tests, to inject a recording filer.
-	client filer.Filer
-}
+type packageAndUpload struct{}
 
 func (m *packageAndUpload) Name() string {
 	return "aicode.PackageAndUpload"
@@ -86,17 +76,16 @@ func (m *packageAndUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 		return diags
 	}
 
-	userDir, err := userWorkspaceHome(b)
-	if err != nil {
-		return diags.Extend(diag.FromErr(err))
-	}
+	// The current user is resolved during the initialize phase, which runs before
+	// this build-phase mutator, so it is always set here.
+	userDir := "/Workspace/Users/" + b.Config.Workspace.CurrentUser.UserName
 
 	// remotePaths maps each config location to the remote archive path it should
 	// point to after upload. Built outside the Mutate closure so upload failures
 	// are reported before any config is rewritten.
 	remotePaths := make(map[string]string, len(sources))
 	for _, cs := range sources {
-		remote, err := m.packageOne(ctx, b, cs, userDir)
+		remote, err := packageOne(ctx, b, cs, userDir)
 		if err != nil {
 			diags = diags.Extend(diag.FromErr(err))
 			return diags
@@ -104,9 +93,10 @@ func (m *packageAndUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 		remotePaths[cs.configPath.String()] = remote
 	}
 
-	err = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		for _, cs := range sources {
 			remote := remotePaths[cs.configPath.String()]
+			var err error
 			root, err = dyn.SetByPath(root, cs.configPath, dyn.NewValue(remote, []dyn.Location{cs.location}))
 			if err != nil {
 				return root, fmt.Errorf("failed to update code_source_path %q to %q: %w", cs.value, remote, err)
@@ -131,7 +121,7 @@ const repoSnapshotsSubdir = ".air/repo_snapshots"
 // reproducible tarball, uploads it to the user's repo_snapshots dir (skipping the
 // upload when a content-identical archive already exists there), and returns the
 // remote path the config should point to.
-func (m *packageAndUpload) packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource, userDir string) (string, error) {
+func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource, userDir string) (string, error) {
 	localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(cs.value))
 	dirName := filepath.Base(localDir)
 
@@ -149,12 +139,9 @@ func (m *packageAndUpload) packageOne(ctx context.Context, b *bundle.Bundle, cs 
 	}
 
 	uploadPath := path.Join(userDir, repoSnapshotsSubdir, dirName)
-	client := m.client
-	if client == nil {
-		client, err = filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), uploadPath)
-		if err != nil {
-			return "", err
-		}
+	client, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), uploadPath)
+	if err != nil {
+		return "", err
 	}
 
 	// Build the archive in memory so its content hash can name the upload; the hash
@@ -206,57 +193,59 @@ func codeSourceFiles(ctx context.Context, b *bundle.Bundle, relBase string) ([]f
 	return fl.Files(ctx)
 }
 
-// userWorkspaceHome returns the current user's workspace home directory
-// (/Workspace/Users/<user>), the root under which code snapshots are stored.
-func userWorkspaceHome(b *bundle.Bundle) (string, error) {
-	u := b.Config.Workspace.CurrentUser
-	if u == nil || u.User == nil || u.UserName == "" {
-		return "", errors.New("unable to resolve code snapshot location: current user not set")
-	}
-	return "/Workspace/Users/" + u.UserName, nil
-}
-
 // collectLocalCodeSources returns every AI Runtime task code_source_path that
 // points at a local directory. Already-remote values are skipped.
 func collectLocalCodeSources(b *bundle.Bundle) ([]codeSource, diag.Diagnostics) {
 	var sources []codeSource
 	var diags diag.Diagnostics
 
-	for _, pattern := range codeSourcePatterns {
-		err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-			return dyn.MapByPattern(root, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				value, ok := v.AsString()
-				if !ok {
-					return v, fmt.Errorf("expected string, got %s", v.Kind())
-				}
-				if !libraries.IsLocalPath(value) {
-					return v, nil
-				}
-				// Only package a local *directory*. A local file (e.g. a pre-built
-				// tarball delivered via an `artifacts` block) is left alone so it flows
-				// through the standard artifact-upload path as a file. aicode.Validate
-				// applies the same directory check, so the two stay in agreement.
-				localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(value))
-				info, statErr := os.Stat(localDir)
-				isDir := statErr == nil && info.IsDir()
-				if !isDir {
-					// Not an existing directory: leave the value untouched for the
-					// artifact-upload path (a stat error here is not fatal — a missing
-					// path is simply not something this mutator packages).
-					return v, nil
-				}
-				sources = append(sources, codeSource{
-					configPath: p,
-					location:   v.Location(),
-					value:      value,
-				})
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		return dyn.MapByPattern(root, codeSourcePattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			value, ok := v.AsString()
+			if !ok {
+				return v, fmt.Errorf("expected string, got %s", v.Kind())
+			}
+			if !libraries.IsLocalPath(value) {
 				return v, nil
+			}
+			// Only package a local *directory*. A local file (e.g. a pre-built
+			// tarball delivered via an `artifacts` block) is left alone so it flows
+			// through the standard artifact-upload path as a file. aicode.Validate
+			// applies the same directory check, so the two stay in agreement.
+			localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(value))
+			isDir, err := isExistingDir(localDir)
+			if err != nil {
+				return v, fmt.Errorf("code_source_path %q: %w", value, err)
+			}
+			if !isDir {
+				return v, nil
+			}
+			sources = append(sources, codeSource{
+				configPath: p,
+				location:   v.Location(),
+				value:      value,
 			})
+			return v, nil
 		})
-		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
-		}
+	})
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
 	}
 
 	return sources, diags
+}
+
+// isExistingDir reports whether path is an existing directory. A not-exist error
+// is not an error here (the path is simply not a directory this mutator packages),
+// but any other stat failure — notably a permission error on the parent — is
+// surfaced so it is not silently swallowed into "skip".
+func isExistingDir(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return false, nil
+		}
+		return false, err
+	}
+	return info.IsDir(), nil
 }
