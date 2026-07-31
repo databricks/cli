@@ -128,7 +128,7 @@ func loadBits(cmd *cobra.Command) ([]bool, []string, error) {
 		return nil, nil, errors.New("failed to load bundle")
 	}
 	schema := bundlebitmap.EmbeddedSchema()
-	bits, err := bundlebitmap.Bits(b.Config, b.Metrics.Telemetry, schema)
+	bits, err := bundlebitmap.Bits(b.Config, b.Telemetry, schema)
 	if err != nil {
 		return nil, nil, err
 	}
