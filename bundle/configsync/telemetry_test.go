@@ -124,7 +124,8 @@ func TestCollectStateStats(t *testing.T) {
 		assert.Equal(t, int64(7), s.StateSerial)
 		assert.Equal(t, "f1621b9c-6ccd-481b-854d-40fa4176e68c", s.StateLineage)
 		assert.Equal(t, "remote", s.StateSource)
-		assert.Equal(t, int64(2), s.StatesAvailableCount)
+		require.NotNil(t, s.StatesAvailableCount)
+		assert.Equal(t, int64(2), *s.StatesAvailableCount)
 	})
 
 	t.Run("local state wins", func(t *testing.T) {
@@ -139,7 +140,8 @@ func TestCollectStateStats(t *testing.T) {
 		// state file was found; that must be visible as 0, not omitted.
 		s := &Stats{}
 		s.CollectStateStats(&statemgmt.StateDesc{IsLocal: true})
-		assert.Equal(t, int64(0), s.StatesAvailableCount)
+		require.NotNil(t, s.StatesAvailableCount)
+		assert.Equal(t, int64(0), *s.StatesAvailableCount)
 		assert.Equal(t, int64(0), s.StateSerial)
 		assert.Empty(t, s.StateLineage)
 	})
@@ -159,9 +161,9 @@ func TestLogTelemetryPayloadIncludesStateAndSelectorFields(t *testing.T) {
 		StateSerial:          99,
 		StateLineage:         "f1621b9c-6ccd-481b-854d-40fa4176e68c",
 		StateSource:          "local",
-		StatesAvailableCount: 2,
-		SelectorCount:        3,
-		SelectorMatchedCount: 0,
+		StatesAvailableCount: ptr(int64(2)),
+		SelectorCount:        ptr(int64(3)),
+		SelectorMatchedCount: ptr(int64(0)),
 	}
 	payload, err := json.Marshal(protos.BundleConfigRemoteSyncEvent{
 		Engine:               string(s.Engine),
@@ -180,9 +182,8 @@ func TestLogTelemetryPayloadIncludesStateAndSelectorFields(t *testing.T) {
 	assert.Contains(t, got, `"state_source":"local"`)
 	assert.Contains(t, got, `"states_available_count":2`)
 	assert.Contains(t, got, `"selector_count":3`)
-	// omitempty drops a zero matched-count; the failure is still identifiable
-	// from selector_count being present with no matched field.
-	assert.NotContains(t, got, "selector_matched_count")
+	// The zero must survive: "no selector matched" is the hard-failure signal.
+	assert.Contains(t, got, `"selector_matched_count":0`)
 
 	empty, err := json.Marshal(protos.BundleConfigRemoteSyncEvent{})
 	require.NoError(t, err)
@@ -190,3 +191,5 @@ func TestLogTelemetryPayloadIncludesStateAndSelectorFields(t *testing.T) {
 		assert.NotContains(t, string(empty), f)
 	}
 }
+
+func ptr[T any](v T) *T { return &v }

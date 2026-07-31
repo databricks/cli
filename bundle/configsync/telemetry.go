@@ -55,15 +55,18 @@ type Stats struct {
 	// Identity of the resource state the run actually read. Without these, a
 	// "no deployed <type> resource with id" failure cannot be told apart from
 	// reading a stale local cache, another target's state, or no state at all.
-	StateSerial          int64
-	StateLineage         string
-	StateSource          string
-	StatesAvailableCount int64
+	StateSerial  int64
+	StateLineage string
+	StateSource  string
+	// Pointers so an informative zero survives omitempty on serialization: no
+	// states found, and no selectors matched, are the two most diagnostic
+	// values this event can carry.
+	StatesAvailableCount *int64
 
 	// Number of --select-ids selectors passed in, and how many resolved to a
 	// deployed resource. matched=0 with selectors>0 is the hard-fail case.
-	SelectorCount        int64
-	SelectorMatchedCount int64
+	SelectorCount        *int64
+	SelectorMatchedCount *int64
 
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
@@ -84,7 +87,8 @@ func (s *Stats) CollectStateStats(desc *statemgmt.StateDesc) {
 	}
 	// AllStates is only populated when at least one state was found; a
 	// synthesized empty state descriptor leaves it nil.
-	s.StatesAvailableCount = int64(len(desc.AllStates))
+	n := int64(len(desc.AllStates))
+	s.StatesAvailableCount = &n
 }
 
 // RestoreStats counts the variable-reference restorations that can leak a

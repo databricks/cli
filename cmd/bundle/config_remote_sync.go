@@ -102,7 +102,8 @@ Examples:
 				stats.CollectChangeStats(ctx, changes)
 
 				if len(selectIDs) > 0 {
-					stats.SelectorCount = int64(len(selectIDs))
+					selectorCount := int64(len(selectIDs))
+					stats.SelectorCount = &selectorCount
 					// Filter after planning, never before: the plan must cover every
 					// resource so ${resources.*} references resolve; only the emitted
 					// changes are restricted to the selected resources.
@@ -112,7 +113,8 @@ Examples:
 					}
 					// Selectors resolve to plan keys and are deduplicated, so this is
 					// the number of distinct resources that matched, not of selectors.
-					stats.SelectorMatchedCount = int64(len(selected))
+					matched := int64(len(selected))
+					stats.SelectorMatchedCount = &matched
 					changes = configsync.FilterChanges(changes, selected)
 				}
 

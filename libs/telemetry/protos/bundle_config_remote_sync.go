@@ -66,21 +66,24 @@ type BundleConfigRemoteSyncEvent struct {
 	//
 	// StateSerial and StateLineage are the state file's own monotonic counter
 	// and its system-generated lineage UUID (uuid.New(), never user input).
-	// StateSource is "local" or "remote". StatesAvailableCount is how many of
-	// the four candidate state files (direct/terraform x local/remote) were
-	// found; 0 means the run proceeded against a synthesized empty state.
+	// StateSource is "local" or "remote".
 	// No state paths and no target names are recorded.
-	StateSerial          int64  `json:"state_serial,omitempty"`
-	StateLineage         string `json:"state_lineage,omitempty"`
-	StateSource          string `json:"state_source,omitempty"`
-	StatesAvailableCount int64  `json:"states_available_count,omitempty"`
+	StateSerial  int64  `json:"state_serial,omitempty"`
+	StateLineage string `json:"state_lineage,omitempty"`
+	StateSource  string `json:"state_source,omitempty"`
+
+	// How many of the four candidate state files (direct/terraform x
+	// local/remote) were found. A pointer so that zero — the run proceeded
+	// against a synthesized empty state, which is the most diagnostic value
+	// here — is emitted rather than dropped by omitempty.
+	StatesAvailableCount *int64 `json:"states_available_count,omitempty"`
 
 	// Number of --select-ids selectors passed in, and how many resolved to a
-	// deployed resource in the state above. Zero matched with a non-zero count
-	// is the hard-failure case; a shortfall between them means some selectors
-	// were skipped as stale.
-	SelectorCount        int64 `json:"selector_count,omitempty"`
-	SelectorMatchedCount int64 `json:"selector_matched_count,omitempty"`
+	// deployed resource in the state above. Pointers for the same reason: zero
+	// matched with a non-zero count is the hard-failure case, so the zero must
+	// survive serialization. Both nil when the command ran without --select-ids.
+	SelectorCount        *int64 `json:"selector_count,omitempty"`
+	SelectorMatchedCount *int64 `json:"selector_matched_count,omitempty"`
 
 	// Scrubbed, truncated summary of the failure when the command exits with an
 	// error. Privileged free-text (DATA_LABEL_USER_COMMANDS_RESPONSE, LPP-5543);
