@@ -1,0 +1,9 @@
+# --download-to resolves the run's node count, then downloads each node's logs.
+# This run resolves no MLflow run id, so it reports no logs (the full byte
+# download is covered by unit tests, since the pre-signed URL host is dynamic).
+
+title "download-to reports no logs when none are available"
+errcode trace $CLI experimental air logs 123 --download-to dl-logs
+
+title "download-to with an out-of-range node is rejected"
+errcode trace $CLI experimental air logs 123 --download-to dl-logs --node 5

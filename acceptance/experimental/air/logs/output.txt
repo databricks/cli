@@ -64,9 +64,3 @@ Exit code: 1
 Error: invalid --node -1: must not be negative
 
 Exit code: 1
-
-=== --download-to not implemented
->>> [CLI] experimental air logs 123 --download-to /tmp/out
-Error: --download-to is not implemented yet
-
-Exit code: 1

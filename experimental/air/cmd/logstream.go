@@ -43,6 +43,9 @@ type logRequest struct {
 	runID int64
 	// node is the node index to fetch; node 0 always exists.
 	node int
+	// nodeSet is true when --node was passed explicitly (vs the default 0). Used
+	// by --download-to to pick a single node vs downloading all nodes.
+	nodeSet bool
 	// attempt is the retry attempt to read; -1 means latest.
 	attempt int
 	// windowMinutes, when > 0, restricts the fetch to the last N minutes.
@@ -50,6 +53,9 @@ type logRequest struct {
 	// tailLines caps a completed run's output to the last N lines. Negative means
 	// --lines was unset (use the default cap); 0 prints nothing.
 	tailLines int
+	// downloadTo, when set, writes each node's logs to that directory instead of
+	// streaming to stdout.
+	downloadTo string
 	// staticView renders a one-shot tail instead of following the run. Set for a
 	// past retry of an active run: that attempt's logs are immutable, so streaming
 	// would poll forever waiting for the run (not the attempt) to finish.
