@@ -19,9 +19,8 @@ func TestPostgresProjectCRUD(t *testing.T) {
 	client := &http.Client{}
 	baseURL := server.URL
 
-	// Create project with a spec so the GET below can assert the spec is echoed.
-	createBody := `{"spec":{"display_name":"Test Project","pg_version":16}}`
-	createReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects?project_id=test-project", strings.NewReader(createBody))
+	// Create project
+	createReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects?project_id=test-project", nil)
 	createReq.Header.Set("Authorization", "Bearer test-token")
 	createReq.Header.Set("Content-Type", "application/json")
 	createResp, err := client.Do(createReq)
@@ -43,10 +42,6 @@ func TestPostgresProjectCRUD(t *testing.T) {
 	var project postgres.Project
 	require.NoError(t, json.NewDecoder(getResp.Body).Decode(&project))
 	assert.Equal(t, "projects/test-project", project.Name)
-	// The backend echoes the spec verbatim on GET (only the fields the user set).
-	require.NotNil(t, project.Spec)
-	assert.Equal(t, "Test Project", project.Spec.DisplayName)
-	assert.Equal(t, 16, project.Spec.PgVersion)
 	getResp.Body.Close()
 
 	// List projects
@@ -412,11 +407,6 @@ func TestPostgresDatabaseUpdateMaskPreservesUnmaskedFields(t *testing.T) {
 	require.NotNil(t, database.Status)
 	assert.Equal(t, "renamed_db", database.Status.PostgresDatabase, "masked field should be updated")
 	assert.Equal(t, "projects/mask-db-project/branches/main/roles/owner", database.Status.Role, "field absent from update_mask should be preserved")
-
-	// GET echoes the spec verbatim; it must track the masked update alongside status.
-	require.NotNil(t, database.Spec)
-	assert.Equal(t, "renamed_db", database.Spec.PostgresDatabase, "spec must reflect the masked update")
-	assert.Equal(t, "projects/mask-db-project/branches/main/roles/owner", database.Spec.Role, "spec must preserve the field absent from update_mask")
 }
 
 func TestPostgresDatabaseCreateDuplicateReturns400(t *testing.T) {
@@ -606,14 +596,6 @@ func TestPostgresRoleUpdateMaskPreservesUnmaskedFields(t *testing.T) {
 	require.NotNil(t, role.Status.Attributes)
 	assert.True(t, role.Status.Attributes.Createdb, "masked field should be updated")
 	assert.Equal(t, "app_role", role.Status.PostgresRole, "field absent from update_mask should be preserved")
-
-	// GET echoes the spec verbatim; it must track the update alongside status,
-	// and honor the update_mask — the out-of-mask postgres_role in the body must
-	// not leak into the echoed spec.
-	require.NotNil(t, role.Spec)
-	require.NotNil(t, role.Spec.Attributes)
-	assert.True(t, role.Spec.Attributes.Createdb, "spec must reflect the updated attribute")
-	assert.Equal(t, "app_role", role.Spec.PostgresRole, "spec must not apply the field absent from update_mask")
 }
 
 func TestPostgresRoleNotFoundWhenBranchNotExists(t *testing.T) {

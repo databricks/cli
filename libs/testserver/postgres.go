@@ -150,6 +150,8 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 				project.Status.DefaultEndpointSettings.SuspendTimeoutDuration = project.Spec.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
 		}
+		// Clear spec so it's not returned in response (API only returns status)
+		project.Spec = nil
 	}
 
 	s.PostgresProjects[name] = project
@@ -211,32 +213,22 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		}
 	}
 
-	// Apply updates to both spec and status. GET echoes the spec verbatim, so
-	// the stored spec must track updates alongside the materialized status.
+	// Apply updates from spec to status
 	if updateProject.Spec != nil {
-		if project.Spec == nil {
-			project.Spec = &postgres.ProjectSpec{}
-		}
 		if project.Status == nil {
 			project.Status = &postgres.ProjectStatus{}
 		}
 		if updateProject.Spec.DisplayName != "" {
-			project.Spec.DisplayName = updateProject.Spec.DisplayName
 			project.Status.DisplayName = updateProject.Spec.DisplayName
 		}
 		if updateProject.Spec.DefaultEndpointSettings != nil {
-			if project.Spec.DefaultEndpointSettings == nil {
-				project.Spec.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{}
-			}
 			if project.Status.DefaultEndpointSettings == nil {
 				project.Status.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{}
 			}
 			if updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu != 0 {
-				project.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu
 				project.Status.DefaultEndpointSettings.AutoscalingLimitMinCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu
 			}
 			if updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu != 0 {
-				project.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu
 				project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu
 			}
 		}
@@ -358,10 +350,12 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 	}
 
 	// Apply user-provided spec fields to status (where input fields are surfaced).
-	// The spec itself is preserved and echoed verbatim on GET.
 	if branch.Spec != nil {
 		branch.Status.IsProtected = branch.Spec.IsProtected
 	}
+
+	// Clear spec - API only returns status
+	branch.Spec = nil
 
 	s.PostgresBranches[name] = branch
 
@@ -442,16 +436,11 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 		}
 	}
 
-	// Apply updates to both spec and status. GET echoes the spec verbatim, so
-	// the stored spec must track updates alongside the materialized status.
+	// Apply updates from spec to status
 	if updateBranch.Spec != nil {
-		if branch.Spec == nil {
-			branch.Spec = &postgres.BranchSpec{}
-		}
 		if branch.Status == nil {
 			branch.Status = &postgres.BranchStatus{}
 		}
-		branch.Spec.IsProtected = updateBranch.Spec.IsProtected
 		branch.Status.IsProtected = updateBranch.Spec.IsProtected
 	}
 
@@ -598,6 +587,9 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 		endpoint.Status.Disabled = endpoint.Spec.Disabled
 	}
 
+	// Clear spec - API only returns status
+	endpoint.Spec = nil
+
 	s.PostgresEndpoints[name] = endpoint
 
 	return Response{
@@ -680,28 +672,20 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 		}
 	}
 
-	// Apply updates to both spec and status. GET echoes the spec verbatim, so
-	// the stored spec must track updates alongside the materialized status.
+	// Apply updates from spec to status
 	if updateEndpoint.Spec != nil {
-		if endpoint.Spec == nil {
-			endpoint.Spec = &postgres.EndpointSpec{}
-		}
 		if endpoint.Status == nil {
 			endpoint.Status = &postgres.EndpointStatus{}
 		}
 		if updateEndpoint.Spec.AutoscalingLimitMinCu != 0 {
-			endpoint.Spec.AutoscalingLimitMinCu = updateEndpoint.Spec.AutoscalingLimitMinCu
 			endpoint.Status.AutoscalingLimitMinCu = updateEndpoint.Spec.AutoscalingLimitMinCu
 		}
 		if updateEndpoint.Spec.AutoscalingLimitMaxCu != 0 {
-			endpoint.Spec.AutoscalingLimitMaxCu = updateEndpoint.Spec.AutoscalingLimitMaxCu
 			endpoint.Status.AutoscalingLimitMaxCu = updateEndpoint.Spec.AutoscalingLimitMaxCu
 		}
 		if updateEndpoint.Spec.SuspendTimeoutDuration != nil {
-			endpoint.Spec.SuspendTimeoutDuration = updateEndpoint.Spec.SuspendTimeoutDuration
 			endpoint.Status.SuspendTimeoutDuration = updateEndpoint.Spec.SuspendTimeoutDuration
 		}
-		endpoint.Spec.Disabled = updateEndpoint.Spec.Disabled
 		endpoint.Status.Disabled = updateEndpoint.Spec.Disabled
 	}
 
@@ -791,7 +775,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 		}
 		existing.UpdateTime = now
 		existing.Status = status
-		existing.Spec = database.Spec
+		existing.Spec = nil
 		s.PostgresDatabases[name] = existing
 
 		return Response{
@@ -805,13 +789,14 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	database.CreateTime = now
 	database.UpdateTime = now
 
-	// Mirror spec onto status; GET echoes both the spec (verbatim) and status.
+	// Mirror spec onto status; the real API only echoes Status on GET.
 	status := &postgres.DatabaseDatabaseStatus{
 		DatabaseId:       databaseID,
 		PostgresDatabase: database.Spec.PostgresDatabase,
 		Role:             database.Spec.Role,
 	}
 	database.Status = status
+	database.Spec = nil
 
 	s.PostgresDatabases[name] = database
 
@@ -905,13 +890,6 @@ func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Respons
 		}
 		database.Status = applyDatabaseSpecMask(database.Status, databaseStatusFromSpec(updateDatabase.Spec), paths)
 		database.Status.DatabaseId = databaseID
-
-		// GET echoes the spec verbatim, so keep the stored spec in sync with the
-		// masked status update.
-		database.Spec = &postgres.DatabaseDatabaseSpec{
-			PostgresDatabase: database.Status.PostgresDatabase,
-			Role:             database.Status.Role,
-		}
 	}
 
 	database.UpdateTime = nowTime()
@@ -1142,7 +1120,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 		existing.UpdateTime = now
 		existing.Status = roleStatusFromSpec(role.Spec)
 		existing.Status.RoleId = roleID
-		existing.Spec = role.Spec
+		existing.Spec = nil
 		s.PostgresRoles[name] = existing
 
 		return Response{
@@ -1158,6 +1136,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 
 	role.Status = roleStatusFromSpec(role.Spec)
 	role.Status.RoleId = roleID
+	role.Spec = nil
 
 	s.PostgresRoles[name] = role
 
@@ -1254,11 +1233,6 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 		}
 		role.Status = applyRoleSpecMask(role.Status, roleStatusFromSpec(updateRole.Spec), paths)
 		role.Status.RoleId = roleID
-
-		// GET echoes the spec verbatim, so keep the stored spec in sync while
-		// respecting the update_mask: only masked fields are taken from the
-		// request, so out-of-mask body values don't leak into the echoed spec.
-		role.Spec = applyRoleSpecMaskToSpec(role.Spec, updateRole.Spec, paths)
 	}
 
 	role.UpdateTime = nowTime()
@@ -1281,36 +1255,6 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 // attributes untouched), but the direct engine always sends the full spec in the
 // request body, so the collapsed result is identical for the requests it makes.
 func applyRoleSpecMask(existing, desired *postgres.RoleRoleStatus, paths []string) *postgres.RoleRoleStatus {
-	if len(paths) == 0 || existing == nil {
-		return desired
-	}
-	result := *existing
-	for _, p := range paths {
-		field, _, _ := strings.Cut(strings.TrimPrefix(p, "spec."), ".")
-		switch field {
-		case "spec":
-			result = *desired
-		case "postgres_role":
-			result.PostgresRole = desired.PostgresRole
-		case "auth_method":
-			result.AuthMethod = desired.AuthMethod
-		case "identity_type":
-			result.IdentityType = desired.IdentityType
-		case "membership_roles":
-			result.MembershipRoles = desired.MembershipRoles
-		case "attributes":
-			result.Attributes = desired.Attributes
-		}
-	}
-	return &result
-}
-
-// applyRoleSpecMaskToSpec applies the masked fields from desired onto existing at
-// the spec level, so the spec echoed on GET tracks exactly the fields the
-// update_mask named (out-of-mask body values are ignored). It mirrors
-// [applyRoleSpecMask] but preserves the verbatim spec shape rather than the
-// materialized status. An empty paths slice replaces everything.
-func applyRoleSpecMaskToSpec(existing, desired *postgres.RoleRoleSpec, paths []string) *postgres.RoleRoleSpec {
 	if len(paths) == 0 || existing == nil {
 		return desired
 	}
