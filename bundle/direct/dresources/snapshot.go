@@ -105,3 +105,8 @@ func (s *ResourceSnapshot) DoUpdate(ctx context.Context, id string, newState *Sn
 func (s *ResourceSnapshot) DoDelete(ctx context.Context, id string, state *SnapshotState) error {
 	return nil
 }
+
+// IsGone treats a snapshot as already-deleted. The snapshot is immutable, so it can't be deleted.
+func (s *ResourceSnapshot) IsGone(remote *SnapshotRemote) bool {
+	return true
+}

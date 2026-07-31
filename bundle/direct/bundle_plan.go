@@ -993,7 +993,8 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 					return nil, fmt.Errorf("parsing %q: %w", targetPath, err)
 				}
 
-				targetNode := resourceNodeFromPath(targetPath, targetPathParsed)
+				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
+				targetNode := targetNodeDP.String()
 				if targetNode == "" {
 					continue
 				}
@@ -1053,11 +1054,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		p.Plan[n] = &deployplan.PlanEntry{
 			Action:    deployplan.Delete,
 			DependsOn: entry.DependsOn,
-		}
-
-		// If the node is an internal snapshot resource, we need to mark it as gone because it can't be deleted.
-		if n == "resources.snapshot.immutable" {
-			p.Plan[n].Gone = true
 		}
 	}
 
@@ -1134,13 +1130,6 @@ func dynPathToStructPath(p dyn.Path) *structpath.PathNode {
 		}
 	}
 	return node
-}
-
-// resourceNodeFromPath extracts the plan node key from a reference target path.
-// Returns "" for paths that aren't plan nodes (e.g. bundle.*, variables.*).
-func resourceNodeFromPath(targetPath string, parsed dyn.Path) string {
-	node, _ := config.GetNodeAndType(parsed)
-	return node.String()
 }
 
 func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Adapter, error) {
