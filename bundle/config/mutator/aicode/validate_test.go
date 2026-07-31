@@ -1,6 +1,7 @@
 package aicode
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -43,15 +44,32 @@ func bundleForValidate(t *testing.T, codeSourcePath string, gitSource *jobs.GitS
 	return b
 }
 
-func TestValidateMissingCodeSourceDir(t *testing.T) {
+// mkCodeDir creates a code_source directory (with one file) under the bundle's
+// sync root, so the path resolves to an existing directory this mutator packages.
+func mkCodeDir(t *testing.T, b *bundle.Bundle, rel string) {
+	t.Helper()
+	dir := filepath.Join(b.SyncRootPath, rel)
+	require.NoError(t, os.MkdirAll(dir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "train.py"), []byte("print()\n"), 0o600))
+}
+
+// A local path that is not an existing directory is left alone: it flows through
+// the standard artifact-upload path (e.g. a pre-built tarball built by an
+// `artifacts` block, which does not exist yet at validate time).
+func TestValidateNonDirectoryCodeSourceIsSkipped(t *testing.T) {
+	// Missing path (nothing on disk yet).
 	b := bundleForValidate(t, "does-not-exist", nil)
-	diags := Validate().Apply(t.Context(), b)
-	require.Len(t, diags, 1)
-	assert.Equal(t, `code_source_path "does-not-exist" not found`, diags[0].Summary)
+	assert.Empty(t, Validate().Apply(t.Context(), b))
+
+	// Existing local file (a pre-built tarball), not a directory.
+	b = bundleForValidate(t, "code.tgz", nil)
+	require.NoError(t, os.WriteFile(filepath.Join(b.SyncRootPath, "code.tgz"), []byte("x"), 0o600))
+	assert.Empty(t, Validate().Apply(t.Context(), b))
 }
 
 func TestValidateGitSourceConflict(t *testing.T) {
 	b := bundleForValidate(t, "src", &jobs.GitSource{GitUrl: "https://example.invalid/repo"})
+	mkCodeDir(t, b, "src")
 	diags := Validate().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
 	assert.Contains(t, diags[0].Summary, "cannot be combined with git_source")

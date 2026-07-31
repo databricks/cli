@@ -1,6 +1,7 @@
 package aicode
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -53,8 +54,10 @@ func bundleWithCodeSource(t *testing.T, dir, codeSourcePath string) *bundle.Bund
 	return b
 }
 
-func TestCollectLocalCodeSourcesFindsLocalPath(t *testing.T) {
-	b := bundleWithCodeSource(t, t.TempDir(), "./src")
+func TestCollectLocalCodeSourcesFindsLocalDir(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
+	b := bundleWithCodeSource(t, dir, "./src")
 	sources, diags := collectLocalCodeSources(b)
 	require.Empty(t, diags)
 	require.Len(t, sources, 1)
@@ -71,4 +74,16 @@ func TestCollectLocalCodeSourcesSkipsRemotePaths(t *testing.T) {
 		require.Empty(t, diags)
 		assert.Empty(t, sources, "remote code_source_path %q must not be collected", remote)
 	}
+}
+
+// A local path that resolves to a file (not a directory) — e.g. a pre-built
+// tarball delivered via an `artifacts` block — is NOT collected: it flows through
+// the standard artifact-upload path as a file rather than being packaged here.
+func TestCollectLocalCodeSourcesSkipsLocalFile(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "code.tgz"), []byte("x"), 0o600))
+	b := bundleWithCodeSource(t, dir, "code.tgz")
+	sources, diags := collectLocalCodeSources(b)
+	require.Empty(t, diags)
+	assert.Empty(t, sources, "a local tarball file must flow through artifact upload, not aicode packaging")
 }

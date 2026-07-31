@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -229,6 +230,19 @@ func collectLocalCodeSources(b *bundle.Bundle) ([]codeSource, diag.Diagnostics) 
 					return v, fmt.Errorf("expected string, got %s", v.Kind())
 				}
 				if !libraries.IsLocalPath(value) {
+					return v, nil
+				}
+				// Only package a local *directory*. A local file (e.g. a pre-built
+				// tarball delivered via an `artifacts` block) is left alone so it flows
+				// through the standard artifact-upload path as a file. aicode.Validate
+				// applies the same directory check, so the two stay in agreement.
+				localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(value))
+				info, statErr := os.Stat(localDir)
+				isDir := statErr == nil && info.IsDir()
+				if !isDir {
+					// Not an existing directory: leave the value untouched for the
+					// artifact-upload path (a stat error here is not fatal — a missing
+					// path is simply not something this mutator packages).
 					return v, nil
 				}
 				sources = append(sources, codeSource{

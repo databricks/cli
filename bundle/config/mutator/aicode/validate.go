@@ -2,7 +2,6 @@ package aicode
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -53,6 +52,18 @@ func (v *validate) validateTask(b *bundle.Bundle, jobHasGitSource bool, codeSour
 		return nil
 	}
 
+	// This mutator packages a local *directory*. A local path that is not an existing
+	// directory is left alone so it flows through the standard artifact-upload path:
+	// a pre-built tarball delivered via an `artifacts` block is produced during the
+	// build phase (so it does not exist yet at validate time) and is uploaded as a
+	// file, not packaged here. Only when the path is an existing directory do the
+	// packaging-specific constraints below apply.
+	localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(codeSourcePath))
+	info, statErr := os.Stat(localDir)
+	if statErr != nil || !info.IsDir() {
+		return nil
+	}
+
 	locations := b.Config.GetLocations(codePath.String())
 
 	// The deploy engine retrieves task files from git when git_source is set, so
@@ -73,25 +84,6 @@ func (v *validate) validateTask(b *bundle.Bundle, jobHasGitSource bool, codeSour
 		return diag.Diagnostics{{
 			Severity:  diag.Error,
 			Summary:   "ai_runtime_task with a local code_source_path is not supported with experimental.immutable_folder",
-			Locations: locations,
-			Paths:     []dyn.Path{codePath},
-		}}
-	}
-
-	localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(codeSourcePath))
-	info, err := os.Stat(localDir)
-	if err != nil {
-		return diag.Diagnostics{{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("code_source_path %q not found", codeSourcePath),
-			Locations: locations,
-			Paths:     []dyn.Path{codePath},
-		}}
-	}
-	if !info.IsDir() {
-		return diag.Diagnostics{{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("code_source_path %q must be a directory", codeSourcePath),
 			Locations: locations,
 			Paths:     []dyn.Path{codePath},
 		}}
