@@ -1,4 +1,5 @@
 trace $CLI bundle deploy
+replace_ids.py
 
 title "Expecting code_source_path rewritten to the uploaded artifact remote path"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[].ai_runtime_task' out.requests.txt

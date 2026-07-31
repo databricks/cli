@@ -120,9 +120,29 @@ func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.
 				existing.Action = deployplan.GetHigherAction(existing.Action, actionType)
 			}
 		} else {
-			plan.Plan[key] = &deployplan.PlanEntry{Action: actionType}
+			entry := &deployplan.PlanEntry{Action: actionType}
+			// A pure delete removes the resource from config, so the deploy summary
+			// can't read its URL back from the config resource. Capture the id from
+			// the pre-delete state now so the summary can build the resource URL.
+			if actionType == deployplan.Delete {
+				entry.ID = terraformStateID(rc.Change.Before)
+			}
+			plan.Plan[key] = entry
 		}
 	}
+}
+
+// terraformStateID extracts the resource identifier from a Terraform state object
+// (rc.Change.Before). Terraform decodes state as map[string]any; every resource
+// type the summary builds a URL for exposes its identifier under the "id"
+// attribute. Returns "" when the id is absent or not a string.
+func terraformStateID(before any) string {
+	attrs, ok := before.(map[string]any)
+	if !ok {
+		return ""
+	}
+	id, _ := attrs["id"].(string)
+	return id
 }
 
 // ShowPlanFile reads a Terraform plan file located at planPath using the provided tfexec.Terraform handle

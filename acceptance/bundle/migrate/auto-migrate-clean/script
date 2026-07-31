@@ -4,6 +4,7 @@ export DATABRICKS_BUNDLE_ENGINE=
 # it after each call so the next deploy's telemetry stands alone.
 title "Initial deploy uses terraform engine (no bundle.engine set, override via env var)"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+replace_ids.py
 trace print_migration_telemetry
 rm -f out.requests.txt
 

@@ -1,6 +1,8 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo      [DATABRICKS_URL]/jobs/[NUMID]
+created jobs.process  [DATABRICKS_URL]/jobs/[NUMID]
+created volumes.data  [DATABRICKS_URL]/explore/data/volumes/main/[USERNAME]@databricks/com/[USERNAME]@databricks/com
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.

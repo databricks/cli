@@ -1,4 +1,5 @@
 trace $CLI pipelines deploy
+replace_ids.py
 title "Run pipeline and display pipeline configuration summary and events durations"
 # Test note: The mock API handler for "GET /api/2.0/pipelines/{pipeline_id}/events" doesn't support
 # the OrderBy query parameter. In production, the real API returns events in descending order (newest first), and

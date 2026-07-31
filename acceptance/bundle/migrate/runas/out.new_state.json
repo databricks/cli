@@ -5,7 +5,7 @@
  "serial": 5,
  "state": {
   "resources.pipelines.foo": {
-   "__id__": "[UUID]",
+   "__id__": "[FOO_ID]",
    "state": {
     "catalog": "main",
     "channel": "CURRENT",
@@ -30,9 +30,9 @@
    }
   },
   "resources.pipelines.foo.permissions": {
-   "__id__": "/pipelines/[UUID]",
+   "__id__": "[PIPELINE_FOO_ID]",
    "state": {
-    "object_id": "/pipelines/[UUID]",
+    "object_id": "[PIPELINE_FOO_ID]",
     "__embed__": [
      {
       "level": "CAN_VIEW",

@@ -10,6 +10,8 @@ cleanup() {
 trap cleanup EXIT
 
 dashboard_id=$($CLI bundle summary -o json | jq .resources.dashboards.already_exists.id -r)
+# The deploy summary prints the dashboard URL, which embeds this random id.
+echo "$dashboard_id:DASHBOARD_ID" >> ACC_REPLS
 
 title "Get current dashboard\n"
 retry $CLI lakeview get $dashboard_id | jq .serialized_dashboard

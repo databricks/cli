@@ -2,9 +2,10 @@
 === initial deploy triggers the first run
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created job_runs.my_run  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]
+created jobs.my_job      [DATABRICKS_URL]/jobs/[MY_JOB_ID]
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle summary
 Name: job-runs-redeploy
@@ -16,11 +17,11 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]
   Jobs:
     my_job:
       Name: my-job
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]
 
 >>> read_id.py my_job
 [MY_JOB_ID]
@@ -64,7 +65,7 @@ Resources:
     },
     "run_id": [NUMID],
     "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/?o=[NUMID]#job/[MY_JOB_ID]/run/[NUMID]",
+    "run_page_url": "[DATABRICKS_URL]/#job/[MY_JOB_ID]/run/[NUMID]",
     "run_type": "JOB_RUN",
     "state": {
       "life_cycle_state": "RUNNING"
@@ -83,9 +84,9 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+recreated job_runs.my_run  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]
+
+Deploy: 1 created, 0 changed, 1 deleted, 1 unchanged.
 
 >>> [CLI] bundle summary
 Name: job-runs-redeploy
@@ -97,11 +98,11 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]
   Jobs:
     my_job:
       Name: my-job
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]
 
 === the config change deleted the previous run and triggered a second, different run
 >>> print_requests.py --keep //jobs/runs/delete
@@ -132,5 +133,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

@@ -9,11 +9,8 @@ create models.my_model
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
 >>> [CLI] model-registry get-model original-name-[UNIQUE_NAME]
 {
@@ -35,11 +32,8 @@ update models.my_model
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
 >>> [CLI] model-registry get-model original-name-[UNIQUE_NAME]
 {
@@ -61,11 +55,8 @@ recreate models.my_model
 
 Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
 >>> [CLI] model-registry get-model new-name-[UNIQUE_NAME]
 {
@@ -82,11 +73,8 @@ Deployment complete!
 === add a new tag, this should be a no-op; terraform does make an update request but since update request has no tags in it, it does nothing; direct skips request completely
 >>> [CLI] bundle plan
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
 >>> [CLI] model-registry get-model new-name-[UNIQUE_NAME]
 {
@@ -106,5 +94,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

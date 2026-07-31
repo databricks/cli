@@ -1,6 +1,5 @@
 
 >>> [CLI] bundle deployment bind database1 projects/test-project/branches/main/databases/test-database --auto-approve
-Updating deployment state...
 Successfully bound postgres_database with an id 'projects/test-project/branches/main/databases/test-database'
 Run 'bundle deploy' to deploy changes to your workspace
 
@@ -17,7 +16,6 @@ Resources:
       URL:  (not deployed)
 
 >>> [CLI] bundle deployment unbind database1
-Updating deployment state...
 
 >>> [CLI] bundle summary
 Name: test-bundle

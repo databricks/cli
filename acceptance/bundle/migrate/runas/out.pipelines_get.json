@@ -3,7 +3,7 @@
   "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
   "last_modified": [UNIX_TIME_MILLIS],
   "name": "DABs Revenue Pipeline",
-  "pipeline_id": "[UUID]",
+  "pipeline_id": "[FOO_ID]",
   "run_as_user_name": "[USERNAME]",
   "spec": {
     "catalog": "main",
@@ -13,7 +13,7 @@
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
     },
     "edition": "ADVANCED",
-    "id": "[UUID]",
+    "id": "[FOO_ID]",
     "libraries": [
       {
         "notebook": {

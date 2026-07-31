@@ -5,6 +5,7 @@
   "serial": 1,
   "plan": {
     "resources.jobs.bar": {
+      "id": "[BAR_ID]",
       "action": "delete",
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][0],
@@ -28,6 +29,7 @@
       }
     },
     "resources.jobs.foo": {
+      "id": "[FOO_ID]",
       "depends_on": [
         {
           "node": "resources.jobs.bar",

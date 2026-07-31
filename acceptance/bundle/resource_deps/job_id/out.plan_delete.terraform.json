@@ -2,9 +2,11 @@
   "cli_version": "[CLI_VERSION]",
   "plan": {
     "resources.jobs.bar": {
+      "id": "[BAR_ID]",
       "action": "delete"
     },
     "resources.jobs.foo": {
+      "id": "[FOO_ID]",
       "action": "delete"
     }
   }

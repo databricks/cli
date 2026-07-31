@@ -12,6 +12,7 @@ trap cleanup EXIT
 
 touch dummy.whl
 $CLI bundle deploy
+replace_ids.py
 
 job_one_id="$(read_id.py job_one)"
 job_two_id="$(read_id.py job_two)"

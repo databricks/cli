@@ -7,6 +7,7 @@ trace $CLI bundle init pydabs --config-file ./input.json
     trace uv pip install --quiet $DATABRICKS_BUNDLES_WHEEL
 
     trace $CLI bundle deploy
+    replace_ids.py
 )
 
 rm -rf my_pydabs

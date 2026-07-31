@@ -1,2 +1,3 @@
 trace $CLI bundle deploy
+replace_ids.py
 trace $CLI bundle destroy --auto-approve

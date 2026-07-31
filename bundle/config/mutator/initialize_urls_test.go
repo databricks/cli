@@ -119,11 +119,12 @@ func TestInitializeURLs(t *testing.T) {
 		"dashboard1":         "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?w=123456",
 	}
 
-	err := initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")
+	baseURL, err := workspaceBaseURL("https://mycompany.databricks.com/", "123456")
 	require.NoError(t, err)
 
 	for _, group := range b.Config.Resources.AllResources() {
 		for key, r := range group.Resources {
+			r.InitializeURL(baseURL)
 			require.Equal(t, expectedURLs[key], r.GetURL(), "Unexpected URL for "+key)
 		}
 	}
@@ -143,8 +144,9 @@ func TestInitializeURLsWithoutOrgId(t *testing.T) {
 		},
 	}
 
-	err := initializeForWorkspace(b, "123456", "https://adb-123456.azuredatabricks.net/")
+	baseURL, err := workspaceBaseURL("https://adb-123456.azuredatabricks.net/", "123456")
 	require.NoError(t, err)
+	b.Config.Resources.Jobs["job1"].InitializeURL(baseURL)
 
 	require.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/1", b.Config.Resources.Jobs["job1"].URL)
 }

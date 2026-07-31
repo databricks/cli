@@ -1,12 +1,12 @@
 
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+created pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID]
 
->>> [CLI] pipelines get [UUID]
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+View your pipeline foo here: [DATABRICKS_URL]/pipelines/[FOO_ID]
+
+>>> [CLI] pipelines get [FOO_ID]
 {
   "spec": {
     "channel": "CURRENT",
@@ -15,7 +15,7 @@ View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/state/metadata.json"
     },
     "edition": "ADVANCED",
-    "id": "[UUID]",
+    "id": "[FOO_ID]",
     "libraries": [
       {
         "notebook": {
@@ -24,6 +24,10 @@ View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
       }
     ],
     "name": "test-pipeline",
-    "storage": "dbfs:/pipelines/[UUID]"
+    "storage": "dbfs:/pipelines/[FOO_ID]"
   }
 }
+
+>>> [CLI] pipelines deploy --quiet
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files...
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.

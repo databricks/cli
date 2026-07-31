@@ -22,6 +22,9 @@ func TestPopulatePlan(t *testing.T) {
 			Type: "databricks_pipeline",
 			Change: &tfjson.Change{
 				Actions: tfjson.Actions{tfjson.ActionDelete},
+				// Pre-delete state; the id is captured so the deploy summary can
+				// build a URL for the now-deleted resource.
+				Before: map[string]any{"id": "pipeline-123"},
 			},
 			Name: "delete pipeline",
 		},
@@ -55,6 +58,7 @@ func TestPopulatePlan(t *testing.T) {
 		{
 			ActionType:  deployplan.Delete,
 			ResourceKey: "resources.pipelines.delete pipeline",
+			ID:          "pipeline-123",
 		},
 		{
 			ActionType:  deployplan.Recreate,
@@ -69,6 +73,7 @@ func TestPopulatePlan(t *testing.T) {
 
 	assert.Contains(t, plan.Plan, "resources.pipelines.delete pipeline")
 	assert.Equal(t, deployplan.Delete, plan.Plan["resources.pipelines.delete pipeline"].Action)
+	assert.Equal(t, "pipeline-123", plan.Plan["resources.pipelines.delete pipeline"].ID)
 
 	assert.Contains(t, plan.Plan, "resources.pipelines.recreate pipeline")
 	assert.Equal(t, deployplan.Recreate, plan.Plan["resources.pipelines.recreate pipeline"].Action)

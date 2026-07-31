@@ -16,7 +16,7 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [NUMID],
+        "job_id": [INTERIM_GOLD_LAYER_JOB_ID],
         "max_concurrent_runs": 1,
         "name": "Untitled",
         "queue": {
@@ -53,7 +53,7 @@
       ],
       "action": "skip",
       "remote_state": {
-        "object_id": "/jobs/[NUMID]",
+        "object_id": "/jobs/[INTERIM_GOLD_LAYER_JOB_ID]",
         "__embed__": [
           {
             "level": "IS_OWNER",

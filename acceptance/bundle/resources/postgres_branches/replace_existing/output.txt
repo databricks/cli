@@ -10,9 +10,10 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-replace-branch-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created postgres_branches.production
+created postgres_projects.my_project
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/production
 {

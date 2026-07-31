@@ -12,6 +12,9 @@ type Action struct {
 	// Gone mirrors PlanEntry.Gone: the delete is a state-only cleanup because the
 	// resource no longer exists remotely.
 	Gone bool
+	// ID mirrors PlanEntry.ID. It is populated for Delete actions so the deploy
+	// summary can build a resource URL after the resource is gone from config.
+	ID string
 }
 
 func (a Action) String() string {

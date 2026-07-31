@@ -69,9 +69,12 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created alerts.my_alert                  [DATABRICKS_URL]/sql/alerts-v2/[MY_ALERT_ID]
+created pipelines.my_pipeline            [DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]
+created schemas.my_schema                [DATABRICKS_URL]/explore/data/main/test-schema
+created sql_warehouses.my_sql_warehouse  [DATABRICKS_URL]/sql/warehouses/[MY_SQL_WAREHOUSE_ID]
+
+Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Post-deployment view of resources with id and without modified_status
 >>> [CLI] bundle summary -o json
@@ -90,14 +93,14 @@ Deployment complete!
           }
         }
       },
-      "id": "[UUID]",
+      "id": "[MY_ALERT_ID]",
       "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
       "query_text": "select 2",
       "schedule": {
         "quartz_cron_schedule": "44 19 */1 * * ?",
         "timezone_id": "Europe/Amsterdam"
       },
-      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?w=[NUMID]",
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[MY_ALERT_ID]",
       "warehouse_id": "aaaaaaaaaaaaaaaa"
     }
   },
@@ -109,7 +112,7 @@ Deployment complete!
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
       },
       "edition": "ADVANCED",
-      "id": "[UUID]",
+      "id": "[MY_PIPELINE_ID]",
       "libraries": [
         {
           "file": {
@@ -118,16 +121,16 @@ Deployment complete!
         }
       ],
       "name": "test-pipeline",
-      "url": "[DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]"
+      "url": "[DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]"
     }
   },
   "schemas": {
     "my_schema": {
       "catalog_name": "main",
       "comment": "COMMENT1",
-      "id": "main.test-schema",
+      "id": "[MY_SCHEMA_ID]",
       "name": "test-schema",
-      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?w=[NUMID]"
+      "url": "[DATABRICKS_URL]/explore/data/main/test-schema"
     }
   },
   "sql_warehouses": {
@@ -136,11 +139,11 @@ Deployment complete!
       "cluster_size": "X-Large",
       "enable_photon": true,
       "enable_serverless_compute": true,
-      "id": "[UUID]",
+      "id": "[MY_SQL_WAREHOUSE_ID]",
       "max_num_clusters": 1,
       "name": "test-sql-warehouse",
       "spot_instance_policy": "COST_OPTIMIZED",
-      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]"
+      "url": "[DATABRICKS_URL]/sql/warehouses/[MY_SQL_WAREHOUSE_ID]"
     }
   }
 }
@@ -150,30 +153,30 @@ Deployment complete!
 {
   "alerts": {
     "my_alert": {
-      "id": "[UUID]",
+      "id": "[MY_ALERT_ID]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?w=[NUMID]"
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[MY_ALERT_ID]"
     }
   },
   "pipelines": {
     "my_pipeline": {
-      "id": "[UUID]",
+      "id": "[MY_PIPELINE_ID]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]"
+      "url": "[DATABRICKS_URL]/pipelines/[MY_PIPELINE_ID]"
     }
   },
   "schemas": {
     "my_schema": {
-      "id": "main.test-schema",
+      "id": "[MY_SCHEMA_ID]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?w=[NUMID]"
+      "url": "[DATABRICKS_URL]/explore/data/main/test-schema"
     }
   },
   "sql_warehouses": {
     "my_sql_warehouse": {
-      "id": "[UUID]",
+      "id": "[MY_SQL_WAREHOUSE_ID]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]"
+      "url": "[DATABRICKS_URL]/sql/warehouses/[MY_SQL_WAREHOUSE_ID]"
     }
   }
 }
@@ -194,8 +197,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 4 deleted.
 
 >>> [CLI] bundle summary -o json
 {}

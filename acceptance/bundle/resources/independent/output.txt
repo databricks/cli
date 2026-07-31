@@ -1,4 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo         [DATABRICKS_URL]/jobs/[FOO_ID]
+created pipelines.my     [DATABRICKS_URL]/pipelines/[MY_ID]
+created volumes.volume1  [DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.

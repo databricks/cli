@@ -3,4 +3,5 @@ errcode $CLI bundle plan
 trace print_requests.py //pipeline
 
 trace $CLI bundle deploy
+replace_ids.py
 trace print_requests.py //pipeline

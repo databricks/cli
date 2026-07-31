@@ -6,6 +6,7 @@ trace $CLI pipelines init --output-dir output
 title "Deploy pipeline"
 cd output/lakeflow_project
 trace $CLI pipelines deploy
+replace_ids.py
 
 title "Run pipeline"
 trace $CLI pipelines run

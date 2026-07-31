@@ -4,6 +4,7 @@ set -euo pipefail
 trace $CLI bundle validate
 
 trace $CLI bundle deploy
+replace_ids.py
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt
 
 trace jq -s '.[] | select(.path=="/api/2.0/pipelines")' out.requests.txt

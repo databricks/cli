@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-removed-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_a  [DATABRICKS_URL]/jobs/[JOB_A_ID]
+created jobs.job_b  [DATABRICKS_URL]/jobs/[JOB_B_ID]
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deployment migrate
 Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
@@ -22,9 +23,9 @@ Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-removed-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+deleted jobs.job_b  [DATABRICKS_URL]/jobs/[JOB_B_ID]
+
+Deploy: 0 created, 0 changed, 1 deleted, 1 unchanged.
 
 >>> print_requests.py //jobs/delete
 {
@@ -36,7 +37,7 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [JOB_B_ID]
   }
 }
 

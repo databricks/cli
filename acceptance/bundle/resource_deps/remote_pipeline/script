@@ -5,6 +5,7 @@ print_requests() {
 
 $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
+replace_ids.py
 trace print_requests
 $CLI bundle plan -o json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests

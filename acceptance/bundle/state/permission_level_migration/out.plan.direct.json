@@ -49,13 +49,13 @@
         }
       },
       "remote_state": {
-        "object_id": "/jobs/123"
+        "object_id": "[MY_JOB_ID_2]"
       },
       "changes": {
         "": {
           "action": "update",
           "old": {
-            "object_id": "/jobs/123",
+            "object_id": "[MY_JOB_ID_2]",
             "__embed__": [
               {
                 "level": "CAN_VIEW",
@@ -80,9 +80,9 @@
         },
         "object_id": {
           "action": "update",
-          "old": "/jobs/123",
+          "old": "[MY_JOB_ID_2]",
           "new": "",
-          "remote": "/jobs/123"
+          "remote": "[MY_JOB_ID_2]"
         }
       }
     }

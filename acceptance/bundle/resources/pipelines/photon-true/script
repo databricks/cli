@@ -1,2 +1,3 @@
 trace $CLI bundle deploy
+replace_ids.py
 print_requests.py //api/2.0/pipelines

@@ -10,17 +10,17 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Uploading immutable bundle snapshot...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.my_job  [DATABRICKS_URL]/jobs/[MY_JOB_ID]
 
->>> [CLI] jobs get [NUMID]
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+
+>>> [CLI] jobs get [MY_JOB_ID]
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [MY_JOB_ID]
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [MY_JOB_ID]
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/some_path"
 
 >>> [CLI] bundle destroy --auto-approve
@@ -29,5 +29,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-no-artifacts-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

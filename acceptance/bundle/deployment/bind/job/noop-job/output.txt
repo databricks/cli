@@ -1,15 +1,14 @@
 
 >>> [CLI] jobs create --json {"name": "My Job"}
 
->>> [CLI] bundle deployment bind job_1 [NUMID] --auto-approve
-Updating deployment state...
-Successfully bound job with an id '[NUMID]'
+>>> [CLI] bundle deployment bind job_1 [JOB_1_ID] --auto-approve
+Successfully bound job with an id '[JOB_1_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated jobs.job_1  [DATABRICKS_URL]/jobs/[JOB_1_ID]
 
->>> [CLI] jobs get [NUMID] --output json
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+
+>>> [CLI] jobs get [JOB_1_ID] --output json

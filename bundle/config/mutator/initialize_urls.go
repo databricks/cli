@@ -25,22 +25,37 @@ func (m *initializeURLs) Name() string {
 }
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	workspaceID, err := auth.ResolveWorkspaceID(ctx, b.WorkspaceClient(ctx))
+	baseURL, err := WorkspaceBaseURL(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	host := b.WorkspaceClient(ctx).Config.CanonicalHostName()
-	err = initializeForWorkspace(b, workspaceID, host)
-	if err != nil {
-		return diag.FromErr(err)
+
+	for _, group := range b.Config.Resources.AllResources() {
+		for _, r := range group.Resources {
+			r.InitializeURL(baseURL)
+		}
 	}
+
 	return nil
 }
 
-func initializeForWorkspace(b *bundle.Bundle, workspaceID, host string) error {
+// WorkspaceBaseURL returns the workspace URL used as the base for resource links,
+// with ?w=<workspace id> appended when the workspace ID isn't already in the
+// hostname. Resolving the workspace ID may cost an extra API call; see
+// auth.ResolveWorkspaceID.
+func WorkspaceBaseURL(ctx context.Context, b *bundle.Bundle) (url.URL, error) {
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, b.WorkspaceClient(ctx))
+	if err != nil {
+		return url.URL{}, err
+	}
+	host := b.WorkspaceClient(ctx).Config.CanonicalHostName()
+	return workspaceBaseURL(host, workspaceID)
+}
+
+func workspaceBaseURL(host, workspaceID string) (url.URL, error) {
 	baseURL, err := url.Parse(host)
 	if err != nil {
-		return err
+		return url.URL{}, err
 	}
 
 	// Add ?w=<workspace id> only if <workspace id> wasn't in the subdomain
@@ -56,11 +71,5 @@ func initializeForWorkspace(b *bundle.Bundle, workspaceID, host string) error {
 		baseURL.RawQuery = values.Encode()
 	}
 
-	for _, group := range b.Config.Resources.AllResources() {
-		for _, r := range group.Resources {
-			r.InitializeURL(*baseURL)
-		}
-	}
-
-	return nil
+	return *baseURL, nil
 }

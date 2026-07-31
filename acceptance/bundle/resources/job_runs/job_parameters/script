@@ -6,6 +6,7 @@ trap cleanup EXIT
 
 title "deploy triggers the run with only the overridden parameter"
 trace $CLI bundle deploy
+replace_ids.py
 trace print_requests.py //jobs/run-now
 
 title "plan is stable: the resolved job default does not look like drift"

@@ -3,6 +3,7 @@ trace $CLI bundle plan
 
 title "after deploy, registered_model_id is resolved to the model's numeric id"
 trace $CLI bundle deploy
+replace_ids.py
 
 # Bind the model's exact numeric id to [MY_MODEL_ID] so the resolved reference is matched
 # precisely rather than by the broad [NUMID] pattern. The id comes from the API (independent

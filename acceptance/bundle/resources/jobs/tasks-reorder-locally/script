@@ -1,5 +1,6 @@
 trace $CLI bundle plan
 trace $CLI bundle deploy
+replace_ids.py
 trace $CLI bundle plan | contains.py "0 to add, 0 to change, 0 to delete"
 
 update_file.py databricks.yml task_aa task_XX

@@ -1,16 +1,34 @@
 #!/usr/bin/env python3
 """
 Read state and add all resource IDs to ACC_REPLS.
+
+Safe to call unconditionally after a deploy: with no -t it processes the state of
+every deployed target (both engines) and is a no-op when no state exists, so it
+never aborts a script (unlike print_state.py, which errors on ambiguous targets).
 """
 
 import argparse
+import glob
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from add_repl import add_repl
-from print_state import get_state_file
+
+
+def iter_state_files(target):
+    if target:
+        target_dirs = [f".databricks/bundle/{target}"]
+    else:
+        # Sort so the [<NAME>_ID] / [<NAME>_ID_2] labels assigned to identical
+        # resource keys across targets are deterministic, not glob-order dependent.
+        target_dirs = sorted(glob.glob(".databricks/bundle/*"))
+    for d in target_dirs:
+        for name in (f"{d}/terraform/terraform.tfstate", f"{d}/resources.json"):
+            if os.path.exists(name):
+                yield name
 
 
 def iter_ids_terraform(filename):
@@ -41,17 +59,15 @@ def iter_ids_direct(filename):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--target")
-    parser.add_argument("--backup", action="store_true")
     args = parser.parse_args()
 
-    filename = get_state_file(args.target, args.backup)
-    if filename.endswith(".tfstate"):
-        it = iter_ids_terraform(filename)
-    else:
-        it = iter_ids_direct(filename)
-
-    for name, id in it:
-        add_repl(id, name.upper() + "_ID")
+    for filename in iter_state_files(args.target):
+        if filename.endswith(".tfstate"):
+            it = iter_ids_terraform(filename)
+        else:
+            it = iter_ids_direct(filename)
+        for name, id in it:
+            add_repl(id, name.upper() + "_ID")
 
 
 if __name__ == "__main__":

@@ -9,6 +9,10 @@ trap cleanup EXIT
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
+# The deploy summary prints each genie room URL, which embeds a random id.
+echo "$($CLI bundle summary -o json | jq -r '.resources.genie_spaces.from_file.id'):GENIE_SPACE_ID_FILE" >> ACC_REPLS
+echo "$($CLI bundle summary -o json | jq -r '.resources.genie_spaces.from_inline.id'):GENIE_SPACE_ID_INLINE" >> ACC_REPLS
+
 # Capture the serialized_space sent to the Genie create API:
 #   - from_file must be sent verbatim from space.geniespace.json.
 #   - from_inline must be the inline YAML rendered as valid JSON (the fromjson

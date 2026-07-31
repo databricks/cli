@@ -5,6 +5,7 @@
       "action": "skip"
     },
     "resources.jobs.job_with_permissions.permissions": {
+      "id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
       "action": "delete"
     }
   }

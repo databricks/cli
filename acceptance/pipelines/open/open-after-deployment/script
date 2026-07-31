@@ -2,6 +2,7 @@ title "not deployed yet"
 errcode trace $CLI pipelines open
 
 errcode trace $CLI pipelines deploy
+replace_ids.py
 
 title "Modify PATH so that real open is not run"
 export PATH=.:$PATH

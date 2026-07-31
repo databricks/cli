@@ -7,6 +7,7 @@ trap cleanup EXIT
 
 trace $CLI bundle validate
 trace $CLI bundle deploy
+replace_ids.py
 
 
 # Get a job and check that task paths point into the snapshot

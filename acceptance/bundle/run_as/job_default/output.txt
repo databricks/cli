@@ -2,9 +2,9 @@
 === Deploy with run_as
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_with_run_as  [DATABRICKS_URL]/jobs/[JOB_WITH_RUN_AS_ID]
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //jobs
 {
@@ -41,7 +41,7 @@ Deployment complete!
   }
 }
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [JOB_WITH_RUN_AS_ID]
 {
   "user_name": "deco-test-user@databricks.com"
 }
@@ -54,16 +54,16 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated jobs.job_with_run_as  [DATABRICKS_URL]/jobs/[JOB_WITH_RUN_AS_ID]
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/reset",
   "body": {
-    "job_id": [NUMID],
+    "job_id": [JOB_WITH_RUN_AS_ID],
     "new_settings": {
       "deployment": {
         "kind": "BUNDLE",
@@ -93,7 +93,7 @@ Deployment complete!
   }
 }
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [JOB_WITH_RUN_AS_ID]
 {
   "user_name": "deco-test-user@databricks.com"
 }
@@ -104,5 +104,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

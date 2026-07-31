@@ -91,7 +91,7 @@
   ]
 }
 {
-  "job_id": [NUMID],
+  "job_id": [GIT_JOB_ID],
   "new_settings": {
     "deployment": {
       "kind": "BUNDLE",

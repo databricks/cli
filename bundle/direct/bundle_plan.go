@@ -178,6 +178,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
+			// Record the ID so the deploy summary can build a resource URL: a
+			// deleted resource is removed from config, so its URL can't be read
+			// back from the config resource the way live resources' URLs are.
+			entry.ID = id
+
 			remoteState, err := retryOnTransient(ctx, func() (any, error) {
 				return adapter.DoRead(ctx, id)
 			})

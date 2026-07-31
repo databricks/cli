@@ -1,4 +1,5 @@
 trace $CLI bundle deploy 2>&1
+replace_ids.py
 
 trace find.py --expect 2 whl
 

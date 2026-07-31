@@ -1,4 +1,5 @@
 trace $CLI bundle deploy
+replace_ids.py
 
 trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event | {bundle_uuid}' > out.telemetry.txt
 

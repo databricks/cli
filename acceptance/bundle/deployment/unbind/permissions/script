@@ -8,6 +8,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
+replace_ids.py
 job_id=$(trace $CLI bundle summary --output json | jq -r '.resources.jobs.job_1.id')
 trace $CLI jobs get-permissions $job_id --output json | jq '.access_control_list[] | select(.group_name == "users")'
 

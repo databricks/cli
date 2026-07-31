@@ -5,6 +5,7 @@
       "action": "skip"
     },
     "resources.pipelines.foo.permissions": {
+      "id": "/pipelines/[FOO_ID]",
       "action": "delete"
     }
   }

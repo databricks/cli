@@ -9,8 +9,8 @@ Resources:
   Jobs:
     foo:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[FOO_ID]
   Pipelines:
     bar:
       Name: 
-      URL:  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/pipelines/[BAR_ID]

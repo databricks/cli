@@ -168,7 +168,7 @@
           }
         ],
         "pipeline_task": {
-          "pipeline_id": "[UUID]"
+          "pipeline_id": "[MY_DEFAULT_PYTHON_ETL_ID]"
         },
         "task_key": "refresh_pipeline"
       }

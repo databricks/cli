@@ -1,4 +1,5 @@
 trace $CLI bundle deploy --var "job_name=My Job"
+replace_ids.py
 
 job_id=$(trace $CLI bundle summary --var "job_name=My Job" --output json | jq -r '.resources.jobs.job_1.id')
 

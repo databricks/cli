@@ -1,9 +1,20 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.chain_bottom    [DATABRICKS_URL]/jobs/[CHAIN_BOTTOM_ID]
+created jobs.chain_mid       [DATABRICKS_URL]/jobs/[CHAIN_MID_ID]
+created jobs.chain_top       [DATABRICKS_URL]/jobs/[CHAIN_TOP_ID]
+created jobs.diamond_bottom  [DATABRICKS_URL]/jobs/[DIAMOND_BOTTOM_ID]
+created jobs.diamond_left    [DATABRICKS_URL]/jobs/[DIAMOND_LEFT_ID]
+created jobs.diamond_right   [DATABRICKS_URL]/jobs/[DIAMOND_RIGHT_ID]
+created jobs.diamond_top     [DATABRICKS_URL]/jobs/[DIAMOND_TOP_ID]
+created jobs.independent1    [DATABRICKS_URL]/jobs/[INDEPENDENT1_ID]
+created jobs.independent2    [DATABRICKS_URL]/jobs/[INDEPENDENT2_ID]
+created jobs.multi_child     [DATABRICKS_URL]/jobs/[MULTI_CHILD_ID]
+created jobs.multi_parent1   [DATABRICKS_URL]/jobs/[MULTI_PARENT1_ID]
+created jobs.multi_parent2   [DATABRICKS_URL]/jobs/[MULTI_PARENT2_ID]
+
+Deploy: 12 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py --sort //jobs
 {
@@ -278,12 +289,22 @@ Deployment complete!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+deleted jobs.chain_bottom    [DATABRICKS_URL]/jobs/[CHAIN_BOTTOM_ID]
+deleted jobs.chain_mid       [DATABRICKS_URL]/jobs/[CHAIN_MID_ID]
+deleted jobs.chain_top       [DATABRICKS_URL]/jobs/[CHAIN_TOP_ID]
+deleted jobs.diamond_bottom  [DATABRICKS_URL]/jobs/[DIAMOND_BOTTOM_ID]
+deleted jobs.diamond_left    [DATABRICKS_URL]/jobs/[DIAMOND_LEFT_ID]
+deleted jobs.diamond_right   [DATABRICKS_URL]/jobs/[DIAMOND_RIGHT_ID]
+deleted jobs.diamond_top     [DATABRICKS_URL]/jobs/[DIAMOND_TOP_ID]
+deleted jobs.independent1    [DATABRICKS_URL]/jobs/[INDEPENDENT1_ID]
+deleted jobs.independent2    [DATABRICKS_URL]/jobs/[INDEPENDENT2_ID]
+deleted jobs.multi_child     [DATABRICKS_URL]/jobs/[MULTI_CHILD_ID]
+deleted jobs.multi_parent1   [DATABRICKS_URL]/jobs/[MULTI_PARENT1_ID]
+deleted jobs.multi_parent2   [DATABRICKS_URL]/jobs/[MULTI_PARENT2_ID]
+
+Deploy: 0 created, 0 changed, 12 deleted, 0 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 0 deleted.

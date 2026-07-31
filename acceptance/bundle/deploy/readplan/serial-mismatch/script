@@ -1,5 +1,6 @@
 # First deploy to create state
 trace $CLI bundle deploy
+replace_ids.py
 
 # Generate a plan (captures current lineage and serial)
 trace $CLI bundle plan -o json > plan.json

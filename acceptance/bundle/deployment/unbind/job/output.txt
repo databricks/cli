@@ -1,26 +1,25 @@
 
 >>> [CLI] bundle deploy --var job_name=My Job
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_1  [DATABRICKS_URL]/jobs/[JOB_1_ID]
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle summary --var job_name=My Job --output json
 
 >>> [CLI] bundle deployment unbind job_1 --var job_name=My Job
-Updating deployment state...
 
 >>> [CLI] bundle deploy --var job_name=Updated Job
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job_1  [DATABRICKS_URL]/jobs/[NUMID]
 
->>> [CLI] jobs get [NUMID] --output json
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+
+>>> [CLI] jobs get [JOB_1_ID] --output json
 {
   "created_time": [UNIX_TIME_MILLIS],
   "creator_user_name": "[USERNAME]",
-  "job_id": [NUMID],
+  "job_id": [JOB_1_ID],
   "run_as_user_name": "[USERNAME]",
   "settings": {
     "deployment": {

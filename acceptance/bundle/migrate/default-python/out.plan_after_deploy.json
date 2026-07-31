@@ -96,7 +96,7 @@
                 }
               ],
               "pipeline_task": {
-                "pipeline_id": "[UUID]"
+                "pipeline_id": "[MY_DEFAULT_PYTHON_ETL_ID]"
               },
               "task_key": "refresh_pipeline"
             }
@@ -134,7 +134,7 @@
             }
           }
         ],
-        "job_id": [NUMID],
+        "job_id": [SAMPLE_JOB_ID],
         "max_concurrent_runs": 4,
         "name": "[dev [USERNAME]] sample_job",
         "parameters": [
@@ -206,7 +206,7 @@
             ],
             "email_notifications": {},
             "pipeline_task": {
-              "pipeline_id": "[UUID]"
+              "pipeline_id": "[MY_DEFAULT_PYTHON_ETL_ID]"
             },
             "run_if": "ALL_SUCCESS",
             "task_key": "refresh_pipeline",
@@ -320,7 +320,7 @@
             "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files"
           ]
         },
-        "id": "[UUID]",
+        "id": "[MY_DEFAULT_PYTHON_ETL_ID]",
         "last_modified": [UNIX_TIME_MILLIS][1],
         "libraries": [
           {
@@ -330,12 +330,12 @@
           }
         ],
         "name": "[dev [USERNAME]] my_default_python_etl",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[MY_DEFAULT_PYTHON_ETL_ID]",
         "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl",
         "run_as_user_name": "[USERNAME]",
         "schema": "[USERNAME]",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]",
+        "storage": "dbfs:/pipelines/[MY_DEFAULT_PYTHON_ETL_ID]",
         "tags": {
           "dev": "[USERNAME]"
         }
@@ -344,7 +344,7 @@
         "storage": {
           "action": "skip",
           "reason": "backend_default",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[MY_DEFAULT_PYTHON_ETL_ID]"
         }
       }
     }

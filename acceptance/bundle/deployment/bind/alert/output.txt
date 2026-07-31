@@ -2,7 +2,6 @@
 >>> [CLI] alerts-v2 create-alert --json @alert.json
 
 >>> [CLI] bundle deployment bind my_alert [ALERT_ID] --auto-approve
-Updating deployment state...
 Successfully bound alert with an id '[ALERT_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
@@ -19,7 +18,6 @@ Resources:
       URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]
 
 >>> [CLI] bundle deployment unbind my_alert
-Updating deployment state...
 
 >>> [CLI] bundle summary
 Name: test-bind-alert-[UNIQUE_NAME]

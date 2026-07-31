@@ -1,12 +1,13 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created pipelines.foo  [DATABRICKS_URL]/pipelines/[FOO_ID]
+created schemas.bar    [DATABRICKS_URL]/explore/data/main/test-schema-[UNIQUE_NAME]
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Assert the pipeline is created with catalog
->>> [CLI] pipelines get [UUID]
+>>> [CLI] pipelines get [FOO_ID]
 {
   "spec": {
     "catalog": "main",
@@ -17,7 +18,7 @@ Deployment complete!
     },
     "development": true,
     "edition": "ADVANCED",
-    "id": "[UUID]",
+    "id": "[FOO_ID]",
     "libraries": [
       {
         "notebook": {
@@ -70,5 +71,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

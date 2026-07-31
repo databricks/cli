@@ -20,6 +20,7 @@ $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests
 
 trace $CLI bundle deploy
+replace_ids.py
 trace print_requests_short
 
 trace update_file.py databricks.yml aa_desc aa_new_desc

@@ -1,12 +1,12 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/partial_run/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.my_job  [DATABRICKS_URL]/jobs/[MY_JOB_ID]
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle run my_job --only task_1
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]
 
 [TIMESTAMP] "my_job" RUNNING
 [TIMESTAMP] "my_job" TERMINATED SUCCESS
@@ -25,7 +25,7 @@ Hello from notebook2!
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "job_id": [NUMID],
+    "job_id": [MY_JOB_ID],
     "only": [
       "task_1"
     ]
@@ -33,7 +33,7 @@ Hello from notebook2!
 }
 
 >>> [CLI] bundle run my_job --only task_1,task_2
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]
 
 [TIMESTAMP] "my_job" RUNNING
 [TIMESTAMP] "my_job" TERMINATED SUCCESS
@@ -52,7 +52,7 @@ Hello from notebook2!
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "job_id": [NUMID],
+    "job_id": [MY_JOB_ID],
     "only": [
       "task_1",
       "task_2"
@@ -61,7 +61,7 @@ Hello from notebook2!
 }
 
 >>> [CLI] bundle run my_job
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]
 
 [TIMESTAMP] "my_job" RUNNING
 [TIMESTAMP] "my_job" TERMINATED SUCCESS
@@ -80,7 +80,7 @@ Hello from notebook2!
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [MY_JOB_ID]
   }
 }
 
@@ -91,7 +91,7 @@ Error: task "non_existent_task" not found in job "my_job"
 Error: task "non_existent_task" not found in job "my_job"
 
 >>> [CLI] bundle run my_job --only task1.table1,task2>,task3>table3
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]
 
 [TIMESTAMP] "my_job" RUNNING
 [TIMESTAMP] "my_job" TERMINATED SUCCESS
@@ -110,7 +110,7 @@ Hello from notebook2!
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "job_id": [NUMID],
+    "job_id": [MY_JOB_ID],
     "only": [
       "task1.table1",
       "task2>",
@@ -120,7 +120,7 @@ Hello from notebook2!
 }
 
 >>> [CLI] bundle run my_job --only +task_1,task_2+
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]
 
 [TIMESTAMP] "my_job" RUNNING
 [TIMESTAMP] "my_job" TERMINATED SUCCESS
@@ -139,7 +139,7 @@ Hello from notebook2!
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "job_id": [NUMID],
+    "job_id": [MY_JOB_ID],
     "only": [
       "+task_1",
       "task_2+"

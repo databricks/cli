@@ -1,4 +1,5 @@
 trace $CLI bundle validate -t dev -o json | jq .resources
 trace $CLI bundle deploy -t dev
+replace_ids.py
 trace jq -s '.[] | select(.path=="/api/2.0/pipelines") | .body.name' out.requests.txt
 rm out.requests.txt

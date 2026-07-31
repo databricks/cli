@@ -8,6 +8,7 @@ trace $CLI bundle validate -o json | jq .artifacts
 
 $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
+replace_ids.py
 
 title "There are 2 original wheels and 2 patched ones"
 trace find.py --expect 4 whl

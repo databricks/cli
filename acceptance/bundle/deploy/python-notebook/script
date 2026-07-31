@@ -1,3 +1,4 @@
 trace $CLI bundle deploy
+replace_ids.py
 
 trace $CLI jobs list --output json
