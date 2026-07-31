@@ -59,7 +59,7 @@ Resource: resources.jobs.job_two
 === An unknown resource id alone is rejected (no match at all must not silently succeed)
 
 >>> [CLI] bundle config-remote-sync --select-ids jobs:no-such-id-123
-Error: no deployed jobs resource with id no-such-id-123; deployed jobs ids in state: [JOB_TWO_ID], [JOB_ONE_ID]
+Error: no deployed jobs resource with id no-such-id-123; deployed jobs ids in state: [JOB_ID], [JOB_ID]
 
 Exit code: 1
 

@@ -99,17 +99,22 @@ const maxReportedIDs = 10
 // apart from an empty state, a state for a different bundle, or a genuinely
 // stale id — the three have very different fixes.
 //
-// byTypeID is keyed "<type>:<id>" as built by ResolveResourceSelectors. Only
-// resource types and ids are reported: ids are opaque workspace identifiers,
-// while resource keys/names come from user configuration and are never included.
+// byTypeID is keyed "<type>:<id>" as built by ResolveResourceSelectors, mapping
+// to the plan key. Only resource types and ids are reported: ids are opaque
+// workspace identifiers, while resource keys/names come from user configuration
+// and are never included.
+//
+// Permissions and grants sub-resources are excluded. They are indexed under
+// their parent's type with a path-shaped object id ("jobs:/jobs/123"), which is
+// never selectable, would inflate the per-type counts, and would be redacted as
+// a path when the error is recorded in telemetry.
 func describeStateIDs(byTypeID map[string]string, resourceType string) string {
-	if len(byTypeID) == 0 {
-		return "the deployment state contains no resources with ids (the bundle may not be deployed, or its resource state is missing)"
-	}
-
 	countsByType := make(map[string]int)
 	var sameTypeIDs []string
-	for typeAndID := range byTypeID {
+	for typeAndID, resourceKey := range byTypeID {
+		if isPermissionsOrGrantsSubResource(resourceKey) {
+			continue
+		}
 		t, id, ok := strings.Cut(typeAndID, ":")
 		if !ok {
 			continue
@@ -118,6 +123,10 @@ func describeStateIDs(byTypeID map[string]string, resourceType string) string {
 		if t == resourceType {
 			sameTypeIDs = append(sameTypeIDs, id)
 		}
+	}
+
+	if len(countsByType) == 0 {
+		return "the deployment state contains no resources with ids (the bundle may not be deployed, or its resource state is missing)"
 	}
 
 	if len(sameTypeIDs) == 0 {

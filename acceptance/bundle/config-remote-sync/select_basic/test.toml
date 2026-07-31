@@ -8,3 +8,10 @@ DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
 
 [EnvMatrix]
 DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+
+# The two job ids are server-assigned, so their sort order in the
+# "deployed jobs ids in state" list varies run to run. Collapse the pair to a
+# single stable token so the expectation stays hermetic.
+[[Repls]]
+Old = 'deployed jobs ids in state: \[JOB_(ONE|TWO)_ID\], \[JOB_(ONE|TWO)_ID\]'
+New = 'deployed jobs ids in state: [JOB_ID], [JOB_ID]'
