@@ -27,4 +27,4 @@ Resources:
   Database instances:
     database_instance1:
       Name: test-instance-02
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-instance-02

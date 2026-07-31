@@ -2,7 +2,7 @@
 === Initial deploy: app created and started
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created apps.myapp
+created apps.myapp  [DATABRICKS_URL]/apps/myapp
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -11,7 +11,7 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 === Change description and deploy from plan: no extra start
 >>> update_file.py databricks.yml description: initial description: updated
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated apps.myapp
+updated apps.myapp  [DATABRICKS_URL]/apps/myapp
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

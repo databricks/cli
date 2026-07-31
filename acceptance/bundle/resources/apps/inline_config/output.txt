@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-inline-config-[UNIQUE_NAME]/default/files...
-created apps.myapp
+created apps.myapp  [DATABRICKS_URL]/apps/[UNIQUE_NAME]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

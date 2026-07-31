@@ -17,7 +17,7 @@ Resources:
   Database instances:
     my_instance:
       Name: test-db-synced-table-[UNIQUE_NAME]
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-db-synced-table-[UNIQUE_NAME]
   Synced database tables:
     my_synced_table:
       Name: ${resources.database_catalogs.my_catalog.name}.${resources.database_catalogs.my_catalog.database_name}.my_synced_table

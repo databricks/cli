@@ -2,7 +2,7 @@
 === Deploy with started=true: app created with compute running
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-created apps.myapp
+created apps.myapp  [DATABRICKS_URL]/apps/[UNIQUE_NAME]
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -32,7 +32,7 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-updated apps.myapp
+updated apps.myapp  [DATABRICKS_URL]/apps/[UNIQUE_NAME]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
@@ -58,7 +58,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 === Deploy fixes the drift: compute restarted
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-updated apps.myapp
+updated apps.myapp  [DATABRICKS_URL]/apps/[UNIQUE_NAME]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
@@ -72,7 +72,7 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-updated apps.myapp
+updated apps.myapp  [DATABRICKS_URL]/apps/[UNIQUE_NAME]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
@@ -104,7 +104,7 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-updated apps.myapp
+updated apps.myapp  [DATABRICKS_URL]/apps/[UNIQUE_NAME]
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 

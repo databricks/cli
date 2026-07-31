@@ -6,7 +6,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created apps.mykey
+created apps.mykey  [DATABRICKS_URL]/apps/myappname
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
@@ -22,7 +22,7 @@ Resources:
   Apps:
     mykey:
       Name: myappname
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/apps/myappname
 
 === Update description and re-deploy
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
@@ -34,7 +34,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated apps.mykey
+updated apps.mykey  [DATABRICKS_URL]/apps/myappname
 
 Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
@@ -50,7 +50,7 @@ Resources:
   Apps:
     mykey:
       Name: myappname
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/apps/myappname
 
 === Update name and re-deploy
 >>> update_file.py databricks.yml myappname mynewappname
@@ -70,11 +70,11 @@ Resources:
   Apps:
     mykey:
       Name: myappname
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/apps/myappname
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-recreated apps.mykey
+recreated apps.mykey  [DATABRICKS_URL]/apps/mynewappname
 
 Deploy: 1 created, 0 changed, 1 deleted, 0 unchanged.
 
@@ -93,7 +93,7 @@ Resources:
   Apps:
     mykey:
       Name: mynewappname
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/apps/mynewappname
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

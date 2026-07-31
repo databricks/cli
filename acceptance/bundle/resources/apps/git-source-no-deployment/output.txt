@@ -2,7 +2,7 @@
 === Deploy: app created with no_compute; git_source is not deployed until the app starts
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-no-deployment/default/files...
-created apps.myapp
+created apps.myapp  [DATABRICKS_URL]/apps/test-app-git-source-no-deployment
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

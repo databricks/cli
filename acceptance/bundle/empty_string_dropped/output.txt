@@ -1,7 +1,7 @@
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy -t tf
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/tf/files...
-created apps.my_app
+created apps.my_app                            [DATABRICKS_URL]/apps/test-app-tf
 created clusters.my_cluster                    [DATABRICKS_URL]/compute/clusters/[UUID]
 created database_instances.my_db_instance      [DATABRICKS_URL]/compute/database-instances/test-db-instance
 created experiments.my_experiment              [DATABRICKS_URL]/ml/experiments/[NUMID]
@@ -17,7 +17,7 @@ Deploy: 11 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy -t direct
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files...
-created apps.my_app
+created apps.my_app                            [DATABRICKS_URL]/apps/test-app-direct
 created clusters.my_cluster                    [DATABRICKS_URL]/compute/clusters/[UUID]
 created database_instances.my_db_instance      [DATABRICKS_URL]/compute/database-instances/test-db-instance
 created experiments.my_experiment              [DATABRICKS_URL]/ml/experiments/[NUMID]

@@ -10,7 +10,7 @@ Validation OK!
 
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]/files...
-created apps.test_app
+created apps.test_app  [DATABRICKS_URL]/apps/app-[UNIQUE_NAME]
 created jobs.foo       [DATABRICKS_URL]/jobs/[NUMID]
 
 Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.

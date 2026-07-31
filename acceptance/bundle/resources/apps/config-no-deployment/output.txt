@@ -2,7 +2,7 @@
 === Deploy: app created with no_compute; config is not deployed until the app starts
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-config-no-deployment/default/files...
-created apps.myapp
+created apps.myapp  [DATABRICKS_URL]/apps/test-app-config-no-deployment
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 

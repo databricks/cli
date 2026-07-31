@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 ✓ Deployment succeeded
-created apps.myapp
+created apps.myapp  [DATABRICKS_URL]/apps/my-app
 
 Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
