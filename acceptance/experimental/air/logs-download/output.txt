@@ -1,0 +1,12 @@
+
+=== download-to reports no logs when none are available
+>>> [CLI] experimental air logs 123 --download-to dl-logs
+Error: failed to download logs for run 123: no logs available for run 123
+
+Exit code: 1
+
+=== download-to with an out-of-range node is rejected
+>>> [CLI] experimental air logs 123 --download-to dl-logs --node 5
+Error: failed to download logs for run 123: node 5 does not exist: run has 2 node(s), indexed 0 to 1
+
+Exit code: 1

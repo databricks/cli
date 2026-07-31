@@ -72,12 +72,6 @@ func TestLogsFlagValidation(t *testing.T) {
 			wantMsg: "invalid --minutes",
 		},
 		{
-			name:    "download-to not implemented",
-			args:    []string{"5"},
-			flags:   map[string]string{"download-to": "/tmp/logs"},
-			wantMsg: "--download-to is not implemented yet",
-		},
-		{
 			name:    "review not implemented",
 			args:    []string{"5"},
 			flags:   map[string]string{"review": "true"},
