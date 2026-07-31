@@ -1,0 +1,20 @@
+# run_as is declared ignore_remote_changes: input_only. This test forces the situation where
+# a genuine local change (state has run_as A, config changes it to B) coincides with remote
+# already reading back B. Before the RemoteAlreadySet input-only fix, remote == new wrongly
+# skipped the change (reason: remote_already_set); it must instead classify as an update.
+
+trace $CLI bundle deploy
+pipeline_id="$(read_id.py my_pipeline)"
+
+title "Make local change: run_as user -> changed@example.test"
+update_file.py databricks.yml "original@example.test" "changed@example.test"
+
+title "Force remote run_as to match the new config value"
+edit_resource.py pipelines "$pipeline_id" <<EOF
+r["run_as"] = {"user_name": "changed@example.test"}
+EOF
+
+trace $CLI bundle plan
+$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+rm out.requests.txt

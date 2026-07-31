@@ -178,6 +178,7 @@ resources:
       # Thus it shows up as a remote change since we don't set on the object.
       - field: id
         reason: "!drop"
+      # QQQ should this be here? tests on AWS/GCP/Azure show run_as is echoed as run_as.user_name
       - field: run_as
         reason: input_only
 

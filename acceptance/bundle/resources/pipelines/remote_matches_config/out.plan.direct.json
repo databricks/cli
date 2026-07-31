@@ -1,0 +1,74 @@
+{
+  "plan_version": 2,
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.pipelines.my_pipeline": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "libraries": [
+            {
+              "notebook": {
+                "path": "/Users/{{workspace_user_name}}/test_notebook"
+              }
+            }
+          ],
+          "name": "Test Pipeline run_as guard",
+          "run_as": {
+            "user_name": "changed@example.test"
+          },
+          "serverless": true
+        }
+      },
+      "remote_state": {
+        "channel": "CURRENT",
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "id": "[MY_PIPELINE_ID]",
+        "last_modified": [UNIX_TIME_MILLIS],
+        "libraries": [
+          {
+            "notebook": {
+              "path": "/Users/{{workspace_user_name}}/test_notebook"
+            }
+          }
+        ],
+        "name": "Test Pipeline run_as guard",
+        "pipeline_id": "[MY_PIPELINE_ID]",
+        "run_as": {
+          "user_name": "changed@example.test"
+        },
+        "run_as_user_name": "[USERNAME]",
+        "serverless": true,
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[MY_PIPELINE_ID]"
+      },
+      "changes": {
+        "run_as.user_name": {
+          "action": "update",
+          "old": "original@example.test",
+          "new": "changed@example.test",
+          "remote": "changed@example.test"
+        },
+        "storage": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "dbfs:/pipelines/[MY_PIPELINE_ID]"
+        }
+      }
+    }
+  }
+}
