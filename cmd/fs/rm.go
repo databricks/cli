@@ -10,7 +10,7 @@ func newRmCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "rm PATH",
 		Short:   "Remove files and directories.",
-		Long:    `Remove files and directories from DBFS and UC Volumes.`,
+		Long:    `Remove files and directories from DBFS, UC Volumes and UC Skills.`,
 		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}

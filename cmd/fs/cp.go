@@ -210,9 +210,9 @@ func newCpCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cp SOURCE_PATH TARGET_PATH",
 		Short: "Copy files and directories.",
-		Long: `Copy files and directories to and from any paths on DBFS, UC Volumes or your local filesystem.
+		Long: `Copy files and directories to and from any paths on DBFS, UC Volumes, UC Skills or your local filesystem.
 
-	  For paths in DBFS and UC Volumes, it is required that you specify the "dbfs" scheme.
+	  For paths in DBFS, UC Volumes and UC Skills, it is required that you specify the "dbfs" scheme.
 	  For example: dbfs:/foo/bar.
 
 	  Recursively copying a directory will copy all files inside directory
