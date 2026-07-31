@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/dockercredentials"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
@@ -31,7 +32,13 @@ func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthA
 	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
 }
 
+type tokenLoader func(context.Context, loadTokenArgs) (*oauth2.Token, error)
+
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
+	return newTokenCommandWithLoader(authArguments, loadToken)
+}
+
+func newTokenCommandWithLoader(authArguments *auth.AuthArguments, load tokenLoader) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [PROFILE]",
 		Short: "Get authentication token",
@@ -50,6 +57,10 @@ and secret is not supported.`,
 	cmd.Flags().BoolVar(&forceRefresh, "force-refresh", false,
 		"Force a token refresh even if the cached token is still valid.")
 
+	var format string
+	cmd.Flags().StringVar(&format, "format", "", "Hidden output format")
+	_ = cmd.Flags().MarkHidden("format")
+
 	cmd.PreRunE = profileHostConflictCheck
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -61,7 +72,7 @@ and secret is not supported.`,
 			return err
 		}
 
-		t, err := loadToken(ctx, loadTokenArgs{
+		loadArgs := loadTokenArgs{
 			authArguments:      authArguments,
 			profileName:        profileName,
 			args:               args,
@@ -71,7 +82,16 @@ and secret is not supported.`,
 			tokenStore:         tokenStore,
 			mode:               mode,
 			persistentAuthOpts: nil,
-		})
+		}
+
+		if format == "docker" {
+			return writeDockerTokenOutput(ctx, cmd, loadArgs, load)
+		}
+		if format != "" {
+			return fmt.Errorf("unsupported token format %q", format)
+		}
+
+		t, err := load(ctx, loadArgs)
 		if err != nil {
 			return err
 		}
@@ -83,6 +103,70 @@ and secret is not supported.`,
 	}
 
 	return cmd
+}
+
+type dockerGetResponse struct {
+	Username string `json:"Username"`
+	Secret   string `json:"Secret"`
+}
+
+func writeDockerTokenOutput(ctx context.Context, cmd *cobra.Command, args loadTokenArgs, load tokenLoader) error {
+	if len(args.args) > 0 {
+		return errors.New("--format=docker does not accept positional arguments")
+	}
+	for _, name := range []string{"profile", "host", "account-id", "workspace-id"} {
+		flag := cmd.Flag(name)
+		if flag != nil && flag.Changed {
+			return fmt.Errorf("--format=docker does not support --%s", name)
+		}
+	}
+
+	rawServer, err := io.ReadAll(cmd.InOrStdin())
+	if err != nil {
+		return fmt.Errorf("read Docker credential request: %w", err)
+	}
+	registry, err := dockercredentials.ParseRegistryHost(string(rawServer))
+	if err != nil {
+		return err
+	}
+
+	profileName, err := dockerTokenProfileName(ctx, registry, args.profiler)
+	if err != nil {
+		return err
+	}
+
+	args.authArguments = &auth.AuthArguments{}
+	args.profileName = profileName
+	args.args = nil
+
+	t, err := load(ctx, args)
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(cmd.OutOrStdout()).Encode(dockerGetResponse{
+		Username: dockercredentials.OAuthTokenUsername,
+		Secret:   t.AccessToken,
+	})
+}
+
+func dockerTokenProfileName(ctx context.Context, registry dockercredentials.Registry, profiler profile.Profiler) (string, error) {
+	matchingProfiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
+		return p.WorkspaceID == registry.WorkspaceID
+	})
+	if err != nil {
+		return "", err
+	}
+	if len(matchingProfiles) == 0 {
+		return "", fmt.Errorf("no Databricks profile found for workspace ID %s from registry host %s. Run databricks auth login --host <workspace-url> or databricks auth configure-docker", registry.WorkspaceID, registry.Host)
+	}
+	if len(matchingProfiles) > 1 {
+		return "", fmt.Errorf("multiple Databricks profiles match workspace ID %s: %s. Make the profile selection unambiguous before using Docker credential helper", registry.WorkspaceID, strings.Join(matchingProfiles.Names(), " and "))
+	}
+	if err := validateConfigureDockerProfile(matchingProfiles[0]); err != nil {
+		return "", err
+	}
+	return matchingProfiles[0].Name, nil
 }
 
 func writeTokenOutput(w io.Writer, t *oauth2.Token, textMode bool) error {
