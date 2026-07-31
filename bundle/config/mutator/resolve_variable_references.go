@@ -214,7 +214,8 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	}
 
 	if m.artifactsReferenceUsed {
-		b.Metrics.Telemetry.ArtifactsReferenceUsed = true
+		b.Metrics.SetBoolValue("artifacts_reference_used", true)
+		b.Telemetry.ArtifactsReferenceUsed = true
 	}
 
 	return diags

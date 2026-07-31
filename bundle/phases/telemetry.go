@@ -10,25 +10,12 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 )
-
-// localCacheMeasurements converts the per-compute cache durations recorded by
-// libs/cache into telemetry entries, preserving the historical key.
-func localCacheMeasurements(b *bundle.Bundle) []protos.IntMapEntry {
-	durations := b.Metrics.Telemetry.ComputeDurationsMs
-	if len(durations) == 0 {
-		return nil
-	}
-	out := make([]protos.IntMapEntry, len(durations))
-	for i, ms := range durations {
-		out[i] = protos.IntMapEntry{Key: "local.cache.compute_duration", Value: ms}
-	}
-	return out
-}
 
 func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 	executionTimes := b.Metrics.ExecutionTimes
@@ -194,24 +181,26 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	slices.Sort(clusterIds)
 	slices.Sort(dashboardIds)
 
-	tm := &b.Metrics.Telemetry
 	for _, app := range b.Config.Resources.Apps {
 		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
-			tm.SetPaired(&tm.AppLifecycleStartedTrue, &tm.AppLifecycleStartedFalse, *app.Lifecycle.Started)
+			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
+			b.Telemetry.SetPaired(&b.Telemetry.AppLifecycleStartedTrue, &b.Telemetry.AppLifecycleStartedFalse, *app.Lifecycle.Started)
 			break
 		}
 	}
 
 	for _, cluster := range b.Config.Resources.Clusters {
 		if cluster != nil && cluster.Lifecycle != nil && cluster.Lifecycle.Started != nil {
-			tm.SetPaired(&tm.ClusterLifecycleStartedTrue, &tm.ClusterLifecycleStartedFalse, *cluster.Lifecycle.Started)
+			b.Metrics.SetBoolValue(metrics.ClusterLifecycleStarted, *cluster.Lifecycle.Started)
+			b.Telemetry.SetPaired(&b.Telemetry.ClusterLifecycleStartedTrue, &b.Telemetry.ClusterLifecycleStartedFalse, *cluster.Lifecycle.Started)
 			break
 		}
 	}
 
 	for _, warehouse := range b.Config.Resources.SqlWarehouses {
 		if warehouse != nil && warehouse.Lifecycle != nil && warehouse.Lifecycle.Started != nil {
-			tm.SetPaired(&tm.SqlWarehouseLifecycleStartedTrue, &tm.SqlWarehouseLifecycleStartedFalse, *warehouse.Lifecycle.Started)
+			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
+			b.Telemetry.SetPaired(&b.Telemetry.SqlWarehouseLifecycleStartedTrue, &b.Telemetry.SqlWarehouseLifecycleStartedFalse, *warehouse.Lifecycle.Started)
 			break
 		}
 	}
@@ -222,10 +211,12 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	// upstream via ResolveEngineSetting, so treating the FromEnv error as
 	// "not terraform" here cannot mask a real terraform opt-in.
 	if b.Config.Bundle.Engine == engine.EngineTerraform {
-		tm.EngineTerraformConfig = true
+		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
+		b.Telemetry.EngineTerraformConfig = true
 	}
 	if envEngine, _ := engine.FromEnv(ctx); envEngine == engine.EngineTerraform {
-		tm.EngineTerraformEnv = true
+		b.Metrics.SetBoolValue(metrics.EngineTerraformEnv, true)
+		b.Telemetry.EngineTerraformEnv = true
 	}
 
 	// If the bundle UUID is not set, we use a default 0 value.
@@ -309,8 +300,8 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
 				TargetCount:                  b.Metrics.TargetCount,
 				WorkspaceArtifactPathType:    artifactPathType,
-				BoolValues:                   b.Metrics.Telemetry.BoolValues(),
-				LocalCacheMeasurementsMs:     localCacheMeasurements(b),
+				BoolValues:                   b.Metrics.BoolValues,
+				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
 				PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
 				PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,
 				PythonResourceLoadersCount:   int64(len(experimentalConfig.Python.Resources)),

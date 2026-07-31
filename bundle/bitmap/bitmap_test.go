@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -138,4 +139,45 @@ func TestDecodeBadMagic(t *testing.T) {
 	// Valid base64 + deflate but not our payload.
 	_, _, err := Decode("not-valid-base64!!!")
 	assert.Error(t, err)
+}
+
+func benchConfig() config.Root {
+	var cfg config.Root
+	cfg.Bundle.Name = "bench"
+	cfg.Resources.Jobs = map[string]*resources.Job{
+		"j": {
+			JobSettings: jobs.JobSettings{
+				Name: "My Job",
+				Tags: map[string]string{"team": "data", "env": "prod"},
+				Tasks: []jobs.Task{
+					{TaskKey: "a", NotebookTask: &jobs.NotebookTask{NotebookPath: "/nb"}},
+					{TaskKey: "b", NewCluster: &compute.ClusterSpec{NumWorkers: 2}},
+				},
+			},
+		},
+	}
+	return cfg
+}
+
+func BenchmarkBits(b *testing.B) {
+	schema := EmbeddedSchema()
+	cfg := benchConfig()
+	tm := testTelemetry{SelectUsed: true}
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := Bits(cfg, tm, schema)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkWalkSchema(b *testing.B) {
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := WalkSchema(reflect.TypeFor[testTelemetry]())
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
 }

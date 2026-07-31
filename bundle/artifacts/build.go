@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/exec"
@@ -63,7 +64,8 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 
 		if a.Type == "whl" && a.DynamicVersion && cacheDir != "" {
-			b.Metrics.Telemetry.ArtifactDynamicVersionIsSet = true
+			b.Metrics.AddBoolValue(metrics.ArtifactDynamicVersionIsSet, true)
+			b.Telemetry.ArtifactDynamicVersionIsSet = true
 			for ind, artifactFile := range a.Files {
 				patchedWheel := makePatchedWheel(ctx, cacheDir, artifactName, artifactFile.Source)
 				log.Debugf(ctx, "Patching ind=%d artifactName=%s Source=%s patchedWheel=%s", ind, artifactName, artifactFile.Source, patchedWheel)

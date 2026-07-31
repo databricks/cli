@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -78,14 +79,11 @@ type Metrics struct {
 	ConfigurationFileCount      int64
 	TargetCount                 int64
 	DeploymentId                uuid.UUID
+	BoolValues                  []protos.BoolMapEntry
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
-
-	// Telemetry holds the boolean feature flags collected during the deploy.
-	// Its fields feed both the deploy telemetry wire (via BoolValues) and the
-	// bundle bitmap.
-	Telemetry Telemetry
+	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
 
 	// StateEngine is the engine that ran the deploy, set in deployCore. Empty when
 	// telemetry is emitted without a deploy having run.
@@ -96,6 +94,31 @@ type Metrics struct {
 	// bytes so deploy telemetry can be derived without re-reading or re-parsing
 	// the state file. Nil for terraform deploys.
 	ResourceState resourcestate.ExportedResourcesMap
+}
+
+// SetBoolValue sets the value of a boolean metric.
+// If the metric does not exist, it is created.
+// If the metric exists, it is updated.
+// Ensures that the metric is unique
+func (m *Metrics) SetBoolValue(key string, value bool) {
+	for i, v := range m.BoolValues {
+		if v.Key == key {
+			m.BoolValues[i].Value = value
+			return
+		}
+	}
+	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
+}
+
+func (m *Metrics) AddBoolValue(key string, value bool) {
+	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
+}
+
+// AddDurationValue sets the value of a duration metric in milliseconds.
+// The value is added to the list of measurements.
+func (m *Metrics) AddDurationValue(key string, value time.Duration) {
+	valueMs := value.Milliseconds()
+	m.LocalCacheMeasurementsMs = append(m.LocalCacheMeasurementsMs, protos.IntMapEntry{Key: key, Value: valueMs})
 }
 
 type Bundle struct {
@@ -211,6 +234,11 @@ type Bundle struct {
 	Cache *cache.Cache
 
 	Metrics Metrics
+
+	// Telemetry mirrors the boolean telemetry flags into a typed struct for the
+	// bundle bitmap. It is additive: the Metrics mechanism above still feeds the
+	// telemetry wire unchanged.
+	Telemetry Telemetry
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
