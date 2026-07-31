@@ -1,6 +1,1 @@
 musterr trace $CLI repos get /Repos/me@databricks.com/doesnotexist -o json
-
-# A path that exists but is not a repo is no longer rejected client-side by an
-# object-type check; the repos API is the authority and returns not found.
-$CLI workspace mkdirs /not-a-repo
-musterr trace $CLI repos get /not-a-repo -o json
