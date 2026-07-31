@@ -214,13 +214,13 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 }
 
 func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	tm := &b.Metrics.Telemetry
-
 	// Track the use of the legacy run_as mode.
-	tm.SetPaired(&tm.UseLegacyRunAsTrue, &tm.UseLegacyRunAsFalse, b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs)
+	b.Metrics.AddBoolValue("experimental.use_legacy_run_as", b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs)
+	b.Telemetry.SetPaired(&b.Telemetry.UseLegacyRunAsTrue, &b.Telemetry.UseLegacyRunAsFalse, b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs)
 
 	// Track whether top level run_as is set.
-	tm.SetPaired(&tm.RunAsSetTrue, &tm.RunAsSetFalse, b.Config.Value().Get("run_as").Kind() != dyn.KindInvalid)
+	b.Metrics.AddBoolValue("run_as_set", b.Config.Value().Get("run_as").Kind() != dyn.KindInvalid)
+	b.Telemetry.SetPaired(&b.Telemetry.RunAsSetTrue, &b.Telemetry.RunAsSetFalse, b.Config.Value().Get("run_as").Kind() != dyn.KindInvalid)
 
 	// Mutator is a no-op if run_as is not specified in the bundle
 	if b.Config.Value().Get("run_as").Kind() == dyn.KindInvalid {

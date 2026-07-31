@@ -14,6 +14,14 @@ Deployment complete!
 >>> print_telemetry_bool_values
 dms_compat_auto true
 dms_compat_auto true
+dms_undeclared_deploying_user false
+dms_undeclared_deploying_user false
+dms_undeclared_group false
+dms_undeclared_group false
+dms_undeclared_other_user false
+dms_undeclared_other_user false
+dms_undeclared_service_principal false
+dms_undeclared_service_principal false
 experimental.use_legacy_run_as false
 experimental.use_legacy_run_as false
 has_classic_interactive_compute false
@@ -38,3 +46,9 @@ skip_artifact_cleanup false
 skip_artifact_cleanup false
 state_path_in_deployer_home true
 state_path_in_deployer_home true
+state_path_in_other_user_home false
+state_path_in_other_user_home false
+state_path_is_shared false
+state_path_is_shared false
+state_path_other false
+state_path_other false

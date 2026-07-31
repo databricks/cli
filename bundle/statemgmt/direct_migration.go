@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/migrate"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -54,12 +55,13 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
 		log.Warnf(ctx, "%sfailed to parse terraform state: %v", warnPrefix, err)
-		tm := &b.Metrics.Telemetry
 		if requestedEngine.Type == engine.EngineDirect {
-			tm.DirectMigrateError = true
+			b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+			b.Telemetry.DirectMigrateError = true
 			log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
 		} else {
-			tm.SetPaired(&tm.DirectDryMigrateSuccessTrue, &tm.DirectDryMigrateSuccessFalse, false)
+			b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, false)
+			b.Telemetry.SetPaired(&b.Telemetry.DirectDryMigrateSuccessTrue, &b.Telemetry.DirectDryMigrateSuccessFalse, false)
 		}
 		return
 	}
@@ -83,7 +85,8 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		}
 		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (opted in via "+requestedEngine.Source+")...")
 		if err := backupTerraformState(ctx, b); err != nil {
-			b.Metrics.Telemetry.DirectMigrateCommitError = true
+			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
+			b.Telemetry.DirectMigrateCommitError = true
 			log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 			return
 		}
@@ -111,22 +114,24 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		log.Warnf(ctx, "%s", feedbackNotice)
 	}
 
-	tm := &b.Metrics.Telemetry
-
 	// The user did not opt in to the direct engine — the conversion was only
 	// a dry run for fleet-wide telemetry, so record dry-run outcome only.
 	if requestedEngine.Type != engine.EngineDirect {
-		tm.SetPaired(&tm.DirectDryMigrateSuccessTrue, &tm.DirectDryMigrateSuccessFalse, err == nil)
-		tm.SetPaired(&tm.DirectDryMigrateWarningsTrue, &tm.DirectDryMigrateWarningsFalse, hasWarnings)
+		b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, err == nil)
+		b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, hasWarnings)
+		b.Telemetry.SetPaired(&b.Telemetry.DirectDryMigrateSuccessTrue, &b.Telemetry.DirectDryMigrateSuccessFalse, err == nil)
+		b.Telemetry.SetPaired(&b.Telemetry.DirectDryMigrateWarningsTrue, &b.Telemetry.DirectDryMigrateWarningsFalse, hasWarnings)
 		return
 	}
 
 	// From here on, the user opted in: use the migrate_* telemetry keys.
 	if err != nil {
-		tm.DirectMigrateError = true
+		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+		b.Telemetry.DirectMigrateError = true
 	}
 	if hasWarnings {
-		tm.DirectMigrateWarnings = true
+		b.Metrics.SetBoolValue(metrics.DirectMigrateWarnings, true)
+		b.Telemetry.DirectMigrateWarnings = true
 	}
 
 	if err != nil || hasWarnings {
@@ -137,7 +142,8 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	cmdio.LogString(ctx, "Migrating state to direct deployment engine (opted in via "+requestedEngine.Source+")...")
 
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
-		tm.DirectMigrateCommitError = true
+		b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
+		b.Telemetry.DirectMigrateCommitError = true
 		log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 		return
 	}
@@ -152,9 +158,10 @@ func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	if requestedEngine.Type == engine.EngineDirect {
 		return
 	}
-	tm := &b.Metrics.Telemetry
-	tm.SetPaired(&tm.DirectDryMigrateSuccessTrue, &tm.DirectDryMigrateSuccessFalse, true)
-	tm.SetPaired(&tm.DirectDryMigrateWarningsTrue, &tm.DirectDryMigrateWarningsFalse, false)
+	b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, true)
+	b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, false)
+	b.Telemetry.SetPaired(&b.Telemetry.DirectDryMigrateSuccessTrue, &b.Telemetry.DirectDryMigrateSuccessFalse, true)
+	b.Telemetry.SetPaired(&b.Telemetry.DirectDryMigrateWarningsTrue, &b.Telemetry.DirectDryMigrateWarningsFalse, false)
 }
 
 // recordAutoMigrateSource sets exactly one of the migrated-via-* telemetry
@@ -165,9 +172,11 @@ func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 // ConfigType == EngineNotSet.
 func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	if requestedEngine.ConfigType == engine.EngineDirect {
-		b.Metrics.Telemetry.DirectMigratedViaConfig = true
+		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaConfig, true)
+		b.Telemetry.DirectMigratedViaConfig = true
 	} else {
-		b.Metrics.Telemetry.DirectMigratedViaEnv = true
+		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaEnv, true)
+		b.Telemetry.DirectMigratedViaEnv = true
 	}
 }
 

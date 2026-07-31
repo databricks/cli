@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/textutil"
@@ -46,8 +47,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	t := b.Config.Presets
 	prefix := t.NamePrefix
 
-	tm := &b.Metrics.Telemetry
-	tm.SetPaired(&tm.PresetsNamePrefixIsSetTrue, &tm.PresetsNamePrefixIsSetFalse, prefix != "")
+	b.Metrics.AddBoolValue(metrics.PresetsNamePrefixIsSet, prefix != "")
+	b.Telemetry.SetPaired(&b.Telemetry.PresetsNamePrefixIsSetTrue, &b.Telemetry.PresetsNamePrefixIsSetFalse, prefix != "")
 
 	tags := toTagArray(t.Tags)
 
