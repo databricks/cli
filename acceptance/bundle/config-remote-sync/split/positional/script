@@ -1,0 +1,53 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+pipeline_id="$(read_id.py split_pipeline)"
+
+
+# Length-preserving field edits on both elements of a positional list that is
+# split across two blocks. Each edit must land in its own block.
+title "Edit num_workers on the top-level cluster and on the target cluster"
+edit_resource.py pipelines $pipeline_id <<EOF
+for cluster in r["clusters"]:
+    if cluster["label"] == "default":
+        cluster["num_workers"] = 5
+    if cluster["label"] == "maintenance":
+        cluster["num_workers"] = 3
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "default updates top-level, maintenance updates the target block"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+
+# A length change on a split positional list. Either it is applied correctly or
+# the source is left unchanged -- the surviving elements must never be corrupted,
+# and no cluster may be lost.
+title "Remove the target-block cluster (length change)"
+edit_resource.py pipelines $pipeline_id <<EOF
+r["clusters"] = [c for c in r["clusters"] if c["label"] != "maintenance"]
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "Applied correctly or left unchanged; default cluster never corrupted"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+trace grep -c "label: default" databricks.yml
+rm databricks.yml.backup

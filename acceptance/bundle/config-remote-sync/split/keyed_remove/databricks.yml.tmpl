@@ -1,0 +1,45 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# remove_job: gamma/beta live top-level, alpha lives in the target block. The
+# merged order is [alpha, beta, gamma], so the merged indices collide with the
+# physical ones -- removing by merged index deletes the wrong tasks.
+#
+# twoblock_remove_job: "both" is defined in the two blocks at once. Removing it
+# cannot be expressed as "drop it from one scope but keep the merged result", so
+# the sync must leave the source untouched rather than half-deleting it.
+resources:
+  jobs:
+    remove_job:
+      tasks:
+        - task_key: gamma
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/gamma
+        - task_key: beta
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/beta
+
+    twoblock_remove_job:
+      tasks:
+        - task_key: both
+          max_retries: 2
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/both
+        - task_key: keep
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/keep
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        remove_job:
+          tasks:
+            - task_key: alpha
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/alpha
+        twoblock_remove_job:
+          tasks:
+            - task_key: both
+              timeout_seconds: 30

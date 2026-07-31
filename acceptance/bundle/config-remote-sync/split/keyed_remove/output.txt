@@ -1,0 +1,54 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Remove gamma from the top-level block and alpha from the target block
+=== Sync
+Error: failed to generate YAML files: failed to apply change to file [TEST_TMP_DIR]/databricks.yml for a field resources.jobs.remove_job.tasks[2]: failed to apply change: op remove /resources/jobs/remove_job/tasks/2: remove index key out of bounds (idx 2, len 2)
+
+Exit code: 1
+
+=== Exactly gamma and alpha are gone; beta survives
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+=== Remove the task defined in BOTH blocks
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.twoblock_remove_job
+  tasks[task_key='both']: remove
+
+
+
+=== 'both' is gone from both blocks; 'keep' survives
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -22,8 +22,4 @@
+     twoblock_remove_job:
+       tasks:
+-        - task_key: both
+-          max_retries: 2
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/both
+         - task_key: keep
+           notebook_task:
+
+>>> grep -c task_key: both databricks.yml
+1
+
+>>> grep -c task_key: keep databricks.yml
+1
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.remove_job
+  delete resources.jobs.twoblock_remove_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!
