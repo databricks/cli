@@ -38,15 +38,15 @@ env-owned sections are refreshed, user-owned content is preserved).`,
 	// silently ignoring them.
 	cmd.Args = cobra.NoArgs
 	cmd.PreRunE = root.MustWorkspaceClient
-	addTargetFlags(cmd)
+	addComputeFlags(cmd)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		return runPipeline(cmd)
 	}
 	return cmd
 }
 
-// addTargetFlags adds the shared target and mode flags to a command.
-func addTargetFlags(cmd *cobra.Command) {
+// addComputeFlags adds the shared compute and mode flags to a command.
+func addComputeFlags(cmd *cobra.Command) {
 	cmd.Flags().String("cluster-id", "", "cluster ID to use as the compute target")
 	cmd.Flags().String("cluster-name", "", "cluster name to use as the compute target (resolved to an ID via the Clusters API)")
 	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. 5)")
@@ -74,7 +74,7 @@ func runPipeline(cmd *cobra.Command) error {
 	check, _ := cmd.Flags().GetBool("dry-run")
 	constraintSource, _ := cmd.Flags().GetString("constraint-source-url")
 
-	targetFlags := libslocalenv.TargetFlags{
+	computeFlags := libslocalenv.ComputeFlags{
 		Cluster:     cluster,
 		ClusterName: clusterName,
 		Serverless:  serverless,
@@ -102,7 +102,7 @@ func runPipeline(cmd *cobra.Command) error {
 	}
 	cacheDir = filepath.Join(cacheDir, "databricks", "localenv")
 
-	// The bundle is only a fallback: ResolveTarget consults it solely when no
+	// The bundle is only a fallback: ResolveCompute consults it solely when no
 	// explicit --cluster-id/--cluster-name/--serverless-version/--job-task flag is set. Skip the bundle load
 	// entirely when a flag is present — it would otherwise re-run TryConfigureBundle
 	// (a second full load) and re-print any bundle load-time diagnostics for nothing.
@@ -118,7 +118,7 @@ func runPipeline(cmd *cobra.Command) error {
 		ProjectDir:        projectDir,
 		ConstraintBaseURL: constraintBaseURL,
 		CacheDir:          cacheDir,
-		Flags:             targetFlags,
+		Flags:             computeFlags,
 		Compute:           sdkCompute{w: w},
 		Bundle:            bt,
 		PM:                libslocalenv.NewUvManager(),

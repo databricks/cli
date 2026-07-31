@@ -75,7 +75,7 @@ func TestProvisionCreatesAndValidatesVenv(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, Check: false, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "5"},
+		Flags:   ComputeFlags{Serverless: "5"},
 		Compute: stubCompute{}, PM: NewUvManager(),
 	}
 	res, err := p.Run(realProvisionCtx(t))
@@ -134,7 +134,7 @@ func TestProvisionValidateIgnoresActiveVirtualEnv(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, Check: false, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "5"},
+		Flags:   ComputeFlags{Serverless: "5"},
 		Compute: stubCompute{}, PM: NewUvManager(),
 	}
 	res, err := p.Run(ctx)
