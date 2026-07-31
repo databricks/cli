@@ -57,17 +57,35 @@ A field qualifies if it is large (a small field gains nothing — the hash place
 
 `dashboards.serialized_dashboard` happens to need both, for unrelated reasons: it is `hashed_in_state` because the inlined dashboard JSON is large, and it is *separately* `ignore_remote_changes` because the **server normalizes** it (adds `pageType`, reorders keys) so its remote hash never equals the config hash — drift is detected via `etag` instead. The plan therefore reports the field as a hash on all three sides. No state version bump is needed: legacy full-content state is hashed on read for comparison and rewritten compactly on the next save.
 
-## RemapState and missing remote fields
+## RemapState is a dumb copy; DoRead owns all remapping
 
-Do not populate a field in `RemapState` by mapping it from a differently-named field in `RemoteType`. When a field is absent from `RemoteType` the engine automatically suppresses remote drift for it (reason: `missing_in_remote`), which means any value `RemapState` sets there is invisible to drift detection — real remote changes go undetected.
+`RemapState` converts `RemoteType` to `StateType` only because `StateType` is typically a
+subset of `RemoteType`. It must be a field-by-field copy (or no-op), never a place for
+logic. In particular, do not remap a differently-named field there (e.g. `state.x = remote.status.x`).
+Any remapping the API requires belongs in `DoRead`: add `x` directly to `RemoteType` and
+populate it from `status.x` inside `DoRead`.
 
-The correct pattern is:
+This is not a style preference — the plan classifier depends on it. Because `RemapState` is a
+dumb copy, a field absent from `RemoteType` is always nil/zero in the remapped remote state the
+planner compares against: there is nothing to copy it from. So "path present in `StateType` but
+absent from `RemoteType`" reliably means "field the API accepts on write but never echoes on
+read," and its remote value is guaranteed meaningless (see `isFieldMissingInRemote` /
+`missing_in_remote` in `bundle_plan.go`).
+
+A `RemapState` that instead synthesizes `state.x = remote.status.x` breaks this: `x` is absent
+from `RemoteType`, so the classifier treats it as input-only and skips it (`missing_in_remote`),
+yet the field actually has a real remote value under `status.x`. Genuine remote drift is then
+silently suppressed. The fix is to make the field genuinely present in `RemoteType`, not to
+smuggle it in via `RemapState`.
+
+So when a field comes back under a different path than `StateType` uses:
 
 1. Add the field to `RemoteType` (the struct returned by `DoRead`).
 2. Populate it in `DoRead` by mapping from whatever the API returns under the other name.
-3. Keep `RemapState` trivial (a direct struct copy or no-op).
+3. Keep `RemapState` a trivial subset copy.
 
-This makes the field present in `InputType`, `StateType`, and `RemoteType`, so it participates in normal drift detection and is no longer subject to the `missing_in_remote` suppression.
+This makes the field present in `InputType`, `StateType`, and `RemoteType`, so it participates
+in normal drift detection and is no longer subject to the `missing_in_remote` suppression.
 
 ## OverrideChangeDesc
 
