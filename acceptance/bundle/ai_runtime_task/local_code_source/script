@@ -1,30 +1,24 @@
-# A local code_source_path is packaged into a content-addressed tarball
-# (<dir>_<hash>.tar.gz) and uploaded to the user's repo_snapshots directory. The
-# command_path is translated to its synced workspace path, and a requirements.yaml
-# derived from the job's serverless environment is written beside it.
+# A local code_source_path is packaged into a content-addressed tarball, uploaded
+# to repo_snapshots, and code_source_path/command_path rewritten; a requirements.yaml
+# is written next to command_path.
 
-title "deploy packages the local code source\n"
+title "deploy packages and uploads the local code source\n"
 trace $CLI bundle deploy
 
-title "the snapshot tarball is uploaded to the user's repo_snapshots directory\n"
-# The upload appears twice: WSFS import-file 404s until the parent dir exists, then
-# the filer mkdirs and retries. Collapse to the distinct path.
-jq -r 'select(.path | test("/import-file/.*/.air/repo_snapshots/src/src_")) | .path' out.requests.txt | sort -u
+title "the tarball contains only synced files: .gitignore'd excluded, sync.include kept, *.log excluded\n"
+trace list_code_snapshot.py
 
-title "code_source_path points at the uploaded archive (no /Workspace prefix)\n"
-jq -r 'select(.path == "/api/2.2/jobs/create") | .body.tasks[0].ai_runtime_task.code_source_path' out.requests.txt
+title "code_source_path and command_path are rewritten; requirements.yaml is written next to command_path\n"
+# --del-body raw_body drops the binary tarball upload body (kept readable); the
+# tarball path itself is asserted via list_code_snapshot.py above. --keep is not
+# passed, so print_requests.py consumes out.requests.txt.
+trace print_requests.py --sort --del-body raw_body '/repo_snapshots/' '/jobs/create' '/files/src/requirements.yaml'
 
-title "command_path is translated to its absolute synced workspace path\n"
-jq -r 'select(.path == "/api/2.2/jobs/create") | .body.tasks[0].ai_runtime_task.deployments[0].command_path' out.requests.txt
-
-title "a requirements.yaml is written next to command_path\n"
-jq -r 'select(.path | test("/import-file/.*/files/src/requirements.yaml$")) | .path' out.requests.txt | sort -u
-
-rm out.requests.txt
-
-title "re-deploying unchanged code is a cache hit: the tarball is not re-uploaded\n"
+title "re-deploy of unchanged code is a cache hit (no tarball upload)\n"
 trace $CLI bundle deploy
-echo -n "tarball uploads on redeploy: "
-jq -r 'select(.path | test("/import-file/.*/.air/repo_snapshots/src/src_")) | .path' out.requests.txt | sort -u | wc -l | tr -d ' '
+trace print_requests.py --sort --del-body raw_body '/repo_snapshots/'
 
-rm out.requests.txt
+title "editing a file changes the hash and re-uploads (cache miss)\n"
+update_file.py src/train.py 'print("training")' 'print("training v2")'
+trace $CLI bundle deploy
+trace print_requests.py --sort --del-body raw_body '/repo_snapshots/'

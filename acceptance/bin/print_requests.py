@@ -226,9 +226,12 @@ def main():
 
     for req in filtered_requests:
         body = req.get("body")
-        if isinstance(body, dict):
-            for field in del_body_fields:
+        for field in del_body_fields:
+            # Drop the field from the parsed body, and (for non-JSON bodies) the
+            # top-level raw_body — used to strip binary/volatile upload payloads.
+            if isinstance(body, dict):
                 body.pop(field, None)
+            req.pop(field, None)
     if args.verbose:
         print(
             f"Read {len(data)} chars, {len(requests)} requests, {len(filtered_requests)} after filtering",

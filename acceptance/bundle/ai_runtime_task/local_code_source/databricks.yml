@@ -2,9 +2,11 @@ bundle:
   name: ai-runtime-test
 
 sync:
-  # Exclude a file from both bundle sync and the code snapshot.
+  # *.log excluded; data/*.bin force-included despite .gitignore.
   exclude:
     - "**/*.log"
+  include:
+    - src/data/*.bin
 
 resources:
   jobs:
