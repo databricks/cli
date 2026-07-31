@@ -23,6 +23,7 @@ experimental and may change in future versions.`,
 	cmd.AddCommand(newLogsCommand())
 	cmd.AddCommand(newCancelCommand())
 	cmd.AddCommand(newRegisterImageCommand())
+	cmd.AddCommand(newConvertToDabsCommand())
 
 	return cmd
 }

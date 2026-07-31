@@ -1,0 +1,83 @@
+
+=== convert an AIR run YAML into a DABs bundle
+>>> [CLI] experimental air convert-to-dabs train.yaml --output-dir generated
+Wrote a Databricks Asset Bundle to generated:
+  databricks.yml
+  training_config.yaml
+  command.sh
+  code_source/
+
+Notes:
+  - code_source was staged into the code_source/ directory; bundle deploy packages and uploads it. Re-run convert-to-dabs to re-stage after code changes.
+
+To deploy and run this workload as a bundle:
+  1. cd generated
+  2. databricks bundle validate
+  3. databricks bundle deploy
+  4. databricks bundle run torchrun-a10-smoke-test
+
+bundle deploy uploads the code source and launch scripts automatically.
+
+Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
+persistent job that is not garbage-collected. When you are done, remove the
+job and its uploaded files with:
+  databricks bundle destroy
+
+=== emitted databricks.yml
+>>> cat generated/databricks.yml
+bundle:
+  name: torchrun-a10-smoke-test
+targets:
+  dev:
+    mode: development
+    default: true
+resources:
+  jobs:
+    torchrun-a10-smoke-test:
+      name: torchrun-a10-smoke-test
+      tasks:
+        - task_key: torchrun-a10-smoke-test
+          environment_key: default
+          ai_runtime_task:
+            experiment: torchrun-a10-smoke-test
+            deployments:
+              - command_path: ./command.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1
+            code_source_path: ./code_source
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - numpy
+
+=== the generated command.sh carries the run command
+>>> cat generated/command.sh
+torchrun --nproc_per_node=1 train.py
+=== the code source is staged as a directory (packaged at deploy time)
+>>> ls generated
+code_source
+command.sh
+databricks.yml
+training_config.yaml
+
+>>> ls generated/code_source
+train.py
+
+=== the emitted bundle validates
+>>> [CLI] bundle validate
+Name: torchrun-a10-smoke-test
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/torchrun-a10-smoke-test/dev
+
+Validation OK!
+
+=== docker_image is not supported yet
+>>> [CLI] experimental air convert-to-dabs docker.yaml --output-dir generated-docker
+Error: environment.docker_image is not yet supported by convert-to-dabs
+
+Exit code: 1
