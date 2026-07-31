@@ -178,7 +178,12 @@ resources:
       # Thus it shows up as a remote change since we don't set on the object.
       - field: id
         reason: "!drop"
-      # QQQ should this be here? tests on AWS/GCP/Azure show run_as is echoed as run_as.user_name
+      # QQQ should this be here? When run_as is explicitly set, the GET response echoes it back
+      # as a structured run_as.user_name (verified on e2-dogfood, AWS), so it may not be truly
+      # input-only. Not confirmed on all clouds: aws-prod-ucws and azure-prod-ucws only exercised
+      # the default (unset) case, where GET returns just the flat run_as_user_name; the SP-auth
+      # test envs can't self-bind run_as. GCP (gcp-prod) has serverless pipelines disabled, so it
+      # was not tested.
       - field: run_as
         reason: input_only
 
