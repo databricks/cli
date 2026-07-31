@@ -76,7 +76,7 @@ type Stats struct {
 // local/remote origin, candidate count) — never a path or a target name.
 //
 // None of these can contain PII: the lineage is an opaque random UUID minted by
-// the state layer, and the source is one of two fixed literals assigned here.
+// the state layer, and the source is one of two fixed literals.
 func (s *Stats) CollectStateStats(desc *statemgmt.StateDesc) {
 	if desc == nil {
 		return
