@@ -47,7 +47,8 @@ local = "code_snapshot.tar.gz"
 env = {**os.environ, "MSYS_NO_PATHCONV": "1"}
 subprocess.run(
     [cli, "workspace", "export", remote, "--format", "AUTO", "--file", local],
-    check=True, env=env,
+    check=True,
+    env=env,
 )
 with open(local, "rb") as f:
     data = gzip.decompress(f.read())
