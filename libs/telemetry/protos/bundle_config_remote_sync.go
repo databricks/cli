@@ -74,16 +74,18 @@ type BundleConfigRemoteSyncEvent struct {
 
 	// How many of the four candidate state files (direct/terraform x
 	// local/remote) were found. A pointer so that zero — the run proceeded
-	// against a synthesized empty state, which is the most diagnostic value
-	// here — is emitted rather than dropped by omitempty.
+	// against a synthesized empty state — is emitted rather than dropped by
+	// omitempty. Not derivable from StateResourceIDs: a state file holding no
+	// resources and no state file at all both yield an empty id set.
 	StatesAvailableCount *int64 `json:"states_available_count,omitempty"`
 
-	// Number of --select-ids selectors passed in, and how many resolved to a
-	// deployed resource in the state above. Pointers for the same reason: zero
-	// matched with a non-zero count is the hard-failure case, so the zero must
-	// survive serialization. Both nil when the command ran without --select-ids.
-	SelectorCount        *int64 `json:"selector_count,omitempty"`
-	SelectorMatchedCount *int64 `json:"selector_matched_count,omitempty"`
+	// IDs of the resources found in the deployment state this run read, and the
+	// IDs the run was asked to sync via --select-ids. Comparing the two is what
+	// classifies a selector miss; the counts are intentionally not sent
+	// separately since they are len() of these lists, and the matched set is
+	// their intersection.
+	StateResourceIDs    *BundleConfigRemoteSyncResourceIDs `json:"state_resource_ids,omitempty"`
+	SelectedResourceIDs *BundleConfigRemoteSyncResourceIDs `json:"selected_resource_ids,omitempty"`
 
 	// Scrubbed, truncated summary of the failure when the command exits with an
 	// error. Privileged free-text (DATA_LABEL_USER_COMMANDS_RESPONSE, LPP-5543);
@@ -93,6 +95,20 @@ type BundleConfigRemoteSyncEvent struct {
 	// Category of the failure when the command exits with an error.
 	// Unset on success.
 	ErrorCategory BundleConfigRemoteSyncErrorCategory `json:"error_category,omitempty"`
+}
+
+// BundleConfigRemoteSyncResourceIDs holds resource IDs grouped by type. The
+// same shape is used for the state's IDs and for the selected IDs so the two
+// can be compared directly.
+//
+// IDs of resources managed by the bundle. Some resources like volumes or schemas
+// do not expose a numerical or UUID identifier and are tracked by name. Those
+// resources are not tracked here since the names are PII.
+type BundleConfigRemoteSyncResourceIDs struct {
+	ResourceJobIDs       []string `json:"resource_job_ids,omitempty"`
+	ResourcePipelineIDs  []string `json:"resource_pipeline_ids,omitempty"`
+	ResourceClusterIDs   []string `json:"resource_cluster_ids,omitempty"`
+	ResourceDashboardIDs []string `json:"resource_dashboard_ids,omitempty"`
 }
 
 // BundleConfigRemoteSyncResourceChanges holds field-level change counts for a

@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"runtime"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
@@ -101,9 +103,12 @@ Examples:
 				}
 				stats.CollectChangeStats(ctx, changes)
 
+				// Record the ids present in state and the ids requested: on failure
+				// they are what classifies the miss.
+				stats.CollectStateIDs(slices.Collect(maps.Keys(configsync.IndexDeployedResources(&deployBundle.StateDB))))
+
 				if len(selectIDs) > 0 {
-					selectorCount := int64(len(selectIDs))
-					stats.SelectorCount = &selectorCount
+					stats.CollectSelectedIDs(selectIDs)
 					// Filter after planning, never before: the plan must cover every
 					// resource so ${resources.*} references resolve; only the emitted
 					// changes are restricted to the selected resources.
@@ -111,10 +116,6 @@ Examples:
 					if err != nil {
 						return err
 					}
-					// Selectors resolve to plan keys and are deduplicated, so this is
-					// the number of distinct resources that matched, not of selectors.
-					matched := int64(len(selected))
-					stats.SelectorMatchedCount = &matched
 					changes = configsync.FilterChanges(changes, selected)
 				}
 

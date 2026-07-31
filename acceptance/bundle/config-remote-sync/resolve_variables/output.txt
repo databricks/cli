@@ -138,7 +138,15 @@ Resource: resources.pipelines.my_pipeline
   "state_serial": [SERIAL],
   "state_lineage": "[UUID]",
   "state_source": "local",
-  "states_available_count": 2
+  "states_available_count": 2,
+  "state_resource_ids": {
+    "resource_job_ids": [
+      "[MY_JOB_ID]"
+    ],
+    "resource_pipeline_ids": [
+      "[MY_PIPELINE_ID]"
+    ]
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve

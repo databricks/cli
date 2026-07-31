@@ -58,15 +58,14 @@ type Stats struct {
 	StateSerial  int64
 	StateLineage string
 	StateSource  string
-	// Pointers so an informative zero survives omitempty on serialization: no
-	// states found, and no selectors matched, are the two most diagnostic
-	// values this event can carry.
+	// Pointer so the informative zero (no state file found at all) survives
+	// omitempty on serialization.
 	StatesAvailableCount *int64
 
-	// Number of --select-ids selectors passed in, and how many resolved to a
-	// deployed resource. matched=0 with selectors>0 is the hard-fail case.
-	SelectorCount        *int64
-	SelectorMatchedCount *int64
+	// Resource ids present in the state that was read, and the ids the run was
+	// asked to sync. Comparing the two classifies a selector miss.
+	StateResourceIDs    *protos.BundleConfigRemoteSyncResourceIDs
+	SelectedResourceIDs *protos.BundleConfigRemoteSyncResourceIDs
 
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
@@ -190,6 +189,70 @@ func resourceTypeFromKey(resourceKey string) string {
 	return parts[1]
 }
 
+// resourceIDLimit caps how many ids of one type are reported. Mirrors
+// phases.ResourceIdLimit: the telemetry upload has a short timeout, so a bundle
+// with very many resources must not produce an unbounded payload.
+const resourceIDLimit = 1000
+
+// collectResourceIDs groups "<type>:<id>" pairs into the per-type id lists.
+// Returns nil when nothing was collected so the field is omitted entirely.
+func collectResourceIDs(typeAndIDs []string) *protos.BundleConfigRemoteSyncResourceIDs {
+	out := &protos.BundleConfigRemoteSyncResourceIDs{}
+	any := false
+	for _, typeAndID := range typeAndIDs {
+		resourceType, id, ok := strings.Cut(typeAndID, ":")
+		if !ok || id == "" {
+			continue
+		}
+		// Sub-resources (permissions/grants) are indexed under their parent's
+		// type with a path-shaped object id; those are not selectable and the
+		// path would be redacted, so skip them.
+		if strings.Contains(id, "/") {
+			continue
+		}
+		switch resourceType {
+		case "jobs":
+			if len(out.ResourceJobIDs) < resourceIDLimit {
+				out.ResourceJobIDs = append(out.ResourceJobIDs, id)
+				any = true
+			}
+		case "pipelines":
+			if len(out.ResourcePipelineIDs) < resourceIDLimit {
+				out.ResourcePipelineIDs = append(out.ResourcePipelineIDs, id)
+				any = true
+			}
+		case "clusters":
+			if len(out.ResourceClusterIDs) < resourceIDLimit {
+				out.ResourceClusterIDs = append(out.ResourceClusterIDs, id)
+				any = true
+			}
+		case "dashboards":
+			if len(out.ResourceDashboardIDs) < resourceIDLimit {
+				out.ResourceDashboardIDs = append(out.ResourceDashboardIDs, id)
+				any = true
+			}
+		}
+	}
+	if !any {
+		return nil
+	}
+	slices.Sort(out.ResourceJobIDs)
+	slices.Sort(out.ResourcePipelineIDs)
+	slices.Sort(out.ResourceClusterIDs)
+	slices.Sort(out.ResourceDashboardIDs)
+	return out
+}
+
+// CollectSelectedIDs records the ids the run was asked to sync.
+func (s *Stats) CollectSelectedIDs(selectors []string) {
+	s.SelectedResourceIDs = collectResourceIDs(selectors)
+}
+
+// CollectStateIDs records the ids present in the state that was read.
+func (s *Stats) CollectStateIDs(typeAndIDs []string) {
+	s.StateResourceIDs = collectResourceIDs(typeAndIDs)
+}
+
 // LogTelemetry emits the BundleConfigRemoteSyncEvent for this run.
 func (s *Stats) LogTelemetry(ctx context.Context) {
 	defer recoverTelemetry(ctx)
@@ -220,8 +283,8 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 			StateLineage:           s.StateLineage,
 			StateSource:            s.StateSource,
 			StatesAvailableCount:   s.StatesAvailableCount,
-			SelectorCount:          s.SelectorCount,
-			SelectorMatchedCount:   s.SelectorMatchedCount,
+			StateResourceIDs:       s.StateResourceIDs,
+			SelectedResourceIDs:    s.SelectedResourceIDs,
 			ErrorMessage:           s.ErrorMessage,
 			ErrorCategory:          s.ErrorCategory,
 		},

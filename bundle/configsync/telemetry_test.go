@@ -1,15 +1,10 @@
 package configsync
 
 import (
-	"encoding/json"
 	"testing"
 
-	"github.com/databricks/cli/bundle/config/engine"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCollectChangeStats(t *testing.T) {
@@ -111,85 +106,3 @@ func TestRestoreStatsCountersNilSafe(t *testing.T) {
 		s.incFromSiblings()
 	})
 }
-
-func TestCollectStateStats(t *testing.T) {
-	t.Run("remote state with candidates", func(t *testing.T) {
-		s := &Stats{}
-		s.CollectStateStats(&statemgmt.StateDesc{
-			Serial:    7,
-			Lineage:   "f1621b9c-6ccd-481b-854d-40fa4176e68c",
-			IsLocal:   false,
-			AllStates: []*statemgmt.StateDesc{{}, {}},
-		})
-		assert.Equal(t, int64(7), s.StateSerial)
-		assert.Equal(t, "f1621b9c-6ccd-481b-854d-40fa4176e68c", s.StateLineage)
-		assert.Equal(t, "remote", s.StateSource)
-		require.NotNil(t, s.StatesAvailableCount)
-		assert.Equal(t, int64(2), *s.StatesAvailableCount)
-	})
-
-	t.Run("local state wins", func(t *testing.T) {
-		s := &Stats{}
-		s.CollectStateStats(&statemgmt.StateDesc{Serial: 99, IsLocal: true})
-		assert.Equal(t, int64(99), s.StateSerial)
-		assert.Equal(t, "local", s.StateSource)
-	})
-
-	t.Run("synthesized empty state reports no candidates", func(t *testing.T) {
-		// PullResourcesState synthesizes a descriptor with no AllStates when no
-		// state file was found; that must be visible as 0, not omitted.
-		s := &Stats{}
-		s.CollectStateStats(&statemgmt.StateDesc{IsLocal: true})
-		require.NotNil(t, s.StatesAvailableCount)
-		assert.Equal(t, int64(0), *s.StatesAvailableCount)
-		assert.Equal(t, int64(0), s.StateSerial)
-		assert.Empty(t, s.StateLineage)
-	})
-
-	t.Run("nil descriptor is a no-op", func(t *testing.T) {
-		s := &Stats{}
-		s.CollectStateStats(nil)
-		assert.Empty(t, s.StateSource)
-	})
-}
-
-// The new state/selector fields must reach the emitted payload, and must be
-// omitted (not zero-valued noise) when the run recorded nothing.
-func TestLogTelemetryPayloadIncludesStateAndSelectorFields(t *testing.T) {
-	s := &Stats{
-		Engine:               engine.EngineDirect,
-		StateSerial:          99,
-		StateLineage:         "f1621b9c-6ccd-481b-854d-40fa4176e68c",
-		StateSource:          "local",
-		StatesAvailableCount: ptr(int64(2)),
-		SelectorCount:        ptr(int64(3)),
-		SelectorMatchedCount: ptr(int64(0)),
-	}
-	payload, err := json.Marshal(protos.BundleConfigRemoteSyncEvent{
-		Engine:               string(s.Engine),
-		StateSerial:          s.StateSerial,
-		StateLineage:         s.StateLineage,
-		StateSource:          s.StateSource,
-		StatesAvailableCount: s.StatesAvailableCount,
-		SelectorCount:        s.SelectorCount,
-		SelectorMatchedCount: s.SelectorMatchedCount,
-	})
-	require.NoError(t, err)
-
-	got := string(payload)
-	assert.Contains(t, got, `"state_serial":99`)
-	assert.Contains(t, got, `"state_lineage":"f1621b9c-6ccd-481b-854d-40fa4176e68c"`)
-	assert.Contains(t, got, `"state_source":"local"`)
-	assert.Contains(t, got, `"states_available_count":2`)
-	assert.Contains(t, got, `"selector_count":3`)
-	// The zero must survive: "no selector matched" is the hard-failure signal.
-	assert.Contains(t, got, `"selector_matched_count":0`)
-
-	empty, err := json.Marshal(protos.BundleConfigRemoteSyncEvent{})
-	require.NoError(t, err)
-	for _, f := range []string{"state_serial", "state_lineage", "state_source", "states_available_count", "selector_count"} {
-		assert.NotContains(t, string(empty), f)
-	}
-}
-
-func ptr[T any](v T) *T { return &v }

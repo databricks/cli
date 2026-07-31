@@ -10,6 +10,30 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
+// IndexDeployedResources indexes the deployed resources by "<type>:<id>",
+// mapping to the plan key ("resources.<type>.<name>"). Indexing by the <type>
+// component means a selector can only ever match a resource of that exact type,
+// never an id that happens to collide across types.
+func IndexDeployedResources(state *dstate.DeploymentState) map[string]string {
+	byTypeID := make(map[string]string)
+	for key := range state.Data.State {
+		id := state.GetResourceID(key)
+		if id == "" {
+			continue
+		}
+		typeAndName, ok := strings.CutPrefix(key, "resources.")
+		if !ok {
+			continue
+		}
+		resourceType, _, ok := strings.Cut(typeAndName, ".")
+		if !ok {
+			continue
+		}
+		byTypeID[resourceType+":"+id] = key
+	}
+	return byTypeID
+}
+
 // ResolveResourceSelectors maps "<type>:<id>" selectors to their plan keys
 // ("resources.<type>.<name>") using the open deployment state (see
 // OpenDeploymentState).
@@ -35,26 +59,7 @@ import (
 // Duplicate selectors are deduplicated; the returned keys preserve the order in
 // which their selectors first appear.
 func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState, selectors []string) ([]string, error) {
-	// Index deployed resources by "<type>:<id>". State keys have the form
-	// "resources.<type>.<name>"; indexing by the <type> component means a
-	// selector can only ever match a resource of that exact type, never an id
-	// that happens to collide across types.
-	byTypeID := make(map[string]string)
-	for key := range state.Data.State {
-		id := state.GetResourceID(key)
-		if id == "" {
-			continue
-		}
-		typeAndName, ok := strings.CutPrefix(key, "resources.")
-		if !ok {
-			continue
-		}
-		resourceType, _, ok := strings.Cut(typeAndName, ".")
-		if !ok {
-			continue
-		}
-		byTypeID[resourceType+":"+id] = key
-	}
+	byTypeID := IndexDeployedResources(state)
 
 	keys := make([]string, 0, len(selectors))
 	var missing []string
