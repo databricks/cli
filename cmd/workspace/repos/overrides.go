@@ -166,13 +166,16 @@ func repoArgumentToRepoID(ctx context.Context, w *databricks.WorkspaceClient, ar
 		return id, nil
 	}
 
-	// If the argument cannot be parsed as a repo ID, try to look it up by name.
+	// If the argument cannot be parsed as a repo ID, look it up by path.
+	//
+	// We deliberately don't check oi.ObjectType here. Git-CLI-enabled folders
+	// are materialized as plain DIRECTORY nodes rather than REPO nodes, but the
+	// repos API still accepts their object ID as a repo ID. The repos API is the
+	// authority on whether the target is a repo, so gating on the object type
+	// here would reject valid Git CLI folders.
 	oi, err := w.Workspace.GetStatusByPath(ctx, arg)
 	if err != nil {
 		return 0, fmt.Errorf("failed to look up repo by path: %w", err)
-	}
-	if oi.ObjectType != workspace.ObjectTypeRepo {
-		return 0, fmt.Errorf("object at path %q is not a repo", arg)
 	}
 	return oi.ObjectId, nil
 }

@@ -23,3 +23,7 @@
     "path": "/not-a-repo"
   }
 }
+{
+  "method": "GET",
+  "path": "/api/2.0/repos/[NUMID]"
+}

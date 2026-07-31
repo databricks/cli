@@ -418,7 +418,11 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 	} else if entry, ok := s.files[cleaned]; ok {
 		info = entry.Info
 	} else if repoId, ok := s.repoIdByPath[cleaned]; ok {
-		info = workspace.ObjectInfo{ObjectType: "REPO", Path: cleaned, ObjectId: repoId}
+		// Git-CLI-enabled repos are materialized as plain DIRECTORY nodes, not
+		// REPO nodes, so get-status reports DIRECTORY for them while the repos
+		// API still resolves the object ID as a repo. This mirrors the backend
+		// behavior that repoArgumentToRepoID must tolerate.
+		info = workspace.ObjectInfo{ObjectType: "DIRECTORY", Path: cleaned, ObjectId: repoId}
 	} else {
 		// Match the real Workspace API wording, which echoes the requested path.
 		return Response{

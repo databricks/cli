@@ -3,4 +3,4 @@
 Error: failed to look up repo by path: Path (/Repos/me@databricks.com/doesnotexist) doesn't exist.
 
 >>> [CLI] repos get /not-a-repo -o json
-Error: object at path "/not-a-repo" is not a repo
+Error: Resource workspace.RepoInfo not found: [NUMID]
