@@ -76,29 +76,20 @@ type listOutput struct {
 	Agents  []agentEntry            `json:"agents,omitempty"`
 }
 
-// agentEntry reports per-agent state for `list`. The JSON output carries an
-// entry for every supported agent in the registry so the VSCode extension can
-// render the full set, not just the ones with a recorded install; the text view
-// keeps its original "Plugin installs:" section (managed agents with a recorded
-// install only), so the extra fields here are additive to the JSON contract.
-//
-// Detected is the CLI's own presence verdict for the agent (Agent.IsPreselected):
-// it folds the cheap binary-on-PATH and config-dir-on-disk signals through the
-// agent-type-specific rules the install picker uses, so JSON consumers get the
-// same answer the CLI would act on without re-implementing that logic. Managed
-// says whether the CLI can install and track a databricks plugin for the agent.
-//
-// Installed maps CLI scope -> the plugin the CLI recorded in that scope, so a
-// stale scoped install stays visible next to an up-to-date one, and
-// up-to-date-ness is derived by comparing each version against the top-level
-// release exactly as the skills view does. It is always present (empty when
-// nothing is recorded), matching the skills shape.
+// agentEntry is one agent in `list --output json`. The JSON carries an entry for
+// every registry agent so the extension sees the full set; the text view still
+// lists only managed agents with a recorded install, so these fields are additive.
 type agentEntry struct {
-	Name        string                `json:"name"`
-	DisplayName string                `json:"display_name"`
-	Managed     bool                  `json:"managed"`
-	Detected    bool                  `json:"detected"`
-	Installed   map[string]pluginInfo `json:"installed"`
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	// Managed is whether the CLI can install and track a databricks plugin for it.
+	Managed bool `json:"managed"`
+	// Detected is the CLI's presence verdict (Agent.IsPreselected), so consumers get
+	// the same answer the CLI would act on.
+	Detected bool `json:"detected"`
+	// Installed maps CLI scope -> the plugin recorded there; always present, empty
+	// when nothing is recorded, matching the skills shape.
+	Installed map[string]pluginInfo `json:"installed"`
 }
 
 // pluginInfo is the per-scope plugin record surfaced in list output.
