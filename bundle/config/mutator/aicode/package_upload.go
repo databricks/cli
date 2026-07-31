@@ -45,6 +45,7 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
 	libsync "github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/vfs"
 )
 
 // codeSourcePattern is the config location of an AI Runtime task's
@@ -86,17 +87,28 @@ func (m *packageAndUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	}
 
 	// remotePaths maps each config location to the synced workspace path its archive
-	// will occupy. Built outside the Mutate closure so packaging failures are
-	// reported before any config is rewritten.
+	// will occupy; overlayFiles maps each archive's sync-relative path to its bytes.
+	// Both are built before any config mutation so packaging failures are reported
+	// first. The archives are added to the sync root as in-memory overlay files
+	// (see below) rather than written to disk, so the user's working tree is not
+	// dirtied by deploy.
 	remotePaths := make(map[string]string, len(sources))
+	overlayFiles := make(map[string][]byte, len(sources))
 	for _, cs := range sources {
-		remote, err := packageOne(ctx, b, cs)
+		relArchive, archive, err := packageOne(ctx, b, cs)
 		if err != nil {
 			diags = diags.Extend(diag.FromErr(err))
 			return diags
 		}
-		remotePaths[cs.configPath.String()] = remote
+		overlayFiles[relArchive] = archive
+		// The workspace path the archive occupies once file sync uploads it. Matches
+		// how command_path is translated (workspace.file_path + sync-relative path).
+		remotePaths[cs.configPath.String()] = path.Join(b.Config.Workspace.FilePath, relArchive)
 	}
+
+	// Overlay the archives onto the sync root: bundle file sync walks and uploads
+	// them like real files, but they never touch the user's working tree.
+	b.SyncRoot = vfs.Overlay(b.SyncRoot, overlayFiles)
 
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		for _, cs := range sources {
@@ -116,19 +128,19 @@ func (m *packageAndUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	return diags
 }
 
-// snapshotSubdir is the bundle-local directory (relative to the sync root) that
-// code snapshots are written into. It is a dedicated folder — not the user's source
-// tree — so a snapshot is never nested inside the directory it snapshots, and the
-// generated archives are grouped in one predictable place. It is synced to the
-// workspace like the rest of the bundle and removed by `bundle destroy`.
+// snapshotSubdir is the bundle-local directory (sync-relative) that code snapshots
+// live under. It is a dedicated folder — not the user's source tree — so a snapshot
+// is never nested inside the directory it snapshots, and the archives are grouped in
+// one predictable place. The archives are overlaid onto the sync root in memory, so
+// this directory is synced to the workspace (and removed by `bundle destroy`) but is
+// never materialized in the user's working tree.
 const snapshotSubdir = ".air_snapshots"
 
 // packageOne packages the local directory for a single code source into a
-// reproducible, content-addressed tarball written under the bundle's snapshot
-// subdir, and returns the workspace path that archive will occupy once bundle file
-// sync uploads it. No workspace write happens here — the file is placed locally and
-// carried by the deploy-phase file sync.
-func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource) (string, error) {
+// reproducible, content-addressed tarball and returns its sync-relative path plus
+// the archive bytes. It performs no disk or workspace write: the caller overlays the
+// bytes onto the sync root and the deploy-phase file sync uploads them.
+func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource) (string, []byte, error) {
 	localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(cs.value))
 	dirName := filepath.Base(localDir)
 
@@ -136,13 +148,13 @@ func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource) (string, e
 	// sync file list to this directory and to re-base archive entry names under it.
 	relBase, err := filepath.Rel(b.SyncRootPath, localDir)
 	if err != nil {
-		return "", fmt.Errorf("code_source_path %q: %w", cs.value, err)
+		return "", nil, fmt.Errorf("code_source_path %q: %w", cs.value, err)
 	}
 	relBase = filepath.ToSlash(relBase)
 
 	files, err := codeSourceFiles(ctx, b, relBase)
 	if err != nil {
-		return "", fmt.Errorf("failed to list files for code_source_path %q: %w", cs.value, err)
+		return "", nil, fmt.Errorf("failed to list files for code_source_path %q: %w", cs.value, err)
 	}
 
 	// Build the archive in memory so its content hash can name the file; the hash is
@@ -150,25 +162,13 @@ func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource) (string, e
 	var buf bytes.Buffer
 	sha, err := buildCodeSnapshot(b.SyncRoot, relBase, files, dirName, &buf)
 	if err != nil {
-		return "", fmt.Errorf("failed to package code_source_path %q: %w", cs.value, err)
+		return "", nil, fmt.Errorf("failed to package code_source_path %q: %w", cs.value, err)
 	}
-	archiveName := fmt.Sprintf("%s_%s.tar.gz", dirName, sha[:16])
-
-	// Write the archive into the bundle's snapshot subdir. Content-addressed name +
-	// incremental file sync means an unchanged archive is not re-uploaded.
-	relArchive := path.Join(snapshotSubdir, archiveName)
-	localArchive := filepath.Join(b.SyncRootPath, filepath.FromSlash(relArchive))
-	if err := os.MkdirAll(filepath.Dir(localArchive), 0o755); err != nil {
-		return "", fmt.Errorf("failed to create snapshot dir for code_source_path %q: %w", cs.value, err)
-	}
-	if err := os.WriteFile(localArchive, buf.Bytes(), 0o644); err != nil {
-		return "", fmt.Errorf("failed to write code snapshot for code_source_path %q: %w", cs.value, err)
-	}
-	log.Debugf(ctx, "wrote code snapshot %s for code_source_path %q", relArchive, cs.value)
-
-	// The workspace path the archive occupies once file sync uploads it. Matches how
-	// command_path is translated (workspace.file_path + sync-relative path).
-	return path.Join(b.Config.Workspace.FilePath, relArchive), nil
+	// Content-addressed name + incremental file sync means an unchanged archive keeps
+	// the same synced path and is not re-uploaded.
+	relArchive := path.Join(snapshotSubdir, fmt.Sprintf("%s_%s.tar.gz", dirName, sha[:16]))
+	log.Debugf(ctx, "packaged code snapshot %s for code_source_path %q", relArchive, cs.value)
+	return relArchive, buf.Bytes(), nil
 }
 
 // codeSourceFiles returns the files under the code directory (relBase, relative to
