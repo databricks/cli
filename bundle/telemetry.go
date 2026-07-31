@@ -31,11 +31,6 @@ type Telemetry struct {
 	StatePathInOtherUserHome bool
 	StatePathOther           bool
 
-	DMSUndeclaredDeployingUser    bool
-	DMSUndeclaredOtherUser        bool
-	DMSUndeclaredServicePrincipal bool
-	DMSUndeclaredGroup            bool
-
 	DMSCompatAuto               bool
 	DMSCompatOnlySelfUndeclared bool
 	DMSCompatNot                bool
@@ -51,6 +46,15 @@ type Telemetry struct {
 
 	// True/False pairs: exactly one is set when the flag is measured, neither
 	// when it is not.
+	DMSUndeclaredDeployingUserTrue     bool
+	DMSUndeclaredDeployingUserFalse    bool
+	DMSUndeclaredOtherUserTrue         bool
+	DMSUndeclaredOtherUserFalse        bool
+	DMSUndeclaredServicePrincipalTrue  bool
+	DMSUndeclaredServicePrincipalFalse bool
+	DMSUndeclaredGroupTrue             bool
+	DMSUndeclaredGroupFalse            bool
+
 	SkipArtifactCleanupTrue  bool
 	SkipArtifactCleanupFalse bool
 
