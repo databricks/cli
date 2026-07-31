@@ -43,9 +43,11 @@ if not code_source_path:
 remote = "/Workspace" + code_source_path
 cli = os.environ["CLI"]
 local = "code_snapshot.tar.gz"
+# MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the /Workspace path.
+env = {**os.environ, "MSYS_NO_PATHCONV": "1"}
 subprocess.run(
     [cli, "workspace", "export", remote, "--format", "AUTO", "--file", local],
-    check=True,
+    check=True, env=env,
 )
 with open(local, "rb") as f:
     data = gzip.decompress(f.read())
