@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
@@ -93,4 +95,20 @@ func TestBuildSourceFilter(t *testing.T) {
 
 	_, err = buildSourceFilter([]string{"foo"})
 	require.Error(t, err)
+}
+
+func TestLogsInvalidSourcePreservesOutputFile(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "app.log")
+	require.NoError(t, os.WriteFile(outputPath, []byte("existing logs\n"), 0o600))
+
+	cmd := newLogsCommand()
+	require.NoError(t, cmd.Flags().Set("output-file", outputPath))
+	require.NoError(t, cmd.Flags().Set("source", "invalid"))
+
+	err := cmd.RunE(cmd, []string{"my-app"})
+	require.ErrorContains(t, err, `invalid --source value "invalid"`)
+
+	content, err := os.ReadFile(outputPath)
+	require.NoError(t, err)
+	assert.Equal(t, "existing logs\n", string(content))
 }
