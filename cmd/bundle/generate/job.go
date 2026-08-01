@@ -133,14 +133,6 @@ After generation, you can deploy this job to other targets using:
 		oldFilename := filepath.Join(configDir, jobKey+".yml")
 		filename := filepath.Join(configDir, jobKey+".job.yml")
 
-		// User might continuously run generate command to update their bundle jobs with any changes made in Databricks UI.
-		// Due to changing in the generated file names, we need to first rename existing resource file to the new name.
-		// Otherwise users can end up with duplicated resources.
-		err = os.Rename(oldFilename, filename)
-		if err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to rename file %s. DABs uses the resource type as a sub-extension for generated content, please rename it to %s, err: %w", oldFilename, filename, err)
-		}
-
 		saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
 			// Including all JobSettings and nested fields which are map[string]string type
 			"spark_conf":  yaml.DoubleQuotedStyle,
@@ -150,6 +142,13 @@ After generation, you can deploy this job to other targets using:
 		err = saver.SaveAsYAML(result, filename, force)
 		if err != nil {
 			return err
+		}
+
+		// Remove the legacy filename only after the new file has been saved.
+		// Otherwise SaveAsYAML sees the renamed file and requires --force.
+		err = os.Remove(oldFilename)
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("failed to remove legacy generated file %s: %w", oldFilename, err)
 		}
 
 		cmdio.LogString(ctx, "Job configuration successfully saved to "+filepath.ToSlash(filename))
