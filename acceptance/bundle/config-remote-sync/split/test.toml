@@ -1,0 +1,10 @@
+# Unlike the other config-remote-sync tests these run against the in-process test
+# server instead of setting Cloud = true, so they execute in normal CI.
+RecordRequests = false
+Ignore = [".databricks", "databricks.yml", "databricks.yml.backup", "overrides/*.yml", "overrides/*.backup"]
+
+[Env]
+DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]

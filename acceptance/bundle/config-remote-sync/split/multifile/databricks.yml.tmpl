@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# One target's override of a single job is spread across two included files.
+# Resource keys are unique across top-level files, but that is not enforced
+# inside the targets subtree, so a target override may legitimately span
+# several files. An edit must land in the exact file that defines the element.
+include:
+  - overrides/*.yml
+
+resources:
+  jobs:
+    multifile_job:
+      tasks:
+        - task_key: base
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/base

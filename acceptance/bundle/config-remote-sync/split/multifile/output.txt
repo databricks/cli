@@ -1,0 +1,40 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Edit a task defined in the second included file
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.multifile_job
+  tasks[task_key='from_second_file'].timeout_seconds: add
+
+
+
+=== databricks.yml is untouched
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+=== overrides/10-first.yml is untouched
+
+>>> diff.py overrides/10-first.yml.backup overrides/10-first.yml
+
+=== overrides/20-second.yml gains timeout_seconds: 777
+
+>>> diff.py overrides/20-second.yml.backup overrides/20-second.yml
+--- overrides/20-second.yml.backup
++++ overrides/20-second.yml
+@@ -8,2 +8,3 @@
+               notebook_task:
+                 notebook_path: /Users/{{workspace_user_name}}/second
++              timeout_seconds: 777
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.multifile_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!

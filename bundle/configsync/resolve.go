@@ -3,6 +3,7 @@ package configsync
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"maps"
@@ -23,23 +24,50 @@ type FieldChange struct {
 	FieldCandidates []string
 }
 
-// resolveSelectors converts key-value selectors to numeric indices that match
-// the YAML file positions. It also returns the location of the resolved leaf value.
+// sequenceStep records a sequence element that a change path navigated through.
+// The element's index inside a physical block is only known once the block has
+// been chosen, so the merged position is kept until then.
+type sequenceStep struct {
+	// position in the pattern built so far, i.e. how many components precede
+	// this sequence's index.
+	component int
+	// path of the sequence relative to a block, e.g. resources.jobs.j.tasks.
+	sequencePath dyn.Path
+	element      dyn.Value
+	// newElement marks an Add whose key is not in the merged sequence yet.
+	newElement bool
+}
+
+// resolvedChange locates a change in the source YAML.
+type resolvedChange struct {
+	// path is relative to the block, with merged indices still in place.
+	path  *structpath.PatternNode
+	steps []sequenceStep
+	// leaf is the merged value the change addresses, invalid for a new field.
+	leaf dyn.Value
+}
+
+// resolveSelectors converts key-value selectors to the indices of the merged
+// configuration and records the sequence elements traversed on the way, so the
+// caller can map those positions onto the physical block that owns them.
 // Example: "resources.jobs.foo.tasks[task_key='main'].name" -> "resources.jobs.foo.tasks[1].name"
 // Returns a PatternNode because for Add operations, [*] may be used as a placeholder for new elements.
-func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (*structpath.PatternNode, dyn.Location, error) {
+func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (resolvedChange, error) {
 	node, err := structpath.ParsePath(pathStr)
 	if err != nil {
-		return nil, dyn.Location{}, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
+		return resolvedChange{}, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
 	}
 
 	nodes := node.AsSlice()
 	var result *structpath.PatternNode
+	var steps []sequenceStep
+	var currentPath dyn.Path
 	currentValue := b.Config.Value()
 
-	for _, n := range nodes {
+	for component, n := range nodes {
 		if key, ok := n.StringKey(); ok {
 			result = structpath.NewPatternStringKey(result, key)
+			currentPath = append(currentPath, dyn.Key(key))
 			if currentValue.IsValid() {
 				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Key(key)})
 			}
@@ -47,17 +75,26 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 		}
 
 		if idx, ok := n.Index(); ok {
+			sequencePath := slices.Clone(currentPath)
 			result = structpath.NewPatternIndex(result, idx)
+			currentPath = append(currentPath, dyn.Index(idx))
+			var element dyn.Value
 			if currentValue.IsValid() {
-				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Index(idx)})
+				element, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Index(idx)})
+				currentValue = element
 			}
+			steps = append(steps, sequenceStep{
+				component:    component,
+				sequencePath: sequencePath,
+				element:      element,
+			})
 			continue
 		}
 
 		// Check for key-value selector: [key='value']
 		if key, value, ok := n.KeyValue(); ok {
 			if !currentValue.IsValid() || currentValue.Kind() != dyn.KindSequence {
-				return nil, dyn.Location{}, fmt.Errorf("cannot apply [%s='%s'] selector to non-array value in path %s", key, value, pathStr)
+				return resolvedChange{}, fmt.Errorf("cannot apply [%s='%s'] selector to non-array value in path %s", key, value, pathStr)
 			}
 
 			seq, _ := currentValue.AsSequence()
@@ -75,50 +112,36 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 				}
 			}
 
+			sequencePath := slices.Clone(currentPath)
+
 			if foundIndex == -1 {
 				if operation == OperationAdd {
 					result = structpath.NewPatternBracketStar(result)
+					steps = append(steps, sequenceStep{
+						component:    component,
+						sequencePath: sequencePath,
+						newElement:   true,
+					})
 					// Can't navigate further into non-existent element
 					currentValue = dyn.Value{}
 					continue
 				}
-				return nil, dyn.Location{}, fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
+				return resolvedChange{}, fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
 			}
 
-			// Mutators may reorder sequence elements (e.g., tasks sorted by task_key).
-			// Use location information to determine the original YAML file position.
-			yamlIndex := yamlFileIndex(seq, foundIndex)
-			result = structpath.NewPatternIndex(result, yamlIndex)
+			result = structpath.NewPatternIndex(result, foundIndex)
+			currentPath = append(currentPath, dyn.Index(foundIndex))
+			steps = append(steps, sequenceStep{
+				component:    component,
+				sequencePath: sequencePath,
+				element:      seq[foundIndex],
+			})
 			currentValue = seq[foundIndex]
 			continue
 		}
 	}
 
-	return result, currentValue.Location(), nil
-}
-
-// yamlFileIndex determines the original YAML file position of a sequence element.
-// Mutators may reorder sequence elements (e.g., tasks sorted by task_key), so the
-// in-memory index may not match the position in the YAML file. This function uses
-// location information to count how many elements from the same file appear before
-// the target element, giving the correct index for YAML patching.
-func yamlFileIndex(seq []dyn.Value, sortedIndex int) int {
-	matchLocation := seq[sortedIndex].Location()
-	if matchLocation.File == "" {
-		return sortedIndex
-	}
-
-	yamlIndex := 0
-	for i, elem := range seq {
-		if i == sortedIndex {
-			continue
-		}
-		loc := elem.Location()
-		if loc.File == matchLocation.File && loc.Line < matchLocation.Line {
-			yamlIndex++
-		}
-	}
-	return yamlIndex
+	return resolvedChange{path: result, steps: steps, leaf: currentValue}, nil
 }
 
 func pathDepth(pathStr string) int {
@@ -132,7 +155,7 @@ func pathDepth(pathStr string) int {
 // adjustArrayIndex adjusts the index in a PatternNode based on previous operations.
 // When operations are applied sequentially, removals and additions shift array indices.
 // This function adjusts the index to account for those shifts.
-func adjustArrayIndex(path *structpath.PatternNode, operations map[string][]struct {
+func adjustArrayIndex(path *structpath.PatternNode, scope string, operations map[string][]struct {
 	index     int
 	operation OperationType
 },
@@ -143,7 +166,7 @@ func adjustArrayIndex(path *structpath.PatternNode, operations map[string][]stru
 	}
 
 	parentPath := path.Parent()
-	parentPathStr := parentPath.String()
+	parentPathStr := scope + parentPath.String()
 	ops := operations[parentPathStr]
 
 	adjustment := 0
@@ -168,6 +191,7 @@ func adjustArrayIndex(path *structpath.PatternNode, operations map[string][]stru
 func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, error) {
 	var result []FieldChange
 	targetName := b.Config.Bundle.Target
+	blocks := newBlockResolver(ctx, b)
 
 	resourceKeys := slices.Sorted(maps.Keys(configChanges))
 
@@ -215,9 +239,37 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			configChange := resourceChanges[fieldPath]
 			fullPath := resourceKey + "." + fieldPath
 
-			resolvedPath, resolvedLocation, err := resolveSelectors(fullPath, b, configChange.Operation)
+			resolved, err := resolveSelectors(fullPath, b, configChange.Operation)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
+			}
+			resolvedPath := resolved.path
+
+			// A sequence element addressed by the merged view has to be mapped onto
+			// the physical block that defines it, because the merged order and the
+			// per-block order differ once a sequence is split across blocks.
+			var block sourceBlock
+			routed := false
+			if blocks != nil && len(resolved.steps) > 0 {
+				var routeErr error
+				block, resolvedPath, routeErr = blocks.route(resolved)
+				if routeErr != nil {
+					if errors.Is(routeErr, errAmbiguousBlock) {
+						// Applying this change would mean guessing a location.
+						// Leave it unapplied; a later run can pick it up.
+						log.Debugf(ctx, "config-remote-sync: skipping %s: %v", fullPath, routeErr)
+						continue
+					}
+					return nil, fmt.Errorf("failed to route change %s: %w", fullPath, routeErr)
+				}
+				routed = true
+			}
+
+			// Index bookkeeping is scoped to a block so that shifts caused by
+			// operations on one block cannot move indices in another.
+			scope := ""
+			if routed {
+				scope = block.prefix + "\x00" + block.file + "\x00"
 			}
 
 			// If the element is removed, we can use the index to replace it with added element
@@ -225,13 +277,13 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			if configChange.Operation == OperationRemove {
 				freeIndex, ok := resolvedPath.Index()
 				if ok {
-					parentPath := resolvedPath.Parent().String()
+					parentPath := scope + resolvedPath.Parent().String()
 					indicesToReplaceMap[parentPath] = append(indicesToReplaceMap[parentPath], freeIndex)
 				}
 			}
 
 			if configChange.Operation == OperationAdd && resolvedPath.BracketStar() {
-				parentPath := resolvedPath.Parent().String()
+				parentPath := scope + resolvedPath.Parent().String()
 				indices, ok := indicesToReplaceMap[parentPath]
 				if ok && len(indices) > 0 {
 					index := indices[0]
@@ -240,11 +292,11 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				}
 			}
 
-			resolvedPath = adjustArrayIndex(resolvedPath, indexOperations)
+			resolvedPath = adjustArrayIndex(resolvedPath, scope, indexOperations)
 
 			// Track this operation for future index adjustments (only for array element operations)
 			if originalIndex, ok := resolvedPath.Index(); ok {
-				parentPath := resolvedPath.Parent().String()
+				parentPath := scope + resolvedPath.Parent().String()
 				indexOperations[parentPath] = append(indexOperations[parentPath], struct {
 					index     int
 					operation OperationType
@@ -252,15 +304,31 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			}
 
 			resolvedPathStr := resolvedPath.String()
-			candidates := []string{resolvedPathStr}
-			if targetName != "" {
-				targetPrefixedPath := "targets." + targetName + "." + resolvedPathStr
-				candidates = append(candidates, targetPrefixedPath)
+			var candidates []string
+			if routed {
+				// The block is known, so there is exactly one path to write.
+				if block.prefix == "" {
+					candidates = []string{resolvedPathStr}
+				} else {
+					candidates = []string{block.prefix + "." + resolvedPathStr}
+				}
+			} else {
+				candidates = []string{resolvedPathStr}
+				if targetName != "" {
+					targetPrefixedPath := "targets." + targetName + "." + resolvedPathStr
+					candidates = append(candidates, targetPrefixedPath)
+				}
 			}
 
-			filePath := resolvedLocation.File
-
+			// A routed change has a known destination file even when the leaf
+			// itself is new, but "defined in the config" must still be decided by
+			// the leaf: a field with no source location is added, not replaced.
+			filePath := resolved.leaf.Location().File
 			isDefinedInConfig := filePath != ""
+			if routed && isDefinedInConfig {
+				filePath = block.file
+			}
+
 			if !isDefinedInConfig {
 				if configChange.Operation == OperationRemove {
 					// If the field is not defined in the config and the operation is remove, it is more likely a CLI default
@@ -274,13 +342,19 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					configChange.Operation = OperationAdd
 				}
 
-				resourceLocation := b.Config.GetLocation(resourceKey)
-				filePath = resourceLocation.File
+				if routed {
+					// The enclosing element was resolved to a block, so a new field
+					// on it belongs in that same block.
+					filePath = block.file
+				} else {
+					resourceLocation := b.Config.GetLocation(resourceKey)
+					filePath = resourceLocation.File
+				}
 				if filePath == "" {
 					return nil, fmt.Errorf("failed to find location for resource %s for a field %s", resourceKey, fieldPath)
 				}
 
-				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
+				log.Debugf(ctx, "Field %s has no location, using %s", fullPath, filePath)
 			}
 
 			if (configChange.Operation == OperationAdd || configChange.Operation == OperationReplace) && b.SyncRootPath != "" {
