@@ -1,0 +1,86 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+job_id="$(read_id.py rename_job)"
+shift_job_id="$(read_id.py shift_job)"
+
+
+# Rename the two-block task and the target-only task in one run. Each key rewrite
+# has to land on its own element: "a_shared" in both blocks, "z_solo" in the target
+# block only. Their sort order is the reverse of the block order, so pairing by
+# order instead of by identity swaps the two.
+title "Rename a task defined in both blocks and a target-only task"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "shared":
+        task["task_key"] = "a_shared"
+    if task["task_key"] == "solo":
+        task["task_key"] = "z_solo"
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "Both blocks get the new key; each field keeps its own scope"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+errcode trace grep -c "task_key: a_shared" databricks.yml
+errcode trace grep -c "task_key: z_solo" databricks.yml
+rm databricks.yml.backup
+
+
+# A removal earlier in the same block shifts every later element down, so the
+# rename has to be written at the shifted position. Writing the pre-removal index
+# renames the WRONG task and loses the one that was meant to be renamed.
+title "Remove a task and rename a later one in the same run, single block"
+edit_resource.py jobs $shift_job_id <<EOF
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "aaa"]
+for task in r["tasks"]:
+    if task["task_key"] == "mmm":
+        task["task_key"] = "mmm2"
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --select-ids "jobs:$shift_job_id" --save
+
+title "aaa is gone, mmm became mmm2, zzz keeps its name and its max_retries"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+errcode trace grep -c "task_key: zzz" databricks.yml
+rm databricks.yml.backup
+
+
+# A key change whose element also had a field edited cannot be recognised as one
+# rename, so the halves would route apart: the removal deletes the element from
+# both blocks while the addition recreates it in one, collapsing the split and
+# moving timeout_seconds out of the target scope. It has to be left for a later run.
+title "Rename the two-block task AND edit one of its fields in the same run"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "a_shared":
+        task["task_key"] = "b_shared"
+        task["max_retries"] = 7
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --select-ids "jobs:$job_id" --save
+
+title "Left unapplied: the split is intact and timeout_seconds stays target-scoped"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+errcode trace grep -c "task_key: a_shared" databricks.yml
+errcode trace grep -c "timeout_seconds: 45" databricks.yml
+rm databricks.yml.backup

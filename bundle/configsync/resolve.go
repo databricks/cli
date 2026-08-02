@@ -227,6 +227,12 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			return cmp.Compare(a, b)
 		})
 
+		// A key change on a keyed element arrives as a remove of the old key plus an
+		// add of the new one, with nothing linking them. Pairing them back up lets a
+		// rename be written as a key rewrite in every block that defines the element,
+		// which keeps a split element split instead of collapsing it into one scope.
+		renames := pairRenames(b, blocks, resourceKey, resourceChanges)
+
 		// Create indices map for this resource, path -> indices, that we could use to replace with added elements
 		indicesToReplaceMap := make(map[string][]int)
 
@@ -239,6 +245,17 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			configChange := resourceChanges[fieldPath]
 			fullPath := resourceKey + "." + fieldPath
 
+			// The add half of a rename carries no source location of its own; the
+			// pair is written from the remove half, which does.
+			if _, ok := renames.addPaths[fieldPath]; ok {
+				continue
+			}
+			if _, ok := renames.unpairedPaths[fieldPath]; ok {
+				log.Debugf(ctx, "config-remote-sync: skipping %s: a split element cannot be removed and recreated in one run", fullPath)
+				continue
+			}
+			rename, isRename := renames.byRemovePath[fieldPath]
+
 			resolved, err := resolveSelectors(fullPath, b, configChange.Operation)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
@@ -249,14 +266,22 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			// the physical block that defines it, because the merged order and the
 			// per-block order differ once a sequence is split across blocks. An
 			// element assembled from several blocks has a part in each, so removing
-			// it yields one destination per block.
+			// or renaming it yields one destination per block.
 			destinations := []routeDestination{{path: resolvedPath}}
 			routed := false
 			if blocks != nil && len(resolved.steps) > 0 {
 				var routeErr error
-				if configChange.Operation == OperationRemove {
+				switch {
+				case isRename:
+					destinations, routeErr = routeRenameElement(b, blocks, resourceKey, fieldPath)
+					if routeErr == nil && len(destinations) == 0 {
+						// The element could not be attributed to a block; leave the
+						// whole pair for a later run rather than half-applying it.
+						continue
+					}
+				case configChange.Operation == OperationRemove:
 					destinations, routeErr = blocks.routeElement(resolved)
-				} else {
+				default:
 					var block sourceBlock
 					var path *structpath.PatternNode
 					block, path, routeErr = blocks.route(resolved)
@@ -291,6 +316,27 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				scope := ""
 				if routed {
 					scope = block.prefix + "\x00" + block.file + "\x00"
+				}
+
+				// A rename rewrites only the key field of the element, so it is a
+				// replace at the element's position rather than a change to the
+				// element itself. The index is still adjusted below, because
+				// removals earlier in the same block shift it.
+				if isRename {
+					resolvedPath = adjustArrayIndex(resolvedPath, scope, indexOperations)
+					destChange.Operation = OperationReplace
+					destChange.Value = rename.newKey
+					resolvedPath = structpath.NewPatternStringKey(resolvedPath, rename.keyField)
+					candidate := resolvedPath.String()
+					if block.prefix != "" {
+						candidate = block.prefix + "." + candidate
+					}
+					result = append(result, FieldChange{
+						FilePath:        block.file,
+						Change:          destChange,
+						FieldCandidates: []string{candidate},
+					})
+					continue
 				}
 
 				// If the element is removed, we can use the index to replace it with added element

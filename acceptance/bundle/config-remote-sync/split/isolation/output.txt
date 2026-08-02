@@ -21,36 +21,32 @@ Resource: resources.jobs.job_b
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -12,11 +12,11 @@
+@@ -12,5 +12,5 @@
      job_a:
        tasks:
 -        - task_key: shared
--          max_retries: 1
-+        - max_retries: 1
++        - task_key: shared_renamed
+           max_retries: 1
            notebook_task:
--            notebook_path: /Users/{{workspace_user_name}}/shared
--
-+            notebook_path: '/Users/{{workspace_user_name}}/shared'
-+          task_key: shared_renamed
-+          timeout_seconds: 45
+@@ -18,5 +18,5 @@
+
      job_b:
 -      max_concurrent_runs: 1
 +      max_concurrent_runs: 6
        tasks:
          - task_key: simple
-@@ -30,5 +30,3 @@
-       jobs:
+@@ -31,4 +31,4 @@
          job_a:
--          tasks:
+           tasks:
 -            - task_key: shared
--              timeout_seconds: 45
-+          tasks: []
++            - task_key: shared_renamed
+               timeout_seconds: 45
 
 >>> grep -c max_concurrent_runs: 6 databricks.yml
 1
 
 >>> grep -c task_key: shared_renamed databricks.yml
-1
+2
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:

@@ -267,8 +267,9 @@ type routeDestination struct {
 
 // routeElement maps a change that addresses a whole sequence element onto every
 // block that defines it. An element assembled from two blocks has a part in each,
-// so removing it means deleting both parts. Expressing the change per block keeps
-// the split intact instead of collapsing the element into one scope.
+// so removing it means deleting both parts, and renaming it means rewriting the
+// key in both. Expressing the change per block keeps the split intact instead of
+// collapsing the element into one scope.
 func (r *blockResolver) routeElement(change resolvedChange) ([]routeDestination, error) {
 	if len(change.steps) == 0 {
 		return nil, fmt.Errorf("%w: change does not address a sequence element", errAmbiguousBlock)
