@@ -247,12 +247,21 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 
 			// A sequence element addressed by the merged view has to be mapped onto
 			// the physical block that defines it, because the merged order and the
-			// per-block order differ once a sequence is split across blocks.
-			var block sourceBlock
+			// per-block order differ once a sequence is split across blocks. An
+			// element assembled from several blocks has a part in each, so removing
+			// it yields one destination per block.
+			destinations := []routeDestination{{path: resolvedPath}}
 			routed := false
 			if blocks != nil && len(resolved.steps) > 0 {
 				var routeErr error
-				block, resolvedPath, routeErr = blocks.route(resolved)
+				if configChange.Operation == OperationRemove {
+					destinations, routeErr = blocks.routeElement(resolved)
+				} else {
+					var block sourceBlock
+					var path *structpath.PatternNode
+					block, path, routeErr = blocks.route(resolved)
+					destinations = []routeDestination{{block: block, path: path}}
+				}
 				if routeErr != nil {
 					if errors.Is(routeErr, errAmbiguousBlock) {
 						// Applying this change would mean guessing a location.
@@ -265,110 +274,126 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				routed = true
 			}
 
-			// Index bookkeeping is scoped to a block so that shifts caused by
-			// operations on one block cannot move indices in another.
-			scope := ""
-			if routed {
-				scope = block.prefix + "\x00" + block.file + "\x00"
-			}
-
-			// If the element is removed, we can use the index to replace it with added element
-			// That may improve the diff in cases when the task is recreated because of renaming
-			if configChange.Operation == OperationRemove {
-				freeIndex, ok := resolvedPath.Index()
-				if ok {
-					parentPath := scope + resolvedPath.Parent().String()
-					indicesToReplaceMap[parentPath] = append(indicesToReplaceMap[parentPath], freeIndex)
-				}
-			}
-
-			if configChange.Operation == OperationAdd && resolvedPath.BracketStar() {
-				parentPath := scope + resolvedPath.Parent().String()
-				indices, ok := indicesToReplaceMap[parentPath]
-				if ok && len(indices) > 0 {
-					index := indices[0]
-					indicesToReplaceMap[parentPath] = indices[1:]
-					resolvedPath = structpath.NewPatternIndex(resolvedPath.Parent(), index)
-				}
-			}
-
-			resolvedPath = adjustArrayIndex(resolvedPath, scope, indexOperations)
-
-			// Track this operation for future index adjustments (only for array element operations)
-			if originalIndex, ok := resolvedPath.Index(); ok {
-				parentPath := scope + resolvedPath.Parent().String()
-				indexOperations[parentPath] = append(indexOperations[parentPath], struct {
-					index     int
-					operation OperationType
-				}{originalIndex, configChange.Operation})
-			}
-
-			resolvedPathStr := resolvedPath.String()
-			var candidates []string
-			if routed {
-				// The block is known, so there is exactly one path to write.
-				if block.prefix == "" {
-					candidates = []string{resolvedPathStr}
-				} else {
-					candidates = []string{block.prefix + "." + resolvedPathStr}
-				}
-			} else {
-				candidates = []string{resolvedPathStr}
-				if targetName != "" {
-					targetPrefixedPath := "targets." + targetName + "." + resolvedPathStr
-					candidates = append(candidates, targetPrefixedPath)
-				}
-			}
-
-			// A routed change has a known destination file even when the leaf
-			// itself is new, but "defined in the config" must still be decided by
-			// the leaf: a field with no source location is added, not replaced.
-			filePath := resolved.leaf.Location().File
-			isDefinedInConfig := filePath != ""
-			if routed && isDefinedInConfig {
-				filePath = block.file
-			}
-
-			if !isDefinedInConfig {
-				if configChange.Operation == OperationRemove {
-					// If the field is not defined in the config and the operation is remove, it is more likely a CLI default
-					// in this case we skip the change
-					continue
-				}
-
-				if configChange.Operation == OperationReplace {
-					// If the field is not defined in the config and the operation is replace, it is more likely a CLI default
-					// in this case we add it explicitly to the resource location
-					configChange.Operation = OperationAdd
-				}
-
-				if routed {
-					// The enclosing element was resolved to a block, so a new field
-					// on it belongs in that same block.
-					filePath = block.file
-				} else {
-					resourceLocation := b.Config.GetLocation(resourceKey)
-					filePath = resourceLocation.File
-				}
-				if filePath == "" {
-					return nil, fmt.Errorf("failed to find location for resource %s for a field %s", resourceKey, fieldPath)
-				}
-
-				log.Debugf(ctx, "Field %s has no location, using %s", fullPath, filePath)
-			}
-
-			if (configChange.Operation == OperationAdd || configChange.Operation == OperationReplace) && b.SyncRootPath != "" {
-				configChange = &ConfigChangeDesc{
+			for _, destination := range destinations {
+				block := destination.block
+				resolvedPath := destination.path
+				// Each destination gets its own copy: the operation and the value
+				// are rewritten below per destination, and one block's rewrite must
+				// not leak into the next.
+				destChange := &ConfigChangeDesc{
 					Operation: configChange.Operation,
-					Value:     translateWorkspacePaths(configChange.Value, b.SyncRootPath, b.SyncRoot, filepath.Dir(filePath)),
+					Value:     configChange.Value,
+					LocalEdit: configChange.LocalEdit,
 				}
-			}
 
-			result = append(result, FieldChange{
-				FilePath:        filePath,
-				Change:          configChange,
-				FieldCandidates: candidates,
-			})
+				// Index bookkeeping is scoped to a block so that shifts caused by
+				// operations on one block cannot move indices in another.
+				scope := ""
+				if routed {
+					scope = block.prefix + "\x00" + block.file + "\x00"
+				}
+
+				// If the element is removed, we can use the index to replace it with added element
+				// That may improve the diff in cases when the task is recreated because of renaming
+				if destChange.Operation == OperationRemove {
+					freeIndex, ok := resolvedPath.Index()
+					if ok {
+						parentPath := scope + resolvedPath.Parent().String()
+						indicesToReplaceMap[parentPath] = append(indicesToReplaceMap[parentPath], freeIndex)
+					}
+				}
+
+				if destChange.Operation == OperationAdd && resolvedPath.BracketStar() {
+					parentPath := scope + resolvedPath.Parent().String()
+					indices, ok := indicesToReplaceMap[parentPath]
+					if ok && len(indices) > 0 {
+						index := indices[0]
+						indicesToReplaceMap[parentPath] = indices[1:]
+						resolvedPath = structpath.NewPatternIndex(resolvedPath.Parent(), index)
+					}
+				}
+
+				resolvedPath = adjustArrayIndex(resolvedPath, scope, indexOperations)
+
+				// Track this operation for future index adjustments (only for array element operations)
+				if originalIndex, ok := resolvedPath.Index(); ok {
+					parentPath := scope + resolvedPath.Parent().String()
+					indexOperations[parentPath] = append(indexOperations[parentPath], struct {
+						index     int
+						operation OperationType
+					}{originalIndex, destChange.Operation})
+				}
+
+				resolvedPathStr := resolvedPath.String()
+				var candidates []string
+				if routed {
+					// The block is known, so there is exactly one path to write.
+					if block.prefix == "" {
+						candidates = []string{resolvedPathStr}
+					} else {
+						candidates = []string{block.prefix + "." + resolvedPathStr}
+					}
+				} else {
+					candidates = []string{resolvedPathStr}
+					if targetName != "" {
+						targetPrefixedPath := "targets." + targetName + "." + resolvedPathStr
+						candidates = append(candidates, targetPrefixedPath)
+					}
+				}
+
+				// A routed change has a known destination file even when the leaf
+				// itself is new, but "defined in the config" must still be decided by
+				// the leaf: a field with no source location is added, not replaced.
+				filePath := resolved.leaf.Location().File
+				isDefinedInConfig := filePath != ""
+				if routed && isDefinedInConfig {
+					filePath = block.file
+				}
+
+				if !isDefinedInConfig {
+					if destChange.Operation == OperationRemove {
+						// If the field is not defined in the config and the operation is remove, it is more likely a CLI default
+						// in this case we skip the change
+						continue
+					}
+
+					if destChange.Operation == OperationReplace {
+						// If the field is not defined in the config and the operation is replace, it is more likely a CLI default
+						// in this case we add it explicitly to the resource location.
+						// The reclassification is also recorded on the shared change so
+						// the command's output reports what was actually written.
+						destChange.Operation = OperationAdd
+						configChange.Operation = OperationAdd
+					}
+
+					if routed {
+						// The enclosing element was resolved to a block, so a new field
+						// on it belongs in that same block.
+						filePath = block.file
+					} else {
+						resourceLocation := b.Config.GetLocation(resourceKey)
+						filePath = resourceLocation.File
+					}
+					if filePath == "" {
+						return nil, fmt.Errorf("failed to find location for resource %s for a field %s", resourceKey, fieldPath)
+					}
+
+					log.Debugf(ctx, "Field %s has no location, using %s", fullPath, filePath)
+				}
+
+				if (destChange.Operation == OperationAdd || destChange.Operation == OperationReplace) && b.SyncRootPath != "" {
+					destChange = &ConfigChangeDesc{
+						Operation: destChange.Operation,
+						Value:     translateWorkspacePaths(destChange.Value, b.SyncRootPath, b.SyncRoot, filepath.Dir(filePath)),
+					}
+				}
+
+				result = append(result, FieldChange{
+					FilePath:        filePath,
+					Change:          destChange,
+					FieldCandidates: candidates,
+				})
+			}
 		}
 	}
 

@@ -259,6 +259,48 @@ func (r *blockResolver) route(change resolvedChange) (sourceBlock, *structpath.P
 	return block, path, nil
 }
 
+// routeDestination is one physical place a change has to be written.
+type routeDestination struct {
+	block sourceBlock
+	path  *structpath.PatternNode
+}
+
+// routeElement maps a change that addresses a whole sequence element onto every
+// block that defines it. An element assembled from two blocks has a part in each,
+// so removing it means deleting both parts. Expressing the change per block keeps
+// the split intact instead of collapsing the element into one scope.
+func (r *blockResolver) routeElement(change resolvedChange) ([]routeDestination, error) {
+	if len(change.steps) == 0 {
+		return nil, fmt.Errorf("%w: change does not address a sequence element", errAmbiguousBlock)
+	}
+	last := change.steps[len(change.steps)-1]
+
+	// A change to one of the element's fields addresses a single location and
+	// routes like any other change.
+	if len(change.path.AsSlice()) > last.component+1 {
+		block, path, err := r.route(change)
+		if err != nil {
+			return nil, err
+		}
+		return []routeDestination{{block: block, path: path}}, nil
+	}
+
+	blocks := r.blocksOf(last.element)
+	if len(blocks) == 0 {
+		return nil, fmt.Errorf("%w: no source location for the addressed element", errAmbiguousBlock)
+	}
+
+	destinations := make([]routeDestination, 0, len(blocks))
+	for _, block := range blocks {
+		path, err := r.localize(block, change)
+		if err != nil {
+			return nil, err
+		}
+		destinations = append(destinations, routeDestination{block: block, path: path})
+	}
+	return destinations, nil
+}
+
 // blockFor picks the block a change belongs to.
 func (r *blockResolver) blockFor(change resolvedChange) (sourceBlock, error) {
 	// A new element has no source of its own; it is placed relative to the
