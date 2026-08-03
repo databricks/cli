@@ -161,6 +161,10 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 	return found[0], nil
 }
 
+func (r *Resources) HasInternalResources() bool {
+	return len(r.Snapshots) > 0
+}
+
 // SupportedResources returns a map which keys correspond to the resource key in the bundle configuration.
 func SupportedResources() map[string]resources.ResourceDescription {
 	return map[string]resources.ResourceDescription{

@@ -15,6 +15,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/serving"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
+	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -397,5 +400,37 @@ func TestResourcesBindSupport(t *testing.T) {
 			assert.NoError(t, err)
 			assert.True(t, exists)
 		}
+	}
+}
+
+func TestAllInteralResourcesAreMarkedAsInternal(t *testing.T) {
+	internalResourceKeys := map[string]reflect.Type{}
+	err := structwalk.WalkType(reflect.TypeFor[Resources](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
+		if path.Len() > 2 {
+			return false
+		}
+		if field == nil {
+			return true
+		}
+		tag := field.Tag.Get("bundle")
+		if structtag.BundleTag(tag).Internal() {
+			internalResourceKeys[field.Name] = typ
+		}
+		return true
+	})
+	assert.NoError(t, err)
+
+	for key, typ := range internalResourceKeys {
+		r := reflect.MakeMap(typ)
+		r.SetMapIndex(reflect.ValueOf("my_resources"), reflect.New(typ.Elem()).Elem())
+
+		resources := &Resources{}
+		res := reflect.ValueOf(resources).Elem()
+		field := res.FieldByName(key)
+		if !field.IsValid() && !field.CanSet() {
+			t.Fatalf("Field %s is not valid", key)
+		}
+		field.Set(r)
+		assert.True(t, resources.HasInternalResources())
 	}
 }

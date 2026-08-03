@@ -2,15 +2,10 @@ package mutator
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structtag"
-	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
 type rejectInternalResources struct{}
@@ -27,36 +22,11 @@ func (m *rejectInternalResources) Name() string {
 
 func (m *rejectInternalResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	var internalResourceKeys []string
-	// collect all internal resource keys, only top level keys under "resources"
-	err := structwalk.WalkType(reflect.TypeFor[config.Resources](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
-		if path.Len() > 2 {
-			return false
-		}
-		if field == nil {
-			return true
-		}
-		tag := field.Tag.Get("bundle")
-		if structtag.BundleTag(tag).Internal() {
-			internalResourceKeys = append(internalResourceKeys, path.String())
-		}
-		return true
-	})
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	for _, key := range internalResourceKeys {
-		v, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("resources."+key))
-		if err != nil {
-			continue
-		}
+	if b.Config.Resources.HasInternalResources() {
 		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   key + " is an internal resource and cannot be set in bundle configuration",
-			Locations: v.Locations(),
-			Paths:     []dyn.Path{dyn.MustPathFromString("resources." + key)},
+			Severity: diag.Error,
+			Summary:  "Internal resources cannot be set in bundle configuration",
+			Paths:    []dyn.Path{dyn.MustPathFromString("resources")},
 		})
 	}
 
