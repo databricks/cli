@@ -5,13 +5,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# This script passes no leading-slash paths to the CLI, so the inherited MSYS_NO_PATHCONV=1
+# is not needed; unset it so bin/*.py helpers resolve their own script path on Windows.
+unset MSYS_NO_PATHCONV
+
 # Deploy: the dashboard is created and published, so the published revision matches the
 # draft (revision_create_time >= update_time).
 trace $CLI bundle deploy
-# Inline id capture rather than read_id.py: this test runs with MSYS_NO_PATHCONV=1, which
-# mangles the helper's own script path on Windows Git Bash (C:\c\a\... not found).
-DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
-echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
+DASHBOARD_ID=$(read_id.py dashboard1)
 
 # A clean re-plan is a no-op: the published content matches the draft.
 title "Plan right after deploy -- published is current, no change:"

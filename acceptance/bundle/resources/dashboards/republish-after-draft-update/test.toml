@@ -19,7 +19,6 @@ Ignore = [
 # republish is owed. The inherited eventual-consistency simulation would make the plan's
 # own read observe stale values and mask the change, so opt out of it here.
 INJECT_STALE_ON_DIRECT = "0"
-MSYS_NO_PATHCONV = "1"
 
 [[Repls]]
 Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+(Z|\+\d\d:\d\d)?)?Z'
