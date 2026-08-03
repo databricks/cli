@@ -97,21 +97,14 @@ Resource: resources.jobs.rename_task_job
 >>> diff.py databricks.yml.backup2 databricks.yml
 --- databricks.yml.backup2
 +++ databricks.yml
-@@ -52,14 +52,14 @@
+@@ -52,5 +52,5 @@
      rename_task_job:
        tasks:
 -        - task_key: b_task
-+        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
-+            num_workers: 1
-+            spark_version: 13.3.x-snapshot-scala2.12
++        - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/b_task
--          new_cluster:
--            spark_version: 13.3.x-snapshot-scala2.12
--            node_type_id: [NODE_TYPE_ID]
--            num_workers: 1
-+          task_key: b_task_renamed
+@@ -61,5 +61,5 @@
          - task_key: d_task
            depends_on:
 -            - task_key: b_task

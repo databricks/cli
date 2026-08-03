@@ -1,0 +1,11 @@
+# Local only: these assert which YAML file and list position a change is written
+# to, which the in-process test server exercises fully. Cloud = true would add a
+# real workspace round-trip that tells us nothing more about write-back.
+RecordRequests = false
+Ignore = [".databricks", "databricks.yml", "databricks.yml.backup", "overrides/*.yml", "overrides/*.backup"]
+
+[Env]
+DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
