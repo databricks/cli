@@ -121,15 +121,10 @@
     ]
   },
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
-  "q": {
-    "overwrite": "false"
-  },
+  "path": "/api/2.0/workspace/delete",
   "body": {
-    "ID": "[UUID]",
-    "AcquisitionTime": "[TIMESTAMP]",
-    "IsForced": false,
-    "User": "[USERNAME]"
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default",
+    "recursive": true
   }
 }
 {
@@ -139,10 +134,13 @@
     ]
   },
   "method": "POST",
-  "path": "/api/2.0/workspace/delete",
+  "path": "/api/2.0/workspace/import",
   "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default",
-    "recursive": true
+    "multipart_form": {
+      "content": "{\"ID\":\"[UUID]\",\"AcquisitionTime\":\"[TIMESTAMP]\",\"IsForced\":false,\"User\":\"[USERNAME]\"}",
+      "format": "AUTO",
+      "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+    }
   }
 }
 {

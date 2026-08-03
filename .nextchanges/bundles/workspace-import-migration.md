@@ -1,0 +1,1 @@
+Bundle file uploads now use the multipart `POST /api/2.0/workspace/import` endpoint instead of the deprecated `POST /api/2.0/workspace-files/import-file`. The new endpoint has a higher rate limit (30 vs 20 requests/sec per workspace) and is ~1.5–2× faster for typical bundle deployments.
