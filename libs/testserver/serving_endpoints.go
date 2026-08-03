@@ -35,6 +35,27 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 	return entities
 }
 
+// applyTelemetryConfig mirrors the backend: it provisions a telemetry profile for
+// the endpoint and echoes back the assigned profile ID and the full name of the
+// inference table it created, neither of which the caller supplies.
+func applyTelemetryConfig(endpointName string, config *serving.TelemetryConfig) *serving.TelemetryConfig {
+	if config == nil {
+		return nil
+	}
+
+	applied := *config
+	if applied.TelemetryProfileId == "" {
+		applied.TelemetryProfileId = nextUUID()
+	}
+	if applied.InferenceTableConfig != nil {
+		inferenceTable := *applied.InferenceTableConfig
+		inferenceTable.Name = "main.default." + endpointName + "_payload"
+		applied.InferenceTableConfig = &inferenceTable
+	}
+
+	return &applied
+}
+
 // clearExternalModelSecrets mirrors the backend, which persists the *_plaintext
 // API keys as secrets and never returns them on GET.
 func clearExternalModelSecrets(em *serving.ExternalModel) *serving.ExternalModel {
@@ -225,6 +246,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		PermissionLevel:      serving.ServingEndpointDetailedPermissionLevelCanManage,
 		RouteOptimized:       createReq.RouteOptimized,
 		Tags:                 createReq.Tags,
+		TelemetryConfig:      applyTelemetryConfig(createReq.Name, createReq.TelemetryConfig),
 		State: &serving.EndpointState{
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
 			Ready:        serving.EndpointStateReadyNotReady,
@@ -362,6 +384,36 @@ func (s *FakeWorkspace) ServingEndpointUpdateNotifications(req Request, name str
 	}
 
 	endpoint.EmailNotifications = updateReq.EmailNotifications
+	s.ServingEndpoints[name] = endpoint
+
+	return Response{
+		Body: endpoint,
+	}
+}
+
+func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	var patchReq serving.PatchTelemetryConfigRequest
+	err := json.Unmarshal(req.Body, &patchReq)
+	if err != nil {
+		return Response{
+			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+			StatusCode: 400,
+		}
+	}
+
+	endpoint, exists := s.ServingEndpoints[name]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": fmt.Sprintf("Serving endpoint with name %s not found", name)},
+		}
+	}
+
+	// An omitted telemetry_config removes the configuration from the endpoint.
+	endpoint.TelemetryConfig = applyTelemetryConfig(name, patchReq.TelemetryConfig)
+	endpoint.LastUpdatedTimestamp = nowMilli()
 	s.ServingEndpoints[name] = endpoint
 
 	return Response{

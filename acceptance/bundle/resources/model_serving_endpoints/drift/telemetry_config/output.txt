@@ -6,11 +6,11 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Plan is a no-op even though telemetry_config does not round-trip
+=== Plan converges: the profile ID and inference table name the backend assigns are not drift
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== telemetry_config is skipped (confirms the matched rules)
+=== Editing sampling_fraction is reported as a real change
 >>> [CLI] bundle plan --output json
 {
   "config.served_entities[0].external_model.openai_config.openai_api_key_plaintext": {
@@ -30,32 +30,34 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "reason": "empty",
     "remote": false
   },
-  "telemetry_config": {
+  "telemetry_config.inference_table_config.name": {
     "action": "skip",
-    "reason": "input_only",
-    "old": {
-      "inference_table_config": {
-        "sampling_fraction": 0.5
-      }
-    },
-    "new": {
-      "inference_table_config": {
-        "sampling_fraction": 0.5
-      }
-    }
+    "reason": "spec:output_only",
+    "remote": "main.default.test-endpoint_payload"
+  },
+  "telemetry_config.inference_table_config.sampling_fraction": {
+    "action": "update",
+    "old": 0.5,
+    "new": 0.9,
+    "remote": 0.5
+  },
+  "telemetry_config.telemetry_profile_id": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "[UUID]"
   }
 }
 
-=== Changing telemetry_config plans nothing: it is create-only
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
-=== Redeploy is a no-op (no config/ai-gateway/tags update calls)
+=== Deploy applies the edit through the telemetry-config API
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+=== Plan converges again once the edit is applied
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> print_requests.py //serving-endpoints
 {
@@ -89,6 +91,17 @@ Deployment complete!
     "telemetry_config": {
       "inference_table_config": {
         "sampling_fraction": 0.5
+      }
+    }
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config",
+  "body": {
+    "telemetry_config": {
+      "inference_table_config": {
+        "sampling_fraction": 0.9
       }
     }
   }

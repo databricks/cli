@@ -984,6 +984,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.ServingEndpointPatchTags(req, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/telemetry-config", func(req Request) any {
+		return req.Workspace.ServingEndpointPatchTelemetryConfig(req, req.Vars["name"])
+	})
+
 	// Vector Search Endpoints:
 
 	server.Handle("POST", "/api/2.0/vector-search/endpoints", func(req Request) any {

@@ -3,16 +3,17 @@ echo "*" > .gitignore
 title "Initial deployment"
 trace $CLI bundle deploy
 
-title "Plan is a no-op even though telemetry_config does not round-trip"
+title "Plan converges: the profile ID and inference table name the backend assigns are not drift"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
-title "telemetry_config is skipped (confirms the matched rules)"
+title "Editing sampling_fraction is reported as a real change"
+update_file.py databricks.yml "sampling_fraction: 0.5" "sampling_fraction: 0.9"
 trace $CLI bundle plan --output json | jq '.plan[].changes'
 
-title "Changing telemetry_config plans nothing: it is create-only"
-update_file.py databricks.yml "sampling_fraction: 0.5" "sampling_fraction: 0.9"
+title "Deploy applies the edit through the telemetry-config API"
+trace $CLI bundle deploy
+
+title "Plan converges again once the edit is applied"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
-title "Redeploy is a no-op (no config/ai-gateway/tags update calls)"
-trace $CLI bundle deploy
 trace print_requests.py //serving-endpoints

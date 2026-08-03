@@ -285,9 +285,6 @@ resources:
       # Accepted on write but not returned by GET.
       - field: config.served_entities[*].burst_scaling_enabled
         reason: input_only
-      # Remote always reads back empty, so without this it never converges.
-      - field: telemetry_config
-        reason: input_only
       # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
       - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
         reason: input_only
@@ -318,10 +315,12 @@ resources:
         reason: no_update_api
       - field: rate_limits
         reason: not_implemented
-      # Only exists on CreateServingEndpoint; no update API accepts it.
-      - field: telemetry_config
-        reason: no_update_api
     backend_defaults:
+      # The backend provisions a telemetry profile for the endpoint and echoes its
+      # ID back on GET. Users may also pin an existing profile, so suppress only the
+      # backend-assigned case and keep drift detection when the ID is set locally.
+      - field: telemetry_config.telemetry_profile_id
+
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
       # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
       - field: config.served_entities[*].name

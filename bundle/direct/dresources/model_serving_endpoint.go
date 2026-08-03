@@ -18,6 +18,7 @@ var (
 	pathAiGateway          = structpath.MustParsePath("ai_gateway")
 	pathConfig             = structpath.MustParsePath("config")
 	pathEmailNotifications = structpath.MustParsePath("email_notifications")
+	pathTelemetryConfig    = structpath.MustParsePath("telemetry_config")
 )
 
 type ResourceModelServingEndpoint struct {
@@ -246,6 +247,20 @@ func (r *ResourceModelServingEndpoint) updateNotifications(ctx context.Context, 
 	return nil
 }
 
+// updateTelemetryConfig applies telemetry_config through its dedicated PATCH API.
+// A nil config removes the telemetry configuration from the endpoint.
+func (r *ResourceModelServingEndpoint) updateTelemetryConfig(ctx context.Context, id string, telemetryConfig *serving.TelemetryConfig) error {
+	req := serving.PatchTelemetryConfigRequest{
+		Name:            id,
+		TelemetryConfig: telemetryConfig,
+	}
+	_, err := r.client.ServingEndpoints.PatchTelemetryConfig(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to update telemetry config: %w", err)
+	}
+	return nil
+}
+
 func diffTags(currentTags, desiredTags []serving.EndpointTag) (addTags []serving.EndpointTag, deleteTags []string) {
 	addTags = make([]serving.EndpointTag, 0)
 
@@ -338,6 +353,13 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 
 	if entry.Changes.HasChange(pathEmailNotifications) {
 		err = r.updateNotifications(ctx, id, config.EmailNotifications)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if entry.Changes.HasChange(pathTelemetryConfig) {
+		err = r.updateTelemetryConfig(ctx, id, config.TelemetryConfig)
 		if err != nil {
 			return nil, err
 		}
