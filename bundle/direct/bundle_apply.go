@@ -93,6 +93,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		if action == deployplan.Delete {
+			// Capture the ID before the delete: DMS requires resource_id on a
+			// DELETE operation, but both Destroy and DeleteState drop it from state,
+			// so GetResourceID would return empty afterwards.
+			resourceID := b.StateDB.GetResourceID(resourceKey)
 			if entry.Gone {
 				// Planning confirmed the resource is already deleted remotely; only
 				// remove it from the state, without calling the delete API.
@@ -105,7 +109,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 			// Record the delete with DMS. State is nil: the resource is gone.
-			if err := opQueue.record(ctx, resourceKey, action, "", nil, nil); err != nil {
+			if err := opQueue.record(ctx, resourceKey, action, resourceID, nil, nil); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
