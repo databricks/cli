@@ -1,0 +1,31 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# This script passes no leading-slash paths to the CLI, so the inherited MSYS_NO_PATHCONV=1
+# is not needed; unset it so bin/*.py helpers resolve their own script path on Windows.
+unset MSYS_NO_PATHCONV
+
+# Deploy: the dashboard is created and published, so the published revision matches the
+# draft (revision_create_time >= update_time).
+trace $CLI bundle deploy
+DASHBOARD_ID=$(read_id.py dashboard1)
+
+# A clean re-plan is a no-op: the published content matches the draft.
+title "Plan right after deploy -- published is current, no change:"
+trace $CLI bundle plan -o json | jq '.plan["resources.dashboards.dashboard1"].changes.published'
+
+# Make an out-of-band DRAFT update without republishing. This advances the draft's
+# update_time past the published revision_create_time, so the published content is now
+# stale. GetPublished still returns 200 (the previous revision), so the old
+# "published = (GetPublished succeeds)" check reported published=true and MISSED this --
+# the regression this test guards. The timestamp comparison reports published=false, so
+# the plan surfaces a pending republish (published: update, remote=false).
+DASHBOARD_JSON="{\"serialized_dashboard\": \"{}\", \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\"}"
+$CLI lakeview update "$DASHBOARD_ID" --json "${DASHBOARD_JSON}" > /dev/null
+
+title "Plan after out-of-band draft update -- a republish is owed:"
+trace $CLI bundle plan -o json | jq '.plan["resources.dashboards.dashboard1"].changes.published'

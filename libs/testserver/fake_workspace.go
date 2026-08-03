@@ -128,6 +128,14 @@ func nowMilli() int64 {
 	return lastNowMilli
 }
 
+// nextTimestamp returns a strictly-increasing RFC3339 timestamp with nanosecond
+// precision. The sub-second component keeps distinct events ordered even within the
+// same wall-clock second, which the dashboard publish lifecycle relies on to compare
+// a draft's update_time against a published revision's revision_create_time.
+func nextTimestamp() string {
+	return time.Unix(0, nowNano()).UTC().Format(time.RFC3339Nano)
+}
+
 func nextUUID() string {
 	var b [16]byte
 	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))

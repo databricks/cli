@@ -10,8 +10,7 @@ unset MSYS_NO_PATHCONV
 
 # First deploy: dashboard is created and published successfully.
 trace $CLI bundle deploy
-replace_ids.py
-DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
+DASHBOARD_ID=$(read_id.py dashboard1)
 DASHBOARD=$(retry $CLI lakeview get $DASHBOARD_ID)
 ETAG_1=$(echo "$DASHBOARD" | jq -r '.etag')
 add_repl.py "$ETAG_1" ETAG_1
