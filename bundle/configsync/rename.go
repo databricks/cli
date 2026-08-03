@@ -79,13 +79,15 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 	// just as a removal can match several additions.
 	matches := make([][]keyedElement, len(candidates))
 	for i, candidate := range candidates {
-		for _, add := range adds {
-			if candidate.remove.parent != add.parent || candidate.remove.keyField != add.keyField {
-				continue
-			}
-			if sameElementApartFromKey(candidate.oldFields, add) {
-				matches[i] = append(matches[i], add)
-			}
+		matches[i] = matchingAdds(candidate, adds, sameElementApartFromKey)
+	}
+
+	// Which removals each addition matches, so "forced from both sides" is a lookup
+	// rather than a rescan of every other removal's matches.
+	matchedBy := map[string][]int{}
+	for i, candidateMatches := range matches {
+		for _, add := range candidateMatches {
+			matchedBy[add.path] = append(matchedBy[add.path], i)
 		}
 	}
 
@@ -94,7 +96,7 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 		// removal matching several additions is the obvious case, but so is several
 		// removals matching the same addition: pairing the first and deleting the
 		// rest would move a key into a block the user did not choose.
-		if len(matches[i]) == 1 && countMatchesOf(matches, matches[i][0].path) == 1 {
+		if len(matches[i]) == 1 && len(matchedBy[matches[i][0].path]) == 1 {
 			add := matches[i][0]
 			set.byRemovePath[candidate.remove.path] = renamedElement{
 				keyField: candidate.remove.keyField,
@@ -114,7 +116,7 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 			// as a plain removal and addition instead of being held back -- otherwise a
 			// rename of two same-bodied elements is dropped, and anything referring to
 			// them by key (depends_on) keeps pointing at keys that no longer exist.
-			if !ambiguityCrossesBlocks(blocks, candidates, matches, i) {
+			if !ambiguityCrossesBlocks(blocks, candidates, matches[i], matchedBy) {
 				continue
 			}
 			const reason = "several elements with the same contents were renamed in one run and they are not in the same block, so the new keys cannot be matched to them"
@@ -137,14 +139,8 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 		// a genuinely new element is an unrelated addition that has to be applied,
 		// even when a removal happens to be in the same run.
 		var edited []string
-		for _, add := range adds {
-			if candidate.remove.parent != add.parent || candidate.remove.keyField != add.keyField {
-				continue
-			}
-			if _, taken := set.addPaths[add.path]; taken {
-				continue
-			}
-			if sameFieldsApartFromKey(candidate.oldFields, add) {
+		for _, add := range matchingAdds(candidate, adds, sameFieldsApartFromKey) {
+			if _, taken := set.addPaths[add.path]; !taken {
 				edited = append(edited, add.path)
 			}
 		}
@@ -173,37 +169,32 @@ type renameCandidate struct {
 	oldFields map[string]any
 }
 
-// matchesAdd reports whether the addition at addPath is among these matches.
-func matchesAdd(matches []keyedElement, addPath string) bool {
-	return slices.ContainsFunc(matches, func(add keyedElement) bool { return add.path == addPath })
-}
-
-// countMatchesOf returns how many removals could have become the addition at
-// addPath.
-func countMatchesOf(matches [][]keyedElement, addPath string) int {
-	count := 0
-	for _, candidateMatches := range matches {
-		if matchesAdd(candidateMatches, addPath) {
-			count++
-		}
-	}
-	return count
-}
-
-// ambiguityCrossesBlocks reports whether an unforced pairing for candidates[i]
-// would have to choose between blocks. Every removal that could have become one of
-// the same additions is considered, because the choice is between them.
-func ambiguityCrossesBlocks(blocks *blockResolver, candidates []renameCandidate, matches [][]keyedElement, i int) bool {
-	var seen []sourceBlock
-	for j, candidate := range candidates {
-		if j != i && !sharesAnyAdd(matches[i], matches[j]) {
+// matchingAdds returns the additions in the same sequence that satisfy pred, i.e. the
+// ones this removal could have become.
+func matchingAdds(candidate renameCandidate, adds []keyedElement, pred func(map[string]any, keyedElement) bool) []keyedElement {
+	var out []keyedElement
+	for _, add := range adds {
+		if candidate.remove.parent != add.parent || candidate.remove.keyField != add.keyField {
 			continue
 		}
-		if len(candidate.resolved.steps) == 0 {
+		if pred(candidate.oldFields, add) {
+			out = append(out, add)
+		}
+	}
+	return out
+}
+
+// ambiguityCrossesBlocks reports whether an unforced pairing would have to choose
+// between blocks. Every removal that could have become one of the same additions is
+// considered, because the choice is between them.
+func ambiguityCrossesBlocks(blocks *blockResolver, candidates []renameCandidate, matches []keyedElement, matchedBy map[string][]int) bool {
+	var seen []sourceBlock
+	for _, i := range competingRemovals(matches, matchedBy) {
+		steps := candidates[i].resolved.steps
+		if len(steps) == 0 {
 			return true
 		}
-		last := candidate.resolved.steps[len(candidate.resolved.steps)-1]
-		elementBlocks := blocks.blocksOf(last.element)
+		elementBlocks := blocks.blocksOf(steps[len(steps)-1].element)
 		if len(elementBlocks) != 1 {
 			return true
 		}
@@ -214,9 +205,18 @@ func ambiguityCrossesBlocks(blocks *blockResolver, candidates []renameCandidate,
 	return len(seen) != 1
 }
 
-// sharesAnyAdd reports whether two removals could have become the same addition.
-func sharesAnyAdd(a, b []keyedElement) bool {
-	return slices.ContainsFunc(a, func(add keyedElement) bool { return matchesAdd(b, add.path) })
+// competingRemovals returns the indices of every removal matching any of these
+// additions, including the one they came from.
+func competingRemovals(matches []keyedElement, matchedBy map[string][]int) []int {
+	var out []int
+	for _, add := range matches {
+		for _, i := range matchedBy[add.path] {
+			if !slices.Contains(out, i) {
+				out = append(out, i)
+			}
+		}
+	}
+	return out
 }
 
 // multiBlockElement reports whether the element the change addresses is assembled

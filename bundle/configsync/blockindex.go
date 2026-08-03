@@ -16,17 +16,19 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
-// A sequence field of a resource may be defined in more than one physical YAML
-// region: the top-level resources.<type>.<name>.<field> block and the
-// targets.<target>.resources.<type>.<name>.<field> override block, either of
-// which may live in its own included file. Loading merges those regions into one
-// sequence, and keyed sequences are also sorted by key, so an index into the
-// merged sequence does not address any single region. Write-back has to map a
-// merged position back to a region and to the position inside that region.
-// There are exactly two kinds of region, so a block is a file plus which of the
-// two it is. Both kinds may occur in the same file, so the file alone does not
-// identify a block, and one target's override may span several files, so the kind
-// alone does not either.
+// Write-back has to turn a position in the merged configuration into a position in a
+// file, and the two do not correspond.
+//
+// A sequence field of a resource may be defined in two physical regions: the top-level
+// resources.<type>.<name>.<field> block and the targets.<target>.resources... override
+// block, either of which may live in its own included file. Loading concatenates those
+// regions into one sequence and sorts keyed ones by key, so a merged index addresses
+// no single region. Every index therefore exists in one of two spaces -- merged, or
+// local to one block -- and each value in this file belongs to exactly one of them;
+// crossing them silently addresses a different element.
+//
+// A block is (kind, file), because both kinds may occur in one file and one target's
+// override may span several files, so neither identifies a block alone.
 type sourceBlock struct {
 	// override is false for the top-level block and true for the selected target's
 	// override block.
@@ -43,14 +45,10 @@ func (b sourceBlock) scopeKey() string {
 	return "toplevel\x00" + b.file + "\x00"
 }
 
-// blockResolver answers which physical block a merged value came from.
-//
-// It works by location: a merged value keeps the locations of the entries it was
-// loaded from, and merging accumulates them (see libs/dyn/merge), so a value
-// assembled from two blocks reports a location in each. Selecting a target folds
-// its overrides into the resources tree and drops the targets subtree, so the
-// blocks are recovered by parsing the contributing files again, where the two
-// regions are still separate.
+// blockResolver answers which physical block a merged value came from, by location:
+// merging accumulates them (libs/dyn/merge), so a value assembled from two blocks
+// reports a location in each. Selecting a target folds its overrides into resources and
+// drops the targets subtree, so the blocks are recovered by parsing the files again.
 type blockResolver struct {
 	// blocks holds one parsed file per contributing file, keyed by block, so a
 	// path relative to a block can be looked up inside it.
@@ -59,14 +57,12 @@ type blockResolver struct {
 	byLocation map[dyn.Location]sourceBlock
 }
 
-// newBlockResolver builds the location -> block mapping for the bundle's
-// resources. It returns nil when the source cannot be re-read, in which case
-// callers keep their existing single-block behaviour.
+// newBlockResolver builds the location -> block mapping for the bundle's resources,
+// returning nil when the source cannot be re-read so callers keep their existing
+// single-block behaviour.
 //
-// Only the files the merged configuration actually references are read, and they
-// are parsed directly rather than reloaded through the mutator pipeline: the
-// pipeline resolves includes, reports through logdiag and executes the bundle's
-// preinit script, none of which belongs to reading back a source location.
+// The contributing files are parsed directly rather than reloaded through the mutator
+// pipeline, which would run the bundle's preinit script a second time.
 func newBlockResolver(ctx context.Context, b *bundle.Bundle) *blockResolver {
 	root := b.Config.Value()
 	if !root.IsValid() {
@@ -219,20 +215,17 @@ func (r *blockResolver) blocksOf(value dyn.Value) []sourceBlock {
 			blocks = append(blocks, block)
 		}
 	}
-	// Order is total and independent of how locations happened to accumulate, so
-	// callers that prefer the top-level block get a deterministic answer.
+	// Total order, so declaringBlock's choice never depends on how locations
+	// happened to accumulate.
 	slices.SortFunc(blocks, compareBlocks)
 	return blocks
 }
 
-// winningBlock returns the block whose definition the merged value took, when
-// several blocks define it.
+// winningBlock returns the block whose definition the merged value took.
 //
 // Locations accumulate in merge order, so the first one that maps to a block is the
-// winner: mergePrimitive records the incoming (overriding) value's location first,
-// and writing any other copy would leave the effective value unchanged. Load order
-// is the only thing that distinguishes two blocks in the same scope, and no property
-// of the blocks themselves reproduces it.
+// winner and writing any other copy would leave the effective value unchanged. Load
+// order is the only thing that distinguishes two blocks in the same scope.
 func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
 	for _, location := range value.Locations() {
 		if block, ok := r.byLocation[location]; ok {
@@ -242,13 +235,9 @@ func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
 	return sourceBlock{}, false
 }
 
-// indexWithinBlock returns the position of element in the sequence that block
-// writes at sequencePath, where sequencePath is relative to the block. That position
-// differs from the element's position in the merged sequence, which concatenates
-// every block's entries and sorts keyed ones by key.
-//
-// A block is one parsed file, so the sequence read here holds only that file's
-// entries and a plain index into it addresses the right entry.
+// indexWithinBlock returns the position of element inside block, where sequencePath is
+// relative to the block. A block is one parsed file, so the sequence read here holds
+// only that file's entries and a plain index into it is block-local.
 func (r *blockResolver) indexWithinBlock(block sourceBlock, sequencePath dyn.Path, element dyn.Value) (int, bool) {
 	parsed, ok := r.blocks[block]
 	if !ok {
@@ -283,8 +272,7 @@ func (r *blockResolver) indexWithinBlock(block sourceBlock, sequencePath dyn.Pat
 // location, since the sync runs unattended and a later run can retry.
 var errAmbiguousBlock = errors.New("change cannot be attributed to a single source block")
 
-// singleDestination maps a change onto the one block that owns it, rewriting
-// merged sequence indices into block-local ones.
+// singleDestination maps a change onto the one block that owns it.
 //
 // The element the change addresses decides the block: an element defined in
 // exactly one block is written there. When the addressed element is assembled from
@@ -301,29 +289,32 @@ func (r *blockResolver) singleDestination(change resolvedChange) (routeDestinati
 	if err != nil {
 		return routeDestination{}, err
 	}
-	return routeDestination{block: block, path: path}, nil
+	return routeDestination{block: &block, path: path}, nil
 }
 
-// routeDestination is one physical place a change has to be written.
+// routeDestination is one physical place a change has to be written. block is nil when
+// the change was not routed to a block, i.e. it is written at its resolved path in
+// whichever file the resource was found in.
 type routeDestination struct {
-	block sourceBlock
+	block *sourceBlock
 	path  *structpath.PatternNode
 }
 
-// routeDestinations returns every physical place a change has to be written.
+// scopeKey identifies the destination for index bookkeeping, so operations on one
+// block cannot shift positions recorded for another. An unrouted destination shares
+// one scope, which is the behaviour before blocks were known.
+func (d routeDestination) scopeKey() string {
+	if d.block == nil {
+		return ""
+	}
+	return d.block.scopeKey()
+}
+
+// routeDestinations returns every physical place a change has to be written: one for an
+// edit, since only the definition that wins the merge decides the deployed value, and
+// one per definition for a removal, since the value is gone only once every copy is.
 //
-// The change must address something inside a sequence: ResolveChanges only routes when
-// the path has a sequence step, and a rename path always ends in a [key='...']
-// selector. A change with no sequence on its path needs no per-block translation and
-// is written at its resolved path directly.
-//
-// An edit has one destination: only the definition that wins the merge decides the
-// deployed value. A removal has one per definition, because the field is gone only
-// once every copy is: deleting just the winning copy lets the shadowed one take
-// effect, so the next deploy restores the value the removal was meant to drop.
-// The same holds for a whole sequence element, which additionally has to be removed
-// or renamed in each block that contributes a part, so that a split element keeps
-// its parts in their original scopes.
+// Callers only route a change that addresses something inside a sequence.
 func (r *blockResolver) routeDestinations(change resolvedChange) ([]routeDestination, error) {
 	// The value whose definitions have to be reached: the element itself when the
 	// change addresses one, otherwise the field being removed.
@@ -353,7 +344,7 @@ func (r *blockResolver) routeDestinations(change resolvedChange) ([]routeDestina
 		if err != nil {
 			return nil, err
 		}
-		destinations = append(destinations, routeDestination{block: block, path: path})
+		destinations = append(destinations, routeDestination{block: &block, path: path})
 	}
 	return destinations, nil
 }
@@ -454,14 +445,9 @@ func (r *blockResolver) blockForNewElement(change resolvedChange) (sourceBlock, 
 	return declaringBlock(blocks), nil
 }
 
-// blocksDefiningSequence returns the blocks that write the sequence at
-// sequencePath. An existing value is traced through its locations instead; this is
-// for a value that does not exist yet, where only the receiving sequence is known.
-//
-// sequencePath is in merged index space, so for a nested sequence its enclosing
-// indices have to be translated per block before the lookup: a task at merged index 1
-// may be index 0 in the block that defines it, and probing the merged index there
-// finds nothing (or the wrong element).
+// blocksDefiningSequence returns the blocks that write the sequence at sequencePath.
+// This is for a value that does not exist yet, where only the receiving sequence is
+// known; an existing value is traced through its own locations instead.
 func (r *blockResolver) blocksDefiningSequence(change resolvedChange, sequencePath dyn.Path) []sourceBlock {
 	var blocks []sourceBlock
 	for _, block := range r.sortedBlocks() {
@@ -480,9 +466,9 @@ func (r *blockResolver) blocksDefiningSequence(change resolvedChange, sequencePa
 	return blocks
 }
 
-// sequencePathWithinBlock rewrites the enclosing sequence indices of sequencePath
-// from merged positions to block's own positions. Reports false when an enclosing
-// element is not in this block, which means the block cannot receive the value.
+// sequencePathWithinBlock rewrites sequencePath's enclosing indices from merged
+// positions to block's own, reporting false when an enclosing element is not in this
+// block. This is the one place merged indices become block-local ones.
 //
 // change.steps is ordered outermost first, so each translated index is already known
 // by the time a deeper step needs it.
@@ -516,18 +502,10 @@ func (r *blockResolver) pathWithinBlock(block sourceBlock, change resolvedChange
 			indices[i] = -1
 			continue
 		}
-		// A nested sequence is reached through the outer sequences on the path,
-		// whose indices refer to the merged view. Rewrite them to the block's own
-		// indices, otherwise the lookup addresses the wrong parent element.
-		sequencePath := slices.Clone(step.sequencePath)
-		for j := range i {
-			outer := change.steps[j]
-			if indices[j] < 0 || len(outer.sequencePath) >= len(sequencePath) {
-				continue
-			}
-			sequencePath[len(outer.sequencePath)] = dyn.Index(indices[j])
+		sequencePath, ok := r.sequencePathWithinBlock(block, change, step.sequencePath)
+		if !ok {
+			return nil, fmt.Errorf("%w: enclosing element has no position in %s", errAmbiguousBlock, block.file)
 		}
-
 		index, ok := r.indexWithinBlock(block, sequencePath, step.element)
 		if !ok {
 			return nil, fmt.Errorf("%w: element has no position in %s", errAmbiguousBlock, block.file)

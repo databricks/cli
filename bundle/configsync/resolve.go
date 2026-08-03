@@ -19,14 +19,20 @@ import (
 )
 
 type FieldChange struct {
-	FilePath        string
-	Change          *ConfigChangeDesc
-	FieldCandidates []string
+	FilePath string
+	Change   *ConfigChangeDesc
+	// WritePath addresses the field in the file at FilePath, so for an override block
+	// it carries the targets.<target> prefix and its sequence indices are block-local.
+	WritePath string
+	// AltWritePath is tried when WritePath does not exist in the file. It is only set
+	// when the change could not be routed to a block, i.e. when the scope had to be
+	// guessed; a routed change has exactly one correct path.
+	AltWritePath string
 	// preResolvedPath addresses the field in the pre-resolved configuration, the one
 	// read to recover a ${var.X} reference that deployment replaced with its value.
 	//
 	// That configuration is merged, so this path keeps the MERGED sequence indices and
-	// no targets.<target> prefix. FieldCandidates is the opposite on both counts: it
+	// no targets.<target> prefix. WritePath is the opposite on both counts: it
 	// addresses the raw file, so its indices are block-local and an override carries
 	// the prefix. Deriving one from the other reads a different element whenever the
 	// two index spaces disagree, which restores a sibling's variable reference.
@@ -293,7 +299,6 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			// here, before pathWithinBlock rewrites indices to be block-local.
 			mergedIndexPath := resolvedPath
 			destinations := []routeDestination{{path: resolvedPath}}
-			routed := false
 			if blocks != nil && len(resolved.steps) > 0 {
 				var routeErr error
 				if isRename {
@@ -315,7 +320,6 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					}
 					return nil, fmt.Errorf("failed to route change %s: %w", fullPath, routeErr)
 				}
-				routed = true
 			}
 
 			for _, destination := range destinations {
@@ -332,10 +336,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 
 				// Index bookkeeping is scoped to a block so that shifts caused by
 				// operations on one block cannot move indices in another.
-				scope := ""
-				if routed {
-					scope = block.scopeKey()
-				}
+				scope := destination.scopeKey()
 
 				// A rename rewrites only the key field of the element, so it is a
 				// replace at the element's position rather than a change to the
@@ -349,7 +350,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					result = append(result, FieldChange{
 						FilePath:        block.file,
 						Change:          destChange,
-						FieldCandidates: []string{blocks.candidatePath(block, resolvedPath)},
+						WritePath:       blocks.candidatePath(*block, resolvedPath),
 						preResolvedPath: structpath.NewPatternStringKey(mergedIndexPath, rename.keyField).String(),
 					})
 					continue
@@ -387,23 +388,23 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				}
 
 				resolvedPathStr := resolvedPath.String()
-				var candidates []string
-				if routed {
+				writePath := resolvedPathStr
+				altWritePath := ""
+				if block != nil {
 					// The block is known, so there is exactly one path to write.
-					candidates = []string{blocks.candidatePath(block, resolvedPath)}
-				} else {
-					candidates = []string{resolvedPathStr}
-					if targetName != "" {
-						candidates = append(candidates, targetPrefixedPath(targetName, resolvedPath))
-					}
+					writePath = blocks.candidatePath(*block, resolvedPath)
+				} else if targetName != "" {
+					// The scope is unknown, so the override is tried if the top-level
+					// path turns out not to exist.
+					altWritePath = targetPrefixedPath(targetName, resolvedPath)
 				}
 
-				// A routed change has a known destination file even when the leaf
+				// A change routed to a block has a known destination file even when the leaf
 				// itself is new, but "defined in the config" must still be decided by
 				// the leaf: a field with no source location is added, not replaced.
 				filePath := resolved.leaf.Location().File
 				isDefinedInConfig := filePath != ""
-				if routed && isDefinedInConfig {
+				if block != nil && isDefinedInConfig {
 					filePath = block.file
 				}
 
@@ -423,7 +424,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 						configChange.Operation = OperationAdd
 					}
 
-					if routed {
+					if block != nil {
 						// The enclosing element was resolved to a block, so a new field
 						// on it belongs in that same block.
 						filePath = block.file
@@ -448,7 +449,8 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				result = append(result, FieldChange{
 					FilePath:        filePath,
 					Change:          destChange,
-					FieldCandidates: candidates,
+					WritePath:       writePath,
+					AltWritePath:    altWritePath,
 					preResolvedPath: mergedIndexPath.String(),
 				})
 			}
@@ -512,4 +514,13 @@ func resolveNotebookExtension(syncRoot fs.FS, relPath string) string {
 		}
 	}
 	return relPath
+}
+
+// writePaths lists the paths to try, in order: the addressed one, then the fallback
+// for a change whose scope had to be guessed.
+func (c FieldChange) writePaths() []string {
+	if c.AltWritePath == "" {
+		return []string{c.WritePath}
+	}
+	return []string{c.WritePath, c.AltWritePath}
 }
