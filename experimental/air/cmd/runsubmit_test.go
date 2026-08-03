@@ -41,7 +41,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 		MLflowExperimentDirectory: new("/Workspace/Users/me/exp"),
 	}
 
-	p := buildSubmitPayload(cfg, "/d/command.sh", "5", []string{"torch==2.4.0", "numpy"}, snapshotResult{})
+	p := buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{})
 
 	assert.Equal(t, "exp", p.RunName)
 	assert.Equal(t, 1800, p.TimeoutSeconds)
@@ -49,8 +49,6 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, aiRuntimeEnvironmentKey, p.Environments[0].EnvironmentKey)
 	require.NotNil(t, p.Environments[0].Spec)
 	assert.Equal(t, "5", p.Environments[0].Spec.EnvironmentVersion)
-	// Dependencies ride the environment spec rather than a co-located requirements.yaml.
-	assert.Equal(t, []string{"torch==2.4.0", "numpy"}, p.Environments[0].Spec.Dependencies)
 
 	require.Len(t, p.Tasks, 1)
 	task := p.Tasks[0]
@@ -78,7 +76,7 @@ func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
 		Command:        new("x"),
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4", nil, snapshotResult{}).Tasks[0]
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}).Tasks[0]
 	assert.Equal(t, defaultMaxRetries, task.MaxRetries)
 	assert.True(t, task.RetryOnTimeout)
 }
@@ -93,7 +91,7 @@ func TestBuildSubmitPayloadNoRetries(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 		MaxRetries:     new(0),
 	}
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4", nil, snapshotResult{}).Tasks[0]
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}).Tasks[0]
 	assert.Equal(t, 0, task.MaxRetries)
 	assert.False(t, task.RetryOnTimeout)
 
@@ -160,40 +158,6 @@ func TestSubmitWorkload(t *testing.T) {
 	assert.True(t, strings.HasSuffix(d.CommandPath, "/"+commandScriptName), d.CommandPath)
 	assert.Contains(t, d.CommandPath, "/.air/cli_launch/")
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu1xH100, AcceleratorCount: 1}, d.Compute)
-}
-
-// TestSubmitWorkloadSendsDependenciesOnEnvironment proves inline
-// environment.dependencies reach the runs/submit payload on the environment spec
-// (the modern Jobs mechanism) rather than as a co-located requirements.yaml artifact.
-func TestSubmitWorkloadSendsDependenciesOnEnvironment(t *testing.T) {
-	server := testserver.New(t)
-	t.Cleanup(server.Close)
-
-	var got jobs.SubmitRun
-	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
-		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return jobs.SubmitRunResponse{RunId: 777}
-	})
-	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
-	require.NoError(t, err)
-
-	cfg := minimalConfig + `
-environment:
-  dependencies:
-    - torch==2.4.0
-    - numpy
-`
-	cfgPath := writeConfigFile(t, "run.yaml", cfg)
-	loaded, err := loadRunConfig(cfgPath)
-	require.NoError(t, err)
-
-	_, _, err = submitWorkload(t.Context(), w, loaded, cfgPath, "idem-key")
-	require.NoError(t, err)
-
-	require.Len(t, got.Environments, 1)
-	require.NotNil(t, got.Environments[0].Spec)
-	assert.Equal(t, []string{"torch==2.4.0", "numpy"}, got.Environments[0].Spec.Dependencies)
 }
 
 // TestSubmitWorkloadHonorsOverride proves a --override reaches the actual
