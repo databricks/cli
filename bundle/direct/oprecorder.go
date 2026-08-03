@@ -3,11 +3,14 @@ package direct
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -107,6 +110,22 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 		ResourceKey: dmsKey,
 		Operation:   operation,
 	})
+	// The CLI discards the response, so a failure to deserialize it does not mean
+	// the operation was not recorded: DMS serves sequence_id as a JSON string
+	// ("1") per proto3 int64 encoding, but bundledeployments.Operation.SequenceId
+	// is an int64 the SDK cannot parse from a string. This surfaces intermittently
+	// (only responses that carry sequence_id trip it) as a spurious deploy
+	// failure on a call the server accepted.
+	//
+	// The SDK emits this only on the 2xx body-parse path - a status >= 400 is
+	// mapped to *apierr.APIError before the body is read - so a "failed to
+	// unmarshal response body" error means the operation was recorded. Tolerate
+	// exactly that, and nothing broader: a transport error means the request may
+	// not have reached DMS and must still fail the deploy.
+	if err != nil && !errors.As(err, new(*apierr.APIError)) && strings.Contains(err.Error(), "failed to unmarshal response body") {
+		log.Debugf(ctx, "ignoring response deserialization error from CreateOperation for %s (operation was recorded): %v", dmsKey, err)
+		return nil
+	}
 	return err
 }
 

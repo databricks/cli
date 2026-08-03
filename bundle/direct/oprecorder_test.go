@@ -2,10 +2,12 @@ package direct
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,13 +18,14 @@ type fakeOpClient struct {
 
 	mu       sync.Mutex
 	requests []bundledeployments.CreateOperationRequest
+	err      error
 }
 
 func (f *fakeOpClient) CreateOperation(ctx context.Context, req bundledeployments.CreateOperationRequest) (*bundledeployments.Operation, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.requests = append(f.requests, req)
-	return &bundledeployments.Operation{}, nil
+	return &bundledeployments.Operation{}, f.err
 }
 
 // uploadOne records a single operation through the given uploader, mirroring what
@@ -50,6 +53,41 @@ func TestOperationRecorderStripsResourcePrefix(t *testing.T) {
 	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeCreate, req.Operation.ActionType)
 	assert.Equal(t, "job-123", req.Operation.ResourceId)
 	require.NotNil(t, req.Operation.State)
+}
+
+func TestOperationRecorderToleratesResponseDeserializationError(t *testing.T) {
+	// DMS returns sequence_id as a JSON string the SDK cannot parse into its
+	// int64 field, so CreateOperation can fail to deserialize a response the
+	// server accepted. The CLI discards the response, so this must not fail the
+	// deploy.
+	f := &fakeOpClient{err: errors.New("failed to unmarshal response body: invalid character '1' after top-level value")}
+	r := NewOperationRecorder(f, "dep-1", 2)
+
+	op, err := newRecordedOperation(deployplan.Create, "job-123", map[string]string{"name": "foo"}, nil)
+	require.NoError(t, err)
+	assert.NoError(t, r.upload(t.Context(), "resources.jobs.foo", op))
+	assert.Len(t, f.requests, 1)
+}
+
+func TestOperationRecorderPropagatesAPIError(t *testing.T) {
+	// A real API error (status >= 400) must still fail the deploy.
+	f := &fakeOpClient{err: &apierr.APIError{StatusCode: 400, ErrorCode: "INVALID_PARAMETER_VALUE", Message: "bad request"}}
+	r := NewOperationRecorder(f, "dep-1", 2)
+
+	op, err := newRecordedOperation(deployplan.Create, "job-123", map[string]string{"name": "foo"}, nil)
+	require.NoError(t, err)
+	assert.Error(t, r.upload(t.Context(), "resources.jobs.foo", op))
+}
+
+func TestOperationRecorderPropagatesTransportError(t *testing.T) {
+	// A transport error means the request may never have reached DMS, so it must
+	// not be swallowed like a response-deserialization error.
+	f := &fakeOpClient{err: errors.New("dial tcp: connection refused")}
+	r := NewOperationRecorder(f, "dep-1", 2)
+
+	op, err := newRecordedOperation(deployplan.Create, "job-123", map[string]string{"name": "foo"}, nil)
+	require.NoError(t, err)
+	assert.Error(t, r.upload(t.Context(), "resources.jobs.foo", op))
 }
 
 func TestNewRecordedOperationRecordsStateAsIs(t *testing.T) {
