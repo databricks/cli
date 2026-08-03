@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Initial deployment"
+trace $CLI bundle deploy
+
+title "Change embedding_dimension (recreate: DELETE then CREATE the same name)"
+trace update_file.py databricks.yml "embedding_dimension: 768" "embedding_dimension: 384"
+
+rm -f out.requests.txt
+trace $CLI bundle deploy --auto-approve
+
+# The name is released only after the index stops being visible on GET, so
+# WaitAfterDelete's poll returns before CREATE is allowed. The first POST here is
+# the rejected one; the second, identical POST is the assertion that createIndex
+# retries instead of failing the deploy — hence no --unique, which would collapse
+# the two into one. --get shows the WaitAfterDelete poll too.
+trace print_requests.py --get //vector-search/indexes

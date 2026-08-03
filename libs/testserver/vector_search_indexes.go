@@ -15,6 +15,13 @@ import (
 // accepts: only alphanumerics and underscores.
 var indexNamePart = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
 
+// indexNamePendingDeletion scopes the two-phase deletion simulation to the
+// pending-deletion recreate test. On the real backend every delete goes through
+// both phases, but the second phase usually completes before the CLI gets to
+// CREATE, so modelling it unconditionally would add a spurious retry to every
+// recreate test. Mirrors catalogNameManagedDefaults.
+const indexNamePendingDeletion = "vs_index_pending_deletion"
+
 // fakeVectorSearchIndex captures the endpoint's UUID at index creation time.
 // On the real backend an index is bound to a specific endpoint instance, not
 // just the name: deleting and recreating an endpoint with the same name yields
@@ -52,6 +59,16 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search index with name %s already exists", createReq.Name)},
+		}
+	}
+	if s.VectorSearchIndexesPendingDeletion[createReq.Name] > 0 {
+		s.VectorSearchIndexesPendingDeletion[createReq.Name]--
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    fmt.Sprintf("Index %s is currently pending deletion. Operations on the index are not permitted while the index is being deleted.", createReq.Name),
+			},
 		}
 	}
 	endpoint, exists := s.VectorSearchEndpoints[createReq.EndpointName]
@@ -101,6 +118,24 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 	return Response{
 		Body: index,
 	}
+}
+
+// VectorSearchIndexDelete removes the index and, for the pending-deletion test
+// name, records that the next CREATE for the same name must still be rejected.
+// The real backend releases the name only after the index has already stopped
+// being visible on GET, so a CLI that polls GET for absence can observe the
+// index as gone and still lose the race on CREATE.
+func (s *FakeWorkspace) VectorSearchIndexDelete(indexName string) Response {
+	defer s.LockUnlock()()
+
+	if _, ok := s.VectorSearchIndexes[indexName]; !ok {
+		return Response{StatusCode: http.StatusNotFound}
+	}
+	delete(s.VectorSearchIndexes, indexName)
+	if strings.Contains(indexName, indexNamePendingDeletion) {
+		s.VectorSearchIndexesPendingDeletion[indexName] = 1
+	}
+	return Response{}
 }
 
 // isValidIndexName checks that name is in catalog.schema.table form with

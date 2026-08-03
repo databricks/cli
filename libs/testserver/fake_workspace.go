@@ -193,6 +193,11 @@ type FakeWorkspace struct {
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
 
+	// VectorSearchIndexesPendingDeletion counts how many further CREATEs an
+	// already-deleted index name must reject with "pending deletion". See
+	// VectorSearchIndexDelete.
+	VectorSearchIndexesPendingDeletion map[string]int
+
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
 	Acls         map[string][]workspace.AclItem
@@ -394,7 +399,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				SingleUserName:   TestUser.UserName,
 			},
 		},
-		InstancePools: map[string]compute.GetInstancePool{},
+		InstancePools:                      map[string]compute.GetInstancePool{},
+		VectorSearchIndexesPendingDeletion: map[string]int{},
 	}
 }
 
