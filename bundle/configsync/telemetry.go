@@ -50,6 +50,10 @@ type Stats struct {
 	FilesChangedCount int64
 	FilesWrittenCount int64
 
+	// Changes that were detected and reported but not written back, because they
+	// could not be attributed to a single source location.
+	SkippedChangesCount int64
+
 	Restore RestoreStats
 
 	// Identity of the resource state the run actually read. Without these, a
@@ -280,6 +284,7 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 			ResourceChanges:        resourceChanges,
 			FilesChangedCount:      s.FilesChangedCount,
 			FilesWrittenCount:      s.FilesWrittenCount,
+			SkippedChangesCount:    s.SkippedChangesCount,
 			RefsRetargeted:         s.Restore.Retargeted,
 			RefsFromSiblings:       s.Restore.FromSiblings,
 			StateSerial:            s.StateSerial,
