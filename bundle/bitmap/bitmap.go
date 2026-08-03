@@ -132,7 +132,7 @@ func Bits(cfg config.Root, telemetry any, schema []string) ([]bool, error) {
 	}
 
 	bits := make([]bool, len(schema))
-	set := func(prefix string, path *structpath.PathNode) {
+	setBit := func(prefix string, path *structpath.PathNode) {
 		for _, pattern := range normalizePrefixes(path) {
 			if i, ok := index[prefix+pattern]; ok {
 				bits[i] = true
@@ -141,13 +141,19 @@ func Bits(cfg config.Root, telemetry any, schema []string) ([]bool, error) {
 	}
 
 	err := structwalk.Walk(cfg, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
-		set("", path)
+		setBit("", path)
 	})
 	if err != nil {
 		return nil, err
 	}
-	err = structwalk.Walk(telemetry, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
-		set(telemetryPrefix+".", path)
+	// The telemetry struct's fields have no json tags, so Walk does not honor
+	// omitempty and visits every field regardless of value. Presence in the
+	// struct is meaningless here (all fields always exist), so gate on the
+	// visited bool value: a field maps to a bit only when it is true.
+	err = structwalk.Walk(telemetry, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
+		if set, ok := val.(bool); ok && set {
+			setBit(telemetryPrefix+".", path)
+		}
 	})
 	if err != nil {
 		return nil, err
@@ -250,9 +256,14 @@ func splitLines(b []byte) []string {
 	// the same clean field paths as WalkType produces; otherwise Merge's dedup
 	// never matches and the schema doubles.
 	s := strings.ReplaceAll(string(b), "\r\n", "\n")
-	s = strings.TrimRight(s, "\n")
-	if s == "" {
-		return nil
+	var lines []string
+	for line := range strings.SplitSeq(s, "\n") {
+		// Drop blank lines defensively: a stray one (bad edit, merge artifact)
+		// would otherwise become a real schema entry and shift every following
+		// bit index, silently breaking append-only stability.
+		if line != "" {
+			lines = append(lines, line)
+		}
 	}
-	return strings.Split(s, "\n")
+	return lines
 }
