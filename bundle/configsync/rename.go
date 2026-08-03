@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"reflect"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -275,7 +275,7 @@ func keyedElementChanges(changes ResourceChanges) (removes, adds []keyedElement)
 // key field.
 func sameElementApartFromKey(oldFields map[string]any, add keyedElement) bool {
 	newFields, ok := fieldsApartFromKey(add)
-	return ok && reflect.DeepEqual(oldFields, newFields)
+	return ok && structdiff.IsEqual(oldFields, newFields)
 }
 
 // sameFieldsApartFromKey reports whether the added element has the same fields as the
