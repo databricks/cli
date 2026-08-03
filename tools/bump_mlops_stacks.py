@@ -73,8 +73,6 @@ def main():
         f.write(sha + "\n")
 
     print(f"Refreshed {len(vendored)} files from {REPO_URL} @ {sha}")
-    print("Review the diff, then update the golden output with:")
-    print("  go test ./acceptance -run TestAccept/bundle/deploy/mlops-stacks -update")
 
 
 if __name__ == "__main__":
