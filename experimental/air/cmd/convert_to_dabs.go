@@ -110,15 +110,17 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		return nil, nil, errors.New("environment.docker_image is not yet supported by convert-to-dabs")
 	}
 	if snap := codeSnapshot(cfg); snap != nil {
-		// remote_volume points the code archive at a UC Volume; bundle deploy uploads
-		// code_source to the bundle artifact path, not an arbitrary Volume.
+		// remote_volume points the code archive at a specific UC Volume. The bundle's
+		// artifact location is set bundle-wide via workspace.artifact_path, not
+		// per-code-source, so a per-source Volume isn't representable here.
 		if snap.RemoteVolume != nil {
-			return nil, nil, errors.New("code_source.snapshot.remote_volume is not supported by convert-to-dabs")
+			return nil, nil, errors.New("code_source.snapshot.remote_volume is not supported by convert-to-dabs; set workspace.artifact_path in the bundle instead")
 		}
-		// git pinning would require materializing the pinned commit, which convert no
-		// longer does — the deploy-time mutator packages the working tree in place.
+		// git pins to a committed revision, but convert packages nothing — the
+		// deploy-time mutator uploads the working tree as it is on disk. Deploying a
+		// specific revision therefore isn't supported; check it out before converting.
 		if snap.Git != nil {
-			return nil, nil, errors.New("code_source.snapshot.git is not supported by convert-to-dabs; deploy packages the working tree")
+			return nil, nil, errors.New("code_source.snapshot.git is not supported by convert-to-dabs; deploy packages your working tree as-is, so check out the revision you want (git checkout <ref>) before converting")
 		}
 	}
 
