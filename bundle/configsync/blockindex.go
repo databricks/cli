@@ -320,25 +320,26 @@ type routeDestination struct {
 // or renamed in each block that contributes a part, so that a split element keeps
 // its parts in their original scopes.
 func (r *blockResolver) routeDestinations(change resolvedChange) ([]routeDestination, error) {
-	var blocks []sourceBlock
-	switch {
-	case addressesWholeElement(change):
-		element := change.steps[len(change.steps)-1].element
-		blocks = r.blocksOf(element)
-		if len(blocks) == 0 {
-			return nil, fmt.Errorf("%w: no source location for the addressed element", errAmbiguousBlock)
-		}
-	case change.operation == OperationRemove && change.leaf.IsValid():
-		blocks = r.blocksOf(change.leaf)
-		if len(blocks) == 0 {
-			return nil, fmt.Errorf("%w: no source location for the removed field", errAmbiguousBlock)
-		}
-	default:
+	// The value whose definitions have to be reached: the element itself when the
+	// change addresses one, otherwise the field being removed.
+	var target dyn.Value
+	if addressesWholeElement(change) {
+		target = change.steps[len(change.steps)-1].element
+	} else if change.operation == OperationRemove {
+		target = change.leaf
+	}
+
+	if !target.IsValid() {
 		destination, err := r.singleDestination(change)
 		if err != nil {
 			return nil, err
 		}
 		return []routeDestination{destination}, nil
+	}
+
+	blocks := r.blocksOf(target)
+	if len(blocks) == 0 {
+		return nil, fmt.Errorf("%w: no source location for the value being changed", errAmbiguousBlock)
 	}
 
 	destinations := make([]routeDestination, 0, len(blocks))
