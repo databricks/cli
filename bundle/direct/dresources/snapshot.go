@@ -2,13 +2,11 @@ package dresources
 
 import (
 	"context"
-	"errors"
 	"path"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type ResourceSnapshot struct {
@@ -75,12 +73,6 @@ func (s *ResourceSnapshot) DoRead(ctx context.Context, id string) (*SnapshotRemo
 	fullPath := path.Join(s.remoteRoot, id)
 	_, err := s.uploader.Get(ctx, fullPath)
 	if err != nil {
-		if errors.Is(err, apierr.ErrNotFound) {
-			return &SnapshotRemote{
-				RelativePath: id,
-				FullPath:     "",
-			}, nil
-		}
 		return nil, err
 	}
 	return &SnapshotRemote{

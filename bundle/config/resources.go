@@ -46,7 +46,7 @@ type Resources struct {
 	InstancePools         map[string]*resources.InstancePool         `json:"instance_pools,omitempty"`
 
 	// Internal resources
-	Snapshot map[string]*resources.Snapshot `json:"snapshot,omitempty" bundle:"internal"`
+	Snapshots map[string]*resources.Snapshot `json:"snapshots,omitempty" bundle:"internal"`
 }
 
 type ConfigResource interface {

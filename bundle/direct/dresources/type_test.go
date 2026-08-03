@@ -54,6 +54,10 @@ var knownMissingInRemoteType = map[string][]string{
 	"vector_search_endpoints": {
 		"usage_policy_id",
 	},
+	"snapshots": {
+		"bundle_id",
+		"acl",
+	},
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.
@@ -90,6 +94,9 @@ var knownMissingInStateType = map[string][]string{
 		"backend_type",
 		"keyvault_metadata",
 		"name",
+	},
+	"snapshots": {
+		"zip_content",
 	},
 }
 

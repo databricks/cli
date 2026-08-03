@@ -2,7 +2,7 @@ bundle:
   name: snapshot_resource_not_allowed
 
 resources:
-  snapshot:
+  snapshots:
     immutable:
       bundle_id: 123
       zip_content: |

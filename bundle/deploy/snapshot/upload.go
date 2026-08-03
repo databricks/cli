@@ -39,11 +39,11 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		}
 	}
 
-	if b.Config.Resources.Snapshot == nil {
-		b.Config.Resources.Snapshot = make(map[string]*resources.Snapshot)
+	if b.Config.Resources.Snapshots == nil {
+		b.Config.Resources.Snapshots = make(map[string]*resources.Snapshot)
 	}
-	if _, ok := b.Config.Resources.Snapshot["immutable"]; !ok {
-		b.Config.Resources.Snapshot["immutable"] = &resources.Snapshot{
+	if _, ok := b.Config.Resources.Snapshots["immutable"]; !ok {
+		b.Config.Resources.Snapshots["immutable"] = &resources.Snapshot{
 			BundleID: b.DeploymentBundle.StateDB.GetOrInitLineage(),
 			ACL:      BuildACL(b),
 		}
@@ -63,7 +63,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			)...)
 		}
 
-		b.Config.Resources.Snapshot["immutable"].ZipContent = string(zipContent)
+		b.Config.Resources.Snapshots["immutable"].ZipContent = string(zipContent)
 	}
 
 	return diags

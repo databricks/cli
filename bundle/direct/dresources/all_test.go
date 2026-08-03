@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -296,6 +297,11 @@ var testConfig map[string]any = map[string]any{
 			Principal:  "user@example.com",
 			Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
 		}},
+	},
+
+	"snapshots": &resources.Snapshot{
+		BundleID: "test-bundle-id",
+		ACL:      []snapshot.ACLEntry{{UserName: "user@example.com", PermissionLevel: "CAN_READ"}},
 	},
 }
 
@@ -890,6 +896,7 @@ func TestAll(t *testing.T) {
 // testIgnoreFilter encapsulates the logic for filtering fields based on ignore_remote_changes config.
 type testIgnoreFilter struct {
 	ignoreFields map[string]bool
+	adapter      *Adapter
 }
 
 // newTestIgnoreFilter creates a filter from the adapter's resource configs.
@@ -903,7 +910,8 @@ func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 			ignoreFields[p.Field.String()] = true
 		}
 	}
-	return &testIgnoreFilter{ignoreFields: ignoreFields}
+
+	return &testIgnoreFilter{ignoreFields: ignoreFields, adapter: adapter}
 }
 
 // shouldIgnore returns true if the field at the given path should be ignored.
@@ -916,7 +924,17 @@ func (f *testIgnoreFilter) shouldIgnore(path string) bool {
 	if prefix, _, ok := strings.Cut(path, "."); ok {
 		topLevelField = prefix
 	}
-	return f.ignoreFields[topLevelField]
+
+	parts := strings.Split(topLevelField, "[")
+	if len(parts) > 1 {
+		topLevelField = parts[0]
+	}
+
+	if f.ignoreFields[topLevelField] {
+		return true
+	}
+
+	return structaccess.ValidatePath(f.adapter.RemoteType(), structpath.MustParsePath(path)) != nil
 }
 
 // filterChanges returns only the changes that should not be ignored.
@@ -1037,6 +1055,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
+		// Skip fields configured in ignore_remote_changes.
+		if ignoreFilter.shouldIgnore(path.String()) {
+			return
+		}
 		remoteValue, err := structaccess.Get(remappedState, path)
 		if err != nil {
 			t.Errorf("Failed to read %s from remapped remote state %#v", path.String(), remappedState)
@@ -1049,10 +1071,6 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		if v.IsZero() {
 			// t.Logf("Ignoring %s zero (%#v), remoteValue=%#v", path.String(), val, remoteValue)
 			// testserver can set field to backend-generated value
-			return
-		}
-		// Skip fields configured in ignore_remote_changes.
-		if ignoreFilter.shouldIgnore(path.String()) {
 			return
 		}
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
@@ -1076,6 +1094,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	isImmutable := strings.HasSuffix(group, "snapshots")
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
 	// A GET on the DELETING app returns the app, not 404 -- the testserver
@@ -1086,6 +1105,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
 	switch {
+	case isImmutable:
+		require.NoError(t, err)
+		assert.True(t, adapter.IsGone(remoteAfterDelete))
 	case deleteIsNoop:
 		require.NoError(t, err)
 		// The resource genuinely still exists, so it must not report as gone.
