@@ -47,20 +47,46 @@ Resource: resources.jobs.multifile_job
 >>> diff.py overrides/10-first.yml.backup overrides/10-first.yml
 --- overrides/10-first.yml.backup
 +++ overrides/10-first.yml
-@@ -10,3 +10,3 @@
+@@ -10,5 +10,5 @@
                  notebook_path: /Users/{{workspace_user_name}}/first
              - task_key: in_both_files
 -              max_retries: 1
 +              max_retries: 9
+             - task_key: same_field_both_files
+               max_retries: 1
 
 >>> diff.py overrides/20-second.yml.backup overrides/20-second.yml
 --- overrides/20-second.yml.backup
 +++ overrides/20-second.yml
-@@ -10,3 +10,3 @@
+@@ -10,5 +10,5 @@
                timeout_seconds: 777
              - task_key: in_both_files
 -              timeout_seconds: 30
 +              timeout_seconds: 900
+             - task_key: same_field_both_files
+               max_retries: 2
+
+=== Edit a field that both override files define
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.multifile_job
+  tasks[task_key='same_field_both_files'].max_retries: replace
+
+
+
+=== The winning file is updated; the shadowed copy is left alone
+
+>>> diff.py overrides/10-first.yml.backup overrides/10-first.yml
+
+>>> diff.py overrides/20-second.yml.backup overrides/20-second.yml
+--- overrides/20-second.yml.backup
++++ overrides/20-second.yml
+@@ -12,3 +12,3 @@
+               timeout_seconds: 900
+             - task_key: same_field_both_files
+-              max_retries: 2
++              max_retries: 9
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:

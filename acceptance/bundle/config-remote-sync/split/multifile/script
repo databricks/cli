@@ -68,3 +68,25 @@ echo
 trace diff.py overrides/10-first.yml.backup overrides/10-first.yml
 trace diff.py overrides/20-second.yml.backup overrides/20-second.yml
 rm overrides/10-first.yml.backup overrides/20-second.yml.backup
+
+
+# max_retries is set in both override files, so only one of them holds the value that
+# was deployed. The edit has to land there; the other copy is shadowed.
+title "Edit a field that both override files define"
+edit_resource.py jobs $job_id <<PYEDIT
+for task in r["tasks"]:
+    if task["task_key"] == "same_field_both_files":
+        task["max_retries"] = 9
+PYEDIT
+
+title "Sync"
+echo
+cp overrides/10-first.yml overrides/10-first.yml.backup
+cp overrides/20-second.yml overrides/20-second.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "The winning file is updated; the shadowed copy is left alone"
+echo
+trace diff.py overrides/10-first.yml.backup overrides/10-first.yml
+trace diff.py overrides/20-second.yml.backup overrides/20-second.yml
+rm overrides/10-first.yml.backup overrides/20-second.yml.backup

@@ -215,16 +215,27 @@ func (r *blockResolver) blocksOf(value dyn.Value) []sourceBlock {
 // location is not a statement about precedence; the target is still the narrower
 // scope and the one a remote edit made under that target belongs in.
 func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
-	blocks := r.blocksOf(value)
-	if len(blocks) == 0 {
-		return sourceBlock{}, false
-	}
-	for _, block := range blocks {
+	// Locations are in merge order, so the first one that maps to a block is the
+	// definition the merged value took. Two blocks in the same scope are only
+	// distinguishable this way: they are ordered by load order, which no property of
+	// the blocks themselves reproduces.
+	var first sourceBlock
+	found := false
+	for _, location := range value.Locations() {
+		block, ok := r.byLocation[location]
+		if !ok {
+			continue
+		}
+		if !found {
+			first, found = block, true
+		}
+		// A scalar's winner is already first, but a map or sequence records the base
+		// first even when the target contributed keys, so an override still wins.
 		if block.override {
 			return block, true
 		}
 	}
-	return blocks[0], true
+	return first, found
 }
 
 // indexWithinBlock returns the position of element in the sequence that block

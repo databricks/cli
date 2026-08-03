@@ -10,6 +10,12 @@ bundle:
 # files within the same target scope: max_retries from the first, timeout_seconds
 # from the second. Each field still has one definition, so each edit has one
 # destination.
+#
+# "same_field_both_files" sets max_retries in BOTH override files. Includes are merged
+# in load order, so the later file wins and its value is the one deployed -- note that
+# order is not the alphabetical order of the filenames, so the destination cannot be
+# chosen by sorting them. Writing the losing copy would leave the effective value
+# unchanged and the sync would re-detect the same change on every run.
 include:
   - overrides/*.yml
 
