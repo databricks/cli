@@ -1,7 +1,7 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE = "$DATABRICKS_HOST"
+DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 
 # --cluster-name resolves the name to an ID via the Clusters API (which lists
 # clusters and matches on name), then resolves identically to --cluster-id.
