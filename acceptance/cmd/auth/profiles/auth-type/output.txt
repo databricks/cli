@@ -1,0 +1,48 @@
+
+=== auth_type is inferred from config keys
+[
+  {
+    "auth_type": "databricks-cli",
+    "name": "oauth-u2m"
+  },
+  {
+    "auth_type": "pat",
+    "name": "pat-explicit"
+  },
+  {
+    "auth_type": "pat",
+    "name": "pat-implicit"
+  },
+  {
+    "auth_type": "basic",
+    "name": "basic-implicit"
+  },
+  {
+    "auth_type": "",
+    "name": "oauth-m2m"
+  }
+]
+
+=== --skip-validate is accepted and changes nothing
+[
+  {
+    "auth_type": "databricks-cli",
+    "name": "oauth-u2m"
+  },
+  {
+    "auth_type": "pat",
+    "name": "pat-explicit"
+  },
+  {
+    "auth_type": "pat",
+    "name": "pat-implicit"
+  },
+  {
+    "auth_type": "basic",
+    "name": "basic-implicit"
+  },
+  {
+    "auth_type": "",
+    "name": "oauth-m2m"
+  }
+]

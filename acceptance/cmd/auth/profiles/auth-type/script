@@ -1,0 +1,12 @@
+sethome "./home"
+
+# auth_type is inferred from the config file keys alone, with no network calls.
+# Downstream tools (e.g. ucode) filter profiles on it, so it stays populated
+# even though this command no longer authenticates. oauth-m2m needs an OIDC
+# round trip to confirm, so it reports "" here — as it did when we validated.
+title "auth_type is inferred from config keys\n"
+$CLI auth profiles --output json | jq -S '[.profiles[] | {name, auth_type}]'
+
+# --skip-validate is a no-op kept for callers that still pass it (VS Code).
+title "--skip-validate is accepted and changes nothing\n"
+$CLI auth profiles --skip-validate --output json | jq -S '[.profiles[] | {name, auth_type}]'
