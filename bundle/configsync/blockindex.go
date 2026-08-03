@@ -204,44 +204,30 @@ func (r *blockResolver) blocksOf(value dyn.Value) []sourceBlock {
 	return blocks
 }
 
-// winningBlock returns the block a change to value has to be written to when
+// winningBlock returns the block whose definition the merged value took, when
 // several blocks define it.
 //
-// The target override is preferred. For a scalar that is also the block that won
-// the merge, because mergePrimitive keeps the incoming value and records its
-// location first, so writing the other copy would leave the effective value
-// unchanged. A sequence is different: mergeSequence records the base's location
-// first even when the target contributed entries, so the first location is not a
-// statement about precedence. This is reachable, because a sequence with no keyed
-// diffing (pipeline clusters) arrives as a change to the whole list when its length
-// changes. The target is the narrower scope and the one a remote edit made under
-// that target belongs in.
+// Locations accumulate in merge order, so the first one that maps to a block is the
+// winner: mergePrimitive records the incoming (overriding) value's location first,
+// and writing any other copy would leave the effective value unchanged. Load order
+// is the only thing that distinguishes two blocks in the same scope, and no property
+// of the blocks themselves reproduces it.
 func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
-	// Locations are in merge order, so the first one that maps to a block is the
-	// definition the merged value took. Two blocks in the same scope are only
-	// distinguishable this way: they are ordered by load order, which no property of
-	// the blocks themselves reproduces.
-	var first sourceBlock
-	found := false
 	for _, location := range value.Locations() {
-		block, ok := r.byLocation[location]
-		if !ok {
-			continue
-		}
-		if !found {
-			first, found = block, true
-		}
-		// A scalar's winner is already first, but a sequence records the base first
-		// even when the target contributed entries, so an override still wins.
-		if block.override {
+		if block, ok := r.byLocation[location]; ok {
 			return block, true
 		}
 	}
-	return first, found
+	return sourceBlock{}, false
 }
 
 // indexWithinBlock returns the position of element in the sequence that block
-// writes at sequencePath, where sequencePath is relative to the block.
+// writes at sequencePath, where sequencePath is relative to the block. That position
+// differs from the element's position in the merged sequence, which concatenates
+// every block's entries and sorts keyed ones by key.
+//
+// A block is one parsed file, so the sequence read here holds only that file's
+// entries and a plain index into it addresses the right entry.
 func (r *blockResolver) indexWithinBlock(block sourceBlock, sequencePath dyn.Path, element dyn.Value) (int, bool) {
 	parsed, ok := r.blocks[block]
 	if !ok {
@@ -261,21 +247,12 @@ func (r *blockResolver) indexWithinBlock(block sourceBlock, sequencePath dyn.Pat
 		locations[location] = struct{}{}
 	}
 
-	// A region's sequence is the concatenation of the entries contributed by each
-	// included file, but the write targets one file, so the index has to be
-	// counted among that file's entries only.
-	local := 0
-	for _, entry := range entries {
-		entryFile := entry.Location().File
-		if entryFile != block.file {
-			continue
-		}
+	for local, entry := range entries {
 		for _, location := range entry.Locations() {
 			if _, ok := locations[location]; ok {
 				return local, true
 			}
 		}
-		local++
 	}
 	return 0, false
 }
