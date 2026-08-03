@@ -76,7 +76,8 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, req logReq
 		return false, fmt.Errorf("failed to create %s: %w", dir, err)
 	}
 
-	nodeLogs, err := downloadAllNodeLogs(ctx, w, ids.RunID, dir, nodes, req.attempt)
+	// 0 = no chunk limit: --download-to fetches every chunk.
+	nodeLogs, err := downloadAllNodeLogs(ctx, w, ids.RunID, dir, nodes, req.attempt, 0)
 	if err != nil {
 		return false, err
 	}
@@ -93,8 +94,9 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, req logReq
 
 // downloadAllNodeLogs downloads the nodes' logs in parallel, returning a
 // node->path map for those that had any. The log-dir layout is run-wide, so it is
-// probed once here rather than by every worker.
-func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, dir string, nodes []int, attempt int) (map[int]string, error) {
+// probed once here rather than by every worker. maxChunksFromEnd > 0 keeps only
+// that many newest chunks per node.
+func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, dir string, nodes []int, attempt, maxChunksFromEnd int) (map[int]string, error) {
 	// -1 (latest) maps to attempt 0's directory, as on the streaming path.
 	attemptDir := max(attempt, 0)
 	withAttempt, err := discoverAttemptPrefix(ctx, w, mlflowRunID, attemptDir)
@@ -107,7 +109,7 @@ func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlf
 	g.SetLimit(downloadConcurrency)
 	for i, node := range nodes {
 		g.Go(func() error {
-			path, err := downloadNodeLog(gctx, w, mlflowRunID, node, attemptDir, withAttempt, dir)
+			path, err := downloadNodeLog(gctx, w, mlflowRunID, node, attemptDir, withAttempt, dir, maxChunksFromEnd)
 			if err != nil {
 				// One bad node shouldn't abort the rest of the download.
 				log.Debugf(gctx, "air logs: node %d download failed: %v", node, err)
@@ -132,7 +134,9 @@ func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlf
 
 // downloadNodeLog concatenates a node's chunks in order into
 // dir/logs/node_<n>.log, returning the path, or "" if the node logged nothing.
-func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string, node, attempt int, withAttempt bool, dir string) (string, error) {
+// maxChunksFromEnd > 0 keeps only that many newest chunks, which is enough for
+// tail analysis and avoids pulling a long run's whole history.
+func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string, node, attempt int, withAttempt bool, dir string, maxChunksFromEnd int) (string, error) {
 	logDir := constructLogPath(node, attempt, withAttempt)
 	chunks, err := listLogChunks(ctx, w, mlflowRunID, logDir)
 	if err != nil {
@@ -140,6 +144,9 @@ func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowR
 	}
 	if len(chunks) == 0 {
 		return "", nil
+	}
+	if maxChunksFromEnd > 0 && len(chunks) > maxChunksFromEnd {
+		chunks = chunks[len(chunks)-maxChunksFromEnd:]
 	}
 
 	var b strings.Builder

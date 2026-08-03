@@ -82,7 +82,7 @@ func TestDownloadNodeLogWritesConcatenatedChunks(t *testing.T) {
 	w := newTestWorkspaceClient(t, downloadServer(t).URL)
 	dir := t.TempDir()
 
-	path, err := downloadNodeLog(t.Context(), w, "run1", 0, 0, false, dir)
+	path, err := downloadNodeLog(t.Context(), w, "run1", 0, 0, false, dir, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, path)
 
@@ -96,7 +96,7 @@ func TestDownloadAllNodeLogs(t *testing.T) {
 	w := newTestWorkspaceClient(t, downloadServer(t).URL)
 	dir := t.TempDir()
 
-	nodeLogs, err := downloadAllNodeLogs(t.Context(), w, "run1", dir, []int{0, 1}, -1)
+	nodeLogs, err := downloadAllNodeLogs(t.Context(), w, "run1", dir, []int{0, 1}, -1, 0)
 	require.NoError(t, err)
 	require.Len(t, nodeLogs, 2)
 	assert.FileExists(t, nodeLogs[0])
@@ -170,4 +170,53 @@ func TestDownloadLogsOutOfRangeNode(t *testing.T) {
 	_, err := downloadLogs(ctx, w, logRequest{runID: 123, node: 5, nodeSet: true, attempt: -1, downloadTo: dir}, logRunStatus{resultState: "SUCCESS"}, dir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "node 5 does not exist")
+}
+
+// multiChunkServer serves a node dir with three chunks whose bodies identify
+// which chunk was fetched, so a chunk limit is observable.
+func multiChunkServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	var base string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.0/mlflow/artifacts/list":
+			_, _ = w.Write([]byte(`{"files": [
+				{"path": "logs/node_0/logs-0.chunk.txt"},
+				{"path": "logs/node_0/logs-1.chunk.txt"},
+				{"path": "logs/node_0/logs-2.chunk.txt"}
+			]}`))
+		case "/api/2.0/mlflow/artifacts/credentials-for-read":
+			// Echo the requested artifact path back through the pre-signed URL so
+			// the downloaded body identifies its chunk.
+			_, _ = w.Write([]byte(`{"credential_infos": [{"signed_uri": "` + base + `/presigned?p=` + r.URL.Query().Get("path") + `"}]}`))
+		case "/presigned":
+			_, _ = w.Write([]byte(r.URL.Query().Get("p") + "\n"))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	base = srv.URL
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestDownloadNodeLogLimitsChunksFromEnd(t *testing.T) {
+	w := newTestWorkspaceClient(t, multiChunkServer(t).URL)
+
+	// No limit: all three chunks are concatenated.
+	full, err := downloadNodeLog(t.Context(), w, "run1", 0, 0, false, t.TempDir(), 0)
+	require.NoError(t, err)
+	body, err := os.ReadFile(full)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "logs-0.chunk.txt")
+	assert.Contains(t, string(body), "logs-2.chunk.txt")
+
+	// Limit of 2 keeps only the two newest chunks.
+	limited, err := downloadNodeLog(t.Context(), w, "run1", 0, 0, false, t.TempDir(), 2)
+	require.NoError(t, err)
+	body, err = os.ReadFile(limited)
+	require.NoError(t, err)
+	assert.NotContains(t, string(body), "logs-0.chunk.txt")
+	assert.Contains(t, string(body), "logs-1.chunk.txt")
+	assert.Contains(t, string(body), "logs-2.chunk.txt")
 }
