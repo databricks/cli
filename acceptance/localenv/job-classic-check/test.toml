@@ -1,7 +1,7 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE = "$DATABRICKS_HOST"
+DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 
 # A classic task carries its own new_cluster, so --job-task <id>.<task-key>
 # resolves to that cluster's DBR-derived environment key.

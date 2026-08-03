@@ -13,29 +13,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRepoConstraintBaseURL(t *testing.T) {
-	// With no repo configured (empty built-in default), it returns "" so the caller
-	// can report the missing source at the fetch phase rather than aborting early.
-	assert.Empty(t, RepoConstraintBaseURL(t.Context()))
+func TestConstraintBaseURL(t *testing.T) {
+	// With nothing set it returns the built-in default, anchored at the python/
+	// subtree of databricks/environments where the Python artifacts live.
+	assert.Equal(t, "https://raw.githubusercontent.com/databricks/environments/main/python", ConstraintBaseURL(t.Context()))
 
-	// The env var supplies the repo and is turned into a raw main-branch URL
-	// anchored at the python/ subtree where the Python artifacts live.
-	ctx := env.Set(t.Context(), EnvConstraintRepo, "databricks/environments")
-	assert.Equal(t, "https://raw.githubusercontent.com/databricks/environments/main/python", RepoConstraintBaseURL(ctx))
+	// The override env var supplies a full base URL verbatim.
+	ctx := env.Set(t.Context(), EnvConstraintSourceURLTestOverride, "http://localhost:8477")
+	assert.Equal(t, "http://localhost:8477", ConstraintBaseURL(ctx))
 
-	// Whitespace-only is treated as unset.
-	ctx = env.Set(t.Context(), EnvConstraintRepo, "  ")
-	assert.Empty(t, RepoConstraintBaseURL(ctx))
+	// Whitespace-only is treated as unset and falls back to the default.
+	ctx = env.Set(t.Context(), EnvConstraintSourceURLTestOverride, "  ")
+	assert.Equal(t, "https://raw.githubusercontent.com/databricks/environments/main/python", ConstraintBaseURL(ctx))
 }
 
 func TestFetchConstraintsNoSourceConfigured(t *testing.T) {
-	// An empty base URL means no constraint host is configured; it must classify as
-	// E_FETCH (surfaced at the fetch phase) and name the env var to set.
+	// An empty base URL should never reach FetchConstraints (ConstraintBaseURL
+	// always returns a non-empty default), but if it does it must classify as
+	// E_FETCH so it surfaces at the fetch phase rather than as a bare error.
 	_, err := FetchConstraints(t.Context(), "", "serverless/serverless-v4", t.TempDir(), true)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrFetch, pe.Code)
-	assert.Contains(t, pe.Error(), EnvConstraintRepo)
 }
 
 const sampleToml = `[project]

@@ -1,7 +1,7 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE = "$DATABRICKS_HOST"
+DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 
 # A for_each_task wraps the real per-iteration task; its compute lives on the
 # nested task. --job-task resolves against that nested task (here a serverless

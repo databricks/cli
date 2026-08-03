@@ -1,22 +1,14 @@
 package environments
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/env"
 	libslocalenv "github.com/databricks/cli/libs/localenv"
 	"github.com/spf13/cobra"
 )
-
-// envConstraintSource is the environment variable that overrides the constraint
-// source with a full base URL (used e.g. by tests pointing at a local server).
-// When unset, the base URL is derived from the hosting repo via
-// libslocalenv.RepoConstraintBaseURL (which reads its own repo env var).
-const envConstraintSource = "DATABRICKS_LOCALENV_CONSTRAINT_SOURCE"
 
 func newSetupLocalCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -53,9 +45,6 @@ func addComputeFlags(cmd *cobra.Command) {
 	cmd.Flags().String("job-task", "", "job task to use as the compute target, as <job-id>.<task-key> (the task key is required)")
 	cmd.Flags().Bool("constraints-only", false, "apply the Python version and constraints without adding the databricks-connect dependency")
 	cmd.Flags().Bool("dry-run", false, "compute the plan without writing files or provisioning")
-	cmd.Flags().String("constraint-source-url", "", "URL for the constraint source (overrides "+envConstraintSource+")")
-	// Hide constraint-source-url from casual --help output; it is a power-user escape hatch.
-	_ = cmd.Flags().MarkHidden("constraint-source-url")
 	// The mutual exclusivity of the target flags is enforced in the pipeline's
 	// preflight (as E_USAGE) rather than via cmd.MarkFlagsMutuallyExclusive, so
 	// the conflict is reported through the phase/JSON contract the --output json
@@ -72,7 +61,6 @@ func runPipeline(cmd *cobra.Command) error {
 	jobTask, _ := cmd.Flags().GetString("job-task")
 	constraintsOnly, _ := cmd.Flags().GetBool("constraints-only")
 	check, _ := cmd.Flags().GetBool("dry-run")
-	constraintSource, _ := cmd.Flags().GetString("constraint-source-url")
 
 	computeFlags := libslocalenv.ComputeFlags{
 		Cluster:     cluster,
@@ -89,7 +77,7 @@ func runPipeline(cmd *cobra.Command) error {
 		mode = libslocalenv.ModeConstraintsOnly
 	}
 
-	constraintBaseURL := resolveConstraintBaseURL(ctx, constraintSource)
+	constraintBaseURL := libslocalenv.ConstraintBaseURL(ctx)
 
 	projectDir, err := os.Getwd()
 	if err != nil {
@@ -126,21 +114,6 @@ func runPipeline(cmd *cobra.Command) error {
 
 	res, pipelineErr := p.Run(ctx)
 	return renderResult(ctx, cmd, res, pipelineErr)
-}
-
-// resolveConstraintBaseURL returns the constraint base URL using ordered precedence:
-// an explicit --constraint-source-url flag, then a full-URL override from
-// DATABRICKS_LOCALENV_CONSTRAINT_SOURCE, then the URL derived from the hosting repo
-// (libslocalenv.RepoConstraintBaseURL). All three may be unset, in which case it
-// returns "" and the pipeline reports the missing source at the fetch phase.
-func resolveConstraintBaseURL(ctx context.Context, flagValue string) string {
-	if flagValue != "" {
-		return flagValue
-	}
-	if v, ok := env.Lookup(ctx, envConstraintSource); ok && v != "" {
-		return v
-	}
-	return libslocalenv.RepoConstraintBaseURL(ctx)
 }
 
 // bundleTarget reads the active bundle (if any) and maps its compute configuration
