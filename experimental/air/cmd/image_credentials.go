@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -15,8 +16,9 @@ import (
 
 // Discovered Docker credentials are stored in a per-Databricks-user secret. The
 // scope is per-user (creator-only ACL) so one user's registry PAT is never
-// readable by other workspace members. The key is suffixed so auto-managed keys
-// are distinguishable and this path never overwrites a hand-curated secret.
+// readable by other workspace members. The key is "<registry-host>-<username>"
+// plus a suffix, so auto-managed keys are distinguishable, never overwrite a
+// hand-curated secret, and don't collide across registries.
 const (
 	dockerCredsScopePrefix = "docker-credentials"
 	localManagedKeySuffix  = "-local"
@@ -73,16 +75,20 @@ func ensureSecretScope(ctx context.Context, w *databricks.WorkspaceClient, scope
 // scope and returns the (scope, key) reference for registration. ok is false
 // when storage fails for a non-quota reason (the caller falls back to the public
 // path); a quota failure returns an error so it surfaces to the user. The caller
-// resolves the credentials so the local Docker config is read only once.
-func storeDockerCredentials(ctx context.Context, w *databricks.WorkspaceClient, username, password string) (scope, key string, ok bool, err error) {
+// resolves the credentials so the local Docker config is read only once, and
+// passes normalizedImageURL so the key is namespaced by registry host.
+func storeDockerCredentials(ctx context.Context, w *databricks.WorkspaceClient, normalizedImageURL, username, password string) (scope, key string, ok bool, err error) {
 	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		log.Debugf(ctx, "could not resolve Databricks user for auto-credential setup: %v", err)
 		return "", "", false, nil
 	}
 
+	// Namespace the key by registry host so the same username on two registries
+	// (e.g. docker.io and nvcr.io) doesn't collide on one secret.
+	host, _, _ := strings.Cut(normalizedImageURL, "/")
 	scope = fmt.Sprintf("%s-%s", dockerCredsScopePrefix, me.UserName)
-	key = fmt.Sprintf("dockerio-%s%s", username, localManagedKeySuffix)
+	key = fmt.Sprintf("%s-%s%s", host, username, localManagedKeySuffix)
 
 	if err := ensureSecretScope(ctx, w, scope); err != nil {
 		if errors.Is(err, errSecretScopeQuota) {

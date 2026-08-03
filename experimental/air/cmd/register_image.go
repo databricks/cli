@@ -165,7 +165,7 @@ func discoverCredentials(ctx context.Context, w *databricks.WorkspaceClient, c *
 		return "", "", nil
 	}
 
-	scope, key, ok, err = storeDockerCredentials(ctx, w, username, password)
+	scope, key, ok, err = storeDockerCredentials(ctx, w, normalized, username, password)
 	if err != nil {
 		return "", "", err
 	}

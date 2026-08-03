@@ -63,13 +63,33 @@ func TestStoreDockerCredentialsCreatesScope(t *testing.T) {
 	cs := &credServer{}
 	w := newTestWorkspaceClient(t, cs.start(t))
 
-	scope, key, ok, err := storeDockerCredentials(t.Context(), w, "bob", "secret")
+	scope, key, ok, err := storeDockerCredentials(t.Context(), w, "docker.io/library/ubuntu:latest", "bob", "secret")
 	require.NoError(t, err)
 	require.True(t, ok)
 	assert.Equal(t, "docker-credentials-user@example.com", scope)
-	assert.Equal(t, "dockerio-bob-local", key)
+	assert.Equal(t, "docker.io-bob-local", key)
 	require.Len(t, cs.putBodies, 1)
 	assert.Contains(t, cs.putBodies[0], base64.StdEncoding.EncodeToString([]byte("bob:secret")))
+}
+
+// TestStoreDockerCredentialsKeyIsPerRegistry guards against the same username on
+// two registries colliding on one secret key.
+func TestStoreDockerCredentialsKeyIsPerRegistry(t *testing.T) {
+	cases := map[string]string{
+		"docker.io/library/ubuntu:latest": "docker.io-bob-local",
+		"nvcr.io/nvidia/pytorch:24.01":    "nvcr.io-bob-local",
+		"ghcr.io/org/img:1.0":             "ghcr.io-bob-local",
+	}
+	for imageURL, wantKey := range cases {
+		t.Run(imageURL, func(t *testing.T) {
+			cs := &credServer{}
+			w := newTestWorkspaceClient(t, cs.start(t))
+			_, key, ok, err := storeDockerCredentials(t.Context(), w, imageURL, "bob", "secret")
+			require.NoError(t, err)
+			require.True(t, ok)
+			assert.Equal(t, wantKey, key)
+		})
+	}
 }
 
 func TestStoreDockerCredentialsScopeExists(t *testing.T) {
@@ -77,7 +97,7 @@ func TestStoreDockerCredentialsScopeExists(t *testing.T) {
 	cs := &credServer{existingScopes: []string{"docker-credentials-user@example.com"}}
 	w := newTestWorkspaceClient(t, cs.start(t))
 
-	_, _, ok, err := storeDockerCredentials(t.Context(), w, "bob", "secret")
+	_, _, ok, err := storeDockerCredentials(t.Context(), w, "nvcr.io/org/img:1.0", "bob", "secret")
 	require.NoError(t, err)
 	assert.True(t, ok)
 	assert.Len(t, cs.putBodies, 1)
@@ -87,7 +107,7 @@ func TestStoreDockerCredentialsQuotaError(t *testing.T) {
 	cs := &credServer{createStatus: http.StatusForbidden}
 	w := newTestWorkspaceClient(t, cs.start(t))
 
-	_, _, ok, err := storeDockerCredentials(t.Context(), w, "bob", "secret")
+	_, _, ok, err := storeDockerCredentials(t.Context(), w, "nvcr.io/org/img:1.0", "bob", "secret")
 	assert.False(t, ok)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, errSecretScopeQuota)

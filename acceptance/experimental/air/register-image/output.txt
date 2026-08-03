@@ -104,7 +104,7 @@ To use this image in your training config:
   "method": "POST",
   "path": "/api/2.0/ai-compute-manager/images",
   "body": {
-    "credentials_key": "dockerio-bob-local",
+    "credentials_key": "nvcr.io-bob-local",
     "credentials_scope": "docker-credentials-[USERNAME]",
     "docker_image_url": "nvcr.io/org/img:1.0"
   }
