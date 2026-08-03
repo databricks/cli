@@ -112,19 +112,21 @@ configuration (run ` + "`docker login`" + ` first); there are no credential flag
 		timeout := time.Duration(timeoutMinutes) * time.Minute
 
 		// Discover credentials from the local Docker config and store them in a
-		// per-user secret for the registration call. A quota failure surfaces; any
-		// other discovery failure leaves creds empty and falls through to the
-		// public-image path.
-		scope, key, err := discoverCredentials(ctx, w, c, dockerImageURL)
-		if err != nil {
-			return renderError(ctx, cmd, "REGISTRATION_FAILED", "PERMANENT", false, err)
+		// per-user secret for the registration call. If storage fails, registration
+		// still proceeds without credentials — a public image succeeds — and
+		// credErr is reported as the cause if the registry rejects anonymous access.
+		// credErr is not fatal on its own: it is reported by registrationError only
+		// if the registry then rejects anonymous access.
+		scope, key, credErr := discoverCredentials(ctx, w, c, dockerImageURL)
+		if credErr != nil {
+			log.Debugf(ctx, "could not store local Docker credentials: %v", credErr)
 		}
 
 		updated, sha, err := registerWithCredentialFallback(ctx, c, dockerImageURL, scope, key, timeout)
 		if err != nil {
 			kind, retryable := classifyRegistrationError(err)
 			return renderError(ctx, cmd, "REGISTRATION_FAILED", kind, retryable,
-				registrationError(dockerImageURL, err))
+				registrationError(dockerImageURL, err, credErr))
 		}
 
 		return renderRegisterResult(ctx, cmd, dockerImageURL,
@@ -144,9 +146,11 @@ configuration (run ` + "`docker login`" + ` first); there are no credential flag
 // and stores them in a per-user secret, returning the (scope, key) reference for
 // registration. It first probes whether the image is public: if so, no
 // credentials are stored (avoiding a throwaway secret). Returns empty scope/key
-// when the image is public or no local credentials exist. A secret-scope quota
-// error is returned; all other discovery failures are swallowed so registration
-// falls through to the public-image path.
+// when the image is public or no local credentials exist, both with a nil error.
+// A non-nil error means credentials were found but could not be stored (e.g. the
+// user lacks permission to create a secret scope); it is advisory, so the caller
+// can still attempt an anonymous registration and report this as the cause if
+// that fails.
 func discoverCredentials(ctx context.Context, w *databricks.WorkspaceClient, c *imageClient, dockerImageURL string) (scope, key string, err error) {
 	// readDockerCredentials keys off the registry host, so it needs the normalized
 	// URL (e.g. bare "ubuntu" resolves to the Docker Hub host).
@@ -165,12 +169,9 @@ func discoverCredentials(ctx context.Context, w *databricks.WorkspaceClient, c *
 		return "", "", nil
 	}
 
-	scope, key, ok, err = storeDockerCredentials(ctx, w, normalized, username, password)
+	scope, key, err = storeDockerCredentials(ctx, w, normalized, username, password)
 	if err != nil {
 		return "", "", err
-	}
-	if !ok {
-		return "", "", nil
 	}
 	log.Infof(ctx, "using Docker credentials from local config (stored as %s/%s)", scope, key)
 	return scope, key, nil
@@ -203,11 +204,16 @@ func classifyRegistrationError(err error) (kind string, retryable bool) {
 	}
 }
 
-// registrationError wraps an auth failure with actionable `docker login`
-// guidance, since local credentials are the only credential path.
-func registrationError(dockerImageURL string, err error) error {
+// registrationError wraps an auth failure with actionable guidance. When
+// credentials were found locally but could not be stored, credErr is the real
+// cause — telling the user to `docker login` would be wrong, since they already
+// have working credentials.
+func registrationError(dockerImageURL string, err, credErr error) error {
 	if !isAuthError(err) {
 		return err
+	}
+	if credErr != nil {
+		return fmt.Errorf("image %q requires credentials, and the credentials found in your local Docker config could not be stored: %w", dockerImageURL, credErr)
 	}
 	return fmt.Errorf("image %q was not found or requires credentials: run `docker login` for its registry, then retry: %w", dockerImageURL, err)
 }

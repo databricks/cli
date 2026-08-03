@@ -60,6 +60,26 @@ func TestValidateTagPolicy(t *testing.T) {
 	assert.Contains(t, err.Error(), "only supported value is latest")
 }
 
+func TestRegistrationError(t *testing.T) {
+	authErr := apierr.ErrPermissionDenied
+	credErr := errors.New(`creating secret scope "docker-credentials-you@example.com" was denied`)
+
+	// Credentials were found but couldn't be stored: report that as the cause,
+	// not "run docker login" — the user already has working credentials.
+	err := registrationError("nvcr.io/org/img:1.0", authErr, credErr)
+	assert.Contains(t, err.Error(), "requires credentials, and the credentials found in your local Docker config could not be stored")
+	assert.Contains(t, err.Error(), "was denied")
+	assert.NotContains(t, err.Error(), "run `docker login`")
+
+	// No credential-storage problem: the docker login hint is the right guidance.
+	err = registrationError("nvcr.io/org/img:1.0", authErr, nil)
+	assert.Contains(t, err.Error(), "run `docker login`")
+
+	// A non-auth failure passes through untouched.
+	other := errors.New("boom")
+	assert.Equal(t, other, registrationError("nvcr.io/org/img:1.0", other, credErr))
+}
+
 // imageServer serves the image API. Each :get call returns the next body in
 // getBodies (repeating the last), where an empty string means 404; POST returns
 // postBody. Sequencing the :get bodies lets a test set distinct before/after

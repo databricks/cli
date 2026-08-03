@@ -21,10 +21,11 @@ func TestEncodeDockerCredentials(t *testing.T) {
 }
 
 // credServer records secret puts and lets a test choose the scope list and the
-// create-scope status. me is the current-user name returned to the client.
+// create-scope failure. me is the current-user name returned to the client.
 type credServer struct {
 	existingScopes []string
-	createStatus   int // 0 → 200
+	createStatus   int    // 0 → 200
+	createCode     string // error_code for a failed create; defaults to the quota code
 	putBodies      []string
 }
 
@@ -42,8 +43,12 @@ func (cs *credServer) start(t *testing.T) string {
 			_ = json.NewEncoder(w).Encode(map[string]any{"scopes": scopes})
 		case r.URL.Path == "/api/2.0/secrets/scopes/create":
 			if cs.createStatus != 0 {
+				code := cs.createCode
+				if code == "" {
+					code = "RESOURCE_LIMIT_EXCEEDED"
+				}
 				w.WriteHeader(cs.createStatus)
-				_, _ = w.Write([]byte(`{"error_code":"RESOURCE_LIMIT_EXCEEDED","message":"too many scopes"}`))
+				_, _ = w.Write([]byte(`{"error_code":"` + code + `","message":"denied"}`))
 				return
 			}
 			_, _ = w.Write([]byte(`{}`))
@@ -63,9 +68,8 @@ func TestStoreDockerCredentialsCreatesScope(t *testing.T) {
 	cs := &credServer{}
 	w := newTestWorkspaceClient(t, cs.start(t))
 
-	scope, key, ok, err := storeDockerCredentials(t.Context(), w, "docker.io/library/ubuntu:latest", "bob", "secret")
+	scope, key, err := storeDockerCredentials(t.Context(), w, "docker.io/library/ubuntu:latest", "bob", "secret")
 	require.NoError(t, err)
-	require.True(t, ok)
 	assert.Equal(t, "docker-credentials-user@example.com", scope)
 	assert.Equal(t, "docker.io-bob-local", key)
 	require.Len(t, cs.putBodies, 1)
@@ -84,9 +88,8 @@ func TestStoreDockerCredentialsKeyIsPerRegistry(t *testing.T) {
 		t.Run(imageURL, func(t *testing.T) {
 			cs := &credServer{}
 			w := newTestWorkspaceClient(t, cs.start(t))
-			_, key, ok, err := storeDockerCredentials(t.Context(), w, imageURL, "bob", "secret")
+			_, key, err := storeDockerCredentials(t.Context(), w, imageURL, "bob", "secret")
 			require.NoError(t, err)
-			require.True(t, ok)
 			assert.Equal(t, wantKey, key)
 		})
 	}
@@ -97,18 +100,31 @@ func TestStoreDockerCredentialsScopeExists(t *testing.T) {
 	cs := &credServer{existingScopes: []string{"docker-credentials-user@example.com"}}
 	w := newTestWorkspaceClient(t, cs.start(t))
 
-	_, _, ok, err := storeDockerCredentials(t.Context(), w, "nvcr.io/org/img:1.0", "bob", "secret")
+	_, _, err := storeDockerCredentials(t.Context(), w, "nvcr.io/org/img:1.0", "bob", "secret")
 	require.NoError(t, err)
-	assert.True(t, ok)
 	assert.Len(t, cs.putBodies, 1)
+}
+
+// TestStoreDockerCredentialsPermissionDenied covers the workspace where the user
+// may not create secret scopes: the failure must surface with admin guidance
+// rather than be swallowed into a misleading "run docker login" error.
+func TestStoreDockerCredentialsPermissionDenied(t *testing.T) {
+	cs := &credServer{createStatus: http.StatusForbidden, createCode: "PERMISSION_DENIED"}
+	w := newTestWorkspaceClient(t, cs.start(t))
+
+	_, _, err := storeDockerCredentials(t.Context(), w, "nvcr.io/org/img:1.0", "bob", "secret")
+	require.Error(t, err)
+	assert.NotErrorIs(t, err, errSecretScopeQuota)
+	assert.Contains(t, err.Error(), `creating secret scope "docker-credentials-user@example.com" was denied`)
+	assert.Contains(t, err.Error(), "Ask a workspace admin")
+	assert.Empty(t, cs.putBodies, "must not attempt to store the secret when the scope could not be created")
 }
 
 func TestStoreDockerCredentialsQuotaError(t *testing.T) {
 	cs := &credServer{createStatus: http.StatusForbidden}
 	w := newTestWorkspaceClient(t, cs.start(t))
 
-	_, _, ok, err := storeDockerCredentials(t.Context(), w, "nvcr.io/org/img:1.0", "bob", "secret")
-	assert.False(t, ok)
+	_, _, err := storeDockerCredentials(t.Context(), w, "nvcr.io/org/img:1.0", "bob", "secret")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, errSecretScopeQuota)
 }

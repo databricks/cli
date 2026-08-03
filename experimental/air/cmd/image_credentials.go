@@ -66,22 +66,24 @@ func ensureSecretScope(ctx context.Context, w *databricks.WorkspaceClient, scope
 		return nil
 	case isScopeQuotaError(err):
 		return errSecretScopeQuota
+	case errors.Is(err, apierr.ErrPermissionDenied):
+		return fmt.Errorf("creating secret scope %q was denied (%w). Ask a workspace admin for permission to create secret scopes", scope, err)
 	default:
-		return err
+		return fmt.Errorf("creating secret scope %q failed: %w", scope, err)
 	}
 }
 
 // storeDockerCredentials stores registry credentials in the per-user secret
-// scope and returns the (scope, key) reference for registration. ok is false
-// when storage fails for a non-quota reason (the caller falls back to the public
-// path); a quota failure returns an error so it surfaces to the user. The caller
-// resolves the credentials so the local Docker config is read only once, and
-// passes normalizedImageURL so the key is namespaced by registry host.
-func storeDockerCredentials(ctx context.Context, w *databricks.WorkspaceClient, normalizedImageURL, username, password string) (scope, key string, ok bool, err error) {
+// scope and returns the (scope, key) reference for registration. A storage
+// failure is returned rather than swallowed: registration continues without
+// credentials (a public image still succeeds), but the caller reports this as the
+// cause if the registry then rejects anonymous access. The caller resolves the
+// credentials so the local Docker config is read only once, and passes
+// normalizedImageURL so the key is namespaced by registry host.
+func storeDockerCredentials(ctx context.Context, w *databricks.WorkspaceClient, normalizedImageURL, username, password string) (scope, key string, err error) {
 	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
-		log.Debugf(ctx, "could not resolve Databricks user for auto-credential setup: %v", err)
-		return "", "", false, nil
+		return "", "", fmt.Errorf("could not resolve the current Databricks user: %w", err)
 	}
 
 	// Namespace the key by registry host so the same username on two registries
@@ -91,11 +93,7 @@ func storeDockerCredentials(ctx context.Context, w *databricks.WorkspaceClient, 
 	key = fmt.Sprintf("%s-%s%s", host, username, localManagedKeySuffix)
 
 	if err := ensureSecretScope(ctx, w, scope); err != nil {
-		if errors.Is(err, errSecretScopeQuota) {
-			return "", "", false, err
-		}
-		log.Debugf(ctx, "auto-credential scope setup failed for %s: %v", scope, err)
-		return "", "", false, nil
+		return "", "", err
 	}
 
 	if err := w.Secrets.PutSecret(ctx, workspace.PutSecret{
@@ -104,11 +102,10 @@ func storeDockerCredentials(ctx context.Context, w *databricks.WorkspaceClient, 
 		StringValue: encodeDockerCredentials(username, password),
 	}); err != nil {
 		if isScopeQuotaError(err) {
-			return "", "", false, errSecretScopeQuota
+			return "", "", errSecretScopeQuota
 		}
-		log.Debugf(ctx, "auto-credential secret storage failed for %s/%s: %v", scope, key, err)
-		return "", "", false, nil
+		return "", "", fmt.Errorf("storing credentials in secret %s/%s failed: %w", scope, key, err)
 	}
 
-	return scope, key, true, nil
+	return scope, key, nil
 }
