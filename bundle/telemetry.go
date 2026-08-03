@@ -31,6 +31,14 @@ type Telemetry struct {
 	StatePathInOtherUserHome bool
 	StatePathOther           bool
 
+	// Independent booleans, but a false is not lost as a single bit: they are
+	// always co-emitted with the one-hot DMSCompat verdict below, whose presence
+	// signals the measurement ran, so a 0 here reads as "measured false".
+	DMSUndeclaredDeployingUser    bool
+	DMSUndeclaredOtherUser        bool
+	DMSUndeclaredServicePrincipal bool
+	DMSUndeclaredGroup            bool
+
 	DMSCompatAuto               bool
 	DMSCompatOnlySelfUndeclared bool
 	DMSCompatNot                bool
@@ -46,15 +54,6 @@ type Telemetry struct {
 
 	// True/False pairs: exactly one is set when the flag is measured, neither
 	// when it is not.
-	DMSUndeclaredDeployingUserTrue     bool
-	DMSUndeclaredDeployingUserFalse    bool
-	DMSUndeclaredOtherUserTrue         bool
-	DMSUndeclaredOtherUserFalse        bool
-	DMSUndeclaredServicePrincipalTrue  bool
-	DMSUndeclaredServicePrincipalFalse bool
-	DMSUndeclaredGroupTrue             bool
-	DMSUndeclaredGroupFalse            bool
-
 	SkipArtifactCleanupTrue  bool
 	SkipArtifactCleanupFalse bool
 

@@ -3211,6 +3211,10 @@ telemetry.StatePathIsShared
 telemetry.StatePathInDeployerHome
 telemetry.StatePathInOtherUserHome
 telemetry.StatePathOther
+telemetry.DMSUndeclaredDeployingUser
+telemetry.DMSUndeclaredOtherUser
+telemetry.DMSUndeclaredServicePrincipal
+telemetry.DMSUndeclaredGroup
 telemetry.DMSCompatAuto
 telemetry.DMSCompatOnlySelfUndeclared
 telemetry.DMSCompatNot
@@ -3221,14 +3225,6 @@ telemetry.DirectMigratedViaConfig
 telemetry.DirectMigratedViaEnv
 telemetry.EngineTerraformConfig
 telemetry.EngineTerraformEnv
-telemetry.DMSUndeclaredDeployingUserTrue
-telemetry.DMSUndeclaredDeployingUserFalse
-telemetry.DMSUndeclaredOtherUserTrue
-telemetry.DMSUndeclaredOtherUserFalse
-telemetry.DMSUndeclaredServicePrincipalTrue
-telemetry.DMSUndeclaredServicePrincipalFalse
-telemetry.DMSUndeclaredGroupTrue
-telemetry.DMSUndeclaredGroupFalse
 telemetry.SkipArtifactCleanupTrue
 telemetry.SkipArtifactCleanupFalse
 telemetry.HasServerlessComputeTrue
