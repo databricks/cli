@@ -10,10 +10,6 @@ RecordRequests = false
 [EnvMatrix]
 DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-Ignore = [
-    "databricks.yml",
-]
-
 [Env]
 # This test makes an out-of-band draft update and expects `bundle plan` to detect that a
 # republish is owed. The inherited eventual-consistency simulation would make the plan's
