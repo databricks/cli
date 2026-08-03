@@ -37,9 +37,9 @@ type usagePoliciesResponse struct {
 	NextPageToken string        `json:"next_page_token"`
 }
 
-// listUsagePolicies pages the serverless-policy index and returns every policy
-// the caller can see. When policyName is non-empty it is sent as
-// filter_by.policy_name, a partial case-insensitive server-side filter.
+// listUsagePolicies pages the serverless-policy index for policies matching
+// policyName, which is sent as filter_by.policy_name: a partial,
+// case-insensitive server-side filter. Callers must pass a non-empty name.
 //
 // The filter key is spelled with its dotted proto path rather than as a nested
 // map: the SDK only flattens nesting for struct-typed query values, and would
@@ -51,11 +51,16 @@ func listUsagePolicies(ctx context.Context, w *databricks.WorkspaceClient, polic
 	}
 
 	var out []usagePolicy
+	// The index can return the same policy on more than one page, and a stuck or
+	// cycling cursor can repeat a whole page; dedupe both so an unambiguous name
+	// never looks like an ambiguous match downstream.
+	seenIDs := map[string]bool{}
+	seenTokens := map[string]bool{}
 	var pageToken string
 	for {
-		query := map[string]any{"page_size": maxPolicyPageSize}
-		if policyName != "" {
-			query["filter_by.policy_name"] = policyName
+		query := map[string]any{
+			"page_size":             maxPolicyPageSize,
+			"filter_by.policy_name": policyName,
 		}
 		if pageToken != "" {
 			query["page_token"] = pageToken
@@ -67,10 +72,18 @@ func listUsagePolicies(ctx context.Context, w *databricks.WorkspaceClient, polic
 			return nil, fmt.Errorf("failed to list usage policies: %w", err)
 		}
 
-		out = append(out, resp.Policies...)
-		if resp.NextPageToken == "" || resp.NextPageToken == pageToken {
+		for _, p := range resp.Policies {
+			if seenIDs[p.PolicyID] {
+				continue
+			}
+			seenIDs[p.PolicyID] = true
+			out = append(out, p)
+		}
+
+		if resp.NextPageToken == "" || seenTokens[resp.NextPageToken] {
 			return out, nil
 		}
+		seenTokens[resp.NextPageToken] = true
 		pageToken = resp.NextPageToken
 	}
 }
@@ -81,9 +94,8 @@ func listUsagePolicies(ctx context.Context, w *databricks.WorkspaceClient, polic
 // match is re-applied locally; policy names are unique among active policies.
 func resolveUsagePolicyIDByName(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 	target := strings.TrimSpace(name)
-	// Guard the contract independently of the YAML validator: an empty name would
-	// otherwise drop the server-side filter and list (then reject against) every
-	// policy in the workspace.
+	// Guard the contract independently of the YAML validator: an empty filter would
+	// otherwise list (then reject against) every policy in the workspace.
 	if target == "" {
 		return "", errors.New("a usage policy name must be a non-empty string")
 	}

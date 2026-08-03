@@ -112,9 +112,8 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 
 	return jobs.SubmitRun{
 		RunName: cfg.ExperimentName,
-		// budget_policy_id is the field the AI Runtime backend reads; the newer
-		// usage_policy_id alias on SubmitRun is not honored there yet, so send the
-		// same field the Python CLI does.
+		// budget_policy_id matches what the Python CLI and `ssh connect` send;
+		// usage_policy_id is the newer alias for the same thing on SubmitRun.
 		BudgetPolicyId: usagePolicyID,
 		TimeoutSeconds: cfg.timeoutSeconds(),
 		Tasks:          []jobs.SubmitTask{st},
@@ -146,7 +145,14 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
 // returns the new run_id and its dashboard URL.
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string) (int64, string, error) {
-	// Resolve the usage policy to its id up front, so a bad name fails fast with a
+	// Resolve the idempotency token first so a bad key fails before any upload,
+	// and before the policy lookup below spends a round trip on it.
+	token, err := submitToken(idempotencyKey, cfg)
+	if err != nil {
+		return 0, "", err
+	}
+
+	// Resolve the usage policy to its id next, so a bad name fails fast with a
 	// clear (caller-fixable) message before we upload any artifacts. Validation
 	// guarantees name and id are mutually exclusive: a literal id is used as-is, a
 	// name is resolved against the workspace.
@@ -155,17 +161,10 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		usagePolicyID = strings.TrimSpace(*cfg.UsagePolicyID)
 	}
 	if cfg.UsagePolicyName != nil {
-		id, err := resolveUsagePolicyIDByName(ctx, w, *cfg.UsagePolicyName)
+		usagePolicyID, err = resolveUsagePolicyIDByName(ctx, w, *cfg.UsagePolicyName)
 		if err != nil {
 			return 0, "", err
 		}
-		usagePolicyID = id
-	}
-
-	// Resolve the idempotency token first so a bad key fails before any upload.
-	token, err := submitToken(idempotencyKey, cfg)
-	if err != nil {
-		return 0, "", err
 	}
 
 	// Resolve dependencies before any upload too, so a bad requirements file fails

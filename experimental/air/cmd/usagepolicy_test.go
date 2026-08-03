@@ -47,23 +47,13 @@ func TestListUsagePoliciesSendsFilterAndPageSize(t *testing.T) {
 	assert.Equal(t, strconv.Itoa(maxPolicyPageSize), q.Get("page_size"))
 }
 
-func TestListUsagePoliciesOmitsFilterWhenNoName(t *testing.T) {
-	w, queries := policyServer(t, usagePoliciesResponse{})
-
-	_, err := listUsagePolicies(t.Context(), w, "")
-	require.NoError(t, err)
-
-	require.Len(t, *queries, 1)
-	assert.Empty(t, (*queries)[0].Get("filter_by.policy_name"))
-}
-
 func TestListUsagePoliciesPaginates(t *testing.T) {
 	w, queries := policyServer(t,
 		usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: "id-1", PolicyName: "a"}}, NextPageToken: "tok"},
 		usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: "id-2", PolicyName: "b"}}},
 	)
 
-	policies, err := listUsagePolicies(t.Context(), w, "")
+	policies, err := listUsagePolicies(t.Context(), w, "a")
 	require.NoError(t, err)
 	assert.Equal(t, []usagePolicy{
 		{PolicyID: "id-1", PolicyName: "a"},
@@ -74,17 +64,52 @@ func TestListUsagePoliciesPaginates(t *testing.T) {
 	assert.Equal(t, "tok", (*queries)[1].Get("page_token"))
 }
 
-// A page token that repeats itself must not spin forever.
+// A page token that repeats itself must not spin forever, and the repeated page
+// must not be counted twice: a duplicated policy would otherwise look like an
+// ambiguous name to resolveUsagePolicyIDByName.
 func TestListUsagePoliciesStopsOnRepeatedToken(t *testing.T) {
 	w, _ := policyServer(t, usagePoliciesResponse{
 		Policies:      []usagePolicy{{PolicyID: "id-1", PolicyName: "a"}},
 		NextPageToken: "same",
 	})
 
-	policies, err := listUsagePolicies(t.Context(), w, "")
+	policies, err := listUsagePolicies(t.Context(), w, "a")
 	require.NoError(t, err)
-	// Second response repeats "same", which ends the loop.
-	assert.Len(t, policies, 2)
+	assert.Equal(t, []usagePolicy{{PolicyID: "id-1", PolicyName: "a"}}, policies)
+}
+
+// An A->B->A token cycle also terminates, rather than only a self-repeat.
+func TestListUsagePoliciesStopsOnTokenCycle(t *testing.T) {
+	w, _ := policyServer(t,
+		usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: "id-1", PolicyName: "a"}}, NextPageToken: "b"},
+		usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: "id-2", PolicyName: "b"}}, NextPageToken: "a"},
+		usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: "id-3", PolicyName: "c"}}, NextPageToken: "b"},
+	)
+
+	policies, err := listUsagePolicies(t.Context(), w, "a")
+	require.NoError(t, err)
+	assert.Len(t, policies, 3)
+}
+
+// The same policy arriving on two pages is returned once.
+func TestListUsagePoliciesDedupesAcrossPages(t *testing.T) {
+	w, _ := policyServer(t,
+		usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: "id-1", PolicyName: "team-a"}}, NextPageToken: "tok"},
+		usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: "id-1", PolicyName: "team-a"}}},
+	)
+
+	policies, err := listUsagePolicies(t.Context(), w, "team-a")
+	require.NoError(t, err)
+	assert.Equal(t, []usagePolicy{{PolicyID: "id-1", PolicyName: "team-a"}}, policies)
+
+	// A repeat must not read as an ambiguous match.
+	w2, _ := policyServer(t,
+		usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: "id-1", PolicyName: "team-a"}}, NextPageToken: "tok"},
+		usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: "id-1", PolicyName: "team-a"}}},
+	)
+	got, err := resolveUsagePolicyIDByName(t.Context(), w2, "team-a")
+	require.NoError(t, err)
+	assert.Equal(t, "id-1", got)
 }
 
 func TestResolveUsagePolicyIDByName(t *testing.T) {
@@ -160,8 +185,8 @@ func TestResolveUsagePolicyIDByName(t *testing.T) {
 		require.ErrorContains(t, err, "has no policy_id")
 	})
 
-	// An empty name would drop the server-side filter and list every policy in the
-	// workspace, so it is rejected without a round-trip.
+	// An empty filter would list every policy in the workspace, so a blank name is
+	// rejected without a round-trip.
 	t.Run("blank name is rejected", func(t *testing.T) {
 		w, queries := policyServer(t, usagePoliciesResponse{})
 		_, err := resolveUsagePolicyIDByName(t.Context(), w, "   ")

@@ -564,13 +564,31 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("unresolvable usage_policy_name fails before upload", func(t *testing.T) {
-		// An empty policy list makes the name unresolvable; the error must surface
-		// before any artifact upload.
-		pw, _ := policyServer(t, usagePoliciesResponse{})
+		// An empty policy list makes the name unresolvable. Record every path the
+		// server sees so the "fails before any upload" ordering is asserted, not just
+		// asserted-by-comment: no import/mkdirs request may be made.
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+		var paths []string
+		server.Handle("GET", "/api/2.0/serverless-policies", func(req testserver.Request) any {
+			paths = append(paths, req.URL.Path)
+			return usagePoliciesResponse{}
+		})
+		server.Handle("POST", "/api/2.0/workspace/{path...}", func(req testserver.Request) any {
+			paths = append(paths, req.URL.Path)
+			return testserver.Response{StatusCode: 200}
+		})
+		testserver.AddDefaultHandlers(server)
+		pw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+		require.NoError(t, err)
+
 		cfg := *base
 		cfg.UsagePolicyName = new("nope")
-		_, _, err := submitWorkload(t.Context(), pw, &cfg, cfgPath, "")
+		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "")
 		require.ErrorContains(t, err, `no usage policy named "nope"`)
+		for _, p := range paths {
+			assert.NotContains(t, p, "/workspace/", "no workspace write may precede policy resolution")
+		}
 	})
 }
 
