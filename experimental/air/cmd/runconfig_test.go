@@ -288,6 +288,36 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"docker_image.url cannot be empty",
 		},
 		{
+			"tag policy latest ok",
+			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", TagPolicy: "latest"}},
+			"",
+		},
+		{
+			"tag policy auto ok",
+			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", TagPolicy: "AUTO"}},
+			"",
+		},
+		{
+			"invalid tag policy",
+			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", TagPolicy: "newest"}},
+			`invalid docker_image.tag_policy "newest"`,
+		},
+		{
+			"credentials scope without key",
+			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", CredentialsScope: "s"}},
+			"must be provided together",
+		},
+		{
+			"credentials key without scope",
+			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", CredentialsKey: "k"}},
+			"must be provided together",
+		},
+		{
+			"credentials pair ok",
+			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", CredentialsScope: "s", CredentialsKey: "k"}},
+			"",
+		},
+		{
 			"version with file deps",
 			environmentConfig{
 				Version:      stringOrInt{set: true, raw: "5"},
