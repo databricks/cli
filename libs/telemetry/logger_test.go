@@ -152,3 +152,14 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 	assert.EqualError(t, err, "failed to upload telemetry logs after three attempts")
 	assert.Equal(t, 3, count)
 }
+
+func TestLogWithoutLoggerDropsEvent(t *testing.T) {
+	// A context without a telemetry logger must not panic; the event is dropped.
+	assert.NotPanics(t, func() {
+		Log(t.Context(), protos.DatabricksCliLog{
+			CliTestEvent: &protos.CliTestEvent{
+				Name: protos.DummyCliEnumValue1,
+			},
+		})
+	})
+}

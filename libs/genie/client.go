@@ -18,6 +18,11 @@ import (
 // "onechat" even though the CLI command is "genie", so the path keeps that name.
 const genieResponsesPath = "/api/2.0/data-rooms/tools/onechat/responses"
 
+// SourceDatabricksCLI is the source tag sent on every request so the OneChat
+// backend attributes CLI traffic distinctly (maps to OneChatEventSource.
+// DATABRICKS_CLI / ConversationSource.CONVERSATION_SOURCE_DATABRICKS_CLI).
+const SourceDatabricksCLI = "databricks_cli"
+
 // StreamingTimeoutSeconds is how long the SDK waits between body reads
 // before canceling the stream. The Genie agent can take minutes between SSE
 // events when executing multi-step tool calls (search, SQL, etc.), so this
@@ -29,6 +34,10 @@ const StreamingTimeoutSeconds = 600
 // Genie picks a default warehouse itself. A non-empty conversationID continues
 // that conversation instead of starting a new one.
 func BuildRequest(question, warehouseID, conversationID string) GenieRequest {
+	// The CLI runs in a terminal that cannot render visualizations, so viz is
+	// always disabled. Bound as a local because GenieRequest.EnableViz is a
+	// *bool (see the type's comment for why it can't be a plain bool).
+	enableViz := false
 	return GenieRequest{
 		Input: []InputItem{
 			{
@@ -41,6 +50,8 @@ func BuildRequest(question, warehouseID, conversationID string) GenieRequest {
 		},
 		WarehouseID:    warehouseID,
 		ConversationID: conversationID,
+		Source:         SourceDatabricksCLI,
+		EnableViz:      &enableViz,
 	}
 }
 

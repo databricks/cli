@@ -97,8 +97,6 @@ If the only reason for divergence is a server-side default that one engine sets 
 
 **RULE: If a test's `out.test.toml` is still in the older `[EnvMatrix]` block format, a regen rewrites it to the inline form and the post-test `git diff --exit-code` check fails** ("out.test.toml files that are out of date"). Regenerate just those files with `go test ./acceptance -run "^TestAccept$" -only-out-test-toml`, then commit.
 
-**RULE: Be aware of `GOOSOnPR` when adding or editing an acceptance test — an inherited opt-out may be skipping it on windows/macOS PR runs.** By default every test runs everywhere. For speed, some directories set `GOOSOnPR.windows = false` / `GOOSOnPR.darwin = false` in `test.toml`, which recursively opts their tests out of windows/macOS PR runs (they still run on Linux for PRs and on every OS on push to main). Check the resolved value in `out.test.toml`. This is right for the platform-independent majority, but if your test genuinely depends on the OS — path separators, `.exe`, CRLF, symlinks, file locking, process/signal semantics, venv layout (`Scripts` vs `bin`), wheel build — and it sits under such a directory, override the inherited skip with `GOOSOnPR.windows = true` / `GOOSOnPR.darwin = true`, or a Windows/macOS-only regression can merge unseen. `MSYS_NO_PATHCONV`, a leading `//`, or a CRLF-normalizing `sed` are portability scaffolding (they make output OS-identical), not evidence of OS-specific behavior. See `GOOSOnPR` in `acceptance/internal/config.go`.
-
 ### Reference
 
 - Tests live in `acceptance/` with a nested directory structure.

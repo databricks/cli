@@ -1647,6 +1647,7 @@ func newSubmit() *cobra.Command {
 	// TODO: complex arg: health
 	cmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
 	// TODO: complex arg: notification_settings
+	cmd.Flags().Var(&submitReq.PerformanceTarget, "performance-target", `The performance mode on a serverless one-time run. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
 	// TODO: complex arg: queue
 	// TODO: complex arg: run_as
 	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)

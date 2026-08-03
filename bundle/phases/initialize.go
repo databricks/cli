@@ -154,6 +154,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		mutator.InitializeVolumePaths(),
 		mutator.ResolveVolumePathReferencesOnlyResources(),
 
+		// Drop empty-string values on omitempty resource fields so they are not
+		// force-sent to the backend. Runs after variable resolution (a variable may
+		// resolve to "") and after all resource mutations, before validation so that
+		// required fields (no omitempty) still error if empty.
+		mutator.DropEmptyStrings(),
+
 		// Resolve --select selectors against the materialized resources: normalize
 		// each to its "type.name" form and validate it exists. Runs after all resource
 		// mutations so that dynamically added resources are visible. This does not

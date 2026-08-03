@@ -37,6 +37,11 @@ resources.alerts.*.lifecycle.prevent_destroy	bool	INPUT
 resources.alerts.*.lifecycle_state	sql.AlertLifecycleState	ALL
 resources.alerts.*.modified_status	string	INPUT
 resources.alerts.*.owner_user_name	string	ALL
+resources.alerts.*.parameters	[]sql.AlertStatementParameter	ALL
+resources.alerts.*.parameters[*]	sql.AlertStatementParameter	ALL
+resources.alerts.*.parameters[*].name	string	ALL
+resources.alerts.*.parameters[*].type	string	ALL
+resources.alerts.*.parameters[*].value	string	ALL
 resources.alerts.*.parent_path	string	ALL
 resources.alerts.*.query_text	string	ALL
 resources.alerts.*.run_as	*sql.AlertV2RunAs	ALL
@@ -274,7 +279,7 @@ resources.catalogs.*.grants[*]	catalog.PrivilegeAssignment	ALL
 resources.catalogs.*.grants[*].principal	string	ALL
 resources.catalogs.*.grants[*].privileges	[]catalog.Privilege	ALL
 resources.catalogs.*.grants[*].privileges[*]	catalog.Privilege	ALL
-resources.clusters.*.apply_policy_default_values	bool	INPUT	STATE
+resources.clusters.*.apply_policy_default_values	bool	ALL
 resources.clusters.*.autoscale	*compute.AutoScale	ALL
 resources.clusters.*.autoscale.max_workers	int	ALL
 resources.clusters.*.autoscale.min_workers	int	ALL
@@ -325,6 +330,7 @@ resources.clusters.*.custom_tags.*	string	ALL
 resources.clusters.*.data_security_mode	compute.DataSecurityMode	ALL
 resources.clusters.*.default_tags	map[string]string	REMOTE
 resources.clusters.*.default_tags.*	string	REMOTE
+resources.clusters.*.dependency_mode	compute.DependencyMode	ALL
 resources.clusters.*.docker_image	*compute.DockerImage	ALL
 resources.clusters.*.docker_image.basic_auth	*compute.DockerBasicAuth	ALL
 resources.clusters.*.docker_image.basic_auth.password	string	ALL
@@ -454,6 +460,7 @@ resources.clusters.*.spec.cluster_name	string	REMOTE
 resources.clusters.*.spec.custom_tags	map[string]string	REMOTE
 resources.clusters.*.spec.custom_tags.*	string	REMOTE
 resources.clusters.*.spec.data_security_mode	compute.DataSecurityMode	REMOTE
+resources.clusters.*.spec.dependency_mode	compute.DependencyMode	REMOTE
 resources.clusters.*.spec.docker_image	*compute.DockerImage	REMOTE
 resources.clusters.*.spec.docker_image.basic_auth	*compute.DockerBasicAuth	REMOTE
 resources.clusters.*.spec.docker_image.basic_auth.password	string	REMOTE
@@ -656,6 +663,7 @@ resources.experiments.*.tags[*].value	string	ALL
 resources.experiments.*.trace_location	*ml.ExperimentTraceLocation	ALL
 resources.experiments.*.trace_location.uc_trace_location	*ml.UcTraceLocation	ALL
 resources.experiments.*.trace_location.uc_trace_location.catalog	string	ALL
+resources.experiments.*.trace_location.uc_trace_location.effective_table_prefix	string	ALL
 resources.experiments.*.trace_location.uc_trace_location.schema	string	ALL
 resources.experiments.*.trace_location.uc_trace_location.table_prefix	string	ALL
 resources.experiments.*.url	string	INPUT
@@ -983,6 +991,7 @@ resources.jobs.*.job_clusters[*].new_cluster.cluster_name	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.custom_tags	map[string]string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.custom_tags.*	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.data_security_mode	compute.DataSecurityMode	ALL
+resources.jobs.*.job_clusters[*].new_cluster.dependency_mode	compute.DependencyMode	ALL
 resources.jobs.*.job_clusters[*].new_cluster.docker_image	*compute.DockerImage	ALL
 resources.jobs.*.job_clusters[*].new_cluster.docker_image.basic_auth	*compute.DockerBasicAuth	ALL
 resources.jobs.*.job_clusters[*].new_cluster.docker_image.basic_auth.password	string	ALL
@@ -1051,6 +1060,7 @@ resources.jobs.*.job_clusters[*].new_cluster.workload_type	*compute.WorkloadType
 resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients	compute.ClientsTypes	ALL
 resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs	bool	ALL
 resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks	bool	ALL
+resources.jobs.*.job_clusters[*].serverless_compute_id	string	ALL
 resources.jobs.*.job_id	int64	REMOTE
 resources.jobs.*.lifecycle	resources.Lifecycle	INPUT
 resources.jobs.*.lifecycle.prevent_destroy	bool	INPUT
@@ -1086,6 +1096,7 @@ resources.jobs.*.tags.*	string	ALL
 resources.jobs.*.tasks	[]jobs.Task	ALL
 resources.jobs.*.tasks[*]	jobs.Task	ALL
 resources.jobs.*.tasks[*].ai_runtime_task	*jobs.AiRuntimeTask	ALL
+resources.jobs.*.tasks[*].ai_runtime_task.code_source_path	string	ALL
 resources.jobs.*.tasks[*].ai_runtime_task.deployments	[]jobs.DeploymentSpec	ALL
 resources.jobs.*.tasks[*].ai_runtime_task.deployments[*]	jobs.DeploymentSpec	ALL
 resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].command_path	string	ALL
@@ -1169,6 +1180,7 @@ resources.jobs.*.tasks[*].for_each_task.concurrency	int	ALL
 resources.jobs.*.tasks[*].for_each_task.inputs	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task	jobs.Task	ALL
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task	*jobs.AiRuntimeTask	ALL
+resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.code_source_path	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments	[]jobs.DeploymentSpec	ALL
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*]	jobs.DeploymentSpec	ALL
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].command_path	string	ALL
@@ -1331,6 +1343,7 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.cluster_name	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.custom_tags	map[string]string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.custom_tags.*	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.data_security_mode	compute.DataSecurityMode	ALL
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.dependency_mode	compute.DependencyMode	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.docker_image	*compute.DockerImage	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.docker_image.basic_auth	*compute.DockerBasicAuth	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.docker_image.basic_auth.password	string	ALL
@@ -1617,6 +1630,7 @@ resources.jobs.*.tasks[*].new_cluster.cluster_name	string	ALL
 resources.jobs.*.tasks[*].new_cluster.custom_tags	map[string]string	ALL
 resources.jobs.*.tasks[*].new_cluster.custom_tags.*	string	ALL
 resources.jobs.*.tasks[*].new_cluster.data_security_mode	compute.DataSecurityMode	ALL
+resources.jobs.*.tasks[*].new_cluster.dependency_mode	compute.DependencyMode	ALL
 resources.jobs.*.tasks[*].new_cluster.docker_image	*compute.DockerImage	ALL
 resources.jobs.*.tasks[*].new_cluster.docker_image.basic_auth	*compute.DockerBasicAuth	ALL
 resources.jobs.*.tasks[*].new_cluster.docker_image.basic_auth.password	string	ALL
@@ -2336,6 +2350,12 @@ resources.model_serving_endpoints.*.endpoint_details.telemetry_config	*serving.T
 resources.model_serving_endpoints.*.endpoint_details.telemetry_config.inference_table_config	*serving.TelemetryInferenceTableConfig	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.telemetry_config.inference_table_config.name	string	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.telemetry_config.inference_table_config.sampling_fraction	float64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.telemetry_config.table_names	*serving.UnityCatalogTableNames	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.telemetry_config.table_names.annotations_table	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.telemetry_config.table_names.logs_table	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.telemetry_config.table_names.metrics_table	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.telemetry_config.table_names.traces_table	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.telemetry_config.telemetry_profile_id	string	REMOTE
 resources.model_serving_endpoints.*.endpoint_id	string	REMOTE
 resources.model_serving_endpoints.*.id	string	INPUT
 resources.model_serving_endpoints.*.lifecycle	resources.Lifecycle	INPUT
@@ -2356,6 +2376,12 @@ resources.model_serving_endpoints.*.telemetry_config	*serving.TelemetryConfig	AL
 resources.model_serving_endpoints.*.telemetry_config.inference_table_config	*serving.TelemetryInferenceTableConfig	ALL
 resources.model_serving_endpoints.*.telemetry_config.inference_table_config.name	string	ALL
 resources.model_serving_endpoints.*.telemetry_config.inference_table_config.sampling_fraction	float64	ALL
+resources.model_serving_endpoints.*.telemetry_config.table_names	*serving.UnityCatalogTableNames	ALL
+resources.model_serving_endpoints.*.telemetry_config.table_names.annotations_table	string	ALL
+resources.model_serving_endpoints.*.telemetry_config.table_names.logs_table	string	ALL
+resources.model_serving_endpoints.*.telemetry_config.table_names.metrics_table	string	ALL
+resources.model_serving_endpoints.*.telemetry_config.table_names.traces_table	string	ALL
+resources.model_serving_endpoints.*.telemetry_config.telemetry_profile_id	string	ALL
 resources.model_serving_endpoints.*.url	string	INPUT
 resources.model_serving_endpoints.*.permissions.object_id	string	ALL
 resources.model_serving_endpoints.*.permissions[*]	dresources.StatePermission	ALL
@@ -2692,6 +2718,14 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.o
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.start_date	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.subject_filter	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.subject_filter[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options	*pipelines.RedditAdsOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options.custom_report_options	*pipelines.RedditAdsOptionsRedditAdsCustomReportOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options.custom_report_options.breakdowns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options.custom_report_options.breakdowns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options.custom_report_options.fields	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options.custom_report_options.fields[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options.lookback_window_days	int	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options.sync_start_date	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options	*pipelines.SharepointOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.entity_type	pipelines.SharepointOptionsSharepointEntityType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.file_ingestion_options	*pipelines.FileIngestionOptions	ALL
@@ -2736,6 +2770,17 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.z
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.zendesk_support_options.start_date	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.destination_catalog	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.destination_schema	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options	*pipelines.IngestionPipelineDefinitionFanoutOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options.fanout_by	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options.transforms	[]pipelines.Transformer	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options.transforms[*]	pipelines.Transformer	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options.transforms[*].format	pipelines.TransformerFormat	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options.transforms[*].json_options	*pipelines.JsonTransformerOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options.transforms[*].json_options.as_variant	bool	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options.transforms[*].json_options.schema	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options.transforms[*].json_options.schema_evolution_mode	pipelines.FileIngestionOptionsSchemaEvolutionMode	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options.transforms[*].json_options.schema_file_path	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.fanout_options.transforms[*].json_options.schema_hints	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.source_catalog	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.source_schema	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration	*pipelines.TableSpecificConfig	ALL
@@ -2876,6 +2921,14 @@ resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.ou
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.start_date	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.subject_filter	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.subject_filter[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options	*pipelines.RedditAdsOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options.custom_report_options	*pipelines.RedditAdsOptionsRedditAdsCustomReportOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options.custom_report_options.breakdowns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options.custom_report_options.breakdowns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options.custom_report_options.fields	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options.custom_report_options.fields[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options.lookback_window_days	int	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options.sync_start_date	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options	*pipelines.SharepointOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.entity_type	pipelines.SharepointOptionsSharepointEntityType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.file_ingestion_options	*pipelines.FileIngestionOptions	ALL
@@ -3288,6 +3341,12 @@ resources.postgres_synced_tables.*.branch	string	ALL
 resources.postgres_synced_tables.*.create_database_objects_if_missing	bool	ALL
 resources.postgres_synced_tables.*.create_time	*time.Time	REMOTE
 resources.postgres_synced_tables.*.existing_pipeline_id	string	ALL
+resources.postgres_synced_tables.*.extra_columns	[]postgres.SyncedTableSyncedTableSpecExtraColumn	ALL
+resources.postgres_synced_tables.*.extra_columns[*]	postgres.SyncedTableSyncedTableSpecExtraColumn	ALL
+resources.postgres_synced_tables.*.extra_columns[*].column_name	string	ALL
+resources.postgres_synced_tables.*.extra_columns[*].column_type	string	ALL
+resources.postgres_synced_tables.*.extra_columns[*].compute	string	ALL
+resources.postgres_synced_tables.*.extra_columns[*].maintenance	postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance	ALL
 resources.postgres_synced_tables.*.id	string	INPUT
 resources.postgres_synced_tables.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_synced_tables.*.lifecycle.prevent_destroy	bool	INPUT
