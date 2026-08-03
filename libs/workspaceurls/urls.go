@@ -90,7 +90,7 @@ func JobRunURL(baseURL url.URL, jobID, runID string) string {
 	return baseURL.String()
 }
 
-// JobRunPageURL converts the legacy run URL returned by the Jobs API
+// ModernizeJobRunPageURL converts the legacy run URL returned by the Jobs API
 //
 //	https://<host>/?o=<id>#job/<jobID>/run/<runID>
 //
@@ -103,7 +103,7 @@ func JobRunURL(baseURL url.URL, jobID, runID string) string {
 // workspace selector query param (o) is preserved as-is. The conversion is
 // cosmetic, so the original URL is returned on the rare chance the format is
 // unexpected.
-func JobRunPageURL(raw string) string {
+func ModernizeJobRunPageURL(raw string) string {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return raw
