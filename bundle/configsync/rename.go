@@ -173,16 +173,18 @@ type renameCandidate struct {
 	oldFields map[string]any
 }
 
+// matchesAdd reports whether the addition at addPath is among these matches.
+func matchesAdd(matches []keyedElement, addPath string) bool {
+	return slices.ContainsFunc(matches, func(add keyedElement) bool { return add.path == addPath })
+}
+
 // countMatchesOf returns how many removals could have become the addition at
 // addPath.
 func countMatchesOf(matches [][]keyedElement, addPath string) int {
 	count := 0
 	for _, candidateMatches := range matches {
-		for _, add := range candidateMatches {
-			if add.path == addPath {
-				count++
-				break
-			}
+		if matchesAdd(candidateMatches, addPath) {
+			count++
 		}
 	}
 	return count
@@ -214,14 +216,7 @@ func ambiguityCrossesBlocks(blocks *blockResolver, candidates []renameCandidate,
 
 // sharesAnyAdd reports whether two removals could have become the same addition.
 func sharesAnyAdd(a, b []keyedElement) bool {
-	for _, x := range a {
-		for _, y := range b {
-			if x.path == y.path {
-				return true
-			}
-		}
-	}
-	return false
+	return slices.ContainsFunc(a, func(add keyedElement) bool { return matchesAdd(b, add.path) })
 }
 
 // multiBlockElement reports whether the element the change addresses is assembled
@@ -275,28 +270,29 @@ func keyedElementChanges(changes ResourceChanges) (removes, adds []keyedElement)
 	return removes, adds
 }
 
-// sameElementApartFromKey reports whether the added element is the removed one
-// with a different key. oldFields is the removed element without its key field.
+// sameElementApartFromKey reports whether the added element is the removed one with
+// a different key, i.e. a plain rename. oldFields is the removed element without its
+// key field.
 func sameElementApartFromKey(oldFields map[string]any, add keyedElement) bool {
-	newValue, ok := add.value.(map[string]any)
-	if !ok {
-		return false
-	}
-	return reflect.DeepEqual(oldFields, withoutKey(newValue, add.keyField))
+	newFields, ok := fieldsApartFromKey(add)
+	return ok && reflect.DeepEqual(oldFields, newFields)
 }
 
-// sameFieldsApartFromKey reports whether the added element has the same fields as
-// the removed one, ignoring their values. A rename that also edited a field keeps
-// the element's shape; an unrelated new element generally does not.
+// sameFieldsApartFromKey reports whether the added element has the same fields as the
+// removed one, ignoring their values. A rename that also edited a field keeps the
+// element's shape; an unrelated new element generally does not.
 func sameFieldsApartFromKey(oldFields map[string]any, add keyedElement) bool {
-	newValue, ok := add.value.(map[string]any)
+	newFields, ok := fieldsApartFromKey(add)
+	return ok && slices.Equal(slices.Sorted(maps.Keys(oldFields)), slices.Sorted(maps.Keys(newFields)))
+}
+
+// fieldsApartFromKey returns the added element's fields without its key field.
+func fieldsApartFromKey(add keyedElement) (map[string]any, bool) {
+	value, ok := add.value.(map[string]any)
 	if !ok {
-		return false
+		return nil, false
 	}
-	return slices.Equal(
-		slices.Sorted(maps.Keys(oldFields)),
-		slices.Sorted(maps.Keys(withoutKey(newValue, add.keyField))),
-	)
+	return withoutKey(value, add.keyField), true
 }
 
 func withoutKey(value map[string]any, keyField string) map[string]any {
