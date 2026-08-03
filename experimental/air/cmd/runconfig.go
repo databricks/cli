@@ -327,6 +327,12 @@ func (d *dockerImageConfig) validate() error {
 	return nil
 }
 
+// wantsLatest reports whether the image should be re-resolved against the source
+// registry before the run.
+func (d *dockerImageConfig) wantsLatest() bool {
+	return strings.EqualFold(strings.TrimSpace(d.TagPolicy), dockerTagPolicyLatest)
+}
+
 // codeSourceConfig is the `code_source` block. Only the "snapshot" type exists.
 type codeSourceConfig struct {
 	Type     string                `yaml:"type"`
