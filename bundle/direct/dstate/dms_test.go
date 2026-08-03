@@ -36,7 +36,11 @@ func (f *fakeResourceLister) ListResources(ctx context.Context, req bundledeploy
 }
 
 func TestFetchDeploymentResourcesUnwrapsEnvelope(t *testing.T) {
-	recorded := json.RawMessage(`{"state":{"name":"foo"},"depends_on":[{"node":"resources.pipelines.bar","label":"${resources.pipelines.bar.id}"}]}`)
+	// DMS types state as a string, so the envelope arrives as a quoted JSON string.
+	envelope := `{"state":{"name":"foo"},"depends_on":[{"node":"resources.pipelines.bar","label":"${resources.pipelines.bar.id}"}]}`
+	quoted, err := json.Marshal(envelope)
+	require.NoError(t, err)
+	recorded := json.RawMessage(quoted)
 	f := &fakeResourceLister{resources: []bundledeployments.Resource{
 		{ResourceKey: "jobs.foo", ResourceId: "123", State: &recorded},
 		{ResourceKey: "pipelines.bar", ResourceId: "456"},

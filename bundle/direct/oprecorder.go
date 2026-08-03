@@ -99,7 +99,16 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 		Status:      bundledeployments.OperationStatusOperationStatusSucceeded,
 	}
 	if op.state != nil {
-		operation.State = &op.state
+		// DMS types state as a string, so the JSON goes on the wire as a quoted
+		// string rather than an embedded object. The SDK field is a json.RawMessage,
+		// so quote the payload here; sending the object directly is rejected with
+		// "Invalid value: {...} for expected type: STRING".
+		quoted, err := json.Marshal(string(op.state))
+		if err != nil {
+			return fmt.Errorf("serializing state: %w", err)
+		}
+		raw := json.RawMessage(quoted)
+		operation.State = &raw
 	}
 
 	_, err := r.client.CreateOperation(ctx, bundledeployments.CreateOperationRequest{

@@ -77,7 +77,14 @@ func fetchDeploymentResources(ctx context.Context, client bundledeployments.Bund
 
 		var recorded RecordedState
 		if res.State != nil {
-			if err := json.Unmarshal(*res.State, &recorded); err != nil {
+			// State is a string field, so it arrives as a quoted JSON string (see the
+			// write side in direct.operationRecorder.upload). Unquote it, then parse
+			// the envelope it holds.
+			var envelope string
+			if err := json.Unmarshal(*res.State, &envelope); err != nil {
+				return nil, fmt.Errorf("interpreting state recorded for %s: %w", key, err)
+			}
+			if err := json.Unmarshal([]byte(envelope), &recorded); err != nil {
 				return nil, fmt.Errorf("interpreting state recorded for %s: %w", key, err)
 			}
 		}
