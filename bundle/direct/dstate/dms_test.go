@@ -66,3 +66,44 @@ func TestFetchDeploymentResourcesRejectsMalformedState(t *testing.T) {
 	_, err := fetchDeploymentResources(t.Context(), f, "dep-1")
 	assert.ErrorContains(t, err, "interpreting state recorded for resources.jobs.foo")
 }
+
+func TestFetchDeploymentResourcesNormalizesIntegralDoubles(t *testing.T) {
+	// DMS serializes state through a protobuf Struct, so integers come back as
+	// doubles ("1.0"). The typed job state unmarshals those fields as int, so
+	// they must be restored to integers on the way out.
+	recorded := json.RawMessage(`{"state":{"max_concurrent_runs":1.0,"tasks":[{"new_cluster":{"num_workers":2.0}}],"timeout_seconds":0.0}}`)
+	f := &fakeResourceLister{resources: []bundledeployments.Resource{
+		{ResourceKey: "jobs.foo", ResourceId: "123", State: &recorded},
+	}}
+
+	got, err := fetchDeploymentResources(t.Context(), f, "dep-1")
+	require.NoError(t, err)
+	assert.Equal(t, json.RawMessage(`{"max_concurrent_runs":1,"tasks":[{"new_cluster":{"num_workers":2}}],"timeout_seconds":0}`), got["resources.jobs.foo"].State)
+}
+
+func TestNormalizeIntegralNumbers(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"integral doubles become ints", `{"a":1.0,"b":2.0}`, `{"a":1,"b":2}`},
+		{"fractions are preserved", `{"a":1.5,"b":0.25}`, `{"a":1.5,"b":0.25}`},
+		{"nested objects and arrays", `{"tasks":[{"n":1.0},{"n":2.5}]}`, `{"tasks":[{"n":1},{"n":2.5}]}`},
+		{"large integral double", `{"id":1000000000000000.0}`, `{"id":1000000000000000}`},
+		{"non-numbers untouched", `{"s":"x","b":true,"z":null}`, `{"b":true,"s":"x","z":null}`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := normalizeIntegralNumbers(json.RawMessage(tc.in))
+			require.NoError(t, err)
+			assert.JSONEq(t, tc.want, string(got))
+		})
+	}
+}
+
+func TestNormalizeIntegralNumbersEmptyInputUnchanged(t *testing.T) {
+	got, err := normalizeIntegralNumbers(nil)
+	require.NoError(t, err)
+	assert.Nil(t, got)
+}

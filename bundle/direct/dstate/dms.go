@@ -1,10 +1,12 @@
 package dstate
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
@@ -82,11 +84,75 @@ func fetchDeploymentResources(ctx context.Context, client bundledeployments.Bund
 			}
 		}
 
+		// DMS stores state in a protobuf Struct, whose only numeric type is
+		// double, so integers come back as "1.0". The typed resource structs
+		// (e.g. jobs.JobSettings.MaxConcurrentRuns, num_workers) unmarshal those
+		// fields as int and reject the fractional form, so restore the integral
+		// doubles to integers before the state reaches them.
+		state, err := normalizeIntegralNumbers(recorded.State)
+		if err != nil {
+			return nil, fmt.Errorf("interpreting state recorded for %s: %w", key, err)
+		}
+
 		out[key] = ResourceEntry{
 			ID:        res.ResourceId,
-			State:     recorded.State,
+			State:     state,
 			DependsOn: recorded.DependsOn,
 		}
 	}
 	return out, nil
+}
+
+// normalizeIntegralNumbers rewrites JSON numbers that have no fractional part
+// (e.g. "1.0") as integers ("1"). DMS round-trips state through a protobuf
+// Struct whose only numeric type is double, so every integer it stores comes
+// back fractional; the typed resource structs unmarshal integer fields as int
+// and reject that form. Genuinely fractional numbers are left untouched.
+//
+// A nil or empty input is returned unchanged so an unrecorded resource keeps
+// its nil state rather than becoming "null".
+func normalizeIntegralNumbers(raw json.RawMessage) (json.RawMessage, error) {
+	if len(raw) == 0 {
+		return raw, nil
+	}
+
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(normalizeValue(v))
+}
+
+// normalizeValue walks a decoded JSON value (with numbers as json.Number) and
+// converts every integral number to an int64, recursing into objects and
+// arrays. Non-numeric leaves are returned as-is.
+func normalizeValue(v any) any {
+	switch t := v.(type) {
+	case map[string]any:
+		for k, val := range t {
+			t[k] = normalizeValue(val)
+		}
+		return t
+	case []any:
+		for i, val := range t {
+			t[i] = normalizeValue(val)
+		}
+		return t
+	case json.Number:
+		// An integer already parses as int64; keep it. Otherwise the value is a
+		// double, and only its integral form needs rewriting - a real fraction
+		// must survive untouched (e.g. a float-typed config field).
+		if i, err := t.Int64(); err == nil {
+			return i
+		}
+		if f, err := t.Float64(); err == nil && f == math.Trunc(f) && !math.IsInf(f, 0) {
+			return int64(f)
+		}
+		return t
+	default:
+		return v
+	}
 }
