@@ -53,10 +53,12 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 	}
 
 	removes, adds := keyedElementChanges(changes)
+
+	// The remove half carries no value, so each removed element is read from the
+	// merged configuration once: its fields decide which additions it could have
+	// become, and its source blocks decide whether a choice between them is safe.
+	candidates := make([]renameCandidate, 0, len(removes))
 	for _, remove := range removes {
-		// The remove half carries no value, so the old element is read from the
-		// merged configuration. Resolving it once also gives the sequence steps that
-		// multiBlockElement needs below.
 		resolved, err := resolveSelectors(resourceKey+"."+remove.path, b, OperationRemove)
 		if err != nil || !resolved.leaf.IsValid() {
 			continue
@@ -65,83 +67,161 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 		if !ok {
 			continue
 		}
-		oldFields := withoutKey(element, remove.keyField)
+		candidates = append(candidates, renameCandidate{
+			remove:    remove,
+			resolved:  resolved,
+			oldFields: withoutKey(element, remove.keyField),
+		})
+	}
 
-		// Every add the removed element could equally well have become. Two
-		// identically-bodied elements renamed in one run produce two removes that
-		// each match both adds, and the pairing decides which key goes to which
-		// element: getting it backwards moves a key into the wrong block, and
-		// anything referring to the element by key (depends_on) then points at the
-		// wrong one. Nothing in the change set says which pairing was intended, so
-		// hold every half back rather than pick one.
-		var matches []keyedElement
+	// Which additions each removal could equally well have become. Matching is by
+	// content, so it is symmetric: an addition can be a match for several removals
+	// just as a removal can match several additions.
+	matches := make([][]keyedElement, len(candidates))
+	for i, candidate := range candidates {
 		for _, add := range adds {
-			if _, taken := set.addPaths[add.path]; taken {
+			if candidate.remove.parent != add.parent || candidate.remove.keyField != add.keyField {
 				continue
 			}
-			if remove.parent != add.parent || remove.keyField != add.keyField {
-				continue
-			}
-			if sameElementApartFromKey(oldFields, add) {
-				matches = append(matches, add)
+			if sameElementApartFromKey(candidate.oldFields, add) {
+				matches[i] = append(matches[i], add)
 			}
 		}
-		if len(matches) == 1 {
-			add := matches[0]
-			set.byRemovePath[remove.path] = renamedElement{
-				keyField: remove.keyField,
-				oldKey:   remove.key,
+	}
+
+	for i, candidate := range candidates {
+		// A pair is only unambiguous when the choice is forced from both sides. One
+		// removal matching several additions is the obvious case, but so is several
+		// removals matching the same addition: pairing the first and deleting the
+		// rest would move a key into a block the user did not choose.
+		if len(matches[i]) == 1 && countMatchesOf(matches, matches[i][0].path) == 1 {
+			add := matches[i][0]
+			set.byRemovePath[candidate.remove.path] = renamedElement{
+				keyField: candidate.remove.keyField,
+				oldKey:   candidate.remove.key,
 				newKey:   add.key,
 				addPath:  add.path,
 			}
 			set.addPaths[add.path] = struct{}{}
 			continue
 		}
-		if len(matches) > 1 {
-			const reason = "several elements with the same contents were renamed in one run, so the new keys cannot be matched to them"
-			set.unpairedPaths[remove.path] = reason
-			for _, add := range matches {
+
+		if len(matches[i]) > 0 {
+			// The pairing is not forced. Which pairing was intended only matters when
+			// the elements live in different blocks, because then it decides which
+			// block each new key is written to. Within one block every pairing writes
+			// the same set of elements to the same place, so the halves can be applied
+			// as a plain removal and addition instead of being held back -- otherwise a
+			// rename of two same-bodied elements is dropped, and anything referring to
+			// them by key (depends_on) keeps pointing at keys that no longer exist.
+			if !ambiguityCrossesBlocks(blocks, candidates, matches, i) {
+				continue
+			}
+			const reason = "several elements with the same contents were renamed in one run and they are not in the same block, so the new keys cannot be matched to them"
+			set.unpairedPaths[candidate.remove.path] = reason
+			for _, add := range matches[i] {
 				set.unpairedPaths[add.path] = reason
 			}
 			continue
 		}
 
-		// The removal was not matched to an addition. A plain removal is fine: it
-		// deletes every part of the element, which is what the user asked for.
-		// But an addition of the same element under a new key, with one of its
-		// fields also edited, cannot be recognised as a rename: applying the halves
-		// separately would delete a split element from every block and recreate it
-		// in one, collapsing the split and moving fields into a scope the user did
-		// not choose. Hold both halves back in that case only.
+		// The removal matched no addition. A plain removal is fine: it deletes every
+		// part of the element, which is what the user asked for. But an addition of
+		// the same element under a new key, with one of its fields also edited, cannot
+		// be recognised as a rename: applying the halves separately would delete a
+		// split element from every block and recreate it in one, collapsing the split
+		// and moving fields into a scope the user did not choose. Hold both halves
+		// back in that case only.
 		//
 		// "The same element with a field edited" means it still has the same fields;
 		// a genuinely new element is an unrelated addition that has to be applied,
 		// even when a removal happens to be in the same run.
-		var candidates []string
+		var edited []string
 		for _, add := range adds {
-			if remove.parent != add.parent || remove.keyField != add.keyField {
+			if candidate.remove.parent != add.parent || candidate.remove.keyField != add.keyField {
 				continue
 			}
 			if _, taken := set.addPaths[add.path]; taken {
 				continue
 			}
-			if sameFieldsApartFromKey(oldFields, add) {
-				candidates = append(candidates, add.path)
+			if sameFieldsApartFromKey(candidate.oldFields, add) {
+				edited = append(edited, add.path)
 			}
 		}
-		if len(candidates) == 0 {
+		if len(edited) == 0 {
 			continue
 		}
-		if !multiBlockElement(blocks, resolved) {
+		if !multiBlockElement(blocks, candidate.resolved) {
 			continue
 		}
 		const reason = "a split element cannot be removed and recreated in one run"
-		set.unpairedPaths[remove.path] = reason
-		for _, path := range candidates {
+		set.unpairedPaths[candidate.remove.path] = reason
+		for _, path := range edited {
 			set.unpairedPaths[path] = reason
 		}
 	}
 	return set
+}
+
+// renameCandidate is a removal of a keyed element, resolved once so its fields and
+// source blocks can be consulted without walking the tree again.
+type renameCandidate struct {
+	remove   keyedElement
+	resolved resolvedChange
+	// oldFields is the removed element without its key field, i.e. what an addition
+	// has to look like to be the same element under a new key.
+	oldFields map[string]any
+}
+
+// countMatchesOf returns how many removals could have become the addition at
+// addPath.
+func countMatchesOf(matches [][]keyedElement, addPath string) int {
+	count := 0
+	for _, candidateMatches := range matches {
+		for _, add := range candidateMatches {
+			if add.path == addPath {
+				count++
+				break
+			}
+		}
+	}
+	return count
+}
+
+// ambiguityCrossesBlocks reports whether an unforced pairing for candidates[i]
+// would have to choose between blocks. Every removal that could have become one of
+// the same additions is considered, because the choice is between them.
+func ambiguityCrossesBlocks(blocks *blockResolver, candidates []renameCandidate, matches [][]keyedElement, i int) bool {
+	var seen []sourceBlock
+	for j, candidate := range candidates {
+		if j != i && !sharesAnyAdd(matches[i], matches[j]) {
+			continue
+		}
+		if len(candidate.resolved.steps) == 0 {
+			return true
+		}
+		last := candidate.resolved.steps[len(candidate.resolved.steps)-1]
+		elementBlocks := blocks.blocksOf(last.element)
+		if len(elementBlocks) != 1 {
+			return true
+		}
+		if !slices.Contains(seen, elementBlocks[0]) {
+			seen = append(seen, elementBlocks[0])
+		}
+	}
+	return len(seen) != 1
+}
+
+// sharesAnyAdd reports whether two removals could have become the same addition.
+func sharesAnyAdd(a, b []keyedElement) bool {
+	for _, x := range a {
+		for _, y := range b {
+			if x.path == y.path {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // multiBlockElement reports whether the element the change addresses is assembled

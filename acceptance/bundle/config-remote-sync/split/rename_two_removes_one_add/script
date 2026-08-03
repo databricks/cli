@@ -1,0 +1,38 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve -t dev; }
+trap cleanup EXIT
+$CLI bundle deploy -t dev
+job_id="$(read_id.py two_removes_job)"
+
+title "Two identical tasks, one in each block; DELETE one (remote), RENAME the other"
+edit_resource.py jobs $job_id <<PYEDIT
+# Delete task_target and rename task_toplevel -> task_renamed
+new_tasks = []
+for task in r["tasks"]:
+    if task["task_key"] == "task_target":
+        # Delete this one (remove only, no add)
+        pass
+    elif task["task_key"] == "task_toplevel":
+        # Rename this one
+        task["task_key"] = "task_renamed"
+        new_tasks.append(task)
+r["tasks"] = new_tasks
+PYEDIT
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "Neither block is rewritten: the pairing is not forced"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+echo
+title "Checking task locations in YAML:"
+echo "=== Top-level block (should have task_renamed):"
+errcode trace grep -A2 "resources:" databricks.yml | grep -A10 "find_a_job:"
+echo "=== Target block (should have nothing, task_target removed):"
+errcode trace grep -A20 "targets:" databricks.yml | grep -A5 "dev:"
+rm databricks.yml.backup
