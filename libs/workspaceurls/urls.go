@@ -1,13 +1,10 @@
 package workspaceurls
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"slices"
 	"strings"
-
-	"github.com/databricks/cli/libs/log"
 )
 
 var resourceURLPatterns = map[string]string{
@@ -106,16 +103,14 @@ func JobRunURL(baseURL url.URL, jobID, runID string) string {
 // workspace selector query param (o) is preserved as-is. The conversion is
 // cosmetic, so the original URL is returned on the rare chance the format is
 // unexpected.
-func JobRunPageURL(ctx context.Context, raw string) string {
+func JobRunPageURL(raw string) string {
 	u, err := url.Parse(raw)
 	if err != nil {
-		log.Debugf(ctx, "could not parse run URL %q: %v", raw, err)
 		return raw
 	}
 
 	jobID, runID, ok := parseLegacyRunFragment(u.Fragment)
 	if !ok {
-		log.Debugf(ctx, "unexpected run URL fragment %q", u.Fragment)
 		return raw
 	}
 

@@ -168,7 +168,6 @@ func TestHasWorkspaceIDInHostname(t *testing.T) {
 }
 
 func TestJobRunPageURL(t *testing.T) {
-	ctx := t.Context()
 	tests := []struct {
 		name     string
 		raw      string
@@ -209,7 +208,7 @@ func TestJobRunPageURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, JobRunPageURL(ctx, tt.raw))
+			assert.Equal(t, tt.expected, JobRunPageURL(tt.raw))
 		})
 	}
 }

@@ -97,7 +97,7 @@ func (m *jobRunMonitor) onProgress(info *jobs.Run) {
 
 	// First time we see this run.
 	if m.prevState == nil {
-		runURL := workspaceurls.JobRunPageURL(m.ctx, info.RunPageUrl)
+		runURL := workspaceurls.JobRunPageURL(info.RunPageUrl)
 		log.Infof(m.ctx, "Run available at %s", runURL)
 		cmdio.Log(m.ctx, progress.NewJobRunUrlEvent(runURL))
 	}
@@ -162,7 +162,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		if err != nil {
 			return nil, err
 		}
-		cmdio.Log(ctx, progress.NewJobRunUrlEvent(workspaceurls.JobRunPageURL(ctx, details.RunPageUrl)))
+		cmdio.Log(ctx, progress.NewJobRunUrlEvent(workspaceurls.JobRunPageURL(details.RunPageUrl)))
 		return nil, nil
 	}
 
