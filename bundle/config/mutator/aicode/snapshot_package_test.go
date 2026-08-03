@@ -51,6 +51,43 @@ func tarEntries(t *testing.T, b []byte) map[string]string {
 	return out
 }
 
+// tarModes reads a gzipped tarball and returns entry name -> permission bits.
+func tarModes(t *testing.T, b []byte) map[string]int64 {
+	t.Helper()
+	gzr, err := gzip.NewReader(bytes.NewReader(b))
+	require.NoError(t, err)
+	tr := tar.NewReader(gzr)
+	out := map[string]int64{}
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+		out[hdr.Name] = hdr.Mode & 0o777
+	}
+	return out
+}
+
+// An executable file keeps the execute bit (0o755) so a bundled helper the user
+// invokes still runs; a non-executable file is normalized to 0o644.
+func TestBuildCodeSnapshotPreservesExecuteBit(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "run.sh"), []byte("#!/bin/sh\n"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "train.py"), []byte("x"), 0o644))
+	root := vfs.MustNew(dir)
+	files, err := fileset.New(root).Files()
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	_, err = buildCodeSnapshot(root, ".", files, "code", &buf)
+	require.NoError(t, err)
+
+	modes := tarModes(t, buf.Bytes())
+	assert.Equal(t, int64(0o755), modes["code/run.sh"], "executable helper must keep its execute bit")
+	assert.Equal(t, int64(0o644), modes["code/train.py"], "non-executable file is normalized to 0o644")
+}
+
 func TestBuildCodeSnapshotPrefixesEntries(t *testing.T) {
 	root, files := writeTree(t, map[string]string{
 		"train.py":        "print('train')",

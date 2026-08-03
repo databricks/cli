@@ -100,15 +100,20 @@ func addFileToArchive(tw *tar.Writer, syncRoot vfs.Path, relBase string, f files
 		return nil
 	}
 
+	// Preserve the owner execute bit so a bundled helper the user invokes (e.g. a
+	// ./run.sh called from command.sh) stays executable, but normalize the rest to a
+	// canonical mode. Deriving the mode from the file's own bits keeps the archive
+	// reproducible (same input file -> same mode); mtime is zeroed for the same reason.
+	mode := int64(0o644)
+	if info.Mode().Perm()&0o100 != 0 {
+		mode = 0o755
+	}
 	hdr := &tar.Header{
 		Typeflag: tar.TypeReg,
 		Name:     path.Join(prefix, rel),
 		Size:     info.Size(),
-		// Normalize permissions and zero the mtime so the archive is reproducible
-		// across machines. The runtime invokes code via an interpreter, not by
-		// executing files from the snapshot, so execute bits are not preserved.
-		Mode:    0o644,
-		ModTime: tarEpoch,
+		Mode:     mode,
+		ModTime:  tarEpoch,
 	}
 	if err := tw.WriteHeader(hdr); err != nil {
 		return fmt.Errorf("tar header for %s: %w", rel, err)
