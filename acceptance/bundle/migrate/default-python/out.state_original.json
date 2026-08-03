@@ -66,6 +66,7 @@
                     "cluster_name": "",
                     "custom_tags": null,
                     "data_security_mode": "DATA_SECURITY_MODE_AUTO",
+                    "dependency_mode": "",
                     "docker_image": [],
                     "driver_instance_pool_id": "",
                     "driver_node_type_flexibility": [],
@@ -95,7 +96,8 @@
                     "worker_node_type_flexibility": [],
                     "workload_type": []
                   }
-                ]
+                ],
+                "serverless_compute_id": ""
               }
             ],
             "library": [],

@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/fs"
 	"maps"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"os/exec"
@@ -427,6 +428,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("NODE_TYPE_ID", nodeTypeID)
 	repls.Set(nodeTypeID, "[NODE_TYPE_ID]")
 
+	// On cloud, tag every $UNIQUE_NAME with a per-process prefix (see
+	// newBundleNamePrefix) so this leg's bundles can be attributed and swept, and
+	// destroy them once all tests finish. Registered before the tests are spawned
+	// so it runs after they complete. Off cloud names need no attribution.
+	if cloudEnv != "" {
+		bundleNamePrefix = newBundleNamePrefix()
+		setupBundleCleanup(t, execPath, bundleNamePrefix)
+	}
+
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
@@ -721,27 +731,61 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 	return ""
 }
 
-var ciRunID = regexp.MustCompile(`^[0-9]{1,16}$`)
+// Cap at 11 digits: the prefix "ci<runID>x<suffix>" plus the 8-char random
+// minimum must fit the 26-char unique name (26 - 8 - len("ci")-len("x") -
+// bundleLegSuffixLen = 11), so a longer GITHUB_RUN_ID falls through to a random
+// id rather than building a prefix ciUniqueName would silently drop.
+var ciRunID = regexp.MustCompile(`^[0-9]{1,11}$`)
 
-// ciUniqueName embeds a CI run id into the random unique name as "ci<runID>x<random>".
-// The result stays purely lowercase-alphanumeric like the base32 name it replaces, so it
-// remains valid everywhere $UNIQUE_NAME is used: app names (no hyphens would be fine but
-// underscores/uppercase are not), Python and Unity Catalog identifiers (no hyphens). No
-// punctuation separator works for all of them, so the run id (all digits) is delimited by
-// the letter "x", which also keeps the sweep prefix "ci<runID>x" collision-free between
-// runs whose ids share a prefix. Length is preserved ("app-$UNIQUE_NAME" is exactly the
-// 30-char app name maximum). Returns random unchanged when runID is absent, malformed, or
-// too long to leave at least 8 random characters.
-func ciUniqueName(runID, random string) string {
+// bundleLegSuffixLen is the length of the per-process random suffix. 36^4 values
+// keep an accidental collision between the few matrix legs that share a workspace
+// within one run (which would let one leg destroy another's live bundles)
+// negligible, while still leaving >=8 random characters after an 11-digit run id.
+const bundleLegSuffixLen = 4
+
+// bundleNamePrefix is the sweepable prefix embedded into every $UNIQUE_NAME on
+// cloud runs (see newBundleNamePrefix / ciUniqueName). Set once in testAccept,
+// empty off cloud where names need no attribution.
+var bundleNamePrefix string
+
+// newBundleNamePrefix builds the "ci<runID>x<suffix>" prefix that attributes
+// deployed bundles to this test process so cleanup can sweep them.
+//
+// runID is the GitHub run id, or a random numeric id when it is unset/malformed
+// (e.g. a local `deco env run`). All matrix legs of a CI run share one GitHub run
+// id and legs of different OSes share a workspace, so a run-id-only prefix would
+// let one leg's cleanup destroy another leg's live bundles; the random
+// lowercase-alphanumeric suffix (bundleLegSuffixLen chars) makes each leg's prefix
+// distinct while keeping "ci<runID>x" a matchable substring for the run-wide
+// sweeper (sweep_test_resources.py). The run id (all digits) is delimited by "x"
+// so that prefix stays collision-free between runs whose ids share a prefix.
+func newBundleNamePrefix() string {
+	runID := os.Getenv("GITHUB_RUN_ID")
 	if !ciRunID.MatchString(runID) {
-		return random
+		runID = strconv.Itoa(rand.IntN(1_000_000_000))
 	}
-	prefix := "ci" + runID + "x"
-	randLen := len(random) - len(prefix)
-	if randLen < 8 {
-		return random
+	const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+	suffix := make([]byte, bundleLegSuffixLen)
+	for i := range suffix {
+		suffix[i] = alphabet[rand.IntN(len(alphabet))]
 	}
-	return prefix + random[:randLen]
+	return "ci" + runID + "x" + string(suffix)
+}
+
+// ciUniqueName prepends prefix to the random unique name, preserving its length
+// (e.g. "app-$UNIQUE_NAME" is exactly the 30-char app name maximum) and its
+// lowercase-alphanumeric shape so it stays valid everywhere $UNIQUE_NAME is used
+// (app names, Python and Unity Catalog identifiers). Returns random unchanged
+// when prefix is empty or too long to leave at least 8 random characters.
+func ciUniqueName(prefix, random string) string {
+	// newBundleNamePrefix keeps the prefix short enough to leave at least this
+	// many random characters (empty prefix trivially fits); a longer one is a bug.
+	const minRandom = 8
+	cut := len(random) - len(prefix)
+	if cut < minRandom {
+		panic(fmt.Sprintf("bundle name prefix %q leaves only %d of %d random chars, need %d", prefix, cut, len(random), minRandom))
+	}
+	return prefix + random[:cut]
 }
 
 func runTest(t *testing.T,
@@ -778,8 +822,8 @@ func runTest(t *testing.T,
 
 	id := uuid.New()
 	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
-	// Embed the CI run id, when present, so leaked resources can be attributed to a run and swept by prefix.
-	uniqueName = ciUniqueName(os.Getenv("GITHUB_RUN_ID"), uniqueName)
+	// Embed the run prefix, when present, so leaked resources can be attributed to this leg and swept.
+	uniqueName = ciUniqueName(bundleNamePrefix, uniqueName)
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string

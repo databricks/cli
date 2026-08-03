@@ -1625,6 +1625,9 @@ resources:
         "existing_pipeline_id":
           "description": |-
             PLACEHOLDER
+        "extra_columns":
+          "description": |-
+            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

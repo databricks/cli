@@ -342,19 +342,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me",
-  "q": {
-    "excludedAttributes": "entitlements"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 auth/pat"
+      "databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
     ]
   },
   "method": "GET",

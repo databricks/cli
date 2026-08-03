@@ -15,13 +15,27 @@
     "database_id": "my-database",
     "name": "[MY_DATABASE_ID]",
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-    "postgres_database": "initial_db_name",
-    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
+    "role": "",
     "status": {
       "database_id": "my-database",
       "postgres_database": "initial_db_name",
       "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
     },
     "update_time": "[TIMESTAMP]"
+  },
+  "changes": {
+    "postgres_database": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "initial_db_name",
+      "new": "initial_db_name"
+    },
+    "role": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
+      "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
+      "remote": ""
+    }
   }
 }

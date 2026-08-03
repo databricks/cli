@@ -73,6 +73,7 @@ func newCreateWorkspaceAssignmentDetail() *cobra.Command {
 
 	cmd.Flags().Var(&createWorkspaceAssignmentDetailJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "create-workspace-assignment-detail WORKSPACE_ID PRINCIPAL_ID"
@@ -738,6 +739,7 @@ func newUpdateWorkspaceAssignmentDetail() *cobra.Command {
 
 	cmd.Flags().Var(&updateWorkspaceAssignmentDetailJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "update-workspace-assignment-detail WORKSPACE_ID PRINCIPAL_ID UPDATE_MASK PRINCIPAL_ID"

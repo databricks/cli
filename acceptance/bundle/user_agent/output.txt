@@ -41,8 +41,7 @@ OK  	deploy.terraform	/api/2.0/workspace/delete	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/mkdirs	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/mkdirs	engine/terraform
 MISS	deploy.terraform	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	deploy.terraform	/api/2.0/preview/scim/v2/Me	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 auth/pat'
-MISS	deploy.terraform	/api/2.0/preview/scim/v2/Me	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 auth/pat'
+MISS	deploy.terraform	/api/2.0/preview/scim/v2/Me	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	deploy.terraform	/api/2.1/unity-catalog/schemas/mycatalog.myschema	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	deploy.terraform	/api/2.1/unity-catalog/schemas	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	deploy.terraform	/.well-known/databricks-config	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5'
@@ -94,7 +93,6 @@ MISS	plan.terraform	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-
 MISS	plan.terraform	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
 OK  	plan.terraform	/api/2.0/workspace/get-status	engine/terraform
 MISS	plan.terraform	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	plan.terraform	/api/2.0/preview/scim/v2/Me	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 auth/pat'
 MISS	plan.terraform	/.well-known/databricks-config	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5'
 MISS	plan.terraform	/.well-known/databricks-config	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5'
 MISS	plan2.direct	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'

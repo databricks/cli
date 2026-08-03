@@ -1,1 +1,0 @@
-`bundle destroy --force-lock` now proceeds without a deployment lock when the workspace directory is at its child-node limit and cannot accept the lock file, so a deployment can still be torn down when the workspace is full.
