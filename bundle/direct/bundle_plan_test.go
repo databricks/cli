@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -283,4 +286,54 @@ func TestShouldSkipBackendDefault_MapDriftUsesBracketKeys(t *testing.T) {
 	})
 	assert.True(t, ok)
 	assert.Equal(t, deployplan.ReasonBackendDefault, reason)
+}
+
+const jobRunKey = "resources.job_runs.my_run"
+
+// planWithSkippedJobRun builds the state a deploy is in when a run recorded by an
+// earlier deploy needs no change: the plan skips it, so references to it are served
+// from the remote state cache.
+func planWithSkippedJobRun(t *testing.T, state *jobs.RunState) *DeploymentBundle {
+	t.Helper()
+
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	plan := deployplan.NewPlanDirect()
+	plan.Plan[jobRunKey] = &deployplan.PlanEntry{
+		Action:   deployplan.Skip,
+		NewState: &structvar.StructVarJSON{},
+	}
+
+	b := &DeploymentBundle{Adapters: adapters, Plan: plan}
+	b.StateCache.Store(jobRunKey, structvar.NewStructVar(&resources.JobRun{}, nil))
+	b.RemoteStateCache.Store(jobRunKey, &dresources.JobRunRemote{
+		RunId: 123,
+		State: state,
+	})
+	return b
+}
+
+// A run that has not finished reports an empty result_state, which would otherwise
+// be substituted into whatever references it.
+func TestLookupReferencePreDeploy_UnfinishedJobRun(t *testing.T) {
+	b := planWithSkippedJobRun(t, &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateRunning,
+	})
+
+	_, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(jobRunKey+".state.result_state"))
+
+	require.ErrorContains(t, err, "run 123 has not finished (RUNNING)")
+}
+
+func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {
+	b := planWithSkippedJobRun(t, &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateTerminated,
+		ResultState:    jobs.RunResultStateSuccess,
+	})
+
+	value, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(jobRunKey+".state.result_state"))
+
+	require.NoError(t, err)
+	assert.Equal(t, jobs.RunResultStateSuccess, value)
 }
