@@ -18,7 +18,7 @@ type Snapshot struct {
 	ZipContent string              `json:"zip_content"`
 	RemoteRoot string              `json:"remote_root"`
 
-	Lifecycle Lifecycle `json:"-,omitempty"`
+	Lifecycle Lifecycle `json:"-"`
 }
 
 func (s *Snapshot) RelativePath() string {
@@ -29,7 +29,7 @@ func (s *Snapshot) FullPath() string {
 	return path.Join(s.RemoteRoot, s.RelativePath())
 }
 
-func (s Snapshot) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
+func (s *Snapshot) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Workspace.GetStatusByPath(ctx, s.FullPath())
 	if err != nil {
 		return false, err
@@ -37,7 +37,7 @@ func (s Snapshot) Exists(ctx context.Context, w *databricks.WorkspaceClient, nam
 	return true, nil
 }
 
-func (s Snapshot) ResourceDescription() ResourceDescription {
+func (s *Snapshot) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "snapshot",
 		PluralName:    "snapshots",
@@ -46,19 +46,19 @@ func (s Snapshot) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (s Snapshot) GetName() string {
+func (s *Snapshot) GetName() string {
 	return s.RelativePath()
 }
 
-func (s Snapshot) GetURL() string {
+func (s *Snapshot) GetURL() string {
 	// Skipping URL initialization for snapshots
 	return ""
 }
 
-func (s Snapshot) InitializeURL(_ url.URL) {
+func (s *Snapshot) InitializeURL(_ url.URL) {
 	// Secret scopes do not have a URL
 }
 
-func (s Snapshot) GetLifecycle() LifecycleConfig {
+func (s *Snapshot) GetLifecycle() LifecycleConfig {
 	return s.Lifecycle
 }
