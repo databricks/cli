@@ -22,11 +22,13 @@ type FieldChange struct {
 	FilePath        string
 	Change          *ConfigChangeDesc
 	FieldCandidates []string
-	// mergedPath addresses the field in a merged configuration, i.e. without the
-	// targets.<target> prefix that a write to an override block needs. Selecting a
-	// target folds the override into resources and drops the targets subtree, so a
-	// prefixed path does not resolve there.
-	mergedPath string
+	// preResolvedPath addresses the field in the pre-resolved configuration, the one
+	// read to recover a ${var.X} reference that deployment replaced with its value.
+	// That configuration is loaded with the target selected, which folds the override
+	// into resources and drops the targets subtree, so this path carries no
+	// targets.<target> prefix -- unlike FieldCandidates, which addresses the raw file
+	// where the override still lives under that prefix.
+	preResolvedPath string
 }
 
 // sequenceStep records a sequence element that a change path navigated through.
@@ -338,12 +340,12 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					destChange.Operation = OperationReplace
 					destChange.Value = rename.newKey
 					resolvedPath = structpath.NewPatternStringKey(resolvedPath, rename.keyField)
-					mergedPath := resolvedPath.String()
+					preResolvedPath := resolvedPath.String()
 					result = append(result, FieldChange{
 						FilePath:        block.file,
 						Change:          destChange,
 						FieldCandidates: []string{blocks.candidatePath(block, resolvedPath)},
-						mergedPath:      mergedPath,
+						preResolvedPath: preResolvedPath,
 					})
 					continue
 				}
@@ -442,7 +444,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					FilePath:        filePath,
 					Change:          destChange,
 					FieldCandidates: candidates,
-					mergedPath:      resolvedPathStr,
+					preResolvedPath: resolvedPathStr,
 				})
 			}
 		}
