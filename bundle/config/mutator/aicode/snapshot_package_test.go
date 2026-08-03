@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/fileset"
@@ -72,6 +73,12 @@ func tarModes(t *testing.T, b []byte) map[string]int64 {
 // An executable file keeps the execute bit (0o755) so a bundled helper the user
 // invokes still runs; a non-executable file is normalized to 0o644.
 func TestBuildCodeSnapshotPreservesExecuteBit(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// Windows file modes don't carry a Unix execute bit, so there's nothing to
+		// preserve; files simply archive as 0o644. The bit only matters on the
+		// Unix hosts that run the deployed workload.
+		t.Skip("execute bit is a Unix concept; not represented on Windows")
+	}
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "run.sh"), []byte("#!/bin/sh\n"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "train.py"), []byte("x"), 0o644))
