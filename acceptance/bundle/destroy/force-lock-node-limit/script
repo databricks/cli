@@ -7,9 +7,9 @@ title "Deploy (creates the job and the deployment)"
 trace $CLI bundle deploy
 
 title "destroy without --force-lock (lock write hits the node limit: aborts)"
-fault.py "POST /api/2.0/workspace-files/import-file/*" 403 0 1 MAX_CHILD_NODE_SIZE_EXCEEDED
+fault.py --body-contains "state/deploy.lock" "POST /api/2.0/workspace/import" 403 0 1 MAX_CHILD_NODE_SIZE_EXCEEDED
 trace errcode $CLI bundle destroy --auto-approve
 
 title "destroy with --force-lock (tolerates the node limit: proceeds and completes)"
-fault.py "POST /api/2.0/workspace-files/import-file/*" 403 0 1 MAX_CHILD_NODE_SIZE_EXCEEDED
+fault.py --body-contains "state/deploy.lock" "POST /api/2.0/workspace/import" 403 0 1 MAX_CHILD_NODE_SIZE_EXCEEDED
 trace $CLI bundle destroy --force-lock --auto-approve

@@ -4,6 +4,6 @@ title "Expecting code_source_path rewritten to the uploaded artifact remote path
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[].ai_runtime_task' out.requests.txt
 
 title "Expecting the code_source tarball to be uploaded"
-trace jq .path < out.requests.txt | grep import | grep code.tgz | sort
+trace jq -r '.body.multipart_form.path | strings' < out.requests.txt | grep code.tgz | sort
 
 rm out.requests.txt

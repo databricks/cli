@@ -19,4 +19,4 @@ Updated pipelines.foo
 Files: 10 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py ^//import-file/ ^//workspace/delete ^//telemetry-ext
+>>> print_requests.py ^//workspace/import ^//workspace/delete ^//telemetry-ext

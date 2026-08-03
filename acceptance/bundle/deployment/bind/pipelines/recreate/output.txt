@@ -1,5 +1,5 @@
 
->>> print_requests.py ^//import-file/ ^//workspace/
+>>> print_requests.py ^//workspace/
 
 >>> [CLI] bundle summary -o json
 
@@ -34,4 +34,4 @@ Recreated pipelines.foo
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
->>> print_requests.py ^//import-file/ ^//workspace/ ^//telemetry-ext
+>>> print_requests.py ^//workspace/ ^//telemetry-ext

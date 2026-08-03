@@ -19,7 +19,7 @@ Created apps.myapp
 Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> jq select(.path | test("app.yml")) out.requests.txt
+>>> jq select(.body.multipart_form.path | strings | test("app.yml")) out.requests.txt
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
