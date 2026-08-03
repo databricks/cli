@@ -1,8 +1,6 @@
 package aircmd
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,10 +53,11 @@ environment:
     - torch
 `
 	path := writeConfigFile(t, "run.yaml", cfg)
+	require.NoError(t, os.MkdirAll(filepath.Join(filepath.Dir(path), "src"), 0o700))
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	root, artifacts, err := convertToDabs(t.Context(), loaded, path)
+	root, artifacts, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.NoError(t, err)
 
 	name := loaded.ExperimentName
@@ -78,9 +77,9 @@ environment:
 	art := task + ".ai_runtime_task"
 	assert.Equal(t, name, get(t, root, art+".experiment").MustString())
 	assert.Equal(t, "run-42", get(t, root, art+".mlflow_run").MustString())
-	// code_source_path is a local directory (packaged by the deploy-time aicode
-	// mutator), not a pre-built tarball.
-	assert.Equal(t, "./"+codeSourceDirName, get(t, root, art+".code_source_path").MustString())
+	// code_source_path is the source dir relative to the bundle; the deploy-time
+	// aicode mutator packages it in place.
+	assert.Equal(t, "./src", get(t, root, art+".code_source_path").MustString())
 
 	dep := art + ".deployments[0]"
 	assert.Equal(t, "./"+commandScriptName, get(t, root, dep+".command_path").MustString())
@@ -108,7 +107,7 @@ func TestConvertToDabsOmitsUnsetFields(t *testing.T) {
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	root, _, err := convertToDabs(t.Context(), loaded, path)
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.NoError(t, err)
 
 	name := loaded.ExperimentName
@@ -135,7 +134,7 @@ func TestConvertToDabsRuntimeVersionEnvOverride(t *testing.T) {
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	root, _, err := convertToDabs(t.Context(), loaded, path)
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.NoError(t, err)
 
 	env := "resources.jobs." + loaded.ExperimentName + ".environments[0]"
@@ -155,7 +154,7 @@ code_source:
 	path := writeConfigFile(t, "run.yaml", cfg)
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
-	_, _, err = convertToDabs(t.Context(), loaded, path)
+	_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.ErrorContains(t, err, "remote_volume is not supported")
 }
 
@@ -174,7 +173,7 @@ parameters:
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	root, artifacts, err := convertToDabs(t.Context(), loaded, path)
+	root, artifacts, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.NoError(t, err)
 
 	names := itemNames(artifacts)
@@ -189,28 +188,66 @@ parameters:
 	assert.False(t, has(root, art+".secrets"))
 }
 
-// A working-tree (non-git-pinned) code_source is staged into the bundle's
-// code_source/ directory, honoring .gitignore just like the run path's plain-tar.
-func TestConvertToDabsWorkingTreeMaterialized(t *testing.T) {
-	repo := t.TempDir()
-	writeRepoFile(t, repo, "train.py", "print('x')")
-	writeRepoFile(t, repo, "notes.log", "scratch")
-	writeRepoFile(t, repo, ".gitignore", "*.log\n")
+// code_source_path is emitted as the source dir relative to the bundle and no code
+// is copied — the deploy-time mutator packages it in place. writeBundle produces
+// only databricks.yml + launch artifacts, not a code_source copy.
+func TestConvertToDabsDoesNotCopyCode(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "train.py"), []byte("print()\n"), 0o600))
 
-	cfg := "experiment_name: wt\ncommand: python train.py\n" +
+	cfg := "experiment_name: wt\ncommand: cd \"$CODE_SOURCE_PATH\" && python train.py\n" +
 		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
-		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: " + repo + "\n"
+		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: ./src\n"
+	path := filepath.Join(dir, "run.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	written, err := writeBundle(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+
+	// code_source_path points at the existing source dir; nothing is copied.
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+	art := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
+	assert.Equal(t, "./src", get(t, root, art+".code_source_path").MustString())
+	assert.NotContains(t, written, "code_source/")
+}
+
+// A code_source root_path outside the bundle directory is rejected: the mutator only
+// packages a directory inside the bundle sync root.
+func TestConvertToDabsRejectsCodeOutsideBundle(t *testing.T) {
+	outside := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(outside, "src"), 0o700))
+
+	cfg := "experiment_name: outside\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
+		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: " + filepath.Join(outside, "src") + "\n"
 	path := writeConfigFile(t, "run.yaml", cfg)
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	outDir := t.TempDir()
-	_, err = writeBundle(t.Context(), loaded, path, outDir)
+	// Bundle dir is the config's temp dir; the source is in a different tree.
+	_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.ErrorContains(t, err, "not inside the bundle")
+}
+
+// A git-pinned code_source is rejected: convert no longer materializes a commit;
+// the deploy-time mutator packages the working tree in place.
+func TestConvertToDabsRejectsGitPin(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
+	cfg := "experiment_name: git-pin\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
+		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: ./src\n    git:\n      commit: abc123\n"
+	path := filepath.Join(dir, "run.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	codeDir := filepath.Join(outDir, codeSourceDirName)
-	assert.FileExists(t, filepath.Join(codeDir, "train.py"))
-	assert.NoFileExists(t, filepath.Join(codeDir, "notes.log"), "gitignored files must be excluded from the staged code_source")
+	_, _, err = convertToDabs(t.Context(), loaded, path, dir)
+	require.ErrorContains(t, err, "git is not supported")
 }
 
 // A requirements-FILE dependency set (environment.dependencies is a path) is folded
@@ -228,7 +265,7 @@ func TestConvertToDabsFoldsRequirementsFileIntoEnvSpec(t *testing.T) {
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	root, artifacts, err := convertToDabs(t.Context(), loaded, path)
+	root, artifacts, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.NoError(t, err)
 
 	env := "resources.jobs." + loaded.ExperimentName + ".environments[0]"
@@ -253,7 +290,6 @@ code_source:
   type: snapshot
   snapshot:
     root_path: ./src
-    git: {commit: abc123}
 `
 	path := writeConfigFile(t, "run.yaml", cfg)
 	loaded, err := loadRunConfig(path)
@@ -261,8 +297,7 @@ code_source:
 
 	notes := conversionNotes(loaded)
 	joined := strings.Join(notes, "\n")
-	assert.Contains(t, joined, "code_source.git")      // git pin flagged
-	assert.Contains(t, joined, "code_source/")         // staged-directory behavior
+	assert.Contains(t, joined, "code_source")          // source-dir behavior
 	assert.Contains(t, joined, "env_vars.json")        // env vars staged
 	assert.Contains(t, joined, "secret_env_vars.json") // secrets staged
 	assert.Contains(t, joined, "hyperparameters.yaml") // parameters staged
@@ -282,7 +317,7 @@ func TestConvertToDabsMapsUsagePolicyID(t *testing.T) {
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	root, _, err := convertToDabs(t.Context(), loaded, path)
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.NoError(t, err)
 	assert.Equal(t, "budget-abc-123", get(t, root, "resources.jobs."+loaded.ExperimentName+".budget_policy_id").MustString())
 }
@@ -299,7 +334,7 @@ permissions:
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	root, _, err := convertToDabs(t.Context(), loaded, path)
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.NoError(t, err)
 
 	perms := get(t, root, "resources.jobs."+loaded.ExperimentName+".permissions").MustSequence()
@@ -307,119 +342,6 @@ permissions:
 	assert.Equal(t, "CAN_MANAGE", perms[0].Get("level").MustString())
 	assert.Equal(t, "alice@example.com", perms[0].Get("user_name").MustString())
 	assert.Equal(t, "eng", perms[1].Get("group_name").MustString())
-}
-
-// A git-pinned code_source is materialized from the commit, not the dirty working
-// tree: writeBundle stages a code_source/ directory holding the committed file only.
-func TestConvertToDabsGitPinnedMaterialized(t *testing.T) {
-	repo := newTestRepo(t)
-	writeRepoFile(t, repo, "train.py", "print('committed')")
-	sha := commitAll(t, repo, "init")
-	// Dirty the tree AFTER the commit; the pinned snapshot must not include this.
-	writeRepoFile(t, repo, "uncommitted.py", "print('dirty')")
-
-	cfg := "experiment_name: git-pin\ncommand: python train.py\n" +
-		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
-		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: " + repo + "\n    git:\n      commit: " + sha + "\n"
-	path := writeConfigFile(t, "run.yaml", cfg)
-	loaded, err := loadRunConfig(path)
-	require.NoError(t, err)
-
-	outDir := t.TempDir()
-	_, err = writeBundle(t.Context(), loaded, path, outDir)
-	require.NoError(t, err)
-
-	codeDir := filepath.Join(outDir, codeSourceDirName)
-	assert.FileExists(t, filepath.Join(codeDir, "train.py"))
-	assert.NoFileExists(t, filepath.Join(codeDir, "uncommitted.py"), "git-pinned snapshot must exclude uncommitted files")
-}
-
-// git archive runs with `git -C repoPath`, so the staging tarball path must be
-// absolute — otherwise `-o out/...` resolves against the repo dir and fails. Exercise
-// writeBundle from a working dir with a RELATIVE output path against a git-pinned source.
-func TestConvertToDabsGitPinnedRelativeOutputDir(t *testing.T) {
-	repo := newTestRepo(t)
-	writeRepoFile(t, repo, "train.py", "print('x')")
-	sha := commitAll(t, repo, "init")
-
-	cfg := "experiment_name: rel-out\ncommand: python train.py\n" +
-		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
-		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: " + repo + "\n    git:\n      commit: " + sha + "\n"
-	path := writeConfigFile(t, "run.yaml", cfg)
-	loaded, err := loadRunConfig(path)
-	require.NoError(t, err)
-
-	// chdir into a scratch dir and pass a relative --output-dir.
-	work := t.TempDir()
-	t.Chdir(work)
-	_, err = writeBundle(t.Context(), loaded, path, "out")
-	require.NoError(t, err)
-
-	assert.FileExists(t, filepath.Join(work, "out", codeSourceDirName, "train.py"))
-}
-
-// writeTarball writes a gzipped tar of the given entries to path. Each entry is
-// either a regular file (typeflag defaults to file) or, when linkname != "", a
-// symlink. Used to exercise extractTarball directly.
-func writeTarball(t *testing.T, path string, entries []tar.Header) {
-	t.Helper()
-	f, err := os.Create(path)
-	require.NoError(t, err)
-	gz := gzip.NewWriter(f)
-	tw := tar.NewWriter(gz)
-	for _, h := range entries {
-		require.NoError(t, tw.WriteHeader(&h))
-		if h.Typeflag == tar.TypeReg {
-			_, err := tw.Write([]byte("data-" + h.Name))
-			require.NoError(t, err)
-		}
-	}
-	require.NoError(t, tw.Close())
-	require.NoError(t, gz.Close())
-	require.NoError(t, f.Close())
-}
-
-// extractTarball unpacks a well-formed archive (files, nested dirs, in-tree
-// symlink) into destDir.
-func TestExtractTarballHappyPath(t *testing.T) {
-	src := filepath.Join(t.TempDir(), "a.tar.gz")
-	writeTarball(t, src, []tar.Header{
-		{Name: "code/", Typeflag: tar.TypeDir, Mode: 0o755},
-		{Name: "code/train.py", Typeflag: tar.TypeReg, Mode: 0o644, Size: int64(len("data-code/train.py"))},
-		{Name: "code/pkg/", Typeflag: tar.TypeDir, Mode: 0o755},
-		{Name: "code/pkg/util.py", Typeflag: tar.TypeReg, Mode: 0o644, Size: int64(len("data-code/pkg/util.py"))},
-		{Name: "code/link.py", Typeflag: tar.TypeSymlink, Linkname: "train.py"},
-	})
-
-	dest := t.TempDir()
-	require.NoError(t, extractTarball(src, dest))
-	assert.FileExists(t, filepath.Join(dest, "code", "train.py"))
-	assert.FileExists(t, filepath.Join(dest, "code", "pkg", "util.py"))
-	if info, err := os.Lstat(filepath.Join(dest, "code", "link.py")); assert.NoError(t, err) {
-		assert.NotZero(t, info.Mode()&os.ModeSymlink, "link.py should be a symlink")
-	}
-}
-
-// A path-traversal entry or an escaping symlink is rejected rather than written
-// outside destDir.
-func TestExtractTarballRejectsEscape(t *testing.T) {
-	t.Run("traversal path", func(t *testing.T) {
-		src := filepath.Join(t.TempDir(), "evil.tar.gz")
-		writeTarball(t, src, []tar.Header{
-			{Name: "../escape.py", Typeflag: tar.TypeReg, Mode: 0o644, Size: int64(len("data-../escape.py"))},
-		})
-		err := extractTarball(src, t.TempDir())
-		require.ErrorContains(t, err, "escapes the destination directory")
-	})
-
-	t.Run("escaping symlink", func(t *testing.T) {
-		src := filepath.Join(t.TempDir(), "evil-link.tar.gz")
-		writeTarball(t, src, []tar.Header{
-			{Name: "link", Typeflag: tar.TypeSymlink, Linkname: "../../etc/passwd"},
-		})
-		err := extractTarball(src, t.TempDir())
-		require.ErrorContains(t, err, "escapes the destination directory")
-	})
 }
 
 // A numeric or reserved-word experiment_name would be an unquoted YAML map key
@@ -445,7 +367,7 @@ func TestConvertToDabsSafeJobKey(t *testing.T) {
 	path := writeConfigFile(t, "run.yaml", cfg)
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
-	root, _, err := convertToDabs(t.Context(), loaded, path)
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.NoError(t, err)
 	assert.Equal(t, "12345", get(t, root, "resources.jobs.job_12345.name").MustString())
 	assert.Equal(t, "12345", get(t, root, "resources.jobs.job_12345.tasks[0].ai_runtime_task.experiment").MustString())
@@ -461,7 +383,7 @@ environment:
 		path := writeConfigFile(t, "run.yaml", cfg)
 		loaded, err := loadRunConfig(path)
 		require.NoError(t, err)
-		_, _, err = convertToDabs(t.Context(), loaded, path)
+		_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 		require.ErrorContains(t, err, "docker_image is not yet supported")
 	})
 
@@ -470,7 +392,7 @@ environment:
 		path := writeConfigFile(t, "run.yaml", cfg)
 		loaded, err := loadRunConfig(path)
 		require.NoError(t, err)
-		_, _, err = convertToDabs(t.Context(), loaded, path)
+		_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 		require.ErrorContains(t, err, "usage_policy_name is not yet supported")
 	})
 }

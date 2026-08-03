@@ -1,20 +1,14 @@
-title "convert an AIR run YAML into a DABs bundle"
-trace $CLI experimental air convert-to-dabs train.yaml --output-dir generated
+title "convert an AIR run YAML into a DABs bundle (in place, next to the source)"
+trace $CLI experimental air convert-to-dabs train.yaml
 
-title "emitted databricks.yml"
-trace cat generated/databricks.yml
+title "emitted databricks.yml (code_source_path points at ./src; no code is copied)"
+trace cat databricks.yml
 
 title "the generated command.sh carries the run command"
-trace cat generated/command.sh
-
-title "the code source is staged as a directory (packaged at deploy time)"
-trace ls generated && true
-trace ls generated/code_source && true
+trace cat command.sh
 
 title "the emitted bundle validates"
-cd generated
 trace $CLI bundle validate
-cd ..
 
 title "docker_image is not supported yet"
 errcode trace $CLI experimental air convert-to-dabs docker.yaml --output-dir generated-docker

@@ -1,17 +1,16 @@
 
-=== convert an AIR run YAML into a DABs bundle
->>> [CLI] experimental air convert-to-dabs train.yaml --output-dir generated
-Wrote a Databricks Asset Bundle to generated:
+=== convert an AIR run YAML into a DABs bundle (in place, next to the source)
+>>> [CLI] experimental air convert-to-dabs train.yaml
+Wrote a Databricks Asset Bundle to .:
   databricks.yml
   training_config.yaml
   command.sh
-  code_source/
 
 Notes:
-  - code_source was staged into the code_source/ directory; bundle deploy packages and uploads it. Re-run convert-to-dabs to re-stage after code changes.
+  - code_source points at your source directory; bundle deploy packages and uploads it from there.
 
 To deploy and run this workload as a bundle:
-  1. cd generated
+  1. cd .
   2. databricks bundle validate
   3. databricks bundle deploy
   4. databricks bundle run torchrun-a10-smoke-test
@@ -23,8 +22,8 @@ persistent job that is not garbage-collected. When you are done, remove the
 job and its uploaded files with:
   databricks bundle destroy
 
-=== emitted databricks.yml
->>> cat generated/databricks.yml
+=== emitted databricks.yml (code_source_path points at ./src; no code is copied)
+>>> cat databricks.yml
 bundle:
   name: torchrun-a10-smoke-test
 targets:
@@ -45,7 +44,7 @@ resources:
                 compute:
                   accelerator_type: GPU_1xA10
                   accelerator_count: 1
-            code_source_path: ./code_source
+            code_source_path: ./src
       environments:
         - environment_key: default
           spec:
@@ -54,18 +53,8 @@ resources:
               - numpy
 
 === the generated command.sh carries the run command
->>> cat generated/command.sh
+>>> cat command.sh
 torchrun --nproc_per_node=1 train.py
-=== the code source is staged as a directory (packaged at deploy time)
->>> ls generated
-code_source
-command.sh
-databricks.yml
-training_config.yaml
-
->>> ls generated/code_source
-train.py
-
 === the emitted bundle validates
 >>> [CLI] bundle validate
 Name: torchrun-a10-smoke-test

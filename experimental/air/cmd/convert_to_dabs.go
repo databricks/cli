@@ -1,12 +1,9 @@
 package aircmd
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -24,29 +21,19 @@ import (
 // convert_to_dabs turns an AIR CLI run YAML into a Databricks Asset Bundle so a
 // workload authored for `air run` can be deployed and managed as a bundle.
 //
-// The emitted bundle is schema-valid: `databricks bundle validate` accepts it,
-// and `databricks bundle deploy` reproduces the same ai_runtime_task workload the
-// CLI would submit. Two properties make that work without any manual upload step:
+// It is a purely local, syntactic translation: it maps the run config onto a
+// schema-valid ai_runtime_task (the SDK jobs.AiRuntimeTask — experiment +
+// deployments[].{command_path,compute} + code_source_path, with framework fields
+// like retries/timeout on the surrounding task) and writes command.sh plus the
+// env_vars.json / secret_env_vars.json / hyperparameters.yaml sidecars at the
+// bundle root. It does NOT package, snapshot, or upload anything.
 //
-//   - The DABs `ai_runtime_task` is the SDK jobs.AiRuntimeTask (strict schema:
-//     experiment + deployments[].{command_path,compute} + code_source_path).
-//     Framework concerns (retries, timeout) live on the surrounding task, not in
-//     ai_runtime_task — so they are emitted as task-level fields.
-//   - code_source_path points at a *local directory* inside the bundle. The
-//     deploy-time aicode.PackageAndUpload mutator (bundle/config/mutator/aicode)
-//     owns the snapshotting: at `bundle deploy` it packages that directory into a
-//     content-addressed tarball, uploads it, and rewrites code_source_path to the
-//     remote archive. convert-to-dabs' job is only to *stage the source bytes* as
-//     that directory — copying the working tree, or materializing a pinned git
-//     commit into it — never to build the tarball itself.
-//
-// command.sh (and — since the task proto carries no inline env/secrets/parameters —
-// the env_vars.json / secret_env_vars.json / hyperparameters.yaml sidecars the
-// server-side launcher reads) are written at the bundle root and uploaded by
-// deploy, mirroring the CLI's own launch layout. requirements.yaml is NOT emitted:
-// the aicode.SynthesizeRequirements mutator derives it from the job's
-// environments[] spec at deploy time, so convert folds the dependency set into that
-// spec instead.
+// code_source_path is emitted as the source directory relative to the bundle (the
+// bundle root defaults to the YAML's directory, which contains it). At deploy the
+// aicode mutator (bundle/config/mutator/aicode) packages that directory and uploads
+// it — so convert never touches the code. Dependencies are folded into the job's
+// environments[] spec, which the runtime installs from directly; no requirements.yaml
+// is emitted.
 
 // dabsTargetName is the single default target emitted; a development-mode target
 // is the conventional starting point for a generated bundle.
@@ -82,13 +69,14 @@ does not contact the workspace.`,
 			return err
 		}
 
-		// Default the bundle next to the input YAML (a <experiment>-bundle subfolder
-		// so the generated files don't scatter across the user's project dir). An
-		// explicit --output-dir — absolute or relative — overrides. We never write to
-		// a temp dir: the bundle is the user's artifact to keep, deploy, and manage.
+		// Default the bundle to the input YAML's directory. The bundle's sync root
+		// must contain the code_source so `code_source_path` resolves within it (the
+		// deploy-time aicode mutator packages the source in place), and root_path is
+		// resolved relative to the YAML, so the YAML's dir is the natural bundle root.
+		// An explicit --output-dir overrides.
 		dir := outputDir
 		if dir == "" {
-			dir = filepath.Join(filepath.Dir(yamlPath), cfg.ExperimentName+"-bundle")
+			dir = filepath.Dir(yamlPath)
 		}
 
 		written, err := writeBundle(ctx, cfg, yamlPath, dir)
@@ -103,20 +91,13 @@ does not contact the workspace.`,
 	return cmd
 }
 
-// codeSourceDirName is the bundle-local directory the code_source is staged into.
-// ai_runtime_task.code_source_path points at it; the deploy-time aicode mutator
-// packages the directory into a tarball and uploads it (see the file header). A
-// fixed name (rather than the source's basename) keeps the emitted databricks.yml
-// deterministic regardless of where the user's code lives.
-const codeSourceDirName = "code_source"
-
 // convertToDabs builds the DABs bundle value and the loose launch artifacts for a
 // run config. It reads only what the run path's buildArtifacts reads, so the
 // mapping is unit-testable in isolation. Returns the bundle root as a
 // map[string]dyn.Value (ready for yamlsaver) and the loose artifacts (command.sh +
-// env/secret/param sidecars) to write at the bundle root; the code_source directory
-// is materialized separately by writeBundle.
-func convertToDabs(ctx context.Context, cfg *runConfig, configPath string) (map[string]dyn.Value, []uploadItem, error) {
+// env/secret/param sidecars) to write at the bundle root. It does not touch the
+// code_source; the deploy-time aicode mutator packages it in place.
+func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir string) (map[string]dyn.Value, []uploadItem, error) {
 	// idempotency_token is intentionally not mapped: it dedups a single runs/submit
 	// call, which has no analogue for a persistent, repeatedly-runnable bundle job.
 	//
@@ -128,26 +109,68 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath string) (map[
 	if cfg.Environment != nil && cfg.Environment.DockerImage != nil {
 		return nil, nil, errors.New("environment.docker_image is not yet supported by convert-to-dabs")
 	}
-	// remote_volume points the code archive at a UC Volume. bundle deploy uploads
-	// code_source_path to the bundle's artifact path, not an arbitrary Volume, so a
-	// converted bundle can't honor it — reject rather than silently drop it.
-	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil && cfg.CodeSource.Snapshot.RemoteVolume != nil {
-		return nil, nil, errors.New("code_source.snapshot.remote_volume is not supported by convert-to-dabs; bundle deploy manages the artifact upload location")
+	if snap := codeSnapshot(cfg); snap != nil {
+		// remote_volume points the code archive at a UC Volume; bundle deploy uploads
+		// code_source to the bundle artifact path, not an arbitrary Volume.
+		if snap.RemoteVolume != nil {
+			return nil, nil, errors.New("code_source.snapshot.remote_volume is not supported by convert-to-dabs")
+		}
+		// git pinning would require materializing the pinned commit, which convert no
+		// longer does — the deploy-time mutator packages the working tree in place.
+		if snap.Git != nil {
+			return nil, nil, errors.New("code_source.snapshot.git is not supported by convert-to-dabs; deploy packages the working tree")
+		}
+	}
+
+	codeSourcePath, err := bundleCodeSourcePath(ctx, cfg, configPath, bundleDir)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	artifacts, err := buildArtifacts(cfg, configPath)
 	if err != nil {
 		return nil, nil, err
 	}
-	// Drop requirements.yaml: the deploy-time aicode.SynthesizeRequirements mutator
-	// regenerates it from the job's environments[] spec (which convert populates with
-	// the same dependency set), so emitting it here would be redundant and could drift.
+	// Drop requirements.yaml: the runtime installs pip deps from the job's
+	// environments[] spec (which convert populates), so a sidecar would be redundant.
 	artifacts = slices.DeleteFunc(artifacts, func(it uploadItem) bool {
 		return it.name == requirementsName
 	})
 
-	root := buildBundleValue(ctx, cfg, configPath)
+	root := buildBundleValue(ctx, cfg, configPath, codeSourcePath)
 	return root, artifacts, nil
+}
+
+// codeSnapshot returns the snapshot code source config, or nil if none.
+func codeSnapshot(cfg *runConfig) *snapshotSourceConfig {
+	if cfg.CodeSource == nil {
+		return nil
+	}
+	return cfg.CodeSource.Snapshot
+}
+
+// bundleCodeSourcePath resolves the code_source directory to a "./"-prefixed path
+// relative to the bundle dir, for emission as ai_runtime_task.code_source_path.
+// Returns "" when the config has no code_source. The path must be inside the bundle
+// (the deploy-time mutator packages it in place and only handles in-bundle dirs).
+func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundleDir string) (string, error) {
+	snap := codeSnapshot(cfg)
+	if snap == nil {
+		return "", nil
+	}
+	root, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
+	if err != nil {
+		return "", err
+	}
+	bundleAbs, err := filepath.Abs(bundleDir)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(bundleAbs, root)
+	if err != nil || !filepath.IsLocal(rel) {
+		return "", fmt.Errorf("code_source root_path %q is not inside the bundle directory %q; run convert-to-dabs with --output-dir set to an ancestor of the code", snap.RootPath, bundleDir)
+	}
+	return localBundlePath(filepath.ToSlash(rel)), nil
 }
 
 // nv builds a dyn.Value at "position" n: yamlsaver orders a map's keys by their
@@ -167,18 +190,17 @@ func localBundlePath(p string) string {
 }
 
 // buildBundleValue assembles the bundle root as an ordered map[string]dyn.Value.
-// command.sh and the code_source directory are bundle-local (emitted "./"-prefixed)
-// so `bundle deploy` uploads/packages them.
-func buildBundleValue(ctx context.Context, cfg *runConfig, configPath string) map[string]dyn.Value {
+// codeSourcePath is the "./"-prefixed code_source dir relative to the bundle (empty
+// when the config has no code_source); command.sh is a bundle-local artifact.
+func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourcePath string) map[string]dyn.Value {
 	name := cfg.ExperimentName
 
 	// ai_runtime_task: experiment + one deployment (command_path + compute) +
 	// code_source_path. Only the fields the strict schema allows.
 	//
-	// Paths are emitted "./"-prefixed so bundle deploy treats them as LOCAL and
-	// uploads them: libraries.IsLibraryLocal classifies a bare, extensionless path
-	// as a PyPI package name (not a local file) and skips it, which would deploy a
-	// path the backend can't resolve. The "./" prefix forces local classification.
+	// command_path is "./"-prefixed so bundle deploy treats it as LOCAL and uploads
+	// it: libraries.IsLibraryLocal classifies a bare, extensionless path as a PyPI
+	// package name, which would deploy a path the backend can't resolve.
 	deployment := map[string]dyn.Value{
 		"command_path": nv(localBundlePath(commandScriptName), 1),
 		"compute": nv(map[string]dyn.Value{
@@ -192,10 +214,10 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath string) ma
 		"deployments": nv([]dyn.Value{dyn.V(deployment)}, 2),
 	}
 	line := 3
-	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
-		// A local directory (not a "./"-prefixed file): the aicode mutator recognizes
-		// a directory code_source_path, packages it, and rewrites this field at deploy.
-		aiRuntimeTask["code_source_path"] = nv(localBundlePath(codeSourceDirName), line)
+	if codeSourcePath != "" {
+		// The source dir relative to the bundle; the aicode mutator packages it at
+		// deploy and rewrites this field to the uploaded workspace path.
+		aiRuntimeTask["code_source_path"] = nv(codeSourcePath, line)
 		line++
 	}
 	if cfg.MLflowRunName != nil {
@@ -360,15 +382,13 @@ func buildPermissionsValue(perms []permission) dyn.Value {
 	return dyn.V(out)
 }
 
-// writeBundle writes the bundle into dir: databricks.yml, the loose launch
-// artifacts (command.sh + env/secret/param sidecars), and — when the config has a
-// code_source — a code_source/ directory holding the staged source tree. All the
-// referenced files are bundle-local; `bundle deploy` uploads the launch artifacts
-// and the aicode mutator packages+uploads the code_source directory. It refuses to
+// writeBundle writes the bundle into dir: databricks.yml plus the loose launch
+// artifacts (command.sh + env/secret/param sidecars). It does not touch the code
+// source — the deploy-time aicode mutator packages it in place. It refuses to
 // overwrite existing files so a re-run can't silently clobber a bundle the user has
 // edited. Returns the relative paths written, for the next-steps message.
 func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string) ([]string, error) {
-	root, artifacts, err := convertToDabs(ctx, cfg, configPath)
+	root, artifacts, err := convertToDabs(ctx, cfg, configPath, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -382,23 +402,17 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string) ([
 	// Refuse to clobber an existing file, with one consistent message. A user
 	// re-running convert into the same dir gets a clear error rather than a silent
 	// overwrite of edits they may have made.
-	checkCollision := func(name string) error {
+	writeFile := func(name string, data []byte) error {
 		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
 			return fmt.Errorf("%s already exists in %s; use --output-dir or remove it", name, dir)
-		}
-		return nil
-	}
-	writeFile := func(name string, data []byte) error {
-		if err := checkCollision(name); err != nil {
-			return err
 		}
 		return os.WriteFile(filepath.Join(dir, name), data, 0o600)
 	}
 
-	if err := checkCollision("databricks.yml"); err != nil {
-		return nil, err
-	}
 	bundlePath := filepath.Join(dir, "databricks.yml")
+	if _, err := os.Stat(bundlePath); err == nil {
+		return nil, fmt.Errorf("databricks.yml already exists in %s; use --output-dir or remove it", dir)
+	}
 	// force=true: we've already run the collision check above, so SaveAsYAML's own
 	// guard (which references a --force flag this command doesn't have) can't fire.
 	if err := yamlsaver.NewSaver().SaveAsYAML(root, bundlePath, true); err != nil {
@@ -414,176 +428,7 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string) ([
 		written = append(written, item.name)
 	}
 
-	// Code source: stage the resolved root_path into the bundle's code_source/ dir.
-	// The aicode mutator packages+uploads it at deploy; convert only lays down the
-	// bytes. A pinned git commit/branch is materialized from the archived commit (not
-	// the dirty working tree), matching what `air run` would submit; otherwise the
-	// working tree is copied, honoring .gitignore just like the run path's plain-tar.
-	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
-		snap := cfg.CodeSource.Snapshot
-		repoPath, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
-		if err != nil {
-			return nil, err
-		}
-		plan, err := resolveSnapshotPlan(ctx, newGitRepo(repoPath), snap.Git, snap.IncludePaths)
-		if err != nil {
-			return nil, err
-		}
-		if err := checkCollision(codeSourceDirName); err != nil {
-			return nil, err
-		}
-		if err := materializeCodeSource(ctx, repoPath, plan, filepath.Join(dir, codeSourceDirName)); err != nil {
-			return nil, err
-		}
-		written = append(written, codeSourceDirName+"/")
-	}
-
 	return written, nil
-}
-
-// materializeCodeSource stages the snapshot described by plan into destDir (the
-// bundle's code_source/ directory). It packages the source with the existing
-// snapshot packagers — git archive for a pinned commit, gitignore-aware plain tar
-// for a working tree — into a temporary tarball, then extracts it and moves its
-// single top-level directory into destDir. Going through the packagers (rather than
-// a raw copy) reuses their exact commit-pin and .gitignore/include-path handling, so
-// the staged tree matches what `air run` would submit; the deploy-time aicode mutator
-// then re-packages destDir into the uploaded, content-addressed archive.
-func materializeCodeSource(ctx context.Context, repoPath string, plan snapshotPlan, destDir string) error {
-	staging, err := os.MkdirTemp("", "air-convert-code-*")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(staging)
-
-	// Absolute tarball path: the git-archive packager runs git with `-C repoPath`, so
-	// a relative -o would resolve against the repo dir. Both packagers accept absolute.
-	tarball, err := filepath.Abs(filepath.Join(staging, "code_source.tar.gz"))
-	if err != nil {
-		return err
-	}
-	// git archive for a pinned commit (deterministic, ignores the dirty tree),
-	// gitignore-aware plain tar for a working tree — the same split the run path uses.
-	dirName := filepath.Base(repoPath)
-	if plan.mode == modeGitArchive {
-		err = createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, dirName, plan.includePaths)
-	} else {
-		err = createPlainTarball(ctx, repoPath, tarball, plan.includePaths)
-	}
-	if err != nil {
-		return err
-	}
-
-	// The archive's single top-level entry is the source directory's basename (both
-	// packagers preserve it). Extract into a scratch dir, then move that top-level
-	// directory to the fixed destDir name so the emitted code_source_path is stable.
-	extractDir := filepath.Join(staging, "extract")
-	if err := os.MkdirAll(extractDir, 0o700); err != nil {
-		return err
-	}
-	if err := extractTarball(tarball, extractDir); err != nil {
-		return err
-	}
-	entries, err := os.ReadDir(extractDir)
-	if err != nil {
-		return err
-	}
-	if len(entries) != 1 || !entries[0].IsDir() {
-		return fmt.Errorf("unexpected code_source archive layout: expected a single top-level directory, got %d entries", len(entries))
-	}
-	if err := os.Rename(filepath.Join(extractDir, entries[0].Name()), destDir); err != nil {
-		return err
-	}
-	return nil
-}
-
-// extractTarball unpacks a gzipped tarball into destDir in pure Go (no `tar`
-// subprocess), so extraction is portable — notably on Windows, where handing a
-// `C:\...` path to the system tar makes it read the drive letter as a remote host.
-// Entries that would escape destDir (path traversal, absolute or escaping symlinks)
-// are rejected; unusual entry types are skipped.
-func extractTarball(tarball, destDir string) error {
-	f, err := os.Open(tarball)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	gz, err := gzip.NewReader(f)
-	if err != nil {
-		return fmt.Errorf("failed to read code_source archive: %w", err)
-	}
-	defer gz.Close()
-
-	// destDir is the boundary every extracted entry must stay within: a malicious or
-	// malformed archive entry ("../x", an absolute path, a symlink escaping the tree)
-	// must not write outside it. destAbs is compared against each resolved target.
-	destAbs, err := filepath.Abs(destDir)
-	if err != nil {
-		return err
-	}
-
-	tr := tar.NewReader(gz)
-	for {
-		hdr, err := tr.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("failed to read code_source archive: %w", err)
-		}
-
-		// Reject path traversal: the cleaned target must stay under destAbs.
-		target := filepath.Join(destAbs, filepath.FromSlash(hdr.Name))
-		if target != destAbs && !strings.HasPrefix(target, destAbs+string(os.PathSeparator)) {
-			return fmt.Errorf("code_source archive entry %q escapes the destination directory", hdr.Name)
-		}
-
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0o700); err != nil {
-				return err
-			}
-		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil {
-				return err
-			}
-			out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(hdr.Mode)&0o777)
-			if err != nil {
-				return err
-			}
-			// Bounded copy: cap the number of bytes written to the size the header
-			// declares, so a corrupt/oversized entry can't write unbounded data.
-			if _, err := io.CopyN(out, tr, hdr.Size); err != nil && !errors.Is(err, io.EOF) {
-				out.Close()
-				return err
-			}
-			if err := out.Close(); err != nil {
-				return err
-			}
-		case tar.TypeSymlink:
-			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil {
-				return err
-			}
-			// A symlink whose resolved target escapes destAbs is rejected: it could be
-			// followed on a later write to reach outside the staged code directory.
-			linkTarget := hdr.Linkname
-			resolved := linkTarget
-			if !filepath.IsAbs(resolved) {
-				resolved = filepath.Join(filepath.Dir(target), filepath.FromSlash(linkTarget))
-			}
-			if resolved != destAbs && !strings.HasPrefix(resolved, destAbs+string(os.PathSeparator)) {
-				return fmt.Errorf("code_source archive symlink %q -> %q escapes the destination directory", hdr.Name, linkTarget)
-			}
-			if err := os.Symlink(linkTarget, target); err != nil {
-				return err
-			}
-		default:
-			// Skip other entry types (devices, fifos, etc.): code source is regular
-			// files, dirs, and symlinks; anything else is not meaningful to a workload.
-		}
-	}
-	return nil
 }
 
 // printConvertNextSteps tells the user what was written and the exact deploy
@@ -626,22 +471,14 @@ func printConvertNextSteps(ctx context.Context, dir string, written []string, jo
 	cmdio.LogString(ctx, "  databricks bundle destroy")
 }
 
-// conversionNotes lists what the conversion transformed, staged out-of-band, or
-// could not represent natively — so a user migrating from `air run` can see what
-// changed between their run YAML and the emitted bundle, and what they may still
-// need to fill in. Best-effort: git resolution errors are ignored here (writeBundle
-// surfaces them), so a note is only emitted when the state is unambiguous.
+// conversionNotes lists what the conversion staged out-of-band or could not
+// represent natively, so a user migrating from `air run` sees what changed between
+// their run YAML and the emitted bundle.
 func conversionNotes(cfg *runConfig) []string {
 	var notes []string
 
-	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
-		snap := cfg.CodeSource.Snapshot
-		if snap.Git != nil {
-			notes = append(notes, "code_source.git was pinned in the run YAML; the pinned commit was materialized into "+
-				"the code_source/ directory. Re-run convert-to-dabs to re-materialize a different revision.")
-		}
-		notes = append(notes, "code_source was staged into the code_source/ directory; bundle deploy packages and uploads it. "+
-			"Re-run convert-to-dabs to re-stage after code changes.")
+	if codeSnapshot(cfg) != nil {
+		notes = append(notes, "code_source points at your source directory; bundle deploy packages and uploads it from there.")
 	}
 
 	// env vars / secrets have no native ai_runtime_task field yet, so they ride as
