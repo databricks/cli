@@ -13,9 +13,12 @@ import (
 )
 
 // testTelemetry stands in for bundle.Telemetry so this package's tests stay
-// decoupled from the bundle package.
+// decoupled from the bundle package. Like the real struct, its fields have no
+// json tags, so structwalk.Walk visits every field regardless of value and Bits
+// must gate on the visited bool value rather than mere presence.
 type testTelemetry struct {
-	SelectUsed bool `json:"select_used"`
+	SelectUsed bool
+	RunAsSet   bool
 }
 
 func TestMergeAppendOnly(t *testing.T) {
@@ -51,8 +54,9 @@ func TestWalkSchemaPrunesTargets(t *testing.T) {
 
 	assert.Contains(t, schema, "bundle.name")
 	assert.Contains(t, schema, "resources.jobs.*.name")
-	// Telemetry fields are namespaced under "telemetry.".
-	assert.Contains(t, schema, "telemetry.select_used")
+	// Telemetry fields are namespaced under "telemetry." and, having no json
+	// tag, keep their Go field name.
+	assert.Contains(t, schema, "telemetry.SelectUsed")
 }
 
 func TestBitsSetsLeafAndPrefixes(t *testing.T) {
@@ -105,13 +109,28 @@ func TestSplitLinesStripsCRLF(t *testing.T) {
 	// paths as an LF one, so Merge's dedup matches and the schema does not double.
 	assert.Equal(t, []string{"variables", "bundle.name"}, splitLines([]byte("variables\r\nbundle.name\r\n")))
 	assert.Equal(t, []string{"variables", "bundle.name"}, splitLines([]byte("variables\nbundle.name\n")))
+
+	// Blank lines (leading, internal, trailing) are dropped so they can never
+	// shift bit indices in the append-only schema.
+	assert.Equal(t, []string{"variables", "bundle.name"}, splitLines([]byte("\nvariables\n\nbundle.name\n\n")))
+	assert.Empty(t, splitLines([]byte("")))
+	assert.Empty(t, splitLines([]byte("\n\n")))
 }
 
-func TestBitsSetsTelemetryField(t *testing.T) {
-	schema := []string{"telemetry.select_used"}
+func TestBitsSetsTelemetryFieldByValue(t *testing.T) {
+	schema := []string{"telemetry.SelectUsed", "telemetry.RunAsSet"}
+
+	// Only the true-valued field sets its bit. A false telemetry field must stay
+	// 0: its Go-named field has no json tag, so structwalk.Walk visits it
+	// regardless of value, and Bits must not treat mere presence as set.
 	bits, err := Bits(config.Root{}, testTelemetry{SelectUsed: true}, schema)
 	require.NoError(t, err)
-	assert.Equal(t, []bool{true}, bits)
+	assert.Equal(t, []bool{true, false}, bits)
+
+	// A zero-valued telemetry struct sets no bits.
+	bits, err = Bits(config.Root{}, testTelemetry{}, schema)
+	require.NoError(t, err)
+	assert.Equal(t, []bool{false, false}, bits)
 }
 
 func TestEncodeDecodeRoundTrip(t *testing.T) {
