@@ -16,8 +16,8 @@ title "both code_source_paths point into the bundle .air_snapshots, command_path
 # passed, so print_requests.py consumes out.requests.txt.
 trace print_requests.py --sort --del-body raw_body '//.air_snapshots/' '//jobs/create'
 
-title "re-deploying unchanged code is a no-op\n"
-trace $CLI bundle deploy
+title "re-planning unchanged code is a no-op (no changes)\n"
+trace $CLI bundle plan
 
 title "editing a file changes the snapshot hash (content-addressed name changes)\n"
 update_file.py src/train.py 'print("training")' 'print("training v2")'

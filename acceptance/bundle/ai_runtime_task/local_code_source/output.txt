@@ -101,13 +101,10 @@ src/train.py
   }
 }
 
-=== re-deploying unchanged code is a no-op
+=== re-planning unchanged code is a no-op (no changes)
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === editing a file changes the snapshot hash (content-addressed name changes)
 

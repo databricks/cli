@@ -1,0 +1,22 @@
+bundle:
+  name: ai-runtime-empty
+
+resources:
+  jobs:
+    train:
+      name: "[${bundle.target}] AI Runtime training"
+      tasks:
+        - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-training
+            code_source_path: ./src
+            deployments:
+              - command_path: src/command.sh
+                compute:
+                  accelerator_type: GPU_8xH100
+                  accelerator_count: 8
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"

@@ -1,0 +1,6 @@
+
+>>> errcode [CLI] bundle deploy
+Error: code_source_path "./src" has no files to package (all excluded by .gitignore or sync.exclude, or the directory is empty)
+
+
+Exit code: 1
