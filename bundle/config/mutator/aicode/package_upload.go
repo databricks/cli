@@ -50,9 +50,8 @@ import (
 
 // codeSourcePattern is the config location of an AI Runtime task's
 // code_source_path. It matches a direct task only — the same scope aicode.Validate
-// and aicode.SynthesizeRequirements operate on. ai_runtime_task nested under a
-// for_each_task is not a supported combination yet; when it is, all three mutators
-// should gain it together.
+// operates on. ai_runtime_task nested under a for_each_task is not a supported
+// combination yet (Validate rejects it); when it is, both should gain it together.
 var codeSourcePattern = dyn.NewPattern(
 	dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
 	dyn.Key("tasks"), dyn.AnyIndex(),

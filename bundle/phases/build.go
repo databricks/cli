@@ -29,15 +29,11 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		scripts.Execute(config.ScriptPostBuild),
 
 		// Package any AI Runtime task code_source_path that points at a local
-		// directory into a tarball, upload it, and rewrite the field to the remote
-		// path. Runs before ExpandGlobReferences/ReplaceWithRemotePath below so those
-		// see an already-remote code_source_path (a directory would otherwise be
-		// collected as a local "library" and fail to upload as a file).
+		// directory into a content-addressed tarball overlaid on the sync root, and
+		// rewrite the field to the synced workspace path. No requirements.yaml is
+		// synthesized: the runtime installs pip deps from the job's serverless
+		// environment (environments[].spec.dependencies) directly.
 		aicode.PackageAndUpload(),
-		// Write requirements.yaml next to the (already translated) command_path,
-		// derived from the job's serverless environment, so the AI Runtime harness
-		// can set up the workload environment.
-		aicode.SynthesizeRequirements(),
 
 		mutator.ResolveVariableReferencesWithoutResources(
 			"artifacts",

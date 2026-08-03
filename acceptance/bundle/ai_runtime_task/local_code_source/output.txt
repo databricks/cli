@@ -15,26 +15,12 @@ src/command.sh
 src/data/model.bin
 src/train.py
 
-=== code_source_path points into the bundle (.air_snapshots), command_path is rewritten, requirements.yaml written
+=== code_source_path points into the bundle (.air_snapshots), command_path rewritten, deps carried on environments spec
 
->>> print_requests.py --sort --del-body raw_body //.air_snapshots/ //jobs/create //files/src/requirements.yaml
+>>> print_requests.py --sort --del-body raw_body //.air_snapshots/ //jobs/create
 {
   "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/src_[SNAPSHOT].tar.gz",
-  "q": {
-    "overwrite": "true"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/src/requirements.yaml",
-  "q": {
-    "overwrite": "true"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/src/requirements.yaml",
   "q": {
     "overwrite": "true"
   }
