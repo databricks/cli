@@ -2,8 +2,6 @@ package dresources
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"net/http"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -162,11 +160,4 @@ func (s SecretState) MarshalJSON() ([]byte, error) {
 // catalog.Secret fields and Fingerprint.
 func (s *SecretState) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
-}
-
-// fingerprintValue returns the SHA-256 hex digest of v, prefixed with "sha256:"
-// to make the algorithm explicit in the stored state.
-func fingerprintValue(v string) string {
-	sum := sha256.Sum256([]byte(v))
-	return "sha256:" + hex.EncodeToString(sum[:])
 }
