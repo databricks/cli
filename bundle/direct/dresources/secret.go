@@ -4,10 +4,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"net/http"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -16,7 +19,6 @@ import (
 
 // Terraform provider implementation:
 // https://github.com/databricks/terraform-provider-databricks/blob/main/catalog/resource_secret.go
-
 type ResourceSecret struct {
 	client *databricks.WorkspaceClient
 }
@@ -28,14 +30,9 @@ type ResourceSecret struct {
 type SecretState struct {
 	catalog.Secret
 
-	// Fingerprint is the SHA-256 hex digest of Value at the time of the last
-	// deploy. It lets the planner detect value changes without the plaintext
-	// appearing in the state file.
-	Fingerprint string `json:"fingerprint"`
-
 	// SecretValue is the plaintext value of the secret. It is not stored in the state file.
 	// It is carried here so DoCreate/DoUpdate can send it to the API.
-	SecretValue string `json:"-"`
+	SecretValue string `json:"-" bundle:"sensitive"`
 }
 
 func (*ResourceSecret) New(client *databricks.WorkspaceClient) *ResourceSecret {
@@ -66,7 +63,6 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *SecretState {
 			UpdatedBy:       "",
 			ForceSendFields: utils.FilterFields[catalog.Secret](nil),
 		},
-		Fingerprint: fingerprintValue(input.Value),
 		// Value is carried here so DoCreate/DoUpdate can send it to the API.
 		// It is cleared from state after the API call (see DoCreate/DoUpdate).
 		SecretValue: input.Value,
@@ -74,10 +70,6 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *SecretState {
 }
 
 func (*ResourceSecret) RemapState(remote *catalog.Secret) *SecretState {
-	// The GET response never includes the plaintext value, so the fingerprint
-	// cannot be reconstructed from remote state. Returning "" causes the planner
-	// to treat fingerprint as a remote-only change (suppressed by
-	// ignore_remote_changes), so it never drives a spurious update on its own.
 	return &SecretState{
 		Secret: catalog.Secret{
 			CatalogName:     remote.CatalogName,
@@ -90,23 +82,33 @@ func (*ResourceSecret) RemapState(remote *catalog.Secret) *SecretState {
 			CreateTime:      nil,
 			CreatedBy:       "",
 			EffectiveOwner:  "",
-			EffectiveValue:  "",
+			EffectiveValue:  remote.EffectiveValue,
 			FullName:        "",
 			MetastoreId:     "",
 			UpdateTime:      nil,
 			UpdatedBy:       "",
 			ForceSendFields: utils.FilterFields[catalog.Secret](remote.ForceSendFields),
 		},
-		Fingerprint: "",
-		SecretValue: "",
+		SecretValue: remote.EffectiveValue,
 	}
 }
 
 // DoRead fetches the secret by full name.
 func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret, error) {
-	return r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
-		FullName: id,
-	})
+	apiClient, err := client.New(r.client.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	// SDK does not support include_value in the GetSecretRequest, so we use the API directly.
+	var secret catalog.Secret
+	err = apiClient.Do(ctx, http.MethodGet, "/api/2.1/unity-catalog/secrets/"+id, auth.WorkspaceIDHeaders(r.client.Config), map[string]any{
+		"include_value": true,
+	}, nil, &secret)
+	if err != nil {
+		return nil, err
+	}
+	return &secret, nil
 }
 
 // DoCreate creates a new UC secret.

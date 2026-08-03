@@ -101,7 +101,7 @@ func (s *FakeWorkspace) SecretsUcGetSecret(req Request) Response {
 	// Return secret without the actual value (only metadata)
 	// The real API doesn't return the value unless specifically requested
 	returnSecret := secret
-	returnSecret.EffectiveValue = "" // Don't expose value in GET
+	returnSecret.EffectiveValue = secret.Value
 	returnSecret.Value = ""
 
 	return Response{

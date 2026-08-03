@@ -522,14 +522,6 @@ resources:
       - field: compute_max_instances # This field does not work correctly in update_mask but exposed in the API spec. TODO: add back when update APIs correctly support it
         reason: managed
 
-  secrets:
-    ignore_local_changes:
-      # value is always stored as empty string in state; fingerprint tracks whether
-      # the value changed instead. Ignoring local changes on value prevents permanent
-      # drift (empty state vs non-empty config) while fingerprint drives updates.
-      - field: value
-        reason: tracked_by_fingerprint
-
   secret_scopes:
     backend_defaults:
       # The Secrets API defaults scope_backend_type to DATABRICKS when not specified.
