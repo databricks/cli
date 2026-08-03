@@ -60,6 +60,13 @@ func newLogsCommand() *cobra.Command {
 				errors.New("--review is not implemented yet"))
 		}
 
+		// A download always writes the full log, so a tail or time window would be
+		// silently dropped.
+		if downloadTo != "" && (cmd.Flags().Changed("lines") || minutes > 0) {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				errors.New("--download-to writes complete logs, so it cannot be combined with --lines or --minutes"))
+		}
+
 		// --lines (line tail) and --minutes (time window) answer the same question
 		// two ways, so reject both together rather than silently honoring one.
 		if lines > 0 && minutes > 0 {
@@ -136,7 +143,10 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 
 	// --download-to writes each node's logs to disk instead of streaming.
 	if req.downloadTo != "" {
-		success, err := downloadLogs(ctx, w, req, status, req.downloadTo)
+		success, err := downloadLogs(ctx, w, cmd.OutOrStdout(), req, status)
+		if errors.Is(err, errNodeOutOfRange) {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+		}
 		if err != nil {
 			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 				fmt.Errorf("failed to download logs for run %d: %w", req.runID, err))
