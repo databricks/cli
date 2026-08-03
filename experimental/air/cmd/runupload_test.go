@@ -57,7 +57,7 @@ func TestBuildArtifacts_CommandAndConfig(t *testing.T) {
 	assert.Equal(t, "python train.py", string(items[1].data))
 }
 
-func TestBuildArtifacts_ParametersNoRequirements(t *testing.T) {
+func TestBuildArtifacts_InlineRequirementsAndParameters(t *testing.T) {
 	path := writeConfigFile(t, "run.yaml", "x: y\n")
 	cfg := &runConfig{
 		Command: new("echo hi"),
@@ -68,30 +68,19 @@ func TestBuildArtifacts_ParametersNoRequirements(t *testing.T) {
 		Parameters: map[string]any{"lr": 0.1},
 	}
 
-	// Dependencies no longer produce a requirements.yaml artifact; they ride the
-	// environment spec (see resolveDependencies / buildSubmitPayload).
 	items, err := buildArtifacts(cfg, path)
 	require.NoError(t, err)
-	assert.Equal(t, []string{trainingConfigName, commandScriptName, hyperparametersName}, itemNames(items))
-}
+	assert.Equal(t, []string{trainingConfigName, commandScriptName, requirementsName, hyperparametersName}, itemNames(items))
 
-func TestResolveDependencies_Inline(t *testing.T) {
-	path := writeConfigFile(t, "run.yaml", "x: y\n")
-	cfg := &runConfig{
-		Environment: &environmentConfig{
-			Dependencies: dependencies{set: true, isList: true, list: []string{"torch", "numpy"}},
-		},
+	var reqIdx int
+	for i, it := range items {
+		if it.name == requirementsName {
+			reqIdx = i
+		}
 	}
-	deps, err := resolveDependencies(cfg, path)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"torch", "numpy"}, deps)
-}
-
-func TestResolveDependencies_None(t *testing.T) {
-	path := writeConfigFile(t, "run.yaml", "x: y\n")
-	deps, err := resolveDependencies(&runConfig{}, path)
-	require.NoError(t, err)
-	assert.Nil(t, deps)
+	req := string(items[reqIdx].data)
+	assert.Contains(t, req, "version: \"5\"")
+	assert.Contains(t, req, "- torch")
 }
 
 func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
@@ -114,19 +103,18 @@ func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
 	assert.JSONEq(t, `[{"name":"HF_TOKEN","secret_scope":"myscope","secret_key":"hf"}]`, string(byName[secretEnvVarsName]))
 }
 
-func TestResolveDependencies_RequirementsFile(t *testing.T) {
+func TestBuildArtifacts_RequirementsFile(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "run.yaml"), []byte("x: y\n"), 0o600))
-	// The file form of environment.dependencies carries the pip list under `dependencies`;
-	// the `version` field is resolved separately (environment.version), so it is ignored here.
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "reqs.yaml"), []byte("version: 4\ndependencies:\n  - torch\n  - numpy\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "reqs.yaml"), []byte("version: 4\n"), 0o600))
 	cfg := &runConfig{
+		Command:     new("echo hi"),
 		Environment: &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "reqs.yaml"}},
 	}
 
-	deps, err := resolveDependencies(cfg, filepath.Join(dir, "run.yaml"))
+	items, err := buildArtifacts(cfg, filepath.Join(dir, "run.yaml"))
 	require.NoError(t, err)
-	assert.Equal(t, []string{"torch", "numpy"}, deps)
+	assert.Contains(t, itemNames(items), requirementsName)
 }
 
 func TestBuildArtifacts_OversizeConfigRejected(t *testing.T) {
@@ -156,11 +144,12 @@ func TestUploadArtifacts_WriteError(t *testing.T) {
 	require.ErrorContains(t, err, "failed to upload "+trainingConfigName)
 }
 
-func TestResolveDependencies_MissingRequirementsFile(t *testing.T) {
+func TestBuildArtifacts_MissingRequirementsFile(t *testing.T) {
 	cfgPath := writeConfigFile(t, "run.yaml", "x: y\n")
 	cfg := &runConfig{
+		Command:     new("echo hi"),
 		Environment: &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "nope.yaml"}},
 	}
-	_, err := resolveDependencies(cfg, cfgPath)
+	_, err := buildArtifacts(cfg, cfgPath)
 	require.ErrorContains(t, err, "failed to read requirements file")
 }

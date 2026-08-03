@@ -17,11 +17,12 @@ import (
 )
 
 // Launch artifact basenames, uploaded into the run's cli_launch directory. The
-// server-side launcher derives hyperparameters.yaml from the same directory, so
-// these names are part of the contract.
+// server-side launcher derives requirements.yaml / hyperparameters.yaml from the
+// same directory, so these names are part of the contract.
 const (
 	trainingConfigName  = "training_config.yaml"
 	commandScriptName   = "command.sh"
+	requirementsName    = "requirements.yaml"
 	hyperparametersName = "hyperparameters.yaml"
 	envVarsName         = "env_vars.json"
 	secretEnvVarsName   = "secret_env_vars.json"
@@ -44,44 +45,16 @@ type fileWriter interface {
 	Write(ctx context.Context, name string, reader io.Reader, mode ...filer.WriteMode) error
 }
 
-// requirementsDoc mirrors the on-disk requirements.yaml format used by the file form of
-// environment.dependencies.
+// requirementsDoc mirrors the on-disk requirements.yaml format so the worker
+// parses synthesized inline dependencies identically to a user-provided file.
 type requirementsDoc struct {
 	Version      string   `yaml:"version,omitempty"`
 	Dependencies []string `yaml:"dependencies"`
 }
 
-// resolveDependencies returns the pip dependency list to send on the serverless environment
-// (environments[].spec.dependencies). environment.dependencies is either an inline list or a path
-// to a requirements.yaml file; for the file form the list is read here (its version field is
-// resolved separately via environment.version). Returns nil when no dependencies are declared.
-func resolveDependencies(cfg *runConfig, configPath string) ([]string, error) {
-	if deps, ok := cfg.inlineDependencies(); ok {
-		return deps, nil
-	}
-	reqPath, ok := cfg.requirementsFile()
-	if !ok {
-		return nil, nil
-	}
-	// Resolve a relative requirements path against the config's directory.
-	if !filepath.IsAbs(reqPath) {
-		reqPath = filepath.Join(filepath.Dir(configPath), reqPath)
-	}
-	data, err := os.ReadFile(reqPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read requirements file %s: %w", reqPath, err)
-	}
-	var doc requirementsDoc
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse requirements file %s: %w", reqPath, err)
-	}
-	return doc.Dependencies, nil
-}
-
 // buildArtifacts assembles the files to upload for a run: the merged config, the
-// inline command as a script, hyperparameters, and env var / secret sidecars.
-// Dependencies are not uploaded here — they ride the environment spec (see
-// resolveDependencies / buildSubmitPayload). configPath is the local YAML path.
+// inline command as a script, requirements (from a file or synthesized from
+// inline dependencies), and hyperparameters. configPath is the local YAML path.
 func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 	// TODO(DABs): with no _bases_/overrides ported yet, the merged config is the
 	// file as-is; once those land, upload the re-serialized merged YAML instead.
@@ -99,9 +72,27 @@ func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 		{commandScriptName, []byte(*cfg.Command)},
 	}
 
-	// Dependencies are sent on the Jobs serverless environment (environments[].spec.dependencies,
-	// see buildSubmitPayload), not as a co-located requirements.yaml. The server installs them
-	// identically, so we no longer upload a requirements.yaml artifact.
+	switch reqPath, ok := cfg.requirementsFile(); {
+	case ok:
+		// Resolve a relative requirements path against the config's directory.
+		if !filepath.IsAbs(reqPath) {
+			reqPath = filepath.Join(filepath.Dir(configPath), reqPath)
+		}
+		data, err := os.ReadFile(reqPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read requirements file %s: %w", reqPath, err)
+		}
+		items = append(items, uploadItem{requirementsName, data})
+	default:
+		if deps, ok := cfg.inlineDependencies(); ok {
+			version, _ := cfg.runtimeVersion()
+			data, err := yaml.Marshal(requirementsDoc{Version: version, Dependencies: deps})
+			if err != nil {
+				return nil, fmt.Errorf("failed to synthesize requirements.yaml: %w", err)
+			}
+			items = append(items, uploadItem{requirementsName, data})
+		}
+	}
 
 	if len(cfg.Parameters) > 0 {
 		data, err := yaml.Marshal(cfg.Parameters)
