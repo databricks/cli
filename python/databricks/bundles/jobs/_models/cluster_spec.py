@@ -28,6 +28,10 @@ from databricks.bundles.jobs._models.data_security_mode import (
     DataSecurityMode,
     DataSecurityModeParam,
 )
+from databricks.bundles.jobs._models.dependency_mode import (
+    DependencyMode,
+    DependencyModeParam,
+)
 from databricks.bundles.jobs._models.docker_image import DockerImage, DockerImageParam
 from databricks.bundles.jobs._models.gcp_attributes import (
     GcpAttributes,
@@ -139,6 +143,11 @@ class ClusterSpec:
     * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
     * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
     * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
+    """
+
+    dependency_mode: VariableOrOptional[DependencyMode] = None
+    """
+    [Beta] Controls dependency configuration for the cluster.
     """
 
     docker_image: VariableOrOptional[DockerImage] = None
@@ -410,6 +419,11 @@ class ClusterSpecDict(TypedDict, total=False):
     * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
     * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
     * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
+    """
+
+    dependency_mode: VariableOrOptional[DependencyModeParam]
+    """
+    [Beta] Controls dependency configuration for the cluster.
     """
 
     docker_image: VariableOrOptional[DockerImageParam]

@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/dyn"
@@ -199,6 +200,18 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
 			break
 		}
+	}
+
+	// Record whether the deprecated terraform engine was explicitly opted into,
+	// separately per source. Only emitted when true; absence means "not opted in
+	// via this source". An invalid env value has already failed the command
+	// upstream via ResolveEngineSetting, so treating the FromEnv error as
+	// "not terraform" here cannot mask a real terraform opt-in.
+	if b.Config.Bundle.Engine == engine.EngineTerraform {
+		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
+	}
+	if envEngine, _ := engine.FromEnv(ctx); envEngine == engine.EngineTerraform {
+		b.Metrics.SetBoolValue(metrics.EngineTerraformEnv, true)
 	}
 
 	// If the bundle UUID is not set, we use a default 0 value.

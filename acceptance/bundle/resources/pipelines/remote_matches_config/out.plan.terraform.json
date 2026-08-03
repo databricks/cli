@@ -1,0 +1,8 @@
+{
+  "cli_version": "[CLI_VERSION]",
+  "plan": {
+    "resources.pipelines.my_pipeline": {
+      "action": "update"
+    }
+  }
+}

@@ -40,7 +40,7 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 
 	// If the specified path has the "Volumes" prefix, use the Files API.
 	if strings.HasPrefix(path, "/Volumes/") {
-		f, err := filer.NewFilesClient(w, "/")
+		f, err := filer.NewFilesClient(ctx, w, "/")
 		return f, path, err
 	}
 

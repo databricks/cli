@@ -346,6 +346,17 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOpti
 	SubjectFilter    []string `json:"subject_filter,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRedditAdsOptionsCustomReportOptions struct {
+	Breakdowns []string `json:"breakdowns,omitempty"`
+	Fields     []string `json:"fields,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRedditAdsOptions struct {
+	LookbackWindowDays  int                                                                                                  `json:"lookback_window_days,omitempty"`
+	SyncStartDate       string                                                                                               `json:"sync_start_date,omitempty"`
+	CustomReportOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRedditAdsOptionsCustomReportOptions `json:"custom_report_options,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptionsFileIngestionOptionsFileFilters struct {
 	ModifiedAfter  string `json:"modified_after,omitempty"`
 	ModifiedBefore string `json:"modified_before,omitempty"`
@@ -407,10 +418,29 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions struct {
 	KafkaOptions          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions          `json:"kafka_options,omitempty"`
 	MetaAdsOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptions        `json:"meta_ads_options,omitempty"`
 	OutlookOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOptions        `json:"outlook_options,omitempty"`
+	RedditAdsOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRedditAdsOptions      `json:"reddit_ads_options,omitempty"`
 	SharepointOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptions     `json:"sharepoint_options,omitempty"`
 	SmartsheetOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSmartsheetOptions     `json:"smartsheet_options,omitempty"`
 	TiktokAdsOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsTiktokAdsOptions      `json:"tiktok_ads_options,omitempty"`
 	ZendeskSupportOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsZendeskSupportOptions `json:"zendesk_support_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransforms struct {
+	Format      string                                                                              `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptions struct {
+	FanoutBy   string                                                                    `json:"fanout_by,omitempty"`
+	Transforms []ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransforms `json:"transforms,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationAutoFullRefreshPolicy struct {
@@ -458,6 +488,7 @@ type ResourcePipelineIngestionDefinitionObjectsSchema struct {
 	SourceCatalog      string                                                              `json:"source_catalog,omitempty"`
 	SourceSchema       string                                                              `json:"source_schema"`
 	ConnectorOptions   *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions   `json:"connector_options,omitempty"`
+	FanoutOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptions      `json:"fanout_options,omitempty"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration `json:"table_configuration,omitempty"`
 }
 
@@ -579,6 +610,17 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptio
 	SubjectFilter    []string `json:"subject_filter,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRedditAdsOptionsCustomReportOptions struct {
+	Breakdowns []string `json:"breakdowns,omitempty"`
+	Fields     []string `json:"fields,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRedditAdsOptions struct {
+	LookbackWindowDays  int                                                                                                 `json:"lookback_window_days,omitempty"`
+	SyncStartDate       string                                                                                              `json:"sync_start_date,omitempty"`
+	CustomReportOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRedditAdsOptionsCustomReportOptions `json:"custom_report_options,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptionsFileIngestionOptionsFileFilters struct {
 	ModifiedAfter  string `json:"modified_after,omitempty"`
 	ModifiedBefore string `json:"modified_before,omitempty"`
@@ -640,6 +682,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptions struct {
 	KafkaOptions          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions          `json:"kafka_options,omitempty"`
 	MetaAdsOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptions        `json:"meta_ads_options,omitempty"`
 	OutlookOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptions        `json:"outlook_options,omitempty"`
+	RedditAdsOptions      *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRedditAdsOptions      `json:"reddit_ads_options,omitempty"`
 	SharepointOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptions     `json:"sharepoint_options,omitempty"`
 	SmartsheetOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSmartsheetOptions     `json:"smartsheet_options,omitempty"`
 	TiktokAdsOptions      *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsTiktokAdsOptions      `json:"tiktok_ads_options,omitempty"`

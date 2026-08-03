@@ -1,6 +1,7 @@
 package localenv
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -47,7 +48,7 @@ type Pipeline struct {
 	ProjectDir        string
 	ConstraintBaseURL string
 	CacheDir          string
-	Flags             TargetFlags
+	Flags             ComputeFlags
 	Bundle            BundleTarget
 	Compute           ComputeClient
 	PM                PackageManager
@@ -97,7 +98,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// before any other work so the failure flows through the phase/JSON reporting
 	// (a plain Cobra mutual-exclusion error would print no command JSON object,
 	// which the --output json consumer needs).
-	if err := ValidateTargetFlags(p.Flags); err != nil {
+	if err := ValidateComputeFlags(p.Flags); err != nil {
 		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
 	}
 	// P0 supports only uv; any other detected manager is a clean, non-blaming exit.
@@ -125,13 +126,13 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: resolve — compute target → environment key.
-	target, err := p.resolve(ctx)
+	compute, err := p.resolve(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Phase: fetch — constraint artifact for the resolved env key.
-	c, err := p.fetch(ctx, target)
+	c, err := p.fetch(ctx, compute)
 	if err != nil {
 		return err
 	}
@@ -188,22 +189,22 @@ func (p *Pipeline) run(ctx context.Context) error {
 	return p.validate(ctx, pyMinor, dbcPin)
 }
 
-// resolve runs ResolveTarget and records the resolve phase.
-func (p *Pipeline) resolve(ctx context.Context) (*TargetInfo, error) {
-	target, err := ResolveTarget(ctx, p.Flags, p.Compute, p.Bundle)
+// resolve runs ResolveCompute and records the resolve phase.
+func (p *Pipeline) resolve(ctx context.Context) (*ComputeInfo, error) {
+	compute, err := ResolveCompute(ctx, p.Flags, p.Compute, p.Bundle)
 	if err != nil {
-		return nil, p.fail(PhaseResolve, false, asPipelineError(err, ErrResolve, "target resolution failed"))
+		return nil, p.fail(PhaseResolve, false, asPipelineError(err, ErrResolve, "compute resolution failed"))
 	}
-	p.res.Target = target
-	p.markOK(PhaseResolve, fmt.Sprintf("source=%s envKey=%s", target.Source, target.EnvKey))
-	return target, nil
+	p.res.Compute = compute
+	p.markOK(PhaseResolve, fmt.Sprintf("source=%s envKey=%s", compute.Source, compute.EnvKey))
+	return compute, nil
 }
 
 // fetch fetches constraints for the resolved target and records the fetch phase.
 // Under --dry-run the cache is not populated, so a dry run performs no disk writes
 // (an existing cache is still read for offline fallback).
-func (p *Pipeline) fetch(ctx context.Context, target *TargetInfo) (*Constraints, error) {
-	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, target.EnvKey, p.CacheDir, !p.Check)
+func (p *Pipeline) fetch(ctx context.Context, compute *ComputeInfo) (*Constraints, error) {
+	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, compute.EnvKey, p.CacheDir, !p.Check)
 	if err != nil {
 		// FetchConstraints classifies the cause: E_ENV_UNSUPPORTED for a missing
 		// key (404) versus E_FETCH for transport failure with no cache. Both are
@@ -338,6 +339,16 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "cannot stat backup %s", filepath.ToSlash(backup)))
 		}
 		p.res.BackupPath = filepath.ToSlash(backup)
+
+		// Skip the write when the merged output already matches what is on disk.
+		// On an idempotent re-run mergePlan reproduces the current file byte for
+		// byte, so rewriting it would only advance the mtime — spuriously
+		// invalidating file watchers and uv.lock freshness checks — without
+		// changing content. The backup above is untouched (the existing .bak is
+		// kept), so this leaves disk exactly as it was.
+		if current, readErr := os.ReadFile(pyproject); readErr == nil && bytes.Equal(current, mergedBytes) {
+			return nil
+		}
 	}
 
 	if err := os.WriteFile(pyproject, mergedBytes, 0o644); err != nil {
@@ -356,7 +367,7 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	if err := p.PM.EnsurePython(ctx, pyMinor); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrPythonInstall, "ensure python %s failed", pyMinor))
 	}
-	if err := p.PM.Provision(ctx, p.ProjectDir); err != nil {
+	if err := p.PM.Provision(ctx, p.ProjectDir, pyMinor); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}
 	if err := p.PM.PostProvision(ctx, p.ProjectDir); err != nil {
@@ -411,7 +422,11 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string)
 	}
 	p.markOK(PhaseValidate, detail)
 
-	p.res.VenvPath = filepath.ToSlash(filepath.Join(p.ProjectDir, venvDir))
+	// venvPath is reported relative to the project root (spec §6.1), not as an
+	// absolute path: the value names the ".venv" the command provisions inside
+	// ProjectDir, and the VS Code consumer already knows the project root (it
+	// sets the working directory when it shells out). venvDir is already ".venv".
+	p.res.VenvPath = venvDir
 	if p.res.Resolved != nil {
 		if defaultMode {
 			p.res.Resolved.DBConnectVersion = dbcVer
