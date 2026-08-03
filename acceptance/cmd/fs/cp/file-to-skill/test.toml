@@ -1,0 +1,4 @@
+# Local only: the UC Skills Files API path is gated by a server-side feature flag
+# that has not rolled out, so a real workspace rejects these writes.
+Local = true
+Cloud = false
