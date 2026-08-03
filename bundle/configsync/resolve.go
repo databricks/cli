@@ -342,7 +342,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					result = append(result, FieldChange{
 						FilePath:        block.file,
 						Change:          destChange,
-						FieldCandidates: []string{blocks.candidatePath(block, mergedPath)},
+						FieldCandidates: []string{blocks.candidatePath(block, resolvedPath)},
 						mergedPath:      mergedPath,
 					})
 					continue
@@ -383,12 +383,11 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				var candidates []string
 				if routed {
 					// The block is known, so there is exactly one path to write.
-					candidates = []string{blocks.candidatePath(block, resolvedPathStr)}
+					candidates = []string{blocks.candidatePath(block, resolvedPath)}
 				} else {
 					candidates = []string{resolvedPathStr}
 					if targetName != "" {
-						targetPrefixedPath := "targets." + targetName + "." + resolvedPathStr
-						candidates = append(candidates, targetPrefixedPath)
+						candidates = append(candidates, targetPrefixedPath(targetName, resolvedPath))
 					}
 				}
 

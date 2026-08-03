@@ -157,11 +157,32 @@ func (r *blockResolver) regionPath(block sourceBlock, path dyn.Path) dyn.Path {
 
 // candidatePath renders a resolved path the way the patch layer addresses it,
 // which for an override block includes the targets.<target> prefix.
-func (r *blockResolver) candidatePath(block sourceBlock, path string) string {
+//
+// The prefix is built as path nodes rather than concatenated as text: a target name
+// may contain a dot ("dev.eu" is a legal name), and the result is parsed back into
+// segments, so text would split one name into two keys and address the wrong node.
+func (r *blockResolver) candidatePath(block sourceBlock, path *structpath.PatternNode) string {
 	if !block.override {
-		return path
+		return path.String()
 	}
-	return "targets." + r.target + "." + path
+	return targetPrefixedPath(r.target, path)
+}
+
+// targetPrefixedPath prefixes path with targets.<target>, quoting the target name
+// where necessary so the result parses back into the same segments.
+func targetPrefixedPath(target string, path *structpath.PatternNode) string {
+	prefixed := structpath.NewPatternStringKey(nil, "targets")
+	prefixed = structpath.NewPatternStringKey(prefixed, target)
+	for _, node := range path.AsSlice() {
+		if key, ok := node.StringKey(); ok {
+			prefixed = structpath.NewPatternStringKey(prefixed, key)
+		} else if index, ok := node.Index(); ok {
+			prefixed = structpath.NewPatternIndex(prefixed, index)
+		} else {
+			prefixed = structpath.NewPatternBracketStar(prefixed)
+		}
+	}
+	return prefixed.String()
 }
 
 // sortedBlocks lists the known blocks with the top-level ones first and a total
