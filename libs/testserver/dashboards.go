@@ -8,7 +8,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -142,7 +141,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		dashboard.Path = dashboard.ParentPath + "/" + dashboard.DisplayName + ".lvdash.json"
 	}
 
-	dashboard.CreateTime = strings.TrimSuffix(time.Now().UTC().Format(time.RFC3339), "Z")
+	dashboard.CreateTime = nextTimestamp()
 	dashboard.UpdateTime = dashboard.CreateTime
 
 	inputSerializedDashboard := dashboard.SerializedDashboard
@@ -230,7 +229,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 		updated.SerializedDashboard = transformSerializedDashboard(updateReq.SerializedDashboard, datasetCatalog, datasetSchema)
 	}
 	updated.WarehouseId = updateReq.WarehouseId
-	updated.UpdateTime = time.Now().UTC().Format(time.RFC3339)
+	updated.UpdateTime = nextTimestamp()
 
 	// Write stages a stale value: like a real backend, the first read after an update
 	// returns the pre-update value. Tests that read right after an update wait for the
@@ -264,7 +263,7 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 		WarehouseId:        dashboard.WarehouseId,
 		DisplayName:        dashboard.DisplayName,
 		EmbedCredentials:   publishReq.EmbedCredentials,
-		RevisionCreateTime: time.Now().UTC().Format(time.RFC3339),
+		RevisionCreateTime: nextTimestamp(),
 		ForceSendFields:    []string{"EmbedCredentials"},
 	}
 

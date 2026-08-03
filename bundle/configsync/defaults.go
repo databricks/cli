@@ -120,6 +120,9 @@ var serverSideDefaults = map[string]any{
 	// modified-remotely detection), so configsync cannot rely on the plan's Skip
 	// action and must exclude the field explicitly.
 	"resources.dashboards.*.etag": alwaysSkip,
+	// published is an internal state field (not part of the user config): DoRead
+	// derives it from the publish lifecycle, so it must never be synced into config.
+	"resources.dashboards.*.published": alwaysSkip,
 }
 
 // shouldSkipField checks if a field should be skipped in change detection.

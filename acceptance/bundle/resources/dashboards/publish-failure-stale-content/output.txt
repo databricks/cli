@@ -84,10 +84,14 @@ The remote modifications will be lost.
 
 json.plan.resources.dashboards.dashboard1.new_state.value.published = true;
 json.plan.resources.dashboards.dashboard1.remote_state.etag = "[ETAG_2]";
-json.plan.resources.dashboards.dashboard1.remote_state.published = true;
+json.plan.resources.dashboards.dashboard1.remote_state.published = false;
 json.plan.resources.dashboards.dashboard1.changes.etag.action = "update";
 json.plan.resources.dashboards.dashboard1.changes.etag.old = "[ETAG_1]";
 json.plan.resources.dashboards.dashboard1.changes.etag.remote = "[ETAG_2]";
+json.plan.resources.dashboards.dashboard1.changes.published.action = "update";
+json.plan.resources.dashboards.dashboard1.changes.published.old = true;
+json.plan.resources.dashboards.dashboard1.changes.published.new = true;
+json.plan.resources.dashboards.dashboard1.changes.published.remote = false;
 json.plan.resources.dashboards.dashboard1.changes.serialized_dashboard.reason = "etag_based";
 
 >>> [CLI] bundle deploy
