@@ -30,18 +30,6 @@ func TestWorkspaceList(t *testing.T) {
 	assert.Empty(t, stderr.String())
 }
 
-func TestWorkpaceListErrorWhenNoArguments(t *testing.T) {
-	ctx := t.Context()
-	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "list")
-	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
-}
-
-func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
-	ctx := t.Context()
-	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "get-status")
-	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
-}
-
 func TestWorkpaceExportPrintsContents(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W

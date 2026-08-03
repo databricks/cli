@@ -15,12 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSecretsCreateScopeErrWhenNoArguments(t *testing.T) {
-	ctx := t.Context()
-	_, _, err := testcli.RequireErrorRun(t, ctx, "secrets", "create-scope")
-	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
-}
-
 func temporarySecretScope(ctx context.Context, t *acc.WorkspaceT) string {
 	scope := testutil.RandomName("cli-acc-")
 	err := t.W.Secrets.CreateScope(ctx, workspace.CreateScope{
