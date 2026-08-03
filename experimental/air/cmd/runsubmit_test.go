@@ -590,6 +590,25 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 			assert.NotContains(t, p, "/workspace/", "no workspace write may precede policy resolution")
 		}
 	})
+
+	t.Run("bad requirements file fails before any upload", func(t *testing.T) {
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+		var uploaded bool
+		server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(testserver.Request) any {
+			uploaded = true
+			return nil
+		})
+		testserver.AddDefaultHandlers(server)
+		tw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+		require.NoError(t, err)
+
+		cfg := *base
+		cfg.Environment = &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "missing.yaml"}}
+		_, _, err = submitWorkload(t.Context(), tw, &cfg, cfgPath, "")
+		require.ErrorContains(t, err, "failed to read requirements file")
+		assert.False(t, uploaded, "no artifacts should be uploaded when dependency resolution fails")
+	})
 }
 
 // The resolved policy id must reach the submit payload, by literal id and by name.
@@ -634,24 +653,5 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem")
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
-	})
-
-	t.Run("bad requirements file fails before any upload", func(t *testing.T) {
-		server := testserver.New(t)
-		t.Cleanup(server.Close)
-		var uploaded bool
-		server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(testserver.Request) any {
-			uploaded = true
-			return nil
-		})
-		testserver.AddDefaultHandlers(server)
-		tw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
-		require.NoError(t, err)
-
-		cfg := *base
-		cfg.Environment = &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "missing.yaml"}}
-		_, _, err = submitWorkload(t.Context(), tw, &cfg, cfgPath, "")
-		require.ErrorContains(t, err, "failed to read requirements file")
-		assert.False(t, uploaded, "no artifacts should be uploaded when dependency resolution fails")
 	})
 }

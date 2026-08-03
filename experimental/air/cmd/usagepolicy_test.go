@@ -193,4 +193,35 @@ func TestResolveUsagePolicyIDByName(t *testing.T) {
 		require.ErrorContains(t, err, "must be a non-empty string")
 		assert.Empty(t, *queries)
 	})
+
+	// A failed lookup must surface, never fall through to an empty (= no policy) id.
+	t.Run("api error surfaces", func(t *testing.T) {
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+		server.Handle("GET", "/api/2.0/serverless-policies", func(req testserver.Request) any {
+			return testserver.Response{StatusCode: 403, Body: `{"error_code":"PERMISSION_DENIED","message":"nope"}`}
+		})
+		testserver.AddDefaultHandlers(server)
+		w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+		require.NoError(t, err)
+
+		_, err = resolveUsagePolicyIDByName(t.Context(), w, "team-a")
+		require.ErrorContains(t, err, "failed to list usage policies")
+	})
+}
+
+// The --override path re-decodes and re-validates the config, so the policy rules
+// must hold there too and not just for fields set in the YAML file.
+func TestOverrideUsagePolicyValidation(t *testing.T) {
+	t.Run("override trips mutual exclusion", func(t *testing.T) {
+		cfgPath := writeConfigFile(t, "run.yaml", minimalConfig+"usage_policy_id: 12345678-90ab-cdef-1234-567890abcdef\n")
+		_, err := loadRunConfigWithOverrides(t.Context(), cfgPath, []string{"usage_policy_name=team-a"})
+		require.ErrorContains(t, err, "mutually exclusive")
+	})
+
+	t.Run("override id is UUID-checked", func(t *testing.T) {
+		cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+		_, err := loadRunConfigWithOverrides(t.Context(), cfgPath, []string{"usage_policy_id=team-a"})
+		require.ErrorContains(t, err, "must be a UUID")
+	})
 }
