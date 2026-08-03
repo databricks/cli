@@ -54,10 +54,11 @@ func newLogsCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		// --review is not yet implemented; reject rather than silently ignore.
-		if review {
+		// --review and --download-to both take over the output, so reject the pair
+		// rather than silently honoring one.
+		if review && downloadTo != "" {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("--review is not implemented yet"))
+				errors.New("cannot combine --review with --download-to: --review prints an analysis, --download-to writes files"))
 		}
 
 		// --lines (line tail) and --minutes (time window) answer the same question
@@ -100,6 +101,7 @@ func newLogsCommand() *cobra.Command {
 			windowMinutes: minutes,
 			tailLines:     tailLines,
 			downloadTo:    downloadTo,
+			review:        review,
 			jsonOutput:    root.OutputType(cmd) == flags.OutputJSON,
 		})
 	}
@@ -132,6 +134,19 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	if req.attempt >= 0 && req.attempt > status.latestAttempt {
 		return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 			fmt.Errorf("invalid retry %d: available retries are 0 to %d", req.attempt, status.latestAttempt))
+	}
+
+	// --review prints every node's recent logs with failure lines highlighted.
+	if req.review {
+		success, err := reviewLogs(ctx, w, cmd.OutOrStdout(), req, status)
+		if err != nil {
+			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
+				fmt.Errorf("failed to review logs for run %d: %w", req.runID, err))
+		}
+		if !success {
+			return root.ErrAlreadyPrinted
+		}
+		return nil
 	}
 
 	// --download-to writes each node's logs to disk instead of streaming.

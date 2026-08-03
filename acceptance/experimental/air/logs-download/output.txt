@@ -10,3 +10,15 @@ Exit code: 1
 Error: failed to download logs for run 123: node 5 does not exist: run has 2 node(s), indexed 0 to 1
 
 Exit code: 1
+
+=== review reports no logs when none are available
+>>> [CLI] experimental air logs 123 --review
+Error: failed to review logs for run 123: no logs available for run 123
+
+Exit code: 1
+
+=== review and download-to are mutually exclusive
+>>> [CLI] experimental air logs 123 --review --download-to dl-logs
+Error: cannot combine --review with --download-to: --review prints an analysis, --download-to writes files
+
+Exit code: 1

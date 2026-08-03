@@ -55,6 +55,9 @@ type logRequest struct {
 	tailLines int
 	// downloadTo, when set, writes logs to that directory instead of stdout.
 	downloadTo string
+	// review prints every node's recent logs with failure lines highlighted,
+	// instead of streaming a single node.
+	review bool
 	// staticView renders a one-shot tail instead of following the run. Set for a
 	// past retry of an active run: that attempt's logs are immutable, so streaming
 	// would poll forever waiting for the run (not the attempt) to finish.

@@ -72,10 +72,10 @@ func TestLogsFlagValidation(t *testing.T) {
 			wantMsg: "invalid --minutes",
 		},
 		{
-			name:    "review not implemented",
+			name:    "review and download-to are mutually exclusive",
 			args:    []string{"5"},
-			flags:   map[string]string{"review": "true"},
-			wantMsg: "--review is not implemented yet",
+			flags:   map[string]string{"review": "true", "download-to": "/tmp/logs"},
+			wantMsg: "cannot combine --review with --download-to",
 		},
 		{
 			name:    "invalid run id",
