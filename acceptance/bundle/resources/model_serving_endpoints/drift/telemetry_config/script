@@ -3,17 +3,17 @@ echo "*" > .gitignore
 title "Initial deployment"
 trace $CLI bundle deploy
 
-title "Plan converges: the profile ID and inference table name the backend assigns are not drift"
+title "Plan converges: backend-assigned fields are not drift"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
-title "Editing sampling_fraction is reported as a real change"
+title "Editing sampling_fraction is a real change"
 update_file.py databricks.yml "sampling_fraction: 0.5" "sampling_fraction: 0.9"
 trace $CLI bundle plan --output json | jq '.plan[].changes'
 
-title "Deploy applies the edit through the telemetry-config API"
+title "Deploy applies it via the telemetry-config API"
 trace $CLI bundle deploy
 
-title "Plan converges again once the edit is applied"
+title "Plan converges again"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 trace print_requests.py //serving-endpoints

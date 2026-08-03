@@ -30,11 +30,9 @@ EnvMatrixExclude.no_grant_ref = ["INPUT_CONFIG=schema_grant_ref.yml.tmpl"]
 # SQL warehouses currently failing with migration with permanent drift. TODO: fix this.
 EnvMatrixExclude.no_sql_warehouse = ["INPUT_CONFIG=sql_warehouse.yml.tmpl"]
 
-# The terraform provider types telemetry_config.inference_table_config.sampling_fraction
-# as an integer (see ResourceModelServingTelemetryConfigInferenceTableConfig), but the API
-# takes a fraction in [0.0, 1.0]. The terraform deploy that seeds the migration truncates
-# 0.5 to 0 and omits it, so the migrated plan reports drift the direct engine cannot
-# reconcile. Covered by no_drift on direct.
+# The terraform provider types sampling_fraction as an integer while the API takes a
+# fraction in [0.0, 1.0], so the terraform deploy that seeds the migration truncates
+# 0.5 to 0 and drops it. Covered by no_drift on direct.
 EnvMatrixExclude.no_telemetry_config = ["INPUT_CONFIG=model_serving_endpoint_telemetry_config.yml.tmpl"]
 
 # The 1000-task scale case is covered by no_drift. Running it here adds ~1.5 min

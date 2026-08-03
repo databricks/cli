@@ -1,4 +1,4 @@
 RecordRequests = true
 
-# Scope this regression to the direct engine where the classification lives.
+# Covers the direct engine's telemetry_config classification and update path.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

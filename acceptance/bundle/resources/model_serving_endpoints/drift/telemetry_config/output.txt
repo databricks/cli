@@ -6,11 +6,11 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Plan converges: the profile ID and inference table name the backend assigns are not drift
+=== Plan converges: backend-assigned fields are not drift
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== Editing sampling_fraction is reported as a real change
+=== Editing sampling_fraction is a real change
 >>> [CLI] bundle plan --output json
 {
   "config.served_entities[0].external_model.openai_config.openai_api_key_plaintext": {
@@ -48,14 +48,14 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   }
 }
 
-=== Deploy applies the edit through the telemetry-config API
+=== Deploy applies it via the telemetry-config API
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Plan converges again once the edit is applied
+=== Plan converges again
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 

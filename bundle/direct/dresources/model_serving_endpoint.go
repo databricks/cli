@@ -247,8 +247,7 @@ func (r *ResourceModelServingEndpoint) updateNotifications(ctx context.Context, 
 	return nil
 }
 
-// updateTelemetryConfig applies telemetry_config through its dedicated PATCH API.
-// A nil config removes the telemetry configuration from the endpoint.
+// updateTelemetryConfig applies telemetry_config; a nil config removes it.
 func (r *ResourceModelServingEndpoint) updateTelemetryConfig(ctx context.Context, id string, telemetryConfig *serving.TelemetryConfig) error {
 	req := serving.PatchTelemetryConfigRequest{
 		Name:            id,

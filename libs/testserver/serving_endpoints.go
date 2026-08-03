@@ -35,9 +35,8 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 	return entities
 }
 
-// applyTelemetryConfig mirrors the backend: it provisions a telemetry profile for
-// the endpoint and echoes back the assigned profile ID and the full name of the
-// inference table it created, neither of which the caller supplies.
+// applyTelemetryConfig mirrors the backend, which assigns the profile ID and the
+// inference table name that the caller never supplies.
 func applyTelemetryConfig(endpointName string, config *serving.TelemetryConfig) *serving.TelemetryConfig {
 	if config == nil {
 		return nil

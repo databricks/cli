@@ -316,9 +316,8 @@ resources:
       - field: rate_limits
         reason: not_implemented
     backend_defaults:
-      # The backend provisions a telemetry profile for the endpoint and echoes its
-      # ID back on GET. Users may also pin an existing profile, so suppress only the
-      # backend-assigned case and keep drift detection when the ID is set locally.
+      # The backend assigns a telemetry profile and echoes its ID back on GET. Users may
+      # also pin an existing profile, so drift still applies when it is set locally.
       - field: telemetry_config.telemetry_profile_id
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
