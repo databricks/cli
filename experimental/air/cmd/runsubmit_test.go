@@ -3,6 +3,7 @@ package aircmd
 import (
 	"encoding/json"
 	"io"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -41,7 +42,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 		MLflowExperimentDirectory: new("/Workspace/Users/me/exp"),
 	}
 
-	p := buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{})
+	p := buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{}, nil)
 
 	assert.Equal(t, "exp", p.RunName)
 	assert.Equal(t, 1800, p.TimeoutSeconds)
@@ -76,7 +77,7 @@ func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
 		Command:        new("x"),
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}).Tasks[0]
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}, nil).Tasks[0]
 	assert.Equal(t, defaultMaxRetries, task.MaxRetries)
 	assert.True(t, task.RetryOnTimeout)
 }
@@ -91,7 +92,7 @@ func TestBuildSubmitPayloadNoRetries(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 		MaxRetries:     new(0),
 	}
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}).Tasks[0]
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}, nil).Tasks[0]
 	assert.Equal(t, 0, task.MaxRetries)
 	assert.False(t, task.RetryOnTimeout)
 
@@ -99,6 +100,88 @@ func TestBuildSubmitPayloadNoRetries(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(b), `"max_retries":0`)
 	assert.NotContains(t, string(b), "retry_on_timeout")
+}
+
+// TestBuildSubmitPayloadInlineDependencies covers how deps land on the environment
+// spec: a non-empty list is set alongside the runtime channel; empty and nil omit
+// the key so the payload is unchanged.
+func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_8xH100", NumAccelerators: 8},
+	}
+
+	deps := []string{"torch==2.3.0", "--extra-index-url https://internal/pypi", "numpy"}
+	spec := buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{}, deps).Environments[0].Spec
+	assert.Equal(t, deps, spec.Dependencies)
+	assert.Equal(t, "5", spec.EnvironmentVersion)
+
+	// The SDK marshaler drops empty/nil slices, so no "dependencies" key is emitted.
+	for _, empty := range [][]string{{}, nil} {
+		spec = buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{}, empty).Environments[0].Spec
+		b, err := json.Marshal(spec)
+		require.NoError(t, err)
+		assert.NotContains(t, string(b), "dependencies")
+	}
+}
+
+// TestEnvironmentDependencies covers how declared deps are resolved to a flat list:
+// an inline list (no file version), a requirements file (path resolved against the
+// config dir, version read from the file), none, and a missing file.
+func TestEnvironmentDependencies(t *testing.T) {
+	inline := &runConfig{Environment: &environmentConfig{
+		Dependencies: dependencies{set: true, isList: true, list: []string{"torch", "numpy"}},
+	}}
+	deps, version, err := environmentDependencies(inline, "run.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"torch", "numpy"}, deps)
+	assert.Empty(t, version)
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "reqs.yaml"), []byte("version: \"5\"\ndependencies:\n  - pandas\n"), 0o600))
+	fromFile := &runConfig{Environment: &environmentConfig{
+		Dependencies: dependencies{set: true, isList: false, path: "reqs.yaml"},
+	}}
+	deps, version, err = environmentDependencies(fromFile, filepath.Join(dir, "run.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"pandas"}, deps)
+	assert.Equal(t, "5", version)
+
+	deps, _, err = environmentDependencies(&runConfig{}, "run.yaml")
+	require.NoError(t, err)
+	assert.Nil(t, deps)
+
+	missing := &runConfig{Environment: &environmentConfig{
+		Dependencies: dependencies{set: true, isList: false, path: "nope.yaml"},
+	}}
+	_, _, err = environmentDependencies(missing, filepath.Join(dir, "run.yaml"))
+	require.ErrorContains(t, err, "failed to read requirements file")
+}
+
+// TestReadRequirementsDependencies covers reading a requirements file's dependency
+// list and version, with a missing key yielding an empty list and a -r include
+// rejected.
+func TestReadRequirementsDependencies(t *testing.T) {
+	dir := t.TempDir()
+
+	reqPath := filepath.Join(dir, "requirements.yaml")
+	require.NoError(t, os.WriteFile(reqPath, []byte("version: \"5\"\ndependencies:\n  - torch==2.3.0\n  - numpy\n"), 0o600))
+	deps, version, err := readRequirementsDependencies(reqPath)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"torch==2.3.0", "numpy"}, deps)
+	assert.Equal(t, "5", version)
+
+	emptyPath := filepath.Join(dir, "empty.yaml")
+	require.NoError(t, os.WriteFile(emptyPath, []byte("version: \"5\"\n"), 0o600))
+	deps, _, err = readRequirementsDependencies(emptyPath)
+	require.NoError(t, err)
+	assert.Empty(t, deps)
+
+	includePath := filepath.Join(dir, "include.yaml")
+	require.NoError(t, os.WriteFile(includePath, []byte("dependencies:\n  - -r other.txt\n"), 0o600))
+	_, _, err = readRequirementsDependencies(includePath)
+	require.ErrorContains(t, err, "requirements-file include")
 }
 
 func TestSubmitToken(t *testing.T) {
@@ -484,5 +567,24 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 		cfg.UsagePolicyName = new("p")
 		_, _, err := submitWorkload(t.Context(), w, &cfg, cfgPath, "")
 		require.ErrorContains(t, err, "usage_policy_name is not yet supported")
+	})
+
+	t.Run("bad requirements file fails before any upload", func(t *testing.T) {
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+		var uploaded bool
+		server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(testserver.Request) any {
+			uploaded = true
+			return nil
+		})
+		testserver.AddDefaultHandlers(server)
+		tw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+		require.NoError(t, err)
+
+		cfg := *base
+		cfg.Environment = &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "missing.yaml"}}
+		_, _, err = submitWorkload(t.Context(), tw, &cfg, cfgPath, "")
+		require.ErrorContains(t, err, "failed to read requirements file")
+		assert.False(t, uploaded, "no artifacts should be uploaded when dependency resolution fails")
 	})
 }
