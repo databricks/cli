@@ -80,3 +80,59 @@ func TestValidateRemoteCodeSourceIsSkipped(t *testing.T) {
 	diags := Validate().Apply(t.Context(), b)
 	assert.Empty(t, diags)
 }
+
+// A code_source_path escaping the bundle sync root is rejected with a clear
+// message (it can't be synced), rather than failing later as an opaque io/fs error.
+func TestValidateCodeSourceOutsideBundleRoot(t *testing.T) {
+	b := bundleForValidate(t, "../shared", nil)
+	diags := Validate().Apply(t.Context(), b)
+	require.Len(t, diags, 1)
+	assert.Contains(t, diags[0].Summary, "outside the bundle root")
+}
+
+// Source-linked deployment doesn't copy files to the workspace file path, so the
+// packaged snapshot would never be uploaded; the combination is rejected.
+func TestValidateSourceLinkedConflict(t *testing.T) {
+	b := bundleForValidate(t, "src", nil)
+	mkCodeDir(t, b, "src")
+	enabled := true
+	b.Config.Presets.SourceLinkedDeployment = &enabled
+	diags := Validate().Apply(t.Context(), b)
+	require.Len(t, diags, 1)
+	assert.Contains(t, diags[0].Summary, "source-linked deployment")
+}
+
+// A local code_source_path nested under a for_each_task is not packaged by the
+// mutator, so it is rejected rather than silently skipped.
+func TestValidateForEachTaskCodeSourceRejected(t *testing.T) {
+	dir := t.TempDir()
+	b := &bundle.Bundle{
+		BundleRootPath: dir,
+		SyncRootPath:   dir,
+		Config: config.Root{
+			Bundle: config.Bundle{Target: "default"},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"train": {
+						JobSettings: jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									TaskKey: "fanout",
+									ForEachTask: &jobs.ForEachTask{
+										Task: jobs.Task{
+											AiRuntimeTask: &jobs.AiRuntimeTask{CodeSourcePath: "src"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
+	diags := Validate().Apply(t.Context(), b)
+	require.Len(t, diags, 1)
+	assert.Contains(t, diags[0].Summary, "for_each_task")
+}

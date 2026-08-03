@@ -36,6 +36,12 @@ import (
 
 const internalFolder = ".internal"
 
+// AiCodeSnapshotDir is the sync-root-relative directory (dot-prefixed so it does not
+// clash with user files) that the aicode mutator writes AI Runtime code snapshots
+// into. It is force-included in sync (see GetSyncIncludePatterns) so user ignore
+// rules cannot filter the deployed job's code_source_path archives out.
+const AiCodeSnapshotDir = ".air_snapshots"
+
 // Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=direct
 const resourcesFilename = "resources.json"
 
@@ -358,7 +364,12 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*"))), nil
+	includes := append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*")))
+	// Force-sync generated AI Runtime code snapshots so a user ignore rule (e.g.
+	// "*.tar.gz" in .gitignore) can't filter them out — the deployed job's
+	// code_source_path points at these archives (see bundle/config/mutator/aicode).
+	includes = append(includes, AiCodeSnapshotDir+"/*")
+	return includes, nil
 }
 
 // AuthEnv returns a map with environment variables and their values

@@ -133,8 +133,9 @@ func (m *packageAndUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 // is never nested inside the directory it snapshots, and the archives are grouped in
 // one predictable place. The archives are overlaid onto the sync root in memory, so
 // this directory is synced to the workspace (and removed by `bundle destroy`) but is
-// never materialized in the user's working tree.
-const snapshotSubdir = ".air_snapshots"
+// never materialized in the user's working tree. bundle.GetSyncIncludePatterns
+// force-includes it so a user ignore rule can't filter the archives out of sync.
+const snapshotSubdir = bundle.AiCodeSnapshotDir
 
 // packageOne packages the local directory for a single code source into a
 // reproducible, content-addressed tarball and returns its sync-relative path plus
@@ -155,6 +156,12 @@ func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource) (string, [
 	files, err := codeSourceFiles(ctx, b, relBase)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to list files for code_source_path %q: %w", cs.value, err)
+	}
+	// An empty file list means every file under the directory was filtered out
+	// (gitignore / sync.exclude) or the directory is empty. Packaging it would deploy
+	// a job with no code, so fail with an actionable message instead.
+	if len(files) == 0 {
+		return "", nil, fmt.Errorf("code_source_path %q has no files to package (all excluded by .gitignore or sync.exclude, or the directory is empty)", cs.value)
 	}
 
 	// Build the archive in memory so its content hash can name the file; the hash is
