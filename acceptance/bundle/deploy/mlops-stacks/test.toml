@@ -1,5 +1,5 @@
 Cloud=true
-Local=false
+Local=true
 
 # The MLOps Stacks template registers the model in Unity Catalog and runs its
 # jobs on serverless compute, so this test only works on a UC-enabled workspace
@@ -16,3 +16,8 @@ Ignore = [
 [[Repls]]
 Old = "aws|azure|gcp"
 New = "[CLOUD_ENV_BASE]"
+
+# $TESTDIR uses backslashes on Windows, hence the either-separator match.
+[[Repls]]
+Old = 'bundle init .*[\\/]mlops-stacks/template'
+New = "bundle init mlops-stacks"

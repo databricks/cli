@@ -29,7 +29,13 @@ trap cleanup EXIT
 
 trace $CLI schemas create "${SCHEMA_NAME}" main | jq '{full_name}'
 
-trace $CLI bundle init mlops-stacks --config-file config.json
+# Local runs must not reach the network; cloud runs clone to keep that path covered.
+# The vendored copy in ./template/ can be updated with `task bump-mlops-stacks`
+if [ -z "$CLOUD_ENV" ]; then
+  trace $CLI bundle init "$TESTDIR/template" --config-file config.json
+else
+  trace $CLI bundle init mlops-stacks --config-file config.json
+fi
 trace cat test_repo_mlops_stacks/README.md | head -n 4
 
 cd "test_repo_mlops_stacks/project_name_${UNIQUE_NAME}" || exit 1

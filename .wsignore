@@ -25,3 +25,6 @@ python/databricks/bundles/*/_models/*.py
 
 # Developed elsewhere:
 internal/genkit/tagging.py
+
+# Vendored from https://github.com/databricks/mlops-stacks:
+acceptance/bundle/deploy/mlops-stacks/template/**
