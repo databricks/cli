@@ -26,8 +26,12 @@ NEXTCHANGES_SECTIONS_KEY = "nextchanges_sections"
 VERSION_FILE = "version"
 SEMVER_RE = re.compile(r"^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 
-ROOT_README = "README.md"
-SECTION_SCAFFOLDING = (".gitkeep",)
+# README.md is allowed both at the .nextchanges root (the docs) and inside each
+# section directory: the release renderer skips it (see
+# internal/genkit/release_tagging.py), so a committed README.md keeps
+# otherwise-empty section directories present in git without being mistaken for
+# a fragment.
+README = "README.md"
 
 
 def load_sections(root):
@@ -61,16 +65,17 @@ def find_problems(changelog_dir, sections):
         # Root-level: only the version file and root documentation belong here. This prevents
         # someone accidentally putting a .md into .nextchanges thinking it would be picked up.
         if len(rel.parts) == 1:
-            if name != VERSION_FILE and name != ROOT_README:
+            if name != VERSION_FILE and name != README:
                 problems.append((path, "unexpected file at .nextchanges root"))
             continue
 
         # Section-level: .nextchanges/<section>/<file>.
         if len(rel.parts) == 2 and rel.parts[0] in known_sections:
+            # README.md holds section docs and keeps the directory in git; the
+            # renderer skips it, so it is not treated as a fragment.
+            if name == README:
+                continue
             if not name.endswith(".md"):
-                # Only allow scaffolding files to exist
-                if name in SECTION_SCAFFOLDING:
-                    continue
                 problems.append((path, "unexpected file (fragments must be *.md)"))
             elif not path.read_text(encoding="utf-8").strip():
                 problems.append((path, "empty fragment"))

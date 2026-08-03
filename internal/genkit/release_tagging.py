@@ -75,7 +75,7 @@ def render_nextchanges(package_path: str) -> Optional[str]:
             continue
         entries = []
         for name in sorted(os.listdir(section_dir)):
-            if not name.endswith(".md"):
+            if not name.endswith(".md") or name == "README.md":
                 continue
             with open(os.path.join(section_dir, name)) as f:
                 text = f.read().strip()
@@ -132,8 +132,8 @@ def clear_nextchanges(package_path: str) -> None:
     Replacement for ``tagging.clean_next_changelog``: stage deletion of the
     ``.nextchanges/`` fragments consumed by this release and bump
     ``.nextchanges/version`` to the next minor (its post-release default; teams
-    can still override it in a PR). Section directories are left in place.
-    ``process_package`` calls this as
+    can still override it in a PR). Section directories and their README.md are
+    left in place. ``process_package`` calls this as
     ``clean_next_changelog(package.path)``, so the signature matches.
     """
     base = os.path.join(os.getcwd(), package_path, NEXTCHANGES_DIR)
@@ -142,7 +142,7 @@ def clear_nextchanges(package_path: str) -> None:
         if not os.path.isdir(section_dir):
             continue
         for name in sorted(os.listdir(section_dir)):
-            if name.endswith(".md"):
+            if name.endswith(".md") and name != "README.md":
                 tagging.gh.delete_file(os.path.join(section_dir, name))
 
     version_path = _version_path(package_path)
