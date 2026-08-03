@@ -140,6 +140,17 @@ func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &JobRunState{RunNow: remote.RunNow}
 }
 
+// CheckSettled rejects a run that has not finished. Interrupting a deploy
+// mid-wait leaves the run going and its id recorded, so the next deploy plans no
+// change for it; without this, a reference to an outcome the run has not reached
+// would resolve to an empty string.
+func (*ResourceJobRun) CheckSettled(remote *JobRunRemote) error {
+	if runIsTerminal(remote.State.LifeCycleState) {
+		return nil
+	}
+	return fmt.Errorf("run %d has not finished (%s)%s", remote.RunId, remote.State.LifeCycleState, runPageLine(remote.RunPageUrl))
+}
+
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
 	// RunNow returns only the new run id, so we return a nil remote and let the
 	// framework read it back via DoRead.

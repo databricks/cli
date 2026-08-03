@@ -805,6 +805,10 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		if canReadRemoteCache {
 			remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 			if ok {
+				err = adapter.CheckSettled(remoteState)
+				if err != nil {
+					return nil, err
+				}
 				return structaccess.Get(remoteState, fieldPath)
 			} else {
 				return nil, fmt.Errorf("internal error: no entry in remote state cache for %q (remote-only)", targetResourceKey)
@@ -824,6 +828,10 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 	if canReadRemoteCache {
 		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 		if ok {
+			err = adapter.CheckSettled(remoteState)
+			if err != nil {
+				return nil, err
+			}
 			return structaccess.Get(remoteState, fieldPath)
 		} else {
 			return nil, fmt.Errorf("internal error: no entry in remote state cache for %q", targetResourceKey)
