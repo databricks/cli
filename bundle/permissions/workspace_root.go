@@ -190,10 +190,10 @@ func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPe
 	b.Metrics.SetBoolValue(metrics.DMSUndeclaredOtherUser, otherUser)
 	b.Metrics.SetBoolValue(metrics.DMSUndeclaredServicePrincipal, servicePrincipal)
 	b.Metrics.SetBoolValue(metrics.DMSUndeclaredGroup, group)
-	b.Telemetry.SetPaired(&b.Telemetry.DMSUndeclaredDeployingUserTrue, &b.Telemetry.DMSUndeclaredDeployingUserFalse, self)
-	b.Telemetry.SetPaired(&b.Telemetry.DMSUndeclaredOtherUserTrue, &b.Telemetry.DMSUndeclaredOtherUserFalse, otherUser)
-	b.Telemetry.SetPaired(&b.Telemetry.DMSUndeclaredServicePrincipalTrue, &b.Telemetry.DMSUndeclaredServicePrincipalFalse, servicePrincipal)
-	b.Telemetry.SetPaired(&b.Telemetry.DMSUndeclaredGroupTrue, &b.Telemetry.DMSUndeclaredGroupFalse, group)
+	b.Telemetry.DMSUndeclaredDeployingUser = self
+	b.Telemetry.DMSUndeclaredOtherUser = otherUser
+	b.Telemetry.DMSUndeclaredServicePrincipal = servicePrincipal
+	b.Telemetry.DMSUndeclaredGroup = group
 
 	// Emit exactly one of the auto-migration verdict keys.
 	verdict := autoMigrationVerdict(b, stateFolderPerms, undeclared)
