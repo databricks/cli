@@ -8,15 +8,13 @@ import (
 	"time"
 )
 
-// Overlay returns a Path that behaves like base but additionally serves a set of
-// in-memory files. It lets a caller inject generated content into a filesystem
-// tree (e.g. the bundle sync root) without writing it to disk: the overlaid files
-// participate in Open/Stat/ReadDir/ReadFile and in fs.WalkDir walks, but the real
-// working tree is left untouched.
+// Overlay returns a Path that behaves like base but also serves a set of in-memory
+// files, letting a caller inject generated content into a tree (e.g. the bundle sync
+// root) without writing to disk. Overlaid files participate in Open/Stat/ReadDir/
+// ReadFile and fs.WalkDir; the real tree is untouched.
 //
-// Overlaid names are slash-separated paths relative to the root (matching io/fs
-// conventions). A name must not collide with a real entry in base; on collision the
-// overlaid file wins for direct access, which callers should avoid.
+// Names are slash-separated, relative to the root. A name must not collide with a
+// real entry in base; on collision the overlaid file wins for direct access.
 func Overlay(base Path, files map[string][]byte) Path {
 	// Copy so later mutations of the caller's map don't leak in.
 	overlay := make(map[string][]byte, len(files))

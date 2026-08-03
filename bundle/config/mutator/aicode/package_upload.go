@@ -1,30 +1,17 @@
-// Package aicode packages a local code directory referenced by an AI Runtime
-// task's code_source_path so the deployed job runs against the packaged code.
+// Package aicode packages a local directory referenced by an AI Runtime task's
+// code_source_path into a content-addressed tarball inside the bundle, and rewrites
+// code_source_path to the workspace path that tarball occupies once synced. Remote
+// values are left untouched.
 //
-// The SDK jobs.AiRuntimeTask.code_source_path field expects a workspace path to an
-// uploaded code archive; its doc comment states that the CLI is responsible for
-// packaging the user's local code directory into that archive. This mutator
-// implements that contract for DABs: when a user points code_source_path at a local
-// directory, it packages the directory into a reproducible tarball (.git and
-// gitignored files excluded) written into the bundle's sync tree, and rewrites
-// code_source_path to the workspace path the tarball will occupy once synced. The
-// tarball is uploaded by the normal bundle file sync during the deploy phase — this
-// mutator performs no workspace writes itself, so it is safe to run in the build
-// phase (before `bundle plan`). Values that are already remote are left untouched.
+// The archive is overlaid on the sync tree and uploaded by normal bundle file sync
+// in the deploy phase; the mutator performs no workspace writes, so it is safe in
+// the build phase (which runs before `bundle plan`). Living in the bundle means
+// `bundle destroy` cleans it, and the content-addressed name lets incremental sync
+// skip re-uploading unchanged code.
 //
-// Placing the archive in the bundle (rather than a separate cache) means
-// `bundle destroy` removes it like any other bundle file, and bundle file sync is
-// incremental so an unchanged archive is not re-uploaded. The archive is
-// content-addressed: its name embeds the SHA-256 of the (reproducible) tarball, so
-// unchanged code keeps the same name and the same synced path across deploys (see
-// snapshot_package.go).
-//
-// Note for reviewers: code_source_path could alternatively be translated to its
-// synced workspace path by mutator.TranslatePaths (like command_path is). That
-// runs in the initialize phase, which also runs on `bundle validate`, so the
-// archive would have to be materialized there too — writing files during validate.
-// Keeping materialization in the build phase (deploy-only) and computing the synced
-// path here avoids that.
+// Not done via mutator.TranslatePaths (which handles command_path): that runs in
+// initialize, which also runs on `bundle validate`, so the archive would be
+// materialized during validate. Build phase is deploy-only.
 package aicode
 
 import (
@@ -109,6 +96,10 @@ func (m *packageCodeSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	// them like real files, but they never touch the user's working tree.
 	b.SyncRoot = vfs.Overlay(b.SyncRoot, overlayFiles)
 
+	// Signal GetSyncIncludePatterns to force-sync the snapshot dir for this bundle,
+	// so a user ignore rule can't filter the archives out of the upload set.
+	b.HasAiRuntimeCodeSnapshot = true
+
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		for _, cs := range sources {
 			remote := remotePaths[cs.configPath.String()]
@@ -127,13 +118,8 @@ func (m *packageCodeSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	return diags
 }
 
-// snapshotSubdir is the bundle-local directory (sync-relative) that code snapshots
-// live under. It is a dedicated folder — not the user's source tree — so a snapshot
-// is never nested inside the directory it snapshots, and the archives are grouped in
-// one predictable place. The archives are overlaid onto the sync root in memory, so
-// this directory is synced to the workspace (and removed by `bundle destroy`) but is
-// never materialized in the user's working tree. bundle.GetSyncIncludePatterns
-// force-includes it so a user ignore rule can't filter the archives out of sync.
+// snapshotSubdir is the sync-relative dir the archives are placed under (dedicated
+// so a snapshot is never nested in the dir it snapshots). See bundle.AiCodeSnapshotDir.
 const snapshotSubdir = bundle.AiCodeSnapshotDir
 
 // packageOne packages the local directory for a single code source into a

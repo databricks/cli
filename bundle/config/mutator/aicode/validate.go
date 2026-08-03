@@ -82,16 +82,13 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	return diags
 }
 
-// validateSnapshotDir guards the reserved snapshot directory. The mutator writes
-// generated code archives into bundle.AiCodeSnapshotDir (overlaid on the sync root)
-// and relies on file sync uploading them. Two config situations would silently break
-// that — surface both at validate time:
+// validateSnapshotDir rejects two configs that would silently drop the generated
+// code archive from sync (leaving the job pointing at an un-uploaded path):
 //
-//   - A real file/dir at that path in the bundle would collide with the overlay
-//     (sync would carry the user's entry, not the generated archive).
-//   - A sync.exclude pattern matching that path removes the archive from the sync
-//     set (exclude is applied after include, so it wins over the force-include),
-//     leaving the deployed job pointing at an un-uploaded path.
+//   - A real file/dir at bundle.AiCodeSnapshotDir collides with the overlay (sync
+//     carries the user's entry, not the archive).
+//   - A sync.exclude matching that path removes the archive (exclude is applied
+//     after include, so it beats the force-include).
 func validateSnapshotDir(b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 	syncExcludePath := dyn.NewPath(dyn.Key("sync"), dyn.Key("exclude"))
