@@ -400,17 +400,15 @@ func (r *blockResolver) blockFor(change resolvedChange) (sourceBlock, error) {
 	// The element is assembled from several blocks. A field of it is not: it is
 	// written in one block, or written in both and one of them wins, so a
 	// field-level change routes by the field's own location.
-	if change.leaf.IsValid() {
-		if block, ok := r.winningBlock(change.leaf); ok {
-			return block, nil
-		}
-		return sourceBlock{}, fmt.Errorf("%w: element is defined in %d blocks and the field has no source location", errAmbiguousBlock, len(blocks))
+	if block, ok := r.winningBlock(change.leaf); ok {
+		return block, nil
 	}
 
-	// An invalid leaf on a path that goes past the element means the change adds a
-	// field the element does not have yet. There is no location to route by, but it
-	// still needs a defined destination, so it goes to the block declaring the
-	// resource rather than into a target-specific scope.
+	// The field has no source location: either it is absent from the config, or a
+	// mutator inserted it (e.g. OverrideCompute setting existing_cluster_id), which
+	// builds a fresh value carrying no location. Either way no block declares it, so
+	// writing it is an addition; it goes to the block declaring the resource rather
+	// than into a target-specific scope the user did not choose.
 	if !addressesWholeElement(change) {
 		return declaringBlock(blocks), nil
 	}
