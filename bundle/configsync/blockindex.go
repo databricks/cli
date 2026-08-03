@@ -450,7 +450,7 @@ func (r *blockResolver) blockForNewElement(change resolvedChange) (sourceBlock, 
 		}
 	}
 
-	blocks := r.blocksDefiningSequence(step.sequencePath)
+	blocks := r.blocksDefiningSequence(change, step.sequencePath)
 	if len(blocks) == 0 {
 		return sourceBlock{}, fmt.Errorf("%w: no block defines the sequence receiving the new element", errAmbiguousBlock)
 	}
@@ -460,10 +460,19 @@ func (r *blockResolver) blockForNewElement(change resolvedChange) (sourceBlock, 
 // blocksDefiningSequence returns the blocks that write the sequence at
 // sequencePath. An existing value is traced through its locations instead; this is
 // for a value that does not exist yet, where only the receiving sequence is known.
-func (r *blockResolver) blocksDefiningSequence(sequencePath dyn.Path) []sourceBlock {
+//
+// sequencePath is in merged index space, so for a nested sequence its enclosing
+// indices have to be translated per block before the lookup: a task at merged index 1
+// may be index 0 in the block that defines it, and probing the merged index there
+// finds nothing (or the wrong element).
+func (r *blockResolver) blocksDefiningSequence(change resolvedChange, sequencePath dyn.Path) []sourceBlock {
 	var blocks []sourceBlock
 	for _, block := range r.sortedBlocks() {
-		sequence, err := dyn.GetByPath(r.blocks[block], r.regionPath(block, sequencePath))
+		blockPath, ok := r.sequencePathWithinBlock(block, change, sequencePath)
+		if !ok {
+			continue
+		}
+		sequence, err := dyn.GetByPath(r.blocks[block], r.regionPath(block, blockPath))
 		if err != nil {
 			continue
 		}
@@ -472,6 +481,30 @@ func (r *blockResolver) blocksDefiningSequence(sequencePath dyn.Path) []sourceBl
 		}
 	}
 	return blocks
+}
+
+// sequencePathWithinBlock rewrites the enclosing sequence indices of sequencePath
+// from merged positions to block's own positions. Reports false when an enclosing
+// element is not in this block, which means the block cannot receive the value.
+//
+// change.steps is ordered outermost first, so each translated index is already known
+// by the time a deeper step needs it.
+func (r *blockResolver) sequencePathWithinBlock(block sourceBlock, change resolvedChange, sequencePath dyn.Path) (dyn.Path, bool) {
+	result := slices.Clone(sequencePath)
+	for _, step := range change.steps {
+		at := len(step.sequencePath)
+		if step.newElement || at >= len(sequencePath) {
+			continue
+		}
+		// The step's own path is a prefix of sequencePath, so the indices translated
+		// so far already apply to it.
+		index, ok := r.indexWithinBlock(block, result[:at], step.element)
+		if !ok {
+			return nil, false
+		}
+		result[at] = dyn.Index(index)
+	}
+	return result, true
 }
 
 // pathWithinBlock rewrites a change's path so every sequence index addresses the
