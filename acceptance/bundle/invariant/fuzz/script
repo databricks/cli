@@ -2,17 +2,9 @@
 # reaches the generator through the helper overrides in script.prepare. Those scripts print
 # INPUT_CONFIG_OK once a config deploys, so a non-zero result before the marker is a rejection;
 # a panic anywhere, or a failure after it, is a bug.
-
-START="${FUZZ_SEED_START:-0}"
-COUNT="${FUZZ_SEED_COUNT:-5}"
-
-# Per-seed cap: a seed past this budget is stuck, not slow. Needs GNU timeout; else uncapped.
-SEED_TIMEOUT="${FUZZ_SEED_TIMEOUT:-180}"
-
-# Overall budget (seconds): stop starting new seeds past it and exit cleanly, so a slow-but-
-# progressing variant isn't force-killed at the per-script Timeout and read as a failure.
-# 900s leaves margin under the 20m test.toml Timeout. Set FUZZ_TIME_BUDGET=0 to disable.
-BUDGET="${FUZZ_TIME_BUDGET:-900}"
+#
+# This is a harness over the sibling invariant targets, not an invariant of its own: FUZZ_TARGET
+# picks which one runs, and run_fuzz.py owns the seed loop and the outcome classification.
 
 # no_drift/script reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
 export READPLAN=""
@@ -21,7 +13,8 @@ export READPLAN=""
 $CLI bundle schema > schema.json 2>LOG.schema.err
 cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
 
-# Factored out so it can run directly or under `timeout`.
+# run_fuzz.py calls this once per seed. It has to be a bash function so the target script it
+# sources sees the invariant helpers from the merged script.prepare files.
 seed_body() {
     cd "$1"
     # Seeds share one long-lived workspace, so scope the unique name to the seed; otherwise state
@@ -33,105 +26,8 @@ seed_body() {
     source "$TESTDIR/../${FUZZ_TARGET:-no_drift}/script"
 }
 
-# timeout spawns a fresh bash, so export seed_body and the harness helpers it calls (trace).
+# run_fuzz.py spawns a fresh bash per seed, so export seed_body and the harness helpers it calls
+# (trace).
 export -f $(compgen -A function)
 
-run_seed() {
-    local dir="$1" seed="$2"
-    # SEED_TIMEOUT=0 or no timeout binary: run uncapped (matches the hang reproduce hint).
-    if [ "$SEED_TIMEOUT" != "0" ] && command -v timeout > /dev/null 2>&1; then
-        # SIGQUIT first for Go's goroutine dump, then SIGKILL as a backstop.
-        timeout --signal=QUIT --kill-after=10s "$SEED_TIMEOUT" \
-            bash -euo pipefail -c 'seed_body "$@"' _ "$dir" "$seed" > "$dir/LOG.check" 2>&1
-    else
-        # set -euo pipefail explicitly: the caller disables errexit to capture the seed's exit
-        # code and a plain subshell inherits that. Without errexit a rejected config runs on to
-        # INPUT_CONFIG_OK and reads as a bug.
-        ( set -euo pipefail; seed_body "$dir" "$seed" ) > "$dir/LOG.check" 2>&1
-    fi
-}
-
-# One machine-readable line per seed. To a file, not stdout, so the committed run's empty-output
-# assertion holds.
-record() {
-    echo "$1 seed=$2 target=${FUZZ_TARGET:-no_drift} mode=${FUZZ_MODE:-generate}" >> LOG.summary
-}
-
-# The repro goes to a file because the harness rewrites env-var values in stdout.
-fail() {
-    local seed="$1" kind="$2" reason="$3" prefix="${4:-}"
-    record "$kind" "$seed"
-    echo "fuzz: seed $seed $reason, reproduce with: ${prefix}FUZZ_SEED_START=$seed FUZZ_SEED_COUNT=1 FUZZ_TARGET=${FUZZ_TARGET:-no_drift} FUZZ_MODE=${FUZZ_MODE:-generate} task test-fuzz" > LOG.repro
-    exit 1
-}
-
-for ((offset = 0; offset < COUNT; offset++)); do
-    # A clean stop, not a failure, so log to a file.
-    if [ "$BUDGET" != "0" ] && [ "$SECONDS" -ge "$BUDGET" ]; then
-        echo "fuzz: stopping after $offset/$COUNT seeds; hit FUZZ_TIME_BUDGET=${BUDGET}s" > LOG.budget
-        break
-    fi
-
-    seed=$((START + offset))
-    dir="seed-$seed"
-    mkdir -p "$dir"
-
-    set +e
-    run_seed "$dir" "$seed"
-    rc=$?
-    set -e
-
-    if [ "$rc" -eq 0 ]; then
-        record deployed "$seed"
-        continue
-    fi
-
-    # timeout exits 124 (137 if the SIGKILL backstop fired): the seed hung, which is distinct
-    # from a drift bug.
-    if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
-        fail "$seed" hang "hung (>${SEED_TIMEOUT}s)" "FUZZ_SEED_TIMEOUT=0 "
-    fi
-
-    # The generator only writes to stderr when it fails: our bug, not a rejected config.
-    if [ -s "$dir/LOG.gen.err" ]; then
-        fail "$seed" bug "could not be generated: $(head -1 "$dir/LOG.gen.err")"
-    fi
-
-    # A panic or internal error anywhere is a bug even if the CLI then rejects the config.
-    if ! cat "$dir"/LOG.* 2>/dev/null | contains.py '!panic:' '!internal error' > /dev/null; then
-        fail "$seed" bug "panicked or hit an internal error"
-    fi
-
-    # A 501 is a testserver gap. Checked before the marker below, else an unstubbed route during
-    # plan or destroy reads as a drift bug.
-    if grep -qs "No stub found for pattern" "$dir"/LOG.*; then
-        record gap "$seed"
-        continue
-    fi
-
-    # Failing after INPUT_CONFIG_OK means the config deployed but drifted (or destroy failed);
-    # failing before it with no panic just means the config was rejected.
-    if grep -q INPUT_CONFIG_OK "$dir/LOG.check"; then
-        fail "$seed" bug "broke the invariant"
-    fi
-
-    record rejected "$seed"
-done
-
-# Per-variant tally for triage. Reached only on a clean run; a bug/hang exits above.
-if [ -f LOG.summary ]; then
-    # Snapshot the counts before appending the header, else awk would also count it.
-    totals=$(awk '{print $1}' LOG.summary | sort | uniq -c)
-    {
-        echo "--- totals ---"
-        echo "$totals"
-    } >> LOG.summary
-fi
-
-# Nothing deploying is not a pass: it means the schema, generator or fixtures are broken, which
-# otherwise looks just like the CLI correctly rejecting random input. A single-seed replay is
-# exempt, where one rejected config is a normal outcome.
-if [ "$COUNT" -gt 1 ] && ! grep -qs '^deployed ' LOG.summary; then
-    echo "fuzz: no seed deployed; the schema, generator or fixtures are broken" >&2
-    exit 1
-fi
+run_fuzz.py
