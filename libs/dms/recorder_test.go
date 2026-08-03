@@ -69,7 +69,7 @@ func (f *fakeDMS) Heartbeat(ctx context.Context, req bundledeployments.Heartbeat
 func TestRecorderFirstDeployCreatesDeploymentWithServerAssignedID(t *testing.T) {
 	f := &fakeDMS{assignedID: "server-generated-id"}
 	// A first deploy resolves no deployment ID from the workspace.
-	r := NewRecorder(f, "", testStatePath, "dev", VersionTypeDeploy)
+	r := NewRecorder(f, "", testStatePath, "dev", VersionTypeDeploy, nil)
 
 	require.NoError(t, r.CreateVersion(t.Context()))
 
@@ -101,7 +101,7 @@ func TestRecorderSubsequentDeployReusesDeploymentAndIncrementsVersion(t *testing
 		},
 	}
 	// A subsequent deploy passes the stored deployment ID.
-	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy)
+	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy, nil)
 
 	require.NoError(t, r.CreateVersion(t.Context()))
 
@@ -114,13 +114,44 @@ func TestRecorderSubsequentDeployReusesDeploymentAndIncrementsVersion(t *testing
 	assert.Equal(t, "stored-id", r.DeploymentID())
 }
 
+func TestRecorderRecordsGitInfo(t *testing.T) {
+	f := &fakeDMS{
+		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
+			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "1"}, nil
+		},
+	}
+	git := &bundledeployments.GitInfo{
+		OriginUrl: "https://github.com/pavloKozlov/bundle-test.git",
+		Branch:    "main",
+		Commit:    "e62c64503a29f91af22ec6544ae9610490ad1fce",
+	}
+	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy, git)
+
+	require.NoError(t, r.CreateVersion(t.Context()))
+	require.Len(t, f.versions, 1)
+	assert.Equal(t, git, f.versions[0].Version.GitInfo)
+}
+
+func TestRecorderGitInfoNilWhenAbsent(t *testing.T) {
+	f := &fakeDMS{
+		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
+			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "1"}, nil
+		},
+	}
+	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy, nil)
+
+	require.NoError(t, r.CreateVersion(t.Context()))
+	require.Len(t, f.versions, 1)
+	assert.Nil(t, f.versions[0].Version.GitInfo)
+}
+
 func TestRecorderGetDeploymentErrorFailsDeploy(t *testing.T) {
 	f := &fakeDMS{
 		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
 			return nil, errors.New("boom")
 		},
 	}
-	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy)
+	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy, nil)
 
 	err := r.CreateVersion(t.Context())
 	assert.ErrorContains(t, err, "failed to get deployment")
@@ -137,7 +168,7 @@ func TestRecorderMissingDeploymentRecordStartsAtVersionOne(t *testing.T) {
 			return nil, fmt.Errorf("deployment: %w", apierr.ErrNotFound)
 		},
 	}
-	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy)
+	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy, nil)
 
 	require.NoError(t, r.CreateVersion(t.Context()))
 	assert.Empty(t, f.created)
@@ -154,7 +185,7 @@ func TestRecorderDestroyDeletesDeploymentOnSuccess(t *testing.T) {
 			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "2"}, nil
 		},
 	}
-	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDestroy)
+	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDestroy, nil)
 
 	require.NoError(t, r.CreateVersion(t.Context()))
 	assert.Equal(t, bundledeployments.VersionTypeVersionTypeDestroy, f.versions[0].Version.VersionType)
@@ -170,7 +201,7 @@ func TestRecorderFailedDestroyKeepsDeployment(t *testing.T) {
 			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "2"}, nil
 		},
 	}
-	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDestroy)
+	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDestroy, nil)
 
 	require.NoError(t, r.CreateVersion(t.Context()))
 	require.NoError(t, r.CompleteVersion(t.Context(), false))
@@ -190,7 +221,7 @@ func TestNilRecorderIsNoOp(t *testing.T) {
 
 func TestRecorderCompleteVersionNoOpWithoutCreateVersion(t *testing.T) {
 	f := &fakeDMS{}
-	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy)
+	r := NewRecorder(f, "stored-id", testStatePath, "dev", VersionTypeDeploy, nil)
 	// CompleteVersion before CreateVersion is a no-op (nothing was claimed).
 	require.NoError(t, r.CompleteVersion(t.Context(), true))
 	assert.Empty(t, f.completed)

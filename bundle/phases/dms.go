@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/dms"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 // newDeploymentRecorder returns a dms.Recorder for the current deployment, or
@@ -39,5 +40,23 @@ func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.Eng
 		statePath,
 		b.Config.Bundle.Target,
 		versionType,
+		gitInfo(b),
 	), nil
+}
+
+// gitInfo maps the bundle's resolved git details onto the DMS version's
+// GitInfo. The details come from the LoadGitDetails mutator (run in the
+// initialize phase, before any recorder), or from user-set bundle.git.* values.
+// Returns nil when none are known - the bundle is not in a git repository - so
+// DMS records no git info rather than empty strings.
+func gitInfo(b *bundle.Bundle) *bundledeployments.GitInfo {
+	g := b.Config.Bundle.Git
+	if g.OriginURL == "" && g.Branch == "" && g.Commit == "" {
+		return nil
+	}
+	return &bundledeployments.GitInfo{
+		OriginUrl: g.OriginURL,
+		Branch:    g.Branch,
+		Commit:    g.Commit,
+	}
 }

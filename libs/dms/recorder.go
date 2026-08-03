@@ -39,6 +39,7 @@ type Recorder struct {
 	statePath    string
 	targetName   string
 	versionType  VersionType
+	gitInfo      *bundledeployments.GitInfo
 
 	// populated by CreateVersion
 	versionNum    int64
@@ -49,14 +50,16 @@ type Recorder struct {
 // ID resolved from the deployment's workspace node, or empty if this bundle has
 // not yet recorded a deployment (the server assigns one during CreateVersion).
 // statePath is the bundle's remote state directory, under which DMS registers
-// the deployment node.
-func NewRecorder(svc bundledeployments.BundleDeploymentsInterface, deploymentID, statePath, targetName string, versionType VersionType) *Recorder {
+// the deployment node. gitInfo is the source's git origin/branch/commit recorded
+// on each version, or nil when the bundle is not in a git repository.
+func NewRecorder(svc bundledeployments.BundleDeploymentsInterface, deploymentID, statePath, targetName string, versionType VersionType, gitInfo *bundledeployments.GitInfo) *Recorder {
 	return &Recorder{
 		svc:          svc,
 		deploymentID: deploymentID,
 		statePath:    statePath,
 		targetName:   targetName,
 		versionType:  versionType,
+		gitInfo:      gitInfo,
 	}
 }
 
@@ -211,6 +214,7 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 			VersionType:       r.versionType,
 			TargetName:        r.targetName,
 			PreviousVersionId: previousVersionID,
+			GitInfo:           r.gitInfo,
 		},
 	})
 	if versionErr != nil {
