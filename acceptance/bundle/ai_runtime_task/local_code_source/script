@@ -1,21 +1,29 @@
-# A local directory code_source_path is packaged into a content-addressed tarball
-# written into the bundle (.air_snapshots/), uploaded by normal bundle file sync,
-# and code_source_path/command_path rewritten. Pip deps ride on the job's
+# Two AI Runtime tasks each with a local directory code_source_path. Each is
+# packaged into a content-addressed tarball written into the bundle
+# (.air_snapshots/, at the repo root) and uploaded by normal bundle file sync;
+# code_source_path/command_path are rewritten. Pip deps ride on the job's
 # environments[].spec.dependencies (no requirements.yaml is synthesized).
 
-title "deploy packages and uploads the local code source\n"
+title "deploy packages and uploads the local code sources\n"
 trace $CLI bundle deploy
 
-title "the tarball contains only synced files: .gitignore'd excluded, sync.include kept, *.log excluded\n"
+title "each task's tarball holds only synced files (both under the repo root .air_snapshots)\n"
 trace list_code_snapshot.py
 
-title "code_source_path points into the bundle (.air_snapshots), command_path rewritten, deps carried on environments spec\n"
+title "both code_source_paths point into the bundle .air_snapshots, command_paths rewritten, deps on environments spec\n"
 # --del-body raw_body drops the binary tarball upload body (kept readable). Filters
 # use a leading // so Git Bash on Windows does not path-convert them. --keep is not
 # passed, so print_requests.py consumes out.requests.txt.
 trace print_requests.py --sort --del-body raw_body '//.air_snapshots/' '//jobs/create'
 
+title "re-deploying unchanged code is a no-op\n"
+trace $CLI bundle deploy
+
 title "editing a file changes the snapshot hash (content-addressed name changes)\n"
 update_file.py src/train.py 'print("training")' 'print("training v2")'
 trace $CLI bundle deploy
 trace print_requests.py --sort --del-body raw_body '//.air_snapshots/'
+
+title "destroy removes the deployed bundle (including the synced snapshots)\n"
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt

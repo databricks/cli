@@ -33,7 +33,7 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		// rewrite the field to the synced workspace path. No requirements.yaml is
 		// synthesized: the runtime installs pip deps from the job's serverless
 		// environment (environments[].spec.dependencies) directly.
-		aicode.PackageAndUpload(),
+		aicode.PackageCodeSource(),
 
 		mutator.ResolveVariableReferencesWithoutResources(
 			"artifacts",

@@ -13,6 +13,8 @@ resources:
     train:
       name: "[${bundle.target}] AI Runtime training"
       tasks:
+        # Two AI Runtime tasks with distinct local code dirs: each is packaged into
+        # its own content-addressed tarball, both under the repo root's .air_snapshots.
         - task_key: train
           environment_key: default
           ai_runtime_task:
@@ -20,6 +22,16 @@ resources:
             code_source_path: ./src
             deployments:
               - command_path: src/command.sh
+                compute:
+                  accelerator_type: GPU_8xH100
+                  accelerator_count: 8
+        - task_key: train2
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-training-2
+            code_source_path: ./src2
+            deployments:
+              - command_path: src2/command.sh
                 compute:
                   accelerator_type: GPU_8xH100
                   accelerator_count: 8

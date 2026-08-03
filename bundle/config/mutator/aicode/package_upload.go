@@ -66,17 +66,17 @@ type codeSource struct {
 	value string
 }
 
-func PackageAndUpload() bundle.Mutator {
-	return &packageAndUpload{}
+func PackageCodeSource() bundle.Mutator {
+	return &packageCodeSource{}
 }
 
-type packageAndUpload struct{}
+type packageCodeSource struct{}
 
-func (m *packageAndUpload) Name() string {
-	return "aicode.PackageAndUpload"
+func (m *packageCodeSource) Name() string {
+	return "aicode.PackageCodeSource"
 }
 
-func (m *packageAndUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *packageCodeSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	sources, diags := collectLocalCodeSources(b)
 	if diags.HasError() {
 		return diags
