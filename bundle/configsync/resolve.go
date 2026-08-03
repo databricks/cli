@@ -87,6 +87,10 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 				component:    component,
 				sequencePath: sequencePath,
 				element:      element,
+				// A positional path can address one past the end of the sequence,
+				// which is how an add to a positionally-diffed list arrives. There is
+				// no element to route by, so it is placed like any other new element.
+				newElement: !element.IsValid(),
 			})
 			continue
 		}
