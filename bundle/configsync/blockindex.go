@@ -312,6 +312,11 @@ type routeDestination struct {
 
 // routeDestinations returns every physical place a change has to be written.
 //
+// The change must address something inside a sequence: ResolveChanges only routes when
+// the path has a sequence step, and a rename path always ends in a [key='...']
+// selector. A change with no sequence on its path needs no per-block translation and
+// is written at its resolved path directly.
+//
 // An edit has one destination: only the definition that wins the merge decides the
 // deployed value. A removal has one per definition, because the field is gone only
 // once every copy is: deleting just the winning copy lets the shadowed one take
@@ -379,14 +384,6 @@ func (r *blockResolver) blockFor(change resolvedChange) (sourceBlock, error) {
 		if step.newElement {
 			return r.blockForNewElement(change)
 		}
-	}
-
-	// No sequence on the path: route by the leaf's own location.
-	if len(change.steps) == 0 {
-		if block, ok := r.winningBlock(change.leaf); ok {
-			return block, nil
-		}
-		return sourceBlock{}, fmt.Errorf("%w: no source location for the change", errAmbiguousBlock)
 	}
 
 	element := change.steps[len(change.steps)-1].element
