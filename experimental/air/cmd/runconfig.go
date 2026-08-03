@@ -294,11 +294,35 @@ func (s *stringOrInt) UnmarshalYAML(node *yaml.Node) error {
 // dockerImageConfig is environment.docker_image.
 type dockerImageConfig struct {
 	URL string `yaml:"url"`
+	// TagPolicy is "latest" to re-check the registry for the tag's newest digest
+	// on every run, or "auto" (the default) to reuse the existing registration.
+	// Registrations are per-user, so "latest" keeps a shared YAML current.
+	TagPolicy string `yaml:"tag_policy"`
+	// Registry credentials for a private image that "latest" re-resolves. When
+	// unset they are discovered from the local Docker config.
+	CredentialsScope string `yaml:"credentials_scope"`
+	CredentialsKey   string `yaml:"credentials_key"`
 }
+
+// dockerTagPolicy values for environment.docker_image.tag_policy.
+const (
+	dockerTagPolicyAuto   = "auto"
+	dockerTagPolicyLatest = "latest"
+)
 
 func (d *dockerImageConfig) validate() error {
 	if strings.TrimSpace(d.URL) == "" {
 		return errors.New("docker_image.url cannot be empty")
+	}
+
+	switch strings.ToLower(strings.TrimSpace(d.TagPolicy)) {
+	case "", dockerTagPolicyAuto, dockerTagPolicyLatest:
+	default:
+		return fmt.Errorf("invalid docker_image.tag_policy %q: must be %q or %q", d.TagPolicy, dockerTagPolicyAuto, dockerTagPolicyLatest)
+	}
+
+	if (d.CredentialsScope != "") != (d.CredentialsKey != "") {
+		return errors.New("docker_image.credentials_scope and docker_image.credentials_key must be provided together")
 	}
 	return nil
 }
