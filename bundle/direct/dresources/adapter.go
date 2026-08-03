@@ -96,6 +96,14 @@ type IResource interface {
 	// (returned by GET, not 404) that rejects a second DELETE.
 	// Example: func (*ResourceApp) IsGone(remote *AppRemote) bool
 	IsGone(remoteState any) bool
+
+	// [Optional] CheckSettled reports whether the remote's output fields are
+	// final. Implement it for a resource whose remote can be tracked and
+	// unchanged while its outputs are still filling in (e.g. a job run that has
+	// not finished): a reference to such a resource fails with the returned
+	// error instead of resolving to a zero value.
+	// Example: func (*ResourceJobRun) CheckSettled(remote *JobRunRemote) error
+	CheckSettled(remoteState any) error
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -118,6 +126,7 @@ type Adapter struct {
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 	isGone             *calladapt.BoundCaller
+	checkSettled       *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
@@ -152,6 +161,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
 		isGone:                  nil,
+		checkSettled:            nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -258,6 +268,11 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.checkSettled, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "CheckSettled")
+	if err != nil {
+		return err
+	}
+
 	keyedSlicesCall, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "KeyedSlices")
 	if err != nil {
 		return err
@@ -345,6 +360,10 @@ func (a *Adapter) validate() error {
 
 	if a.isGone != nil {
 		validations = append(validations, "IsGone remoteState", a.isGone.InTypes[0], remoteType)
+	}
+
+	if a.checkSettled != nil {
+		validations = append(validations, "CheckSettled remoteState", a.checkSettled.InTypes[0], remoteType)
 	}
 
 	if a.doUpdateWithID != nil {
@@ -623,6 +642,17 @@ func (a *Adapter) IsGone(remoteState any) bool {
 		return false
 	}
 	return outs[0].(bool)
+}
+
+// CheckSettled reports whether the remote's output fields are final, so a
+// reference to one resolves to the value it will keep. Resources that don't
+// implement CheckSettled are always settled.
+func (a *Adapter) CheckSettled(remoteState any) error {
+	if a.checkSettled == nil {
+		return nil
+	}
+	_, err := a.checkSettled.Call(remoteState)
+	return err
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

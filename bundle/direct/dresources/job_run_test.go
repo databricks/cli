@@ -218,7 +218,7 @@ func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
 }
 
 // After an abandoned wait the next deploy triggers no second run: it reads this
-// one, so a reference to the outcome resolves to an empty string.
+// one, and the empty outcome is what CheckSettled keeps out of a reference.
 func TestJobRunReadOfUnfinishedRunReportsNoResult(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning})
 
@@ -228,6 +228,58 @@ func TestJobRunReadOfUnfinishedRunReportsNoResult(t *testing.T) {
 	require.NotNil(t, remote.State)
 	assert.Equal(t, jobs.RunLifeCycleStateRunning, remote.State.LifeCycleState)
 	assert.Empty(t, remote.State.ResultState)
+}
+
+func TestJobRunCheckSettled(t *testing.T) {
+	// Every state runIsTerminal accepts is settled: the run has the outcome it is
+	// going to keep, whether or not it succeeded.
+	for _, state := range []jobs.RunLifeCycleState{
+		jobs.RunLifeCycleStateTerminated,
+		jobs.RunLifeCycleStateSkipped,
+		jobs.RunLifeCycleStateInternalError,
+	} {
+		t.Run(string(state), func(t *testing.T) {
+			remote := &JobRunRemote{RunId: 123, State: &jobs.RunState{LifeCycleState: state}}
+
+			require.NoError(t, (&ResourceJobRun{}).CheckSettled(remote))
+		})
+	}
+}
+
+func TestJobRunCheckSettledRejectsUnfinishedRun(t *testing.T) {
+	for _, state := range []jobs.RunLifeCycleState{
+		jobs.RunLifeCycleStatePending,
+		jobs.RunLifeCycleStateRunning,
+	} {
+		t.Run(string(state), func(t *testing.T) {
+			remote := &JobRunRemote{
+				RunId:      123,
+				State:      &jobs.RunState{LifeCycleState: state},
+				RunPageUrl: testRunPageURL,
+			}
+
+			err := (&ResourceJobRun{}).CheckSettled(remote)
+
+			// The run has no outcome yet, and the error links the run so the user
+			// can see what it is still doing.
+			require.ErrorContains(t, err, "run 123 has not finished ("+string(state)+")")
+			require.ErrorContains(t, err, testRunPageLink)
+		})
+	}
+}
+
+func TestJobRunCheckSettledIsWiredIntoTheAdapter(t *testing.T) {
+	adapters, err := InitAll(nil)
+	require.NoError(t, err)
+
+	running := &JobRunRemote{RunId: 123, State: &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateRunning,
+	}}
+	require.ErrorContains(t, adapters["job_runs"].CheckSettled(running), "has not finished")
+
+	// A resource that does not implement CheckSettled is always settled, so the
+	// remote state is never even looked at.
+	require.NoError(t, adapters["jobs"].CheckSettled(nil))
 }
 
 // Reporting RUNNING for the first two polls exercises the poll loop; the other
