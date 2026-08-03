@@ -210,10 +210,12 @@ func (r *blockResolver) blocksOf(value dyn.Value) []sourceBlock {
 // The target override is preferred. For a scalar that is also the block that won
 // the merge, because mergePrimitive keeps the incoming value and records its
 // location first, so writing the other copy would leave the effective value
-// unchanged. For a map or sequence, merging records the base's location first
-// (mergeMap, mergeSequence) even though the target contributed keys, so the first
-// location is not a statement about precedence; the target is still the narrower
-// scope and the one a remote edit made under that target belongs in.
+// unchanged. A sequence is different: mergeSequence records the base's location
+// first even when the target contributed entries, so the first location is not a
+// statement about precedence. This is reachable, because a sequence with no keyed
+// diffing (pipeline clusters) arrives as a change to the whole list when its length
+// changes. The target is the narrower scope and the one a remote edit made under
+// that target belongs in.
 func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
 	// Locations are in merge order, so the first one that maps to a block is the
 	// definition the merged value took. Two blocks in the same scope are only
@@ -229,8 +231,8 @@ func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
 		if !found {
 			first, found = block, true
 		}
-		// A scalar's winner is already first, but a map or sequence records the base
-		// first even when the target contributed keys, so an override still wins.
+		// A scalar's winner is already first, but a sequence records the base first
+		// even when the target contributed entries, so an override still wins.
 		if block.override {
 			return block, true
 		}
