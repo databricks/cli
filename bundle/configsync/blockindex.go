@@ -312,25 +312,33 @@ type routeDestination struct {
 
 // routeDestinations returns every physical place a change has to be written.
 //
-// A change to a field has one destination, because a field has one definition.
-// A change that addresses a whole sequence element has one destination per block
-// that defines the element: an element assembled from two blocks has a part in
-// each, so removing it means deleting both parts and renaming it means rewriting
-// the key in both. Writing per block keeps the split intact instead of collapsing
-// the element into one scope.
+// An edit has one destination: only the definition that wins the merge decides the
+// deployed value. A removal has one per definition, because the field is gone only
+// once every copy is: deleting just the winning copy lets the shadowed one take
+// effect, so the next deploy restores the value the removal was meant to drop.
+// The same holds for a whole sequence element, which additionally has to be removed
+// or renamed in each block that contributes a part, so that a split element keeps
+// its parts in their original scopes.
 func (r *blockResolver) routeDestinations(change resolvedChange) ([]routeDestination, error) {
-	if !addressesWholeElement(change) {
+	var blocks []sourceBlock
+	switch {
+	case addressesWholeElement(change):
+		element := change.steps[len(change.steps)-1].element
+		blocks = r.blocksOf(element)
+		if len(blocks) == 0 {
+			return nil, fmt.Errorf("%w: no source location for the addressed element", errAmbiguousBlock)
+		}
+	case change.operation == OperationRemove && change.leaf.IsValid():
+		blocks = r.blocksOf(change.leaf)
+		if len(blocks) == 0 {
+			return nil, fmt.Errorf("%w: no source location for the removed field", errAmbiguousBlock)
+		}
+	default:
 		destination, err := r.singleDestination(change)
 		if err != nil {
 			return nil, err
 		}
 		return []routeDestination{destination}, nil
-	}
-
-	element := change.steps[len(change.steps)-1].element
-	blocks := r.blocksOf(element)
-	if len(blocks) == 0 {
-		return nil, fmt.Errorf("%w: no source location for the addressed element", errAmbiguousBlock)
 	}
 
 	destinations := make([]routeDestination, 0, len(blocks))

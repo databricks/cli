@@ -50,6 +50,9 @@ type resolvedChange struct {
 	steps []sequenceStep
 	// leaf is the merged value the change addresses, invalid for a new field.
 	leaf dyn.Value
+	// operation decides how many destinations the change needs: a removal has to
+	// reach every definition, an edit only the one that wins the merge.
+	operation OperationType
 }
 
 // resolveSelectors converts key-value selectors to the indices of the merged
@@ -150,7 +153,7 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 		}
 	}
 
-	return resolvedChange{path: result, steps: steps, leaf: currentValue}, nil
+	return resolvedChange{path: result, steps: steps, leaf: currentValue, operation: operation}, nil
 }
 
 func pathDepth(pathStr string) int {
@@ -259,8 +262,8 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			if _, ok := renames.addPaths[fieldPath]; ok {
 				continue
 			}
-			if _, ok := renames.unpairedPaths[fieldPath]; ok {
-				log.Debugf(ctx, "config-remote-sync: skipping %s: a split element cannot be removed and recreated in one run", fullPath)
+			if reason, ok := renames.unpairedPaths[fieldPath]; ok {
+				log.Debugf(ctx, "config-remote-sync: skipping %s: %s", fullPath, reason)
 				continue
 			}
 			rename, isRename := renames.byRemovePath[fieldPath]

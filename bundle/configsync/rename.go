@@ -26,12 +26,12 @@ type renameSet struct {
 	byRemovePath map[string]renamedElement
 	// addPaths are the add halves, which must not be routed on their own.
 	addPaths map[string]struct{}
-	// unpairedPaths are the halves of a suspected key change on an element that
-	// is defined in several blocks, where the two halves could not be matched.
-	// Applying them separately would delete the element from every block and
-	// recreate it in one, collapsing the split and moving fields into a scope the
-	// user did not choose, so neither half is applied.
-	unpairedPaths map[string]struct{}
+	// unpairedPaths are the halves of a suspected key change that could not be
+	// matched up one-to-one. Applying them separately would delete the element from
+	// every block and recreate it in one, collapsing a split element and moving
+	// fields into a scope the user did not choose, so neither half is applied. The
+	// value is the reason, for reporting.
+	unpairedPaths map[string]string
 }
 
 // pairRenames matches removes of keyed elements against adds in the same sequence
@@ -46,7 +46,7 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 	set := renameSet{
 		byRemovePath:  map[string]renamedElement{},
 		addPaths:      map[string]struct{}{},
-		unpairedPaths: map[string]struct{}{},
+		unpairedPaths: map[string]string{},
 	}
 	if blocks == nil {
 		return set
@@ -54,7 +54,14 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 
 	removes, adds := keyedElementChanges(changes)
 	for _, remove := range removes {
-		paired := false
+		// Every add the removed element could equally well have become. Two
+		// identically-bodied elements renamed in one run produce two removes that
+		// each match both adds, and the pairing decides which key goes to which
+		// element: getting it backwards moves a key into the wrong block, and
+		// anything referring to the element by key (depends_on) then points at the
+		// wrong one. Nothing in the change set says which pairing was intended, so
+		// hold every half back rather than pick one.
+		var matches []keyedElement
 		for _, add := range adds {
 			if _, taken := set.addPaths[add.path]; taken {
 				continue
@@ -62,9 +69,12 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 			if remove.parent != add.parent || remove.keyField != add.keyField {
 				continue
 			}
-			if !sameElementApartFromKey(b, resourceKey, remove, add) {
-				continue
+			if sameElementApartFromKey(b, resourceKey, remove, add) {
+				matches = append(matches, add)
 			}
+		}
+		if len(matches) == 1 {
+			add := matches[0]
 			set.byRemovePath[remove.path] = renamedElement{
 				keyField: remove.keyField,
 				oldKey:   remove.key,
@@ -72,26 +82,37 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 				addPath:  add.path,
 			}
 			set.addPaths[add.path] = struct{}{}
-			paired = true
-			break
+			continue
 		}
-		if paired {
+		if len(matches) > 1 {
+			const reason = "several elements with the same contents were renamed in one run, so the new keys cannot be matched to them"
+			set.unpairedPaths[remove.path] = reason
+			for _, add := range matches {
+				set.unpairedPaths[add.path] = reason
+			}
 			continue
 		}
 
 		// The removal was not matched to an addition. A plain removal is fine: it
 		// deletes every part of the element, which is what the user asked for.
-		// But if an unmatched addition to the same sequence is present, the two are
-		// most likely one key change whose element also had a field edited. Applying
-		// them separately would delete a split element from every block and recreate
-		// it in one, collapsing the split and moving fields into a scope the user did
-		// not choose, so hold both halves back.
+		// But an addition of the same element under a new key, with one of its
+		// fields also edited, cannot be recognised as a rename: applying the halves
+		// separately would delete a split element from every block and recreate it
+		// in one, collapsing the split and moving fields into a scope the user did
+		// not choose. Hold both halves back in that case only.
+		//
+		// "The same element with a field edited" means it still has the same fields;
+		// a genuinely new element is an unrelated addition that has to be applied,
+		// even when a removal happens to be in the same run.
 		var candidates []string
 		for _, add := range adds {
 			if remove.parent != add.parent || remove.keyField != add.keyField {
 				continue
 			}
-			if _, taken := set.addPaths[add.path]; !taken {
+			if _, taken := set.addPaths[add.path]; taken {
+				continue
+			}
+			if sameFieldsApartFromKey(b, resourceKey, remove, add) {
 				candidates = append(candidates, add.path)
 			}
 		}
@@ -101,9 +122,10 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 		if !multiBlockElement(b, blocks, resourceKey, remove.path) {
 			continue
 		}
-		set.unpairedPaths[remove.path] = struct{}{}
+		const reason = "a split element cannot be removed and recreated in one run"
+		set.unpairedPaths[remove.path] = reason
 		for _, path := range candidates {
-			set.unpairedPaths[path] = struct{}{}
+			set.unpairedPaths[path] = reason
 		}
 	}
 	return set
@@ -178,6 +200,28 @@ func sameElementApartFromKey(b *bundle.Bundle, resourceKey string, remove, add k
 		return false
 	}
 	return reflect.DeepEqual(withoutKey(oldValue, remove.keyField), withoutKey(newValue, add.keyField))
+}
+
+// sameFieldsApartFromKey reports whether the added element has the same fields as
+// the removed one, ignoring their values. A rename that also edited a field keeps
+// the element's shape; an unrelated new element generally does not.
+func sameFieldsApartFromKey(b *bundle.Bundle, resourceKey string, remove, add keyedElement) bool {
+	resolved, err := resolveSelectors(resourceKey+"."+remove.path, b, OperationRemove)
+	if err != nil || !resolved.leaf.IsValid() {
+		return false
+	}
+	oldValue, ok := resolved.leaf.AsAny().(map[string]any)
+	if !ok {
+		return false
+	}
+	newValue, ok := add.value.(map[string]any)
+	if !ok {
+		return false
+	}
+	return slices.Equal(
+		slices.Sorted(maps.Keys(withoutKey(oldValue, remove.keyField))),
+		slices.Sorted(maps.Keys(withoutKey(newValue, add.keyField))),
+	)
 }
 
 func withoutKey(value map[string]any, keyField string) map[string]any {

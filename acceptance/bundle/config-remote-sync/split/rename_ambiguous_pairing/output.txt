@@ -1,0 +1,35 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== alpha (top-level) -> zzz and beta (target block) -> aaa, bodies identical
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.ambiguous_rename_job
+  tasks[task_key='aaa']: add
+  tasks[task_key='alpha']: remove
+  tasks[task_key='beta']: remove
+  tasks[task_key='zzz']: add
+
+
+
+=== Neither rename is applied, and both blocks keep their own task
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+>>> grep -c task_key: alpha databricks.yml
+1
+
+>>> grep -c task_key: beta databricks.yml
+1
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.ambiguous_rename_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!
