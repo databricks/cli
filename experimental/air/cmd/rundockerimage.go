@@ -10,13 +10,10 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-// imageReadyTimeout bounds how long a submit waits for a registration that is
-// still importing. Registration itself can take several minutes for a large
-// image, so this is generous.
+// imageReadyTimeout is generous: replicating a large image takes minutes.
 const imageReadyTimeout = time.Hour
 
-// digestDisplay abbreviates a manifest digest for logs, or reports it as unknown
-// when the registration carries none.
+// digestDisplay abbreviates a manifest digest for logs.
 func digestDisplay(sha string) string {
 	if sha == "" {
 		return "digest unknown"
@@ -24,16 +21,12 @@ func digestDisplay(sha string) string {
 	return shortManifestSHA(sha)
 }
 
-// notRegisteredError explains that the image must be registered before a run can
-// use it, pointing at the command that does it.
 func notRegisteredError(dockerImageURL string) error {
 	return fmt.Errorf("docker image not registered: %s\nregister it first: databricks experimental air register-image %s", dockerImageURL, dockerImageURL)
 }
 
-// prepareDockerImage runs the pre-submit checks for a run's custom image: it
-// re-resolves the tag when tag_policy is "latest", then requires a registration
-// that is (or becomes) AVAILABLE. It returns an error rather than letting the run
-// fail later in the launch/pod stage, where the cause is much harder to see.
+// prepareDockerImage verifies a run's custom image before submit, so a bad image
+// fails here instead of deep in the launch stage where the cause is obscured.
 func prepareDockerImage(ctx context.Context, w *databricks.WorkspaceClient, img *dockerImageConfig) error {
 	c, err := newImageClient(w)
 	if err != nil {
@@ -50,9 +43,8 @@ func prepareDockerImage(ctx context.Context, w *databricks.WorkspaceClient, img 
 }
 
 // resolveLatestDockerImage re-registers the image so the run picks up the tag's
-// newest digest. Credentials come from the config when set, else from the local
-// Docker config; stale discovered credentials fall back to an anonymous retry the
-// same way `air register-image` does.
+// newest digest, using the config's credentials when set and otherwise the local
+// Docker config.
 func resolveLatestDockerImage(ctx context.Context, w *databricks.WorkspaceClient, c *imageClient, img *dockerImageConfig) error {
 	scope, key := img.CredentialsScope, img.CredentialsKey
 	var credErr error
@@ -71,8 +63,7 @@ func resolveLatestDockerImage(ctx context.Context, w *databricks.WorkspaceClient
 }
 
 // waitForRegisteredImage requires an existing registration and blocks while it is
-// still importing. A missing or failed registration is an error the user must fix
-// by (re-)registering.
+// still importing. Missing or FAILED is an error the user fixes by re-registering.
 func waitForRegisteredImage(ctx context.Context, c *imageClient, dockerImageURL string) error {
 	reg, err := c.getImage(ctx, dockerImageURL)
 	if err != nil {

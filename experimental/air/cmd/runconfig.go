@@ -305,17 +305,15 @@ func (s *stringOrInt) UnmarshalYAML(node *yaml.Node) error {
 // dockerImageConfig is environment.docker_image.
 type dockerImageConfig struct {
 	URL string `yaml:"url"`
-	// TagPolicy is "latest" to re-check the registry for the tag's newest digest
-	// on every run, or "auto" (the default) to reuse the existing registration.
-	// Registrations are per-user, so "latest" keeps a shared YAML current.
+	// "latest" re-checks the registry for the tag's newest digest each run;
+	// "auto" (default) reuses the existing registration.
 	TagPolicy string `yaml:"tag_policy"`
-	// Registry credentials for a private image that "latest" re-resolves. When
-	// unset they are discovered from the local Docker config.
+	// Credentials for a private image that "latest" re-resolves; discovered from
+	// the local Docker config when unset.
 	CredentialsScope string `yaml:"credentials_scope"`
 	CredentialsKey   string `yaml:"credentials_key"`
 }
 
-// dockerTagPolicy values for environment.docker_image.tag_policy.
 const (
 	dockerTagPolicyAuto   = "auto"
 	dockerTagPolicyLatest = "latest"
@@ -338,8 +336,7 @@ func (d *dockerImageConfig) validate() error {
 	return nil
 }
 
-// wantsLatest reports whether the image should be re-resolved against the source
-// registry before the run.
+// wantsLatest reports whether the image should be re-resolved before the run.
 func (d *dockerImageConfig) wantsLatest() bool {
 	return strings.EqualFold(strings.TrimSpace(d.TagPolicy), dockerTagPolicyLatest)
 }

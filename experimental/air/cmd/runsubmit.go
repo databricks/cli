@@ -80,7 +80,7 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 			},
 		}},
 		CodeSourcePath: snap.CodeSourcePath,
-		// The image must already be registered; prepareDockerImage verified that.
+		// Verified as registered by prepareDockerImage.
 		DockerImageUrl: cfg.dockerImageURL(),
 	}
 	if cfg.MLflowRunName != nil {
