@@ -54,6 +54,19 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 
 	removes, adds := keyedElementChanges(changes)
 	for _, remove := range removes {
+		// The remove half carries no value, so the old element is read from the
+		// merged configuration. Resolving it once also gives the sequence steps that
+		// multiBlockElement needs below.
+		resolved, err := resolveSelectors(resourceKey+"."+remove.path, b, OperationRemove)
+		if err != nil || !resolved.leaf.IsValid() {
+			continue
+		}
+		element, ok := resolved.leaf.AsAny().(map[string]any)
+		if !ok {
+			continue
+		}
+		oldFields := withoutKey(element, remove.keyField)
+
 		// Every add the removed element could equally well have become. Two
 		// identically-bodied elements renamed in one run produce two removes that
 		// each match both adds, and the pairing decides which key goes to which
@@ -69,7 +82,7 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 			if remove.parent != add.parent || remove.keyField != add.keyField {
 				continue
 			}
-			if sameElementApartFromKey(b, resourceKey, remove, add) {
+			if sameElementApartFromKey(oldFields, add) {
 				matches = append(matches, add)
 			}
 		}
@@ -112,14 +125,14 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 			if _, taken := set.addPaths[add.path]; taken {
 				continue
 			}
-			if sameFieldsApartFromKey(b, resourceKey, remove, add) {
+			if sameFieldsApartFromKey(oldFields, add) {
 				candidates = append(candidates, add.path)
 			}
 		}
 		if len(candidates) == 0 {
 			continue
 		}
-		if !multiBlockElement(b, blocks, resourceKey, remove.path) {
+		if !multiBlockElement(blocks, resolved) {
 			continue
 		}
 		const reason = "a split element cannot be removed and recreated in one run"
@@ -131,14 +144,13 @@ func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, ch
 	return set
 }
 
-// multiBlockElement reports whether the element at path is assembled from more
-// than one physical block.
-func multiBlockElement(b *bundle.Bundle, blocks *blockResolver, resourceKey, path string) bool {
-	resolved, err := resolveSelectors(resourceKey+"."+path, b, OperationRemove)
-	if err != nil || len(resolved.steps) == 0 {
+// multiBlockElement reports whether the element the change addresses is assembled
+// from more than one physical block.
+func multiBlockElement(blocks *blockResolver, change resolvedChange) bool {
+	if len(change.steps) == 0 {
 		return false
 	}
-	last := resolved.steps[len(resolved.steps)-1]
+	last := change.steps[len(change.steps)-1]
 	return len(blocks.blocksOf(last.element)) > 1
 }
 
@@ -184,42 +196,25 @@ func keyedElementChanges(changes ResourceChanges) (removes, adds []keyedElement)
 }
 
 // sameElementApartFromKey reports whether the added element is the removed one
-// with a different key. The remove half carries no value, so the old element is
-// read from the merged configuration.
-func sameElementApartFromKey(b *bundle.Bundle, resourceKey string, remove, add keyedElement) bool {
-	resolved, err := resolveSelectors(resourceKey+"."+remove.path, b, OperationRemove)
-	if err != nil || !resolved.leaf.IsValid() {
-		return false
-	}
-	oldValue, ok := resolved.leaf.AsAny().(map[string]any)
-	if !ok {
-		return false
-	}
+// with a different key. oldFields is the removed element without its key field.
+func sameElementApartFromKey(oldFields map[string]any, add keyedElement) bool {
 	newValue, ok := add.value.(map[string]any)
 	if !ok {
 		return false
 	}
-	return reflect.DeepEqual(withoutKey(oldValue, remove.keyField), withoutKey(newValue, add.keyField))
+	return reflect.DeepEqual(oldFields, withoutKey(newValue, add.keyField))
 }
 
 // sameFieldsApartFromKey reports whether the added element has the same fields as
 // the removed one, ignoring their values. A rename that also edited a field keeps
 // the element's shape; an unrelated new element generally does not.
-func sameFieldsApartFromKey(b *bundle.Bundle, resourceKey string, remove, add keyedElement) bool {
-	resolved, err := resolveSelectors(resourceKey+"."+remove.path, b, OperationRemove)
-	if err != nil || !resolved.leaf.IsValid() {
-		return false
-	}
-	oldValue, ok := resolved.leaf.AsAny().(map[string]any)
-	if !ok {
-		return false
-	}
+func sameFieldsApartFromKey(oldFields map[string]any, add keyedElement) bool {
 	newValue, ok := add.value.(map[string]any)
 	if !ok {
 		return false
 	}
 	return slices.Equal(
-		slices.Sorted(maps.Keys(withoutKey(oldValue, remove.keyField))),
+		slices.Sorted(maps.Keys(oldFields)),
 		slices.Sorted(maps.Keys(withoutKey(newValue, add.keyField))),
 	)
 }

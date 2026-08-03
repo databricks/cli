@@ -164,6 +164,12 @@ func pathDepth(pathStr string) int {
 	return len(node.AsSlice())
 }
 
+// scopedParent keys index bookkeeping by the sequence a path addresses, within the
+// scope of one block, so operations on one block cannot shift indices in another.
+func scopedParent(scope string, path *structpath.PatternNode) string {
+	return scope + path.Parent().String()
+}
+
 // adjustArrayIndex adjusts the index in a PatternNode based on previous operations.
 // When operations are applied sequentially, removals and additions shift array indices.
 // This function adjusts the index to account for those shifts.
@@ -178,8 +184,7 @@ func adjustArrayIndex(path *structpath.PatternNode, scope string, operations map
 	}
 
 	parentPath := path.Parent()
-	parentPathStr := scope + parentPath.String()
-	ops := operations[parentPathStr]
+	ops := operations[scopedParent(scope, path)]
 
 	adjustment := 0
 	for _, op := range ops {
@@ -348,13 +353,13 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				if destChange.Operation == OperationRemove {
 					freeIndex, ok := resolvedPath.Index()
 					if ok {
-						parentPath := scope + resolvedPath.Parent().String()
+						parentPath := scopedParent(scope, resolvedPath)
 						indicesToReplaceMap[parentPath] = append(indicesToReplaceMap[parentPath], freeIndex)
 					}
 				}
 
 				if destChange.Operation == OperationAdd && resolvedPath.BracketStar() {
-					parentPath := scope + resolvedPath.Parent().String()
+					parentPath := scopedParent(scope, resolvedPath)
 					indices, ok := indicesToReplaceMap[parentPath]
 					if ok && len(indices) > 0 {
 						index := indices[0]
@@ -367,7 +372,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 
 				// Track this operation for future index adjustments (only for array element operations)
 				if originalIndex, ok := resolvedPath.Index(); ok {
-					parentPath := scope + resolvedPath.Parent().String()
+					parentPath := scopedParent(scope, resolvedPath)
 					indexOperations[parentPath] = append(indexOperations[parentPath], struct {
 						index     int
 						operation OperationType

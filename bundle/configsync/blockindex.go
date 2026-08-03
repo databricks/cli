@@ -446,10 +446,8 @@ func (r *blockResolver) blocksDefiningSequence(sequencePath dyn.Path) []sourceBl
 		if err != nil {
 			continue
 		}
-		for _, location := range sequence.Locations() {
-			if location.File == block.file && !slices.Contains(blocks, block) {
-				blocks = append(blocks, block)
-			}
+		if slices.ContainsFunc(sequence.Locations(), func(l dyn.Location) bool { return l.File == block.file }) {
+			blocks = append(blocks, block)
 		}
 	}
 	return blocks
