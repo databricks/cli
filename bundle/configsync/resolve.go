@@ -24,10 +24,12 @@ type FieldChange struct {
 	FieldCandidates []string
 	// preResolvedPath addresses the field in the pre-resolved configuration, the one
 	// read to recover a ${var.X} reference that deployment replaced with its value.
-	// That configuration is loaded with the target selected, which folds the override
-	// into resources and drops the targets subtree, so this path carries no
-	// targets.<target> prefix -- unlike FieldCandidates, which addresses the raw file
-	// where the override still lives under that prefix.
+	//
+	// That configuration is merged, so this path keeps the MERGED sequence indices and
+	// no targets.<target> prefix. FieldCandidates is the opposite on both counts: it
+	// addresses the raw file, so its indices are block-local and an override carries
+	// the prefix. Deriving one from the other reads a different element whenever the
+	// two index spaces disagree, which restores a sibling's variable reference.
 	preResolvedPath string
 }
 
@@ -286,6 +288,10 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			// per-block order differ once a sequence is split across blocks. An
 			// element assembled from several blocks has a part in each, so removing
 			// or renaming it yields one destination per block.
+			// Variable restoration resolves against the pre-resolved configuration,
+			// which is merged, so it needs the path in merged index space -- captured
+			// here, before pathWithinBlock rewrites indices to be block-local.
+			mergedIndexPath := resolvedPath
 			destinations := []routeDestination{{path: resolvedPath}}
 			routed := false
 			if blocks != nil && len(resolved.steps) > 0 {
@@ -340,12 +346,11 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					destChange.Operation = OperationReplace
 					destChange.Value = rename.newKey
 					resolvedPath = structpath.NewPatternStringKey(resolvedPath, rename.keyField)
-					preResolvedPath := resolvedPath.String()
 					result = append(result, FieldChange{
 						FilePath:        block.file,
 						Change:          destChange,
 						FieldCandidates: []string{blocks.candidatePath(block, resolvedPath)},
-						preResolvedPath: preResolvedPath,
+						preResolvedPath: structpath.NewPatternStringKey(mergedIndexPath, rename.keyField).String(),
 					})
 					continue
 				}
@@ -444,7 +449,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					FilePath:        filePath,
 					Change:          destChange,
 					FieldCandidates: candidates,
-					preResolvedPath: resolvedPathStr,
+					preResolvedPath: mergedIndexPath.String(),
 				})
 			}
 		}

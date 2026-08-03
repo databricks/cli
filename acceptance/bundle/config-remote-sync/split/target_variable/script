@@ -13,9 +13,12 @@ job_id="$(read_id.py var_job)"
 
 # Edit only the trailing segment of a path whose leading segment came from ${var.root}.
 # The reference must survive; hardcoding it would bake the dev value into the source.
+# zzz is index 1 in the merged list but index 0 in the target block it is written to.
 title "Rename the notebook inside a target-block field that uses a variable"
 edit_resource.py jobs $job_id <<PYEDIT
-r["tasks"][0]["notebook_task"]["notebook_path"] = "/Users/base/renamed"
+for task in r["tasks"]:
+    if task["task_key"] == "zzz":
+        task["notebook_task"]["notebook_path"] = "/Users/base/renamed"
 PYEDIT
 
 title "Sync"
@@ -23,8 +26,9 @@ echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 
-title "The variable reference is preserved"
+title "zzz keeps its own variable, and aaa is untouched"
 echo
 trace diff.py databricks.yml.backup databricks.yml
-errcode trace grep -c 'var.root' databricks.yml
+errcode trace grep -c 'var.dev_dir' databricks.yml
+errcode trace grep -c 'var.shared_dir' databricks.yml
 rm databricks.yml.backup

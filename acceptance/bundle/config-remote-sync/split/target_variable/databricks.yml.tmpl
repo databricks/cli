@@ -1,14 +1,31 @@
 bundle:
   name: test-bundle-$UNIQUE_NAME
 
+# notebook_path is defined ONLY in the target override block, and its value contains a
+# ${var.X} reference. Variable references are restored by looking the field up in the
+# pre-resolved configuration, where the target has already been folded into resources,
+# so that lookup path must not carry a targets.<target> prefix -- even though the write
+# itself has to.
+#
+# The lookup also has to keep MERGED sequence indices, which is why "aaa" exists: it
+# sorts before "zzz" and lives in the top-level block, so zzz is index 1 after the
+# merge but index 0 inside the block it is written to. Each task carries its own
+# variable, so reading the wrong sibling shows up as the wrong variable rather than
+# merely a lost reference.
 variables:
-  root:
+  shared_dir:
+    default: base
+  dev_dir:
     default: base
 
 resources:
   jobs:
     var_job:
       max_concurrent_runs: 1
+      tasks:
+        - task_key: aaa
+          notebook_task:
+            notebook_path: /Users/${var.shared_dir}/aaa
 
 targets:
   dev:
@@ -17,6 +34,6 @@ targets:
       jobs:
         var_job:
           tasks:
-            - task_key: main
+            - task_key: zzz
               notebook_task:
-                notebook_path: /Users/${var.root}/nb
+                notebook_path: /Users/${var.dev_dir}/zzz
