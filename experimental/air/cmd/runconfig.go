@@ -320,7 +320,13 @@ const (
 )
 
 func (d *dockerImageConfig) validate() error {
-	if strings.TrimSpace(d.URL) == "" {
+	// Store the trimmed values: URL rides the submitted task, and the credential
+	// pairing check below must not treat blank-but-present as set.
+	d.URL = strings.TrimSpace(d.URL)
+	d.CredentialsScope = strings.TrimSpace(d.CredentialsScope)
+	d.CredentialsKey = strings.TrimSpace(d.CredentialsKey)
+
+	if d.URL == "" {
 		return errors.New("docker_image.url cannot be empty")
 	}
 

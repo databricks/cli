@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -55,7 +56,8 @@ func resolveLatestDockerImage(ctx context.Context, w *databricks.WorkspaceClient
 		}
 	}
 
-	log.Infof(ctx, "re-resolving %s against the source registry (tag_policy=latest)", img.URL)
+	// Visible at the default log level (WARN): this can block for minutes.
+	cmdio.LogString(ctx, fmt.Sprintf("Re-resolving %s against the source registry (tag_policy=latest)...", img.URL))
 	if _, _, err := registerWithCredentialFallback(ctx, c, img.URL, scope, key, imageReadyTimeout); err != nil {
 		return registrationError(img.URL, err, credErr)
 	}
@@ -84,12 +86,14 @@ func waitForRegisteredImage(ctx context.Context, c *imageClient, dockerImageURL 
 		}
 		return fmt.Errorf("docker image registration failed: %s\nfix the issue and re-register: databricks experimental air register-image %s", msg, dockerImageURL)
 	case imageStatusPending, imageStatusImporting:
-		log.Infof(ctx, "docker image registration in progress (%s); waiting for it to become available", reg.Status)
+		// This wait runs up to imageReadyTimeout, so it must be visible at the
+		// default log level (WARN); log.Infof would be silent.
+		cmdio.LogString(ctx, fmt.Sprintf("Docker image registration in progress (%s); waiting for it to become available...", reg.Status))
 		final, err := c.waitForImageReady(ctx, dockerImageURL, imageReadyTimeout, imagePollInterval)
 		if err != nil {
 			return err
 		}
-		log.Infof(ctx, "image ready (%s)", digestDisplay(final.ManifestSHA256))
+		cmdio.LogString(ctx, "Image ready ("+digestDisplay(final.ManifestSHA256)+")")
 		return nil
 	}
 
