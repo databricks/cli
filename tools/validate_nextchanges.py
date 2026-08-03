@@ -27,10 +27,9 @@ VERSION_FILE = "version"
 SEMVER_RE = re.compile(r"^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 
 # README.md is allowed both at the .nextchanges root (the docs) and inside each
-# section directory: the release renderer skips it (see
-# internal/genkit/release_tagging.py), so a committed README.md keeps
-# otherwise-empty section directories present in git without being mistaken for
-# a fragment.
+# section directory: the release renderer skips it, so a committed README.md
+# keeps otherwise-empty section directories present in git without being
+# mistaken for a fragment.
 README = "README.md"
 
 
