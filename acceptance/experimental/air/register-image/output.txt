@@ -90,7 +90,7 @@ Global Flags:
 Exit code: 1
 
 === private image: credentials are discovered from the local Docker config
->>> DOCKER_CONFIG=[TESTROOT]/experimental/air/register-image/dockercfg [CLI] experimental air register-image nvcr.io/org/img:1.0
+>>> [CLI] experimental air register-image nvcr.io/org/img:1.0
 Image registered: f9e8d7c6b5a4f3e2...
 
 To use this image in your training config:

@@ -26,8 +26,12 @@ errcode trace $CLI experimental air register-image my-image:latest --scope s --k
 # the private-image registration's requests.
 print_requests.py //api/2.0/ai-compute-manager/images &> LOG.drain
 
+# Exported rather than passed through trace: $TESTDIR is a backslash path on
+# Windows, so echoing it into the output would not match this golden.
+export DOCKER_CONFIG="$TESTDIR/dockercfg"
+
 title "private image: credentials are discovered from the local Docker config"
-trace DOCKER_CONFIG="$TESTDIR/dockercfg" $CLI experimental air register-image nvcr.io/org/img:1.0
+trace $CLI experimental air register-image nvcr.io/org/img:1.0
 
 title "the registration POST carries the auto-stored credential reference"
 trace print_requests.py //api/2.0/ai-compute-manager/images ^//api/2.0/secrets

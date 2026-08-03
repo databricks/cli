@@ -1,6 +1,6 @@
 
 === private image, but the user cannot create a secret scope to store credentials
->>> DOCKER_CONFIG=[TESTROOT]/experimental/air/register-image-no-secret-permission/dockercfg [CLI] experimental air register-image nvcr.io/org/img:1.0
+>>> [CLI] experimental air register-image nvcr.io/org/img:1.0
 Error: image "nvcr.io/org/img:1.0" requires credentials, and the credentials found in your local Docker config could not be stored: creating secret scope "docker-credentials-[USERNAME]" was denied (user does not have permission to create secret scopes). Ask a workspace admin for permission to create secret scopes
 
 Host:      [DATABRICKS_URL]
@@ -14,7 +14,7 @@ Next steps:
 Exit code: 1
 
 === same failure as a JSON envelope
->>> DOCKER_CONFIG=[TESTROOT]/experimental/air/register-image-no-secret-permission/dockercfg [CLI] experimental air register-image nvcr.io/org/img:1.0 -o json
+>>> [CLI] experimental air register-image nvcr.io/org/img:1.0 -o json
 {
   "v": 1,
   "ts": "[TIMESTAMP]",

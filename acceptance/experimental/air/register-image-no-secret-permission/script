@@ -1,5 +1,9 @@
+# Exported rather than passed through trace: $TESTDIR is a backslash path on
+# Windows, so echoing it into the output would not match this golden.
+export DOCKER_CONFIG="$TESTDIR/dockercfg"
+
 title "private image, but the user cannot create a secret scope to store credentials"
-errcode trace DOCKER_CONFIG="$TESTDIR/dockercfg" $CLI experimental air register-image nvcr.io/org/img:1.0
+errcode trace $CLI experimental air register-image nvcr.io/org/img:1.0
 
 title "same failure as a JSON envelope"
-errcode trace DOCKER_CONFIG="$TESTDIR/dockercfg" $CLI experimental air register-image nvcr.io/org/img:1.0 -o json
+errcode trace $CLI experimental air register-image nvcr.io/org/img:1.0 -o json
