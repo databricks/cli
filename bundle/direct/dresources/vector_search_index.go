@@ -22,6 +22,12 @@ import (
 // embedding pipeline shutdown can stretch closer to ten minutes.
 const deleteIndexTimeout = 15 * time.Minute
 
+// pendingDeletionTimeout caps how long a create is retried while the backend
+// still holds the index name from a preceding delete (see createIndex). Kept
+// deliberately short so we fail fast rather than hang for the full
+// deleteIndexTimeout: if nightlies still hit the race, raise it then.
+const pendingDeletionTimeout = time.Minute
+
 // createIndexTimeout caps the wait for an index to become ready after creation.
 // Delta sync indexes do an initial sync from the source table, which can stretch
 // out for large tables. Matches the terraform provider's defaultIndexProvisionTimeout.
@@ -151,7 +157,7 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 // The API exposes no DELETING state to poll for instead; remove this once it
 // does, or once CREATE queues behind the pending delete rather than failing.
 func (r *ResourceVectorSearchIndex) createIndex(ctx context.Context, req vectorsearch.CreateVectorIndexRequest) (*vectorsearch.VectorIndex, error) {
-	return retries.Poll(ctx, deleteIndexTimeout, func() (*vectorsearch.VectorIndex, *retries.Err) {
+	return retries.Poll(ctx, pendingDeletionTimeout, func() (*vectorsearch.VectorIndex, *retries.Err) {
 		index, err := r.client.VectorSearchIndexes.CreateIndex(ctx, req)
 		if err == nil {
 			return index, nil
