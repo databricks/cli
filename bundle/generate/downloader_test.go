@@ -521,23 +521,23 @@ func TestDownloader_MarkDirectoryForDownload_NotebookGetsExtension(t *testing.T)
 					{Path: filePath, ObjectType: workspace.ObjectTypeFile},
 				},
 			})
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		case "/api/2.0/workspace/get-status":
 			path := r.URL.Query().Get("path")
 			switch path {
 			case rootPath:
 				err := json.NewEncoder(rw).Encode(workspace.ObjectInfo{Path: rootPath})
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			case notebookPath:
 				err := json.NewEncoder(rw).Encode(workspaceStatus{
 					Language:     workspace.LanguagePython,
 					ObjectType:   workspace.ObjectTypeNotebook,
 					ExportFormat: workspace.ExportFormatSource,
 				})
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			case filePath:
 				err := json.NewEncoder(rw).Encode(workspace.ObjectInfo{Path: filePath})
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			default:
 				t.Fatalf("unexpected get-status path: %s", path)
 			}
