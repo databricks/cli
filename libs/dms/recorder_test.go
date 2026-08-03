@@ -85,6 +85,7 @@ func TestRecorderFirstDeployCreatesDeploymentWithServerAssignedID(t *testing.T) 
 	require.Len(t, f.versions, 1)
 	assert.Equal(t, "1", f.versions[0].VersionId)
 	assert.Equal(t, "deployments/server-generated-id", f.versions[0].Parent)
+	assert.Empty(t, f.versions[0].Version.PreviousVersionId)
 	assert.Equal(t, int64(1), r.Version())
 
 	require.NoError(t, r.CompleteVersion(t.Context(), true))
@@ -104,10 +105,12 @@ func TestRecorderSubsequentDeployReusesDeploymentAndIncrementsVersion(t *testing
 
 	require.NoError(t, r.CreateVersion(t.Context()))
 
-	// No new deployment is created; the version increments to last_version_id + 1.
+	// No new deployment is created; the version increments to last_version_id + 1
+	// and names its predecessor for the server's concurrency check.
 	assert.Empty(t, f.created)
 	require.Len(t, f.versions, 1)
 	assert.Equal(t, "5", f.versions[0].VersionId)
+	assert.Equal(t, "4", f.versions[0].Version.PreviousVersionId)
 	assert.Equal(t, "stored-id", r.DeploymentID())
 }
 
@@ -141,6 +144,8 @@ func TestRecorderMissingDeploymentRecordStartsAtVersionOne(t *testing.T) {
 	require.Len(t, f.versions, 1)
 	assert.Equal(t, "1", f.versions[0].VersionId)
 	assert.Equal(t, "deployments/stored-id", f.versions[0].Parent)
+	// The first version has no predecessor.
+	assert.Empty(t, f.versions[0].Version.PreviousVersionId)
 }
 
 func TestRecorderDestroyDeletesDeploymentOnSuccess(t *testing.T) {

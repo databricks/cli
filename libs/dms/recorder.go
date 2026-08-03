@@ -149,6 +149,10 @@ func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 // the server assign the ID; otherwise it reads the existing deployment to
 // compute the next version number.
 func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID string, err error) {
+	// previousVersionID is the deployment's current most-recent version, which the
+	// server requires for optimistic concurrency (see CreateVersion below). It
+	// stays empty for the deployment's first version, which has no predecessor.
+	var previousVersionID string
 	if r.deploymentID != "" {
 		// A resolved node names the deployment, but its record is created by the
 		// first version, so there may be none yet: a deploy that registered the
@@ -164,6 +168,7 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 			if parseErr != nil {
 				return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
 			}
+			previousVersionID = dep.LastVersionId
 			versionID = strconv.FormatInt(lastVersion+1, 10)
 		case errors.Is(getErr, apierr.ErrNotFound), errors.Is(getErr, apierr.ErrResourceDoesNotExist):
 			versionID = "1"
@@ -194,15 +199,18 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 		versionID = "1"
 	}
 
-	// The server validates that versionID equals last_version_id + 1 and returns
-	// ABORTED otherwise (e.g. a concurrent deploy already created this version).
+	// The server validates that previous_version_id matches the deployment's
+	// current most-recent version and returns INVALID_PARAMETER_VALUE otherwise
+	// (e.g. a concurrent deploy already recorded a newer version). It is empty for
+	// the first version, which has no predecessor.
 	version, versionErr := r.svc.CreateVersion(ctx, bundledeployments.CreateVersionRequest{
 		Parent:    "deployments/" + r.deploymentID,
 		VersionId: versionID,
 		Version: bundledeployments.Version{
-			CliVersion:  build.GetInfo().Version,
-			VersionType: r.versionType,
-			TargetName:  r.targetName,
+			CliVersion:        build.GetInfo().Version,
+			VersionType:       r.versionType,
+			TargetName:        r.targetName,
+			PreviousVersionId: previousVersionID,
 		},
 	})
 	if versionErr != nil {
