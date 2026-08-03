@@ -94,13 +94,13 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 		var newValue any
 		switch fc.Change.Operation {
 		case OperationReplace:
-			fieldValue, ok := preResolvedValueAt(preResolved, fc.FieldCandidates)
+			fieldValue, ok := preResolvedValueAt(preResolved, fc.mergedPath)
 			if !ok {
 				continue
 			}
 			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, stats)
 		case OperationAdd:
-			siblings, ok := sequenceSiblings(preResolved, fc.FieldCandidates)
+			siblings, ok := sequenceSiblings(preResolved, fc.mergedPath)
 			if !ok {
 				continue
 			}
@@ -556,18 +556,16 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 
 // preResolvedValueAt returns the pre-resolved dyn.Value at the field path,
 // if the field exists in the merged pre-resolved config.
-func preResolvedValueAt(preResolved dyn.Value, candidates []string) (dyn.Value, bool) {
-	for _, candidate := range candidates {
-		p, err := dyn.NewPathFromString(candidate)
-		if err != nil {
-			continue
-		}
-		v, err := dyn.GetByPath(preResolved, p)
-		if err == nil {
-			return v, true
-		}
+func preResolvedValueAt(preResolved dyn.Value, fieldPath string) (dyn.Value, bool) {
+	p, err := dyn.NewPathFromString(fieldPath)
+	if err != nil {
+		return dyn.InvalidValue, false
 	}
-	return dyn.InvalidValue, false
+	v, err := dyn.GetByPath(preResolved, p)
+	if err != nil {
+		return dyn.InvalidValue, false
+	}
+	return v, true
 }
 
 // sequenceSiblings returns the sibling elements of the parent sequence when
@@ -575,29 +573,26 @@ func preResolvedValueAt(preResolved dyn.Value, candidates []string) (dyn.Value, 
 // last component must be an index ([*] or [N]) and the parent must resolve
 // to a sequence in the pre-resolved config. Returns false for non-sequence
 // Adds (e.g., new map fields).
-func sequenceSiblings(preResolved dyn.Value, candidates []string) ([]dyn.Value, bool) {
-	for _, candidate := range candidates {
-		node, err := structpath.ParsePattern(candidate)
-		if err != nil {
-			continue
-		}
-		_, hasIndex := node.Index()
-		if !hasIndex && !node.BracketStar() {
-			continue
-		}
-		p, err := dyn.NewPathFromString(node.Parent().String())
-		if err != nil {
-			continue
-		}
-		parentValue, err := dyn.GetByPath(preResolved, p)
-		if err != nil {
-			continue
-		}
-		seq, ok := parentValue.AsSequence()
-		if !ok {
-			continue
-		}
-		return seq, true
+func sequenceSiblings(preResolved dyn.Value, fieldPath string) ([]dyn.Value, bool) {
+	node, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return nil, false
 	}
-	return nil, false
+	_, hasIndex := node.Index()
+	if !hasIndex && !node.BracketStar() {
+		return nil, false
+	}
+	p, err := dyn.NewPathFromString(node.Parent().String())
+	if err != nil {
+		return nil, false
+	}
+	parentValue, err := dyn.GetByPath(preResolved, p)
+	if err != nil {
+		return nil, false
+	}
+	seq, ok := parentValue.AsSequence()
+	if !ok {
+		return nil, false
+	}
+	return seq, true
 }

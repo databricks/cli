@@ -1,0 +1,30 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+job_id="$(read_id.py var_job)"
+
+
+# Edit only the trailing segment of a path whose leading segment came from ${var.root}.
+# The reference must survive; hardcoding it would bake the dev value into the source.
+title "Rename the notebook inside a target-block field that uses a variable"
+edit_resource.py jobs $job_id <<PYEDIT
+r["tasks"][0]["notebook_task"]["notebook_path"] = "/Users/base/renamed"
+PYEDIT
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "The variable reference is preserved"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+errcode trace grep -c 'var.root' databricks.yml
+rm databricks.yml.backup

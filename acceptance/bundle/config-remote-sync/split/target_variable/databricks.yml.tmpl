@@ -1,0 +1,22 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  root:
+    default: base
+
+resources:
+  jobs:
+    var_job:
+      max_concurrent_runs: 1
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        var_job:
+          tasks:
+            - task_key: main
+              notebook_task:
+                notebook_path: /Users/${var.root}/nb

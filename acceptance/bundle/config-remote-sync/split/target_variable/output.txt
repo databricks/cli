@@ -1,0 +1,36 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Rename the notebook inside a target-block field that uses a variable
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.var_job
+  tasks[task_key='main'].notebook_task.notebook_path: replace
+
+
+
+=== The variable reference is preserved
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -20,3 +20,3 @@
+             - task_key: main
+               notebook_task:
+-                notebook_path: /Users/${var.root}/nb
++                notebook_path: /Users/${var.root}/renamed
+
+>>> grep -c var.root databricks.yml
+1
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.var_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!

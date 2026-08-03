@@ -22,6 +22,11 @@ type FieldChange struct {
 	FilePath        string
 	Change          *ConfigChangeDesc
 	FieldCandidates []string
+	// mergedPath addresses the field in a merged configuration, i.e. without the
+	// targets.<target> prefix that a write to an override block needs. Selecting a
+	// target folds the override into resources and drops the targets subtree, so a
+	// prefixed path does not resolve there.
+	mergedPath string
 }
 
 // sequenceStep records a sequence element that a change path navigated through.
@@ -325,11 +330,12 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					destChange.Operation = OperationReplace
 					destChange.Value = rename.newKey
 					resolvedPath = structpath.NewPatternStringKey(resolvedPath, rename.keyField)
-					candidate := blocks.candidatePath(block, resolvedPath.String())
+					mergedPath := resolvedPath.String()
 					result = append(result, FieldChange{
 						FilePath:        block.file,
 						Change:          destChange,
-						FieldCandidates: []string{candidate},
+						FieldCandidates: []string{blocks.candidatePath(block, mergedPath)},
+						mergedPath:      mergedPath,
 					})
 					continue
 				}
@@ -429,6 +435,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					FilePath:        filePath,
 					Change:          destChange,
 					FieldCandidates: candidates,
+					mergedPath:      resolvedPathStr,
 				})
 			}
 		}
