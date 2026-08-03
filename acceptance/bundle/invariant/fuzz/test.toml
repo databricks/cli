@@ -16,6 +16,11 @@ IgnoreUnhandledRequests = true
 # The idempotency targets assert a delete or destroy re-run succeeds, which holds regardless of
 # how faithfully the fake server round-trips fields. No redeploy target: no_drift's post-deploy
 # plan already dry-runs one.
+#
+# ../continue_293 is deliberately left out: it deploys with the pinned v0.293.0 binary first, and
+# that version does not know many current fields and resource types (see its test.toml, which
+# excludes a third of the curated configs for that reason). The old CLI would reject most seeds
+# before the current one ever ran, so the window would measure v0.293.0's schema, not this CLI.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "delete_idempotent", "destroy_idempotent"]
 
 # Snapshot of pre-delete state the idempotency targets keep; may linger if a seed fails.
