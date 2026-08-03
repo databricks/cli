@@ -743,9 +743,8 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	localConfig := sv.Value
 
-	var adapter *dresources.Adapter
-	adapter, err = b.getAdapterForKey(targetResourceKey)
-	if adapter == nil {
+	adapter, err := b.getAdapterForKey(targetResourceKey)
+	if err != nil {
 		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)
 	}
 

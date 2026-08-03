@@ -55,7 +55,14 @@ Building python_artifact...
   "new_state": {
     "value": {
       "relative_path": "[UUID]/[SNAPSHOT_HASH]",
-      "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]"
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
+      "bundle_id": "[UUID]",
+      "acl": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ]
     }
   }
 }
@@ -89,7 +96,14 @@ Building python_artifact...
   "new_state": {
     "value": {
       "relative_path": "[UUID]/[SNAPSHOT_HASH]",
-      "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]"
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
+      "bundle_id": "[UUID]",
+      "acl": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ]
     }
   },
   "remote_state": {
@@ -97,6 +111,30 @@ Building python_artifact...
     "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]"
   },
   "changes": {
+    "acl": {
+      "action": "skip",
+      "reason": "missing_in_remote",
+      "old": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ],
+      "new": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ],
+      "remote": null
+    },
+    "bundle_id": {
+      "action": "skip",
+      "reason": "missing_in_remote",
+      "old": "[UUID]",
+      "new": "[UUID]",
+      "remote": ""
+    },
     "full_path": {
       "action": "recreate",
       "reason": "immutable",

@@ -132,6 +132,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
 		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
 		collectResourceMap(descriptions["instance_pools"], r.InstancePools),
+		collectResourceMap(descriptions["snapshots"], r.Snapshots),
 	}
 }
 
@@ -195,5 +196,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"postgres_synced_tables":  (&resources.PostgresSyncedTable{}).ResourceDescription(),
 		"vector_search_endpoints": (&resources.VectorSearchEndpoint{}).ResourceDescription(),
 		"vector_search_indexes":   (&resources.VectorSearchIndex{}).ResourceDescription(),
+		"snapshots":               (&resources.Snapshot{}).ResourceDescription(),
 	}
 }

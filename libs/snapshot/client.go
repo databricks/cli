@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+	"path"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
@@ -120,8 +121,13 @@ func (c *snapshotAPIClient) Upload(ctx context.Context, path, bundleID string, a
 	return &SnapshotInfo{Path: resp.Snapshot.Path}, nil
 }
 
-func (c *snapshotAPIClient) Get(ctx context.Context, path string) (*SnapshotInfo, error) {
-	resp, err := c.workspaceClient.Workspace.GetStatusByPath(ctx, path)
+func (c *snapshotAPIClient) Get(ctx context.Context, snapshotRelativePath string) (*SnapshotInfo, error) {
+	rootPath, err := c.GetSnapshotRootPath(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get snapshot root path: %w", err)
+	}
+	snapshotPath := path.Join(rootPath, snapshotRelativePath)
+	resp, err := c.workspaceClient.Workspace.GetStatusByPath(ctx, snapshotPath)
 	if err != nil {
 		return nil, fmt.Errorf("snapshot get: %w", err)
 	}

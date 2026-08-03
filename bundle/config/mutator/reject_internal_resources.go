@@ -30,7 +30,7 @@ func (m *rejectInternalResources) Apply(ctx context.Context, b *bundle.Bundle) d
 
 	var internalResourceKeys []string
 	// collect all internal resource keys, only top level keys under "resources"
-	structwalk.WalkType(reflect.TypeFor[config.Resources](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
+	err := structwalk.WalkType(reflect.TypeFor[config.Resources](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
 		if path.Len() > 2 {
 			return false
 		}
@@ -43,6 +43,9 @@ func (m *rejectInternalResources) Apply(ctx context.Context, b *bundle.Bundle) d
 		}
 		return true
 	})
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	for _, key := range internalResourceKeys {
 		v, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("resources."+key))

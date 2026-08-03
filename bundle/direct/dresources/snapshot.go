@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"path"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/snapshot"
@@ -10,8 +9,7 @@ import (
 )
 
 type ResourceSnapshot struct {
-	remoteRoot string
-	uploader   snapshot.SnapshotUploader
+	uploader snapshot.SnapshotUploader
 }
 
 type SnapshotState struct {
@@ -30,7 +28,9 @@ type SnapshotRemote struct {
 func (s *ResourceSnapshot) New(client *databricks.WorkspaceClient) *ResourceSnapshot {
 	// Return a zero-value instance when client is nil (e.g. refschema introspection).
 	if client == nil {
-		return &ResourceSnapshot{}
+		return &ResourceSnapshot{
+			uploader: nil,
+		}
 	}
 
 	uploader, err := snapshot.NewSnapshotUploader(client)
@@ -38,21 +38,15 @@ func (s *ResourceSnapshot) New(client *databricks.WorkspaceClient) *ResourceSnap
 		panic(err)
 	}
 
-	snapshotRootPath, err := uploader.GetSnapshotRootPath(context.Background())
-	if err != nil {
-		panic(err)
-	}
-
 	return &ResourceSnapshot{
-		remoteRoot: snapshotRootPath,
-		uploader:   uploader,
+		uploader: uploader,
 	}
 }
 
 func (s *ResourceSnapshot) PrepareState(input *resources.Snapshot) *SnapshotState {
 	return &SnapshotState{
 		RelativePath: input.RelativePath(),
-		FullPath:     input.FullPath(s.remoteRoot),
+		FullPath:     input.FullPath(),
 		BundleID:     input.BundleID,
 		ACL:          input.ACL,
 		ZipContent:   input.ZipContent,
@@ -70,14 +64,13 @@ func (s *ResourceSnapshot) RemapState(remote *SnapshotRemote) *SnapshotState {
 }
 
 func (s *ResourceSnapshot) DoRead(ctx context.Context, id string) (*SnapshotRemote, error) {
-	fullPath := path.Join(s.remoteRoot, id)
-	_, err := s.uploader.Get(ctx, fullPath)
+	info, err := s.uploader.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	return &SnapshotRemote{
 		RelativePath: id,
-		FullPath:     fullPath,
+		FullPath:     info.Path,
 	}, nil
 }
 

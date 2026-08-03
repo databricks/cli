@@ -76,7 +76,7 @@ func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName strin
 
 func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// We only validate UC Volumes paths right now.
-	if !libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) {
+	if !libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) || b.IsImmutableFolder() {
 		return nil
 	}
 
