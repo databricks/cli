@@ -1,5 +1,5 @@
 
->>> print_requests.py ^//import-file/ ^//workspace/ ^//telemetry-ext
+>>> print_requests.py ^//workspace/ ^//telemetry-ext
 {
   "method": "POST",
   "path": "/api/2.0/secrets/scopes/delete",

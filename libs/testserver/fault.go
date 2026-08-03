@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 	"sync"
@@ -17,6 +18,12 @@ type FaultRule struct {
 	Body       string
 	offset     int
 	times      int
+
+	// bodyContains, if non-empty, additionally requires the request body to
+	// contain this substring for the rule to fire. /workspace/import routes
+	// every upload through the same method+path, so the only way to target a
+	// single file's upload is by matching its multipart "path" form field.
+	bodyContains string
 }
 
 // FaultRules holds the active fault injection rules for a test server.
@@ -31,20 +38,22 @@ func NewFaultRules() *FaultRules {
 }
 
 // Set registers or replaces a fault rule for the given token and pattern.
-func (fr *FaultRules) Set(token, pattern string, statusCode int, body string, offset, times int) {
+func (fr *FaultRules) Set(token, pattern string, statusCode int, body string, offset, times int, bodyContains string) {
 	fr.mu.Lock()
 	defer fr.mu.Unlock()
 	fr.rules[faultRuleKey{token: token, pattern: pattern}] = &FaultRule{
-		StatusCode: statusCode,
-		Body:       body,
-		offset:     offset,
-		times:      times,
+		StatusCode:   statusCode,
+		Body:         body,
+		offset:       offset,
+		times:        times,
+		bodyContains: bodyContains,
 	}
 }
 
 // Check returns a matching fault rule and advances its counters, or nil if no rule matches.
 // Pattern supports a trailing "*" wildcard, e.g. "PUT /api/2.0/permissions/pipelines/*".
-func (fr *FaultRules) Check(method, path, token string) *FaultRule {
+// A rule with a non-empty bodyContains only matches when body contains that substring.
+func (fr *FaultRules) Check(method, path, token string, body []byte) *FaultRule {
 	requestPattern := method + " " + path
 
 	fr.mu.Lock()
@@ -62,6 +71,11 @@ func (fr *FaultRules) Check(method, path, token string) *FaultRule {
 			matched = requestPattern == rulePattern
 		}
 		if !matched {
+			continue
+		}
+		// A non-matching body must not consume the rule's offset/times budget,
+		// so this check precedes the counter updates below.
+		if rule.bodyContains != "" && !bytes.Contains(body, []byte(rule.bodyContains)) {
 			continue
 		}
 		if rule.offset > 0 {
@@ -87,16 +101,17 @@ func (fr *FaultRules) Check(method, path, token string) *FaultRule {
 func faultEndpointHandler(fr *FaultRules) HandlerFunc {
 	return func(req Request) any {
 		var body struct {
-			Pattern    string `json:"pattern"`
-			StatusCode int    `json:"status_code"`
-			Body       string `json:"body"`
-			Offset     int    `json:"offset"`
-			Times      int    `json:"times"`
+			Pattern      string `json:"pattern"`
+			StatusCode   int    `json:"status_code"`
+			Body         string `json:"body"`
+			Offset       int    `json:"offset"`
+			Times        int    `json:"times"`
+			BodyContains string `json:"body_contains"`
 		}
 		if err := json.Unmarshal(req.Body, &body); err != nil {
 			return Response{StatusCode: 400, Body: map[string]string{"error": err.Error()}}
 		}
-		fr.Set(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times)
+		fr.Set(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times, body.BodyContains)
 		return Response{StatusCode: 200}
 	}
 }

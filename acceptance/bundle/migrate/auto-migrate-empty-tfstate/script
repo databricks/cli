@@ -19,7 +19,7 @@ title "Sweep is recorded in telemetry as via-config\n"
 trace print_migration_telemetry
 
 title "Sweep also affected the workspace: .backup uploaded, terraform.tfstate deleted\n"
-trace print_requests.py //workspace-files/import-file //workspace/delete --sort | jq '.method + " " + .path' | contains.py 'terraform.tfstate.backup' 'workspace/delete'
+trace print_requests.py //workspace/import //workspace/delete --sort | jq '.method + " " + (.body.multipart_form.path // .path)' | contains.py 'terraform.tfstate.backup' 'workspace/delete'
 
 title "debug states confirms no terraform.tfstate anywhere; only .backup remains\n"
 trace $CLI bundle debug states --force-pull

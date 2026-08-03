@@ -27,6 +27,6 @@ trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm out.requests.txt
 trace $CLI bundle deploy
 # dashboard_id is output only field that terraform adds
-trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' | grep -v '"dashboard_id":' > out.deploy.requests.json
+trace print_requests.py '^//workspace/' '^//telemetry-ext' | grep -v '"dashboard_id":' > out.deploy.requests.json
 
 trace $CLI bundle plan | contains.py "1 unchanged"
