@@ -11,16 +11,19 @@ Notes:
 
 To deploy and run this workload as a bundle:
   1. cd .
-  2. databricks bundle validate
-  3. databricks bundle deploy
-  4. databricks bundle run torchrun-a10-smoke-test
+  2. [CLI] bundle validate
+  3. [CLI] bundle deploy
+  4. [CLI] bundle run torchrun-a10-smoke-test
 
 bundle deploy uploads the code source and launch scripts automatically.
+
+Run these with this same CLI: a build without ai_runtime_task support
+only warns about the unknown field, then deploys a job with no AI task.
 
 Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
 persistent job that is not garbage-collected. When you are done, remove the
 job and its uploaded files with:
-  databricks bundle destroy
+  [CLI] bundle destroy
 
 === emitted databricks.yml (code_source_path points at ./src; no code is copied)
 >>> cat databricks.yml
@@ -64,6 +67,38 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/torchrun-a10-smoke-test/dev
 
 Validation OK!
+
+=== re-converting refuses to clobber the generated bundle
+>>> [CLI] experimental air convert-to-dabs train.yaml
+Error: databricks.yml already exists in .; pass --force to overwrite or remove it
+
+Exit code: 1
+
+=== --force overwrites it
+>>> [CLI] experimental air convert-to-dabs train.yaml --force
+Wrote a Databricks Asset Bundle to .:
+  databricks.yml
+  training_config.yaml
+  command.sh
+
+Notes:
+  - code_source points at your source directory; bundle deploy packages and uploads it from there.
+
+To deploy and run this workload as a bundle:
+  1. cd .
+  2. [CLI] bundle validate
+  3. [CLI] bundle deploy
+  4. [CLI] bundle run torchrun-a10-smoke-test
+
+bundle deploy uploads the code source and launch scripts automatically.
+
+Run these with this same CLI: a build without ai_runtime_task support
+only warns about the unknown field, then deploys a job with no AI task.
+
+Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
+persistent job that is not garbage-collected. When you are done, remove the
+job and its uploaded files with:
+  [CLI] bundle destroy
 
 === docker_image is not supported yet
 >>> [CLI] experimental air convert-to-dabs docker.yaml --output-dir generated-docker

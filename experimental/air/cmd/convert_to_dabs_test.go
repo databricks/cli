@@ -11,6 +11,41 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Re-running a conversion into a dir that already holds a generated bundle is
+// refused by default (the user may have edited it) and allowed with --force.
+func TestConvertToDabsForceOverwrite(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
+	cfg := "experiment_name: overwrite\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
+		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: ./src\n"
+	path := filepath.Join(dir, "run.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	_, err = writeBundle(t.Context(), loaded, path, dir, false)
+	require.NoError(t, err)
+
+	// A hand edit must survive a refused re-run.
+	edited := []byte("# hand-edited\n")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), edited, 0o600))
+
+	_, err = writeBundle(t.Context(), loaded, path, dir, false)
+	require.ErrorContains(t, err, "pass --force to overwrite")
+	kept, err := os.ReadFile(filepath.Join(dir, "databricks.yml"))
+	require.NoError(t, err)
+	assert.Equal(t, edited, kept)
+
+	// With --force the generated bundle replaces it.
+	_, err = writeBundle(t.Context(), loaded, path, dir, true)
+	require.NoError(t, err)
+	regenerated, err := os.ReadFile(filepath.Join(dir, "databricks.yml"))
+	require.NoError(t, err)
+	assert.NotEqual(t, edited, regenerated)
+	assert.Contains(t, string(regenerated), "ai_runtime_task")
+}
+
 func TestConvertToDabsCommandShape(t *testing.T) {
 	cmd := newConvertToDabsCommand()
 	assert.Equal(t, "convert-to-dabs <yaml_path>", cmd.Use)
@@ -204,7 +239,7 @@ func TestConvertToDabsDoesNotCopyCode(t *testing.T) {
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	written, err := writeBundle(t.Context(), loaded, path, dir)
+	written, err := writeBundle(t.Context(), loaded, path, dir, false)
 	require.NoError(t, err)
 
 	// code_source_path points at the existing source dir; nothing is copied.

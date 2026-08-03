@@ -40,7 +40,10 @@ import (
 const dabsTargetName = "dev"
 
 func newConvertToDabsCommand() *cobra.Command {
-	var outputDir string
+	var (
+		outputDir string
+		force     bool
+	)
 
 	cmd := &cobra.Command{
 		Use:   "convert-to-dabs <yaml_path>",
@@ -59,6 +62,7 @@ does not contact the workspace.`,
 	}
 
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the bundle into (default: a <experiment>-bundle folder next to the input YAML). Accepts an absolute or relative path.")
+	cmd.Flags().BoolVar(&force, "force", false, "Overwrite the generated bundle files if they already exist.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -79,7 +83,7 @@ does not contact the workspace.`,
 			dir = filepath.Dir(yamlPath)
 		}
 
-		written, err := writeBundle(ctx, cfg, yamlPath, dir)
+		written, err := writeBundle(ctx, cfg, yamlPath, dir, force)
 		if err != nil {
 			return err
 		}
@@ -386,10 +390,11 @@ func buildPermissionsValue(perms []permission) dyn.Value {
 
 // writeBundle writes the bundle into dir: databricks.yml plus the loose launch
 // artifacts (command.sh + env/secret/param sidecars). It does not touch the code
-// source — the deploy-time aicode mutator packages it in place. It refuses to
-// overwrite existing files so a re-run can't silently clobber a bundle the user has
-// edited. Returns the relative paths written, for the next-steps message.
-func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string) ([]string, error) {
+// source — the deploy-time aicode mutator packages it in place. Unless force is set
+// it refuses to overwrite existing files, so a re-run can't silently clobber a
+// bundle the user has edited. Returns the relative paths written, for the
+// next-steps message.
+func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, force bool) ([]string, error) {
 	root, artifacts, err := convertToDabs(ctx, cfg, configPath, dir)
 	if err != nil {
 		return nil, err
@@ -403,20 +408,26 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string) ([
 
 	// Refuse to clobber an existing file, with one consistent message. A user
 	// re-running convert into the same dir gets a clear error rather than a silent
-	// overwrite of edits they may have made.
+	// overwrite of edits they may have made. The hint names --force rather than
+	// --output-dir: the code_source must live inside the bundle dir, so redirecting
+	// the output usually isn't a usable escape hatch for an in-place conversion.
 	writeFile := func(name string, data []byte) error {
-		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
-			return fmt.Errorf("%s already exists in %s; use --output-dir or remove it", name, dir)
+		if !force {
+			if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
+				return fmt.Errorf("%s already exists in %s; pass --force to overwrite or remove it", name, dir)
+			}
 		}
 		return os.WriteFile(filepath.Join(dir, name), data, 0o600)
 	}
 
 	bundlePath := filepath.Join(dir, "databricks.yml")
-	if _, err := os.Stat(bundlePath); err == nil {
-		return nil, fmt.Errorf("databricks.yml already exists in %s; use --output-dir or remove it", dir)
+	if !force {
+		if _, err := os.Stat(bundlePath); err == nil {
+			return nil, fmt.Errorf("databricks.yml already exists in %s; pass --force to overwrite or remove it", dir)
+		}
 	}
-	// force=true: we've already run the collision check above, so SaveAsYAML's own
-	// guard (which references a --force flag this command doesn't have) can't fire.
+	// SaveAsYAML's force arg is passed true unconditionally: the collision check
+	// above already decided whether overwriting is allowed.
 	if err := yamlsaver.NewSaver().SaveAsYAML(root, bundlePath, true); err != nil {
 		return nil, err
 	}
@@ -458,19 +469,41 @@ func printConvertNextSteps(ctx context.Context, dir string, written []string, jo
 		}
 	}
 
+	// Name this binary rather than a bare "databricks": ai_runtime_task is only
+	// understood by a CLI carrying it, and an older one on PATH drops the field with
+	// just a warning, deploying a job with no AI task at all.
+	self := cliInvocation()
+
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "To deploy and run this workload as a bundle:")
 	cmdio.LogString(ctx, "  1. cd "+dir)
-	cmdio.LogString(ctx, "  2. databricks bundle validate")
-	cmdio.LogString(ctx, "  3. databricks bundle deploy")
-	cmdio.LogString(ctx, "  4. databricks bundle run "+jobKey)
+	cmdio.LogString(ctx, "  2. "+self+" bundle validate")
+	cmdio.LogString(ctx, "  3. "+self+" bundle deploy")
+	cmdio.LogString(ctx, "  4. "+self+" bundle run "+jobKey)
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "bundle deploy uploads the code source and launch scripts automatically.")
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, "Run these with this same CLI: a build without ai_runtime_task support")
+	cmdio.LogString(ctx, "only warns about the unknown field, then deploys a job with no AI task.")
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Unlike `air run` (which submits an ephemeral run), bundle deploy creates a")
 	cmdio.LogString(ctx, "persistent job that is not garbage-collected. When you are done, remove the")
 	cmdio.LogString(ctx, "job and its uploaded files with:")
-	cmdio.LogString(ctx, "  databricks bundle destroy")
+	cmdio.LogString(ctx, "  "+self+" bundle destroy")
+}
+
+// cliInvocation is how the user should spell this binary in a follow-up command.
+// A path-qualified argv[0] (./dbcli, ../dbcli) is kept as typed so copy-paste works
+// from the same cwd; a bare name resolved via PATH is reported as "databricks".
+func cliInvocation() string {
+	arg0 := os.Args[0]
+	if arg0 == "" {
+		return "databricks"
+	}
+	if arg0 == filepath.Base(arg0) {
+		return "databricks"
+	}
+	return arg0
 }
 
 // conversionNotes lists what the conversion staged out-of-band or could not
