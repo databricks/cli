@@ -52,7 +52,8 @@ func TestOperationRecorderStripsResourcePrefix(t *testing.T) {
 	assert.Equal(t, "deployments/dep-1/versions/2", req.Parent)
 	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeCreate, req.Operation.ActionType)
 	assert.Equal(t, "job-123", req.Operation.ResourceId)
-	require.NotNil(t, req.Operation.State)
+	// State is sent as an opaque JSON string carrying the serialized config.
+	assert.JSONEq(t, `{"state":{"name":"foo"}}`, req.Operation.State)
 }
 
 func TestOperationRecorderToleratesResponseDeserializationError(t *testing.T) {

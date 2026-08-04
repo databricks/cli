@@ -36,9 +36,9 @@ func (f *fakeResourceLister) ListResources(ctx context.Context, req bundledeploy
 }
 
 func TestFetchDeploymentResourcesUnwrapsEnvelope(t *testing.T) {
-	recorded := json.RawMessage(`{"state":{"name":"foo"},"depends_on":[{"node":"resources.pipelines.bar","label":"${resources.pipelines.bar.id}"}]}`)
+	recorded := `{"state":{"name":"foo"},"depends_on":[{"node":"resources.pipelines.bar","label":"${resources.pipelines.bar.id}"}]}`
 	f := &fakeResourceLister{resources: []bundledeployments.Resource{
-		{ResourceKey: "jobs.foo", ResourceId: "123", State: &recorded},
+		{ResourceKey: "jobs.foo", ResourceId: "123", State: recorded},
 		{ResourceKey: "pipelines.bar", ResourceId: "456"},
 	}}
 
@@ -58,9 +58,9 @@ func TestFetchDeploymentResourcesUnwrapsEnvelope(t *testing.T) {
 }
 
 func TestFetchDeploymentResourcesRejectsMalformedState(t *testing.T) {
-	recorded := json.RawMessage(`not json`)
+	recorded := `not json`
 	f := &fakeResourceLister{resources: []bundledeployments.Resource{
-		{ResourceKey: "jobs.foo", ResourceId: "123", State: &recorded},
+		{ResourceKey: "jobs.foo", ResourceId: "123", State: recorded},
 	}}
 
 	_, err := fetchDeploymentResources(t.Context(), f, "dep-1")
@@ -68,12 +68,14 @@ func TestFetchDeploymentResourcesRejectsMalformedState(t *testing.T) {
 }
 
 func TestFetchDeploymentResourcesNormalizesIntegralDoubles(t *testing.T) {
-	// DMS serializes state through a protobuf Struct, so integers come back as
-	// doubles ("1.0"). The typed job state unmarshals those fields as int, so
-	// they must be restored to integers on the way out.
-	recorded := json.RawMessage(`{"state":{"max_concurrent_runs":1.0,"tasks":[{"new_cluster":{"num_workers":2.0}}],"timeout_seconds":0.0}}`)
+	// State recorded by an older server that round-tripped it through a protobuf
+	// Struct comes back with integers as doubles ("1.0"). The typed job state
+	// unmarshals those fields as int, so they must be restored to integers on
+	// the way out. (A current server stores the string unchanged, so this only
+	// matters for legacy state.)
+	recorded := `{"state":{"max_concurrent_runs":1.0,"tasks":[{"new_cluster":{"num_workers":2.0}}],"timeout_seconds":0.0}}`
 	f := &fakeResourceLister{resources: []bundledeployments.Resource{
-		{ResourceKey: "jobs.foo", ResourceId: "123", State: &recorded},
+		{ResourceKey: "jobs.foo", ResourceId: "123", State: recorded},
 	}}
 
 	got, err := fetchDeploymentResources(t.Context(), f, "dep-1")

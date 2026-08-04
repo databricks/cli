@@ -78,17 +78,19 @@ func fetchDeploymentResources(ctx context.Context, client bundledeployments.Bund
 		key := "resources." + res.ResourceKey
 
 		var recorded RecordedState
-		if res.State != nil {
-			if err := json.Unmarshal(*res.State, &recorded); err != nil {
+		if res.State != "" {
+			if err := json.Unmarshal([]byte(res.State), &recorded); err != nil {
 				return nil, fmt.Errorf("interpreting state recorded for %s: %w", key, err)
 			}
 		}
 
-		// DMS stores state in a protobuf Struct, whose only numeric type is
-		// double, so integers come back as "1.0". The typed resource structs
-		// (e.g. jobs.JobSettings.MaxConcurrentRuns, num_workers) unmarshal those
-		// fields as int and reject the fractional form, so restore the integral
-		// doubles to integers before the state reaches them.
+		// Normalize integral doubles ("1.0") back to integers before the state
+		// reaches the typed resource structs, which unmarshal fields like
+		// jobs.JobSettings.MaxConcurrentRuns and num_workers as int and reject
+		// the fractional form. DMS now stores state as an opaque string it never
+		// parses (see the Operation.state SDK docs), so freshly recorded state no
+		// longer picks up doubles; this still guards state written by an older
+		// server that round-tripped it through a protobuf Struct.
 		state, err := normalizeIntegralNumbers(recorded.State)
 		if err != nil {
 			return nil, fmt.Errorf("interpreting state recorded for %s: %w", key, err)

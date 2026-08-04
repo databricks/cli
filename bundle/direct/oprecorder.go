@@ -102,7 +102,9 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 		Status:      bundledeployments.OperationStatusOperationStatusSucceeded,
 	}
 	if op.state != nil {
-		operation.State = &op.state
+		// Operation.State is an opaque UTF-8 JSON string the service stores
+		// unchanged (see the SDK docs), so send the serialized state as-is.
+		operation.State = string(op.state)
 	}
 
 	_, err := r.client.CreateOperation(ctx, bundledeployments.CreateOperationRequest{
