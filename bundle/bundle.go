@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
@@ -56,6 +57,10 @@ type Metrics struct {
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
 	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+
+	// StateEngine is the engine that ran the deploy, set in deployCore. Empty when
+	// telemetry is emitted without a deploy having run.
+	StateEngine engine.EngineType
 
 	// ResourceState is the direct engine's per-resource deployment state
 	// captured right after the deploy. It carries each resource's state-size in
