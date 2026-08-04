@@ -427,8 +427,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      # For the failure-reporting step's PR comment.
-      pull-requests: write
 
     steps:
       - name: Checkout repository and submodules
@@ -446,33 +444,6 @@ jobs:
           # Non-overlapping windows, so CI explores new configs every run.
           export FUZZ_SEED_START=$(( GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
-
-      # Not in test-result, so surface failures by commenting on the PR under test.
-      - name: Report failure
-        if: ${{ failure() }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          COMMIT: ${{ github.sha }}
-        run: |
-          body=$(cat <<EOF
-          The nightly schema fuzz invariant job (\`task test-fuzz\`) failed while running against
-          commit \`$COMMIT\`. Each night covers a new seed window, so the failing config is most
-          likely pre-existing rather than introduced by this commit.
-
-          Run: $RUN_URL
-
-          The job log prints a ready-to-run repro as \`LOG.repro: fuzz: seed <n> ...\`.
-          EOF
-          )
-
-          # The commit's pulls endpoint returns the PR that introduced it.
-          pr=$(gh api "repos/$GITHUB_REPOSITORY/commits/$COMMIT/pulls" --jq '.[0].number // empty')
-          if [ -n "$pr" ]; then
-            gh pr comment "$pr" --body "$body"
-          else
-            echo "No PR found for commit $COMMIT; skipping failure comment" >&2
-          fi
 
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.

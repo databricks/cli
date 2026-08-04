@@ -750,36 +750,6 @@ tasks:
           --packages ./acceptance/... \
           -- -count=1 -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/bundle/fuzz"
 
-  test-fuzz-cover:
-    desc: Run the schema fuzzer under coverage and report which CLI packages it exercises
-    # No `sources:` fingerprint: like test-fuzz, the window depends on FUZZ_* env vars.
-    cmds:
-      - rm -fr ./acceptance/build/cover-fuzz/ ./acceptance/build/cover-fuzz-merged/
-      - mkdir -p ./acceptance/build/cover-fuzz-merged/
-      - |
-        # CLI_GOCOVERDIR makes the harness build a -cover CLI and set GOCOVERDIR per run, so every
-        # fuzzed `bundle` invocation drops aggregatable counter files. Drift off so the run
-        # exercises the full deploy/plan path instead of stopping on the first drift.
-        export CLI_GOCOVERDIR=build/cover-fuzz
-        export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-100}"
-        unset FUZZ_CHECK_DRIFT
-        {{.GO_TOOL}} gotestsum \
-          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
-          --no-summary=skipped \
-          --packages ./acceptance/... \
-          -- -count=1 -timeout=${LOCAL_TIMEOUT:-40m} -run "TestAccept/bundle/fuzz" || true
-      - "go tool covdata merge -i $(printf '%s,' acceptance/build/cover-fuzz/* | sed 's/,$//') -o acceptance/build/cover-fuzz-merged/"
-      - go tool covdata textfmt -i acceptance/build/cover-fuzz-merged -o coverage-fuzz.txt
-      - |
-        echo "== total CLI coverage exercised by the fuzz run =="
-        go tool cover -func=coverage-fuzz.txt | awk '/^total:/{print $NF}'
-        echo
-        echo "== bundle/cmd packages by coverage (ascending; 0.0% = never exercised) =="
-        go tool covdata percent -i=acceptance/build/cover-fuzz-merged \
-          | awk '/coverage:/{p=$3; gsub(/%/,"",p); sub("github.com/databricks/cli/","",$1); printf "%6.1f%%  %s\n", p, $1}' \
-          | grep -E '  (bundle|cmd/bundle)/' \
-          | sort -n
-
   # --- Integration tests ---
 
   integration:

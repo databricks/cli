@@ -3,14 +3,13 @@
 # would only re-assert the no-panic property the local run already covers.
 Cloud = false
 
-# Room for the nightly FUZZ_TIME_BUDGET (script) plus the last seed's tail.
+# Room for the nightly FUZZ_TIME_BUDGET (run_fuzz.py) plus the last seed's tail.
 Timeout = '20m'
 
-# The targets this harness runs come from ../invariant, but test.toml only merges along the
-# directory chain, so this engine pin, the ignore patterns and the per-route [[Server]] stubs below
-# are copied from ../invariant/test.toml and have to be kept in step with it. A stub that is added
-# there and not here does not fail this test: the catch-alls at the bottom answer the route and its
-# seeds are recorded as gaps.
+# test.toml only merges along the directory chain, so the engine pin, the ignore patterns and the
+# per-route [[Server]] stubs below are copied from ../invariant/test.toml, where the targets live.
+# A stub added there and not here does not fail this test: the catch-alls at the bottom answer the
+# route and its seeds are recorded as gaps.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [
@@ -26,15 +25,12 @@ Ignore = [
     ".databricks.backup",
 ]
 
-# The idempotency targets assert a delete or destroy re-run succeeds, which holds regardless of
-# how faithfully the fake server round-trips fields. No redeploy target: no_drift's post-deploy
-# plan already dry-runs one.
+# The idempotency targets assert that a delete or destroy re-run succeeds, which holds regardless of
+# how faithfully the fake server round-trips fields, so they keep their real oracle under fuzzing.
 #
-# ../invariant/continue_293 is deliberately left out: it deploys with the pinned v0.293.0 binary
-# first, and that version does not know many current fields and resource types (see its test.toml,
-# which excludes a third of the curated configs for that reason). The old CLI would reject most
-# seeds before the current one ever ran, so the window would measure v0.293.0's schema, not this
-# CLI.
+# ../invariant/continue_293 is left out: it deploys with the pinned v0.293.0 binary first, and that
+# version does not know many current fields and resource types, so it would reject most seeds before
+# the current CLI ever ran and the window would measure v0.293.0's schema instead.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "delete_idempotent", "destroy_idempotent"]
 
 # generate = build from the schema; mutate = perturb a curated config. See emit_fuzz_config.py.
@@ -60,13 +56,10 @@ Response.Body = '{"status": "OK"}'
 # classifies as a gap, instead of letting the unhandled-request check fail the whole run.
 #
 # They shadow nothing: wildcard patterns go to ServeMux, which matches most-specific-first, and
-# exact paths are looked up before the mux is consulted (see the Router type doc). The requests
-# still go through serve(), so the request callbacks keep seeing them.
+# exact paths are looked up before the mux is consulted (see the Router type doc).
 #
 # No HEAD entry: ServeMux matches a GET pattern for HEAD too, so "HEAD /{path...}" conflicts with
-# every GET wildcard and panics at registration -- the example the Router type doc gives. The GET
-# catch-all already answers HEAD, which also means the localhost probe gets a 501 rather than
-# IsLocalhostProbe's 200; both are benign.
+# every GET wildcard and panics at registration. The GET catch-all answers HEAD anyway.
 [[Server]]
 Pattern = "GET /{path...}"
 Response.StatusCode = 501

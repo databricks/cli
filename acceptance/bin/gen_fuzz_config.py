@@ -348,43 +348,37 @@ class Generator:
         return "fuzz_" + "".join(self.rng.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(8))
 
 
-def resource_types(schema, gen):
+def resource_types(gen):
     # resources is oneOf[{ object with one property per resource type }].
-    resources = gen.resolve(schema["properties"]["resources"])
+    resources = gen.resolve(gen.root["properties"]["resources"])
     obj = next(b for b in resources["oneOf"] if b.get("type") == "object")
     return obj["properties"]
 
 
-def gen_resource(schema, gen, types, candidates, seed, unique):
-    rtype = gen.rng.choice(sorted(candidates))
-
+def resource_element(gen, type_schema):
     # Each type is a map; the element schema is the object branch's additionalProperties.
-    map_schema = gen.resolve(types[rtype])
+    map_schema = gen.resolve(type_schema)
     obj = next(b for b in map_schema["oneOf"] if b.get("type") == "object")
-    element = obj["additionalProperties"]
-
-    key = f"fuzz_{rtype}_{seed}"
-    gen.unique = unique
-    gen.rtype = rtype
-    instance = gen.gen(element, 0)
-    return rtype, key, instance
+    return obj["additionalProperties"]
 
 
 def gen_config(schema, seed, unique, allowed=frozenset()):
     gen = Generator(schema, random.Random(seed), unique)
 
-    types = resource_types(schema, gen)
+    types = resource_types(gen)
     candidates = [t for t in types if not allowed or t in allowed]
     if not candidates:
         sys.exit(f"no resource types to generate from (allowed={sorted(allowed)})")
 
-    rtype, key, instance = gen_resource(schema, gen, types, candidates, seed, unique)
+    rtype = gen.rng.choice(sorted(candidates))
+    gen.rtype = rtype
+    instance = gen.gen(resource_element(gen, types[rtype]), 0)
 
     return {
         # Same name shape as the curated configs, so targets that derive workspace paths from the
         # bundle name work unchanged.
         "bundle": {"name": f"test-bundle-{unique}"},
-        "resources": {rtype: {key: instance}},
+        "resources": {rtype: {f"fuzz_{rtype}_{seed}": instance}},
     }
 
 

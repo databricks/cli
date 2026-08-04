@@ -3,11 +3,11 @@
 Emit a fuzz databricks.yml on stdout for the current seed, picking the strategy from FUZZ_MODE so
 the invariant scripts don't each duplicate the branch:
 
-  generate (default) - build from scratch by walking `bundle schema` (gen_fuzz_config.py).
-  mutate             - perturb a curated invariant config (mutate_fuzz_config.py).
+  generate - build from scratch by walking `bundle schema` (gen_fuzz_config.py).
+  mutate   - perturb a curated invariant config (mutate_fuzz_config.py).
 
-Reads its inputs from the environment the invariant scripts export: FUZZ_SEED, FUZZ_SCHEMA,
-UNIQUE_NAME, INVARIANT_DIR.
+Reads FUZZ_SEED, FUZZ_SCHEMA, FUZZ_MODE, UNIQUE_NAME and INVARIANT_DIR, which fuzz/script and the
+invariant prologue set.
 """
 
 import json
@@ -58,7 +58,7 @@ def mutate_base(seed):
 
 def main():
     seed = int(os.environ["FUZZ_SEED"])
-    mode = os.environ.get("FUZZ_MODE", "generate")
+    mode = os.environ["FUZZ_MODE"]
     if mode == "generate":
         sys.stdout.write(generate(seed))
     elif mode == "mutate":
