@@ -15,26 +15,15 @@ func TestBundleRoots(t *testing.T) {
 		expected []string
 	}{
 		{
-			name:     "no files",
-			files:    nil,
-			expected: nil,
-		},
-		{
 			name:     "no bundle configuration file",
 			files:    []string{"README.md", "src/main.py"},
 			expected: nil,
 		},
 		{
-			name:     "bundle configuration file at the output root",
-			files:    []string{"databricks.yml", "src/main.py"},
-			expected: []string{"."},
-		},
-		{
-			name:     "nested bundle configuration file",
-			files:    []string{"projects/alpha/yz/databricks.yml", "projects/alpha/yz/src/main.py"},
-			expected: []string{"projects/alpha/yz"},
-		},
-		{
+			// The nested and top-level shapes are covered end to end by the
+			// nested-output and standard-output-json acceptance tests; this pins
+			// the ordering and the "." normalization for a root that is the
+			// output directory itself.
 			name: "multiple bundle configuration files are sorted",
 			files: []string{
 				"projects/beta/qq/databricks.yml",

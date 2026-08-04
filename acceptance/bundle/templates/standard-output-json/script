@@ -3,7 +3,10 @@
 # standard shape.
 #
 # stderr is dropped so that the golden output only pins the JSON payload.
-trace $CLI bundle init default-minimal --config-file ./input.json --output-dir output -o json 2>/dev/null
+#
+# output_dir is an OS path, so it is backslash-separated on Windows. Normalize it
+# to forward slashes to keep a single golden file across platforms.
+trace $CLI bundle init default-minimal --config-file ./input.json --output-dir output -o json 2>/dev/null | sed 's|\\\\|/|g'
 
 [ -f "output/my_default_minimal/databricks.yml" ] || exit 1
 
