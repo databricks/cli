@@ -2,6 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
@@ -16,3 +17,13 @@ musterr trace $CLI bundle deploy
 title "the failed run is recorded, and not having succeeded is drift"
 trace read_id.py my_run
 trace $CLI bundle plan
+
+# The recreate re-runs the job instead of accepting the recorded failure.
+title "so a redeploy runs the job again, and fails again"
+musterr trace $CLI bundle deploy
+
+# [MY_RUN_ID] is the first run, so the delete naming it is what shows the recreate
+# discarded the failed run rather than leaving it in the workspace.
+title "run-now was issued once per deploy, and the recreate deleted the failed run"
+trace print_requests.py --keep //jobs/run-now
+trace print_requests.py //jobs/runs/delete
