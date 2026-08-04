@@ -88,6 +88,18 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 	if updateRequest.Comment != "" {
 		existing.Comment = updateRequest.Comment
 	}
+	if updateRequest.CustomMaxRetentionHours != 0 {
+		existing.CustomMaxRetentionHours = updateRequest.CustomMaxRetentionHours
+	}
+	if updateRequest.ManagedEncryptionSettings != nil {
+		existing.ManagedEncryptionSettings = updateRequest.ManagedEncryptionSettings
+	}
+	if updateRequest.Options != nil {
+		existing.Options = updateRequest.Options
+	}
+	if updateRequest.Properties != nil {
+		existing.Properties = updateRequest.Properties
+	}
 	if updateRequest.Owner != "" {
 		existing.Owner = updateRequest.Owner
 	}
