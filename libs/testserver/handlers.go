@@ -605,7 +605,7 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/repos/snapshots/rootpath", func(req Request) any {
 		return map[string]any{
-			"path": "/Workspace/Users/" + TestUserSP.UserName + "/.snapshots",
+			"path": "/Workspace/Users/" + TestUserSP.UserName + "/.snapshots/",
 		}
 	})
 

@@ -6,8 +6,10 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/snapshot"
+	"github.com/google/uuid"
 )
 
 // fileLimitWarning is the file count above which immutable folder deployments may fail.
@@ -49,7 +51,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 	if _, ok := b.Config.Resources.Snapshots["immutable"]; !ok {
 		b.Config.Resources.Snapshots["immutable"] = &resources.Snapshot{
-			BundleID:   b.DeploymentBundle.StateDB.GetOrInitLineage(),
+			BundleID:   BundleID(b),
 			ACL:        BuildACL(b),
 			RemoteRoot: remoteRoot,
 		}
@@ -73,6 +75,38 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	return diags
+}
+
+// SyncZipContent copies the zip content from b.Config.Resources.Snapshots["immutable"]
+// into the in-memory state cache entry for the snapshot resource. This is needed when
+// deploying from a plan file: the plan JSON omits ZipContent (json:"-"), so InitForApply
+// leaves it empty, causing DoCreate to upload an empty zip and derive a wrong snapshot ID.
+func SyncZipContent(b *bundle.Bundle) {
+	snap := b.Config.Resources.Snapshots["immutable"]
+	if snap == nil || snap.ZipContent == "" {
+		return
+	}
+	sv, ok := b.DeploymentBundle.StateCache.Load("resources.snapshots.immutable")
+	if !ok {
+		return
+	}
+	state, ok := sv.Value.(*dresources.SnapshotState)
+	if !ok {
+		return
+	}
+	state.ZipContent = snap.ZipContent
+}
+
+// bundleIDNamespace is the UUID namespace used to derive the bundle ID.
+var bundleIDNamespace = uuid.MustParse("4b4e4b5a-3c3d-4e4f-8b8c-9d9e9f0a0b0c")
+
+// BundleID returns a stable UUID that identifies the bundle deployment.
+// It is derived deterministically from the bundle name, target, and workspace host
+// so that every CLI invocation for the same deployment produces the same value.
+// This is used as the path prefix for immutable snapshots in the workspace.
+func BundleID(b *bundle.Bundle) string {
+	key := b.Config.Bundle.Name + "/" + b.Config.Bundle.Target + "/" + b.Config.Workspace.Host
+	return uuid.NewSHA1(bundleIDNamespace, []byte(key)).String()
 }
 
 // BuildACL constructs the access_control_list for the snapshot upload.

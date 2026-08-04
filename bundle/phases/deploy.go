@@ -108,7 +108,8 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		return
 	}
 
-	bundle.ApplySeqContext(ctx, b,
+	bundle.ApplySeqContext(
+		ctx, b,
 		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
@@ -133,7 +134,8 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 // It also cleans up the artifacts directory and transforms wheel tasks.
 // It is called by only "bundle deploy".
 func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]libraries.LocationToUpdate) {
-	bundle.ApplySeqContext(ctx, b,
+	bundle.ApplySeqContext(
+		ctx, b,
 		artifacts.CleanUp(),
 		libraries.Upload(libs),
 	)
@@ -149,7 +151,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
-	bundle.ApplySeqContext(ctx, b,
+	bundle.ApplySeqContext(
+		ctx, b,
 		scripts.Execute(config.ScriptPreDeploy),
 		lock.Acquire(),
 	)
@@ -182,7 +185,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
-	bundle.ApplySeqContext(ctx, b,
+	bundle.ApplySeqContext(
+		ctx, b,
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
@@ -229,6 +233,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			logdiag.LogError(ctx, err)
 			return
 		}
+		if immutable {
+			// The plan JSON omits ZipContent (json:"-"), so InitForApply leaves it
+			// empty in the state cache. Transfer the zip content built by PlanUpload
+			// above so DoCreate uploads the correct content and derives the right ID.
+			snapshot.SyncZipContent(b)
+		}
 	}
 
 	// InitForApply receives ctx and could log a diagnostic without returning an
@@ -273,7 +283,8 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 	// b.Select is rejected for the terraform engine in ProcessBundleRet, so it is
 	// never set here.
 
-	bundle.ApplySeqContext(ctx, b,
+	bundle.ApplySeqContext(
+		ctx, b,
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Plan(terraform.PlanGoal("deploy")),

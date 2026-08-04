@@ -35,6 +35,7 @@ Validation OK!
   "action": "create",
   "new_state": {
     "value": {
+      "remote_root": "/Workspace/Users/[UUID]/.snapshots",
       "relative_path": "[UUID]/[SNAPSHOT_HASH]",
       "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
       "bundle_id": "[UUID]",
@@ -62,9 +63,9 @@ Deployment complete!
 >>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/some_path"
 
->>> title Check snapshot plan after deploy
+>>> title Check snapshot plan after deploy: 
 
-=== Check snapshot plan after deploy
+=== Check snapshot plan after deploy: 
 >>> [CLI] bundle plan -o json
 
 >>> jq .plan["resources.snapshots.immutable"] plan.json
@@ -97,6 +98,13 @@ Deployment complete!
       "reason": "missing_in_remote",
       "old": "[UUID]",
       "new": "[UUID]",
+      "remote": ""
+    },
+    "remote_root": {
+      "action": "skip",
+      "reason": "missing_in_remote",
+      "old": "/Workspace/Users/[UUID]/.snapshots",
+      "new": "/Workspace/Users/[UUID]/.snapshots",
       "remote": ""
     }
   }

@@ -140,5 +140,5 @@ func (c *snapshotAPIClient) GetSnapshotRootPath(ctx context.Context) (string, er
 	if err != nil {
 		return "", fmt.Errorf("snapshot root path get: %w", err)
 	}
-	return resp.Path, nil
+	return path.Clean(resp.Path), nil
 }
