@@ -1,5 +1,7 @@
 Local = true
-Cloud = false
+# Run against a real workspace too, so the golden keeps the message the fake
+# returns honest: the fake is only useful here if it matches what MLflow says.
+Cloud = true
 RecordRequests = false
 Ignore = [".databricks"]
 
