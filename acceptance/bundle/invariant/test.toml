@@ -84,11 +84,6 @@ no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
 # so this config is local-only (the mock server stores it verbatim).
 no_run_job_ref_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=job_run_job_ref.yml.tmpl"]
 
-# Deploying a job_run waits for the run to succeed, and a real workspace reports a
-# run of condition tasks alone as SKIPPED. resources/job_runs/wait covers the real
-# run on cloud; this config stays local.
-no_job_run_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=job_run.yml.tmpl"]
-
 # Postgres resources only work on AWS
 no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_project.yml.tmpl"]
 no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
