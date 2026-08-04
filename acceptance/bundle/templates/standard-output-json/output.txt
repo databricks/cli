@@ -1,0 +1,7 @@
+{
+  "template_name": "default-minimal",
+  "output_dir": "[TEST_TMP_DIR]/output",
+  "bundle_roots": [
+    "my_default_minimal"
+  ]
+}

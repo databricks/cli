@@ -23,6 +23,29 @@ const (
 	schemaFileName  = "databricks_template_schema.json"
 )
 
+// InitResult describes where a template was materialized. It is reported by
+// `bundle init -o json` so that callers do not have to guess which directory
+// under the output directory became the bundle root.
+//
+// The field names are part of the CLI's JSON output contract; renaming one is a
+// breaking change for callers. New fields must be additive so that consumers
+// tolerate older CLI versions that do not emit them.
+type InitResult struct {
+	// The name of the template that was materialized.
+	TemplateName string `json:"template_name"`
+
+	// The resolved (absolute) output directory the writer was configured with.
+	OutputDir string `json:"output_dir"`
+
+	// The directories that received a bundle configuration file, relative to
+	// OutputDir, slash-separated and sorted. A bundle root that is OutputDir
+	// itself is reported as ".".
+	//
+	// A template may emit more than one bundle configuration file, so callers
+	// that expect exactly one root should handle len != 1 explicitly.
+	BundleRoots []string `json:"bundle_roots"`
+}
+
 type Writer interface {
 	// Configure the writer with:
 	// 1. The path to the config file (if any) that contains input values for the
@@ -35,11 +58,16 @@ type Writer interface {
 
 	// Log telemetry for the template initialization event.
 	LogTelemetry(ctx context.Context)
+
+	// InitResult returns where the template was materialized. It must be called
+	// after Materialize; it returns nil if the template was not materialized.
+	InitResult() *InitResult
 }
 
 type defaultWriter struct {
 	name        TemplateName
 	configPath  string
+	outputDir   string
 	outputFiler filer.Filer
 
 	// Internal state
@@ -47,12 +75,9 @@ type defaultWriter struct {
 	renderer *renderer
 }
 
+// constructOutputFiler returns a filer rooted at outputDir, which must already be
+// an absolute path.
 func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, error) {
-	outputDir, err := filepath.Abs(outputDir)
-	if err != nil {
-		return nil, err
-	}
-
 	// If the CLI is running on DBR and we're writing to the workspace file system,
 	// use the extension-aware workspace filesystem filer to instantiate the template.
 	//
@@ -69,6 +94,15 @@ func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, e
 
 func (tmpl *defaultWriter) Configure(ctx context.Context, configPath, outputDir string) error {
 	tmpl.configPath = configPath
+
+	// Resolve the output directory before constructing the filer, so that the
+	// resolved path can be reported in the init result. Callers may pass a
+	// relative path such as "..".
+	outputDir, err := filepath.Abs(outputDir)
+	if err != nil {
+		return err
+	}
+	tmpl.outputDir = outputDir
 
 	outputFiler, err := constructOutputFiler(ctx, outputDir)
 	if err != nil {
@@ -158,6 +192,19 @@ func (tmpl *defaultWriter) Materialize(ctx context.Context, reader Reader) error
 	}
 
 	return tmpl.printSuccessMessage(ctx)
+}
+
+func (tmpl *defaultWriter) InitResult() *InitResult {
+	// The renderer is only set once the template has been materialized.
+	if tmpl.renderer == nil {
+		return nil
+	}
+
+	return &InitResult{
+		TemplateName: string(tmpl.name),
+		OutputDir:    tmpl.outputDir,
+		BundleRoots:  bundleRoots(tmpl.renderer.persistedPaths),
+	}
 }
 
 func (tmpl *defaultWriter) LogTelemetry(ctx context.Context) {
