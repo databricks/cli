@@ -21,6 +21,10 @@ func TestCatalogsCreate_RejectsEmptyName(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "INVALID_PARAMETER_VALUE", body["error_code"])
 	assert.Contains(t, body["message"], "is not a valid name")
+
+	// The rejected catalog must not be stored: that is the original bug, where a
+	// deploy appeared to succeed and the next plan saw the resource as missing.
+	assert.Empty(t, workspace.Catalogs)
 }
 
 func TestCatalogsCreate_AllowsNonEmptyName(t *testing.T) {
@@ -28,11 +32,17 @@ func TestCatalogsCreate_AllowsNonEmptyName(t *testing.T) {
 
 	response := workspace.CatalogsCreate(Request{Body: []byte(`{"name": "my_catalog"}`)})
 	// StatusCode 0 gets converted to 200 by normalizeResponse in the server
-	assert.Equal(t, 0, response.StatusCode)
+	require.Equal(t, 0, response.StatusCode)
 
-	body, ok := response.Body.(catalog.CatalogInfo)
+	// Read the catalog back through the same helper the GET route uses, so the
+	// test fails if create stores it under a key the CLI cannot look up.
+	getResponse := MapGet(workspace, workspace.Catalogs, "my_catalog")
+	require.Equal(t, 0, getResponse.StatusCode)
+
+	body, ok := getResponse.Body.(catalog.CatalogInfo)
 	require.True(t, ok)
 	assert.Equal(t, "my_catalog", body.Name)
+	assert.Equal(t, "my_catalog", body.FullName)
 }
 
 // createCatalogRequest sets every field CreateCatalog accepts. Tests below assert
