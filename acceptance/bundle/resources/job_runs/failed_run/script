@@ -18,12 +18,16 @@ title "the failed run is recorded, and not having succeeded is drift"
 trace read_id.py my_run
 trace $CLI bundle plan
 
+read_id.py my_job > /dev/null
+
 # The recreate re-runs the job instead of accepting the recorded failure.
 title "so a redeploy runs the job again, and fails again"
 musterr trace $CLI bundle deploy
+read_id.py my_run > /dev/null
 
-# [MY_RUN_ID] is the first run, so the delete naming it is what shows the recreate
-# discarded the failed run rather than leaving it in the workspace.
+# The delete names [MY_RUN_ID], the run that failed first, rather than the
+# [MY_RUN_ID_2] that replaced it: the recreate discards the failed run instead of
+# leaving it in the workspace.
 title "run-now was issued once per deploy, and the recreate deleted the failed run"
 trace print_requests.py --keep //jobs/run-now
 trace print_requests.py //jobs/runs/delete

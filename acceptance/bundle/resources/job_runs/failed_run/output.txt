@@ -27,9 +27,9 @@ Plan: 2 to add, 0 to change, 1 to delete, 1 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Deploying resources...
-job run [NUMID]: Run URL: [RUN_URL]
-job run [NUMID]: [TIMESTAMP] "test-job-[UNIQUE_NAME]" INTERNAL_ERROR FAILED Task main failed with message: Workload failed, see run output for details.
-Error: cannot recreate resources.job_runs.my_run: waiting after creating id=[NUMID]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
+job run [MY_RUN_ID_2]: Run URL: [RUN_URL]
+job run [MY_RUN_ID_2]: [TIMESTAMP] "test-job-[UNIQUE_NAME]" INTERNAL_ERROR FAILED Task main failed with message: Workload failed, see run output for details.
+Error: cannot recreate resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID_2]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
 task "main": RuntimeError: intentional failure
 run page: [RUN_URL]
 
@@ -43,14 +43,14 @@ Updating deployment state...
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [MY_JOB_ID]
   }
 }
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [MY_JOB_ID]
   }
 }
 
