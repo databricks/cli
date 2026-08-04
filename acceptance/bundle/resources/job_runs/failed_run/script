@@ -4,21 +4,23 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# The run finishes FAILED, so the deploy aborts: the error names the failed task
-# and the message it reported, and downstream_job is reported as a failed
+# The error names the failed task, and downstream_job is reported as a failed
 # dependency because it reads the run's result_state.
 title "a run that finishes FAILED fails the deploy"
 musterr trace $CLI bundle deploy
 
-# The framework saves the run id before calling WaitAfterCreate, so a run that
-# failed stays recorded and an unchanged config plans no second run.
-title "the failed run stays recorded, so a redeploy starts no new run"
+# The framework saves the run id before calling WaitAfterCreate, so the failed run
+# stays recorded, and FAILED against the required SUCCESS is drift.
+title "the failed run is recorded, and not having succeeded is drift"
 trace read_id.py my_run
 trace $CLI bundle plan
-trace $CLI bundle deploy
 
-title "downstream_job resolved its tag from the failed run"
-trace jq -r 'select(.path == "/api/2.2/jobs/create" and .body.name == "downstream-job") | .body.tags.run_result' out.requests.txt
+title "so a redeploy runs the job again, and fails again"
+musterr trace $CLI bundle deploy
 
-title "run-now was issued once"
+# Only my-job: nothing downstream of a run that never succeeded is created.
+title "downstream_job was never created"
+trace jq -r 'select(.path == "/api/2.2/jobs/create") | .body.name' out.requests.txt
+
+title "run-now was issued once per deploy"
 trace print_requests.py //jobs/run-now

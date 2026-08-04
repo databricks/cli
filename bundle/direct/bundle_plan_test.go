@@ -290,10 +290,110 @@ func TestShouldSkipBackendDefault_MapDriftUsesBracketKeys(t *testing.T) {
 
 const jobRunKey = "resources.job_runs.my_run"
 
-// planWithSkippedJobRun builds the state a deploy is in when a run recorded by an
-// earlier deploy needs no change: the plan skips it, so references to it are served
-// from the remote state cache.
-func planWithSkippedJobRun(t *testing.T, state *jobs.RunState) *DeploymentBundle {
+// The plan skips only a run that reached the required SUCCESS, so a reference
+// served from the remote state cache reads a finished run.
+func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {
+	b := bundleWithSkippedJobRun(t, &dresources.JobRunRemote{
+		RunId:       123,
+		ResultState: jobs.RunResultStateSuccess,
+		State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateSuccess,
+		},
+	})
+
+	value, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(jobRunKey+".state.result_state"))
+
+	require.NoError(t, err)
+	assert.Equal(t, jobs.RunResultStateSuccess, value)
+}
+
+// A resource reads the run the workspace reports. These paths are absent from
+// JobRunState, so they resolve from the remote, and the failure-shaped values
+// below come back unrewritten. result_state is the exception: it resolves to the
+// outcome PrepareState requires, which TestJobRunOutcomeIsDrift keeps from
+// standing in for one the run never reached.
+func TestLookupReferencePreDeploy_JobRunReferencesAreRaw(t *testing.T) {
+	b := bundleWithSkippedJobRun(t, &dresources.JobRunRemote{
+		RunId:       123,
+		RunName:     "my-job",
+		RunPageUrl:  "https://myworkspace.databricks.test/jobs/456/runs/123",
+		ResultState: jobs.RunResultStateFailed,
+		State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateFailed,
+			StateMessage:   "task main failed",
+		},
+	})
+
+	for field, want := range map[string]any{
+		"state.result_state":     jobs.RunResultStateFailed,
+		"state.life_cycle_state": jobs.RunLifeCycleStateTerminated,
+		"state.state_message":    "task main failed",
+		"run_id":                 int64(123),
+		"run_name":               "my-job",
+		"run_page_url":           "https://myworkspace.databricks.test/jobs/456/runs/123",
+	} {
+		t.Run(field, func(t *testing.T) {
+			value, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(jobRunKey+"."+field))
+
+			require.NoError(t, err)
+			assert.Equal(t, want, value)
+		})
+	}
+}
+
+// References are served from the remote state cache only for a run the plan
+// skips, and any outcome other than the required SUCCESS is a recreate.
+func TestJobRunOutcomeIsDrift(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	for name, remote := range map[string]jobs.RunResultState{
+		"FAILED":   jobs.RunResultStateFailed,
+		"CANCELED": jobs.RunResultStateCanceled,
+		"TIMEDOUT": jobs.RunResultStateTimedout,
+		// A run that is still going reports no result at all.
+		"no result yet": "",
+	} {
+		t.Run(name, func(t *testing.T) {
+			// Old == New: a deploy records the outcome it asked for, and only the
+			// remote says the run missed it.
+			changes := deployplan.Changes{"result_state": &deployplan.ChangeDesc{
+				Old:    jobs.RunResultStateSuccess,
+				New:    jobs.RunResultStateSuccess,
+				Remote: remote,
+			}}
+
+			err := addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil)
+
+			require.NoError(t, err)
+			assert.Equal(t, deployplan.Recreate, changes["result_state"].Action)
+		})
+	}
+}
+
+// The run reached the required outcome, so the plan can skip it.
+func TestJobRunSucceededOutcomeIsNotDrift(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	changes := deployplan.Changes{"result_state": &deployplan.ChangeDesc{
+		Old:    jobs.RunResultStateSuccess,
+		New:    jobs.RunResultStateSuccess,
+		Remote: jobs.RunResultStateSuccess,
+	}}
+
+	err = addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil)
+
+	require.NoError(t, err)
+	assert.Equal(t, deployplan.Skip, changes["result_state"].Action)
+}
+
+// bundleWithSkippedJobRun sets up a deploy whose plan skips the run, so
+// references to it resolve from the remote state cache. The state cache holds
+// PrepareState's output, as a real plan does.
+func bundleWithSkippedJobRun(t *testing.T, remote *dresources.JobRunRemote) *DeploymentBundle {
 	t.Helper()
 
 	adapters, err := dresources.InitAll(nil)
@@ -306,34 +406,8 @@ func planWithSkippedJobRun(t *testing.T, state *jobs.RunState) *DeploymentBundle
 	}
 
 	b := &DeploymentBundle{Adapters: adapters, Plan: plan}
-	b.StateCache.Store(jobRunKey, structvar.NewStructVar(&resources.JobRun{}, nil))
-	b.RemoteStateCache.Store(jobRunKey, &dresources.JobRunRemote{
-		RunId: 123,
-		State: state,
-	})
+	state := (&dresources.ResourceJobRun{}).PrepareState(&resources.JobRun{})
+	b.StateCache.Store(jobRunKey, structvar.NewStructVar(state, nil))
+	b.RemoteStateCache.Store(jobRunKey, remote)
 	return b
-}
-
-// A run that has not finished reports an empty result_state, which would otherwise
-// be substituted into whatever references it.
-func TestLookupReferencePreDeploy_UnfinishedJobRun(t *testing.T) {
-	b := planWithSkippedJobRun(t, &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateRunning,
-	})
-
-	_, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(jobRunKey+".state.result_state"))
-
-	require.ErrorContains(t, err, "run 123 has not finished (RUNNING)")
-}
-
-func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {
-	b := planWithSkippedJobRun(t, &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateSuccess,
-	})
-
-	value, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(jobRunKey+".state.result_state"))
-
-	require.NoError(t, err)
-	assert.Equal(t, jobs.RunResultStateSuccess, value)
 }

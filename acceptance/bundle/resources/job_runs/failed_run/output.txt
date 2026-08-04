@@ -15,27 +15,45 @@ Error: cannot create resources.jobs.downstream_job: dependency failed: resources
 
 Updating deployment state...
 
-=== the failed run stays recorded, so a redeploy starts no new run
+=== the failed run is recorded, and not having succeeded is drift
 >>> read_id.py my_run
 [MY_RUN_ID]
 
 >>> [CLI] bundle plan
+recreate job_runs.my_run
 create jobs.downstream_job
 
-Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
+Plan: 2 to add, 0 to change, 1 to delete, 1 unchanged
 
+=== so a redeploy runs the job again, and fails again
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/files...
 Deploying resources...
+job run [NUMID]: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+job run [NUMID]: [TIMESTAMP] "my-job" TERMINATED FAILED task main failed
+Error: cannot recreate resources.job_runs.my_run: waiting after creating id=[NUMID]: run did not succeed: FAILED: task main failed
+task "main": spark python task execution failed: exit status 1
+intentional failure
+
+run page: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+
+Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
+
 Updating deployment state...
-Deployment complete!
 
-=== downstream_job resolved its tag from the failed run
->>> jq -r select(.path == "/api/2.2/jobs/create" and .body.name == "downstream-job") | .body.tags.run_result out.requests.txt
-FAILED
+=== downstream_job was never created
+>>> jq -r select(.path == "/api/2.2/jobs/create") | .body.name out.requests.txt
+my-job
 
-=== run-now was issued once
+=== run-now was issued once per deploy
 >>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [NUMID]
+  }
+}
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
@@ -47,7 +65,6 @@ FAILED
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.job_runs.my_run
-  delete resources.jobs.downstream_job
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default

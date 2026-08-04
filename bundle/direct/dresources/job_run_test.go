@@ -2,10 +2,15 @@ package dresources
 
 import (
 	"context"
+	"reflect"
+	"slices"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -82,7 +87,6 @@ func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 
 	_, err := waitForTestRun(t, t.Context(), client)
 
-	// Only SUCCESS completes the deploy; a FAILED result fails it.
 	require.ErrorContains(t, err, "did not succeed: FAILED: task failed")
 }
 
@@ -112,8 +116,6 @@ func TestJobRunWaitReportsFailedTask(t *testing.T) {
 
 	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
 
-	// The error names the failing task and the message it reported, and leaves out
-	// the tasks that did not fail.
 	require.ErrorContains(t, err, `task "main": notebook not found`)
 	assert.NotContains(t, err.Error(), `task "ok"`)
 }
@@ -141,8 +143,7 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 }
 
 // A real workspace reports a run whose task failed as INTERNAL_ERROR in the
-// deprecated life_cycle_state, which the SDK waiter halts on with an error of its
-// own. The failing task still has to be named.
+// deprecated life_cycle_state. The failing task still has to be named.
 func TestJobRunWaitReportsFailedTaskOfInternalErrorRun(t *testing.T) {
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
@@ -211,14 +212,13 @@ func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
 
 	_, err := waitForTestRun(t, ctx, client)
 
-	// The run keeps going, so the error links to it and names the interrupt rather
-	// than the 24h bound.
+	// The run keeps going, so the error links to it and names the interrupt.
 	require.ErrorContains(t, err, "interrupted while waiting for the run to finish")
 	require.ErrorContains(t, err, testRunPageLink)
 }
 
-// After an abandoned wait the next deploy triggers no second run: it reads this
-// one, and the empty outcome is what CheckSettled keeps out of a reference.
+// An abandoned wait leaves the run going with its id recorded, so the next deploy
+// reads an empty outcome, which result_state drift catches.
 func TestJobRunReadOfUnfinishedRunReportsNoResult(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning})
 
@@ -227,63 +227,61 @@ func TestJobRunReadOfUnfinishedRunReportsNoResult(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, remote.State)
 	assert.Equal(t, jobs.RunLifeCycleStateRunning, remote.State.LifeCycleState)
-	assert.Empty(t, remote.State.ResultState)
+	assert.Empty(t, remote.ResultState)
 }
 
-func TestJobRunCheckSettled(t *testing.T) {
-	// Every state runIsTerminal accepts is settled: the run has the outcome it is
-	// going to keep, whether or not it succeeded.
-	for _, state := range []jobs.RunLifeCycleState{
-		jobs.RunLifeCycleStateTerminated,
-		jobs.RunLifeCycleStateSkipped,
-		jobs.RunLifeCycleStateInternalError,
-	} {
-		t.Run(string(state), func(t *testing.T) {
-			remote := &JobRunRemote{RunId: 123, State: &jobs.RunState{LifeCycleState: state}}
+// PrepareState records the outcome the run must reach, the same for every run,
+// so the planner has something to compare the remote against.
+func TestJobRunPrepareStateRequiresSuccess(t *testing.T) {
+	state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{RunNow: jobs.RunNow{JobId: 456}})
 
-			require.NoError(t, (&ResourceJobRun{}).CheckSettled(remote))
+	assert.Equal(t, jobs.RunResultStateSuccess, state.ResultState)
+}
+
+// The planner diffs RemapState(remote) against PrepareState(config), so a run
+// that did not end in SUCCESS has to surface as a difference on result_state.
+func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
+	for _, outcome := range []jobs.RunResultState{
+		jobs.RunResultStateSuccess,
+		jobs.RunResultStateFailed,
+		// A run still going, and a SKIPPED one, report no result at all.
+		"",
+	} {
+		t.Run(string(outcome), func(t *testing.T) {
+			remote := &JobRunRemote{RunId: 123, ResultState: outcome}
+
+			state := (&ResourceJobRun{}).RemapState(remote)
+
+			assert.Equal(t, outcome, state.ResultState)
 		})
 	}
 }
 
-func TestJobRunCheckSettledRejectsUnfinishedRun(t *testing.T) {
-	for _, state := range []jobs.RunLifeCycleState{
-		jobs.RunLifeCycleStatePending,
-		jobs.RunLifeCycleStateRunning,
-	} {
-		t.Run(string(state), func(t *testing.T) {
-			remote := &JobRunRemote{
-				RunId:      123,
-				State:      &jobs.RunState{LifeCycleState: state},
-				RunPageUrl: testRunPageURL,
-			}
-
-			err := (&ResourceJobRun{}).CheckSettled(remote)
-
-			// The run has no outcome yet, and the error links the run so the user
-			// can see what it is still doing.
-			require.ErrorContains(t, err, "run 123 has not finished ("+string(state)+")")
-			require.ErrorContains(t, err, testRunPageLink)
-		})
-	}
-}
-
-func TestJobRunCheckSettledIsWiredIntoTheAdapter(t *testing.T) {
+// resources.yml ignores remote drift on everything the RunNow request carries,
+// since GetRun does not echo it back faithfully, and leaves result_state alone.
+func TestJobRunIgnoresEveryRequestField(t *testing.T) {
 	adapters, err := InitAll(nil)
 	require.NoError(t, err)
+	ignored := adapters["job_runs"].ResourceConfig().IgnoreRemoteChanges
 
-	running := &JobRunRemote{RunId: 123, State: &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateRunning,
-	}}
-	require.ErrorContains(t, adapters["job_runs"].CheckSettled(running), "has not finished")
+	for field := range reflect.TypeFor[jobs.RunNow]().Fields() {
+		name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+		if name == "" || name == "-" {
+			continue
+		}
+		assert.True(t, ignoresRemoteChanges(ignored, name), "jobs.RunNow field %q is not in job_runs ignore_remote_changes", name)
+	}
 
-	// A resource that does not implement CheckSettled is always settled, so the
-	// remote state is never even looked at.
-	require.NoError(t, adapters["jobs"].CheckSettled(nil))
+	assert.False(t, ignoresRemoteChanges(ignored, "result_state"), "result_state must stay comparable against the remote")
 }
 
-// Reporting RUNNING for the first two polls exercises the poll loop; the other
-// tests stub an already-terminal state.
+// ignoresRemoteChanges reports whether the rules suppress remote drift on field.
+func ignoresRemoteChanges(rules []FieldRule, field string) bool {
+	path := structpath.MustParsePath(field)
+	return slices.ContainsFunc(rules, func(r FieldRule) bool { return path.HasPatternPrefix(r.Field) })
+}
+
+// Reporting RUNNING for the first two polls exercises the poll loop.
 func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	var gets atomic.Int32
 	client := jobRunServer(t, func(req testserver.Request) any {
