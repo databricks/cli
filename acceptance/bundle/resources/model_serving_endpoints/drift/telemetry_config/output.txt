@@ -59,6 +59,56 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
+=== Removing telemetry_config from the bundle removes it remotely
+>>> [CLI] bundle plan --output json
+{
+  "config.served_entities[0].external_model.openai_config.openai_api_key_plaintext": {
+    "action": "skip",
+    "reason": "input_only",
+    "old": "sk-test-plaintext-key",
+    "new": "sk-test-plaintext-key",
+    "remote": ""
+  },
+  "description": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": ""
+  },
+  "route_optimized": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": false
+  },
+  "telemetry_config": {
+    "action": "update",
+    "old": {
+      "inference_table_config": {
+        "sampling_fraction": 0.9
+      }
+    },
+    "remote": {
+      "inference_table_config": {
+        "name": "main.default.test-endpoint_payload",
+        "sampling_fraction": 0.9
+      },
+      "telemetry_profile_id": "[UUID]"
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] api get /api/2.0/serving-endpoints/test-endpoint
+null
+
+=== Plan converges with telemetry_config removed
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
 >>> print_requests.py //serving-endpoints
 {
   "method": "POST",
@@ -105,4 +155,9 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
       }
     }
   }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config",
+  "body": {}
 }

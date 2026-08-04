@@ -36,13 +36,19 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 }
 
 // applyTelemetryConfig mirrors the backend, which assigns the profile ID and the
-// inference table name that the caller never supplies.
-func applyTelemetryConfig(endpointName string, config *serving.TelemetryConfig) *serving.TelemetryConfig {
+// inference table name that the caller never supplies. previous is the endpoint's
+// current telemetry config, if any: the profile belongs to the endpoint, so a patch
+// that does not name one updates the existing profile rather than provisioning
+// another.
+func applyTelemetryConfig(endpointName string, previous, config *serving.TelemetryConfig) *serving.TelemetryConfig {
 	if config == nil {
 		return nil
 	}
 
 	applied := *config
+	if applied.TelemetryProfileId == "" && previous != nil {
+		applied.TelemetryProfileId = previous.TelemetryProfileId
+	}
 	if applied.TelemetryProfileId == "" {
 		applied.TelemetryProfileId = nextUUID()
 	}
@@ -245,7 +251,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		PermissionLevel:      serving.ServingEndpointDetailedPermissionLevelCanManage,
 		RouteOptimized:       createReq.RouteOptimized,
 		Tags:                 createReq.Tags,
-		TelemetryConfig:      applyTelemetryConfig(createReq.Name, createReq.TelemetryConfig),
+		TelemetryConfig:      applyTelemetryConfig(createReq.Name, nil, createReq.TelemetryConfig),
 		State: &serving.EndpointState{
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
 			Ready:        serving.EndpointStateReadyNotReady,
@@ -411,7 +417,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name st
 	}
 
 	// An omitted telemetry_config removes the configuration from the endpoint.
-	endpoint.TelemetryConfig = applyTelemetryConfig(name, patchReq.TelemetryConfig)
+	endpoint.TelemetryConfig = applyTelemetryConfig(name, endpoint.TelemetryConfig, patchReq.TelemetryConfig)
 	endpoint.LastUpdatedTimestamp = nowMilli()
 	s.ServingEndpoints[name] = endpoint
 
