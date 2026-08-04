@@ -1035,19 +1035,24 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			"unexpected differences between remappedState and remappedRemoteStateFromCreate")
 	}
 
+	// Only a job run's state moves while WaitAfterCreate blocks: it polls a RUNNING
+	// run until terminal. Everything else settles on create here.
+	waitSettlesState := group == "job_runs"
+
 	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitCreate != nil {
-		// WaitAfterCreate returns the settled state; the read right after DoCreate
-		// may still be non-terminal, so compare against a fresh read.
-		remotePostWaitCreate, err := adapter.DoRead(ctx, createdID)
-		require.NoError(t, err)
-		require.Equal(t, remotePostWaitCreate, remoteStateFromWaitCreate)
+		if waitSettlesState {
+			// The pre-wait read is stale, and result_state fills in only once settled.
+			remotePostWaitCreate, err := adapter.DoRead(ctx, createdID)
+			require.NoError(t, err)
+			require.Equal(t, remotePostWaitCreate, remoteStateFromWaitCreate)
 
-		// The settled state is the one a deploy records, so the field checks below
-		// run against it: a job run's result_state fills in only once it settles.
-		remappedState, err = adapter.RemapState(remoteStateFromWaitCreate)
-		require.NoError(t, err)
+			remappedState, err = adapter.RemapState(remoteStateFromWaitCreate)
+			require.NoError(t, err)
+		} else {
+			require.Equal(t, remote, remoteStateFromWaitCreate)
+		}
 	}
 
 	if adapter.HasDoUpdate() {
