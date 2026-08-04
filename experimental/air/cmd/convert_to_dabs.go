@@ -88,7 +88,7 @@ does not contact the workspace.`,
 			return err
 		}
 
-		printConvertNextSteps(ctx, dir, written, bundleResourceKey(cfg.ExperimentName), conversionNotes(cfg))
+		printConvertNextSteps(ctx, dir, written, bundleResourceKey(cfg.ExperimentName))
 		return nil
 	}
 
@@ -452,21 +452,10 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 // whereas `bundle deploy` creates a *persistent* job that lingers until explicitly
 // destroyed — DABs has no automatic GC. A user migrating from `air run` will not
 // expect a durable resource, so we call out `bundle destroy` explicitly.
-func printConvertNextSteps(ctx context.Context, dir string, written []string, jobKey string, notes []string) {
+func printConvertNextSteps(ctx context.Context, dir string, written []string, jobKey string) {
 	cmdio.LogString(ctx, fmt.Sprintf("Wrote a Databricks Asset Bundle to %s:", dir))
 	for _, w := range written {
 		cmdio.LogString(ctx, "  "+w)
-	}
-
-	// Notes surface anything the user should know: fields we transformed or dropped,
-	// and values they may need to fill in. Migrating users otherwise can't tell what
-	// silently changed between their run YAML and the bundle.
-	if len(notes) > 0 {
-		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Notes:")
-		for _, n := range notes {
-			cmdio.LogString(ctx, "  - "+n)
-		}
 	}
 
 	// Name this binary rather than a bare "databricks": ai_runtime_task is only
@@ -474,17 +463,26 @@ func printConvertNextSteps(ctx context.Context, dir string, written []string, jo
 	// just a warning, deploying a job with no AI task at all.
 	self := cliInvocation()
 
+	// The bundle is written next to the input YAML by default, so a cd step is only
+	// worth printing when the user has to leave the current directory.
+	var steps []string
+	if dir != "." {
+		steps = append(steps, "cd "+dir)
+	}
+	steps = append(steps,
+		self+" bundle validate",
+		self+" bundle deploy",
+		self+" bundle run "+jobKey,
+	)
+
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "To deploy and run this workload as a bundle:")
-	cmdio.LogString(ctx, "  1. cd "+dir)
-	cmdio.LogString(ctx, "  2. "+self+" bundle validate")
-	cmdio.LogString(ctx, "  3. "+self+" bundle deploy")
-	cmdio.LogString(ctx, "  4. "+self+" bundle run "+jobKey)
+	for i, s := range steps {
+		cmdio.LogString(ctx, fmt.Sprintf("  %d. %s", i+1, s))
+	}
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "bundle deploy uploads the code source and launch scripts automatically.")
-	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Run these with this same CLI: a build without ai_runtime_task support")
-	cmdio.LogString(ctx, "only warns about the unknown field, then deploys a job with no AI task.")
+	cmdio.LogString(ctx, "To see what it deployed and where: "+self+" bundle summary")
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Unlike `air run` (which submits an ephemeral run), bundle deploy creates a")
 	cmdio.LogString(ctx, "persistent job that is not garbage-collected. When you are done, remove the")
@@ -504,29 +502,4 @@ func cliInvocation() string {
 		return "databricks"
 	}
 	return arg0
-}
-
-// conversionNotes lists what the conversion staged out-of-band or could not
-// represent natively, so a user migrating from `air run` sees what changed between
-// their run YAML and the emitted bundle.
-func conversionNotes(cfg *runConfig) []string {
-	var notes []string
-
-	if codeSnapshot(cfg) != nil {
-		notes = append(notes, "code_source points at your source directory; bundle deploy packages and uploads it from there.")
-	}
-
-	// env vars / secrets have no native ai_runtime_task field yet, so they ride as
-	// sidecar files the server-side launcher reads (same as `air run`).
-	if len(cfg.EnvVariables) > 0 {
-		notes = append(notes, "env_variables were written to env_vars.json (no native bundle field yet); they are uploaded with the code and applied at run time.")
-	}
-	if len(cfg.Secrets) > 0 {
-		notes = append(notes, "secrets were written to secret_env_vars.json (no native bundle field yet); they are resolved at run time.")
-	}
-	if len(cfg.Parameters) > 0 {
-		notes = append(notes, "parameters were written to hyperparameters.yaml; they are not a native bundle field and are passed through to the workload.")
-	}
-
-	return notes
 }

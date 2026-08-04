@@ -6,19 +6,13 @@ Wrote a Databricks Asset Bundle to .:
   training_config.yaml
   command.sh
 
-Notes:
-  - code_source points at your source directory; bundle deploy packages and uploads it from there.
-
 To deploy and run this workload as a bundle:
-  1. cd .
-  2. [CLI] bundle validate
-  3. [CLI] bundle deploy
-  4. [CLI] bundle run torchrun-a10-smoke-test
+  1. [CLI] bundle validate
+  2. [CLI] bundle deploy
+  3. [CLI] bundle run torchrun-a10-smoke-test
 
 bundle deploy uploads the code source and launch scripts automatically.
-
-Run these with this same CLI: a build without ai_runtime_task support
-only warns about the unknown field, then deploys a job with no AI task.
+To see what it deployed and where: [CLI] bundle summary
 
 Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
 persistent job that is not garbage-collected. When you are done, remove the
@@ -81,19 +75,13 @@ Wrote a Databricks Asset Bundle to .:
   training_config.yaml
   command.sh
 
-Notes:
-  - code_source points at your source directory; bundle deploy packages and uploads it from there.
-
 To deploy and run this workload as a bundle:
-  1. cd .
-  2. [CLI] bundle validate
-  3. [CLI] bundle deploy
-  4. [CLI] bundle run torchrun-a10-smoke-test
+  1. [CLI] bundle validate
+  2. [CLI] bundle deploy
+  3. [CLI] bundle run torchrun-a10-smoke-test
 
 bundle deploy uploads the code source and launch scripts automatically.
-
-Run these with this same CLI: a build without ai_runtime_task support
-only warns about the unknown field, then deploys a job with no AI task.
+To see what it deployed and where: [CLI] bundle summary
 
 Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
 persistent job that is not garbage-collected. When you are done, remove the

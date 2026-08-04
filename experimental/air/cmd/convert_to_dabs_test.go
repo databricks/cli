@@ -3,7 +3,6 @@ package aircmd
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -312,36 +311,6 @@ func TestConvertToDabsFoldsRequirementsFileIntoEnvSpec(t *testing.T) {
 
 	// No requirements.yaml artifact: the mutator regenerates it from the spec.
 	assert.NotContains(t, itemNames(artifacts), requirementsName)
-}
-
-// conversionNotes surfaces what was transformed/staged so a migrating user knows
-// what changed between their run YAML and the bundle.
-func TestConvertToDabsConversionNotes(t *testing.T) {
-	cfg := minimalConfig + `
-env_variables: {FOO: bar}
-secrets: {TOKEN: scope/key}
-parameters: {lr: 0.1}
-code_source:
-  type: snapshot
-  snapshot:
-    root_path: ./src
-`
-	path := writeConfigFile(t, "run.yaml", cfg)
-	loaded, err := loadRunConfig(path)
-	require.NoError(t, err)
-
-	notes := conversionNotes(loaded)
-	joined := strings.Join(notes, "\n")
-	assert.Contains(t, joined, "code_source")          // source-dir behavior
-	assert.Contains(t, joined, "env_vars.json")        // env vars staged
-	assert.Contains(t, joined, "secret_env_vars.json") // secrets staged
-	assert.Contains(t, joined, "hyperparameters.yaml") // parameters staged
-
-	// A minimal config with none of those has no notes.
-	base := writeConfigFile(t, "min.yaml", minimalConfig)
-	minCfg, err := loadRunConfig(base)
-	require.NoError(t, err)
-	assert.Empty(t, conversionNotes(minCfg))
 }
 
 // usage_policy_id is a resolved budget policy id and maps to the job's
