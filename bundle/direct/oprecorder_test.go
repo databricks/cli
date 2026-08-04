@@ -2,6 +2,8 @@ package direct
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"sync"
 	"testing"
 
@@ -83,6 +85,25 @@ func TestNewRecordedOperationRecordsDependsOn(t *testing.T) {
 func TestNewRecordedOperationRejectsUnsupportedAction(t *testing.T) {
 	_, err := newRecordedOperation(deployplan.Skip, "job-123", nil, nil)
 	assert.Error(t, err)
+}
+
+func TestNewFailedOperationRecordsError(t *testing.T) {
+	op, err := newFailedOperation(deployplan.Create, "", errors.New("cluster spec is invalid"))
+	require.NoError(t, err)
+
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, op.status)
+	assert.Equal(t, "cluster spec is invalid", op.errorMessage)
+	// The resource was never written, so there is no state to serve back for it.
+	assert.Nil(t, op.state)
+}
+
+func TestNewFailedOperationTruncatesLongError(t *testing.T) {
+	// Truncated rather than rejected: a message over the limit would make recording
+	// fail and hide the error it is reporting.
+	op, err := newFailedOperation(deployplan.Update, "job-123", errors.New(strings.Repeat("x", maxOperationErrorMessageSize+100)))
+	require.NoError(t, err)
+
+	assert.Len(t, op.errorMessage, maxOperationErrorMessageSize)
 }
 
 func TestDeployActionToSDK(t *testing.T) {

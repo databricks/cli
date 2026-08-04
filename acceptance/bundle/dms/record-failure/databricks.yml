@@ -1,0 +1,10 @@
+bundle:
+  name: dms-record-failure
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    doomed:
+      name: doomed

@@ -18,7 +18,13 @@ const (
 	// operationUploadWorkers is how many uploads run at a time. It is below
 	// operationQueueSize so a burst of operations is absorbed by the queue rather
 	// than by one request per resource.
-	operationUploadWorkers = 4
+	//
+	// Capped at 2 because concurrent CreateOperation calls under the same version
+	// contend on shared state server-side and the transaction conflict surfaces as
+	// a 500, which fails the deploy. Measured against the service: 3 concurrent
+	// writes still succeeded, 4 did not. The real fix is a batch upload API that
+	// commits every operation in one transaction; until then, keep this at 2.
+	operationUploadWorkers = 2
 )
 
 // operationQueue hands recorded operations to background workers, so an apply
@@ -125,6 +131,33 @@ func (q *operationQueue) record(ctx context.Context, resourceKey string, action 
 		return err
 	}
 
+	q.enqueue(ctx, resourceKey, op)
+	return nil
+}
+
+// recordFailure records that applying a resource failed, so the deployment
+// history explains the failure instead of omitting the resource.
+//
+// Unlike record, this does not resurface an earlier upload error: the deploy is
+// already failing, and returning a different error here would replace the one the
+// user needs to see. A failure to upload this record is reported at close.
+func (q *operationQueue) recordFailure(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, cause error) {
+	if q == nil {
+		return
+	}
+
+	op, err := newFailedOperation(action, resourceID, cause)
+	if err != nil {
+		log.Warnf(ctx, "Not recording failure for %s: %s", resourceKey, err)
+		return
+	}
+
+	q.enqueue(ctx, resourceKey, op)
+}
+
+// enqueue publishes op as the pending operation for resourceKey and makes sure a
+// worker will pick it up.
+func (q *operationQueue) enqueue(ctx context.Context, resourceKey string, op recordedOperation) {
 	q.mu.Lock()
 	_, replaced := q.pending[resourceKey]
 	q.pending[resourceKey] = op
@@ -140,11 +173,10 @@ func (q *operationQueue) record(ctx context.Context, resourceKey string, action 
 	// finishing, so it will see the operation written above. Queueing the key again
 	// would let a second worker upload the same resource concurrently.
 	if alreadyHandled {
-		return nil
+		return
 	}
 
 	q.queue <- resourceKey
-	return nil
 }
 
 // close drains the queue and returns the first upload error. All callers of

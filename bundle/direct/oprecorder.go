@@ -16,6 +16,12 @@ import (
 // message that names the resource.
 const maxOperationStateSize = 64 * 1024
 
+// maxOperationErrorMessageSize is the largest error message DMS accepts per
+// operation. A longer message is truncated rather than rejected, so a failing
+// resource is still recorded with its error instead of the recording itself
+// failing and masking the error we are trying to report.
+const maxOperationErrorMessageSize = 16 * 1024
+
 // recordedOperation is an applied resource operation, serialized and waiting to be
 // uploaded to the deployment metadata service (DMS).
 //
@@ -25,9 +31,15 @@ const maxOperationStateSize = 64 * 1024
 type recordedOperation struct {
 	action     bundledeployments.OperationActionType
 	resourceID string
+	status     bundledeployments.OperationStatus
+
+	// errorMessage is why the operation failed. It is set only when status is
+	// failed, which the service enforces.
+	errorMessage string
 
 	// state is the serialized local config after the operation. It is nil for a
-	// delete, where the resource no longer exists.
+	// delete, where the resource no longer exists, and for a failure, where the
+	// resource was not written.
 	state json.RawMessage
 }
 
@@ -40,7 +52,11 @@ func newRecordedOperation(action deployplan.ActionType, resourceID string, state
 		return recordedOperation{}, err
 	}
 
-	op := recordedOperation{action: actionType, resourceID: resourceID}
+	op := recordedOperation{
+		action:     actionType,
+		resourceID: resourceID,
+		status:     bundledeployments.OperationStatusOperationStatusSucceeded,
+	}
 
 	// Operation.State carries the serialized state, which DMS serves back as
 	// resource state. Unset for delete: the resource is gone.
@@ -60,6 +76,31 @@ func newRecordedOperation(action deployplan.ActionType, resourceID string, state
 	}
 
 	return op, nil
+}
+
+// newFailedOperation records an operation that did not apply, so the deployment
+// history says why a resource failed rather than just omitting it.
+//
+// No state is recorded: the resource was not written, so there is nothing to
+// serve back as its state. CREATE and RECREATE may have no resourceID yet, which
+// the service allows for exactly those two actions.
+func newFailedOperation(action deployplan.ActionType, resourceID string, cause error) (recordedOperation, error) {
+	actionType, err := deployActionToSDK(action)
+	if err != nil {
+		return recordedOperation{}, err
+	}
+
+	message := cause.Error()
+	if len(message) > maxOperationErrorMessageSize {
+		message = message[:maxOperationErrorMessageSize]
+	}
+
+	return recordedOperation{
+		action:       actionType,
+		resourceID:   resourceID,
+		status:       bundledeployments.OperationStatusOperationStatusFailed,
+		errorMessage: message,
+	}, nil
 }
 
 // operationUploader records an applied resource operation with DMS. Uploads run
@@ -93,10 +134,11 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 	dmsKey := strings.TrimPrefix(resourceKey, "resources.")
 
 	operation := bundledeployments.Operation{
-		ActionType:  op.action,
-		ResourceId:  op.resourceID,
-		ResourceKey: dmsKey,
-		Status:      bundledeployments.OperationStatusOperationStatusSucceeded,
+		ActionType:   op.action,
+		ResourceId:   op.resourceID,
+		ResourceKey:  dmsKey,
+		Status:       op.status,
+		ErrorMessage: op.errorMessage,
 	}
 	if op.state != nil {
 		// DMS types state as a string, so the JSON goes on the wire as a quoted

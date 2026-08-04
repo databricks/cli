@@ -243,9 +243,15 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 	}
 
 	// A delete carries no state, so resource_id is the only thing identifying which
-	// resource it refers to; the service rejects a delete without one.
+	// resource it refers to; the service rejects a delete without one. A failed
+	// delete is exempt only for create-flavored actions, which may not have an ID.
 	if op.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete && op.ResourceId == "" {
 		return dmsInvalidArgument("resource_id is required for OPERATION_ACTION_TYPE_DELETE operations")
+	}
+
+	failed := op.Status == bundledeployments.OperationStatusOperationStatusFailed
+	if !failed && op.ErrorMessage != "" {
+		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
 	}
 
 	op.Name = "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + resourceKey
@@ -253,9 +259,15 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 
 	// Reflect the operation onto the deployment-level resource set the way the
 	// backend does: a delete removes the resource, anything else upserts it.
-	if op.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete {
+	//
+	// A failed operation is upserted too, matching the service, but it carries
+	// neither a resource_id nor state, so the read path treats the resource as not
+	// yet created rather than as existing state (verified against the service: a
+	// failed create is listed with an empty resource_id and no state).
+	switch {
+	case op.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete && !failed:
 		delete(d.resources, resourceKey)
-	} else {
+	default:
 		d.resources[resourceKey] = bundledeployments.Resource{
 			Name:           "deployments/" + deploymentID + "/resources/" + resourceKey,
 			ResourceKey:    resourceKey,
