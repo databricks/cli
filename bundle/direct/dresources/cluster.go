@@ -48,9 +48,15 @@ func (s ClusterState) MarshalJSON() ([]byte, error) {
 // ClusterRemote extends compute.ClusterDetails with a synthetic Lifecycle field so that
 // RemoteType satisfies TestRemoteSuperset (every field in ClusterState exists in ClusterRemote).
 // Lifecycle.Started is populated by DoRead from the cluster's running state.
+//
+// ApplyPolicyDefaultValues is promoted to the top level because the cluster GET API returns it
+// only under .spec (a snapshot of the create/edit settings), never at the top level. DoRead
+// copies it up so RemapState stays a dumb copy and the field participates in normal drift
+// detection instead of being suppressed as missing_in_remote.
 type ClusterRemote struct {
 	compute.ClusterDetails
-	Lifecycle *StateLifecycle `json:"lifecycle,omitempty"`
+	ApplyPolicyDefaultValues bool            `json:"apply_policy_default_values,omitempty"`
+	Lifecycle                *StateLifecycle `json:"lifecycle,omitempty"`
 }
 
 func (r *ClusterRemote) UnmarshalJSON(b []byte) error {
@@ -88,7 +94,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 	started := input.State == compute.StateRunning
 	spec := &ClusterState{
 		ClusterSpec: compute.ClusterSpec{
-			ApplyPolicyDefaultValues:   false,
+			ApplyPolicyDefaultValues:   input.ApplyPolicyDefaultValues,
 			Autoscale:                  input.Autoscale,
 			AutoterminationMinutes:     input.AutoterminationMinutes,
 			AwsAttributes:              input.AwsAttributes,
@@ -127,9 +133,6 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 		},
 		Lifecycle: &StateLifecycle{Started: &started},
 	}
-	if input.Spec != nil {
-		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
-	}
 	return spec
 }
 
@@ -139,8 +142,14 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 		return nil, err
 	}
 	remote := &ClusterRemote{
-		ClusterDetails: *details,
-		Lifecycle:      nil,
+		ClusterDetails:           *details,
+		ApplyPolicyDefaultValues: false,
+		Lifecycle:                nil,
+	}
+	// The GET response carries apply_policy_default_values only under .spec (a snapshot of the
+	// create/edit settings), not at the top level. Promote it so RemapState is a dumb copy.
+	if details.Spec != nil {
+		remote.ApplyPolicyDefaultValues = details.Spec.ApplyPolicyDefaultValues
 	}
 
 	switch details.State {

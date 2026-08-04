@@ -48,7 +48,7 @@ type Pipeline struct {
 	ProjectDir        string
 	ConstraintBaseURL string
 	CacheDir          string
-	Flags             TargetFlags
+	Flags             ComputeFlags
 	Bundle            BundleTarget
 	Compute           ComputeClient
 	PM                PackageManager
@@ -98,7 +98,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// before any other work so the failure flows through the phase/JSON reporting
 	// (a plain Cobra mutual-exclusion error would print no command JSON object,
 	// which the --output json consumer needs).
-	if err := ValidateTargetFlags(p.Flags); err != nil {
+	if err := ValidateComputeFlags(p.Flags); err != nil {
 		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
 	}
 	// P0 supports only uv; any other detected manager is a clean, non-blaming exit.
@@ -126,13 +126,13 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: resolve — compute target → environment key.
-	target, err := p.resolve(ctx)
+	compute, err := p.resolve(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Phase: fetch — constraint artifact for the resolved env key.
-	c, err := p.fetch(ctx, target)
+	c, err := p.fetch(ctx, compute)
 	if err != nil {
 		return err
 	}
@@ -189,22 +189,22 @@ func (p *Pipeline) run(ctx context.Context) error {
 	return p.validate(ctx, pyMinor, dbcPin)
 }
 
-// resolve runs ResolveTarget and records the resolve phase.
-func (p *Pipeline) resolve(ctx context.Context) (*TargetInfo, error) {
-	target, err := ResolveTarget(ctx, p.Flags, p.Compute, p.Bundle)
+// resolve runs ResolveCompute and records the resolve phase.
+func (p *Pipeline) resolve(ctx context.Context) (*ComputeInfo, error) {
+	compute, err := ResolveCompute(ctx, p.Flags, p.Compute, p.Bundle)
 	if err != nil {
-		return nil, p.fail(PhaseResolve, false, asPipelineError(err, ErrResolve, "target resolution failed"))
+		return nil, p.fail(PhaseResolve, false, asPipelineError(err, ErrResolve, "compute resolution failed"))
 	}
-	p.res.Target = target
-	p.markOK(PhaseResolve, fmt.Sprintf("source=%s envKey=%s", target.Source, target.EnvKey))
-	return target, nil
+	p.res.Compute = compute
+	p.markOK(PhaseResolve, fmt.Sprintf("source=%s envKey=%s", compute.Source, compute.EnvKey))
+	return compute, nil
 }
 
 // fetch fetches constraints for the resolved target and records the fetch phase.
 // Under --dry-run the cache is not populated, so a dry run performs no disk writes
 // (an existing cache is still read for offline fallback).
-func (p *Pipeline) fetch(ctx context.Context, target *TargetInfo) (*Constraints, error) {
-	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, target.EnvKey, p.CacheDir, !p.Check)
+func (p *Pipeline) fetch(ctx context.Context, compute *ComputeInfo) (*Constraints, error) {
+	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, compute.EnvKey, p.CacheDir, !p.Check)
 	if err != nil {
 		// FetchConstraints classifies the cause: E_ENV_UNSUPPORTED for a missing
 		// key (404) versus E_FETCH for transport failure with no cache. Both are
