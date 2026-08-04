@@ -27,6 +27,7 @@ func TestCatalogsCreate_AllowsNonEmptyName(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
 	response := workspace.CatalogsCreate(Request{Body: []byte(`{"name": "my_catalog"}`)})
+	// StatusCode 0 gets converted to 200 by normalizeResponse in the server
 	assert.Equal(t, 0, response.StatusCode)
 
 	body, ok := response.Body.(catalog.CatalogInfo)

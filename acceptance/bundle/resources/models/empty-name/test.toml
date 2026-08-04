@@ -1,0 +1,8 @@
+Local = true
+Cloud = false
+RecordRequests = false
+Ignore = [".databricks"]
+
+# The error surface is the same on both engines, but terraform wraps it in its
+# own output; keep a single golden.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

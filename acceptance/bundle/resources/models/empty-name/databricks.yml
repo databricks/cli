@@ -1,0 +1,7 @@
+bundle:
+  name: model-empty-name
+
+resources:
+  models:
+    mymodel:
+      name: ""

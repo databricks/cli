@@ -1,0 +1,7 @@
+bundle:
+  name: catalog-empty-name
+
+resources:
+  catalogs:
+    mycatalog:
+      name: ""

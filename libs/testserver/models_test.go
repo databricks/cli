@@ -26,6 +26,7 @@ func TestModelRegistryCreateModel_AllowsNonEmptyName(t *testing.T) {
 
 	response, ok := workspace.ModelRegistryCreateModel(Request{Body: []byte(`{"name": "my_model"}`)}).(Response)
 	require.True(t, ok)
+	// StatusCode 0 gets converted to 200 by normalizeResponse in the server
 	assert.Equal(t, 0, response.StatusCode)
 
 	body, ok := response.Body.(ml.CreateModelResponse)
