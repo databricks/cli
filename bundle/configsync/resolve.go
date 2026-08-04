@@ -28,29 +28,16 @@ type FieldChange struct {
 	// when the change could not be routed to a block, i.e. when the scope had to be
 	// guessed; a routed change has exactly one correct path.
 	AltWritePath string
-	// preResolvedPath addresses the field in the pre-resolved configuration, the one
-	// read to recover a ${var.X} reference that deployment replaced with its value.
+	// originalPath addresses the field in the original configuration, before deployment
+	// replaced any ${var.X} reference with its value, so restoration can read the
+	// reference back.
 	//
 	// That configuration is merged, so this path keeps the MERGED sequence indices and
-	// no targets.<target> prefix. WritePath is the opposite on both counts: it
-	// addresses the raw file, so its indices are block-local and an override carries
-	// the prefix. Deriving one from the other reads a different element whenever the
-	// two index spaces disagree, which restores a sibling's variable reference.
-	preResolvedPath string
-}
-
-// sequenceStep records a sequence element that a change path navigated through.
-// The element's index inside a physical block is only known once the block has
-// been chosen, so the merged position is kept until then.
-type sequenceStep struct {
-	// position in the pattern built so far, i.e. how many components precede
-	// this sequence's index.
-	component int
-	// path of the sequence relative to a block, e.g. resources.jobs.j.tasks.
-	sequencePath dyn.Path
-	element      dyn.Value
-	// newElement marks an Add whose key is not in the merged sequence yet.
-	newElement bool
+	// no targets.<target> prefix. WritePath is the opposite on both counts: it addresses
+	// the raw file, so its indices are block-local and an override carries the prefix.
+	// Deriving one from the other reads a different element whenever the two index
+	// spaces disagree, which restores a sibling's variable reference.
+	originalPath string
 }
 
 // resolvedChange locates a change in the source YAML.
@@ -174,12 +161,6 @@ func pathDepth(pathStr string) int {
 	return len(node.AsSlice())
 }
 
-// scopedParent keys index bookkeeping by the sequence a path addresses, within the
-// scope of one block, so operations on one block cannot shift indices in another.
-func scopedParent(scope string, path *structpath.PatternNode) string {
-	return scope + path.Parent().String()
-}
-
 // adjustArrayIndex adjusts the index in a PatternNode based on previous operations.
 // When operations are applied sequentially, removals and additions shift array indices.
 // This function adjusts the index to account for those shifts.
@@ -258,15 +239,9 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 		// add of the new one, with nothing linking them. Pairing them back up lets a
 		// rename be written as a key rewrite in every block that defines the element,
 		// which keeps a split element split instead of collapsing it into one scope.
-		renames := pairRenames(b, blocks, resourceKey, resourceChanges)
+		renames := matchRenamingPairs(b, blocks, resourceKey, resourceChanges)
 
-		// Create indices map for this resource, path -> indices, that we could use to replace with added elements
-		indicesToReplaceMap := make(map[string][]int)
-
-		indexOperations := make(map[string][]struct {
-			index     int
-			operation OperationType
-		})
+		indices := newIndexTracker()
 
 		for _, fieldPath := range fieldPaths {
 			configChange := resourceChanges[fieldPath]
@@ -289,37 +264,23 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			}
 			resolvedPath := resolved.path
 
-			// A sequence element addressed by the merged view has to be mapped onto
-			// the physical block that defines it, because the merged order and the
-			// per-block order differ once a sequence is split across blocks. An
-			// element assembled from several blocks has a part in each, so removing
-			// or renaming it yields one destination per block.
 			// Variable restoration resolves against the pre-resolved configuration,
 			// which is merged, so it needs the path in merged index space -- captured
-			// here, before pathWithinBlock rewrites indices to be block-local.
+			// before routing rewrites indices to be block-local.
 			mergedIndexPath := resolvedPath
-			destinations := []routeDestination{{path: resolvedPath}}
-			if blocks != nil && len(resolved.steps) > 0 {
-				var routeErr error
-				if isRename {
-					destinations, routeErr = routeRenameElement(b, blocks, resourceKey, fieldPath)
-					if routeErr == nil && len(destinations) == 0 {
-						// The element could not be attributed to a block; leave the
-						// whole pair for a later run rather than half-applying it.
-						continue
-					}
-				} else {
-					destinations, routeErr = blocks.routeDestinations(resolved)
+
+			destinations, err := routeChange(blocks, resolved, isRename)
+			if err != nil {
+				if !errors.Is(err, errAmbiguousBlock) {
+					return nil, err
 				}
-				if routeErr != nil {
-					if errors.Is(routeErr, errAmbiguousBlock) {
-						// Applying this change would mean guessing a location.
-						// Leave it unapplied; a later run can pick it up.
-						log.Debugf(ctx, "config-remote-sync: skipping %s: %v", fullPath, routeErr)
-						continue
-					}
-					return nil, fmt.Errorf("failed to route change %s: %w", fullPath, routeErr)
-				}
+				// Applying this change would mean guessing a location. Leave it
+				// unapplied; a later run can pick it up.
+				log.Debugf(ctx, "config-remote-sync: skipping %s: %v", fullPath, err)
+				continue
+			}
+			if len(destinations) == 0 {
+				continue
 			}
 
 			for _, destination := range destinations {
@@ -343,49 +304,20 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				// element itself. The index is still adjusted below, because
 				// removals earlier in the same block shift it.
 				if isRename {
-					resolvedPath = adjustArrayIndex(resolvedPath, scope, indexOperations)
+					resolvedPath = adjustArrayIndex(resolvedPath, scope, indices.operations)
 					destChange.Operation = OperationReplace
 					destChange.Value = rename.newKey
 					resolvedPath = structpath.NewPatternStringKey(resolvedPath, rename.keyField)
 					result = append(result, FieldChange{
-						FilePath:        block.file,
-						Change:          destChange,
-						WritePath:       blocks.candidatePath(*block, resolvedPath),
-						preResolvedPath: structpath.NewPatternStringKey(mergedIndexPath, rename.keyField).String(),
+						FilePath:     block.file,
+						Change:       destChange,
+						WritePath:    blocks.candidatePath(*block, resolvedPath),
+						originalPath: structpath.NewPatternStringKey(mergedIndexPath, rename.keyField).String(),
 					})
 					continue
 				}
 
-				// If the element is removed, we can use the index to replace it with added element
-				// That may improve the diff in cases when the task is recreated because of renaming
-				if destChange.Operation == OperationRemove {
-					freeIndex, ok := resolvedPath.Index()
-					if ok {
-						parentPath := scopedParent(scope, resolvedPath)
-						indicesToReplaceMap[parentPath] = append(indicesToReplaceMap[parentPath], freeIndex)
-					}
-				}
-
-				if destChange.Operation == OperationAdd && resolvedPath.BracketStar() {
-					parentPath := scopedParent(scope, resolvedPath)
-					indices, ok := indicesToReplaceMap[parentPath]
-					if ok && len(indices) > 0 {
-						index := indices[0]
-						indicesToReplaceMap[parentPath] = indices[1:]
-						resolvedPath = structpath.NewPatternIndex(resolvedPath.Parent(), index)
-					}
-				}
-
-				resolvedPath = adjustArrayIndex(resolvedPath, scope, indexOperations)
-
-				// Track this operation for future index adjustments (only for array element operations)
-				if originalIndex, ok := resolvedPath.Index(); ok {
-					parentPath := scopedParent(scope, resolvedPath)
-					indexOperations[parentPath] = append(indexOperations[parentPath], struct {
-						index     int
-						operation OperationType
-					}{originalIndex, destChange.Operation})
-				}
+				resolvedPath = indices.place(scope, resolvedPath, destChange.Operation)
 
 				resolvedPathStr := resolvedPath.String()
 				writePath := resolvedPathStr
@@ -447,11 +379,11 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				}
 
 				result = append(result, FieldChange{
-					FilePath:        filePath,
-					Change:          destChange,
-					WritePath:       writePath,
-					AltWritePath:    altWritePath,
-					preResolvedPath: mergedIndexPath.String(),
+					FilePath:     filePath,
+					Change:       destChange,
+					WritePath:    writePath,
+					AltWritePath: altWritePath,
+					originalPath: mergedIndexPath.String(),
 				})
 			}
 		}

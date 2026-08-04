@@ -94,13 +94,13 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 		var newValue any
 		switch fc.Change.Operation {
 		case OperationReplace:
-			fieldValue, ok := preResolvedValueAt(preResolved, fc.preResolvedPath)
+			fieldValue, ok := preResolvedValueAt(preResolved, fc.originalPath)
 			if !ok {
 				continue
 			}
 			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, stats)
 		case OperationAdd:
-			siblings, ok := sequenceSiblings(preResolved, fc.preResolvedPath)
+			siblings, ok := sequenceSiblings(preResolved, fc.originalPath)
 			if !ok {
 				continue
 			}

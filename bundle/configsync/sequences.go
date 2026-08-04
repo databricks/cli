@@ -17,16 +17,27 @@ import (
 )
 
 // Write-back has to turn a position in the merged configuration into a position in a
-// file, and the two do not correspond.
+// file, and the two do not correspond. That translation is what this file does.
 //
 // A sequence field of a resource may be defined in two physical regions: the top-level
 // resources.<type>.<name>.<field> block and the targets.<target>.resources... override
 // block, either of which may live in its own included file. Loading concatenates those
-// regions into one sequence and sorts keyed ones by key, so a merged index addresses
-// no single region. Every index therefore exists in one of two spaces -- merged, or
-// local to one block -- and each value in this file belongs to exactly one of them;
-// crossing them silently addresses a different element.
+// regions into one sequence and sorts keyed ones by key, so a merged index addresses no
+// single region. Every index therefore exists in one of two spaces -- merged, or local to
+// one block -- and each value here belongs to exactly one of them; crossing them silently
+// addresses a different element.
 //
+// Two questions have to be answered, in order:
+//
+//   - Which block receives the change? Its locations say where it was defined, and an
+//     element assembled from two blocks has a part in each.
+//   - Which position inside that block? Not just the block-local index, but the index the
+//     sequence will have by the time this change is applied, since earlier changes in the
+//     same run may already have moved it.
+//
+// Both apply equally to keyed and positional sequences; those differ only in how
+// resolveSelectors arrives at a merged position.
+
 // A block is (kind, file), because both kinds may occur in one file and one target's
 // override may span several files, so neither identifies a block alone.
 type sourceBlock struct {
@@ -349,6 +360,24 @@ func (r *blockResolver) routeDestinations(change resolvedChange) ([]routeDestina
 	return destinations, nil
 }
 
+// routeChange returns every physical place a change has to be written: one per block
+// that defines the addressed element, since an element split across blocks has a part in
+// each.
+//
+// Returns no destinations when the change has to be left for a later run, and
+// errAmbiguousBlock when applying it would mean guessing a location.
+func routeChange(blocks *blockResolver, resolved resolvedChange, isRename bool) ([]routeDestination, error) {
+	// Without a resolver, or with no sequence on the path, the resolved path is written
+	// as-is in whichever file the resource was found in.
+	if blocks == nil || len(resolved.steps) == 0 {
+		return []routeDestination{{path: resolved.path}}, nil
+	}
+	if isRename {
+		return routeRenameElement(blocks, resolved)
+	}
+	return blocks.routeDestinations(resolved)
+}
+
 // addressesWholeElement reports whether the change targets an existing sequence
 // element itself rather than something inside it. Only such a change can need more
 // than one destination, since only it can span the blocks the element is built
@@ -532,4 +561,75 @@ func (r *blockResolver) pathWithinBlock(block sourceBlock, change resolvedChange
 		result = structpath.NewPatternStringKey(result, key)
 	}
 	return result, nil
+}
+
+// sequenceStep records a sequence element that a change path navigated through.
+// The element's index inside a physical block is only known once the block has
+// been chosen, so the merged position is kept until then.
+type sequenceStep struct {
+	// component is how many path components precede this sequence's index.
+	component int
+	// sequencePath is the sequence itself, e.g. resources.jobs.j.tasks.
+	sequencePath dyn.Path
+	element      dyn.Value
+	// newElement marks an Add whose key is not in the merged sequence yet.
+	newElement bool
+}
+
+// scopedParent keys index bookkeeping by the sequence a path addresses, per block.
+func scopedParent(scope string, path *structpath.PatternNode) string {
+	return scope + path.Parent().String()
+}
+
+// indexTracker keeps the positions already spoken for while a resource's changes are
+// applied one after another: removing an element shifts everything after it, and adding
+// one can reuse a position a removal just freed. Keyed per block, so operations on one
+// block cannot move positions in another.
+type indexTracker struct {
+	// freed holds positions left by a removal, so an addition can reuse one instead of
+	// appending. That keeps a recreated element in place, which matters for a rename
+	// that could not be paired.
+	freed map[string][]int
+	// operations lets adjustArrayIndex shift a later index past earlier ones.
+	operations map[string][]struct {
+		index     int
+		operation OperationType
+	}
+}
+
+func newIndexTracker() *indexTracker {
+	return &indexTracker{
+		freed: map[string][]int{},
+		operations: map[string][]struct {
+			index     int
+			operation OperationType
+		}{},
+	}
+}
+
+// place accounts for earlier operations in the same block, and records this one for the
+// operations that follow.
+func (t *indexTracker) place(scope string, path *structpath.PatternNode, operation OperationType) *structpath.PatternNode {
+	parent := scopedParent(scope, path)
+	switch {
+	case operation == OperationRemove:
+		if freeIndex, ok := path.Index(); ok {
+			t.freed[parent] = append(t.freed[parent], freeIndex)
+		}
+	case operation == OperationAdd && path.BracketStar():
+		if reusable := t.freed[parent]; len(reusable) > 0 {
+			t.freed[parent] = reusable[1:]
+			path = structpath.NewPatternIndex(path.Parent(), reusable[0])
+		}
+	}
+
+	path = adjustArrayIndex(path, scope, t.operations)
+	if index, ok := path.Index(); ok {
+		key := scopedParent(scope, path)
+		t.operations[key] = append(t.operations[key], struct {
+			index     int
+			operation OperationType
+		}{index, operation})
+	}
+	return path
 }

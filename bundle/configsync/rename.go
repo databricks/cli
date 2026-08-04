@@ -2,7 +2,6 @@ package configsync
 
 import (
 	"errors"
-	"fmt"
 	"maps"
 	"slices"
 
@@ -34,7 +33,7 @@ type renameSet struct {
 	unpairedPaths map[string]string
 }
 
-// pairRenames matches removes of keyed elements against adds in the same sequence
+// matchRenamingPairs matches removes of keyed elements against adds in the same sequence
 // that carry the same content apart from the key.
 //
 // A remote key change is reported as an unrelated remove plus add, so without
@@ -42,7 +41,7 @@ type renameSet struct {
 // placed somewhere, and for an element defined in several blocks there is no
 // single right place. Recognising the pair turns it into a key rewrite, which
 // every defining block can apply to its own part.
-func pairRenames(b *bundle.Bundle, blocks *blockResolver, resourceKey string, changes ResourceChanges) renameSet {
+func matchRenamingPairs(b *bundle.Bundle, blocks *blockResolver, resourceKey string, changes ResourceChanges) renameSet {
 	set := renameSet{
 		byRemovePath:  map[string]renamedElement{},
 		addPaths:      map[string]struct{}{},
@@ -305,23 +304,17 @@ func withoutKey(value map[string]any, keyField string) map[string]any {
 	return out
 }
 
-// routeRenameElement locates the renamed element in every block that defines it.
-// The caller turns each destination into a rewrite of the key field, so the
-// element's other fields stay where they are and a split element keeps its parts
-// in their original scopes.
-func routeRenameElement(b *bundle.Bundle, blocks *blockResolver, resourceKey, removePath string) ([]routeDestination, error) {
-	fullPath := resourceKey + "." + removePath
-	resolved, err := resolveSelectors(fullPath, b, OperationRemove)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
-	}
-
+// routeRenameElement locates the renamed element in every block that defines it. The
+// caller turns each destination into a rewrite of the key field, so the element's other
+// fields stay where they are and a split element keeps its parts in their original
+// scopes.
+//
+// Returns no destinations, and no error, when the element cannot be attributed to a
+// block: the rename is left for a later run rather than half-applied.
+func routeRenameElement(blocks *blockResolver, resolved resolvedChange) ([]routeDestination, error) {
 	destinations, err := blocks.routeDestinations(resolved)
-	if err != nil {
-		if errors.Is(err, errAmbiguousBlock) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to route rename %s: %w", fullPath, err)
+	if errors.Is(err, errAmbiguousBlock) {
+		return nil, nil
 	}
-	return destinations, nil
+	return destinations, err
 }
