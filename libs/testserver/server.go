@@ -73,10 +73,6 @@ type Server struct {
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
-
-	// Return 501 for a request with no handler instead of failing the test: the fuzzer emits
-	// resource types the testserver may not model. Curated tests leave it false so gaps stay loud.
-	IgnoreUnhandledRequests bool
 }
 
 type Request struct {
@@ -282,11 +278,7 @@ func New(t testutil.TestingT) *Server {
 			body = fmt.Sprintf("[%d bytes] %s", len(bodyBytes), bodyBytes)
 		}
 
-		if s.IgnoreUnhandledRequests {
-			// Coverage gap, not a CLI bug: log it but return the 501 so the caller can reject.
-			t.Logf("No handler for URL (ignored): %s", r.URL)
-		} else {
-			t.Errorf(`No handler for URL: %s
+		t.Errorf(`No handler for URL: %s
 Body: %s
 
 For acceptance tests, add this to test.toml:
@@ -295,7 +287,6 @@ Pattern = %q
 Response.Body = '<response body here>'
 # Response.StatusCode = <response code if not 200>
 `, r.URL, body, pattern)
-		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotImplemented)

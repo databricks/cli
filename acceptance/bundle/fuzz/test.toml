@@ -6,14 +6,11 @@ Cloud = false
 # Room for the nightly FUZZ_TIME_BUDGET (script) plus the last seed's tail.
 Timeout = '20m'
 
-# A resource type the testserver doesn't model is a coverage gap, not a failure: 501 lets the
-# script record the seed as a gap instead of failing the whole run.
-IgnoreUnhandledRequests = true
-
 # The targets this harness runs come from ../invariant, but test.toml only merges along the
-# directory chain, so this engine pin, the ignore patterns and the [[Server]] stubs at the bottom
+# directory chain, so this engine pin, the ignore patterns and the per-route [[Server]] stubs below
 # are copied from ../invariant/test.toml and have to be kept in step with it. A stub that is added
-# there and not here does not fail this test: the route 501s and its seeds are recorded as gaps.
+# there and not here does not fail this test: the catch-alls at the bottom answer the route and its
+# seeds are recorded as gaps.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [
@@ -57,3 +54,40 @@ Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"col
 [[Server]]
 Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
 Response.Body = '{"status": "OK"}'
+
+# Catch-alls, one per method. A route the testserver does not model is a coverage gap for a config
+# nobody wrote by hand, not a missing stub, so these answer it with a marker body run_fuzz.py
+# classifies as a gap, instead of letting the unhandled-request check fail the whole run.
+#
+# They shadow nothing: wildcard patterns go to ServeMux, which matches most-specific-first, and
+# exact paths are looked up before the mux is consulted (see the Router type doc). The requests
+# still go through serve(), so the request callbacks keep seeing them.
+#
+# No HEAD entry: ServeMux matches a GET pattern for HEAD too, so "HEAD /{path...}" conflicts with
+# every GET wildcard and panics at registration -- the example the Router type doc gives. The GET
+# catch-all already answers HEAD, which also means the localhost probe gets a 501 rather than
+# IsLocalhostProbe's 200; both are benign.
+[[Server]]
+Pattern = "GET /{path...}"
+Response.StatusCode = 501
+Response.Body = '{"message": "TESTSERVER_GAP"}'
+
+[[Server]]
+Pattern = "POST /{path...}"
+Response.StatusCode = 501
+Response.Body = '{"message": "TESTSERVER_GAP"}'
+
+[[Server]]
+Pattern = "PUT /{path...}"
+Response.StatusCode = 501
+Response.Body = '{"message": "TESTSERVER_GAP"}'
+
+[[Server]]
+Pattern = "PATCH /{path...}"
+Response.StatusCode = 501
+Response.Body = '{"message": "TESTSERVER_GAP"}'
+
+[[Server]]
+Pattern = "DELETE /{path...}"
+Response.StatusCode = 501
+Response.Body = '{"message": "TESTSERVER_GAP"}'

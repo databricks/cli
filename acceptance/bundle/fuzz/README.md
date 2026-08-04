@@ -25,6 +25,11 @@ The invariant helpers come from ../invariant/script.prepare, which script.prepar
 because test.toml and script.prepare only merge along the directory chain. For the same reason the
 server stubs and ignore patterns this test needs are copied into test.toml.
 
+A generated config can reach an API route the testserver does not model, which is a coverage gap
+rather than a missing stub. test.toml answers those with a per-method catch-all stub returning a
+`TESTSERVER_GAP` marker, so the seed is recorded as a gap instead of failing the run, and the seed's
+log names the route the CLI could not reach.
+
 Since the schema comes from the CLI under test, an unrelated struct change can shift a
 seed onto a new config. A failure is a real CLI bug (panic, internal error, or drift),
 not flakiness; the failing seed's `LOG.repro` prints a ready-to-run repro, of the form
