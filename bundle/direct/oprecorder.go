@@ -32,6 +32,12 @@ type recordedOperation struct {
 	// state is the serialized local config after the operation. It is nil for a
 	// delete, where the resource no longer exists.
 	state json.RawMessage
+
+	// status is the outcome of the operation. It is SUCCEEDED for a normal
+	// record and FAILED for one built by newFailedOperation.
+	status bundledeployments.OperationStatus
+	// errorMessage explains a FAILED operation. Empty for a succeeded one.
+	errorMessage string
 }
 
 // newRecordedOperation serializes an applied operation for upload. state is the
@@ -43,7 +49,11 @@ func newRecordedOperation(action deployplan.ActionType, resourceID string, state
 		return recordedOperation{}, err
 	}
 
-	op := recordedOperation{action: actionType, resourceID: resourceID}
+	op := recordedOperation{
+		action:     actionType,
+		resourceID: resourceID,
+		status:     bundledeployments.OperationStatusOperationStatusSucceeded,
+	}
 
 	// Operation.State carries the serialized state, which DMS serves back as
 	// resource state. Unset for delete: the resource is gone.
@@ -63,6 +73,23 @@ func newRecordedOperation(action deployplan.ActionType, resourceID string, state
 	}
 
 	return op, nil
+}
+
+// newFailedOperation builds an operation recording that a resource failed to
+// apply, carrying the error so DMS captures why the deployment version failed.
+// No state is attached: the write did not succeed, so there is no new config to
+// record. resourceID may be empty when the resource was never created.
+func newFailedOperation(action deployplan.ActionType, resourceID, errorMessage string) (recordedOperation, error) {
+	actionType, err := deployActionToSDK(action)
+	if err != nil {
+		return recordedOperation{}, err
+	}
+	return recordedOperation{
+		action:       actionType,
+		resourceID:   resourceID,
+		status:       bundledeployments.OperationStatusOperationStatusFailed,
+		errorMessage: errorMessage,
+	}, nil
 }
 
 // operationUploader records an applied resource operation with DMS. Uploads run
@@ -96,10 +123,11 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 	dmsKey := strings.TrimPrefix(resourceKey, "resources.")
 
 	operation := bundledeployments.Operation{
-		ActionType:  op.action,
-		ResourceId:  op.resourceID,
-		ResourceKey: dmsKey,
-		Status:      bundledeployments.OperationStatusOperationStatusSucceeded,
+		ActionType:   op.action,
+		ResourceId:   op.resourceID,
+		ResourceKey:  dmsKey,
+		Status:       op.status,
+		ErrorMessage: op.errorMessage,
 	}
 	if op.state != nil {
 		// Operation.State is an opaque UTF-8 JSON string the service stores

@@ -125,6 +125,29 @@ func (q *operationQueue) record(ctx context.Context, resourceKey string, action 
 		return err
 	}
 
+	return q.enqueue(ctx, resourceKey, op)
+}
+
+// recordFailure queues a FAILED operation carrying the error that a resource hit
+// while applying, so DMS records why the deployment version failed. Unlike
+// record it does not short-circuit on a prior upload error: the failure is the
+// reason the deploy is stopping and must still be recorded.
+func (q *operationQueue) recordFailure(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID, errorMessage string) error {
+	if q == nil {
+		return nil
+	}
+
+	op, err := newFailedOperation(action, resourceID, errorMessage)
+	if err != nil {
+		return err
+	}
+
+	return q.enqueue(ctx, resourceKey, op)
+}
+
+// enqueue stores op for resourceKey and hands the key to a worker, coalescing
+// with any operation already queued for the same resource.
+func (q *operationQueue) enqueue(ctx context.Context, resourceKey string, op recordedOperation) error {
 	q.mu.Lock()
 	_, replaced := q.pending[resourceKey]
 	q.pending[resourceKey] = op

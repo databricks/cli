@@ -29,6 +29,8 @@ type fakeUploader struct {
 	uploads     []string
 	actions     map[string]bundledeployments.OperationActionType
 	resourceIDs map[string]string
+	statuses    map[string]bundledeployments.OperationStatus
+	errors      map[string]string
 }
 
 func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
@@ -44,9 +46,13 @@ func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op record
 	if f.actions == nil {
 		f.actions = map[string]bundledeployments.OperationActionType{}
 		f.resourceIDs = map[string]string{}
+		f.statuses = map[string]bundledeployments.OperationStatus{}
+		f.errors = map[string]string{}
 	}
 	f.actions[resourceKey] = op.action
 	f.resourceIDs[resourceKey] = op.resourceID
+	f.statuses[resourceKey] = op.status
+	f.errors[resourceKey] = op.errorMessage
 	f.mu.Unlock()
 
 	// Sent outside the lock: a test that stops reading this channel would otherwise
@@ -73,6 +79,18 @@ func (f *fakeUploader) resourceIDFor(resourceKey string) string {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.resourceIDs[resourceKey]
+}
+
+func (f *fakeUploader) statusFor(resourceKey string) bundledeployments.OperationStatus {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.statuses[resourceKey]
+}
+
+func (f *fakeUploader) errorFor(resourceKey string) string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.errors[resourceKey]
 }
 
 func recordState(t *testing.T, q *operationQueue, resourceKey, name string) {
@@ -196,6 +214,39 @@ func TestOperationQueueReturnsUploadError(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, uploadErr)
 	assert.Contains(t, err.Error(), "resources.jobs.foo")
+}
+
+func TestOperationQueueRecordFailureUploadsFailedOperation(t *testing.T) {
+	f := &fakeUploader{done: make(chan string, 1)}
+	q := newOperationQueue(t.Context(), f)
+
+	require.NoError(t, q.recordFailure(t.Context(), "resources.jobs.foo", deployplan.Update, "id-1", "Node type i9.xlarge is not supported"))
+	assert.Equal(t, "resources.jobs.foo", <-f.done)
+	require.NoError(t, q.close())
+
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, f.statusFor("resources.jobs.foo"))
+	assert.Equal(t, "Node type i9.xlarge is not supported", f.errorFor("resources.jobs.foo"))
+	assert.Equal(t, "id-1", f.resourceIDFor("resources.jobs.foo"))
+}
+
+func TestOperationQueueRecordFailureBypassesPriorUploadError(t *testing.T) {
+	// A prior upload error stops new record() calls, but the failure that is
+	// stopping the deploy must still be recorded so DMS captures why.
+	uploadErr := errors.New("boom")
+	f := &fakeUploader{err: uploadErr, done: make(chan string, 1)}
+	q := newOperationQueue(t.Context(), f)
+
+	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "v1"}, nil))
+	assert.Equal(t, "resources.jobs.foo", <-f.done)
+
+	// record() is now refused...
+	require.ErrorIs(t, q.record(t.Context(), "resources.jobs.bar", deployplan.Create, "id-2", map[string]string{"name": "v1"}, nil), uploadErr)
+	// ...but recordFailure() still goes through.
+	require.NoError(t, q.recordFailure(t.Context(), "resources.jobs.baz", deployplan.Update, "id-3", "kaboom"))
+	assert.Equal(t, "resources.jobs.baz", <-f.done)
+
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, f.statusFor("resources.jobs.baz"))
+	assert.Equal(t, "kaboom", f.errorFor("resources.jobs.baz"))
 }
 
 func TestOperationQueueRecordFailsAfterUploadError(t *testing.T) {

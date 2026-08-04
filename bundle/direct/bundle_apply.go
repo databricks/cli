@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -105,6 +106,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				err = d.Destroy(ctx, &b.StateDB)
 			}
 			if err != nil {
+				// Record the delete failure with DMS so the version captures why.
+				// Best-effort: don't let a recording error mask the delete error.
+				if recErr := opQueue.recordFailure(ctx, resourceKey, action, resourceID, err.Error()); recErr != nil {
+					log.Debugf(ctx, "failed to record operation failure for %s: %v", resourceKey, recErr)
+				}
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -138,6 +144,12 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
+				// Record the failure with DMS so the version captures why it failed,
+				// not just that it did. Best-effort: a recording error must not mask
+				// the deploy error, which is the one the user needs to see.
+				if recErr := opQueue.recordFailure(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), err.Error()); recErr != nil {
+					log.Debugf(ctx, "failed to record operation failure for %s: %v", resourceKey, recErr)
+				}
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}

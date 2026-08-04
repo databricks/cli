@@ -52,6 +52,8 @@ func TestOperationRecorderStripsResourcePrefix(t *testing.T) {
 	assert.Equal(t, "deployments/dep-1/versions/2", req.Parent)
 	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeCreate, req.Operation.ActionType)
 	assert.Equal(t, "job-123", req.Operation.ResourceId)
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusSucceeded, req.Operation.Status)
+	assert.Empty(t, req.Operation.ErrorMessage)
 	// State is sent as an opaque JSON string carrying the serialized config.
 	assert.JSONEq(t, `{"state":{"name":"foo"}}`, req.Operation.State)
 }
@@ -89,6 +91,29 @@ func TestOperationRecorderPropagatesTransportError(t *testing.T) {
 	op, err := newRecordedOperation(deployplan.Create, "job-123", map[string]string{"name": "foo"}, nil)
 	require.NoError(t, err)
 	assert.Error(t, r.upload(t.Context(), "resources.jobs.foo", op))
+}
+
+func TestOperationRecorderRecordsFailure(t *testing.T) {
+	f := &fakeOpClient{}
+	r := NewOperationRecorder(f, "dep-1", 2)
+
+	op, err := newFailedOperation(deployplan.Update, "job-123", "Node type i9.xlarge is not supported")
+	require.NoError(t, err)
+	require.NoError(t, r.upload(t.Context(), "resources.jobs.foo", op))
+
+	require.Len(t, f.requests, 1)
+	sent := f.requests[0].Operation
+	// A failed operation records the error and no state, so DMS captures why the
+	// version failed rather than only that it did.
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, sent.Status)
+	assert.Equal(t, "Node type i9.xlarge is not supported", sent.ErrorMessage)
+	assert.Equal(t, "job-123", sent.ResourceId)
+	assert.Empty(t, sent.State)
+}
+
+func TestNewFailedOperationRejectsUnsupportedAction(t *testing.T) {
+	_, err := newFailedOperation(deployplan.Skip, "job-123", "boom")
+	assert.Error(t, err)
 }
 
 func TestNewRecordedOperationRecordsStateAsIs(t *testing.T) {
