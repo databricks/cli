@@ -120,8 +120,8 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		cfg := w.Config
 
 		// If we are running in a cloud environment AND we need to intercept requests
-		// (for recording, logging, or an explicit Proxy), start a proxy server.
-		if recordRequests || logRequests || isTruePtr(config.Proxy) {
+		// (for recording or logging), start a proxy server.
+		if recordRequests || logRequests {
 			// An empty config resolves the real workspace from the environment.
 			host := startProxyServer(t, &sdkconfig.Config{}, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 			cfg = &sdkconfig.Config{
@@ -140,9 +140,10 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	}
 
 	// Same topology as cloud, with the testserver as the upstream. Only the proxy
-	// records, otherwise every request would be recorded twice.
+	// records and logs: the upstream sees the same requests, so instrumenting both
+	// would duplicate every entry.
 	if isTruePtr(config.Proxy) {
-		upstream := startLocalServer(t, config.Server, false, logRequests, nil, outputDir)
+		upstream := startLocalServer(t, config.Server, false, false, nil, outputDir)
 		host := startProxyServer(t, &sdkconfig.Config{
 			Host:  upstream,
 			Token: token,

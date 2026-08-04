@@ -25,7 +25,7 @@ type ProxyServer struct {
 	ResponseCallback func(request *testserver.Request, response *testserver.EncodedResponse)
 }
 
-// This creates a reverse proxy server that sits in front of a real Databricks
+// New creates a reverse proxy server that sits in front of the upstream
 // workspace. This is useful for recording API requests and responses in
 // integration tests.
 //
@@ -49,7 +49,7 @@ func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 	s.apiClient = httpclient.NewApiClient(clientCfg)
 
 	// Set up the proxy handler as the default handler for all requests.
-	server := httptest.NewServer(http.HandlerFunc(s.proxyToCloud))
+	server := httptest.NewServer(http.HandlerFunc(s.proxyToUpstream))
 	t.Cleanup(server.Close)
 
 	s.Server = server
@@ -71,7 +71,7 @@ func (s *ProxyServer) reqBody(r testserver.Request) any {
 	return r.Body
 }
 
-func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
+func (s *ProxyServer) proxyToUpstream(w http.ResponseWriter, r *http.Request) {
 	request := testserver.NewRequest(s.t, r, nil)
 	if s.RequestCallback != nil {
 		s.RequestCallback(&request)
