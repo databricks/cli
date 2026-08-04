@@ -18,6 +18,7 @@ FUZZ_SEED_TIMEOUT and FUZZ_TIME_BUDGET are optional knobs the caller sets (see t
 """
 
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -41,6 +42,12 @@ TARGET = os.environ["FUZZ_TARGET"]
 MODE = os.environ["FUZZ_MODE"]
 
 POSIX = os.name == "posix"
+
+# Resolved rather than passed as a bare name: on Windows, CreateProcess searches System32 before
+# PATH, so "bash" there is the WSL launcher stub, which exits non-zero with no distribution
+# installed and every seed reads as rejected. shutil.which searches PATH only, so it finds the same
+# bash the harness runs this script under.
+BASH = shutil.which("bash")
 
 
 def read(path):
@@ -69,7 +76,7 @@ def run_seed(seed_dir, seed):
     """Run one seed in a fresh bash. Returns its exit code and whether it had to be killed."""
     with open(seed_dir / "LOG.check", "wb") as log:
         proc = subprocess.Popen(
-            ["bash", "-euo", "pipefail", "-c", 'seed_body "$@"', "_", str(seed_dir), str(seed)],
+            [BASH, "-euo", "pipefail", "-c", 'seed_body "$@"', "_", str(seed_dir), str(seed)],
             stdout=log,
             stderr=subprocess.STDOUT,
             # Own process group, so killing a hung seed also takes down the CLI it is waiting on.
