@@ -24,6 +24,18 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
+	// An empty name would store a catalog the CLI cannot find again. UC rejects it; verified
+	// against a real workspace.
+	if createRequest.Name == "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    `Invalid input: RPC CreateCatalog Field managedcatalog.CatalogInfo.name: name "" is not a valid name. Valid names cannot contain spaces, periods, forward slashes, or control characters.`,
+			},
+		}
+	}
+
 	// Echo back every field create accepts: a dropped one makes the next plan see a
 	// phantom change.
 	catalogInfo := catalog.CatalogInfo{

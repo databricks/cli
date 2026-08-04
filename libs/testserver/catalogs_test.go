@@ -11,6 +11,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCatalogsCreate_RejectsEmptyName(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	response := workspace.CatalogsCreate(Request{Body: []byte(`{"name": ""}`)})
+	assert.Equal(t, 400, response.StatusCode)
+
+	body, ok := response.Body.(map[string]string)
+	require.True(t, ok)
+	assert.Equal(t, "INVALID_PARAMETER_VALUE", body["error_code"])
+	assert.Contains(t, body["message"], "is not a valid name")
+}
+
+func TestCatalogsCreate_AllowsNonEmptyName(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	response := workspace.CatalogsCreate(Request{Body: []byte(`{"name": "my_catalog"}`)})
+	assert.Equal(t, 0, response.StatusCode)
+
+	body, ok := response.Body.(catalog.CatalogInfo)
+	require.True(t, ok)
+	assert.Equal(t, "my_catalog", body.Name)
+}
+
 // createCatalogRequest sets every field CreateCatalog accepts. Tests below assert
 // the fake echoes all of them back and that the request stays exhaustive.
 const createCatalogRequest = `{
