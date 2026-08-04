@@ -83,10 +83,8 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		}
 		tmpl.Writer.LogTelemetry(ctx)
 
-		// Report where the template was materialized, so that callers do not have
-		// to guess which directory under the output directory is the bundle root.
-		// This is gated on JSON output to keep the text output unchanged: the
-		// success message is already printed by Materialize.
+		// Gated on JSON output to keep the text output unchanged: the success
+		// message is already printed by Materialize.
 		if root.OutputType(cmd) == flags.OutputJSON {
 			if result := tmpl.Writer.InitResult(); result != nil {
 				return cmdio.Render(ctx, result)

@@ -24,8 +24,7 @@ const (
 )
 
 // InitResult describes where a template was materialized. It is reported by
-// `bundle init -o json` so that callers do not have to guess which directory
-// under the output directory became the bundle root.
+// `bundle init -o json`.
 //
 // The field names are part of the CLI's JSON output contract; renaming one is a
 // breaking change for callers. New fields must be additive so that consumers
