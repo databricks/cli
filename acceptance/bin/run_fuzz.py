@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Seed loop for the invariant fuzzer. Runs one seed per iteration by calling the seed_body bash
-function that acceptance/bundle/invariant/fuzz/script exports, which sources the invariant target
-picked by FUZZ_TARGET, and classifies each outcome:
+function that acceptance/bundle/fuzz/script exports, which sources the invariant target picked by
+FUZZ_TARGET, and classifies each outcome:
 
   deployed - the config deployed and the invariant held
   rejected - the CLI refused the config before deploying it; the common case, not a bug

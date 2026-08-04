@@ -1,27 +1,32 @@
 # Shared setup for the invariant targets; each script keeps only the invariant it asserts.
 
+# Root of configs/ and data/. Defaults to this directory for the targets below, which inherit this
+# file as their parent. A caller outside the subtree sources this file directly and sets the
+# variable first. Exported because the fuzzer runs each seed in a fresh bash.
+export INVARIANT_DIR="${INVARIANT_DIR:-$TESTDIR/..}"
+
 invariant_cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy
     cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
 
     # INPUT_CONFIG is unset for a caller that generates its own config, and scripts run under set -u.
-    CLEANUP_SCRIPT="$TESTDIR/../configs/${INPUT_CONFIG:-}-cleanup.sh"
+    CLEANUP_SCRIPT="$INVARIANT_DIR/configs/${INPUT_CONFIG:-}-cleanup.sh"
     if [ -f "$CLEANUP_SCRIPT" ]; then
         source "$CLEANUP_SCRIPT" &> LOG.cleanup
     fi
 }
 
 # Separate from invariant_setup so a caller that generates its own config can override the
-# render alone; child script.prepare files are concatenated after this one.
+# render alone, by redefining it after sourcing this file.
 invariant_render() {
-    cp -r "$TESTDIR/../data/." . &> LOG.cp
+    cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
 
-    INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
+    INIT_SCRIPT="$INVARIANT_DIR/configs/$INPUT_CONFIG-init.sh"
     if [ -f "$INIT_SCRIPT" ]; then
         source "$INIT_SCRIPT" &> LOG.init
     fi
 
-    envsubst < "$TESTDIR/../configs/$INPUT_CONFIG" > databricks.yml
+    envsubst < "$INVARIANT_DIR/configs/$INPUT_CONFIG" > databricks.yml
 
     cp databricks.yml LOG.config
 }
