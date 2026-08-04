@@ -3,8 +3,9 @@
 # INPUT_CONFIG_OK once a config deploys, so a non-zero result before the marker is a rejection;
 # a panic anywhere, or a failure after it, is a bug.
 #
-# This is a harness over the sibling invariant targets, not an invariant of its own: FUZZ_TARGET
-# picks which one runs, and run_fuzz.py owns the seed loop and the outcome classification.
+# This is a harness over the invariant targets in ../invariant, not an invariant of its own:
+# FUZZ_TARGET picks which one runs, and run_fuzz.py owns the seed loop and the outcome
+# classification.
 
 # no_drift/script reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
 export READPLAN=""
@@ -14,7 +15,7 @@ $CLI bundle schema > schema.json 2>LOG.schema.err
 cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
 
 # run_fuzz.py calls this once per seed. It has to be a bash function so the target script it
-# sources sees the invariant helpers from the merged script.prepare files.
+# sources sees the invariant helpers that script.prepare defined.
 seed_body() {
     cd "$1"
     # Seeds share one long-lived workspace, so scope the unique name to the seed; otherwise state
@@ -23,7 +24,7 @@ seed_body() {
     export UNIQUE_NAME="$UNIQUE_NAME-$2"
     export FUZZ_SEED="$2"
     export FUZZ_SCHEMA="../schema.json"
-    source "$TESTDIR/../${FUZZ_TARGET:-no_drift}/script"
+    source "$INVARIANT_DIR/${FUZZ_TARGET:-no_drift}/script"
 }
 
 # run_fuzz.py spawns a fresh bash per seed, so export seed_body and the harness helpers it calls

@@ -7,7 +7,7 @@ the invariant scripts don't each duplicate the branch:
   mutate             - perturb a curated invariant config (mutate_fuzz_config.py).
 
 Reads its inputs from the environment the invariant scripts export: FUZZ_SEED, FUZZ_SCHEMA,
-UNIQUE_NAME, TESTDIR.
+UNIQUE_NAME, INVARIANT_DIR.
 """
 
 import json
@@ -45,7 +45,7 @@ def generate(seed):
 
 def mutate_base(seed):
     name = MUTATE_BASES[seed % len(MUTATE_BASES)]
-    path = os.path.join(os.environ["TESTDIR"], "..", "configs", name + ".yml.tmpl")
+    path = os.path.join(os.environ["INVARIANT_DIR"], "configs", name + ".yml.tmpl")
     unique = os.environ["UNIQUE_NAME"]
     with open(path) as f:
         rendered = substitute_variables(f.read())

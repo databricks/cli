@@ -1,5 +1,8 @@
-# Fuzz overrides of the shared invariant helpers, which the harness concatenates from
-# ../script.prepare before this file. The target scripts stay unaware of fuzzing.
+# Fuzz overrides of the shared invariant helpers. This test lives outside the invariant subtree,
+# so the harness does not concatenate them; source them explicitly, before the overrides below.
+# The target scripts stay unaware of fuzzing.
+export INVARIANT_DIR="$TESTDIR/../invariant"
+source "$INVARIANT_DIR/script.prepare"
 
 # The config comes from the generator rather than configs/$INPUT_CONFIG, which the fuzzer leaves
 # unset. The validate probe lives here because the config only exists once it is rendered and
@@ -7,7 +10,7 @@
 # config may warn.
 invariant_render() {
     # Stage the fixtures the generator's file_path/source_code_path fields point at.
-    cp -r "$TESTDIR/../data/." . &> LOG.cp
+    cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
 
     emit_fuzz_config.py > databricks.yml 2>LOG.gen.err
     cp databricks.yml LOG.config

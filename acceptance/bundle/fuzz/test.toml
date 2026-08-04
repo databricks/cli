@@ -1,0 +1,59 @@
+# Local only: against a real workspace each seed's deploy/migrate/plan/destroy round trip
+# takes minutes and trips SEED_TIMEOUT, and the cloud run leaves FUZZ_CHECK_DRIFT unset, so it
+# would only re-assert the no-panic property the local run already covers.
+Cloud = false
+
+# Room for the nightly FUZZ_TIME_BUDGET (script) plus the last seed's tail.
+Timeout = '20m'
+
+# A resource type the testserver doesn't model is a coverage gap, not a failure: 501 lets the
+# script record the seed as a gap instead of failing the whole run.
+IgnoreUnhandledRequests = true
+
+# The targets this harness runs come from ../invariant, but test.toml only merges along the
+# directory chain, so this engine pin, the ignore patterns and the [[Server]] stubs at the bottom
+# are copied from ../invariant/test.toml and have to be kept in step with it. A stub that is added
+# there and not here does not fail this test: the route 501s and its seeds are recorded as gaps.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    ".databricks",
+    ".venv",
+    "databricks.yml",
+    "plan.json",
+    "*.py",
+    "*.json",
+    "*.err",
+    "app",
+    # Snapshot of pre-delete state the idempotency targets keep; may linger if a seed fails.
+    ".databricks.backup",
+]
+
+# The idempotency targets assert a delete or destroy re-run succeeds, which holds regardless of
+# how faithfully the fake server round-trips fields. No redeploy target: no_drift's post-deploy
+# plan already dry-runs one.
+#
+# ../invariant/continue_293 is deliberately left out: it deploys with the pinned v0.293.0 binary
+# first, and that version does not know many current fields and resource types (see its test.toml,
+# which excludes a third of the curated configs for that reason). The old CLI would reject most
+# seeds before the current one ever ran, so the window would measure v0.293.0's schema, not this
+# CLI.
+EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "delete_idempotent", "destroy_idempotent"]
+
+# generate = build from the schema; mutate = perturb a curated config. See emit_fuzz_config.py.
+EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
+
+# Generate mode pins name/display_name, so it cannot vary the identifier the delete path reads,
+# and ../invariant/delete_idempotent already covers every resource type. Mutate can hit the
+# identifier and reshape grants/permissions, so it is the mode worth running here.
+EnvMatrixExclude.no_generate_on_delete_idempotent = ["FUZZ_MODE=generate", "FUZZ_TARGET=delete_idempotent"]
+EnvMatrixExclude.no_generate_on_destroy_idempotent = ["FUZZ_MODE=generate", "FUZZ_TARGET=destroy_idempotent"]
+
+# Fake SQL endpoint for local tests
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
+
+[[Server]]
+Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
+Response.Body = '{"status": "OK"}'

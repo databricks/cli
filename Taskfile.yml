@@ -748,7 +748,7 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -count=1 -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/bundle/invariant/fuzz"
+          -- -count=1 -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/bundle/fuzz"
 
   test-fuzz-cover:
     desc: Run the schema fuzzer under coverage and report which CLI packages it exercises
@@ -767,7 +767,7 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -count=1 -timeout=${LOCAL_TIMEOUT:-40m} -run "TestAccept/bundle/invariant/fuzz" || true
+          -- -count=1 -timeout=${LOCAL_TIMEOUT:-40m} -run "TestAccept/bundle/fuzz" || true
       - "go tool covdata merge -i $(printf '%s,' acceptance/build/cover-fuzz/* | sed 's/,$//') -o acceptance/build/cover-fuzz-merged/"
       - go tool covdata textfmt -i acceptance/build/cover-fuzz-merged -o coverage-fuzz.txt
       - |
