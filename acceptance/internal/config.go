@@ -84,10 +84,6 @@ type TestConfig struct {
 	// instead of straight to the testserver, matching the cloud topology.
 	Proxy *bool
 
-	// Return 501 for a request with no handler instead of failing the test: a resource type the
-	// testserver doesn't model is a coverage gap, not a bug.
-	IgnoreUnhandledRequests *bool
-
 	// List of request headers to include when recording requests.
 	IncludeRequestHeaders []string
 

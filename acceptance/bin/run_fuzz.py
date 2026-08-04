@@ -6,7 +6,7 @@ FUZZ_TARGET, and classifies each outcome:
 
   deployed - the config deployed and the invariant held
   rejected - the CLI refused the config before deploying it; the common case, not a bug
-  gap      - the config needs a route the testserver does not stub
+  gap      - the config needs a route the testserver does not model
   hang     - the seed outlived FUZZ_SEED_TIMEOUT
   bug      - a panic, an internal error, a generator failure, or a broken invariant
 
@@ -96,9 +96,10 @@ def classify(seed_dir):
     if b"panic:" in logs or b"internal error" in logs:
         return "bug", "panicked or hit an internal error"
 
-    # A 501 is a testserver gap. Checked before the marker below, else an unstubbed route during
-    # plan or destroy reads as a drift bug.
-    if b"No stub found for pattern" in logs:
+    # Marker body of the catch-all stubs in fuzz/test.toml: the route is one the testserver does
+    # not model. Checked before the marker below, else an unmodeled route reached during plan or
+    # destroy reads as a drift bug.
+    if b"TESTSERVER_GAP" in logs:
         return "gap", ""
 
     # Failing after INPUT_CONFIG_OK means the config deployed but drifted (or destroy failed);
