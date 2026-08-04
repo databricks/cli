@@ -127,16 +127,11 @@ func matchRenamingPairs(b *bundle.Bundle, blocks *blockResolver, resourceKey str
 		}
 
 		// The removal matched no addition. A plain removal is fine: it deletes every
-		// part of the element, which is what the user asked for. But an addition of
-		// the same element under a new key, with one of its fields also edited, cannot
-		// be recognised as a rename: applying the halves separately would delete a
-		// split element from every block and recreate it in one, collapsing the split
-		// and moving fields into a scope the user did not choose. Hold both halves
-		// back in that case only.
-		//
-		// "The same element with a field edited" means it still has the same fields;
-		// a genuinely new element is an unrelated addition that has to be applied,
-		// even when a removal happens to be in the same run.
+		// part of the element. But the same element re-added under a new key with one of
+		// its fields also edited cannot be recognised as a rename: applying the halves
+		// separately would delete a split element from every block and recreate it in
+		// one, collapsing the split and moving fields into a scope the user did not
+		// choose. Hold both halves back in that case.
 		var edited []string
 		for _, add := range matchingAdds(candidate, adds, sameFieldsApartFromKey) {
 			if _, taken := set.addPaths[add.path]; !taken {
@@ -278,8 +273,8 @@ func sameElementApartFromKey(oldFields map[string]any, add keyedElement) bool {
 }
 
 // sameFieldsApartFromKey reports whether the added element has the same fields as the
-// removed one, ignoring their values. A rename that also edited a field keeps the
-// element's shape; an unrelated new element generally does not.
+// removed one, ignoring their values, i.e. whether it could be that element with a field
+// edited. An unrelated new element generally has a different shape.
 func sameFieldsApartFromKey(oldFields map[string]any, add keyedElement) bool {
 	newFields, ok := fieldsApartFromKey(add)
 	return ok && slices.Equal(slices.Sorted(maps.Keys(oldFields)), slices.Sorted(maps.Keys(newFields)))

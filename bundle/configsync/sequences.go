@@ -23,9 +23,7 @@ import (
 // resources.<type>.<name>.<field> block and the targets.<target>.resources... override
 // block, either of which may live in its own included file. Loading concatenates those
 // regions into one sequence and sorts keyed ones by key, so a merged index addresses no
-// single region. Every index therefore exists in one of two spaces -- merged, or local to
-// one block -- and each value here belongs to exactly one of them; crossing them silently
-// addresses a different element.
+// single region. Crossing the two index spaces silently addresses a different element.
 //
 // Two questions have to be answered, in order:
 //
@@ -110,7 +108,6 @@ func newBlockResolver(ctx context.Context, b *bundle.Bundle) *blockResolver {
 	return r
 }
 
-// referencedFiles returns the files the merged configuration was loaded from.
 func referencedFiles(root dyn.Value) map[string]struct{} {
 	files := map[string]struct{}{}
 	_ = dyn.WalkReadOnly(root, func(_ dyn.Path, v dyn.Value) error {
@@ -192,16 +189,14 @@ func targetPrefixedPath(target string, path *structpath.PatternNode) string {
 	return prefixed.String()
 }
 
-// sortedBlocks lists the known blocks with the top-level ones first and a total
-// order within each scope, so a choice between blocks never depends on map or
-// location iteration order.
+// sortedBlocks orders top-level blocks first, so a choice between blocks never depends
+// on map iteration order.
 func (r *blockResolver) sortedBlocks() []sourceBlock {
 	blocks := slices.Collect(maps.Keys(r.blocks))
 	slices.SortFunc(blocks, compareBlocks)
 	return blocks
 }
 
-// compareBlocks orders top-level blocks before target blocks, then by file.
 func compareBlocks(a, b sourceBlock) int {
 	if a.override != b.override {
 		if !a.override {
@@ -321,11 +316,9 @@ func (d routeDestination) scopeKey() string {
 	return d.block.scopeKey()
 }
 
-// routeDestinations returns every physical place a change has to be written: one for an
-// edit, since only the definition that wins the merge decides the deployed value, and
-// one per definition for a removal, since the value is gone only once every copy is.
-//
-// Callers only route a change that addresses something inside a sequence.
+// routeDestinations returns one destination for an edit, since only the definition that
+// wins the merge decides the deployed value, and one per definition for a removal, since
+// the value is gone only once every copy is.
 func (r *blockResolver) routeDestinations(change resolvedChange) ([]routeDestination, error) {
 	// The value whose definitions have to be reached: the element itself when the
 	// change addresses one, otherwise the field being removed.
@@ -396,7 +389,6 @@ func addressesWholeElement(change resolvedChange) bool {
 	return len(change.path.AsSlice()) == last.component+1
 }
 
-// blockFor picks the block a change belongs to.
 func (r *blockResolver) blockFor(change resolvedChange) (sourceBlock, error) {
 	// A new element has no source of its own; it is placed relative to the
 	// sequence that receives it.
@@ -436,8 +428,7 @@ func (r *blockResolver) blockFor(change resolvedChange) (sourceBlock, error) {
 	return sourceBlock{}, fmt.Errorf("%w: element is defined in %d blocks", errAmbiguousBlock, len(blocks))
 }
 
-// declaringBlock picks the block a resource is declared in, which is the top-level
-// one whenever there is one. blocksOf and sortedBlocks both order top-level first.
+// declaringBlock relies on blocksOf and sortedBlocks ordering top-level first.
 func declaringBlock(blocks []sourceBlock) sourceBlock {
 	for _, block := range blocks {
 		if !block.override {

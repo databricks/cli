@@ -30,13 +30,9 @@ type FieldChange struct {
 	AltWritePath string
 	// originalPath addresses the field in the original configuration, before deployment
 	// replaced any ${var.X} reference with its value, so restoration can read the
-	// reference back.
-	//
-	// That configuration is merged, so this path keeps the MERGED sequence indices and
-	// no targets.<target> prefix. WritePath is the opposite on both counts: it addresses
-	// the raw file, so its indices are block-local and an override carries the prefix.
-	// Deriving one from the other reads a different element whenever the two index
-	// spaces disagree, which restores a sibling's variable reference.
+	// reference back. That configuration is merged, so unlike WritePath this path is in
+	// merged index space and has no prefix (see sequences.go). Deriving one from the
+	// other reads a different element and restores a sibling's reference.
 	originalPath string
 }
 
@@ -264,9 +260,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			}
 			resolvedPath := resolved.path
 
-			// Variable restoration resolves against the pre-resolved configuration,
-			// which is merged, so it needs the path in merged index space -- captured
-			// before routing rewrites indices to be block-local.
+			// Captured before routing rewrites indices to be block-local.
 			mergedIndexPath := resolvedPath
 
 			destinations, err := routeChange(blocks, resolved, isRename)
