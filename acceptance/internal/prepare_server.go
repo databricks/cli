@@ -139,9 +139,8 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		return cfg, *user
 	}
 
-	// Same topology as cloud, with the testserver as the upstream. Only the proxy
-	// records and logs: the upstream sees the same requests, so instrumenting both
-	// would duplicate every entry.
+	// Same topology as cloud, with the testserver as the upstream. Both servers see
+	// the same requests, so only the proxy records and logs.
 	if isTruePtr(config.Proxy) {
 		upstream := startLocalServer(t, config.Server, false, false, nil, outputDir)
 		host := startProxyServer(t, &sdkconfig.Config{

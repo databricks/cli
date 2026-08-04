@@ -2,6 +2,6 @@ Cloud = true
 Local = true
 RecordRequests = true
 
-# Putting the recording proxy (libs/testproxy) in front of the testserver too lets
-# one set of goldens assert it behaves the same against a real workspace and a fake.
+# Local runs go through the proxy too, so one set of goldens covers it against both
+# a real workspace and the fake.
 Proxy = true
