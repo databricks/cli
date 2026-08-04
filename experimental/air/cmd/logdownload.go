@@ -98,14 +98,15 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 	if err != nil {
 		return false, err
 	}
+	// Reported before the no-logs check, so a run whose every node failed explains
+	// why instead of looking like a run that never logged.
+	for _, node := range sortedNodeKeys(failures) {
+		cmdio.LogString(ctx, fmt.Sprintf("warning: node %d logs could not be downloaded: %s", node, failures[node]))
+	}
+
 	if len(nodeLogs) == 0 {
 		emitNoLogs(out, req, status)
 		return status.succeeded(), nil
-	}
-
-	// Surface partial failures: a silently truncated log set looks complete.
-	for _, node := range sortedNodeKeys(failures) {
-		cmdio.LogString(ctx, fmt.Sprintf("warning: node %d logs could not be downloaded: %s", node, failures[node]))
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Downloaded logs from %d of %d node(s) to %s", len(nodeLogs), len(nodes), dir))
