@@ -31,10 +31,6 @@ Use this when you want to develop or debug a Databricks project locally: it inst
 
   # See what would change without writing anything
   databricks environments setup-local --serverless-version 5 --dry-run`,
-		// Hidden until the environment constraints repository is publicly
-		// available: the command is runnable for dogfooding but stays out of
-		// help and completion until it is unveiled.
-		Hidden: true,
 	}
 	// The target is selected via flags; reject stray positional args rather than
 	// silently ignoring them.
