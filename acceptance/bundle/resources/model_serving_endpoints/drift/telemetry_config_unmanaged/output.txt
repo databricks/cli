@@ -1,0 +1,71 @@
+
+=== Deploy an endpoint that does not declare telemetry_config
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Telemetry gets configured out of band, as on an adopted endpoint
+=== A remote-only telemetry_config is a backend default, not drift
+>>> [CLI] bundle plan --output json
+{
+  "config.served_entities[0].external_model.openai_config.openai_api_key_plaintext": {
+    "action": "skip",
+    "reason": "input_only",
+    "old": "sk-test-plaintext-key",
+    "new": "sk-test-plaintext-key",
+    "remote": ""
+  },
+  "description": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": ""
+  },
+  "route_optimized": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": false
+  },
+  "telemetry_config": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "inference_table_config": {
+        "name": "main.default.test-endpoint_payload",
+        "sampling_fraction": 0.5
+      },
+      "telemetry_profile_id": "[UUID]"
+    }
+  }
+}
+
+=== Deploying does not remove it
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] api get /api/2.0/serving-endpoints/test-endpoint
+{
+  "inference_table_config": {
+    "name": "main.default.test-endpoint_payload",
+    "sampling_fraction": 0.5
+  },
+  "telemetry_profile_id": "[UUID]"
+}
+
+=== The out-of-band call above is the only telemetry-config PATCH
+>>> print_requests.py --method PATCH //serving-endpoints
+{
+  "method": "PATCH",
+  "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config",
+  "body": {
+    "telemetry_config": {
+      "inference_table_config": {
+        "sampling_fraction": 0.5
+      }
+    }
+  }
+}

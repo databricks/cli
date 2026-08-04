@@ -318,7 +318,14 @@ resources:
     backend_defaults:
       # The backend assigns a telemetry profile and echoes its ID back on GET. Users may
       # also pin an existing profile, so drift still applies when it is set locally.
-      - field: telemetry_config.telemetry_profile_id
+      #
+      # The rule covers the whole subtree rather than just telemetry_profile_id: when
+      # telemetry_config is absent locally, structdiff reports the populated remote as one
+      # change on the parent path, which no child rule matches. Without this the change
+      # becomes an update and DoUpdate sends a PATCH with no telemetry_config, removing a
+      # configuration the bundle never managed. A genuine removal is unaffected because it
+      # has a non-nil old value.
+      - field: telemetry_config
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
       # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
