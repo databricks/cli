@@ -1043,6 +1043,11 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		remotePostWaitCreate, err := adapter.DoRead(ctx, createdID)
 		require.NoError(t, err)
 		require.Equal(t, remotePostWaitCreate, remoteStateFromWaitCreate)
+
+		// The settled state is the one a deploy records, so the field checks below
+		// run against it: a job run's result_state fills in only once it settles.
+		remappedState, err = adapter.RemapState(remoteStateFromWaitCreate)
+		require.NoError(t, err)
 	}
 
 	if adapter.HasDoUpdate() {

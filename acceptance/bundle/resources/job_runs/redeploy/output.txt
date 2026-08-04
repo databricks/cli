@@ -56,7 +56,8 @@ Resources:
       "job_id": [MY_JOB_ID],
       "job_parameters": {
         "env": "prod"
-      }
+      },
+      "result_state": "SUCCESS"
     }
   },
   "remote_state": {
@@ -64,6 +65,7 @@ Resources:
     "job_parameters": {
       "env": "dev"
     },
+    "result_state": "SUCCESS",
     "run_id": [NUMID],
     "run_name": "my-job",
     "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?o=[NUMID]",

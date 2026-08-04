@@ -23,9 +23,14 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
-// JobRunState is what we persist for a triggered run: the RunNow request.
+// JobRunState is what we persist for a triggered run: the RunNow request, plus
+// the outcome the run is required to reach.
 type JobRunState struct {
 	jobs.RunNow
+
+	// Always SUCCESS, never read from the config: a run that did not succeed
+	// differs from the remote and is re-triggered by recreate_on_changes.
+	ResultState jobs.RunResultState `json:"result_state,omitempty"`
 }
 
 func (s *JobRunState) UnmarshalJSON(b []byte) error {
@@ -40,6 +45,10 @@ func (s JobRunState) MarshalJSON() ([]byte, error) {
 // (see TestRemoteSuperset), plus the run's output-only fields for a faithful view.
 type JobRunRemote struct {
 	jobs.RunNow
+
+	// Repeats state.result_state at the path JobRunState uses, so the planner can
+	// compare the two. See "RemapState is a dumb copy" in README.md.
+	ResultState jobs.RunResultState `json:"result_state,omitempty"`
 
 	RunId      int64          `json:"run_id,omitempty"`
 	RunName    string         `json:"run_name,omitempty"`
@@ -70,7 +79,8 @@ func (*ResourceJobRun) New(client *databricks.WorkspaceClient) *ResourceJobRun {
 
 func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	return &JobRunState{
-		RunNow: input.RunNow,
+		RunNow:      input.RunNow,
+		ResultState: jobs.RunResultStateSuccess,
 	}
 }
 
@@ -109,17 +119,16 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 			Queue:             nil,
 			ForceSendFields:   nil,
 		},
-		RunId:      run.RunId,
-		RunName:    run.RunName,
-		State:      run.State,
-		RunPageUrl: workspaceurls.ModernizeJobRunPageURL(run.RunPageUrl),
-		RunType:    run.RunType,
+		ResultState: run.State.ResultState,
+		RunId:       run.RunId,
+		RunName:     run.RunName,
+		State:       run.State,
+		RunPageUrl:  workspaceurls.ModernizeJobRunPageURL(run.RunPageUrl),
+		RunType:     run.RunType,
 	}
 }
 
-// DoRead returns the run as GetRun reports it; a 404 lets the planner
-// re-trigger. Root ignore_remote_changes suppresses all remote drift, so a run
-// is recreated only on a local config change.
+// DoRead returns the run as GetRun reports it; a 404 lets the planner re-trigger.
 func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, error) {
 	runID, err := parseRunID(id)
 	if err != nil {
@@ -135,20 +144,10 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 	return makeJobRunRemote(run), nil
 }
 
-// RemapState extracts the embedded RunNow as the state used for diffing.
+// RemapState extracts the fields used for diffing: the RunNow request and the
+// outcome the run reached.
 func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
-	return &JobRunState{RunNow: remote.RunNow}
-}
-
-// CheckSettled rejects a run that has not finished. Interrupting a deploy
-// mid-wait leaves the run going and its id recorded, so the next deploy plans no
-// change for it; without this, a reference to an outcome the run has not reached
-// would resolve to an empty string.
-func (*ResourceJobRun) CheckSettled(remote *JobRunRemote) error {
-	if runIsTerminal(remote.State.LifeCycleState) {
-		return nil
-	}
-	return fmt.Errorf("run %d has not finished (%s)%s", remote.RunId, remote.State.LifeCycleState, runPageLine(remote.RunPageUrl))
+	return &JobRunState{RunNow: remote.RunNow, ResultState: remote.ResultState}
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
@@ -173,11 +172,9 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	// outlives the poll so an abandoned wait can still link the run.
 	var tracker progress.JobStateTracker
 	var pageURL string
-	// Polled here rather than through Jobs.WaitGetRunJobTerminatedOrSkipped: a run
-	// whose task failed reports the deprecated life_cycle_state as INTERNAL_ERROR
-	// (status.state is TERMINATED, termination code RUN_EXECUTION_ERROR), and the
-	// SDK waiter halts on it with an error of its own, which hides the task that
-	// failed.
+	// Polled here rather than through the SDK waiter, which halts with an error of
+	// its own on the INTERNAL_ERROR a run whose task failed reports, hiding the
+	// task that failed.
 	run, err := retries.Poll(ctx, jobRunTimeout, func() (*jobs.Run, *retries.Err) {
 		var req jobs.GetRunRequest
 		req.RunId = runID
@@ -194,7 +191,7 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	})
 	if err != nil {
 		// The wait can end with the run still going (timeout, interrupt), so link
-		// the run page: the next deploy triggers no second run, finished or not.
+		// the run page.
 		if ctx.Err() != nil {
 			// A cancelled context is reported as a timeout.
 			return nil, fmt.Errorf("interrupted while waiting for the run to finish: %w%s", ctx.Err(), runPageLine(pageURL))
@@ -288,9 +285,9 @@ func runPageLine(rawURL string) string {
 }
 
 // logRunProgress logs every state change like `bundle run` does, but reports only
-// the run page URL and the run's final state to the user: how many states a run
-// passes through varies with how long its compute takes to start, so a deploy's
-// output would not be reproducible.
+// the run page URL and the final state to the user: how many states a run passes
+// through varies with how long its compute takes to start, and a deploy's output
+// has to stay reproducible.
 func logRunProgress(ctx context.Context, run *jobs.Run, tracker *progress.JobStateTracker) {
 	event, first := tracker.Poll(run)
 	if event == nil {
@@ -307,7 +304,7 @@ func logRunProgress(ctx context.Context, run *jobs.Run, tracker *progress.JobSta
 	}
 }
 
-// runIsTerminal reports whether a run is done, i.e. in a state the SDK waiter stops on.
+// runIsTerminal reports whether a run has stopped, whatever it stopped as.
 func runIsTerminal(state jobs.RunLifeCycleState) bool {
 	return state == jobs.RunLifeCycleStateTerminated ||
 		state == jobs.RunLifeCycleStateSkipped ||

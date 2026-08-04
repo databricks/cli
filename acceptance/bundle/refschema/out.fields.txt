@@ -870,6 +870,7 @@ resources.job_runs.*.python_params[*]	string	ALL
 resources.job_runs.*.queue	*jobs.QueueSettings	ALL
 resources.job_runs.*.queue.enabled	bool	ALL
 resources.job_runs.*.resolved_job_id	int64	INPUT
+resources.job_runs.*.result_state	jobs.RunResultState	REMOTE	STATE
 resources.job_runs.*.run_id	int64	REMOTE
 resources.job_runs.*.run_name	string	REMOTE
 resources.job_runs.*.run_page_url	string	REMOTE

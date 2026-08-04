@@ -139,11 +139,42 @@ resources:
       - field: job_clusters[*].new_cluster.data_security_mode
 
   job_runs:
-    # A run is immutable and fire-once: re-trigger only on a local config change,
-    # never on remote drift. Both rules omit `field` to match every field (root;
-    # see TestFieldRuleOmittedIsRoot). `field: ""` would instead match nothing.
+    # Every jobs.RunNow field: the request cannot drift, and GetRun does not echo
+    # it back faithfully (job_parameters come back resolved against the job's
+    # defaults, request-only fields not at all). TestJobRunIgnoresEveryRequestField
+    # keeps the list in step with the SDK. result_state is left out on purpose:
+    # comparing it against the remote re-triggers a run that did not succeed.
     ignore_remote_changes:
-      - reason: immutable
+      - field: dbt_commands
+        reason: immutable
+      - field: idempotency_token
+        reason: immutable
+      - field: jar_params
+        reason: immutable
+      - field: job_id
+        reason: immutable
+      - field: job_parameters
+        reason: immutable
+      - field: notebook_params
+        reason: immutable
+      - field: only
+        reason: immutable
+      - field: performance_target
+        reason: immutable
+      - field: pipeline_params
+        reason: immutable
+      - field: python_named_params
+        reason: immutable
+      - field: python_params
+        reason: immutable
+      - field: queue
+        reason: immutable
+      - field: spark_submit_params
+        reason: immutable
+      - field: sql_params
+        reason: immutable
+    # A run is immutable and fire-once, so any change recreates it. Omitting
+    # `field` matches every field (root; see TestFieldRuleOmittedIsRoot).
     recreate_on_changes:
       - reason: immutable
 
