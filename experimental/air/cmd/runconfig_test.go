@@ -313,8 +313,18 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"must be provided together",
 		},
 		{
-			"credentials pair ok",
+			"credentials pair ok with latest",
+			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", TagPolicy: "latest", CredentialsScope: "s", CredentialsKey: "k"}},
+			"",
+		},
+		{
+			"credentials without latest rejected",
 			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", CredentialsScope: "s", CredentialsKey: "k"}},
+			`only apply with tag_policy "latest"`,
+		},
+		{
+			"blank credentials scope is not treated as set",
+			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", CredentialsScope: "  "}},
 			"",
 		},
 		{

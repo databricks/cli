@@ -339,6 +339,12 @@ func (d *dockerImageConfig) validate() error {
 	if (d.CredentialsScope != "") != (d.CredentialsKey != "") {
 		return errors.New("docker_image.credentials_scope and docker_image.credentials_key must be provided together")
 	}
+
+	// Credentials are only consulted when re-resolving the tag, so accepting them
+	// under the default policy would silently ignore them.
+	if d.CredentialsScope != "" && !d.wantsLatest() {
+		return fmt.Errorf("docker_image.credentials_scope/credentials_key only apply with tag_policy %q; the image is otherwise used as already registered", dockerTagPolicyLatest)
+	}
 	return nil
 }
 

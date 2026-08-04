@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -140,6 +141,44 @@ func TestPrepareDockerImageLatestStorageDeniedReportsCause(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "could not be stored")
 	assert.NotContains(t, err.Error(), "run `docker login`")
+}
+
+// TestPrepareDockerImageLatestExplicitCredsRejected asserts a rejected secret the
+// user named reports that secret, and is not retried anonymously or blamed on a
+// missing `docker login`.
+func TestPrepareDockerImageLatestExplicitCredsRejected(t *testing.T) {
+	var credentialedPOSTs int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case imagesAPIPath + ":get":
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error_code":"NOT_FOUND","message":"not registered"}`))
+		case imagesAPIPath:
+			body, _ := io.ReadAll(r.Body)
+			if strings.Contains(string(body), "credentials_scope") {
+				credentialedPOSTs++
+			}
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error_code":"PERMISSION_DENIED","message":"denied"}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	w := newTestWorkspaceClient(t, srv.URL)
+	img := &dockerImageConfig{
+		URL:              "nvcr.io/org/img:1.0",
+		TagPolicy:        "latest",
+		CredentialsScope: "myscope",
+		CredentialsKey:   "mykey",
+	}
+
+	err := prepareDockerImage(cmdio.MockDiscard(t.Context()), w, img)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "credentials in secret myscope/mykey were rejected")
+	assert.NotContains(t, err.Error(), "docker login")
+	assert.Equal(t, 1, credentialedPOSTs, "explicit credentials must not be retried anonymously")
 }
 
 func TestPrepareDockerImageLatestReregisters(t *testing.T) {
