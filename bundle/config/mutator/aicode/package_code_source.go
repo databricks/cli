@@ -23,6 +23,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -94,13 +96,17 @@ func (m *packageCodeSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 	// Overlay the archives onto the sync root: bundle file sync walks and uploads
 	// them like real files, but they never touch the user's working tree.
-	b.SyncRoot = vfs.Overlay(b.SyncRoot, overlayFiles)
+	syncRoot, err := vfs.Overlay(b.SyncRoot, overlayFiles)
+	if err != nil {
+		return diags.Extend(diag.FromErr(err))
+	}
+	b.SyncRoot = syncRoot
 
 	// Signal GetSyncIncludePatterns to force-sync the snapshot dir for this bundle,
 	// so a user ignore rule can't filter the archives out of the upload set.
 	b.HasAiRuntimeCodeSnapshot = true
 
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		for _, cs := range sources {
 			remote := remotePaths[cs.configPath.String()]
 			var err error
@@ -179,7 +185,23 @@ func codeSourceFiles(ctx context.Context, b *bundle.Bundle, relBase string) ([]f
 	if err != nil {
 		return nil, err
 	}
-	return fl.Files(ctx)
+	all, err := fl.Files(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// sync.include is force-added regardless of the scoped walk, so the list can
+	// contain files outside the code directory (an `include` of "assets/*.bin" shows
+	// up here even when scoped to "src"). Keep only what is actually under relBase:
+	// otherwise those strays make an all-filtered directory look non-empty, and the
+	// empty-snapshot guard is bypassed into shipping an empty archive.
+	if relBase == "." {
+		return all, nil
+	}
+	prefix := relBase + "/"
+	return slices.DeleteFunc(all, func(f fileset.File) bool {
+		return !strings.HasPrefix(f.Relative, prefix)
+	}), nil
 }
 
 // collectLocalCodeSources returns every AI Runtime task code_source_path that

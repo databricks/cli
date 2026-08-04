@@ -21,7 +21,7 @@ src/train.py
 
 === both code_source_paths point into the bundle .air_snapshots, command_paths rewritten, deps on environments spec
 
->>> print_requests.py --sort --del-body raw_body //.air_snapshots/ //jobs/create
+>>> print_requests.py --sort --del-field raw_body //.air_snapshots/ //jobs/create
 {
   "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz",
@@ -114,7 +114,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --sort --del-body raw_body //.air_snapshots/
+>>> print_requests.py --sort --del-field raw_body //.air_snapshots/
 {
   "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz",

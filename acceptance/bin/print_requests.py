@@ -201,10 +201,20 @@ def main():
         "body fields that diverge between deployment engines, e.g. identity fields the "
         "terraform provider serializes into the body but the direct engine sends as query params.",
     )
+    parser.add_argument(
+        "--del-field",
+        action="append",
+        default=[],
+        metavar="FIELDS",
+        help="Comma-separated top-level request fields to delete (repeatable). Unlike "
+        "--del-body, which edits the parsed JSON body, this drops a field of the request "
+        "record itself, e.g. raw_body for a binary upload payload.",
+    )
     parser.add_argument("--fname", default="out.requests.txt")
     args = parser.parse_args()
 
     del_body_fields = [field for group in args.del_body for field in group.split(",")]
+    del_fields = [field for group in args.del_field for field in group.split(",")]
 
     test_tmp_dir = os.environ.get("TEST_TMP_DIR")
     if test_tmp_dir:
@@ -226,11 +236,10 @@ def main():
 
     for req in filtered_requests:
         body = req.get("body")
-        for field in del_body_fields:
-            # Drop the field from the parsed body, and (for non-JSON bodies) the
-            # top-level raw_body — used to strip binary/volatile upload payloads.
-            if isinstance(body, dict):
+        if isinstance(body, dict):
+            for field in del_body_fields:
                 body.pop(field, None)
+        for field in del_fields:
             req.pop(field, None)
     if args.verbose:
         print(

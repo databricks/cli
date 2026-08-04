@@ -2,6 +2,7 @@ package vfs
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/fs"
 	"path"
@@ -13,28 +14,26 @@ import (
 // root) without writing to disk. Overlaid files participate in Open/Stat/ReadDir/
 // ReadFile and fs.WalkDir; the real tree is untouched.
 //
-// Names are slash-separated, relative to the root. A name must not collide with a
-// real entry in base; on collision the overlaid file wins for direct access.
-func Overlay(base Path, files map[string][]byte) Path {
+// Names are slash-separated and relative to the root, per fs.ValidPath: an absolute
+// name, an empty name, or one escaping the root with ".." is rejected. A name must
+// not collide with a real entry in base; on collision the overlaid file wins for
+// direct access.
+func Overlay(base Path, files map[string][]byte) (Path, error) {
 	// Copy so later mutations of the caller's map don't leak in.
 	overlay := make(map[string][]byte, len(files))
 	// dirs maps each ancestor directory to its overlaid children (base-name -> isFile),
 	// so ReadDir and fs.WalkDir surface the synthetic entries even when the parent
 	// directory itself exists only in the overlay.
 	dirs := make(map[string]map[string]bool)
-	addChild := func(dir, base string, isFile bool) {
-		entries, ok := dirs[dir]
-		if !ok {
-			entries = make(map[string]bool)
-			dirs[dir] = entries
-		}
-		// Don't downgrade a dir entry to file if seen both ways; files never collide.
-		if isFile || !entries[base] {
-			entries[base] = isFile
-		}
-	}
+
 	for name, data := range files {
 		clean := path.Clean(name)
+		// Reject anything that isn't a file rooted in the tree. An absolute path would
+		// also make the ancestor walk below spin forever: path.Dir("/") is "/", never
+		// ".". Clean("") is "." (the root itself), which is a directory, not a file.
+		if clean == "." || !fs.ValidPath(clean) {
+			return nil, fmt.Errorf("overlay: invalid file name %q: must be a relative slash-separated path inside the root", name)
+		}
 		overlay[clean] = data
 		// Register clean under its parent as a file, then each ancestor dir under its
 		// own parent as a directory, up to ".".
@@ -42,12 +41,25 @@ func Overlay(base Path, files map[string][]byte) Path {
 		isFile := true
 		for child != "." {
 			parent := path.Dir(child)
-			addChild(parent, path.Base(child), isFile)
+			addOverlayChild(dirs, parent, path.Base(child), isFile)
 			child = parent
 			isFile = false
 		}
 	}
-	return &overlayPath{base: base, files: overlay, dirs: dirs}
+	return &overlayPath{base: base, files: overlay, dirs: dirs}, nil
+}
+
+// addOverlayChild records child under dir in the ancestor-directory index.
+func addOverlayChild(dirs map[string]map[string]bool, dir, child string, isFile bool) {
+	entries, ok := dirs[dir]
+	if !ok {
+		entries = make(map[string]bool)
+		dirs[dir] = entries
+	}
+	// Don't downgrade a dir entry to file if seen both ways; files never collide.
+	if isFile || !entries[child] {
+		entries[child] = isFile
+	}
 }
 
 type overlayPath struct {

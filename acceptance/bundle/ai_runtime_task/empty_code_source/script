@@ -1,4 +1,5 @@
 # When code_source_path resolves to a directory whose contents are all filtered out
 # (here: a src/.gitignore of "*"), there is nothing to package. Deploy must fail
 # with an actionable message rather than shipping an empty code archive.
-trace errcode $CLI bundle deploy
+# A sync.include elsewhere in the bundle must not defeat that guard (see databricks.yml).
+musterr trace $CLI bundle deploy

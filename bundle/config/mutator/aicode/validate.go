@@ -33,9 +33,9 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
-	// packagesCode records whether any task actually has a local code_source_path
-	// this mutator will package. The bundle-level guards below (which reject configs
-	// that would drop the generated snapshot from sync) only matter in that case, so
+	// packagesCode records whether any task actually has a code_source_path this
+	// mutator will package. The bundle-level guards below (which reject configs that
+	// would drop the generated snapshot from sync) only matter in that case, so
 	// they're gated on it to avoid spurious errors on unrelated bundles.
 	packagesCode := false
 
@@ -44,8 +44,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 
 		for i, task := range job.Tasks {
 			taskPath := jobPath.Append(dyn.Key("tasks"), dyn.Index(i))
-			if task.AiRuntimeTask != nil && task.AiRuntimeTask.CodeSourcePath != "" &&
-				libraries.IsLocalPath(task.AiRuntimeTask.CodeSourcePath) {
+			if task.AiRuntimeTask != nil && v.packagesLocalDir(b, task.AiRuntimeTask.CodeSourcePath) {
 				packagesCode = true
 			}
 
@@ -80,6 +79,20 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	}
 
 	return diags
+}
+
+// packagesLocalDir reports whether codeSourcePath is one this mutator packages: a
+// local path that is an existing directory. A local *file* (a pre-built tarball from
+// an `artifacts` block) is uploaded by the artifact path instead, so it must not
+// trigger the snapshot-directory guards — gating those on IsLocalPath alone rejects
+// valid pre-built-tarball bundles that exclude "*.tar.gz" from sync.
+func (v *validate) packagesLocalDir(b *bundle.Bundle, codeSourcePath string) bool {
+	if codeSourcePath == "" || !libraries.IsLocalPath(codeSourcePath) {
+		return false
+	}
+	// A stat error is reported by validateTask; treat it as "not a directory" here.
+	isDir, err := isExistingDir(filepath.Join(b.SyncRootPath, filepath.FromSlash(codeSourcePath)))
+	return err == nil && isDir
 }
 
 // validateSnapshotDir rejects two configs that would silently drop the generated

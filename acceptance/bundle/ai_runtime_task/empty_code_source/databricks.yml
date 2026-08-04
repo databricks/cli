@@ -1,6 +1,13 @@
 bundle:
   name: ai-runtime-empty
 
+# An unrelated force-include elsewhere in the bundle. sync.include is added to the
+# file list regardless of the scoped walk, so it must not make an all-filtered code
+# directory look non-empty.
+sync:
+  include:
+    - assets/*.bin
+
 resources:
   jobs:
     train:

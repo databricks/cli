@@ -17,9 +17,10 @@ func TestOverlayServesVirtualFileAndRealFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "real.txt"), []byte("real"), 0o644))
 
 	base := MustNew(dir)
-	ov := Overlay(base, map[string][]byte{
+	ov, err := Overlay(base, map[string][]byte{
 		".air_snapshots/src_abc.tar.gz": []byte("SNAPSHOT-BYTES"),
 	})
+	require.NoError(t, err)
 
 	// Real file still readable through the overlay.
 	got, err := ov.ReadFile("real.txt")
@@ -41,9 +42,10 @@ func TestOverlayServesVirtualFileAndRealFiles(t *testing.T) {
 func TestOverlayWalkDirSurfacesVirtualFile(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "real.txt"), []byte("real"), 0o644))
-	ov := Overlay(MustNew(dir), map[string][]byte{
+	ov, err := Overlay(MustNew(dir), map[string][]byte{
 		".air_snapshots/src_abc.tar.gz": []byte("x"),
 	})
+	require.NoError(t, err)
 
 	var walked []string
 	require.NoError(t, fs.WalkDir(ov, ".", func(name string, d fs.DirEntry, err error) error {
@@ -60,4 +62,34 @@ func TestOverlayWalkDirSurfacesVirtualFile(t *testing.T) {
 	// Both the real file and the virtual snapshot (in its virtual dir) are walked,
 	// so bundle file sync uploads the snapshot without it existing on disk.
 	assert.Equal(t, []string{".air_snapshots/src_abc.tar.gz", "real.txt"}, walked)
+}
+
+// Names outside the root are rejected rather than silently mis-registered. An
+// absolute name additionally used to hang the ancestor walk (path.Dir("/") == "/").
+func TestOverlayRejectsNamesOutsideRoot(t *testing.T) {
+	for _, name := range []string{
+		"/foo/bar.txt",
+		"../foo.txt",
+		"a/../../b",
+		"",
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := Overlay(MustNew(t.TempDir()), map[string][]byte{name: []byte("x")})
+			require.ErrorContains(t, err, "invalid file name")
+		})
+	}
+}
+
+// A relative name that stays inside the root is accepted, including one that only
+// normalizes to an in-root path after cleaning.
+func TestOverlayAcceptsInRootNames(t *testing.T) {
+	for _, name := range []string{"a.txt", "./b/c.txt", "d/../e.txt"} {
+		t.Run(name, func(t *testing.T) {
+			ov, err := Overlay(MustNew(t.TempDir()), map[string][]byte{name: []byte("x")})
+			require.NoError(t, err)
+			got, err := ov.ReadFile(name)
+			require.NoError(t, err)
+			assert.Equal(t, "x", string(got))
+		})
+	}
 }

@@ -11,10 +11,10 @@ title "each task's tarball holds only synced files (both under the repo root .ai
 trace list_code_snapshot.py
 
 title "both code_source_paths point into the bundle .air_snapshots, command_paths rewritten, deps on environments spec\n"
-# --del-body raw_body drops the binary tarball upload body (kept readable). Filters
+# --del-field raw_body drops the binary tarball upload payload (kept readable). Filters
 # use a leading // so Git Bash on Windows does not path-convert them. --keep is not
 # passed, so print_requests.py consumes out.requests.txt.
-trace print_requests.py --sort --del-body raw_body '//.air_snapshots/' '//jobs/create'
+trace print_requests.py --sort --del-field raw_body '//.air_snapshots/' '//jobs/create'
 
 title "re-planning unchanged code is a no-op (no changes)\n"
 trace $CLI bundle plan
@@ -22,7 +22,7 @@ trace $CLI bundle plan
 title "editing a file changes the snapshot hash (content-addressed name changes)\n"
 update_file.py src/train.py 'print("training")' 'print("training v2")'
 trace $CLI bundle deploy
-trace print_requests.py --sort --del-body raw_body '//.air_snapshots/'
+trace print_requests.py --sort --del-field raw_body '//.air_snapshots/'
 
 title "destroy removes the deployed bundle (including the synced snapshots)\n"
 trace $CLI bundle destroy --auto-approve
