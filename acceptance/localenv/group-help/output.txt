@@ -1,0 +1,3 @@
+
+>>> [CLI] environments --help
+  setup-local                               Provision a local Python environment matched to a Databricks compute target
