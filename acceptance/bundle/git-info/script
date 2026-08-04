@@ -1,6 +1,8 @@
-# A .git written by hand rather than by `git init`: git cannot operate on the
-# /Workspace FUSE mount ("detected dubious ownership"), but libs/git reads these
-# files directly, so this is what the new in-workspace Git folders look like to it.
+# A .git written by hand rather than by `git init`: the harness sets
+# GIT_CONFIG_GLOBAL=/dev/null for hermeticity, which drops the safe.directory=*
+# that DBR ships, so on the workspace mount (owned by root, uid != ours) every git
+# command fails with "detected dubious ownership". libs/git reads these files
+# directly, which is what a Git in Dataplane folder's real .git looks like to it.
 origin_url=https://github.com/databricks/bundle-examples.git
 commit=4fa481d6502eb6104d62c33a693ef8a134e765e0
 
@@ -11,6 +13,11 @@ printf '%s\n' "$commit" > .git/refs/heads/main
 
 title "Provenance read from the on-disk .git\n"
 trace $CLI bundle validate -o json | jq '.bundle.git'
+
+title "Subdirectory of the git folder resolves to the same git folder\n"
+mkdir -p subdir/nested
+cp databricks.yml subdir/nested/
+trace withdir subdir/nested $CLI bundle validate -o json | jq '.bundle.git'
 
 rm -rf .git
 

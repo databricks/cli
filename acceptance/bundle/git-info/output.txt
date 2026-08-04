@@ -10,6 +10,17 @@
   "origin_url": "https://github.com/databricks/bundle-examples.git"
 }
 
+=== Subdirectory of the git folder resolves to the same git folder
+
+>>> withdir subdir/nested [CLI] bundle validate -o json
+{
+  "actual_branch": "main",
+  "branch": "main",
+  "bundle_root_path": "subdir/nested",
+  "commit": "4fa481d6502eb6104d62c33a693ef8a134e765e0",
+  "origin_url": "https://github.com/databricks/bundle-examples.git"
+}
+
 === No .git: provenance degrades to empty without failing
 
 >>> [CLI] bundle validate -o json

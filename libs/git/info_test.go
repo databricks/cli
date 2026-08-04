@@ -43,8 +43,34 @@ func runtimeContext(t *testing.T) context.Context {
 	return dbr.MockRuntime(t.Context(), dbr.Environment{IsDbr: true, Version: "15.4"})
 }
 
-// writeDotGit lays down the subset of .git that fetchRepositoryInfoDotGit reads,
-// matching what the new in-workspace Git folders expose on the FUSE mount.
+// mockWorkspaceMount relocates the workspace mount point into a temporary directory
+// and returns it. Without this the paths below do not start with the mount prefix, so
+// FetchRepositoryInfo takes the on-disk branch on the prefix check alone and never
+// reaches the .git lookup the tests are exercising.
+func mockWorkspaceMount(t *testing.T) string {
+	t.Helper()
+	mount := filepath.Join(t.TempDir(), "Workspace")
+	original := workspaceMountPrefix
+	workspaceMountPrefix = mount + string(os.PathSeparator)
+	t.Cleanup(func() { workspaceMountPrefix = original })
+	return mount
+}
+
+// mockGitFolder creates a Git folder at <mount>/Users/<user>/<name> holding a .git,
+// plus the nested bundle root inside it, and returns both paths.
+func mockGitFolder(t *testing.T, mount, name, branch, commit string) (gitFolder, bundleRoot string) {
+	t.Helper()
+	gitFolder = filepath.Join(mount, "Users", "test@databricks.com", name)
+	bundleRoot = filepath.Join(gitFolder, "dabs_in_ws_bundle")
+	require.NoError(t, os.MkdirAll(bundleRoot, 0o755))
+	writeDotGit(t, gitFolder, testOriginURL, branch, commit)
+	return gitFolder, bundleRoot
+}
+
+// writeDotGit lays down the subset of .git that fetchRepositoryInfoDotGit reads.
+// A Git in Dataplane folder exposes a complete .git on the workspace mount (objects,
+// index, packed-refs and all); libs/git only reads HEAD, config and the branch ref,
+// so those three are all a fixture needs.
 func writeDotGit(t *testing.T, root, originURL, branch, commit string) {
 	t.Helper()
 	gitDir := filepath.Join(root, GitDirectoryName)
@@ -59,22 +85,30 @@ func writeDotGit(t *testing.T, root, originURL, branch, commit string) {
 	write(filepath.Join("refs", "heads", branch), commit+"\n")
 }
 
-// On DBR, a bundle root with a readable .git is served from disk: the new type of
-// in-workspace Git folder exposes one on the /Workspace FUSE mount, and get-status
-// returns only id+path for it, so the API cannot supply the provenance anyway.
-func TestFetchRepositoryInfoDbrPrefersDotGit(t *testing.T) {
-	// The bundle root is a subdirectory, so the .git lookup has to walk up to find it.
-	gitFolder := filepath.Join(t.TempDir(), "bundle-examples")
-	bundleRoot := filepath.Join(gitFolder, "dabs_in_ws_bundle")
-	require.NoError(t, os.MkdirAll(bundleRoot, 0o755))
-	writeDotGit(t, gitFolder, testOriginURL, "main", testDotGitCommit)
-
+// newGetStatusServer returns a test server whose get-status records whether it was
+// called and answers with the id+path-only git_info of a Git in Dataplane folder.
+func newGetStatusServer(t *testing.T) (*testserver.Server, *atomic.Bool) {
+	t.Helper()
 	server := testserver.New(t)
-	var apiCalled atomic.Bool
+	var called atomic.Bool
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(_ testserver.Request) any {
-		apiCalled.Store(true)
-		return testserver.Response{Body: map[string]any{}}
+		called.Store(true)
+		return testserver.Response{Body: map[string]any{
+			"git_info": map[string]any{"id": testRepoID, "path": testGitFolderRaw},
+		}}
 	})
+	return server, &called
+}
+
+// On DBR, a bundle root whose Git folder has a readable .git is served from disk:
+// Git in Dataplane folders expose one on the workspace mount, and get-status returns
+// only id+path for them, so the API cannot supply the provenance anyway.
+func TestFetchRepositoryInfoDbrPrefersDotGit(t *testing.T) {
+	mount := mockWorkspaceMount(t)
+	// The bundle root is a subdirectory, so the .git lookup has to walk up to find it.
+	gitFolder, bundleRoot := mockGitFolder(t, mount, "bundle-examples", "main", testDotGitCommit)
+
+	server, apiCalled := newGetStatusServer(t)
 
 	info, err := FetchRepositoryInfo(runtimeContext(t), bundleRoot, newTestWorkspaceClient(t, server))
 	require.NoError(t, err)
@@ -85,8 +119,46 @@ func TestFetchRepositoryInfoDbrPrefersDotGit(t *testing.T) {
 	assert.Equal(t, gitFolder, info.WorktreeRoot)
 }
 
-// Without a .git on the mount, the API path still owns classic Repos and the older
-// workspace Git folders, which return their git info inline.
+// The counterpart of the test above: on the same mount, a bundle root with no .git
+// anywhere below the Git folder boundary must still reach the API. Without this the
+// assertion above passes for any routing rule that happens to prefer disk.
+func TestFetchRepositoryInfoDbrWithoutDotGitUsesAPI(t *testing.T) {
+	mount := mockWorkspaceMount(t)
+	bundleRoot := filepath.Join(mount, "Users", "test@databricks.com", "plain-dir", "dabs_in_ws_bundle")
+	require.NoError(t, os.MkdirAll(bundleRoot, 0o755))
+
+	server, apiCalled := newGetStatusServer(t)
+
+	info, err := FetchRepositoryInfo(runtimeContext(t), bundleRoot, newTestWorkspaceClient(t, server))
+	require.NoError(t, err)
+	assert.True(t, apiCalled.Load(), "get-status must be called when no .git is reachable")
+	assert.Equal(t, testWorktreeRoot, info.WorktreeRoot)
+}
+
+// A .git above the Git folder boundary belongs to a different repository, so it must
+// not be reported as this bundle's provenance. Reproduced on DBR: a `git init` in the
+// user's workspace home otherwise makes every bundle below it report that repo's
+// origin, branch and commit, which can also fail the deploy in ValidateGitDetails.
+func TestFetchRepositoryInfoDbrIgnoresDotGitAboveGitFolder(t *testing.T) {
+	mount := mockWorkspaceMount(t)
+	userHome := filepath.Join(mount, "Users", "test@databricks.com")
+	bundleRoot := filepath.Join(userHome, "plain-dir", "dabs_in_ws_bundle")
+	require.NoError(t, os.MkdirAll(bundleRoot, 0o755))
+	// An unrelated repository in the user's workspace home, above the boundary.
+	writeDotGit(t, userHome, "https://github.com/unrelated/other.git", "other-branch", testDotGitCommit)
+
+	server, apiCalled := newGetStatusServer(t)
+
+	info, err := FetchRepositoryInfo(runtimeContext(t), bundleRoot, newTestWorkspaceClient(t, server))
+	require.NoError(t, err)
+	assert.True(t, apiCalled.Load(), "get-status must be called instead of reading an unrelated .git")
+	assert.Empty(t, info.OriginURL)
+	assert.Empty(t, info.CurrentBranch)
+	assert.Equal(t, testWorktreeRoot, info.WorktreeRoot)
+}
+
+// Without a .git on the mount, the API path still owns classic Repos, which return
+// their git info inline.
 func TestFetchRepositoryInfoAPI(t *testing.T) {
 	tests := []struct {
 		name string
@@ -127,6 +199,19 @@ func TestFetchRepositoryInfoAPI(t *testing.T) {
 			wantWorktreeRoot: testWorktreeRoot,
 		},
 		{
+			// A Git in Dataplane folder whose .git is not readable: get-status
+			// carries only id+path, so there is no provenance to report.
+			name: "id-only git info yields no provenance",
+			gitInfo: map[string]any{
+				"id":   testRepoID,
+				"path": testGitFolderRaw,
+			},
+			wantBranch:       "",
+			wantCommit:       "",
+			wantOriginURL:    "",
+			wantWorktreeRoot: testWorktreeRoot,
+		},
+		{
 			// A plain workspace directory: no git info, and no error either.
 			name:             "no git info degrades to empty provenance",
 			gitInfo:          nil,
@@ -159,12 +244,33 @@ func TestFetchRepositoryInfoAPI(t *testing.T) {
 }
 
 func TestHasDotGit(t *testing.T) {
-	root := t.TempDir()
-	nested := filepath.Join(root, "repo", "nested", "bundle")
-	require.NoError(t, os.MkdirAll(nested, 0o755))
-	require.NoError(t, os.MkdirAll(filepath.Join(root, "repo", GitDirectoryName), 0o755))
+	mount := mockWorkspaceMount(t)
+	gitFolder, bundleRoot := mockGitFolder(t, mount, "bundle-examples", "main", testDotGitCommit)
+	ctx := t.Context()
 
-	assert.True(t, hasDotGit(filepath.Join(root, "repo")))
-	assert.True(t, hasDotGit(nested), "should walk up to find .git")
-	assert.False(t, hasDotGit(filepath.Join(t.TempDir(), "no-git-here")))
+	assert.True(t, hasDotGit(ctx, gitFolder))
+	assert.True(t, hasDotGit(ctx, bundleRoot), "should walk up to find .git")
+	assert.False(t, hasDotGit(ctx, filepath.Join(mount, "Users", "test@databricks.com", "no-git-here")))
+}
+
+func TestOwnerRoot(t *testing.T) {
+	tests := []struct {
+		path string
+		want string
+	}{
+		{"/Workspace/Users/me@databricks.com/repo/bundle", "/Workspace/Users/me@databricks.com"},
+		{"/Workspace/Users/me@databricks.com/repo", "/Workspace/Users/me@databricks.com"},
+		{"/Workspace/Users/me@databricks.com", "/Workspace/Users/me@databricks.com"},
+		{"/Workspace/Repos/me@databricks.com/repo", "/Workspace/Repos/me@databricks.com"},
+		{"/Workspace/Shared/repo/bundle", "/Workspace/Shared"},
+		{"/Workspace/Users", "/Workspace/Users"},
+		// Not under the mount at all: nothing above the mount is ever searched.
+		{"/tmp/local/bundle", "/Workspace/"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			assert.Equal(t, filepath.FromSlash(tt.want), ownerRoot(tt.path))
+		})
+	}
 }

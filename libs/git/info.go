@@ -5,7 +5,9 @@ import (
 	"errors"
 	"io/fs"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/auth"
@@ -17,6 +19,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 )
+
+// Prefix of the workspace file system mount, as seen from a DBR session.
+// Overridden by tests, which cannot create files under the real mount point.
+var workspaceMountPrefix = "/Workspace/"
 
 type RepositoryInfo struct {
 	// Various metadata about the repo. Each could be "" if it could not be read. No error is returned for such case.
@@ -49,7 +55,7 @@ type response struct {
 func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
 	var info RepositoryInfo
 	var err error
-	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) && !hasDotGit(path) {
+	if strings.HasPrefix(path, workspaceMountPrefix) && dbr.RunsOnRuntime(ctx) && !hasDotGit(ctx, path) {
 		info, err = fetchRepositoryInfoAPI(ctx, path, w)
 	} else {
 		info, err = fetchRepositoryInfoDotGit(ctx, path)
@@ -115,22 +121,83 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 	return result, nil
 }
 
-// hasDotGit reports whether a .git directory is reachable from path, walking up
-// to the filesystem root the same way fetchRepositoryInfoDotGit does.
+// hasDotGit reports whether a .git belonging to path's own Git folder is readable
+// on the workspace mount.
 //
-// The new type of in-workspace Git folder exposes a real .git on the /Workspace
-// FUSE mount, and get-status returns only id+path for it, omitting the origin URL,
-// branch and commit. Reading .git recovers all three, and is much cheaper than the
-// API: these stat calls cost fractions of a millisecond against ~80ms for
-// get-status. Classic Repos and older Git folders have no .git on the mount and
-// still go through the API, which returns their git info inline.
-func hasDotGit(path string) bool {
-	_, err := folders.FindDirWithLeaf(path, GitDirectoryName)
-	return err == nil
+// The new type of in-workspace Git folder (Git in Dataplane) exposes a real .git on
+// the /Workspace mount, while get-status returns only id+path for it, omitting the
+// origin URL, branch and commit. Reading .git recovers all three. Classic Repos have
+// no .git on the mount and still go through the API, which returns their git info
+// inline.
+//
+// The search stops below the owner root (/Workspace/Users/<user>, /Workspace/Shared,
+// ...) rather than walking to the filesystem root: a Git folder always carries its
+// .git at its own root, which lives inside the owner root, so anything found at or
+// above it belongs to a different repository. Without the bound, an unrelated .git in
+// the user's workspace home would be reported as this bundle's provenance and could
+// fail the deploy in ValidateGitDetails.
+func hasDotGit(ctx context.Context, path string) bool {
+	root, err := findDotGitBelow(path, ownerRoot(path))
+	if err != nil {
+		// Anything other than "not found" (a permission or mount error) leaves the
+		// state on disk unknown, so fall back to the API rather than guess.
+		log.Debugf(ctx, "failed to look for %s under %s: %s", GitDirectoryName, path, err)
+		return false
+	}
+	return root != ""
+}
+
+// findDotGitBelow returns the directory holding .git at or below dir, stopping before
+// ceiling, or "" if there is none. A non-nil error means the lookup itself failed.
+func findDotGitBelow(dir, ceiling string) (string, error) {
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+
+	for dir != ceiling {
+		_, err := os.Stat(filepath.Join(dir, GitDirectoryName))
+		if err == nil {
+			return dir, nil
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			return "", err
+		}
+
+		next := filepath.Dir(dir)
+		if dir == next {
+			return "", nil
+		}
+		dir = next
+	}
+	return "", nil
+}
+
+// ownerRoot returns the workspace directory that owns path's Git folders, e.g.
+// /Workspace/Users/me@databricks.com or /Workspace/Shared. Git folders are created
+// inside it, never at it.
+func ownerRoot(path string) string {
+	rest, ok := strings.CutPrefix(filepath.ToSlash(path), workspaceMountPrefix)
+	if !ok {
+		return workspaceMountPrefix
+	}
+
+	// Users and Repos are keyed by principal, so the owner root includes it.
+	depth := 1
+	scope, _, _ := strings.Cut(rest, "/")
+	if scope == "Users" || scope == "Repos" {
+		depth = 2
+	}
+
+	segments := strings.Split(rest, "/")
+	if len(segments) > depth {
+		segments = segments[:depth]
+	}
+	return filepath.FromSlash(workspaceMountPrefix + strings.Join(segments, "/"))
 }
 
 func ensureWorkspacePrefix(p string) string {
-	if !strings.HasPrefix(p, "/Workspace/") {
+	if !strings.HasPrefix(p, workspaceMountPrefix) {
 		return path.Join("/Workspace", p)
 	}
 	return p
