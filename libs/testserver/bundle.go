@@ -142,6 +142,14 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
 
+	// previous_version_id is absent from the generated struct, so read it separately.
+	var concurrency struct {
+		PreviousVersionId string `json:"previous_version_id"`
+	}
+	if err := json.Unmarshal(req.Body, &concurrency); err != nil {
+		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
+	}
+
 	defer s.LockUnlock()()
 
 	d, ok := s.dmsDeployments[deploymentID]
@@ -164,15 +172,22 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		s.dmsDeployments[deploymentID] = d
 	}
 
-	// Mirror the server-side optimistic concurrency check: the new version must
-	// be exactly last_version_id + 1.
-	want := "1"
-	if d.deployment.LastVersionId != "" {
-		last, _ := strconv.ParseInt(d.deployment.LastVersionId, 10, 64)
-		want = strconv.FormatInt(last+1, 10)
+	// Mirror the server-side checks: version_id must be numerically greater than
+	// the most recent version (not exactly one more), and previous_version_id must
+	// name that version, which is what detects a concurrent deploy.
+	next, err := strconv.ParseInt(versionID, 10, 64)
+	if err != nil || next < 1 {
+		return dmsInvalidArgument("version_id must be a positive integer, got " + versionID)
 	}
-	if versionID != want {
-		return dmsAborted("expected version " + want + ", got " + versionID)
+	var last int64
+	if d.deployment.LastVersionId != "" {
+		last, _ = strconv.ParseInt(d.deployment.LastVersionId, 10, 64)
+	}
+	if next <= last {
+		return dmsInvalidArgument("version_id " + versionID + " must be greater than the most recent version " + d.deployment.LastVersionId)
+	}
+	if concurrency.PreviousVersionId != d.deployment.LastVersionId {
+		return dmsAborted("previous_version_id is outdated; the deployment's most recent version is " + d.deployment.LastVersionId)
 	}
 
 	d.deployment.LastVersionId = versionID
@@ -284,6 +299,14 @@ func dmsNotFound(what string) Response {
 
 // dmsAborted returns the 409 ABORTED error the server uses for the version
 // optimistic-concurrency check.
+func dmsInvalidArgument(message string) Response {
+	return Response{
+		StatusCode: 400,
+		Headers:    map[string][]string{"Content-Type": {"application/json"}},
+		Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": message},
+	}
+}
+
 func dmsAborted(message string) Response {
 	return Response{
 		StatusCode: 409,

@@ -47,6 +47,6 @@ Deployment complete!
 
 >>> print_requests.py //api/2.0/bundle --oneline
 {"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default/state", "target_name": "default"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "target_name": "default", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "target_name": "default", "display_name": "dms-existing-state"}}
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations", "q": {"resource_key": "jobs.one"}, "body": {"action_type": "OPERATION_ACTION_TYPE_CREATE", "resource_id": "[NUMID]", "resource_key": "jobs.one", "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"one\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}

@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/dms"
+	"github.com/databricks/databricks-sdk-go/client"
 )
 
 // newDeploymentRecorder returns a dms.Recorder for the current deployment, or
@@ -33,11 +34,17 @@ func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.Eng
 	if err != nil {
 		return nil, err
 	}
-	return dms.NewRecorder(
-		b.WorkspaceClient(ctx).BundleDeployments,
-		deploymentID,
-		statePath,
-		b.Config.Bundle.Target,
-		versionType,
-	), nil
+	apiClient, err := client.New(b.WorkspaceClient(ctx).Config)
+	if err != nil {
+		return nil, err
+	}
+	return dms.NewRecorder(dms.RecorderOptions{
+		Service:      b.WorkspaceClient(ctx).BundleDeployments,
+		Versions:     dms.NewAPIVersionCreator(apiClient),
+		DeploymentID: deploymentID,
+		StatePath:    statePath,
+		TargetName:   b.Config.Bundle.Target,
+		DisplayName:  b.Config.Bundle.Name,
+		VersionType:  versionType,
+	}), nil
 }

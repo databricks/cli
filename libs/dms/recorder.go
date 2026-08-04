@@ -10,8 +10,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -27,6 +29,54 @@ const (
 	VersionTypeDestroy VersionType = bundledeployments.VersionTypeVersionTypeDestroy
 )
 
+// createVersionRequest is the CreateVersion request body.
+//
+// The CLI builds the body itself instead of using bundledeployments.Version
+// because the generated struct has no previous_version_id field, which the
+// service requires as its concurrency check. Without it every deploy after the
+// first is rejected.
+type createVersionRequest struct {
+	CliVersion  string      `json:"cli_version"`
+	VersionType VersionType `json:"version_type"`
+	TargetName  string      `json:"target_name,omitempty"`
+	// DisplayName names the deployment in the UI. The service copies it onto the
+	// deployment's workspace node, which is where GetDeployment reads it from, so
+	// a version that omits it leaves the deployment unnamed.
+	DisplayName string `json:"display_name,omitempty"`
+	// PreviousVersionId is the deployment's most recent version, unset for a
+	// deployment's first version.
+	PreviousVersionId string `json:"previous_version_id,omitempty"`
+}
+
+// versionCreator creates a version under a deployment. It exists because the
+// generated client cannot express the request body (see createVersionRequest).
+type versionCreator interface {
+	CreateVersion(ctx context.Context, deploymentID, versionID string, body createVersionRequest) (*bundledeployments.Version, error)
+}
+
+// apiVersionCreator creates versions through the workspace API client.
+type apiVersionCreator struct {
+	client *client.DatabricksClient
+}
+
+// NewAPIVersionCreator returns a versionCreator that posts to the DMS API.
+func NewAPIVersionCreator(c *client.DatabricksClient) versionCreator {
+	return &apiVersionCreator{client: c}
+}
+
+func (a *apiVersionCreator) CreateVersion(ctx context.Context, deploymentID, versionID string, body createVersionRequest) (*bundledeployments.Version, error) {
+	var version bundledeployments.Version
+	path := fmt.Sprintf("/api/2.0/bundle/deployments/%s/versions", deploymentID)
+	err := a.client.Do(ctx, http.MethodPost, path,
+		auth.WorkspaceIDHeaders(a.client.Config),
+		map[string]any{"version_id": versionID},
+		body, &version)
+	if err != nil {
+		return nil, err
+	}
+	return &version, nil
+}
+
 // Recorder records a single deploy/destroy as a version with DMS.
 //
 // The server assigns the deployment ID on the first deploy, i.e. when the ID
@@ -35,9 +85,11 @@ const (
 // node, so the next deploy starts over from empty.
 type Recorder struct {
 	svc          bundledeployments.BundleDeploymentsInterface
+	versions     versionCreator
 	deploymentID string
 	statePath    string
 	targetName   string
+	displayName  string
 	versionType  VersionType
 
 	// populated by CreateVersion
@@ -45,18 +97,34 @@ type Recorder struct {
 	stopHeartbeat context.CancelFunc
 }
 
-// NewRecorder returns a Recorder for the given deployment. deploymentID is the
-// ID resolved from the deployment's workspace node, or empty if this bundle has
-// not yet recorded a deployment (the server assigns one during CreateVersion).
-// statePath is the bundle's remote state directory, under which DMS registers
-// the deployment node.
-func NewRecorder(svc bundledeployments.BundleDeploymentsInterface, deploymentID, statePath, targetName string, versionType VersionType) *Recorder {
+// RecorderOptions are the dependencies and deployment identity a Recorder needs.
+type RecorderOptions struct {
+	// Service handles every DMS call except CreateVersion.
+	Service bundledeployments.BundleDeploymentsInterface
+	// Versions handles CreateVersion; see versionCreator.
+	Versions versionCreator
+	// DeploymentID is the ID resolved from the deployment's workspace node, or
+	// empty if this bundle has not recorded a deployment yet (the server assigns
+	// one during CreateVersion).
+	DeploymentID string
+	// StatePath is the bundle's remote state directory, under which DMS registers
+	// the deployment node.
+	StatePath   string
+	TargetName  string
+	DisplayName string
+	VersionType VersionType
+}
+
+// NewRecorder returns a Recorder for the deployment described by opts.
+func NewRecorder(opts RecorderOptions) *Recorder {
 	return &Recorder{
-		svc:          svc,
-		deploymentID: deploymentID,
-		statePath:    statePath,
-		targetName:   targetName,
-		versionType:  versionType,
+		svc:          opts.Service,
+		versions:     opts.Versions,
+		deploymentID: opts.DeploymentID,
+		statePath:    opts.StatePath,
+		targetName:   opts.TargetName,
+		displayName:  opts.DisplayName,
+		versionType:  opts.VersionType,
 	}
 }
 
@@ -149,6 +217,9 @@ func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 // the server assign the ID; otherwise it reads the existing deployment to
 // compute the next version number.
 func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID string, err error) {
+	// The version this one supersedes, sent as the concurrency check. Empty for a
+	// deployment's first version.
+	var previousVersionID string
 	if r.deploymentID != "" {
 		// A resolved node names the deployment, but its record is created by the
 		// first version, so there may be none yet: a deploy that registered the
@@ -165,6 +236,7 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 				return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
 			}
 			versionID = strconv.FormatInt(lastVersion+1, 10)
+			previousVersionID = dep.LastVersionId
 		case errors.Is(getErr, apierr.ErrNotFound), errors.Is(getErr, apierr.ErrResourceDoesNotExist):
 			versionID = "1"
 		default:
@@ -194,16 +266,15 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 		versionID = "1"
 	}
 
-	// The server validates that versionID equals last_version_id + 1 and returns
-	// ABORTED otherwise (e.g. a concurrent deploy already created this version).
-	version, versionErr := r.svc.CreateVersion(ctx, bundledeployments.CreateVersionRequest{
-		Parent:    "deployments/" + r.deploymentID,
-		VersionId: versionID,
-		Version: bundledeployments.Version{
-			CliVersion:  build.GetInfo().Version,
-			VersionType: r.versionType,
-			TargetName:  r.targetName,
-		},
+	// The server rejects the call unless versionID is numerically greater than
+	// last_version_id and previous_version_id matches it, so a deploy racing
+	// another is rejected rather than overwriting it.
+	version, versionErr := r.versions.CreateVersion(ctx, r.deploymentID, versionID, createVersionRequest{
+		CliVersion:        build.GetInfo().Version,
+		VersionType:       r.versionType,
+		TargetName:        r.targetName,
+		DisplayName:       r.displayName,
+		PreviousVersionId: previousVersionID,
 	})
 	if versionErr != nil {
 		return "", fmt.Errorf("failed to create deployment version: %w", versionErr)
