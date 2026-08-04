@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -133,6 +134,17 @@ func loadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
 			bundle.ApplyContext(ctx, fresh, mutator.SelectTarget(target))
 		}
 	}
+
+	// Keyed sequences merge in the initialize phase, which this reload skips. Without
+	// them the sequences here stay in file order while the change paths address the
+	// merged, key-sorted order, so a lookup would read a different element.
+	bundle.ApplySeqContext(ctx, fresh,
+		resourcemutator.MergeJobClusters(),
+		resourcemutator.MergeJobParameters(),
+		resourcemutator.MergeJobTasks(),
+		resourcemutator.MergePipelineClusters(),
+		resourcemutator.MergeApps(),
+	)
 	return fresh.Config.Value()
 }
 
