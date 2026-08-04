@@ -1,5 +1,5 @@
 bundle:
-  name: job-runs-wait-cloud
+  name: job-runs-wait
 
 workspace:
   root_path: ~/.bundle/$UNIQUE_NAME
@@ -28,6 +28,8 @@ resources:
 
     # Reads the run's outcome, so the tag it is created with shows whether the
     # deploy waited for the run before creating resources that depend on it.
+    # Separate from my_job, which my_run already depends on: a reference back
+    # would cycle.
     downstream_job:
       name: test-downstream-job-$UNIQUE_NAME
       tags:

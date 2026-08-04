@@ -86,7 +86,7 @@ no_run_job_ref_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=job_run_job_ref.ym
 
 # Deploying a job_run waits for the run to succeed, and a real workspace reports a
 # run of condition tasks alone as SKIPPED. A task that does succeed would run in
-# every variant of this suite, so resources/job_runs/wait_cloud covers the real run
+# every variant of this suite, so resources/job_runs/wait covers the real run
 # on cloud instead. Still exercised locally here.
 no_job_run_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=job_run.yml.tmpl"]
 
