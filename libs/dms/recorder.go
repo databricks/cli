@@ -95,6 +95,10 @@ type Recorder struct {
 	// populated by CreateVersion
 	versionNum    int64
 	stopHeartbeat context.CancelFunc
+
+	// completed makes CompleteVersion idempotent, so a caller that completes the
+	// version early can still defer it unconditionally.
+	completed bool
 }
 
 // RecorderOptions are the dependencies and deployment identity a Recorder needs.
@@ -175,9 +179,10 @@ func (r *Recorder) CreateVersion(ctx context.Context) error {
 // is the check that keeps a cancelled or failed deploy from completing a version
 // that was never created.
 func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
-	if r == nil || r.versionNum == 0 {
+	if r == nil || r.versionNum == 0 || r.completed {
 		return nil
 	}
+	r.completed = true
 
 	r.stopHeartbeat()
 

@@ -123,6 +123,7 @@ Destroy complete!
   },
   "body": {
     "action_type": "OPERATION_ACTION_TYPE_DELETE",
+    "resource_id": "[NUMID]",
     "resource_key": "jobs.foo",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }

@@ -242,6 +242,12 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 		return dmsNotFound("deployment " + deploymentID)
 	}
 
+	// A delete carries no state, so resource_id is the only thing identifying which
+	// resource it refers to; the service rejects a delete without one.
+	if op.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete && op.ResourceId == "" {
+		return dmsInvalidArgument("resource_id is required for OPERATION_ACTION_TYPE_DELETE operations")
+	}
+
 	op.Name = "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + resourceKey
 	op.ResourceKey = resourceKey
 

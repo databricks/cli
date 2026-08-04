@@ -211,6 +211,26 @@ func TestRecorderFailedDestroyKeepsDeployment(t *testing.T) {
 	assert.Empty(t, f.deleted)
 }
 
+func TestRecorderCompleteVersionIsIdempotent(t *testing.T) {
+	// Destroy completes the version before deleting the remote files, because that
+	// deletes the deployment's node, and still defers CompleteVersion. The second
+	// call must not reach the server, which would fail with 404.
+	f := &fakeDMS{
+		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
+			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "2"}, nil
+		},
+	}
+	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, TargetName: "dev", DisplayName: testDisplayName, VersionType: VersionTypeDestroy})
+
+	require.NoError(t, r.CreateVersion(t.Context()))
+	require.NoError(t, r.CompleteVersion(t.Context(), true))
+	require.NoError(t, r.CompleteVersion(t.Context(), true))
+
+	assert.Len(t, f.completed, 1)
+	// The destroy deletes the deployment record once, not once per call.
+	assert.Equal(t, []string{"deployments/stored-id"}, f.deleted)
+}
+
 func TestNilRecorderIsNoOp(t *testing.T) {
 	var r *Recorder
 	assert.NoError(t, r.CreateVersion(t.Context()))

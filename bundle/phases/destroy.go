@@ -82,7 +82,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, recorder *dms.Recorder) {
 	if engine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 	} else {
@@ -103,6 +103,15 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	}
 
 	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// Complete the version before deleting the remote files. The deployment is a
+	// node under the state directory, so files.Delete removes it and any later call
+	// fails with 404. CompleteVersion is idempotent, so the deferred call in Destroy
+	// is a no-op after this.
+	if err := recorder.CompleteVersion(ctx, true); err != nil {
+		logdiag.LogError(ctx, err)
 		return
 	}
 
@@ -215,7 +224,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				recorder.Version(),
 			)
 		}
-		destroyCore(ctx, b, plan, engine)
+		destroyCore(ctx, b, plan, engine, recorder)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
