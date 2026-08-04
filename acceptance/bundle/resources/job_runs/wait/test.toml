@@ -10,11 +10,8 @@ RequiresUnityCatalog = true
 # depend on how long the run takes.
 RecordRequests = false
 
-Ignore = [
-    "databricks.yml",
-    "databricks.yml.tmpl",
-    "hello.py",
-]
+# databricks.yml is rendered by the script.
+Ignore = ["databricks.yml"]
 
 # The host and the workspace selector in the run URL differ per workspace; the URL
 # form itself is covered by libs/workspaceurls.
