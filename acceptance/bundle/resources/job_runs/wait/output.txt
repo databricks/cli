@@ -15,9 +15,17 @@ Deployment complete!
 >>> [CLI] jobs get [DOWNSTREAM_JOB_ID] -o json
 SUCCESS
 
-=== the parameters the run resolved are not drift
+=== nothing the run resolved is drift, so a redeploy starts no new run
 >>> [CLI] bundle plan -o json
-skip
+resources.job_runs.my_run skip
+resources.jobs.downstream_job skip
+resources.jobs.my_job skip
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

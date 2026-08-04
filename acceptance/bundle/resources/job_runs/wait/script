@@ -8,13 +8,12 @@ trap cleanup EXIT
 title "the deploy waits for the run to finish"
 trace $CLI bundle deploy
 
-# Registers the run id as a replacement, so the deploy output above compares the
-# same against a real workspace as against the test server.
 trace read_id.py my_run
 
 title "the downstream job was created with the run's result_state"
 downstream_id=$(read_id.py downstream_job)
 trace $CLI jobs get $downstream_id -o json | jq -r ".settings.tags.run_result"
 
-title "the parameters the run resolved are not drift"
-trace $CLI bundle plan -o json | jq -r '.plan["resources.job_runs.my_run"].action'
+title "nothing the run resolved is drift, so a redeploy starts no new run"
+trace $CLI bundle plan -o json | jq -r '.plan | to_entries[] | "\(.key) \(.value.action)"'
+trace $CLI bundle deploy

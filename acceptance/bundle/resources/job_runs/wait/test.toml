@@ -2,14 +2,13 @@
 # equivalent, so restrict the matrix to direct.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-# The cloud counterpart of wait_output: it runs the job for real, which is what
-# invariant/configs/job_run.yml.tmpl no longer does on cloud. Serverless needs
-# Unity Catalog.
+# Runs the job for real, which invariant/configs/job_run.yml.tmpl no longer does
+# on cloud. Serverless needs Unity Catalog.
 Cloud = true
 RequiresUnityCatalog = true
 
-# A real workspace is not proxied, so there are no recorded requests to assert
-# on; this test reads the deployed job back instead.
+# The wait polls GetRun until the run is terminal, so the recorded requests
+# depend on how long the run takes.
 RecordRequests = false
 
 Ignore = [
