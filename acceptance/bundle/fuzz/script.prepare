@@ -5,9 +5,8 @@ export INVARIANT_DIR="$TESTDIR/../invariant"
 source "$INVARIANT_DIR/script.prepare"
 
 # The config comes from the generator rather than configs/$INPUT_CONFIG, which the fuzzer leaves
-# unset. The validate probe lives here because the config only exists once it is rendered and
-# must be probed before the target's deploy. Its output is redirected, not recorded, as a fuzzed
-# config may warn.
+# unset. validate runs here as an isolated panic surface, and rejects an invalid config before the
+# target's deploy.
 invariant_render() {
     # Stage the fixtures the generator's file_path/source_code_path fields point at.
     cp -r "$INVARIANT_DIR/data/." . &> LOG.cp

@@ -23,7 +23,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, Generator, resource_types
+from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, Generator, resource_element, resource_types
 
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
@@ -162,13 +162,6 @@ def mutate_once(rng, roots):
         container[key] = rng.choice([{}, [], None])
 
 
-def resource_element(gen, type_schema):
-    # The instance schema is the map's object-branch additionalProperties.
-    map_schema = gen.resolve(type_schema)
-    obj = next(b for b in map_schema["oneOf"] if b.get("type") == "object")
-    return obj["additionalProperties"]
-
-
 def collect_insertions(gen, node, schema, rtype, out):
     # Record every writable optional field absent from an object, walking node and schema together
     # so nested objects are candidates too.
@@ -216,7 +209,7 @@ def collect_insertions(gen, node, schema, rtype, out):
 
 def add_field(gen, rng, config):
     # Inject one valid optional field, absent from the base, into a random insertion point.
-    types = resource_types(gen.root, gen)
+    types = resource_types(gen)
     points = []
     for rtype, instances in config.get("resources", {}).items():
         if rtype not in types or not isinstance(instances, dict):
@@ -237,6 +230,8 @@ def add_field(gen, rng, config):
 
 
 def mutate(config, seed, schema=None, unique="fuzz"):
+    # Without a schema only the destructive mutations run; the selftest uses that path to print
+    # configs that don't churn as the schema grows.
     rng = random.Random(seed)
     gen = Generator(schema, rng, unique) if schema is not None else None
 
@@ -248,8 +243,6 @@ def mutate(config, seed, schema=None, unique="fuzz"):
             roots.extend(v for v in instances.values() if isinstance(v, (dict, list)))
 
     for _ in range(rng.randint(1, 3)):
-        # gen is None short-circuits before rng is touched, so the no-schema path keeps its exact
-        # RNG stream unchanged.
         if gen is not None and rng.random() < ADD_PROB:
             add_field(gen, rng, config)
         else:

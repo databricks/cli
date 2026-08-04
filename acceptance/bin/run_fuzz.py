@@ -13,8 +13,8 @@ FUZZ_TARGET, and classifies each outcome:
 Every seed adds a line to LOG.summary. A bug or a hang also writes a ready-to-run repro to
 LOG.repro and exits non-zero. Nothing is written to stdout: the committed run asserts empty output.
 
-Reads its inputs from the environment fuzz/script exports: FUZZ_SEED_START, FUZZ_SEED_COUNT,
-FUZZ_SEED_TIMEOUT, FUZZ_TIME_BUDGET, FUZZ_TARGET, FUZZ_MODE.
+FUZZ_TARGET and FUZZ_MODE come from the test.toml matrix; FUZZ_SEED_START, FUZZ_SEED_COUNT,
+FUZZ_SEED_TIMEOUT and FUZZ_TIME_BUDGET are optional knobs the caller sets (see task test-fuzz).
 """
 
 import os
@@ -37,8 +37,8 @@ BUDGET = float(os.environ.get("FUZZ_TIME_BUDGET", "900"))
 # Grace period between the SIGQUIT that asks Go for a goroutine dump and the SIGKILL backstop.
 QUIT_GRACE = 10
 
-TARGET = os.environ.get("FUZZ_TARGET", "no_drift")
-MODE = os.environ.get("FUZZ_MODE", "generate")
+TARGET = os.environ["FUZZ_TARGET"]
+MODE = os.environ["FUZZ_MODE"]
 
 POSIX = os.name == "posix"
 

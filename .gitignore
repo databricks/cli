@@ -19,7 +19,6 @@
 *.log
 coverage.txt
 coverage-acceptance.txt
-coverage-fuzz.txt
 .coverage
 
 __pycache__

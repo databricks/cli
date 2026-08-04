@@ -24,7 +24,7 @@ seed_body() {
     export UNIQUE_NAME="$UNIQUE_NAME-$2"
     export FUZZ_SEED="$2"
     export FUZZ_SCHEMA="../schema.json"
-    source "$INVARIANT_DIR/${FUZZ_TARGET:-no_drift}/script"
+    source "$INVARIANT_DIR/$FUZZ_TARGET/script"
 }
 
 # run_fuzz.py spawns a fresh bash per seed, so export seed_body and the harness helpers it calls
