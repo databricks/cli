@@ -11,10 +11,6 @@ def check_plan(path):
     with open(path) as fobj:
         raw = fobj.read()
 
-    # A failed `bundle plan` leaves nothing to check; say so instead of raising below.
-    if not raw.strip():
-        sys.exit(f"{path}: empty plan output (bundle plan failed)")
-
     changes_detected = 0
 
     try:
