@@ -1,0 +1,111 @@
+
+=== re-registers and reports an updated digest
+>>> [CLI] experimental air register-image my-image:latest
+Image registered: f9e8d7c6b5a4f3e2...
+
+To use this image in your training config:
+  environment:
+    docker_image:
+      url: my-image:latest
+
+=== re-registers and reports an updated digest (json)
+>>> [CLI] experimental air register-image my-image:latest -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "docker_image_url": "my-image:latest",
+    "manifest_sha256": "f9e8d7c6b5a4f3e2newnewnewnew",
+    "status": "AVAILABLE",
+    "image_updated": true,
+    "cached": false
+  }
+}
+
+=== tag-policy latest is accepted for backward compatibility
+>>> [CLI] experimental air register-image my-image:latest --tag-policy latest -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "docker_image_url": "my-image:latest",
+    "manifest_sha256": "f9e8d7c6b5a4f3e2newnewnewnew",
+    "status": "AVAILABLE",
+    "image_updated": true,
+    "cached": false
+  }
+}
+
+=== empty image url
+>>> [CLI] experimental air register-image    
+Error: IMAGE_URL cannot be empty
+
+Exit code: 1
+
+=== tag-policy auto is rejected
+>>> [CLI] experimental air register-image my-image:latest --tag-policy auto
+Error: --tag-policy auto is no longer supported: auto mode was removed and registration now always checks the source registry for the latest digest; omit the flag or use --tag-policy latest
+
+Exit code: 1
+
+=== invalid tag policy (json)
+>>> [CLI] experimental air register-image my-image:latest --tag-policy bogus -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "invalid image tag policy \"bogus\": the only supported value is latest",
+    "retryable": false
+  }
+}
+
+Exit code: 1
+
+=== non-positive timeout is rejected
+>>> [CLI] experimental air register-image my-image:latest --timeout-minutes 0
+Error: --timeout-minutes must be positive, got 0
+
+Exit code: 1
+
+=== removed credential flags are unknown
+>>> [CLI] experimental air register-image my-image:latest --scope s --key k
+Error: unknown flag: --scope
+
+Usage:
+  databricks experimental air register-image IMAGE_URL [flags]
+
+Flags:
+  -h, --help                  help for register-image
+      --timeout-minutes int   Timeout to wait for the image to become available (default 60)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+Exit code: 1
+
+=== private image: credentials are discovered from the local Docker config
+>>> [CLI] experimental air register-image nvcr.io/org/img:1.0
+Image registered: f9e8d7c6b5a4f3e2...
+
+To use this image in your training config:
+  environment:
+    docker_image:
+      url: nvcr.io/org/img:1.0
+
+=== the registration POST carries the auto-stored credential reference
+>>> print_requests.py //api/2.0/ai-compute-manager/images ^//api/2.0/secrets
+{
+  "method": "POST",
+  "path": "/api/2.0/ai-compute-manager/images",
+  "body": {
+    "credentials_key": "nvcr.io-bob-local",
+    "credentials_scope": "docker-credentials-[USERNAME]",
+    "docker_image_url": "nvcr.io/org/img:1.0"
+  }
+}

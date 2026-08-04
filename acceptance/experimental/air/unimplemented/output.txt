@@ -1,6 +1,0 @@
-
-=== register-image
->>> [CLI] experimental air register-image my-image:latest
-Error: `air register-image` is not implemented yet
-
-Exit code: 1
