@@ -1,0 +1,13 @@
+targets:
+  dev:
+    resources:
+      jobs:
+        multifile_job:
+          tasks:
+            - task_key: from_second_file
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/second
+            - task_key: in_both_files
+              timeout_seconds: 30
+            - task_key: same_field_both_files
+              max_retries: 2
