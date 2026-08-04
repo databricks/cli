@@ -1,13 +1,13 @@
 
 === a run that finishes FAILED fails the deploy
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Deploying resources...
-job run [MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[MY_RUN_ID]?o=[NUMID]
-job run [MY_RUN_ID]: [TIMESTAMP] "my-job" INTERNAL_ERROR FAILED Task main failed with message: Workload failed, see run output for details.
+job run [MY_RUN_ID]: Run URL: [RUN_URL]
+job run [MY_RUN_ID]: [TIMESTAMP] "test-job-[UNIQUE_NAME]" INTERNAL_ERROR FAILED Task main failed with message: Workload failed, see run output for details.
 Error: cannot create resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
-task "main": intentional failure
-run page: [DATABRICKS_URL]/jobs/[NUMID]/runs/[MY_RUN_ID]?o=[NUMID]
+task "main": RuntimeError: intentional failure
+run page: [RUN_URL]
 
 Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
 
@@ -23,47 +23,12 @@ create jobs.downstream_job
 
 Plan: 2 to add, 0 to change, 1 to delete, 1 unchanged
 
-=== so a redeploy runs the job again, and fails again
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default/files...
-Deploying resources...
-job run [NUMID]: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
-job run [NUMID]: [TIMESTAMP] "my-job" INTERNAL_ERROR FAILED Task main failed with message: Workload failed, see run output for details.
-Error: cannot recreate resources.job_runs.my_run: waiting after creating id=[NUMID]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
-task "main": intentional failure
-run page: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
-
-Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
-
-Updating deployment state...
-
-=== downstream_job was never created
->>> jq -r select(.path == "/api/2.2/jobs/create") | .body.name out.requests.txt
-my-job
-
-=== run-now was issued once per deploy
->>> print_requests.py //jobs/run-now
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/run-now",
-  "body": {
-    "job_id": [NUMID]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/run-now",
-  "body": {
-    "job_id": [NUMID]
-  }
-}
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.job_runs.my_run
   delete resources.jobs.my_job
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-run/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Deleting files...
 Destroy complete!

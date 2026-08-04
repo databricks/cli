@@ -1,0 +1,51 @@
+
+=== a run that finishes FAILED fails the deploy
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-redeploy/default/files...
+Deploying resources...
+job run [NUMID]: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+job run [NUMID]: [TIMESTAMP] "my-job" INTERNAL_ERROR FAILED Task main failed with message: Workload failed, see run output for details.
+Error: cannot create resources.job_runs.my_run: waiting after creating id=[NUMID]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
+task "main": RuntimeError: intentional failure
+run page: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+
+Updating deployment state...
+
+=== so a redeploy runs the job again, and fails again
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-redeploy/default/files...
+Deploying resources...
+job run [NUMID]: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+job run [NUMID]: [TIMESTAMP] "my-job" INTERNAL_ERROR FAILED Task main failed with message: Workload failed, see run output for details.
+Error: cannot recreate resources.job_runs.my_run: waiting after creating id=[NUMID]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
+task "main": RuntimeError: intentional failure
+run page: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+
+Updating deployment state...
+
+=== run-now was issued once per deploy
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [NUMID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [NUMID]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-failed-redeploy/default
+
+Deleting files...
+Destroy complete!

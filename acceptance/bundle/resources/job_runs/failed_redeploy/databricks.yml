@@ -1,15 +1,12 @@
 bundle:
-  name: job-runs-failed-cloud
-
-workspace:
-  root_path: ~/.bundle/$UNIQUE_NAME
+  name: job-runs-failed-redeploy
 
 resources:
   jobs:
     my_job:
-      name: test-job-$UNIQUE_NAME
+      name: my-job
       tasks:
-        # Serverless keeps the run to about a minute.
+        # The test server runs this locally; the exception fails the run.
         - task_key: main
           spark_python_task:
             python_file: ./fail.py
@@ -18,7 +15,7 @@ resources:
       environments:
         - environment_key: default
           spec:
-            environment_version: "2"
+            client: "2"
 
   job_runs:
     my_run:
