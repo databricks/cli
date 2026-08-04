@@ -30,9 +30,8 @@ title "Neither block is rewritten: the pairing is not forced"
 echo
 trace diff.py databricks.yml.backup databricks.yml
 echo
-title "Checking task locations in YAML:"
-echo "=== Top-level block (should have task_renamed):"
-errcode trace grep -A2 "resources:" databricks.yml | grep -A10 "find_a_job:"
-echo "=== Target block (should have nothing, task_target removed):"
-errcode trace grep -A20 "targets:" databricks.yml | grep -A5 "dev:"
+title "Both tasks keep their original keys, and no new key was written"
+errcode trace grep -c "task_key: task_toplevel" databricks.yml
+errcode trace grep -c "task_key: task_target" databricks.yml
+errcode trace grep -c "task_key: task_renamed" databricks.yml
 rm databricks.yml.backup

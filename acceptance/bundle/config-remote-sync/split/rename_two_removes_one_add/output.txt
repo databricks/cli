@@ -19,9 +19,17 @@ Resource: resources.jobs.two_removes_job
 >>> diff.py databricks.yml.backup databricks.yml
 
 
-=== Checking task locations in YAML:=== Top-level block (should have task_renamed):
+=== Both tasks keep their original keys, and no new key was written
+>>> grep -c task_key: task_toplevel databricks.yml
+1
 
->>> grep -A2 resources: databricks.yml
+>>> grep -c task_key: task_target databricks.yml
+1
+
+>>> grep -c task_key: task_renamed databricks.yml
+0
+
+Exit code: 1
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:
@@ -31,5 +39,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
-Exit code: 1

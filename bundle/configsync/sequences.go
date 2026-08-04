@@ -443,9 +443,9 @@ func (r *blockResolver) blockFor(change resolvedChange) (sourceBlock, error) {
 		return declaringBlock(blocks), nil
 	}
 
-	// The change addresses the element itself. Removing or recreating an element
-	// built from several blocks cannot be expressed against just one of them.
-	return sourceBlock{}, fmt.Errorf("%w: element is defined in %d blocks", errAmbiguousBlock, len(blocks))
+	// A change addressing the element itself never reaches here: routeDestinations sends
+	// it to every defining block instead of asking for one.
+	return declaringBlock(blocks), nil
 }
 
 // declaringBlock relies on blocksOf and sortedBlocks ordering top-level first.
