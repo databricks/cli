@@ -1,7 +1,6 @@
 package configsync
 
 import (
-	"errors"
 	"maps"
 	"slices"
 
@@ -297,19 +296,4 @@ func withoutKey(value map[string]any, keyField string) map[string]any {
 		}
 	}
 	return out
-}
-
-// routeRenameElement locates the renamed element in every block that defines it. The
-// caller turns each destination into a rewrite of the key field, so the element's other
-// fields stay where they are and a split element keeps its parts in their original
-// scopes.
-//
-// Returns no destinations, and no error, when the element cannot be attributed to a
-// block: the rename is left for a later run rather than half-applied.
-func routeRenameElement(blocks *blockResolver, resolved resolvedChange) ([]routeDestination, error) {
-	destinations, err := blocks.routeDestinations(resolved)
-	if errors.Is(err, errAmbiguousBlock) {
-		return nil, nil
-	}
-	return destinations, err
 }

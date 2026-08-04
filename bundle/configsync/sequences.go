@@ -365,10 +365,14 @@ func routeChange(blocks *blockResolver, resolved resolvedChange, isRename bool) 
 	if blocks == nil || len(resolved.steps) == 0 {
 		return []routeDestination{{path: resolved.path}}, nil
 	}
-	if isRename {
-		return routeRenameElement(blocks, resolved)
+
+	destinations, err := blocks.routeDestinations(resolved)
+	if isRename && errors.Is(err, errAmbiguousBlock) {
+		// A rename is a pair, so an element that cannot be attributed to a block leaves
+		// both halves for a later run instead of failing the resource.
+		return nil, nil
 	}
-	return blocks.routeDestinations(resolved)
+	return destinations, err
 }
 
 // addressesWholeElement reports whether the change targets an existing sequence
