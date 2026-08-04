@@ -2,8 +2,7 @@ Cloud = true
 Local = true
 RecordRequests = true
 
-# These tests cover the recording proxy (libs/testproxy), which on cloud sits
-# between the CLI and the workspace. Proxy = true puts it in front of the
-# testserver too, so the same goldens assert the proxy behaves identically
+# These tests cover the recording proxy (libs/testproxy). Running it in front of
+# the testserver too means one set of goldens asserts the proxy behaves the same
 # whether the upstream is a real workspace or the fake.
 Proxy = true

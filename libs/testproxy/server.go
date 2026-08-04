@@ -37,17 +37,14 @@ type ProxyServer struct {
 // For reference, see:
 // https://github.com/databricks/databricks-sdk-go/blob/79e4b3a6e9b0b7dcb1af9ad4025deb447b01d933/common/environment/environments.go#L57
 //
-// The upstream argument selects what the proxy forwards to. Pass an empty config
-// to resolve a real workspace and its auth from the environment, or an explicit
-// host and token to forward to a testserver.
+// upstream selects what the proxy forwards to: an empty config resolves a real
+// workspace and its auth from the environment, an explicit host and token a
+// testserver.
 func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 	s := &ProxyServer{
 		t: t,
 	}
 
-	// Create an API client for the upstream workspace. An empty config resolves
-	// the authentication context from the environment, which is how CI test
-	// environments supply the workspace to record against.
 	clientCfg, err := config.HTTPClientConfigFromConfig(upstream)
 	require.NoError(t, err)
 	s.apiClient = httpclient.NewApiClient(clientCfg)

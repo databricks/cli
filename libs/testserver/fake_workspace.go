@@ -267,9 +267,9 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	}
 }
 
-// MapGetUC is MapGet for Unity Catalog securables. UC reports a missing securable
-// by name and type ("Volume 'main.s.v' does not exist."), which callers surface
-// verbatim, so the generic MapGet message is not a faithful substitute.
+// MapGetUC is MapGet for Unity Catalog securables, which report a missing
+// securable as "Volume 'main.s.v' does not exist." Callers surface that verbatim,
+// so the generic MapGet message is not a faithful substitute.
 func MapGetUC[T any](w *FakeWorkspace, collection map[string]T, key, securable string) Response {
 	defer w.LockUnlock()()
 
@@ -477,8 +477,7 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	defer s.LockUnlock()()
 
-	// The real API 404s on a path that does not exist. Without this check a
-	// deleted or misspelled path is indistinguishable from an empty directory.
+	// The real API 404s on a missing path; without this it looks like an empty directory.
 	_, isDir := s.directories[listPath]
 	_, isFile := s.files[listPath]
 	if !isDir && !isFile {
@@ -510,9 +509,8 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	}
 }
 
-// FsListDirectory lists the immediate children of a directory for the Files API
-// (GET /api/2.0/fs/directories/{path}). A path that is absent or points at a file
-// is a 404, matching the HEAD handler for the same route.
+// FsListDirectory implements GET /api/2.0/fs/directories/{path}. A missing path,
+// or one pointing at a file, is a 404 as in the HEAD handler for the same route.
 func (s *FakeWorkspace) FsListDirectory(dirPath string) Response {
 	if !strings.HasPrefix(dirPath, "/") {
 		dirPath = "/" + dirPath
@@ -557,8 +555,7 @@ func (s *FakeWorkspace) FsListDirectory(dirPath string) Response {
 	}
 }
 
-// FsDeleteFile deletes a single file for the Files API
-// (DELETE /api/2.0/fs/files/{path}).
+// FsDeleteFile implements DELETE /api/2.0/fs/files/{path}.
 func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath

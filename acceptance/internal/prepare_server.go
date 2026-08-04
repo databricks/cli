@@ -122,8 +122,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		// If we are running in a cloud environment AND we need to intercept requests
 		// (for recording or logging), start a proxy server.
 		if recordRequests || logRequests {
-			// An empty config makes the proxy resolve the real workspace and its
-			// auth from the environment.
+			// An empty config resolves the real workspace from the environment.
 			host := startProxyServer(t, &sdkconfig.Config{}, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 			cfg = &sdkconfig.Config{
 				Host:  host,
@@ -140,11 +139,8 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		return cfg, *user
 	}
 
-	// Mirror the cloud topology locally: the proxy records requests and forwards
-	// them to the workspace, which here is a dedicated testserver. This keeps the
-	// forwarding code in libs/testproxy covered on local runs instead of only when
-	// a cloud environment is configured. Recording is attached to the proxy only,
-	// so each request is recorded once, as it is on cloud.
+	// Same topology as cloud, with the testserver as the upstream. Only the proxy
+	// records, otherwise every request would be recorded twice.
 	if isTruePtr(config.Proxy) {
 		upstream := startLocalServer(t, config.Server, false, false, nil, outputDir)
 		host := startProxyServer(t, &sdkconfig.Config{
