@@ -293,37 +293,15 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				// operations on one block cannot move indices in another.
 				scope := destination.scopeKey()
 
-				// A rename rewrites only the key field of the element, so it is a
-				// replace at the element's position rather than a change to the
-				// element itself. The index is still adjusted below, because
-				// removals earlier in the same block shift it.
 				if isRename {
-					resolvedPath = adjustArrayIndex(resolvedPath, scope, indices.operations)
-					destChange.Operation = OperationReplace
-					destChange.Value = rename.newKey
-					resolvedPath = structpath.NewPatternStringKey(resolvedPath, rename.keyField)
-					result = append(result, FieldChange{
-						FilePath:     block.file,
-						Change:       destChange,
-						WritePath:    blocks.candidatePath(*block, resolvedPath),
-						originalPath: structpath.NewPatternStringKey(mergedIndexPath, rename.keyField).String(),
-					})
+					result = append(result, renameKeyChange(blocks, *block, scope, indices,
+						resolvedPath, mergedIndexPath, rename, destChange))
 					continue
 				}
 
 				resolvedPath = indices.place(scope, resolvedPath, destChange.Operation)
 
-				resolvedPathStr := resolvedPath.String()
-				writePath := resolvedPathStr
-				altWritePath := ""
-				if block != nil {
-					// The block is known, so there is exactly one path to write.
-					writePath = blocks.candidatePath(*block, resolvedPath)
-				} else if targetName != "" {
-					// The scope is unknown, so the override is tried if the top-level
-					// path turns out not to exist.
-					altWritePath = targetPrefixedPath(targetName, resolvedPath)
-				}
+				writePath, altWritePath := writeAddress(blocks, block, targetName, resolvedPath)
 
 				// A change routed to a block has a known destination file even when the leaf
 				// itself is new, but "defined in the config" must still be decided by

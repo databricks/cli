@@ -375,6 +375,22 @@ func routeChange(blocks *blockResolver, resolved resolvedChange, isRename bool) 
 	return destinations, err
 }
 
+// writeAddress renders the path to write, plus a fallback to try when the first does not
+// exist in the file.
+//
+// A change routed to a block has exactly one correct path, so it needs no fallback. One
+// that was not routed has a guessed scope: the top-level path is tried first and the
+// target override second.
+func writeAddress(blocks *blockResolver, block *sourceBlock, target string, path *structpath.PatternNode) (writePath, altWritePath string) {
+	if block != nil {
+		return blocks.candidatePath(*block, path), ""
+	}
+	if target == "" {
+		return path.String(), ""
+	}
+	return path.String(), targetPrefixedPath(target, path)
+}
+
 // addressesWholeElement reports whether the change targets an existing sequence
 // element itself rather than something inside it. Only such a change can need more
 // than one destination, since only it can span the blocks the element is built

@@ -297,3 +297,25 @@ func withoutKey(value map[string]any, keyField string) map[string]any {
 	}
 	return out
 }
+
+// renameKeyChange turns a paired rename into a write of just the element's key field, so
+// the element's other fields stay where they are and a split element keeps its parts in
+// their original scopes.
+//
+// The index is still adjusted, because a removal earlier in the same block shifts the
+// position the key rewrite has to target.
+func renameKeyChange(blocks *blockResolver, block sourceBlock, scope string, indices *indexTracker,
+	blockPath, mergedPath *structpath.PatternNode, rename renamedElement, change *ConfigChangeDesc,
+) FieldChange {
+	change.Operation = OperationReplace
+	change.Value = rename.newKey
+
+	blockPath = adjustArrayIndex(blockPath, scope, indices.operations)
+	blockPath = structpath.NewPatternStringKey(blockPath, rename.keyField)
+	return FieldChange{
+		FilePath:     block.file,
+		Change:       change,
+		WritePath:    blocks.candidatePath(block, blockPath),
+		originalPath: structpath.NewPatternStringKey(mergedPath, rename.keyField).String(),
+	}
+}
