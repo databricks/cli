@@ -138,6 +138,7 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 		"postgres_projects":  true,
 		"postgres_roles":     true,
 		"secret_scopes":      true,
+		"snapshots":          true,
 	}
 
 	supported := SupportedResources()
@@ -345,7 +346,8 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 	}
 	unbindableResources := map[string]bool{
-		"model": true,
+		"model":     true,
+		"snapshots": true,
 	}
 
 	ctx := t.Context()
