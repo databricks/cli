@@ -22,14 +22,11 @@ import (
 // archive was built. This is what lets an unchanged code directory resolve to the
 // same uploaded filename across deploys and skip re-upload. The technique mirrors
 // bundle/deploy/snapshot/path.go (which does the same for the immutable-folder zip).
-//
-// Reproducible for a given platform, not across platforms: entry modes carry the
-// POSIX execute bit, which Windows does not have (see addFileToArchive).
+// Reproducible per platform, not across them (see addFileToArchive).
 var tarEpoch = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 
 // appleDoublePrefix is the basename prefix of macOS AppleDouble metadata files.
-// The AIR CLI excludes these; we match it so a macOS archive does not carry entries
-// a Linux archive of the same sources lacks.
+// The AIR CLI excludes these; we match it so macOS archives carry no extra entries.
 const appleDoublePrefix = "._"
 
 // buildCodeSnapshot writes a reproducible gzipped tarball of the given files to out
@@ -104,19 +101,9 @@ func addFileToArchive(tw *tar.Writer, syncRoot vfs.Path, relBase string, f files
 		return nil
 	}
 
-	// Preserve the owner execute bit so a bundled helper the user invokes (e.g. a
-	// ./run.sh called from command.sh) stays executable, but normalize the rest to a
-	// canonical mode. Deriving the mode from the file's own bits keeps the archive
-	// reproducible per platform (same input file -> same mode); mtime is zeroed for
-	// the same reason.
-	//
-	// This is the one part of the archive that is NOT cross-platform identical:
-	// Windows has no POSIX execute bit, so every file is archived 0644 there and a
-	// Windows-built archive of the same sources hashes differently from a Unix-built
-	// one (only affecting a deploy of the same bundle from both platforms, which just
-	// re-uploads under a different content-addressed name). A helper that relies on
-	// its own execute bit therefore needs to be invoked through its interpreter
-	// (`bash run.sh`) to work when deployed from Windows.
+	// Preserve the owner execute bit so a bundled helper stays executable, and
+	// normalize the rest to a canonical mode. Windows has no execute bit, so files are
+	// archived 0644 there and the archive hash differs from a Unix-built one.
 	mode := int64(0o644)
 	if info.Mode().Perm()&0o100 != 0 {
 		mode = 0o755

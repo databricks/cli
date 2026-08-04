@@ -191,10 +191,9 @@ func codeSourceFiles(ctx context.Context, b *bundle.Bundle, relBase string) ([]f
 	}
 
 	// sync.include is force-added regardless of the scoped walk, so the list can
-	// contain files outside the code directory (an `include` of "assets/*.bin" shows
-	// up here even when scoped to "src"). Keep only what is actually under relBase:
-	// otherwise those strays make an all-filtered directory look non-empty, and the
-	// empty-snapshot guard is bypassed into shipping an empty archive.
+	// contain files outside the code directory. Keep only what is under relBase, or
+	// those strays make an all-filtered directory look non-empty and an empty archive
+	// ships.
 	if relBase == "." {
 		return all, nil
 	}

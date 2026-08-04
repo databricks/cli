@@ -83,9 +83,8 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 
 // packagesLocalDir reports whether codeSourcePath is one this mutator packages: a
 // local path that is an existing directory. A local *file* (a pre-built tarball from
-// an `artifacts` block) is uploaded by the artifact path instead, so it must not
-// trigger the snapshot-directory guards — gating those on IsLocalPath alone rejects
-// valid pre-built-tarball bundles that exclude "*.tar.gz" from sync.
+// an `artifacts` block) is uploaded by the artifact path instead, so it packages no
+// snapshot and the snapshot-directory guards must not apply to it.
 func (v *validate) packagesLocalDir(b *bundle.Bundle, codeSourcePath string) bool {
 	if codeSourcePath == "" || !libraries.IsLocalPath(codeSourcePath) {
 		return false
