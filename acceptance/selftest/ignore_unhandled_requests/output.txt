@@ -1,0 +1,3 @@
+
+>>> curl -s -o /dev/null -w %{http_code}\n [DATABRICKS_URL]/api/2.0/no-such-endpoint
+501

@@ -1,0 +1,2 @@
+# Without IgnoreUnhandledRequests this would fail the test with "No handler for URL".
+trace curl -s -o /dev/null -w '%{http_code}\n' $DATABRICKS_HOST/api/2.0/no-such-endpoint

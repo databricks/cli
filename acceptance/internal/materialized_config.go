@@ -47,6 +47,9 @@ func GenerateMaterializedConfig(config *TestConfig) string {
 	writeBool(&buf, "RequiresCluster", config.RequiresCluster)
 	writeBool(&buf, "RequiresWarehouse", config.RequiresWarehouse)
 	writeBool(&buf, "RunsOnDbr", config.RunsOnDbr)
+	// Inheritable and it disables handler-coverage enforcement, so surface it on every
+	// leaf test underneath the parent config that set it.
+	writeBool(&buf, "IgnoreUnhandledRequests", config.IgnoreUnhandledRequests)
 	if config.Phase != 0 {
 		fmt.Fprintf(&buf, "Phase = %d\n", config.Phase)
 	}

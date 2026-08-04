@@ -73,6 +73,10 @@ type Server struct {
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
+
+	// Return 501 for a request with no handler instead of failing the test. For a test that
+	// generates the config it deploys, an unmodeled route is a coverage gap, not a bug.
+	IgnoreUnhandledRequests bool
 }
 
 type Request struct {
@@ -278,7 +282,12 @@ func New(t testutil.TestingT) *Server {
 			body = fmt.Sprintf("[%d bytes] %s", len(bodyBytes), bodyBytes)
 		}
 
-		t.Errorf(`No handler for URL: %s
+		if s.IgnoreUnhandledRequests {
+			// Log rather than fail the run; the 501 below is unchanged. Log the pattern
+			// rather than the URL so the line can be pasted into a [[Server]] stub as-is.
+			t.Logf("No handler for pattern (ignored): %q\nBody: %s", pattern, body)
+		} else {
+			t.Errorf(`No handler for URL: %s
 Body: %s
 
 For acceptance tests, add this to test.toml:
@@ -287,6 +296,7 @@ Pattern = %q
 Response.Body = '<response body here>'
 # Response.StatusCode = <response code if not 200>
 `, r.URL, body, pattern)
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotImplemented)

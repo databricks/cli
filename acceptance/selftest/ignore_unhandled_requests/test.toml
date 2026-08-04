@@ -1,0 +1,6 @@
+IgnoreUnhandledRequests = true
+
+# The script only curls the testserver, so there is nothing engine-specific to cover.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+
+Env.MSYS_NO_PATHCONV = "1"

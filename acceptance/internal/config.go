@@ -83,6 +83,10 @@ type TestConfig struct {
 	// out.requests.txt
 	RecordRequests *bool
 
+	// Return 501 for a request with no handler instead of failing the test.
+	// This is a per-server setting, so it gives the test a dedicated server.
+	IgnoreUnhandledRequests *bool
+
 	// List of request headers to include when recording requests.
 	IncludeRequestHeaders []string
 
