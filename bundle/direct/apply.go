@@ -287,12 +287,12 @@ func (d *DeploymentUnit) loadPersistedState(db *dstate.DeploymentState) (any, er
 	return state, nil
 }
 
-func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string, newState any) error {
+func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) error {
 	if d.RemoteState != nil {
 		return nil
 	}
 	remoteState, err := retryOnTransient(ctx, func() (any, error) {
-		return d.Adapter.DoRead(ctx, id, newState)
+		return d.Adapter.DoRead(ctx, id)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)

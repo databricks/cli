@@ -157,10 +157,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			// Delete branch: there is no planned new state, pass typed nil so the
-			// adapter falls back to using the deployment state id.
 			remoteState, err := retryOnTransient(ctx, func() (any, error) {
-				return adapter.DoRead(ctx, id, nil)
+				return adapter.DoRead(ctx, id)
 			})
 			if err != nil {
 				if isResourceGone(err) {
@@ -217,7 +215,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		remoteState, err := retryOnTransient(ctx, func() (any, error) {
-			return adapter.DoRead(ctx, dbentry.ID, sv.Value)
+			return adapter.DoRead(ctx, dbentry.ID)
 		})
 		if err != nil {
 			if isResourceGone(err) {
