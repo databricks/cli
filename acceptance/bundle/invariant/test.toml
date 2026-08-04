@@ -48,7 +48,6 @@ EnvMatrix.INPUT_CONFIG = [
     "model.yml.tmpl",
     "model_with_permissions.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",
-    "model_serving_endpoint_telemetry_config.yml.tmpl",
     "pipeline.yml.tmpl",
     "pipeline_allow_duplicate_names.yml.tmpl",
     "pipeline_apply_policy_default_values.yml.tmpl",
@@ -110,7 +109,6 @@ no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_loc
 
 # External volumes reference external locations; excluded from cloud for the same reason
 no_external_volume_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=volume_external.yml.tmpl"]
-
 # A vector search index takes 10-20 min to create, and these tests deploy it twice
 # (deploy, then re-plan), making it by far the slowest variant on cloud. The dedicated
 # vector_search_indexes resource test already covers it on cloud (CloudSlow), so exclude

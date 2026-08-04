@@ -1,4 +1,6 @@
 RecordRequests = true
 
-# Covers the direct engine's telemetry_config classification and update path.
+# Covers the direct engine's telemetry_config classification and update path. Terraform is
+# excluded because the provider types sampling_fraction as an integer while the API takes a
+# fraction in [0.0, 1.0], so a terraform deploy truncates 0.5 to 0 and drops it.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
