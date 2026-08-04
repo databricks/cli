@@ -20,10 +20,15 @@ add_repl.py $ETAG ETAG
 json_in_json_normalize.py out.state_after_bind.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle plan
-trace errcode $CLI bundle deploy
+# Not traced: the deploy command line differs by READPLAN (--plan vs none). This deploy is
+# expected to fail; applying the saved plan must fail the same way.
+$CLI bundle plan -o json > tmp.plan.json
+errcode $CLI bundle deploy $(readplanarg tmp.plan.json)
 
 trace $CLI bundle deployment unbind dashboard1
 
-trace $CLI bundle deploy --auto-approve
+# Re-plan after unbind: the plan saved above no longer matches state.
+$CLI bundle plan -o json > tmp.plan_after_unbind.json
+$CLI bundle deploy --auto-approve $(readplanarg tmp.plan_after_unbind.json)
 
 trace $CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name, lifecycle_state}'
