@@ -3,8 +3,8 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
 Deploying resources...
-job run [NUMID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?o=[NUMID]
-job run [NUMID]: [TIMESTAMP] "my-job" TERMINATED SUCCESS
+job run [MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+job run [MY_RUN_ID]: [TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 
@@ -18,7 +18,7 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[NUMID]
   Jobs:
     my_job:
       Name: my-job
@@ -66,9 +66,9 @@ Resources:
       "env": "dev"
     },
     "result_state": "SUCCESS",
-    "run_id": [NUMID],
+    "run_id": [MY_RUN_ID],
     "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?o=[NUMID]",
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
     "run_type": "JOB_RUN",
     "state": {
       "life_cycle_state": "TERMINATED",
@@ -89,8 +89,8 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
 Deploying resources...
-job run [NUMID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?o=[NUMID]
-job run [NUMID]: [TIMESTAMP] "my-job" TERMINATED SUCCESS
+job run [MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+job run [MY_RUN_ID_2]: [TIMESTAMP] "my-job" TERMINATED SUCCESS
 Updating deployment state...
 Deployment complete!
 
@@ -104,7 +104,7 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?w=[NUMID]
   Jobs:
     my_job:
       Name: my-job
@@ -116,7 +116,7 @@ Resources:
   "method": "POST",
   "path": "/api/2.2/jobs/runs/delete",
   "body": {
-    "run_id": [NUMID]
+    "run_id": [MY_RUN_ID]
   }
 }
 
