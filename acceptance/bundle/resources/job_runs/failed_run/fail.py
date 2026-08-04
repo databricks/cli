@@ -1,4 +1,1 @@
-import sys
-
-print("intentional failure", file=sys.stderr)
-sys.exit(1)
+raise RuntimeError("intentional failure")

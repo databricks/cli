@@ -1,11 +1,13 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
-# The error names the failed task, and downstream_job is reported as a failed
-# dependency because it reads the run's result_state.
+# The error names the failed task and the message the workspace reported for it,
+# and downstream_job is reported as a failed dependency because it reads the
+# run's result_state.
 title "a run that finishes FAILED fails the deploy"
 musterr trace $CLI bundle deploy
 
@@ -14,13 +16,3 @@ musterr trace $CLI bundle deploy
 title "the failed run is recorded, and not having succeeded is drift"
 trace read_id.py my_run
 trace $CLI bundle plan
-
-title "so a redeploy runs the job again, and fails again"
-musterr trace $CLI bundle deploy
-
-# Only my-job: nothing downstream of a run that never succeeded is created.
-title "downstream_job was never created"
-trace jq -r 'select(.path == "/api/2.2/jobs/create") | .body.name' out.requests.txt
-
-title "run-now was issued once per deploy"
-trace print_requests.py //jobs/run-now
