@@ -92,8 +92,8 @@ func matchRenamingPairs(b *bundle.Bundle, blocks *blockResolver, resourceKey str
 	for i, candidate := range candidates {
 		// A pair is only unambiguous when the choice is forced from both sides. One
 		// removal matching several additions is the obvious case, but so is several
-		// removals matching the same addition: pairing the first and deleting the
-		// rest would move a key into a block the user did not choose.
+		// removals matching the same addition: pairing the first and deleting the rest
+		// would move a key into a block the user did not choose.
 		if len(matches[i]) == 1 && len(matchedBy[matches[i][0].path]) == 1 {
 			add := matches[i][0]
 			set.byRemovePath[candidate.remove.path] = renamedElement{
@@ -107,20 +107,15 @@ func matchRenamingPairs(b *bundle.Bundle, blocks *blockResolver, resourceKey str
 		}
 
 		if len(matches[i]) > 0 {
-			// The pairing is not forced. Which pairing was intended only matters when
-			// the elements live in different blocks, because then it decides which
-			// block each new key is written to. Within one block every pairing writes
-			// the same set of elements to the same place, so the halves can be applied
-			// as a plain removal and addition instead of being held back -- otherwise a
-			// rename of two same-bodied elements is dropped, and anything referring to
-			// them by key (depends_on) keeps pointing at keys that no longer exist.
-			if !ambiguityCrossesBlocks(blocks, candidates, matches[i], matchedBy) {
-				continue
-			}
-			const reason = "several elements with the same contents were renamed in one run and they are not in the same block, so the new keys cannot be matched to them"
-			set.unpairedPaths[candidate.remove.path] = reason
-			for _, add := range matches[i] {
-				set.unpairedPaths[add.path] = reason
+			// Which pairing was intended only matters when the elements live in
+			// different blocks, because then it decides which block each new key is
+			// written to. Within one block every pairing writes the same elements to the
+			// same place, so the halves are applied as a plain removal and addition --
+			// holding them back would drop the rename and leave anything referring to
+			// them by key (depends_on) pointing at keys that no longer exist.
+			if ambiguityCrossesBlocks(blocks, candidates, matches[i], matchedBy) {
+				set.holdBack(candidate.remove.path, addPaths(matches[i]),
+					"several elements with the same contents were renamed at once, in different blocks")
 			}
 			continue
 		}
@@ -130,23 +125,17 @@ func matchRenamingPairs(b *bundle.Bundle, blocks *blockResolver, resourceKey str
 		// its fields also edited cannot be recognised as a rename: applying the halves
 		// separately would delete a split element from every block and recreate it in
 		// one, collapsing the split and moving fields into a scope the user did not
-		// choose. Hold both halves back in that case.
-		var edited []string
+		// choose.
+		var edited []keyedElement
 		for _, add := range matchingAdds(candidate, adds, sameFieldsApartFromKey) {
+			// An addition already paired with another removal is that rename's half.
 			if _, taken := set.addPaths[add.path]; !taken {
-				edited = append(edited, add.path)
+				edited = append(edited, add)
 			}
 		}
-		if len(edited) == 0 {
-			continue
-		}
-		if !multiBlockElement(blocks, candidate.resolved) {
-			continue
-		}
-		const reason = "a split element cannot be removed and recreated in one run"
-		set.unpairedPaths[candidate.remove.path] = reason
-		for _, path := range edited {
-			set.unpairedPaths[path] = reason
+		if len(edited) > 0 && multiBlockElement(blocks, candidate.resolved) {
+			set.holdBack(candidate.remove.path, addPaths(edited),
+				"a split element cannot be removed and recreated at once")
 		}
 	}
 	return set
@@ -210,6 +199,23 @@ func competingRemovals(matches []keyedElement, matchedBy map[string][]int) []int
 		}
 	}
 	return out
+}
+
+// holdBack refuses both halves of a suspected key change, so a rename is never applied
+// as a removal that lands without its matching addition.
+func (s renameSet) holdBack(removePath string, addPaths []string, reason string) {
+	s.unpairedPaths[removePath] = reason
+	for _, path := range addPaths {
+		s.unpairedPaths[path] = reason
+	}
+}
+
+func addPaths(adds []keyedElement) []string {
+	paths := make([]string, 0, len(adds))
+	for _, add := range adds {
+		paths = append(paths, add.path)
+	}
+	return paths
 }
 
 // multiBlockElement reports whether the element the change addresses is assembled
