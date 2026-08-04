@@ -36,8 +36,38 @@ func newRunCommand() *cobra.Command {
 		Short: "Submit a training workload from a YAML config",
 		Long: `Submit a training workload to Databricks serverless GPU compute.
 
-The workload is described by a YAML config file (see --file).`,
+The workload is described by a YAML config file (see --file).
+
+To look up a config field, pass its path to -h:
+
+  databricks experimental air run -h config
+  databricks experimental air run -h config.compute
+  databricks experimental air run -h config.compute.accelerator_type
+
+The path must be a separate argument: cobra reserves -h as a boolean, so
+-h=config.compute and -hconfig.compute are not accepted.`,
 	}
+
+	// Document a config field instead of the command when -h is given a path.
+	// cobra hands the help function the positional args it collected, and it does
+	// so before Args and required-flag validation, so -f is not needed here.
+	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
+		fields := c.Flags().Args()
+		if len(fields) == 0 {
+			// Resolved through the parent rather than captured up front, so this
+			// picks up the inherited help function instead of cobra's default.
+			// A detached command (as in unit tests) has no parent to inherit from.
+			if parent := c.Parent(); parent != nil {
+				parent.HelpFunc()(c, args)
+				return
+			}
+			_ = c.Usage()
+			return
+		}
+		if err := writeConfigFieldHelp(c.OutOrStdout(), fields[0]); err != nil {
+			c.PrintErrln("Error:", err)
+		}
+	})
 
 	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to the workload YAML config")
 	cmd.Flags().BoolVar(&watch, "watch", false, "Stream logs until the run completes")
