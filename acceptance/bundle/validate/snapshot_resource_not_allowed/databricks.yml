@@ -5,5 +5,5 @@ resources:
   snapshots:
     immutable:
       bundle_id: 123
-      zip_content: |
+      zip_content: |-
         This is a test zip content.

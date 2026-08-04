@@ -20,11 +20,6 @@ func (v *filesToSync) Name() string {
 }
 
 func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Immutable folder does not use the sync mechanism, so we don't need to validate it.
-	if b.IsImmutableFolder() {
-		return nil
-	}
-
 	// The user may be intentional about not synchronizing any files.
 	// In this case, we should not show any warnings.
 	if len(b.Config.Sync.Paths) == 0 {

@@ -34,7 +34,7 @@ type ACLEntry struct {
 // snapshotID is the content-addressed key supplied by the caller; the API uses
 // it as the final path component so that identical content always resolves to
 // the same workspace location.
-// This interface exists so the implementation can later be replaced with a Go SDK call.
+// The interface exists so we can replace the implementation in tests with a mock.
 type SnapshotUploader interface {
 	GetSnapshotRootPath(ctx context.Context) (string, error)
 	Upload(ctx context.Context, path, bundleID string, acl []ACLEntry, zipContent []byte) (*SnapshotInfo, error)

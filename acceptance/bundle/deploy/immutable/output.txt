@@ -73,13 +73,13 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.environments[0].spec.dependencies job.json
 [
   "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
 ]
@@ -158,7 +158,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Check that job uses a new snapshot\nSnapshot changed as expected
+=== Check that job uses a new snapshotSnapshot changed as expected
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

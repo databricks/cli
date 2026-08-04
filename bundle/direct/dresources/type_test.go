@@ -57,6 +57,7 @@ var knownMissingInRemoteType = map[string][]string{
 	"snapshots": {
 		"bundle_id",
 		"acl",
+		"remote_root",
 	},
 }
 

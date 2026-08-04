@@ -300,8 +300,9 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"snapshots": &resources.Snapshot{
-		BundleID: "test-bundle-id",
-		ACL:      []snapshot.ACLEntry{{UserName: "user@example.com", PermissionLevel: "CAN_READ"}},
+		RemoteRoot: "/Workspace/Users/" + testserver.TestUserSP.UserName + "/.snapshots",
+		BundleID:   "test-bundle-id",
+		ACL:        []snapshot.ACLEntry{{UserName: "user@example.com", PermissionLevel: "CAN_READ"}},
 	},
 }
 

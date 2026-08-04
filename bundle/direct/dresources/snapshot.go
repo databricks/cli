@@ -13,6 +13,7 @@ type ResourceSnapshot struct {
 }
 
 type SnapshotState struct {
+	RemoteRoot   string              `json:"remote_root"`
 	RelativePath string              `json:"relative_path"`
 	FullPath     string              `json:"full_path"`
 	BundleID     string              `json:"bundle_id"`
@@ -45,6 +46,7 @@ func (s *ResourceSnapshot) New(client *databricks.WorkspaceClient) *ResourceSnap
 
 func (s *ResourceSnapshot) PrepareState(input *resources.Snapshot) *SnapshotState {
 	return &SnapshotState{
+		RemoteRoot:   input.RemoteRoot,
 		RelativePath: input.RelativePath(),
 		FullPath:     input.FullPath(),
 		BundleID:     input.BundleID,
@@ -55,6 +57,7 @@ func (s *ResourceSnapshot) PrepareState(input *resources.Snapshot) *SnapshotStat
 
 func (s *ResourceSnapshot) RemapState(remote *SnapshotRemote) *SnapshotState {
 	return &SnapshotState{
+		RemoteRoot:   "",
 		RelativePath: remote.RelativePath,
 		FullPath:     remote.FullPath,
 		BundleID:     "",

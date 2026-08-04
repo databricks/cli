@@ -53,13 +53,13 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/some_path"
 
 >>> title Check snapshot plan after deploy
@@ -106,7 +106,7 @@ Deployment complete!
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-\nSnapshot did not change as expected
+Snapshot did not change as expected
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
