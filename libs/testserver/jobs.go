@@ -25,6 +25,34 @@ const missingJobGitProviderMessage = "git_source.git_provider must be one of: gi
 // the job, so the task succeeds.
 var errNoCodeInWorkspace = errors.New("task code is not in the workspace")
 
+// taskFailureMessage is what a real workspace reports for a task that failed: a
+// generic pointer at the run output, on both the task and the run. Measured on
+// serverless against a spark_python_task that raises. The run-level message
+// wraps it as "Task <key> failed with message: <this>." and ends in a period,
+// which the task-level one does not.
+const taskFailureMessage = "Workload failed, see run output for details"
+
+// taskFailure splits a failed task's output the way jobs/runs/get-output does:
+// error carries the exception, error_trace the traceback. Reporting the whole
+// output as the error instead would leak this server's own wording into the
+// message a deploy names the task with.
+type taskFailure struct {
+	message string
+	trace   string
+}
+
+func (e *taskFailure) Error() string {
+	return e.message
+}
+
+// newTaskFailure takes the exception from the last line of the task's output,
+// where a Python traceback ends.
+func newTaskFailure(output string) *taskFailure {
+	trimmed := strings.TrimRight(output, "\r\n")
+	lastLine := strings.TrimSpace(trimmed[strings.LastIndex(trimmed, "\n")+1:])
+	return &taskFailure{message: lastLine, trace: trimmed}
+}
+
 // venvPython returns the path to the Python executable in a venv.
 // On Unix: venv/bin/python
 // On Windows: venv\Scripts\python.exe
@@ -397,9 +425,14 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 				// Nothing ran, so the task keeps its SUCCESS state.
 			case err != nil:
 				taskRun.State.ResultState = jobs.RunResultStateFailed
-				s.JobRunOutputs[taskRunId] = jobs.RunOutput{
-					Error: err.Error(),
+				taskRun.State.StateMessage = taskFailureMessage
+				runOutput := jobs.RunOutput{Error: err.Error()}
+				// A task this server could not even start (e.g. uv failed) has no
+				// traceback to report.
+				if failure, ok := errors.AsType[*taskFailure](err); ok {
+					runOutput.ErrorTrace = failure.trace
 				}
+				s.JobRunOutputs[taskRunId] = runOutput
 			case logs != "":
 				s.JobRunOutputs[taskRunId] = jobs.RunOutput{
 					Logs: logs,
@@ -646,7 +679,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(output), fmt.Errorf("wheel task execution failed: %s\n%s", err, output)
+		return string(output), newTaskFailure(string(output))
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
@@ -734,7 +767,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(output), fmt.Errorf("notebook task execution failed: %s\n%s", err, output)
+		return string(output), newTaskFailure(string(output))
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
@@ -780,7 +813,7 @@ func (s *FakeWorkspace) executeSparkPythonTask(task jobs.Task) (string, error) {
 
 	output, err := exec.Command(venvPython(env.venvDir), runArgs...).CombinedOutput()
 	if err != nil {
-		return string(output), fmt.Errorf("spark python task execution failed: %s\n%s", err, output)
+		return string(output), newTaskFailure(string(output))
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
@@ -857,7 +890,9 @@ func sparkVersionToPython(task jobs.Task) string {
 }
 
 // terminateRun completes the run, rolling task outcomes up into the run-level
-// state the way the Jobs API does: one failed task fails the whole run.
+// state the way the Jobs API does: one failed task fails the whole run, and the
+// run reports INTERNAL_ERROR in the deprecated life_cycle_state even though its
+// tasks are TERMINATED (status.state is TERMINATED with RUN_EXECUTION_ERROR).
 func terminateRun(run *jobs.Run) {
 	for i := range run.Tasks {
 		// Tasks that were never executed (jobs/runs/submit) are still running.
@@ -873,8 +908,9 @@ func terminateRun(run *jobs.Run) {
 	}
 	for _, task := range run.Tasks {
 		if task.State.ResultState != jobs.RunResultStateSuccess {
+			run.State.LifeCycleState = jobs.RunLifeCycleStateInternalError
 			run.State.ResultState = task.State.ResultState
-			run.State.StateMessage = fmt.Sprintf("task %s failed", task.TaskKey)
+			run.State.StateMessage = fmt.Sprintf("Task %s failed with message: %s.", task.TaskKey, taskFailureMessage)
 			return
 		}
 	}
