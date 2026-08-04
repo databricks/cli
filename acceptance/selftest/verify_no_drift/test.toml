@@ -1,0 +1,2 @@
+# The plan fixtures the script writes are inputs, not recorded output.
+Ignore = ["*.json"]

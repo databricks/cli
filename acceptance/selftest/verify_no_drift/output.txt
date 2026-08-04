@@ -1,0 +1,17 @@
+
+=== A plan where every action is skip passes
+>>> verify_no_drift.py skip.json
+
+=== A plan with any other action fails
+>>> errcode verify_no_drift.py update.json
+Unexpected action='update' for resources.jobs.foo
+{"plan": {"resources.jobs.foo": {"action": "update"}}}
+
+
+Exit code: 10
+
+=== An empty plan says the plan failed, rather than raising a decode error
+>>> errcode verify_no_drift.py empty.json
+empty.json: empty plan output (bundle plan failed)
+
+Exit code: 1

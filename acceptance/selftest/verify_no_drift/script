@@ -1,0 +1,11 @@
+title "A plan where every action is skip passes"
+echo '{"plan": {"resources.jobs.foo": {"action": "skip"}}}' > skip.json
+trace verify_no_drift.py skip.json
+
+title "A plan with any other action fails"
+echo '{"plan": {"resources.jobs.foo": {"action": "update"}}}' > update.json
+trace errcode verify_no_drift.py update.json
+
+title "An empty plan says the plan failed, rather than raising a decode error"
+touch empty.json
+trace errcode verify_no_drift.py empty.json
