@@ -9,8 +9,7 @@ resources:
     my_job:
       name: test-job-$UNIQUE_NAME
       tasks:
-        # Serverless keeps the run to about a minute; a job cluster would take
-        # several.
+        # Serverless keeps the run to about a minute.
         - task_key: main
           spark_python_task:
             python_file: ./fail.py

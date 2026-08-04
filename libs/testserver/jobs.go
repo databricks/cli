@@ -20,9 +20,9 @@ import (
 
 const missingJobGitProviderMessage = "git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit"
 
-// errNoCodeInWorkspace marks a task there is nothing to execute for, e.g.
-// because an immutable deployment uploaded the code as a snapshot zip this
-// server never unpacks. The gap is here, not in the job, so the task succeeds.
+// errNoCodeInWorkspace marks a task there is nothing to execute for, e.g. code
+// uploaded as a snapshot zip this server never unpacks. The gap is here, not in
+// the job, so the task succeeds.
 var errNoCodeInWorkspace = errors.New("task code is not in the workspace")
 
 // venvPython returns the path to the Python executable in a venv.
