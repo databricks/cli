@@ -47,10 +47,12 @@ func prepareDockerImage(ctx context.Context, w *databricks.WorkspaceClient, img 
 // newest digest, using the config's credentials when set and otherwise the local
 // Docker config.
 func resolveLatestDockerImage(ctx context.Context, w *databricks.WorkspaceClient, c *imageClient, img *dockerImageConfig) error {
-	scope, key := img.CredentialsScope, img.CredentialsKey
+	// Credentials the user configured are used as-is (discovered=false), so a
+	// rejection is not retried anonymously and reports the secret they named.
+	creds := imageCredentials{scope: img.CredentialsScope, key: img.CredentialsKey}
 	var credErr error
-	if scope == "" {
-		scope, key, credErr = discoverCredentials(ctx, w, c, img.URL)
+	if creds.scope == "" {
+		creds, credErr = discoverCredentials(ctx, w, c, img.URL)
 		if credErr != nil {
 			log.Debugf(ctx, "could not store local Docker credentials: %v", credErr)
 		}
@@ -58,7 +60,10 @@ func resolveLatestDockerImage(ctx context.Context, w *databricks.WorkspaceClient
 
 	// Visible at the default log level (WARN): this can block for minutes.
 	cmdio.LogString(ctx, fmt.Sprintf("Re-resolving %s against the source registry (tag_policy=latest)...", img.URL))
-	if _, _, err := registerWithCredentialFallback(ctx, c, img.URL, scope, key, imageReadyTimeout); err != nil {
+	if _, _, err := registerWithCredentialFallback(ctx, c, img.URL, creds, imageReadyTimeout); err != nil {
+		if !creds.discovered && creds.scope != "" && isAuthError(err) {
+			return fmt.Errorf("the credentials in secret %s/%s were rejected for image %q: %w", creds.scope, creds.key, img.URL, err)
+		}
 		return registrationError(img.URL, err, credErr)
 	}
 	return nil
@@ -66,6 +71,12 @@ func resolveLatestDockerImage(ctx context.Context, w *databricks.WorkspaceClient
 
 // waitForRegisteredImage requires an existing registration and blocks while it is
 // still importing. Missing or FAILED is an error the user fixes by re-registering.
+//
+// An AVAILABLE registration whose stored credentials have since lost registry
+// access is accepted here and only fails at pod launch. The Python CLI catches
+// that with a :validateImageAccess probe (cli/sdk/_submit.py), which is not ported
+// deliberately: this check belongs in the backend, so every client gets it and
+// the CLI doesn't pay a round trip per submit. Port it there rather than here.
 func waitForRegisteredImage(ctx context.Context, c *imageClient, dockerImageURL string) error {
 	reg, err := c.getImage(ctx, dockerImageURL)
 	if err != nil {
