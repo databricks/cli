@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -122,9 +123,25 @@ func TestTerminateRun_FailedTaskFailsTheRun(t *testing.T) {
 
 	terminateRun(&run)
 
-	assert.Equal(t, jobs.RunLifeCycleStateTerminated, run.State.LifeCycleState)
+	// A failed run reports INTERNAL_ERROR, not TERMINATED, in life_cycle_state.
+	assert.Equal(t, jobs.RunLifeCycleStateInternalError, run.State.LifeCycleState)
 	assert.Equal(t, jobs.RunResultStateFailed, run.State.ResultState)
-	assert.Equal(t, "task second failed", run.State.StateMessage)
+	assert.Equal(t, "Task second failed with message: Workload failed, see run output for details.", run.State.StateMessage)
+}
+
+func TestNewTaskFailure_ReportsTheExceptionAndTheTraceback(t *testing.T) {
+	output := "Traceback (most recent call last):\n  File \"fail.py\", line 1\nRuntimeError: intentional failure\n"
+
+	failure := newTaskFailure(output)
+
+	assert.Equal(t, "RuntimeError: intentional failure", failure.Error())
+	assert.Equal(t, strings.TrimRight(output, "\n"), failure.trace)
+}
+
+func TestNewTaskFailure_SingleLineOutputIsTheException(t *testing.T) {
+	failure := newTaskFailure("RuntimeError: intentional failure\n")
+
+	assert.Equal(t, "RuntimeError: intentional failure", failure.Error())
 }
 
 func TestTerminateRun_CompletesTasksThatAreStillRunning(t *testing.T) {
