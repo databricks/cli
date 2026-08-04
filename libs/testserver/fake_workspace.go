@@ -277,10 +277,7 @@ func MapGetUC[T any](w *FakeWorkspace, collection map[string]T, key, securable s
 	if !ok {
 		return Response{
 			StatusCode: 404,
-			Body: map[string]string{
-				"error_code": "NOT_FOUND",
-				"message":    fmt.Sprintf("%s '%s' does not exist.", securable, key),
-			},
+			Body:       map[string]string{"message": fmt.Sprintf("%s '%s' does not exist.", securable, key)},
 		}
 	}
 	return Response{
@@ -477,10 +474,15 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	defer s.LockUnlock()()
 
-	// The real API 404s on a missing path; without this it looks like an empty directory.
-	_, isDir := s.directories[listPath]
-	_, isFile := s.files[listPath]
-	if !isDir && !isFile {
+	// The real API collapses duplicate slashes, so look up the cleaned path.
+	cleaned := path.Clean(listPath)
+
+	// The real API 404s on a missing path; without this it looks like an empty
+	// directory. Repos are listable but tracked outside s.directories, so they
+	// have to be admitted here too.
+	_, isDir := s.directories[cleaned]
+	_, isRepo := s.repoIdByPath[cleaned]
+	if !isDir && !isRepo {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", listPath)},
@@ -490,12 +492,12 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	var objects []workspace.ObjectInfo
 
 	for filePath, entry := range s.files {
-		if path.Dir(filePath) == listPath {
+		if path.Dir(filePath) == cleaned {
 			objects = append(objects, entry.Info)
 		}
 	}
 	for dirPath, dirInfo := range s.directories {
-		if dirPath != listPath && path.Dir(dirPath) == listPath {
+		if dirPath != cleaned && path.Dir(dirPath) == cleaned {
 			objects = append(objects, dirInfo)
 		}
 	}
@@ -509,8 +511,9 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	}
 }
 
-// FsListDirectory implements GET /api/2.0/fs/directories/{path}. A missing path,
-// or one pointing at a file, is a 404 as in the HEAD handler for the same route.
+// FsListDirectory implements GET /api/2.0/fs/directories/{path}. Anything that is
+// not a directory, including a path pointing at a file, is a 404, as in the HEAD
+// handler for the same route.
 func (s *FakeWorkspace) FsListDirectory(dirPath string) Response {
 	if !strings.HasPrefix(dirPath, "/") {
 		dirPath = "/" + dirPath
@@ -518,11 +521,11 @@ func (s *FakeWorkspace) FsListDirectory(dirPath string) Response {
 
 	defer s.LockUnlock()()
 
-	if _, isFile := s.files[dirPath]; isFile {
-		return Response{StatusCode: 404}
-	}
 	if _, isDir := s.directories[dirPath]; !isDir {
-		return Response{StatusCode: 404}
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": "directory does not exist"},
+		}
 	}
 
 	var contents []files.DirectoryEntry
@@ -564,7 +567,10 @@ func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
 	defer s.LockUnlock()()
 
 	if _, exists := s.files[filePath]; !exists {
-		return Response{StatusCode: 404}
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": "file does not exist"},
+		}
 	}
 
 	delete(s.files, filePath)
