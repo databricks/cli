@@ -78,13 +78,13 @@ func newTestServer(t *testing.T) *httptest.Server {
 	}))
 }
 
-func TestPipelineRejectsConflictingTargetFlagsAtPreflight(t *testing.T) {
+func TestPipelineRejectsConflictingComputeFlagsAtPreflight(t *testing.T) {
 	// Incompatible target flags are a usage error surfaced as E_USAGE at
 	// preflight, before any manager/writability/fetch work.
 	dir := writeProject(t)
 	p := &Pipeline{
 		Mode: ModeDefault, Check: true, ProjectDir: dir, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Cluster: "abc", Serverless: "v4"},
+		Flags:   ComputeFlags{Cluster: "abc", Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -107,7 +107,7 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, Check: true, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: cacheDir,
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -137,7 +137,7 @@ func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {
 		return &Pipeline{
 			Mode: ModeDefault, Check: check, ProjectDir: dir,
 			ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-			Flags:   TargetFlags{Serverless: "v4"},
+			Flags:   ComputeFlags{Serverless: "v4"},
 			Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 		}
 	}
@@ -166,7 +166,7 @@ func TestPipelineCheckDoesNotProvision(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, Check: true, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: noProvisionPM{},
 	}
 	res, err := p.Run(t.Context())
@@ -191,7 +191,7 @@ func TestPipelineCheckWorksOnReadOnlyDir(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, Check: true, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -214,7 +214,7 @@ func TestPipelineProvisionsAndValidatesExisting(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -241,7 +241,7 @@ func TestPipelineGreenfieldCreatesNewPyproject(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -277,7 +277,7 @@ func TestPipelineGreenfieldFromDotDirRendersValidName(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -296,7 +296,7 @@ func TestPipelineExistingBacksUp(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -318,7 +318,7 @@ func TestPipelineReRunDoesNotRewriteUnchangedPyproject(t *testing.T) {
 		return &Pipeline{
 			Mode: ModeDefault, ProjectDir: dir,
 			ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-			Flags:   TargetFlags{Serverless: "v4"},
+			Flags:   ComputeFlags{Serverless: "v4"},
 			Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 		}
 	}
@@ -390,7 +390,7 @@ func TestPipelineManagerUnsupportedFailsAtPreflight(t *testing.T) {
 
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -406,7 +406,7 @@ func TestPipelineUvMissingFailsAtPreflight(t *testing.T) {
 
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: uvMissingPM{},
 	}
 	res, err := p.Run(t.Context())
@@ -456,7 +456,7 @@ func TestPipelineConstraintsOnlyOmitsDBConnect(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeConstraintsOnly, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -481,7 +481,7 @@ func TestPipelineNoTarget(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{},
+		Flags:   ComputeFlags{},
 		Compute: stubCompute{}, PM: fakePM{},
 	}
 	res, err := p.Run(t.Context())
@@ -528,7 +528,7 @@ dev = ["databricks-connect~=17.2.0"]
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -572,7 +572,7 @@ dev = ["databricks-connect~=16.0.0"]
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -599,7 +599,7 @@ func TestPipelineResultPopulatesResolved(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, Check: true, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -638,7 +638,7 @@ func TestPipelineValidateRejectsUnparseablePin(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 	}
 	res, err := p.Run(t.Context())
@@ -658,7 +658,7 @@ func TestPipelineValidateRejectsUnparseableInstalledVersion(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   TargetFlags{Serverless: "v4"},
+		Flags:   ComputeFlags{Serverless: "v4"},
 		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: ""},
 	}
 	res, err := p.Run(t.Context())

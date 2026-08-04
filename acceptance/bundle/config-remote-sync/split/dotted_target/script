@@ -1,0 +1,22 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve -t dev.eu; }
+trap cleanup EXIT
+$CLI bundle deploy -t dev.eu
+job_id="$(read_id.py -t dev.eu dotted_job)"
+
+title "Edit a field in the override block of a target whose name contains a dot"
+edit_resource.py jobs $job_id <<PYEDIT
+for task in r["tasks"]:
+    if task["task_key"] == "main":
+        task["timeout_seconds"] = 900
+PYEDIT
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev.eu --save
+title "The override block is updated"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

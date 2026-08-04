@@ -9,9 +9,7 @@
   "remote_state": {
     "branch_id": "dev-branch",
     "create_time": "[TIMESTAMP]",
-    "is_protected": false,
     "name": "[DEV_BRANCH_ID]",
-    "no_expiry": true,
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
     "status": {
       "branch_id": "dev-branch",
@@ -25,5 +23,19 @@
     },
     "uid": "[BRANCH_UID]",
     "update_time": "[TIMESTAMP]"
+  },
+  "changes": {
+    "is_protected": {
+      "action": "skip",
+      "reason": "empty",
+      "old": false,
+      "new": false
+    },
+    "no_expiry": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": true,
+      "new": true
+    }
   }
 }
