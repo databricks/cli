@@ -14,8 +14,7 @@ resources:
         - name: region
           default: us
       tasks:
-        # Serverless keeps the run to about a minute; a job cluster would take
-        # several.
+        # Serverless keeps the run to about a minute.
         - task_key: main
           spark_python_task:
             python_file: ./hello.py
@@ -26,10 +25,9 @@ resources:
           spec:
             environment_version: "2"
 
-    # Reads the run's outcome, so the tag it is created with shows whether the
-    # deploy waited for the run before creating resources that depend on it.
-    # Separate from my_job, which my_run already depends on: a reference back
-    # would cycle.
+    # Reads the run's outcome, so its tag shows the deploy waited for the run
+    # before creating what depends on it. Separate from my_job, which my_run
+    # already depends on, to avoid a cycle.
     downstream_job:
       name: test-downstream-job-$UNIQUE_NAME
       tags:
@@ -46,6 +44,6 @@ resources:
       job_id: ${resources.jobs.my_job.id}
       # Override one of the job's two parameters: a real GetRun reports the full
       # resolved set, including the region default, which ignore_remote_changes
-      # has to absorb to avoid perpetual drift.
+      # has to absorb.
       job_parameters:
         env: prod

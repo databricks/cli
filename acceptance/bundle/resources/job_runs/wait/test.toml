@@ -2,8 +2,7 @@
 # equivalent, so restrict the matrix to direct.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-# Runs the job for real, which invariant/configs/job_run.yml.tmpl no longer does
-# on cloud. Serverless needs Unity Catalog.
+# Runs the job for real on cloud. Serverless needs Unity Catalog.
 Cloud = true
 RequiresUnityCatalog = true
 
@@ -17,8 +16,8 @@ Ignore = [
     "hello.py",
 ]
 
-# The host and the workspace selector in the run URL differ per workspace, and the
-# URL form itself is covered by libs/workspaceurls; assert only that it is reported.
+# The host and the workspace selector in the run URL differ per workspace; the URL
+# form itself is covered by libs/workspaceurls.
 [[Repls]]
 Old = 'Run URL: .*'
 New = 'Run URL: [RUN_URL]'

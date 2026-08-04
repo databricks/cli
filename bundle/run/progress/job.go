@@ -21,9 +21,9 @@ type JobStateTracker struct {
 	prev *jobs.RunState
 }
 
-// Poll returns the event to report for this poll, or nil when the state has not
-// changed. first is true for the state the run is seen in initially, where
-// callers also report the run page URL.
+// Poll returns the event to report, or nil when the state has not changed. first
+// is true for the state the run is seen in initially, where callers also report
+// the run page URL.
 func (t *JobStateTracker) Poll(run *jobs.Run) (event *JobProgressEvent, first bool) {
 	if run.State == nil {
 		return nil, false
