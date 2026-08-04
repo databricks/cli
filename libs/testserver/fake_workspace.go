@@ -267,9 +267,8 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	}
 }
 
-// MapGetUC is MapGet for Unity Catalog securables, which report a missing
-// securable as "Volume 'main.s.v' does not exist." Callers surface that verbatim,
-// so the generic MapGet message is not a faithful substitute.
+// MapGetUC is MapGet for Unity Catalog securables. The CLI surfaces the API's
+// message verbatim, and UC words it as "Volume 'main.s.v' does not exist."
 func MapGetUC[T any](w *FakeWorkspace, collection map[string]T, key, securable string) Response {
 	defer w.LockUnlock()()
 
@@ -477,9 +476,8 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	// The real API collapses duplicate slashes, so look up the cleaned path.
 	cleaned := path.Clean(listPath)
 
-	// The real API 404s on a missing path; without this it looks like an empty
-	// directory. Repos are listable but tracked outside s.directories, so they
-	// have to be admitted here too.
+	// The real API 404s on a missing path rather than reporting an empty directory.
+	// Repos are listable but tracked outside s.directories, so admit them too.
 	_, isDir := s.directories[cleaned]
 	_, isRepo := s.repoIdByPath[cleaned]
 	if !isDir && !isRepo {
@@ -511,9 +509,8 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	}
 }
 
-// FsListDirectory implements GET /api/2.0/fs/directories/{path}. Anything that is
-// not a directory, including a path pointing at a file, is a 404, as in the HEAD
-// handler for the same route.
+// FsListDirectory implements GET /api/2.0/fs/directories/{path}. A path that is
+// not a directory, including one pointing at a file, is a 404, as it is for HEAD.
 func (s *FakeWorkspace) FsListDirectory(dirPath string) Response {
 	if !strings.HasPrefix(dirPath, "/") {
 		dirPath = "/" + dirPath

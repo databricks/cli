@@ -84,8 +84,8 @@ type TestConfig struct {
 	RecordRequests *bool
 
 	// If true, route the CLI through the recording proxy (libs/testproxy) rather
-	// than straight to the workspace or testserver. Cloud runs also take this
-	// topology whenever requests are recorded or logged.
+	// than straight to the testserver. Cloud runs take this topology anyway when
+	// requests are recorded or logged.
 	Proxy *bool
 
 	// List of request headers to include when recording requests.

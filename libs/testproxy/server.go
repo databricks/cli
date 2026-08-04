@@ -37,9 +37,8 @@ type ProxyServer struct {
 // For reference, see:
 // https://github.com/databricks/databricks-sdk-go/blob/79e4b3a6e9b0b7dcb1af9ad4025deb447b01d933/common/environment/environments.go#L57
 //
-// upstream selects what the proxy forwards to: an empty config resolves a real
-// workspace and its auth from the environment, an explicit host and token a
-// testserver.
+// An upstream with no fields set resolves a real workspace and its auth from the
+// environment; an explicit host and token point at a testserver instead.
 func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 	s := &ProxyServer{
 		t: t,
