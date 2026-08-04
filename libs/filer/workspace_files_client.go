@@ -239,6 +239,9 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	//        targets /foo.py: AUTO would store the new content as FILE at
 	//        /foo.py, but the workspace treats /foo.py as the source view of
 	//        the existing /foo NOTEBOOK and rejects the type change.
+	//        Unlike (a), this message comes from the legacy webapp tree path
+	//        (webapp/.../tree/TreeBackendHelper.scala), not from WCS, so the
+	//        WCS-only ErrorInfo work below does not cover it.
 	//
 	//    The server refuses the overwrite even though the caller asked for
 	//    it; from the caller's perspective the path is occupied, so we
@@ -254,10 +257,19 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 			if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == workspaceObjectTypeMismatchReason {
 				return fileAlreadyExistsError{absPath}
 			}
-			// Fallback for workspaces where the ErrorInfo change has not
-			// rolled out: as of 2026-06-12 aws-prod-ucws still returns these
-			// errors without details, so match the two observed messages.
-			// Remove once the rollout is confirmed everywhere.
+			// Fallback for errors that carry no ErrorInfo. Two reasons this
+			// is still needed, both verified against a live workspace on
+			// 2026-08-04:
+			//
+			//  - Rollout lag: universe #2019174 merged 2026-06-03 with its
+			//    SAFE flag defaulting to true, but workspaces on an older WCS
+			//    build still return WCS-worded collisions without details.
+			//    That half is temporary.
+			//
+			//  - Message (b) above is thrown by webapp, which #2019174 never
+			//    touched, so it has no ErrorInfo regardless of WCS rollout.
+			//    Once the lag clears this can narrow to "node type" alone,
+			//    but it cannot be dropped until webapp attaches details too.
 			if strings.Contains(aerr.Message, "type mismatch") || strings.Contains(aerr.Message, "node type") {
 				return fileAlreadyExistsError{absPath}
 			}
