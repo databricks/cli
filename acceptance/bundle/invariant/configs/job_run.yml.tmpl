@@ -6,13 +6,18 @@ resources:
     foo:
       name: test-job-$UNIQUE_NAME
       tasks:
-        # Deploying a job_run actually runs the job, so use a condition task,
-        # which needs no workspace files or compute.
+        # Deploying a job_run actually runs the job. A condition task needs no
+        # compute, but a run with no material task to execute is SKIPPED, which
+        # fails the wait. Serverless keeps this one to about a minute.
         - task_key: only_task
-          condition_task:
-            op: EQUAL_TO
-            left: "1"
-            right: "1"
+          spark_python_task:
+            python_file: ./job_run.py
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"
 
   job_runs:
     foo_run:
