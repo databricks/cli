@@ -1,0 +1,33 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev.eu/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Edit a field in the override block of a target whose name contains a dot
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.dotted_job
+  tasks[task_key='main'].timeout_seconds: replace
+
+
+
+=== The override block is updated
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -22,3 +22,3 @@
+           tasks:
+             - task_key: main
+-              timeout_seconds: 45
++              timeout_seconds: 900
+
+>>> [CLI] bundle destroy --auto-approve -t dev.eu
+The following resources will be deleted:
+  delete resources.jobs.dotted_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev.eu
+
+Deleting files...
+Destroy complete!

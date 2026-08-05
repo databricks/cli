@@ -1,0 +1,29 @@
+# Two AI Runtime tasks each with a local directory code_source_path. Each is
+# packaged into a content-addressed tarball written into the bundle
+# (.air_snapshots/, at the repo root) and uploaded by normal bundle file sync;
+# code_source_path/command_path are rewritten. Pip deps ride on the job's
+# environments[].spec.dependencies (no requirements.yaml is synthesized).
+
+title "deploy packages and uploads the local code sources\n"
+trace $CLI bundle deploy
+
+title "each task's tarball holds only synced files (both under the repo root .air_snapshots)\n"
+trace list_code_snapshot.py
+
+title "both code_source_paths point into the bundle .air_snapshots, command_paths rewritten, deps on environments spec\n"
+# --del-field raw_body drops the binary tarball upload payload (kept readable). Filters
+# use a leading // so Git Bash on Windows does not path-convert them. --keep is not
+# passed, so print_requests.py consumes out.requests.txt.
+trace print_requests.py --sort --del-field raw_body '//.air_snapshots/' '//jobs/create'
+
+title "re-planning unchanged code is a no-op (no changes)\n"
+trace $CLI bundle plan
+
+title "editing a file changes the snapshot hash (content-addressed name changes)\n"
+update_file.py src/train.py 'print("training")' 'print("training v2")'
+trace $CLI bundle deploy
+trace print_requests.py --sort --del-field raw_body '//.air_snapshots/'
+
+title "destroy removes the deployed bundle (including the synced snapshots)\n"
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt

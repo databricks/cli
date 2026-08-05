@@ -1,0 +1,1 @@
+direct: Recreating a `vector_search_indexes` resource no longer fails with "Index ... is currently pending deletion" when the backend has not yet released the index name. The create is now retried until the name becomes available.

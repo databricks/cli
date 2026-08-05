@@ -598,6 +598,15 @@ tasks:
       - task: test-update
       - task: test-update-aws
 
+  # Follows upstream HEAD, so its result changes over time: keep it out of
+  # `generate-check`, which requires byte-for-byte reproducible output.
+  bump-mlops-stacks:
+    desc: Bump the vendored mlops-stacks acceptance template to github.com/databricks/mlops-stacks HEAD
+    cmds:
+      - "./tools/bump_mlops_stacks.py"
+      # The bump rewrites a test input, so refresh that test's golden output.
+      - "go test ./acceptance -run '^TestAccept/bundle/deploy/mlops-stacks' -update -timeout=${LOCAL_TIMEOUT:-60m}"
+
   slowest:
     desc: Show 50 slowest tests from last run
     cmds:
@@ -650,7 +659,7 @@ tasks:
   # generic `test` target (the catch-all) instead.
 
   test-exp-aitools:
-    desc: Run aitools (top-level + experimental) unit and acceptance tests
+    desc: Run aitools (top-level + experimental) unit and acceptance tests.
     sources:
       - cmd/aitools/**
       - libs/aitools/**

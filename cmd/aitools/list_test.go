@@ -3,11 +3,15 @@ package aitools
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -110,9 +114,17 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 		Summary: map[string]scopeSummary{installer.ScopeGlobal: {Installed: 0, Total: 0}},
 		Agents: []agentEntry{
 			{
-				Name:      "claude-code",
-				Managed:   true,
-				Installed: map[string]pluginInfo{installer.ScopeGlobal: {Version: "0.2.6"}},
+				Name:        "claude-code",
+				DisplayName: "Claude Code",
+				Managed:     true,
+				Detected:    true,
+				Installed:   map[string]installInfo{installer.ScopeGlobal: {Delivery: "plugin", Version: "0.2.6"}},
+			},
+			{
+				Name:        "cursor",
+				DisplayName: "Cursor",
+				Managed:     false,
+				Installed:   map[string]installInfo{},
 			},
 		},
 	}
@@ -128,16 +140,28 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 	assert.Contains(t, raw, "summary")
 
 	agentsRaw := raw["agents"].([]any)
-	require.Len(t, agentsRaw, 1)
+	require.Len(t, agentsRaw, 2)
 	first := agentsRaw[0].(map[string]any)
 	assert.Equal(t, "claude-code", first["name"])
+	assert.Equal(t, "Claude Code", first["display_name"])
 	assert.Equal(t, true, first["managed"])
+	assert.Equal(t, true, first["detected"])
 	installed := first["installed"].(map[string]any)
 	global := installed["global"].(map[string]any)
 	assert.Equal(t, "0.2.6", global["version"])
+	assert.Equal(t, "plugin", global["delivery"])
+
+	// A not-installed agent emits "installed": {} rather than omitting the key,
+	// matching the skills shape.
+	second := agentsRaw[1].(map[string]any)
+	assert.Contains(t, second, "installed")
+	assert.Empty(t, second["installed"])
 }
 
 func TestBuildAgentEntries(t *testing.T) {
+	// Isolate HOME so the skills-only on-disk detection doesn't pick up the
+	// developer's real agent skills dirs.
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 	globalState := &installer.InstallState{
 		Plugins: map[string]installer.PluginRecord{
 			"claude-code": {Plugin: "databricks", Version: "0.2.6"},
@@ -145,7 +169,7 @@ func TestBuildAgentEntries(t *testing.T) {
 		},
 	}
 
-	entries := buildAgentEntries(map[string]*installer.InstallState{
+	entries := buildAgentEntries(ctx, map[string]*installer.InstallState{
 		installer.ScopeGlobal: globalState,
 	})
 	byName := map[string]agentEntry{}
@@ -155,6 +179,7 @@ func TestBuildAgentEntries(t *testing.T) {
 
 	require.Contains(t, byName, "claude-code")
 	assert.True(t, byName["claude-code"].Managed)
+	assert.Equal(t, "Claude Code", byName["claude-code"].DisplayName)
 	assert.Equal(t, "0.2.6", byName["claude-code"].Installed[installer.ScopeGlobal].Version)
 	assert.Equal(t, "databricks plugin · v0.2.6 · up to date", agentStatusLabel(byName["claude-code"], "0.2.6"))
 
@@ -163,8 +188,126 @@ func TestBuildAgentEntries(t *testing.T) {
 	assert.Equal(t, "0.2.5", byName["codex"].Installed[installer.ScopeGlobal].Version)
 	assert.Equal(t, "databricks plugin · v0.2.5 · update available", agentStatusLabel(byName["codex"], "0.2.6"))
 
-	// Cursor has no plugin, so it never appears as a plugin agent entry.
-	assert.NotContains(t, byName, "cursor")
+	// The JSON output carries an entry for every registry agent, including
+	// skills-only agents like Cursor and managed agents with no recorded install.
+	require.Contains(t, byName, "cursor")
+	assert.False(t, byName["cursor"].Managed)
+	assert.Empty(t, byName["cursor"].Installed)
+
+	require.Contains(t, byName, "copilot")
+	assert.True(t, byName["copilot"].Managed)
+	assert.Empty(t, byName["copilot"].Installed)
+}
+
+func TestBuildAgentEntriesReportsSkillsOnlyAgentFromDisk(t *testing.T) {
+	// Skills-only agents (Plugin == nil) never get a plugin record; their skills
+	// are symlinked into the agent's own skills dir. The install must still be
+	// reported from disk, versioned by the scope's recorded release.
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+
+	// On Windows, openCodeConfigDir checks APPDATA first; on other platforms,
+	// it checks XDG_CONFIG_HOME. Override the platform-specific setting to route
+	// config discovery to a temp directory so the test controls where the function
+	// looks for skills, regardless of system defaults.
+	configDir := filepath.Join(home, ".config")
+	if runtime.GOOS == "windows" {
+		ctx = env.Set(ctx, "APPDATA", configDir)
+	} else {
+		ctx = env.Set(ctx, "XDG_CONFIG_HOME", configDir)
+	}
+
+	// OpenCode is skills-only; its global skills dir is configDir/opencode/skills.
+	// The CLI installs skills there as symlinks to the canonical store, so build
+	// the symlink to exercise the real on-disk shape.
+	canonical := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-jobs")
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	skillsDir := filepath.Join(configDir, "opencode", "skills")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	require.NoError(t, os.Symlink(canonical, filepath.Join(skillsDir, "databricks-jobs")))
+
+	globalState := &installer.InstallState{Release: "0.2.6"}
+	entries := buildAgentEntries(ctx, map[string]*installer.InstallState{
+		installer.ScopeGlobal: globalState,
+	})
+	byName := map[string]agentEntry{}
+	for _, e := range entries {
+		byName[e.Name] = e
+	}
+
+	require.Contains(t, byName, "opencode")
+	opencode := byName["opencode"]
+	assert.False(t, opencode.Managed)
+	assert.Equal(t, "0.2.6", opencode.Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "skills", opencode.Installed[installer.ScopeGlobal].Delivery)
+
+	// A skills-only agent with nothing on disk stays empty.
+	require.Contains(t, byName, "cursor")
+	assert.Empty(t, byName["cursor"].Installed)
+}
+
+func TestBuildAgentEntriesReportsSkillsOnlyInstallForPluginAgent(t *testing.T) {
+	// `install --skills-only` gives a plugin-capable agent skills on disk and no
+	// plugin record, so the on-disk fallback must fire for it too rather than
+	// reporting it as not installed.
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+
+	canonical := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-jobs")
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	skillsDir := filepath.Join(home, ".claude", "skills")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	require.NoError(t, os.Symlink(canonical, filepath.Join(skillsDir, "databricks-jobs")))
+
+	entries := buildAgentEntries(ctx, map[string]*installer.InstallState{
+		installer.ScopeGlobal: {Release: "0.2.6"},
+	})
+	byName := map[string]agentEntry{}
+	for _, e := range entries {
+		byName[e.Name] = e
+	}
+
+	require.Contains(t, byName, "claude-code")
+	cc := byName["claude-code"]
+	assert.True(t, cc.Managed)
+	assert.Equal(t, "skills", cc.Installed[installer.ScopeGlobal].Delivery)
+	assert.Equal(t, "0.2.6", cc.Installed[installer.ScopeGlobal].Version)
+
+	// A skills install is not a plugin install, so the text view's "Plugin
+	// installs:" section must not claim one.
+	assert.False(t, cc.hasPluginInstall())
+}
+
+func TestBuildAgentEntriesPrefersPluginRecordOverSkillsOnDisk(t *testing.T) {
+	// An agent can have both a plugin record and leftover skills on disk (e.g. a
+	// --skills-only install later replaced by the plugin). The recorded plugin is
+	// authoritative for the scope.
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+
+	canonical := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-jobs")
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	skillsDir := filepath.Join(home, ".claude", "skills")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	require.NoError(t, os.Symlink(canonical, filepath.Join(skillsDir, "databricks-jobs")))
+
+	entries := buildAgentEntries(ctx, map[string]*installer.InstallState{
+		installer.ScopeGlobal: {
+			Release: "0.2.6",
+			Plugins: map[string]installer.PluginRecord{
+				"claude-code": {Plugin: "databricks", Version: "0.2.5", Scope: "user"},
+			},
+		},
+	})
+	byName := map[string]agentEntry{}
+	for _, e := range entries {
+		byName[e.Name] = e
+	}
+
+	cc := byName["claude-code"]
+	assert.Equal(t, "plugin", cc.Installed[installer.ScopeGlobal].Delivery)
+	assert.Equal(t, "0.2.5", cc.Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "user", cc.Installed[installer.ScopeGlobal].NativeScope)
 }
 
 func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {
@@ -177,7 +320,7 @@ func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {
 		"claude-code": {Plugin: "databricks", Version: "0.2.5"},
 	}}
 
-	entries := buildAgentEntries(map[string]*installer.InstallState{
+	entries := buildAgentEntries(t.Context(), map[string]*installer.InstallState{
 		installer.ScopeGlobal:  globalState,
 		installer.ScopeProject: projectState,
 	})
@@ -385,9 +528,16 @@ func TestRenderListTextShowsPluginInstallsBeforeRawSkills(t *testing.T) {
 		},
 		Agents: []agentEntry{
 			{
-				Name:      "claude-code",
-				Managed:   true,
-				Installed: map[string]pluginInfo{installer.ScopeGlobal: {Version: "0.2.6", NativeScope: "user"}},
+				Name:        "claude-code",
+				DisplayName: "Claude Code",
+				Managed:     true,
+				Detected:    true,
+				Installed:   map[string]installInfo{installer.ScopeGlobal: {Delivery: "plugin", Version: "0.2.6", NativeScope: "user"}},
+			},
+			{
+				Name:        "cursor",
+				DisplayName: "Cursor",
+				Managed:     false,
 			},
 		},
 	}
@@ -402,6 +552,9 @@ func TestRenderListTextShowsPluginInstallsBeforeRawSkills(t *testing.T) {
 	assert.Less(t, pluginIdx, rawIdx)
 	assert.Contains(t, got, "Claude Code")
 	assert.Contains(t, got, "databricks plugin · v0.2.6 · up to date")
+	// Skills-only agents (and any without a recorded install) are JSON-only and
+	// must not appear in the text "Plugin installs:" section.
+	assert.NotContains(t, got, "Cursor")
 	assert.Contains(t, got, "0/1 raw skill directories installed (global)")
 }
 
