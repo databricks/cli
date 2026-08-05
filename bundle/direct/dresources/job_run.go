@@ -259,17 +259,23 @@ func lastFailedAttempts(tasks []jobs.RunTask) []jobs.RunTask {
 // taskFailed reports whether a task is a cause of the run's failure. A task left
 // SKIPPED or UPSTREAM_FAILED never ran, so it has no error to report.
 func taskFailed(task jobs.RunTask) bool {
-	// State is deprecated in favour of Status, so it may be absent.
-	if task.State == nil {
+	if task.State != nil {
+		return task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
+			task.State.ResultState == jobs.RunResultStateFailed ||
+			task.State.ResultState == jobs.RunResultStateTimedout
+	}
+	// State is deprecated in favour of Status, so a workspace may stop setting it.
+	if task.Status == nil || task.Status.TerminationDetails == nil {
 		return false
 	}
-	return task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
-		task.State.ResultState == jobs.RunResultStateFailed ||
-		task.State.ResultState == jobs.RunResultStateTimedout
+	details := task.Status.TerminationDetails
+	// SKIPPED is also the code for a task an upstream failure skipped.
+	return details.Type != jobs.TerminationTypeTypeSuccess &&
+		details.Code != jobs.TerminationCodeCodeSkipped
 }
 
 // taskError returns the message the task reported, from the same place `bundle
-// run` reads it. Only reached for a task taskFailed accepted, so State is set.
+// run` reads it.
 func (r *ResourceJobRun) taskError(ctx context.Context, task jobs.RunTask) string {
 	var reported string
 	output, err := r.client.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{RunId: task.RunId})
@@ -278,9 +284,17 @@ func (r *ResourceJobRun) taskError(ctx context.Context, task jobs.RunTask) strin
 	} else {
 		reported = output.Error
 	}
-	// Not every task type reports an error through GetRunOutput, so fall back to
-	// what the run itself says about the task.
-	return cmp.Or(reported, task.State.StateMessage, string(task.State.ResultState), string(task.State.LifeCycleState))
+	// Not every task type reports an error through GetRunOutput.
+	return cmp.Or(reported, taskMessage(task))
+}
+
+// taskMessage reads the message off whichever field taskFailed accepted the task
+// on, so the field it reads is always set.
+func taskMessage(task jobs.RunTask) string {
+	if task.State != nil {
+		return task.State.StateMessage
+	}
+	return task.Status.TerminationDetails.Message
 }
 
 func runPageLine(rawURL string) string {
