@@ -42,10 +42,12 @@ func TestBuildSubmitPayload(t *testing.T) {
 		MLflowExperimentDirectory: new("/Workspace/Users/me/exp"),
 	}
 
-	p := buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{}, nil)
+	p := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, nil)
 
 	assert.Equal(t, "exp", p.RunName)
 	assert.Equal(t, 1800, p.TimeoutSeconds)
+	// No policy configured: the field stays empty and is omitted from the wire form.
+	assert.Empty(t, p.BudgetPolicyId)
 	require.Len(t, p.Environments, 1)
 	assert.Equal(t, aiRuntimeEnvironmentKey, p.Environments[0].EnvironmentKey)
 	require.NotNil(t, p.Environments[0].Spec)
@@ -77,7 +79,7 @@ func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
 		Command:        new("x"),
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}, nil).Tasks[0]
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4", "", snapshotResult{}, nil).Tasks[0]
 	assert.Equal(t, defaultMaxRetries, task.MaxRetries)
 	assert.True(t, task.RetryOnTimeout)
 }
@@ -92,7 +94,7 @@ func TestBuildSubmitPayloadNoRetries(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 		MaxRetries:     new(0),
 	}
-	task := buildSubmitPayload(cfg, "/d/command.sh", "4", snapshotResult{}, nil).Tasks[0]
+	task := buildSubmitPayload(cfg, "/d/command.sh", "4", "", snapshotResult{}, nil).Tasks[0]
 	assert.Equal(t, 0, task.MaxRetries)
 	assert.False(t, task.RetryOnTimeout)
 
@@ -113,13 +115,13 @@ func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
 	}
 
 	deps := []string{"torch==2.3.0", "--extra-index-url https://internal/pypi", "numpy"}
-	spec := buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{}, deps).Environments[0].Spec
+	spec := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, deps).Environments[0].Spec
 	assert.Equal(t, deps, spec.Dependencies)
 	assert.Equal(t, "5", spec.EnvironmentVersion)
 
 	// The SDK marshaler drops empty/nil slices, so no "dependencies" key is emitted.
 	for _, empty := range [][]string{{}, nil} {
-		spec = buildSubmitPayload(cfg, "/d/command.sh", "5", snapshotResult{}, empty).Environments[0].Spec
+		spec = buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, empty).Environments[0].Spec
 		b, err := json.Marshal(spec)
 		require.NoError(t, err)
 		assert.NotContains(t, string(b), "dependencies")
@@ -557,16 +559,36 @@ code_source:
 }
 
 func TestSubmitWorkloadGuards(t *testing.T) {
-	w := newFakeWorkspaceClient(t)
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
 	base, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	t.Run("usage_policy_name rejected", func(t *testing.T) {
+	t.Run("unresolvable usage_policy_name fails before upload", func(t *testing.T) {
+		// An empty policy list makes the name unresolvable. Record every path the
+		// server sees so the "fails before any upload" ordering is asserted, not just
+		// asserted-by-comment: no import/mkdirs request may be made.
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+		var paths []string
+		server.Handle("GET", "/api/2.0/serverless-policies", func(req testserver.Request) any {
+			paths = append(paths, req.URL.Path)
+			return usagePoliciesResponse{}
+		})
+		server.Handle("POST", "/api/2.0/workspace/{path...}", func(req testserver.Request) any {
+			paths = append(paths, req.URL.Path)
+			return testserver.Response{StatusCode: 200}
+		})
+		testserver.AddDefaultHandlers(server)
+		pw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+		require.NoError(t, err)
+
 		cfg := *base
-		cfg.UsagePolicyName = new("p")
-		_, _, err := submitWorkload(t.Context(), w, &cfg, cfgPath, "")
-		require.ErrorContains(t, err, "usage_policy_name is not yet supported")
+		cfg.UsagePolicyName = new("nope")
+		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "")
+		require.ErrorContains(t, err, `no usage policy named "nope"`)
+		for _, p := range paths {
+			assert.NotContains(t, p, "/workspace/", "no workspace write may precede policy resolution")
+		}
 	})
 
 	t.Run("bad requirements file fails before any upload", func(t *testing.T) {
@@ -586,5 +608,50 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 		_, _, err = submitWorkload(t.Context(), tw, &cfg, cfgPath, "")
 		require.ErrorContains(t, err, "failed to read requirements file")
 		assert.False(t, uploaded, "no artifacts should be uploaded when dependency resolution fails")
+	})
+}
+
+// The resolved policy id must reach the submit payload, by literal id and by name.
+func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
+	const policyID = "12345678-90ab-cdef-1234-567890abcdef"
+
+	setup := func(t *testing.T) (*databricks.WorkspaceClient, *jobs.SubmitRun) {
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+
+		got := &jobs.SubmitRun{}
+		server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+			require.NoError(t, json.Unmarshal(req.Body, got))
+			return jobs.SubmitRunResponse{RunId: 1}
+		})
+		server.Handle("GET", "/api/2.0/serverless-policies", func(req testserver.Request) any {
+			return usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: policyID, PolicyName: "team-a"}}}
+		})
+		testserver.AddDefaultHandlers(server)
+		w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+		require.NoError(t, err)
+		return w, got
+	}
+
+	t.Run("literal id", func(t *testing.T) {
+		w, got := setup(t)
+		cfgPath := writeConfigFile(t, "run.yaml", minimalConfig+"usage_policy_id: "+policyID+"\n")
+		cfg, err := loadRunConfig(cfgPath)
+		require.NoError(t, err)
+
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem")
+		require.NoError(t, err)
+		assert.Equal(t, policyID, got.BudgetPolicyId)
+	})
+
+	t.Run("resolved from name", func(t *testing.T) {
+		w, got := setup(t)
+		cfgPath := writeConfigFile(t, "run.yaml", minimalConfig+"usage_policy_name: team-a\n")
+		cfg, err := loadRunConfig(cfgPath)
+		require.NoError(t, err)
+
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem")
+		require.NoError(t, err)
+		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})
 }

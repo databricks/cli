@@ -2,7 +2,6 @@ package aircmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -61,6 +60,7 @@ func environmentDependencies(cfg *runConfig, configPath string) (deps []string, 
 
 // buildSubmitPayload assembles the runs/submit payload. commandPath is the
 // workspace path of the uploaded command.sh; dlImage is the runtime channel;
+// usagePolicyID is the already-resolved policy id ("" when the run has none);
 // deps is the user's declared dependencies (nil when none are declared).
 //
 // max_retries is always sent (including 0) so the user's YAML value is honored:
@@ -69,7 +69,7 @@ func environmentDependencies(cfg *runConfig, configPath string) (deps []string, 
 // omitempty so the wire form matches the Python CLI (which never emits a bare
 // "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
 // workload.
-func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapshotResult, deps []string) jobs.SubmitRun {
+func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID string, snap snapshotResult, deps []string) jobs.SubmitRun {
 	task := jobs.AiRuntimeTask{
 		Experiment: cfg.ExperimentName,
 		Deployments: []jobs.DeploymentSpec{{
@@ -111,7 +111,10 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapsh
 	}
 
 	return jobs.SubmitRun{
-		RunName:        cfg.ExperimentName,
+		RunName: cfg.ExperimentName,
+		// budget_policy_id matches what the Python CLI and `ssh connect` send;
+		// usage_policy_id is the newer alias for the same thing on SubmitRun.
+		BudgetPolicyId: usagePolicyID,
 		TimeoutSeconds: cfg.timeoutSeconds(),
 		Tasks:          []jobs.SubmitTask{st},
 		Environments: []jobs.JobEnvironment{{
@@ -142,16 +145,26 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
 // returns the new run_id and its dashboard URL.
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string) (int64, string, error) {
-	// Resolving usage_policy_name to a budget policy id is not ported yet; reject
-	// rather than silently drop.
-	if cfg.UsagePolicyName != nil {
-		return 0, "", errors.New("usage_policy_name is not yet supported")
-	}
-
-	// Resolve the idempotency token first so a bad key fails before any upload.
+	// Resolve the idempotency token first so a bad key fails before any upload,
+	// and before the policy lookup below spends a round trip on it.
 	token, err := submitToken(idempotencyKey, cfg)
 	if err != nil {
 		return 0, "", err
+	}
+
+	// Resolve the usage policy to its id next, so a bad name fails fast with a
+	// clear (caller-fixable) message before we upload any artifacts. Validation
+	// guarantees name and id are mutually exclusive: a literal id is used as-is, a
+	// name is resolved against the workspace.
+	usagePolicyID := ""
+	if cfg.UsagePolicyID != nil {
+		usagePolicyID = strings.TrimSpace(*cfg.UsagePolicyID)
+	}
+	if cfg.UsagePolicyName != nil {
+		usagePolicyID, err = resolveUsagePolicyIDByName(ctx, w, *cfg.UsagePolicyName)
+		if err != nil {
+			return 0, "", err
+		}
 	}
 
 	// Resolve dependencies before any upload too, so a bad requirements file fails
@@ -209,7 +222,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if !ok {
 		runtimeVersion = fileVersion
 	}
-	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), snap, deps)
+	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
 
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
