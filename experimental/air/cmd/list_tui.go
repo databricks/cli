@@ -25,7 +25,7 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int) error {
 	// "just print these N"). Everything else — piped, NO_COLOR, --limit — prints
 	// once.
 	interactive := color &&
-		cmdio.IsPromptSupported(ctx) &&
+		cmdio.IsPagerSupported(ctx) &&
 		!cmd.Flags().Changed("limit")
 
 	if interactive {
