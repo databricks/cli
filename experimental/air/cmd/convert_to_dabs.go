@@ -145,10 +145,8 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 	if err != nil {
 		return nil, nil, err
 	}
-	// Drop requirements.yaml: the runtime installs pip deps from the job's
-	// environments[] spec (which convert populates), so a sidecar would be redundant.
 	artifacts = slices.DeleteFunc(artifacts, func(it uploadItem) bool {
-		return it.name == requirementsName
+		return it.name == requirementsName || it.name == trainingConfigName
 	})
 
 	root := buildBundleValue(ctx, cfg, configPath, codeSourcePath)

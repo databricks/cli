@@ -128,11 +128,13 @@ environment:
 	require.Len(t, deps, 2)
 	assert.Equal(t, "numpy", deps[0].MustString())
 
-	// command.sh is always an artifact. requirements.yaml is NOT emitted: the
-	// deploy-time aicode.SynthesizeRequirements mutator regenerates it from the
-	// environments[] spec (asserted above), so convert must not also write it.
+	// command.sh is always an artifact. Two sidecars the run path uploads are not
+	// emitted: requirements.yaml (deps ride on the environments[] spec asserted
+	// above) and training_config.yaml (a verbatim copy of the input YAML, which is
+	// already synced into the bundle and referenced by nothing).
 	assert.Contains(t, itemNames(artifacts), commandScriptName)
 	assert.NotContains(t, itemNames(artifacts), requirementsName)
+	assert.NotContains(t, itemNames(artifacts), trainingConfigName)
 }
 
 // Optional fields are omitted rather than emitted empty: no code_source means no
