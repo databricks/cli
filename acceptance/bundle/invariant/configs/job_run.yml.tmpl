@@ -6,9 +6,8 @@ resources:
     foo:
       name: test-job-$UNIQUE_NAME
       tasks:
-        # Deploying a job_run actually runs the job. A condition task needs no
-        # compute, but a run with no material task to execute is SKIPPED, which
-        # fails the wait. Serverless keeps this one to about a minute.
+        # Deploying a job_run actually runs the job, and the wait needs a task a
+        # workspace will execute. Serverless keeps this one to about a minute.
         - task_key: only_task
           spark_python_task:
             python_file: ./job_run.py
