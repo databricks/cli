@@ -1,0 +1,26 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# max_retries is defined in BOTH blocks. An edit only has to reach the definition that
+# wins the merge, but a removal has to reach every copy: deleting only the winner lets
+# the shadowed copy take effect, so the next deploy restores the value the user just
+# removed in the UI.
+
+resources:
+  jobs:
+    shared_field_job:
+      tasks:
+        - task_key: shared
+          max_retries: 1
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        shared_field_job:
+          tasks:
+            - task_key: shared
+              max_retries: 5
