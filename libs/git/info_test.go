@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"testing"
 
@@ -51,7 +52,8 @@ func mockWorkspaceMount(t *testing.T) string {
 	t.Helper()
 	mount := filepath.Join(t.TempDir(), "Workspace")
 	original := workspaceMountPrefix
-	workspaceMountPrefix = mount + string(os.PathSeparator)
+	// Slash form, matching the real prefix and what the path helpers compare against.
+	workspaceMountPrefix = filepath.ToSlash(mount) + "/"
 	t.Cleanup(func() { workspaceMountPrefix = original })
 	return mount
 }
@@ -253,6 +255,24 @@ func TestHasDotGit(t *testing.T) {
 	assert.False(t, hasDotGit(ctx, filepath.Join(mount, "Users", "test@databricks.com", "no-git-here")))
 }
 
+// Workspace paths are always slash-separated, but on Windows the bundle root reaches
+// these helpers with backslashes, so every comparison must normalize first. Without it
+// the mount prefix never matches and the walk escapes the owner root. Windows-only:
+// filepath.ToSlash is a no-op elsewhere, so there is nothing to convert.
+func TestPathHelpersNormalizeSeparators(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("path separator normalization only differs on Windows")
+	}
+
+	original := workspaceMountPrefix
+	workspaceMountPrefix = "C:/tmp/Workspace/"
+	t.Cleanup(func() { workspaceMountPrefix = original })
+
+	backslashed := `C:\tmp\Workspace\Users\me@databricks.com\repo\bundle`
+	assert.True(t, isWorkspaceMountPath(backslashed))
+	assert.Equal(t, "C:/tmp/Workspace/Users/me@databricks.com", ownerRoot(backslashed))
+}
+
 func TestOwnerRoot(t *testing.T) {
 	tests := []struct {
 		path string
@@ -265,12 +285,12 @@ func TestOwnerRoot(t *testing.T) {
 		{"/Workspace/Shared/repo/bundle", "/Workspace/Shared"},
 		{"/Workspace/Users", "/Workspace/Users"},
 		// Not under the mount at all: nothing above the mount is ever searched.
-		{"/tmp/local/bundle", "/Workspace/"},
+		{"/tmp/local/bundle", "/Workspace"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			assert.Equal(t, filepath.FromSlash(tt.want), ownerRoot(tt.path))
+			assert.Equal(t, tt.want, ownerRoot(tt.path))
 		})
 	}
 }

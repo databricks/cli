@@ -55,7 +55,7 @@ type response struct {
 func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
 	var info RepositoryInfo
 	var err error
-	if strings.HasPrefix(path, workspaceMountPrefix) && dbr.RunsOnRuntime(ctx) && !hasDotGit(ctx, path) {
+	if isWorkspaceMountPath(path) && dbr.RunsOnRuntime(ctx) && !hasDotGit(ctx, path) {
 		info, err = fetchRepositoryInfoAPI(ctx, path, w)
 	} else {
 		info, err = fetchRepositoryInfoDotGit(ctx, path)
@@ -149,13 +149,14 @@ func hasDotGit(ctx context.Context, path string) bool {
 
 // findDotGitBelow returns the directory holding .git at or below dir, stopping before
 // ceiling, or "" if there is none. A non-nil error means the lookup itself failed.
+// ceiling is compared in slash form, so it matches regardless of separator.
 func findDotGitBelow(dir, ceiling string) (string, error) {
 	dir, err := filepath.Abs(dir)
 	if err != nil {
 		return "", err
 	}
 
-	for dir != ceiling {
+	for filepath.ToSlash(dir) != ceiling {
 		_, err := os.Stat(filepath.Join(dir, GitDirectoryName))
 		if err == nil {
 			return dir, nil
@@ -173,13 +174,19 @@ func findDotGitBelow(dir, ceiling string) (string, error) {
 	return "", nil
 }
 
+// isWorkspaceMountPath reports whether path lives on the workspace mount. Compared in
+// slash form so a Windows-style path is recognised too.
+func isWorkspaceMountPath(path string) bool {
+	return strings.HasPrefix(filepath.ToSlash(path), workspaceMountPrefix)
+}
+
 // ownerRoot returns the workspace directory that owns path's Git folders, e.g.
 // /Workspace/Users/me@databricks.com or /Workspace/Shared. Git folders are created
-// inside it, never at it.
+// inside it, never at it. The result is in slash form, like every workspace path.
 func ownerRoot(path string) string {
 	rest, ok := strings.CutPrefix(filepath.ToSlash(path), workspaceMountPrefix)
 	if !ok {
-		return workspaceMountPrefix
+		return strings.TrimSuffix(workspaceMountPrefix, "/")
 	}
 
 	// Users and Repos are keyed by principal, so the owner root includes it.
@@ -193,11 +200,11 @@ func ownerRoot(path string) string {
 	if len(segments) > depth {
 		segments = segments[:depth]
 	}
-	return filepath.FromSlash(workspaceMountPrefix + strings.Join(segments, "/"))
+	return workspaceMountPrefix + strings.Join(segments, "/")
 }
 
 func ensureWorkspacePrefix(p string) string {
-	if !strings.HasPrefix(p, workspaceMountPrefix) {
+	if !isWorkspaceMountPath(p) {
 		return path.Join("/Workspace", p)
 	}
 	return p
