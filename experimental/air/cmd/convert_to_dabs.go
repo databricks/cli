@@ -1,12 +1,15 @@
 package aircmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -354,10 +357,50 @@ func bundleEnvironmentDeps(ctx context.Context, cfg *runConfig, configPath strin
 }
 
 // bundleResourceKey is the job resource key for an experiment name: the name
-// itself. A name that YAML would type as a non-string scalar (a numeric "12345",
-// or "true"/"null") is emitted quoted by yamlsaver, so it stays a valid string key.
+// itself. quoteJobKey quotes it in the emitted YAML when it would otherwise load
+// as a non-string scalar.
 func bundleResourceKey(name string) string {
 	return name
+}
+
+// quoteJobKey rewrites the emitted job resource key as a quoted YAML key when the
+// name would otherwise load as a non-string scalar. yamlsaver emits map keys
+// unquoted, and the bundle loader rejects a key that types as something other than
+// a string ("12345" -> !!int, "true" -> !!bool) with "invalid key tag". Only the
+// job key needs this: every other key convert emits is a fixed schema field name.
+func quoteJobKey(bundlePath, key string) error {
+	if !yamlKeyNeedsQuoting(key) {
+		return nil
+	}
+	data, err := os.ReadFile(bundlePath)
+	if err != nil {
+		return err
+	}
+	// The key is emitted by buildBundleValue at a known depth under resources.jobs,
+	// so the indented "<key>:" line is unambiguous.
+	old := []byte("\n    " + key + ":\n")
+	updated := bytes.Replace(data, old, []byte("\n    \""+key+"\":\n"), 1)
+	if bytes.Equal(data, updated) {
+		return fmt.Errorf("could not quote job key %q in %s", key, bundlePath)
+	}
+	return os.WriteFile(bundlePath, updated, 0o600)
+}
+
+// yamlKeyNeedsQuoting reports whether an unquoted YAML key would load as a
+// non-string scalar. experiment_name allows only [alphanumeric, -, _], so the
+// cases are numbers and the bool/null words.
+func yamlKeyNeedsQuoting(key string) bool {
+	switch strings.ToLower(key) {
+	case "true", "false", "null", "yes", "no", "on", "off", "~":
+		return true
+	}
+	if _, err := strconv.ParseFloat(key, 64); err == nil {
+		return true
+	}
+	if _, err := strconv.ParseInt(key, 0, 64); err == nil {
+		return true
+	}
+	return false
 }
 
 // buildPermissionsValue maps run-config permissions to DABs job permissions
@@ -423,6 +466,9 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 	// SaveAsYAML's force arg is passed true unconditionally: the collision check
 	// above already decided whether overwriting is allowed.
 	if err := yamlsaver.NewSaver().SaveAsYAML(root, bundlePath, true); err != nil {
+		return nil, err
+	}
+	if err := quoteJobKey(bundlePath, bundleResourceKey(cfg.ExperimentName)); err != nil {
 		return nil, err
 	}
 	written := []string{"databricks.yml"}
