@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/run/progress"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
@@ -168,10 +167,13 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 		return nil, err
 	}
 
-	// A run can take hours, so report progress like `bundle run` does. pageURL
+	// A run can take hours, so report the run page as soon as it is known. pageURL
 	// outlives the poll so an abandoned wait can still link the run.
-	var tracker progress.JobStateTracker
 	var pageURL string
+	// Every state the run passes through is logged, but only its outcome is
+	// reported: how many states a run passes through varies with how long its
+	// compute takes to start, and a deploy's output has to stay reproducible.
+	var logged jobs.RunState
 	// Polled here rather than through the SDK waiter, which halts with an error of
 	// its own on the INTERNAL_ERROR a run whose task failed reports, hiding the
 	// task that failed.
@@ -182,8 +184,14 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 		if err != nil {
 			return nil, retries.Halt(err)
 		}
-		pageURL = cmp.Or(pageURL, run.RunPageUrl)
-		logRunProgress(ctx, run, &tracker)
+		if pageURL == "" && run.RunPageUrl != "" {
+			pageURL = run.RunPageUrl
+			reportRunLine(ctx, runID, "Run URL: "+workspaceurls.ModernizeJobRunPageURL(pageURL))
+		}
+		if run.State.LifeCycleState != logged.LifeCycleState || run.State.ResultState != logged.ResultState {
+			logged = *run.State
+			log.Info(ctx, strings.TrimSpace(fmt.Sprintf("job run %d: %s %s", runID, logged.LifeCycleState, logged.ResultState)))
+		}
 		if !runIsTerminal(run.State.LifeCycleState) {
 			return nil, retries.Continues(run.State.StateMessage)
 		}
@@ -199,8 +207,10 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 		return nil, fmt.Errorf("%w%s", err, runPageLine(pageURL))
 	}
 	if run.State.ResultState != jobs.RunResultStateSuccess {
+		// The error names the outcome, so it is not reported twice.
 		return nil, r.runFailedError(ctx, run)
 	}
+	reportRunLine(ctx, runID, string(run.State.ResultState))
 	return makeJobRunRemote(run), nil
 }
 
@@ -282,26 +292,6 @@ func runPageLine(rawURL string) string {
 		return ""
 	}
 	return "\nrun page: " + workspaceurls.ModernizeJobRunPageURL(rawURL)
-}
-
-// logRunProgress logs every state change like `bundle run` does, but reports only
-// the run page URL and the final state to the user: how many states a run passes
-// through varies with how long its compute takes to start, and a deploy's output
-// has to stay reproducible.
-func logRunProgress(ctx context.Context, run *jobs.Run, tracker *progress.JobStateTracker) {
-	event, first := tracker.Poll(run)
-	if event == nil {
-		return
-	}
-	log.Info(ctx, event.String())
-	if first && run.RunPageUrl != "" {
-		line := "Run URL: " + workspaceurls.ModernizeJobRunPageURL(run.RunPageUrl)
-		log.Info(ctx, line)
-		reportRunLine(ctx, run.RunId, line)
-	}
-	if runIsTerminal(run.State.LifeCycleState) {
-		reportRunLine(ctx, run.RunId, event.String())
-	}
 }
 
 // runIsTerminal reports whether a run has stopped, whatever it stopped as.
