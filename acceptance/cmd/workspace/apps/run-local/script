@@ -16,9 +16,20 @@ trace $CLI apps run-local --entry-point test.yml --port "$ENTRY_POINT_PORT" &> .
 trace grep -x "Running command: python -c print('Hello, world')" ../LOG.entry-point
 trace grep -x "Hello, world" ../LOG.entry-point
 
+cleanup() {
+    local status=$?
+    # Backgrounding a function puts a subshell between the script and the CLI, so $PID is
+    # that subshell and killing it leaves the CLI and the app it started behind. Windows
+    # has the same problem for a different reason: kill terminates the CLI outright rather
+    # than letting it stop the app. Reap by port instead, but only when the script failed:
+    # on success both have exited already and the ports may belong to another test by now.
+    kill $PID 2>/dev/null || true
+    [ "$status" -eq 0 ] || kill_port.py "$APP_PORT" "$PROXY_PORT"
+}
+
 trace $CLI apps run-local --port "$PROXY_PORT" --app-port "$APP_PORT" &> ../LOG.run &
 PID=$!
-trap 'kill $PID 2>/dev/null || true' EXIT
+trap cleanup EXIT
 cd ..
 
 title "Proxy forwards to the app and injects the identity headers\n"
