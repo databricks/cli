@@ -1,11 +1,10 @@
 Local = true
-# Run against a real workspace too, so the golden keeps the message the fake
-# returns honest: the fake is only useful here if it matches what UC says.
+# The golden asserts UC's message verbatim, so run on cloud to catch it drifting.
 Cloud = true
 RequiresUnityCatalog = true
 RecordRequests = false
 Ignore = [".databricks"]
 
-# Catalog resources are only supported by the direct engine, which rejects them
-# before any API call on terraform, so there is nothing to assert there.
+# Terraform rejects catalog resources before any API call, so there is nothing to
+# assert on that engine.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

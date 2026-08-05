@@ -1,6 +1,7 @@
-# The deploy fails, but only after the bundle files are uploaded, so the bundle
-# name carries $UNIQUE_NAME to keep concurrent cloud legs off each other's root
-# path and let the run-wide sweeper find what is left behind.
+# The deploy fails only after the files are uploaded, so $UNIQUE_NAME in the bundle
+# name keeps concurrent cloud legs apart and lets the sweeper find what is left.
 envsubst < databricks.yml.tmpl > databricks.yml
 
+# Both engines reach the create call, but terraform wraps the message in its own
+# output, so the goldens are per-engine.
 trace musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt

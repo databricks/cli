@@ -19,8 +19,8 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 		}
 	}
 
-	// MLflow rejects an empty name (message verbatim from a real workspace); the fake would
-	// otherwise store a model the CLI can never read back.
+	// MLflow rejects an empty name; the fake would otherwise store a model under a key
+	// nothing can look up.
 	if request.Name == "" {
 		return Response{
 			StatusCode: 400,

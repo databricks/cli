@@ -16,10 +16,8 @@ func TestModelRegistryCreateModel_RejectsEmptyName(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, 400, response.StatusCode)
 
-	// The rejected model must not be stored: that is the original bug, where a
-	// deploy appeared to succeed and the next plan saw the resource as missing.
-	// Checked before the require below so it is still reported when the rejection
-	// is missing altogether.
+	// A stored-but-unreadable model is the original bug. Asserted before the
+	// require below so it is still reported when the rejection is missing.
 	assert.Empty(t, workspace.ModelRegistryModels)
 
 	body, ok := response.Body.(map[string]string)
@@ -36,8 +34,7 @@ func TestModelRegistryCreateModel_AllowsNonEmptyName(t *testing.T) {
 	// StatusCode 0 gets converted to 200 by normalizeResponse in the server
 	require.Equal(t, 0, response.StatusCode)
 
-	// Read the model back through the GET handler, so the test fails if create
-	// stores it under a key the CLI cannot look up.
+	// Read back through the GET handler: a mis-keyed store must fail here.
 	getResponse, ok := workspace.ModelRegistryGetModel(Request{
 		URL: &url.URL{RawQuery: "name=my_model"},
 	}).(Response)

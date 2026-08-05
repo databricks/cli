@@ -17,10 +17,8 @@ func TestCatalogsCreate_RejectsEmptyName(t *testing.T) {
 	response := workspace.CatalogsCreate(Request{Body: []byte(`{"name": ""}`)})
 	assert.Equal(t, 400, response.StatusCode)
 
-	// The rejected catalog must not be stored: that is the original bug, where a
-	// deploy appeared to succeed and the next plan saw the resource as missing.
-	// Checked before the require below so it is still reported when the rejection
-	// is missing altogether.
+	// A stored-but-unreadable catalog is the original bug. Asserted before the
+	// require below so it is still reported when the rejection is missing.
 	assert.Empty(t, workspace.Catalogs)
 
 	body, ok := response.Body.(map[string]string)
@@ -36,8 +34,7 @@ func TestCatalogsCreate_AllowsNonEmptyName(t *testing.T) {
 	// StatusCode 0 gets converted to 200 by normalizeResponse in the server
 	require.Equal(t, 0, response.StatusCode)
 
-	// Read the catalog back through the same helper the GET route uses, so the
-	// test fails if create stores it under a key the CLI cannot look up.
+	// Read back through the same helper the GET route uses: a mis-keyed store must fail here.
 	getResponse := MapGet(workspace, workspace.Catalogs, "my_catalog")
 	require.Equal(t, 0, getResponse.StatusCode)
 
