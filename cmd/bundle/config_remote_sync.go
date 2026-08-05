@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"runtime"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
@@ -75,6 +77,7 @@ Examples:
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 				stats.Engine = stateDesc.Engine
+				stats.CollectStateStats(stateDesc)
 
 				// Open the deployment state once and reuse it for both planning and
 				// selector resolution (avoids reading the terraform snapshot twice).
@@ -100,7 +103,12 @@ Examples:
 				}
 				stats.CollectChangeStats(ctx, changes)
 
+				// Record the ids present in state and the ids requested: on failure
+				// they are what classifies the miss.
+				stats.CollectStateIDs(slices.Collect(maps.Keys(configsync.IndexDeployedResources(&deployBundle.StateDB))))
+
 				if len(selectIDs) > 0 {
+					stats.CollectSelectedIDs(selectIDs)
 					// Filter after planning, never before: the plan must cover every
 					// resource so ${resources.*} references resolve; only the emitted
 					// changes are restricted to the selected resources.
@@ -111,11 +119,12 @@ Examples:
 					changes = configsync.FilterChanges(changes, selected)
 				}
 
-				fieldChanges, err := configsync.ResolveChanges(ctx, b, changes)
+				fieldChanges, skipped, err := configsync.ResolveChanges(ctx, b, changes)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResolveFailed
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
+				stats.SkippedChangesCount = int64(skipped)
 
 				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, &stats.Restore); err != nil {
 					log.Warnf(ctx, "variable restoration skipped: %v", err)

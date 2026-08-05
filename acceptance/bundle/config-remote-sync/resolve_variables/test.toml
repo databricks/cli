@@ -13,3 +13,10 @@ DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
 
 [EnvMatrix]
 DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+
+# The state serial counts state writes, and the terraform path writes more times
+# than the direct path for the same script, so the value differs per engine.
+# The serial is not what this test asserts — normalize it.
+[[Repls]]
+Old = '"state_serial": [0-9]+'
+New = '"state_serial": [SERIAL]'

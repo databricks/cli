@@ -76,4 +76,4 @@ Deployment complete!
 }
 
 >>> musterr [CLI] volumes read main.myschema.myvolume
-Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+Error: Volume 'main.myschema.myvolume' does not exist.

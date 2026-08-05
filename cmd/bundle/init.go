@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
@@ -81,6 +82,12 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			return err
 		}
 		tmpl.Writer.LogTelemetry(ctx)
+
+		// Gated on JSON output to keep the text output unchanged: the success
+		// message is already printed by Materialize.
+		if root.OutputType(cmd) == flags.OutputJSON {
+			return cmdio.Render(ctx, tmpl.Writer.InitResult())
+		}
 		return nil
 	}
 	return cmd

@@ -1,0 +1,12 @@
+bundle:
+  name: republish-after-draft-update
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  dashboards:
+    dashboard1:
+      display_name: test-dashboard-$UNIQUE_NAME
+      file_path: ./dashboard.lvdash.json
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
