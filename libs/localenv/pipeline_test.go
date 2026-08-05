@@ -8,11 +8,18 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// cancelPMStderr is the stderr the interrupted uv sync emits. It stands in for a
+// real resolver diagnostic — the thing the cancellation reclassification must not
+// drop when it races with a Ctrl-C.
+const cancelPMStderr = "error: no solution found: databricks-connect==17.2 conflicts with pyspark==3.5"
 
 type fakePM struct{ py, dbc string }
 
@@ -58,6 +65,30 @@ type uvMissingPM struct{ fakePM }
 
 func (uvMissingPM) EnsureAvailable(context.Context) (string, error) {
 	return "", errors.New("uv not found and install failed")
+}
+
+// cancelPM simulates uv being interrupted: Provision closes entered (so the test
+// knows the pipeline reached this phase), blocks until the context is cancelled,
+// then returns a *process.ProcessError carrying uv's stderr (NOT context.Canceled),
+// exactly as a real `uv sync` does when it exits on SIGTERM mid-resolution. The
+// stderr is the real diagnostic; the pipeline's uvFailure folds it into the
+// PipelineError's Msg, which the cancellation reclassification must preserve.
+type cancelPM struct {
+	fakePM
+	entered chan struct{}
+}
+
+func (c cancelPM) Provision(ctx context.Context, _, _ string) error {
+	close(c.entered)
+	<-ctx.Done()
+	// Mirror uvManager.Provision's real return: a *PipelineError from uvFailure,
+	// which folds uv's stderr into Msg. Returning a bare ProcessError would not
+	// reproduce the stderr-in-Msg shape the reclassification must preserve.
+	return uvFailure(ErrProvision, &process.ProcessError{
+		Command: "uv sync",
+		Err:     errors.New("signal: terminated"),
+		Stderr:  cancelPMStderr,
+	}, "uv sync")
 }
 
 func writeProject(t *testing.T) string {
@@ -123,6 +154,71 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	entries, err := os.ReadDir(cacheDir)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
+}
+
+func TestPipelineReportsCancellationNotProvisionFailure(t *testing.T) {
+	// When the context is cancelled mid-provision (a Ctrl-C / SIGTERM), the run
+	// must surface E_CANCELED, not E_PROVISION — the provision phase's own error
+	// ("signal: terminated") would otherwise imply something broke.
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	pm := cancelPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}, entered: make(chan struct{})}
+	p := &Pipeline{
+		Mode: ModeDefault, Check: false, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: pm,
+	}
+
+	// Cancel once Provision is running, so the run unblocks and returns through the
+	// interrupt path (mirrors a Ctrl-C landing mid-`uv sync`).
+	go func() {
+		<-pm.entered
+		cancel()
+	}()
+
+	res, err := p.Run(ctx)
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrCanceled, pe.Code)
+	assert.Equal(t, PhaseProvision, pe.FailurePhase, "should still record where it stopped")
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrCanceled, res.Error.Code)
+	assert.False(t, res.OK)
+	// The wrapped cause is the context error, so errors.Is works upstream.
+	assert.ErrorIs(t, pe, context.Canceled)
+
+	// The phase's own error is kept as a second cause, not discarded: a genuine
+	// failure can race with the signal, and its stderr is the only diagnostic
+	// there is. uvFailure folds that stderr into Msg, so preserving only the inner
+	// .Err would drop it — assert the actual resolver output survives.
+	assert.Contains(t, pe.Error(), "signal: terminated",
+		"the phase's cause must survive the reclassification")
+	assert.Contains(t, pe.Error(), cancelPMStderr,
+		"uv's stderr (the real diagnostic) must survive the cancellation reclassification")
+
+	// Text mode prints the errored phase's Detail while --json prints the error
+	// object; they must agree (see PipelineError.MarshalJSON). Detail is set when
+	// the phase fails, i.e. before the reclassification, so this catches a stale one.
+	var detail string
+	for _, ph := range res.Phases {
+		if ph.Phase == PhaseProvision {
+			detail = ph.Detail
+		}
+	}
+	assert.Equal(t, pe.Error(), detail, "text-mode phase detail must match the JSON error")
+	// A Ctrl-C must be *classified* as cancellation, not a provision failure: the
+	// message leads with "interrupted" (Code is E_CANCELED). The retained cause may
+	// still contain the phase's own "... failed" text — that is the preserved
+	// diagnostic, not the classification — so assert the prefix, not absence.
+	assert.True(t, strings.HasPrefix(detail, "interrupted"),
+		"a Ctrl-C must read as interrupted, not a provision failure: %q", detail)
+
+	// Both causes render on one line: a phase row is a single line of output.
+	assert.NotContains(t, pe.Error(), "\n", "the error must stay single-line")
 }
 
 func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {

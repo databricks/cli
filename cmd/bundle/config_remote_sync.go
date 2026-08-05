@@ -119,11 +119,12 @@ Examples:
 					changes = configsync.FilterChanges(changes, selected)
 				}
 
-				fieldChanges, err := configsync.ResolveChanges(ctx, b, changes)
+				fieldChanges, skipped, err := configsync.ResolveChanges(ctx, b, changes)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResolveFailed
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
+				stats.SkippedChangesCount = int64(skipped)
 
 				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, &stats.Restore); err != nil {
 					log.Warnf(ctx, "variable restoration skipped: %v", err)
