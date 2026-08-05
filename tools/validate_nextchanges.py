@@ -12,45 +12,67 @@ renders ``.nextchanges/`` into ``CHANGELOG.md`` (see
 """
 
 import argparse
+import json
 import pathlib
 import re
 import sys
 
 CHANGELOG_DIR = ".nextchanges"
-
-# Known section subdirectories. Mirrors NEXTCHANGES_SECTIONS in
-# internal/genkit/tagging.py — keep the two in sync.
-SECTIONS = ("notable-changes", "cli", "bundles", "dependency-updates", "api-changes")
+CODEGEN_FILE = ".codegen.json"
+NEXTCHANGES_SECTIONS_KEY = "nextchanges_sections"
 
 # .nextchanges/version holds the next release version; the release reads it and
 # bumps it. Accept a bare semver (optionally v-prefixed), e.g. 1.4.0 / v1.4.0.
 VERSION_FILE = "version"
 SEMVER_RE = re.compile(r"^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 
-# Non-fragment files allowed to sit alongside fragments at any depth.
-SCAFFOLDING = ("README.md", ".gitkeep")
+# README.md is allowed both at the .nextchanges root (the docs) and inside each
+# section directory: the release renderer skips it, so a committed README.md
+# keeps otherwise-empty section directories present in git without being
+# mistaken for a fragment.
+README = "README.md"
 
 
-def find_problems(changelog_dir):
+def load_sections(root):
+    codegen_path = root / CODEGEN_FILE
+    try:
+        codegen = json.loads(codegen_path.read_text(encoding="utf-8"))
+    except FileNotFoundError as err:
+        raise ValueError(f"{CODEGEN_FILE} is missing") from err
+    except json.JSONDecodeError as err:
+        raise ValueError(f"{CODEGEN_FILE} is not valid JSON: {err}") from err
+
+    sections = codegen.get(NEXTCHANGES_SECTIONS_KEY)
+    if not isinstance(sections, dict) or not sections:
+        raise ValueError(f"{CODEGEN_FILE} must define a non-empty {NEXTCHANGES_SECTIONS_KEY} object")
+
+    return tuple(sections)
+
+
+def find_problems(changelog_dir, sections):
     """Return a list of ``(path, message)`` for anything unexpected under
     ``.nextchanges/``: files that aren't a section fragment or known scaffolding,
     empty fragments, and a missing/malformed version file."""
     problems = []
+    known_sections = set(sections)
     for path in sorted(changelog_dir.rglob("*")):
         if path.is_dir():
             continue
         rel = path.relative_to(changelog_dir)
         name = path.name
 
-        # Root-level: only the version file and scaffolding belong here.
+        # Root-level: only the version file and root documentation belong here. This prevents
+        # someone accidentally putting a .md into .nextchanges thinking it would be picked up.
         if len(rel.parts) == 1:
-            if name != VERSION_FILE and name not in SCAFFOLDING:
+            if name != VERSION_FILE and name != README:
                 problems.append((path, "unexpected file at .nextchanges root"))
             continue
 
         # Section-level: .nextchanges/<section>/<file>.
-        if len(rel.parts) == 2 and rel.parts[0] in SECTIONS:
-            if name in SCAFFOLDING:
+        if len(rel.parts) == 2 and rel.parts[0] in known_sections:
+            # README.md holds section docs and keeps the directory in git; the
+            # renderer skips it, so it is not treated as a fragment.
+            if name == README:
                 continue
             if not name.endswith(".md"):
                 problems.append((path, "unexpected file (fragments must be *.md)"))
@@ -78,12 +100,18 @@ def main(argv=None):
     if not changelog_dir.is_dir():
         return
 
-    problems = find_problems(changelog_dir)
+    try:
+        sections = load_sections(args.root)
+    except ValueError as err:
+        print(err, file=sys.stderr)
+        sys.exit(1)
+
+    problems = find_problems(changelog_dir, sections)
     if problems:
         for path, msg in problems:
             print(f"{path}: {msg}", file=sys.stderr)
         print(f"\nFragments must live at {CHANGELOG_DIR}/<section>/<name>.md", file=sys.stderr)
-        print(f"Valid sections: {', '.join(SECTIONS)}", file=sys.stderr)
+        print(f"Valid sections: {', '.join(sections)}", file=sys.stderr)
         print(f"{CHANGELOG_DIR}/{VERSION_FILE} must hold the next release version.", file=sys.stderr)
         sys.exit(1)
 
