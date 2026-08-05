@@ -139,12 +139,13 @@ func NewError(code ErrorCode, err error, format string, args ...any) *PipelineEr
 	}
 }
 
-// TargetInfo is the resolved compute target (spec §6 "target"). Source records
-// which precedence source was used ("cluster", "serverless", "job", or
-// "bundle"). SparkVersion is the raw cluster runtime string the resolver read;
+// ComputeInfo is the resolved compute target, serialized as the result's
+// "compute" key (spec §6). Source records which precedence source was used
+// ("cluster", "serverless", "job", or "bundle"). SparkVersion is the raw cluster
+// runtime string the resolver read;
 // it is folded into EnvKey (dbr/<SparkVersion>) and is not part of the JSON
 // contract, kept only as intermediate resolver state.
-type TargetInfo struct {
+type ComputeInfo struct {
 	Source            string `json:"source"`
 	ClusterID         string `json:"clusterId,omitempty"`
 	ServerlessVersion string `json:"serverlessVersion,omitempty"`
@@ -200,7 +201,7 @@ type Result struct {
 	OK            bool           `json:"ok"`
 	Mode          string         `json:"mode"`
 	DryRun        bool           `json:"dryRun"`
-	Target        *TargetInfo    `json:"target,omitempty"`
+	Compute       *ComputeInfo   `json:"compute,omitempty"`
 	Resolved      *ResolvedInfo  `json:"resolved,omitempty"`
 	Greenfield    bool           `json:"greenfield"`
 	Plan          *Plan          `json:"plan,omitempty"`

@@ -126,13 +126,17 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 	}
 
 	for _, obj := range objects {
-		if obj.ObjectType == workspace.ObjectTypeDirectory {
+		switch obj.ObjectType {
+		case workspace.ObjectTypeDirectory:
 			continue
-		}
-
-		err := n.markFileForDownload(ctx, &obj.Path)
-		if err != nil {
-			return err
+		case workspace.ObjectTypeNotebook:
+			if err := n.markNotebookForDownload(ctx, &obj.Path); err != nil {
+				return err
+			}
+		default:
+			if err := n.markFileForDownload(ctx, &obj.Path); err != nil {
+				return err
+			}
 		}
 	}
 

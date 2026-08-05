@@ -19,40 +19,30 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-// EnvConstraintRepo names the environment variable that supplies the GitHub repo
-// ("owner/name") hosting the environment constraint artifacts.
-const EnvConstraintRepo = "DATABRICKS_LOCALENV_CONSTRAINT_REPO"
+// EnvConstraintSourceURLTestOverride names the environment variable that
+// overrides the constraint source with a full base URL. It exists so tests can
+// point the fetch at a local server (see the acceptance suite) and for power-user
+// debugging; normal runs use defaultConstraintBaseURL. The TEST_OVERRIDE naming
+// signals it is not a supported user-facing knob.
+const EnvConstraintSourceURLTestOverride = "DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE"
 
-// defaultConstraintRepo is the GitHub repo that hosts the constraint artifacts.
-// It is intentionally empty for now: the artifacts must move to a
-// Databricks-owned repo (databricks/environments) before this ships, but that
-// repo can't publish them yet (its GitHub Actions are disabled). Until then the
-// repo is supplied via the EnvConstraintRepo environment variable rather than
-// hardcoding a personal repo, so no untrusted default controls what the CLI
-// installs. Once databricks/environments is ready this becomes that constant.
-const defaultConstraintRepo = ""
+// defaultConstraintBaseURL is the base URL of the published constraint artifacts.
+//
+// The databricks/environments repo nests its language ecosystems under a
+// top-level directory, so the Python artifacts live at python/<env key>/
+// pyproject.toml (e.g. python/serverless/serverless-v5, python/dbr/<spark>),
+// not at the repo root. The base URL is anchored at that python/ subtree so an
+// env key of "serverless/serverless-v5" resolves to the real path.
+const defaultConstraintBaseURL = "https://raw.githubusercontent.com/databricks/environments/main/python"
 
-// RepoConstraintBaseURL resolves the base URL for constraint artifacts from the
-// hosting GitHub repo: EnvConstraintRepo overrides the (currently empty) built-in
-// default, and the repo is turned into a raw.githubusercontent.com main-branch
-// URL. It returns "" when no repo is configured; the caller must not fall back to
-// any other source, and FetchConstraints reports the missing configuration as a
-// fetch-phase error so it surfaces through the normal phase/JSON reporting rather
-// than aborting the command before the phase table is rendered.
-func RepoConstraintBaseURL(ctx context.Context) string {
-	repo := defaultConstraintRepo
-	if v, ok := env.Lookup(ctx, EnvConstraintRepo); ok && strings.TrimSpace(v) != "" {
-		repo = strings.TrimSpace(v)
+// ConstraintBaseURL returns the base URL for constraint artifacts: the
+// EnvConstraintSourceURLTestOverride value when set (a full base URL), otherwise
+// the built-in defaultConstraintBaseURL.
+func ConstraintBaseURL(ctx context.Context) string {
+	if v, ok := env.Lookup(ctx, EnvConstraintSourceURLTestOverride); ok && strings.TrimSpace(v) != "" {
+		return strings.TrimSpace(v)
 	}
-	if repo == "" {
-		return ""
-	}
-	// The databricks/environments repo nests its language ecosystems under a
-	// top-level directory, so the Python artifacts live at python/<env key>/
-	// pyproject.toml (e.g. python/serverless/serverless-v5, python/dbr/<spark>),
-	// not at the repo root. Anchor the base URL at that python/ subtree so an
-	// env key of "serverless/serverless-v5" resolves to the real path.
-	return "https://raw.githubusercontent.com/" + repo + "/main/python"
+	return defaultConstraintBaseURL
 }
 
 // errEnvKeyNotFound is returned by fetchURL when the constraint artifact does
@@ -139,9 +129,7 @@ func writeCacheAtomic(path string, data []byte) error {
 // and does not fall back to cache — a resolvable target with no environment is a distinct,
 // non-transient condition.
 //
-// baseURL points at the repo hosting the constraint artifacts (see
-// RepoConstraintBaseURL); it is empty when no source is configured, which is
-// reported below as a fetch-phase error.
+// baseURL points at the base of the constraint artifacts (see ConstraintBaseURL).
 //
 // writeCache controls whether a successful live fetch populates the on-disk
 // cache. Callers pass false for a dry run (--dry-run), which must not mutate
@@ -149,11 +137,10 @@ func writeCacheAtomic(path string, data []byte) error {
 // not a mutation.
 func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string, writeCache bool) (*Constraints, error) {
 	if baseURL == "" {
-		// No constraint host is configured. This is reported at the fetch phase (as
-		// E_FETCH) rather than aborting earlier, so the failure flows through the
-		// same phase/JSON reporting as any other fetch error.
-		return nil, NewError(ErrFetch, nil,
-			"no constraint source configured: set %s to the GitHub repo (owner/name) that hosts the environment constraints", EnvConstraintRepo)
+		// ConstraintBaseURL always returns a non-empty default, so an empty baseURL
+		// here means the resolver was bypassed. Report it at the fetch phase so it
+		// still flows through the same phase/JSON reporting as any other fetch error.
+		return nil, NewError(ErrFetch, nil, "no constraint source configured")
 	}
 	url := baseURL + "/" + envKey + "/pyproject.toml"
 	cachePath := filepath.Join(cacheDir, cacheFileName(envKey))

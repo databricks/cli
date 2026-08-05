@@ -10,7 +10,7 @@ func newCatCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "cat FILE_PATH",
 		Short:   "Show file content.",
-		Long:    `Show the contents of a file in DBFS or a UC Volume.`,
+		Long:    `Show the contents of a file in DBFS, a UC Volume or a UC Skill.`,
 		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}

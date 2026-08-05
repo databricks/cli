@@ -279,7 +279,7 @@ resources.catalogs.*.grants[*]	catalog.PrivilegeAssignment	ALL
 resources.catalogs.*.grants[*].principal	string	ALL
 resources.catalogs.*.grants[*].privileges	[]catalog.Privilege	ALL
 resources.catalogs.*.grants[*].privileges[*]	catalog.Privilege	ALL
-resources.clusters.*.apply_policy_default_values	bool	INPUT	STATE
+resources.clusters.*.apply_policy_default_values	bool	ALL
 resources.clusters.*.autoscale	*compute.AutoScale	ALL
 resources.clusters.*.autoscale.max_workers	int	ALL
 resources.clusters.*.autoscale.min_workers	int	ALL

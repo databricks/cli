@@ -7,6 +7,7 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -27,6 +28,16 @@ type ResourceDashboard struct {
 
 type DashboardState struct {
 	resources.DashboardConfig
+	// Published reports whether the current draft content is published. DoRead sets it
+	// to true only when GetPublished succeeds AND the published revision is at least as
+	// new as the draft (revision_create_time >= update_time). A draft update without a
+	// republish leaves the previously-published content in place, but the API keeps
+	// returning it from GetPublished, so a naive "does GetPublished succeed" cannot
+	// detect stale content; the timestamp comparison can.
+	//
+	// The desired value (PrepareState) is always true, so when the published content is
+	// stale, remote Published=false differs from desired and the planner runs DoUpdate,
+	// which republishes.
 	Published bool `json:"published"`
 }
 
@@ -141,8 +152,14 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*DashboardSt
 		return nil, apierr.ErrNotFound
 	}
 
-	// Determine if the dashboard is published
-	published := publishedErr == nil
+	// A dashboard is published (in the sense that matters for planning: the current
+	// draft content is what's published) only when GetPublished succeeds AND the
+	// published revision is at least as new as the draft. A draft update without a
+	// republish leaves stale content published, but GetPublished keeps returning it,
+	// so publishedErr == nil alone cannot detect staleness — the timestamp comparison
+	// can. If either timestamp is unparseable, fall back to publish-existence so we
+	// don't spuriously republish. See DashboardState.Published.
+	published := publishedErr == nil && publishedIsCurrent(dashboard, publishedDashboard)
 
 	forceSendFields := utils.FilterFields[DashboardState](dashboard.ForceSendFields)
 	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
@@ -179,6 +196,29 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*DashboardSt
 		},
 		Published: published,
 	}, nil
+}
+
+// publishedIsCurrent reports whether the published revision reflects the current
+// draft, i.e. the dashboard was published after its last draft update. The published
+// API exposes no etag, only revision_create_time, so we compare it against the draft's
+// update_time. Both are RFC3339 timestamps set by the backend on a shared clock
+// (verified on AWS/GCP/Azure/dogfood: a publish always leaves revision_create_time >=
+// update_time, and a draft update pushes update_time ahead until the next publish).
+// If either timestamp is missing or unparseable, return true so we do not force a
+// spurious republish.
+func publishedIsCurrent(dashboard *dashboards.Dashboard, published *dashboards.PublishedDashboard) bool {
+	if published == nil {
+		return false
+	}
+	updateTime, err := time.Parse(time.RFC3339, dashboard.UpdateTime)
+	if err != nil {
+		return true
+	}
+	revisionTime, err := time.Parse(time.RFC3339, published.RevisionCreateTime)
+	if err != nil {
+		return true
+	}
+	return !revisionTime.Before(updateTime)
 }
 
 func prepareDashboardRequest(config *DashboardState) (dashboards.Dashboard, error) {

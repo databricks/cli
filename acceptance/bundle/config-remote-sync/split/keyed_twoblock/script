@@ -1,0 +1,57 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+job_id="$(read_id.py twoblock_job)"
+
+
+# omega is defined only in the target block, but its sibling "shared" contributes
+# to both blocks. Editing omega must land on omega and must leave the two-block
+# element completely untouched.
+title "Edit omega, whose sibling is defined in two blocks"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "omega":
+        task["timeout_seconds"] = 303
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "Only omega changes; shared is untouched in both blocks"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+
+# timeout_seconds lives only in the target block, so its edit goes there.
+# max_retries is set in BOTH blocks: the target's value is the deployed one, so
+# that is the definition an edit has to overwrite -- writing the top-level copy
+# instead would leave the effective value unchanged. A brand-new field on the same
+# element must land in a single defined place, not be duplicated across both.
+title "Edit a field per block, a field defined in both, and add a new field"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "shared":
+        task["max_retries"] = 9
+        task["timeout_seconds"] = 900
+        task["min_retry_interval_millis"] = 5000
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "Each edit lands on the definition that was deployed"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

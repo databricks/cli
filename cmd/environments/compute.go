@@ -106,7 +106,7 @@ func (c sdkCompute) JobTaskEnvironment(ctx context.Context, jobID, taskKey strin
 	}
 
 	// No task key given: ask the caller to pick one, listing what is available.
-	// This is a usage error, not a resolve failure — see ResolveTarget.
+	// This is a usage error, not a resolve failure — see ResolveCompute.
 	if taskKey == "" {
 		return "", false, "", &localenv.ErrTaskKeyRequired{JobID: jobID, TaskKeys: taskKeys}
 	}

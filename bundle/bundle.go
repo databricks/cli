@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
@@ -36,6 +37,11 @@ import (
 
 const internalFolder = ".internal"
 
+// AiCodeSnapshotDir is the sync-relative dir the aicode mutator writes AI Runtime
+// code snapshots into. Force-included in sync (see GetSyncIncludePatterns) so user
+// ignore rules can't filter the deployed job's code_source_path archives out.
+const AiCodeSnapshotDir = ".air_snapshots"
+
 // Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=direct
 const resourcesFilename = "resources.json"
 
@@ -56,6 +62,10 @@ type Metrics struct {
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
 	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+
+	// StateEngine is the engine that ran the deploy, set in deployCore. Empty when
+	// telemetry is emitted without a deploy having run.
+	StateEngine engine.EngineType
 
 	// ResourceState is the direct engine's per-resource deployment state
 	// captured right after the deploy. It carries each resource's state-size in
@@ -169,6 +179,12 @@ type Bundle struct {
 	// locally. Path translation is still needed to produce fully resolved paths for
 	// comparison with remote state, but local file validation would incorrectly fail.
 	SkipLocalFileValidation bool
+
+	// HasAiRuntimeCodeSnapshot is set by the aicode.PackageCodeSource build-phase
+	// mutator when it packages a local AI Runtime code_source into the bundle's
+	// snapshot dir. GetSyncIncludePatterns reads it to force-sync that dir only for
+	// bundles that actually use the feature, rather than for every bundle.
+	HasAiRuntimeCodeSnapshot bool
 
 	// Tagging is used to normalize tag keys and values.
 	// The implementation depends on the cloud being targeted.
@@ -358,7 +374,15 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*"))), nil
+	includes := append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*")))
+	// Force-sync generated AI Runtime code snapshots so a user ignore rule (e.g.
+	// "*.tar.gz" in .gitignore) can't filter them out — the deployed job's
+	// code_source_path points at these archives (see bundle/config/mutator/aicode).
+	// Scoped to bundles that actually package one, so it's not a global include.
+	if b.HasAiRuntimeCodeSnapshot {
+		includes = append(includes, AiCodeSnapshotDir+"/*")
+	}
+	return includes, nil
 }
 
 // AuthEnv returns a map with environment variables and their values
