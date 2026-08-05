@@ -202,6 +202,27 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 			expectErrTarget: fileAlreadyExistsError{},
 		},
 		{
+			// A 409 carrying no error_code unwraps to ErrResourceConflict only,
+			// not to ErrAlreadyExists; the testserver returns exactly this shape.
+			name: "409 without error_code maps to fileAlreadyExistsError",
+			apiErr: &apierr.APIError{
+				StatusCode: http.StatusConflict,
+				Message:    "Node with name /dir/file.txt already exists.",
+			},
+			expectErrTarget: fileAlreadyExistsError{},
+		},
+		{
+			// Notebook conflicts arrive as a 400 with an empty error_code, so
+			// they match neither ErrResourceAlreadyExists nor
+			// ErrInvalidParameterValue and are detected by message marker.
+			name: "400 without error_code and 'already exists.' maps to fileAlreadyExistsError",
+			apiErr: &apierr.APIError{
+				StatusCode: http.StatusBadRequest,
+				Message:    "Path (/dir/notebook) already exists.",
+			},
+			expectErrTarget: fileAlreadyExistsError{},
+		},
+		{
 			name: "400 INVALID_PARAMETER_VALUE 'type mismatch' (overwrite=true) maps to fileAlreadyExistsError",
 			apiErr: &apierr.APIError{
 				StatusCode: http.StatusBadRequest,
