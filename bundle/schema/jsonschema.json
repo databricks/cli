@@ -1793,6 +1793,7 @@
                     "type": "object",
                     "properties": {
                       "branch_id": {
+                        "description": "The ID to use for the branch; becomes the final component of the branch's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `development` becomes `projects/my-app/branches/development`.",
                         "$ref": "#/$defs/string"
                       },
                       "expire_time": {
@@ -1812,12 +1813,15 @@
                         "$ref": "#/$defs/bool"
                       },
                       "parent": {
+                        "description": "The project containing this branch (API resource hierarchy). Format: projects/{project_id}\n\nThis field indicates where the branch exists in the resource hierarchy. For point-in-time branching from another branch, see `source_branch`.",
                         "$ref": "#/$defs/string"
                       },
                       "purge_on_delete": {
+                        "description": "When true, permanently delete the branch when the bundle is destroyed. When false or unset, the branch is soft deleted and can be restored within its retention window.",
                         "$ref": "#/$defs/bool"
                       },
                       "replace_existing": {
+                        "description": "When true, take over an existing branch with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a branch that already exists on the project (for example, the production branch created with the project) under bundle management. Only takes effect when the branch is created.",
                         "$ref": "#/$defs/bool"
                       },
                       "source_branch": {
@@ -1860,6 +1864,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "catalog_id": {
+                        "description": "The ID of the catalog in Unity Catalog; becomes the full resource name. For example, `my_catalog` becomes `catalogs/my_catalog`.",
                         "$ref": "#/$defs/string"
                       },
                       "create_database_if_missing": {
@@ -1893,6 +1898,7 @@
                     "type": "object",
                     "properties": {
                       "database_id": {
+                        "description": "The ID to use for the database; becomes the final component of the database's resource name and the database name in Postgres. Must be 4-63 characters and use only characters available in DNS names, as defined by RFC 1123. If not specified, it is generated automatically.",
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
@@ -1900,6 +1906,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent": {
+                        "description": "The branch containing this database. Format: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "postgres_database": {
@@ -1946,6 +1953,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "endpoint_id": {
+                        "description": "The ID to use for the endpoint; becomes the final component of the endpoint's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `primary` becomes `projects/my-app/branches/development/endpoints/primary`.",
                         "$ref": "#/$defs/string"
                       },
                       "endpoint_type": {
@@ -1965,9 +1973,11 @@
                         "$ref": "#/$defs/bool"
                       },
                       "parent": {
+                        "description": "The branch containing this endpoint (API resource hierarchy). Format: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
+                        "description": "When true, take over an existing endpoint with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring an endpoint that already exists on the branch (for example, the primary read-write endpoint created with the branch) under bundle management. Only takes effect when the endpoint is created.",
                         "$ref": "#/$defs/bool"
                       },
                       "settings": {
@@ -2039,9 +2049,11 @@
                         "$ref": "#/$defs/int"
                       },
                       "project_id": {
+                        "description": "The ID to use for the project; becomes the final component of the project's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `my-app` becomes `projects/my-app`.",
                         "$ref": "#/$defs/string"
                       },
                       "purge_on_delete": {
+                        "description": "When true, permanently delete the project when the bundle is destroyed. When false or unset, the project is soft deleted and can be restored within its retention window.",
                         "$ref": "#/$defs/bool"
                       }
                     },
@@ -2164,6 +2176,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "synced_table_id": {
+                        "description": "The ID to use for the synced table; becomes the final component of the synced table's resource name. It is the synced table name, a `{catalog}.{schema}.{table}` tuple of Unity Catalog entity names.\n\nIt names both an online view in Unity Catalog, accessible through Lakehouse Federation, and a Postgres table named `{table}` in schema `{schema}` in the connected Postgres database.",
                         "$ref": "#/$defs/string"
                       },
                       "timeseries_key": {
@@ -3339,6 +3352,7 @@
                       "markdownDescription": "The pipeline definitions for the bundle, where each key is the name of the pipeline. See [pipelines](https://docs.databricks.com/dev-tools/bundles/resources.html#pipelines)."
                     },
                     "postgres_branches": {
+                      "description": "The Postgres branch definitions for the bundle, where each key is the name of the branch. Each entry defines a branch of a Lakebase Autoscaling project, holding its own copy of the project's databases and roles.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
                     },
                     "postgres_catalogs": {
@@ -3346,15 +3360,19 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
                     },
                     "postgres_databases": {
+                      "description": "The Postgres database definitions for the bundle, where each key is the name of the database. Each entry defines a database on a Lakebase Autoscaling branch.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresDatabase"
                     },
                     "postgres_endpoints": {
+                      "description": "The Postgres endpoint definitions for the bundle, where each key is the name of the endpoint. Each entry defines a compute endpoint that serves queries for a Lakebase Autoscaling branch.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint"
                     },
                     "postgres_projects": {
+                      "description": "The Postgres project definitions for the bundle, where each key is the name of the project. Each entry defines a Lakebase Autoscaling project, the top-level container for branches, endpoints, databases, and roles.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
                     },
                     "postgres_roles": {
+                      "description": "The Postgres role definitions for the bundle, where each key is the name of the role. Each entry defines a role on a Lakebase Autoscaling branch, optionally backed by a Databricks identity.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresRole"
                     },
                     "postgres_synced_tables": {
@@ -12205,15 +12223,15 @@
                   "description": "Attributes that can be granted to a Postgres role. We are only implementing a subset for now, see xref:\nhttps://www.postgresql.org/docs/16/sql-createrole.html\nThe values follow Postgres keyword naming e.g. CREATEDB, BYPASSRLS, etc. which is why they don't include typical\nunderscores between words.",
                   "properties": {
                     "bypassrls": {
-                      "description": "[Beta]",
+                      "description": "[Beta] Grants the Postgres `BYPASSRLS` attribute, which lets the role bypass every row-level security policy.",
                       "$ref": "#/$defs/bool"
                     },
                     "createdb": {
-                      "description": "[Beta]",
+                      "description": "[Beta] Grants the Postgres `CREATEDB` attribute, which lets the role create databases.",
                       "$ref": "#/$defs/bool"
                     },
                     "createrole": {
-                      "description": "[Beta]",
+                      "description": "[Beta] Grants the Postgres `CREATEROLE` attribute, which lets the role create, alter, and drop other roles.",
                       "$ref": "#/$defs/bool"
                     }
                   },
