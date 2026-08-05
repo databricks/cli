@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"os"
 	"slices"
 	"strings"
 	"text/tabwriter"
@@ -75,20 +76,40 @@ type listOutput struct {
 	Agents  []agentEntry            `json:"agents,omitempty"`
 }
 
-// agentEntry reports per-agent plugin state for `list`. It mirrors skillEntry:
-// Installed maps scope -> the plugin recorded in that scope, so a stale scoped
-// install stays visible next to an up-to-date one. Managed says whether the CLI
-// installs and tracks the plugin. Up-to-date-ness is derived by comparing each
-// Installed version against the top-level release, exactly as the skills view
-// does, so there is no precomputed cross-scope status to keep in sync.
+// agentEntry is one agent in `list --output json`. The JSON carries an entry for
+// every registry agent so the extension sees the full set; the text view still
+// lists only agents with a plugin install, so these fields are additive.
 type agentEntry struct {
-	Name      string                `json:"name"`
-	Managed   bool                  `json:"managed"`
-	Installed map[string]pluginInfo `json:"installed,omitempty"`
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	// Managed is whether the CLI can install and track a databricks plugin for it.
+	Managed bool `json:"managed"`
+	// Detected is the CLI's presence verdict (Agent.IsPreselected), so consumers get
+	// the same answer the CLI would act on.
+	Detected bool `json:"detected"`
+	// Installed maps CLI scope -> the install found there; always present, empty
+	// when nothing is installed, matching the skills shape.
+	Installed map[string]installInfo `json:"installed"`
 }
 
-// pluginInfo is the per-scope plugin record surfaced in list output.
-type pluginInfo struct {
+// hasPluginInstall reports whether any scope holds a databricks plugin install
+// (as opposed to raw skill files).
+func (a agentEntry) hasPluginInstall() bool {
+	for _, info := range a.Installed {
+		if info.Delivery == deliveryPlugin.String() {
+			return true
+		}
+	}
+	return false
+}
+
+// installInfo is one agent's install in one CLI scope: how the databricks tools
+// were delivered there, and the version recorded for that delivery.
+type installInfo struct {
+	// Delivery is deliveryPlugin ("plugin") when the CLI installed the databricks
+	// plugin through the agent's own CLI, or deliverySkills ("skills") when raw
+	// skill files were installed instead.
+	Delivery    string `json:"delivery"`
 	Version     string `json:"version,omitempty"`
 	NativeScope string `json:"native_scope,omitempty"`
 }
@@ -194,34 +215,76 @@ func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
 	if projectState != nil {
 		states[installer.ScopeProject] = projectState
 	}
-	out.Agents = buildAgentEntries(states)
+	out.Agents = buildAgentEntries(ctx, states)
 
 	return out, nil
 }
 
-// buildAgentEntries reports per-agent plugin state: each plugin agent with a
-// recorded install (its version per scope). states maps scope -> install state
-// and must contain only non-nil states; the caller filters scopes it did not
-// load. Status across scopes is left for the renderer (and JSON consumers) to
-// derive from the per-scope versions, so no cross-scope record is merged away here.
-func buildAgentEntries(states map[string]*installer.InstallState) []agentEntry {
-	var entries []agentEntry
+// buildAgentEntries reports state for every supported agent in the registry:
+// detection (binary on PATH and config dir on disk), whether the CLI can manage
+// a databricks plugin for it, and the per-scope install found for it.
+// states maps CLI scope -> install state and must contain only non-nil states;
+// the caller filters scopes it did not load. Status across scopes is left for
+// the renderer (and JSON consumers) to derive from the per-scope versions, so no
+// cross-scope record is merged away here.
+func buildAgentEntries(ctx context.Context, states map[string]*installer.InstallState) []agentEntry {
+	entries := make([]agentEntry, 0, len(agents.Registry))
 	for _, a := range agents.Registry {
-		if a.Plugin == nil {
-			continue
+		entry := agentEntry{
+			Name:        a.Name,
+			DisplayName: a.DisplayName,
+			Managed:     a.Plugin != nil,
+			Detected:    a.IsPreselected(ctx),
 		}
 
-		installed := map[string]pluginInfo{}
+		// Always emit an installed map, empty when nothing is installed, so the
+		// JSON shape matches skillEntry ("installed": {}) rather than omitting it.
+		entry.Installed = map[string]installInfo{}
 		for scope, st := range states {
 			if rec, ok := st.Plugins[a.Name]; ok {
-				installed[scope] = pluginInfo{Version: rec.Version, NativeScope: rec.Scope}
+				entry.Installed[scope] = installInfo{
+					Delivery:    deliveryPlugin.String(),
+					Version:     rec.Version,
+					NativeScope: rec.Scope,
+				}
+				continue
+			}
+			// A skills install produces no plugin record, so fall back to the
+			// agent's own skills dir on disk. This covers both skills-only agents
+			// (Plugin == nil) and plugin-capable agents installed with
+			// --skills-only, which are otherwise indistinguishable here.
+			if agentHasSkillsInScope(ctx, a, scope) {
+				entry.Installed[scope] = installInfo{
+					Delivery: deliverySkills.String(),
+					Version:  installer.DisplaySkillsVersion(st.Release),
+				}
 			}
 		}
-		if len(installed) > 0 {
-			entries = append(entries, agentEntry{Name: a.Name, Managed: true, Installed: installed})
-		}
+
+		entries = append(entries, entry)
 	}
 	return entries
+}
+
+// agentHasSkillsInScope reports whether databricks skills are present in the
+// agent's own skills directory for the given CLI scope. It is the on-disk
+// install signal for skills installs, which have no plugin record to consult.
+func agentHasSkillsInScope(ctx context.Context, a *agents.Agent, scope string) bool {
+	if scope == installer.ScopeProject {
+		if !a.SupportsProjectScope {
+			return false
+		}
+		cwd, err := os.Getwd()
+		if err != nil {
+			return false
+		}
+		return agents.HasDatabricksSkillsIn(a.ProjectSkillsDir(cwd))
+	}
+	dir, err := a.SkillsDir(ctx)
+	if err != nil {
+		return false
+	}
+	return agents.HasDatabricksSkillsIn(dir)
 }
 
 // loadStateForScope returns the install state for the named scope when the
@@ -266,13 +329,25 @@ func renderListText(ctx context.Context, out listOutput, scope string) {
 		}
 	}
 
-	if len(out.Agents) > 0 {
+	// The text view keeps its original "Plugin installs:" section: only agents with
+	// a recorded plugin install are shown here, so an agent whose only install is
+	// raw skills isn't labelled as a plugin (its skills show in the table below).
+	// The richer per-agent detection state (every registry agent, skills installs
+	// included) is JSON-only, for the extension.
+	var pluginInstalls []agentEntry
+	for _, a := range out.Agents {
+		if a.hasPluginInstall() {
+			pluginInstalls = append(pluginInstalls, a)
+		}
+	}
+
+	if len(pluginInstalls) > 0 {
 		cmdio.LogString(ctx, "Plugin installs:")
 		cmdio.LogString(ctx, "")
 		var ab strings.Builder
 		atw := tabwriter.NewWriter(&ab, 0, 4, 2, ' ', 0)
 		fmt.Fprintln(atw, "  AGENT\tSTATUS")
-		for _, a := range out.Agents {
+		for _, a := range pluginInstalls {
 			fmt.Fprintf(atw, "  %s\t%s\n", agentDisplayName(a.Name), agentStatusLabel(a, out.Release))
 		}
 		atw.Flush()
@@ -308,12 +383,14 @@ func renderSkillTable(skills []skillEntry, bothScopes bool) string {
 // agentStatusLabel renders the text-view status for an agent, collapsing the
 // per-scope plugin records into a single line. A stale scope (version !=
 // release) is surfaced over an up-to-date one so an outdated install is never
-// hidden; project is preferred when every scope matches release.
+// hidden; project is preferred when every scope matches release. Skills installs
+// are skipped: this line reports the plugin, and their versions would otherwise
+// decide the status of an agent that also has a plugin in another scope.
 func agentStatusLabel(a agentEntry, release string) string {
 	version, upToDate := "", true
 	for _, scope := range []string{installer.ScopeProject, installer.ScopeGlobal} {
 		info, ok := a.Installed[scope]
-		if !ok {
+		if !ok || info.Delivery != deliveryPlugin.String() {
 			continue
 		}
 		stale := info.Version != release

@@ -1,0 +1,23 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve; }
+trap cleanup EXIT
+$CLI bundle deploy
+job_id="$(read_id.py file_order_job)"
+
+title "Edit aaa, whose file position differs from its merged position"
+edit_resource.py jobs $job_id <<PYEDIT
+for task in r["tasks"]:
+    if task["task_key"] == "aaa":
+        task["notebook_task"]["notebook_path"] = "/Users/aaahome/renamed"
+PYEDIT
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync --save
+title "aaa keeps its own variable reference"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+errcode trace grep -c 'var.aaa_dir' databricks.yml
+rm databricks.yml.backup

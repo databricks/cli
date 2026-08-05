@@ -1,0 +1,39 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+job_a_id="$(read_id.py job_a)"
+job_b_id="$(read_id.py job_b)"
+
+
+# A rename of the two-block task on job_a, and a plain scalar edit on job_b, in the
+# SAME run. job_b's edit is independent of anything job_a does, so it must be
+# applied whether or not job_a's rename can be placed.
+title "Rename the two-block task on job_a, and edit job_b in the same run"
+edit_resource.py jobs $job_a_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "shared":
+        task["task_key"] = "shared_renamed"
+EOF
+
+edit_resource.py jobs $job_b_id <<EOF
+r["max_concurrent_runs"] = 6
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "job_b is updated, and job_a's rename is written in both blocks"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+trace grep -c "max_concurrent_runs: 6" databricks.yml
+trace grep -c "task_key: shared_renamed" databricks.yml
+rm databricks.yml.backup

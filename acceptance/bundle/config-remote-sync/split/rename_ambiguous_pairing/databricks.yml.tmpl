@@ -1,0 +1,28 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# Two tasks with IDENTICAL bodies, one per block. Renaming both in one run yields two
+# removes that each match both adds, so the change set does not say which new key
+# belongs to which element. Guessing crosses them: a key lands in the other element's
+# block, and anything referring to a task by key points at the wrong one.
+
+resources:
+  jobs:
+    ambiguous_rename_job:
+      tasks:
+        - task_key: alpha
+          max_retries: 3
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        ambiguous_rename_job:
+          tasks:
+            - task_key: beta
+              max_retries: 3
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/nb

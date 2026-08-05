@@ -1,0 +1,64 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Edit omega, whose sibling is defined in two blocks
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.twoblock_job
+  tasks[task_key='omega'].timeout_seconds: add
+
+
+
+=== Only omega changes; shared is untouched in both blocks
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -38,2 +38,3 @@
+               notebook_task:
+                 notebook_path: /Users/{{workspace_user_name}}/omega
++              timeout_seconds: 303
+
+=== Edit a field per block, a field defined in both, and add a new field
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.twoblock_job
+  tasks[task_key='shared'].max_retries: replace
+  tasks[task_key='shared'].min_retry_interval_millis: add
+  tasks[task_key='shared'].timeout_seconds: replace
+
+
+
+=== Each edit lands on the definition that was deployed
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -21,4 +21,5 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/shared
++          min_retry_interval_millis: 5000
+         - task_key: nu
+           notebook_task:
+@@ -33,6 +34,6 @@
+           tasks:
+             - task_key: shared
+-              max_retries: 2
+-              timeout_seconds: 60
++              max_retries: 9
++              timeout_seconds: 900
+             - task_key: omega
+               notebook_task:
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.twoblock_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!
