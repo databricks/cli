@@ -1,75 +1,31 @@
 cd app
 
+# Ports are allocated per run so that tests in parallel worktrees do not collide.
+read -r APP_PORT PROXY_PORT ENTRY_POINT_PORT <<< "$(free_port.py 3)"
+
+# The app and the proxy start asynchronously; allow up to 15s for them to come up.
+export RETRY_MAX_ATTEMPTS=30
+
+title "Env var with valueFrom cannot be resolved locally\n"
 trace errcode $CLI apps run-local --entry-point value-from.yml 2>&1
 
-# We first run the command with different entry point which starts unblocking script
-# so we don't need to start it in background. It will install the dependencies as part of the command
-trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -w "Hello, world"
+title "Entry point overrides the command from app.yml\n"
+$CLI apps run-local --entry-point test.yml --port "$ENTRY_POINT_PORT" &> ../LOG.entry-point
+trace grep -x "Running command: python -c print('Hello, world')" ../LOG.entry-point
+trace grep -x "Hello, world" ../LOG.entry-point
 
-PORT=8090
-DEBUG_PORT=5252
-PROXY_PORT=8091
-
-cleanup() {
-    # Kill any still running processes on these ports when the script exits
-    kill_port.py $PORT $DEBUG_PORT $PROXY_PORT
-}
-
-trap cleanup EXIT
-
-title "Starting the app in background..."
-trace $CLI apps run-local --prepare-environment --debug --port "$PROXY_PORT" --debug-port "$DEBUG_PORT" --app-port "$PORT" > ../out.run.txt 2>&1 &
+title "Starting the app in the background\n"
+$CLI apps run-local --port "$PROXY_PORT" --app-port "$APP_PORT" &> ../LOG.run &
 PID=$!
-# Ensure background process is killed on script exit
 trap 'kill $PID 2>/dev/null || true' EXIT
 cd ..
 
-title Waiting for the app to start...
-# Use a loop to check for the startup message instead of tail/sed which can be unreliable on Windows
-# due to file locking, buffering issues, and different text processing behavior across Windows versions.
-# A simple grep loop is more robust across platforms.
-while [ -z "$(grep -o "Python Flask app has started with" out.run.txt 2>/dev/null)" ]; do
-    sleep 1
-done
+title "Proxy forwards to the app and injects the identity headers\n"
+trace retry --until X-Forwarded-Email curl -sS "http://127.0.0.1:$PROXY_PORT"
 
-# Make sure the proxy is ready to serve requests
-while [ -z "$(grep -o "To access your app go to " out.run.txt 2>/dev/null)" ]; do
-    sleep 1
-done
+title "App picked up the env var from app.yml\n"
+trace grep -x "Python app has started with: test" LOG.run
 
-title "Checking app is running..."
-# Wait for the proxy to be ready to serve requests (with timeout)
-timeout=5
-counter=0
-while ! curl -s -o /dev/null http://127.0.0.1:$PORT 2>/dev/null; do
-    sleep 1
-    counter=$((counter + 1))
-    if [ $counter -ge $timeout ]; then
-        echo "Timeout waiting for app to be ready after ${timeout}s"
-        exit 1
-    fi
-done
-
-title "Checking the proxy is running..."
-# Wait for the proxy to be ready to serve requests (with timeout)
-timeout=5
-counter=0
-while ! curl -s -o /dev/null http://127.0.0.1:$PROXY_PORT 2>/dev/null; do
-    sleep 1
-    counter=$((counter + 1))
-    if [ $counter -ge $timeout ]; then
-        echo "Timeout waiting for proxy to be ready after ${timeout}s"
-        exit 1
-    fi
-done
-
-trace curl -s -o - http://127.0.0.1:$PROXY_PORT
-
-title "Sending shutdown request..."
-trace curl -s -o /dev/null  http://127.0.0.1:$PROXY_PORT/shutdown || true
-
-title "Checking CLI command output..."
-
-trace grep "To debug your app, attach a debugger to port" ./out.run.txt
-trace grep -o "Python Flask app has started with: test" ./out.run.txt
-rm out.run.txt
+title "Shutting the app down\n"
+trace curl -sS -o /dev/null "http://127.0.0.1:$PROXY_PORT/shutdown"
+wait $PID
