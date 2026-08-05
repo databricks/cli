@@ -27,6 +27,11 @@ const maxPolicyPageSize = 1000
 // error: enough to spot a typo or casing mistake without dumping a huge list.
 const maxPolicySuggestions = 10
 
+// usagePolicy models only the two fields resolution needs. The API also returns
+// display_name, which is deliberately not read: policy_name is the unique key
+// (unique among active policies) and the only field filter_by can match on. The
+// two are identical for user-created policies and diverge only for the system
+// defaults, whose display_name is fixed to "Default Policy".
 type usagePolicy struct {
 	PolicyID   string `json:"policy_id"`
 	PolicyName string `json:"policy_name"`
@@ -92,6 +97,11 @@ func listUsagePolicies(ctx context.Context, w *databricks.WorkspaceClient, polic
 //
 // The server-side filter is a partial match, so the exact (but case-insensitive)
 // match is re-applied locally; policy names are unique among active policies.
+//
+// name is matched against policy_name, not the policy's display_name. For a
+// user-created policy the two are the same, so the distinction only surfaces for
+// the system defaults; a user who supplies a display name that isn't a
+// policy_name gets the not-found error with the real names as candidates.
 func resolveUsagePolicyIDByName(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 	target := strings.TrimSpace(name)
 	// Guard the contract independently of the YAML validator: an empty filter would
@@ -121,7 +131,10 @@ func resolveUsagePolicyIDByName(ctx context.Context, w *databricks.WorkspaceClie
 
 	case 0:
 		// policies holds the partial-match candidates the server returned for this
-		// name; surface a few to help the user fix a typo or casing.
+		// name; surface a few to help the user fix a typo or casing. These are
+		// policy_name values, which is also what a user who typed a policy's UI
+		// display name needs to see: the two differ only for the system default
+		// policies, so listing the real names points them at the right one.
 		return "", fmt.Errorf("no usage policy named %q was found in this workspace%s", target, suggestionHint(policies))
 
 	default:
