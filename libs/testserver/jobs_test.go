@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"encoding/json"
+	"errors"
 	"net/url"
 	"strconv"
 	"strings"
@@ -132,16 +133,23 @@ func TestTerminateRun_FailedTaskFailsTheRun(t *testing.T) {
 func TestNewTaskFailure_ReportsTheExceptionAndTheTraceback(t *testing.T) {
 	output := "Traceback (most recent call last):\n  File \"fail.py\", line 1\nRuntimeError: intentional failure\n"
 
-	failure := newTaskFailure(output)
+	failure := newTaskFailure(errors.New("exit status 1"), output)
 
 	assert.Equal(t, "RuntimeError: intentional failure", failure.Error())
 	assert.Equal(t, strings.TrimRight(output, "\n"), failure.trace)
 }
 
 func TestNewTaskFailure_SingleLineOutputIsTheException(t *testing.T) {
-	failure := newTaskFailure("RuntimeError: intentional failure\n")
+	failure := newTaskFailure(errors.New("exit status 1"), "RuntimeError: intentional failure\n")
 
 	assert.Equal(t, "RuntimeError: intentional failure", failure.Error())
+}
+
+// A task can exit non-zero without writing anything, e.g. sys.exit(1).
+func TestNewTaskFailure_SilentFailureIsReportedAsTheExitError(t *testing.T) {
+	failure := newTaskFailure(errors.New("exit status 1"), "")
+
+	assert.Equal(t, "exit status 1", failure.Error())
 }
 
 func TestTerminateRun_CompletesTasksThatAreStillRunning(t *testing.T) {
