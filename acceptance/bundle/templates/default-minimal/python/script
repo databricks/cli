@@ -1,4 +1,4 @@
-trace $CLI bundle init default-minimal --config-file ./input.json --output-dir output
+trace $CLI bundle init default-minimal --config-file ./input.json --output-dir output -o json
 
 cd output/my_default_minimal
 
