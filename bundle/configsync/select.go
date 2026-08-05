@@ -93,9 +93,9 @@ func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState
 	return keys, nil
 }
 
-// maxReportedIDs bounds how many ids describeStateIDs lists, so the message
-// stays readable (and within the 500-char error_message telemetry limit) for
-// bundles with many resources of one type.
+// maxReportedIDs bounds how many ids describeStateIDs lists, so the message stays
+// readable for bundles with many resources of one type, and fits the limit
+// telemetry.ScrubErrorMessage truncates error_message to.
 const maxReportedIDs = 10
 
 // describeStateIDs summarizes the ids present in the deployment state index so
