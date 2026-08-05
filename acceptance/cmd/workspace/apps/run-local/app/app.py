@@ -23,7 +23,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         # than exiting the process lets the connection close cleanly, otherwise the client
         # can see a reset instead of the response we just wrote.
         if shutdown:
-            threading.Thread(target=server.shutdown, daemon=True).start()
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
 
     def log_message(self, fmt, *args):
         pass
