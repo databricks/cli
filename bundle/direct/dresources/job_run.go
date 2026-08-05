@@ -128,7 +128,7 @@ func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &JobRunState{RunNow: remote.RunNow}
 }
 
-func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
+func (r *ResourceJobRun) DoCreate(ctx context.Context, _ *StateSaver, config *JobRunState) (string, *JobRunRemote, error) {
 	// RunNow returns only the new run id, so we return a nil remote and let the
 	// framework read it back via DoRead.
 	wait, err := r.client.Jobs.RunNow(ctx, config.RunNow)

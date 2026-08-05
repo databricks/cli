@@ -25,8 +25,9 @@ fault.py "POST /api/2.0/lakeview/dashboards/*" 400 0 1
 # Rename the dashboard to trigger an Update.
 update_file.py databricks.yml "my dashboard" "my dashboard renamed"
 
-# Deploy: PATCH succeeds (bumping the remote etag) but publish fails.
-# SaveState is only called on success, so state retains the pre-PATCH etag.
+# Deploy: PATCH succeeds (bumping the remote etag) but publish fails. State is saved
+# before the publish with the post-PATCH etag and published=false, so the stale-publish
+# situation is recorded honestly.
 errcode trace $CLI bundle deploy
 trace print_requests.py //lakeview/dashboards
 # The PATCH bumped the remote etag to ETAG_2; retry until it is visible (eventual consistency).
@@ -34,23 +35,15 @@ ETAG_2=$(retry --until-not "$ETAG_1" $CLI lakeview get $DASHBOARD_ID | jq -r '.e
 add_repl.py "$ETAG_2" ETAG_2
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
+# The stored etag matches remote, so there is no "modified remotely" warning. DoRead
+# reports published=false (revision_create_time < update_time), so a republish is owed.
 trace $CLI bundle plan -o json | gron.py | grep -E "etag|published"
 
-# Bug: re-running deploy fails with "modified remotely" because the stored etag
-# (pre-PATCH) no longer matches the remote etag (bumped by the PATCH above).
-# No API writes are attempted — the stale published content is stuck.
-errcode trace $CLI bundle deploy
+# A plain re-deploy (no --force) recovers: it republishes and fixes the stale content.
+trace $CLI bundle deploy
 trace print_requests.py //lakeview/dashboards
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 
-# --force bypasses the etag check and forces a full re-deploy (PATCH + POST /published),
-# which fixes the stale published content.
-trace $CLI bundle deploy --force
-trace print_requests.py //lakeview/dashboards
-# --force did another PATCH; retry until the new etag is visible (eventual consistency).
-ETAG_3=$(retry --until-not "$ETAG_2" $CLI lakeview get $DASHBOARD_ID | jq -r '.etag')
-add_repl.py "$ETAG_3" ETAG_3
-trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
-trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
+# The follow-up plan is a clean no-op: the published revision now matches the draft.
 trace $CLI bundle plan

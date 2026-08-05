@@ -1,0 +1,20 @@
+Cloud = false
+Local = true
+RecordRequests = true
+
+# Only run with the direct engine: the test verifies direct engine's SaveState
+# behavior (draft persists on publish failure and is re-published on retry).
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[Env]
+# This test drives an explicit publish-failure/retry sequence and reads the
+# dashboard back with `bundle plan`. The inherited eventual-consistency simulation
+# would make that read observe a stale 404 and mask the behavior under test, so
+# opt out of it here (same reason as detect-change).
+INJECT_STALE_ON_DIRECT = "0"
+
+# Dashboard published URLs use ?o= (local testserver) or ?w= (cloud) for the workspace/org ID.
+[[Repls]]
+Old = '\?[ow]=\d+'
+New = "?[WSPARAM]=[NUMID]"

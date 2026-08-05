@@ -40,12 +40,19 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 		}
 	})
 
+	// GET serves two phases: the retry-check (before the successful create,
+	// reports DELETING so DoCreate retries) and the post-create waitForApp poll
+	// (after the create succeeds, reports ACTIVE so the wait terminates).
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
 		getCallCount++
+		state := apps.ComputeStateActive
+		if createCallCount < 2 {
+			state = apps.ComputeStateDeleting
+		}
 		return apps.App{
 			Name: req.Vars["name"],
 			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateDeleting,
+				State: state,
 			},
 		}
 	})
@@ -60,12 +67,13 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
+	name, _, err := r.DoCreate(ctx, NewNopStateSaver(reflect.TypeFor[*AppState]()), &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
 	assert.Equal(t, 2, createCallCount, "expected Create to be called twice (1 retry)")
-	assert.Equal(t, 1, getCallCount, "expected Get to be called once to check app state")
+	// One GET during the retry check (DELETING) and one during waitForApp (ACTIVE).
+	assert.Equal(t, 2, getCallCount, "expected Get to be called for the retry check and the post-create wait")
 }
 
 // TestAppDoCreate_RetriesWhenGetReturnsNotFound verifies that DoCreate retries
@@ -95,13 +103,23 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 		}
 	})
 
+	// GET returns 404 during the retry check (app was deleted between the create
+	// and the existence check), then ACTIVE for the post-create waitForApp poll.
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
 		getCallCount++
-		return testserver.Response{
-			StatusCode: 404,
-			Body: map[string]string{
-				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    "App not found.",
+		if createCallCount < 2 {
+			return testserver.Response{
+				StatusCode: 404,
+				Body: map[string]string{
+					"error_code": "RESOURCE_DOES_NOT_EXIST",
+					"message":    "App not found.",
+				},
+			}
+		}
+		return apps.App{
+			Name: req.Vars["name"],
+			ComputeStatus: &apps.ComputeStatus{
+				State: apps.ComputeStateActive,
 			},
 		}
 	})
@@ -116,12 +134,13 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
+	name, _, err := r.DoCreate(ctx, NewNopStateSaver(reflect.TypeFor[*AppState]()), &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
 	assert.Equal(t, 2, createCallCount, "expected Create to be called twice")
-	assert.Equal(t, 1, getCallCount, "expected Get to be called once to check app state")
+	// One GET during the retry check (404) and one during waitForApp (ACTIVE).
+	assert.Equal(t, 2, getCallCount, "expected Get to be called for the retry check and the post-create wait")
 }
 
 func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {

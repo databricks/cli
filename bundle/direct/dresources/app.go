@@ -116,7 +116,7 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 	return remote, nil
 }
 
-func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *AppRemote, error) {
+func (r *ResourceApp) DoCreate(ctx context.Context, engine *StateSaver, config *AppState) (string, *AppRemote, error) {
 	// Start app compute only when lifecycle.started=true is explicit.
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
 	noCompute := config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started
@@ -154,7 +154,23 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 		return "", nil, err
 	}
 
-	return app.Name, nil, nil
+	// Save with Lifecycle=nil: app exists but lifecycle has not been applied yet.
+	// If waitForApp or manageLifecycle is interrupted and the app reaches ACTIVE on
+	// its own (without a deployment), the planner on the next run sees a localDiff
+	// for lifecycle (nil→desired) and triggers DoUpdate → manageLifecycle → Deploy.
+	// Without this, OverrideChangeDesc silently skips source_code_path drift when
+	// the remote has no active deployment, leaving the app permanently un-deployed.
+	SaveStateWith(ctx, engine, app.Name, config, &config.Lifecycle, (*StateLifecycle)(nil))
+
+	remote, err := r.waitForApp(ctx, r.client, config.Name)
+	if err != nil {
+		return "", nil, err
+	}
+	alreadyStarted := remote.Lifecycle != nil && remote.Lifecycle.Started != nil && *remote.Lifecycle.Started
+	if err := r.manageLifecycle(ctx, config.Name, config, alreadyStarted); err != nil {
+		return "", nil, err
+	}
+	return app.Name, remote, nil
 }
 
 var UpdateMaskFields = []string{
@@ -172,7 +188,7 @@ var UpdateMaskFields = []string{
 
 var updateMask = strings.Join(UpdateMaskFields, ",")
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
+func (r *ResourceApp) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Deploy-only fields (source_code_path, config,
 	// git_source, lifecycle) are not part of apps.App and thus excluded from the request body.
 	if hasAppChanges(entry) {
@@ -321,18 +337,6 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) erro
 // delete) produces a spurious update/skip because plan/apply do not special-case it there.
 func (*ResourceApp) IsGone(remote *AppRemote) bool {
 	return remote.ComputeStatus != nil && remote.ComputeStatus.State == apps.ComputeStateDeleting
-}
-
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {
-	remote, err := r.waitForApp(ctx, r.client, config.Name)
-	if err != nil {
-		return nil, err
-	}
-	alreadyStarted := remote.Lifecycle != nil && remote.Lifecycle.Started != nil && *remote.Lifecycle.Started
-	if err := r.manageLifecycle(ctx, config.Name, config, alreadyStarted); err != nil {
-		return nil, err
-	}
-	return remote, nil
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.

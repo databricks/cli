@@ -38,7 +38,7 @@ func (r *ResourceSchema) DoRead(ctx context.Context, id string) (*catalog.Schema
 	return r.client.Schemas.GetByFullName(ctx, id)
 }
 
-func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSchema) (string, *catalog.SchemaInfo, error) {
+func (r *ResourceSchema) DoCreate(ctx context.Context, _ *StateSaver, config *catalog.CreateSchema) (string, *catalog.SchemaInfo, error) {
 	response, err := r.client.Schemas.Create(ctx, *config)
 	if err != nil || response == nil {
 		return "", nil, err
@@ -47,7 +47,7 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSch
 }
 
 // DoUpdate updates the schema in place and returns remote state.
-func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {
+func (r *ResourceSchema) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {
 	updateRequest := catalog.UpdateSchema{
 		Comment:                      config.Comment,
 		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
