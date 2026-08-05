@@ -285,6 +285,13 @@ resources:
       # Accepted on write but not returned by GET.
       - field: config.served_entities[*].burst_scaling_enabled
         reason: input_only
+      # The backend creates a telemetry profile from these tables and reports back the
+      # resulting telemetry_profile_id instead; the table names themselves are never
+      # echoed, so remote reads back empty and a config that sets them never converges.
+      # inference_table_config is deliberately not listed: sampling_fraction does round
+      # trip, so it is subject to normal drift detection.
+      - field: telemetry_config.table_names
+        reason: input_only
       # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
       - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
         reason: input_only
@@ -316,8 +323,9 @@ resources:
       - field: rate_limits
         reason: not_implemented
     backend_defaults:
-      # The backend assigns a telemetry profile and echoes its ID back on GET. Users may
-      # also pin an existing profile, so drift still applies when it is set locally.
+      # The backend creates a telemetry profile from table_names and echoes its ID back on
+      # GET. Users may also pin an existing profile, so drift still applies when
+      # telemetry_profile_id is set locally.
       #
       # The rule covers the whole subtree rather than just telemetry_profile_id: when
       # telemetry_config is absent locally, structdiff reports the populated remote as one

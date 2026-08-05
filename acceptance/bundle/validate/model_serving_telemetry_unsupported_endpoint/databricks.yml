@@ -1,0 +1,28 @@
+bundle:
+  name: "model_serving_telemetry"
+
+resources:
+  model_serving_endpoints:
+    # Typed NO_CONFIG by the API: nothing is served.
+    endpoint1:
+      name: "test-endpoint-1"
+      telemetry_config:
+        inference_table_config:
+          sampling_fraction: 0.5
+
+    # Typed EXTERNAL_MODELS by the API: it serves something, but telemetry is still
+    # only supported for custom served models.
+    endpoint2:
+      name: "test-endpoint-2"
+      config:
+        served_entities:
+          - name: prod
+            external_model:
+              name: gpt-4o-mini
+              provider: openai
+              task: llm/v1/chat
+              openai_config:
+                openai_api_key_plaintext: sk-test-plaintext-key
+      telemetry_config:
+        inference_table_config:
+          sampling_fraction: 0.5

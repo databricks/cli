@@ -12,6 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	unsupportedEndpoint = "telemetry_config is only supported on an endpoint that serves a registered model"
+	noProfile           = "telemetry_config must set table_names or telemetry_profile_id"
+)
+
 func endpointBundle(endpoint serving.CreateServingEndpoint) *bundle.Bundle {
 	return &bundle.Bundle{
 		Config: config.Root{
@@ -24,9 +29,21 @@ func endpointBundle(endpoint serving.CreateServingEndpoint) *bundle.Bundle {
 	}
 }
 
+// telemetryConfig returns a configuration that names the tables to create a profile
+// from, which is the form the API accepts.
 func telemetryConfig() *serving.TelemetryConfig {
 	return &serving.TelemetryConfig{
-		InferenceTableConfig: &serving.TelemetryInferenceTableConfig{SamplingFraction: 0.5},
+		TableNames: &serving.UnityCatalogTableNames{LogsTable: "main.default.logs"},
+	}
+}
+
+func servedModelConfig() *serving.EndpointCoreConfigInput {
+	return &serving.EndpointCoreConfigInput{
+		ServedEntities: []serving.ServedEntityInput{{
+			Name:          "prod",
+			EntityName:    "main.default.my_model",
+			EntityVersion: "1",
+		}},
 	}
 }
 
@@ -34,28 +51,22 @@ func TestValidateServingTelemetryConfig(t *testing.T) {
 	tests := []struct {
 		name     string
 		endpoint serving.CreateServingEndpoint
-		wantErr  bool
+		want     []string
 	}{
 		{
-			name: "telemetry with a served entity",
+			name: "telemetry with a served registered model",
 			endpoint: serving.CreateServingEndpoint{
 				Name:            "my_endpoint",
 				TelemetryConfig: telemetryConfig(),
-				Config: &serving.EndpointCoreConfigInput{
-					ServedEntities: []serving.ServedEntityInput{{Name: "prod"}},
-				},
+				Config:          servedModelConfig(),
 			},
 		},
 		{
-			// served_models is converted to served_entities by ModelServingEndpointFixups,
-			// so accept either to stay independent of mutator order.
-			name: "telemetry with a served model",
+			name: "telemetry pinned to an existing profile",
 			endpoint: serving.CreateServingEndpoint{
 				Name:            "my_endpoint",
-				TelemetryConfig: telemetryConfig(),
-				Config: &serving.EndpointCoreConfigInput{
-					ServedModels: []serving.ServedModelInput{{ModelName: "m", ModelVersion: "1"}},
-				},
+				TelemetryConfig: &serving.TelemetryConfig{TelemetryProfileId: "abc"},
+				Config:          servedModelConfig(),
 			},
 		},
 		{
@@ -70,7 +81,7 @@ func TestValidateServingTelemetryConfig(t *testing.T) {
 				Name:            "my_endpoint",
 				TelemetryConfig: telemetryConfig(),
 			},
-			wantErr: true,
+			want: []string{unsupportedEndpoint},
 		},
 		{
 			name: "telemetry and a config that serves nothing",
@@ -79,7 +90,50 @@ func TestValidateServingTelemetryConfig(t *testing.T) {
 				TelemetryConfig: telemetryConfig(),
 				Config:          &serving.EndpointCoreConfigInput{},
 			},
-			wantErr: true,
+			want: []string{unsupportedEndpoint},
+		},
+		{
+			// The API types this endpoint as EXTERNAL_MODELS and rejects telemetry on it,
+			// even though it does serve something.
+			name: "telemetry with only an external model",
+			endpoint: serving.CreateServingEndpoint{
+				Name:            "my_endpoint",
+				TelemetryConfig: telemetryConfig(),
+				Config: &serving.EndpointCoreConfigInput{
+					ServedEntities: []serving.ServedEntityInput{{
+						Name: "prod",
+						ExternalModel: &serving.ExternalModel{
+							Name:     "gpt-4o-mini",
+							Provider: "openai",
+							Task:     "llm/v1/chat",
+						},
+					}},
+				},
+			},
+			want: []string{unsupportedEndpoint},
+		},
+		{
+			// The API discards a configuration that names no profile, so sampling on its
+			// own never takes effect.
+			name: "telemetry with only an inference table config",
+			endpoint: serving.CreateServingEndpoint{
+				Name: "my_endpoint",
+				TelemetryConfig: &serving.TelemetryConfig{
+					InferenceTableConfig: &serving.TelemetryInferenceTableConfig{SamplingFraction: 0.5},
+				},
+				Config: servedModelConfig(),
+			},
+			want: []string{noProfile},
+		},
+		{
+			name: "an endpoint can fail both rules",
+			endpoint: serving.CreateServingEndpoint{
+				Name: "my_endpoint",
+				TelemetryConfig: &serving.TelemetryConfig{
+					InferenceTableConfig: &serving.TelemetryInferenceTableConfig{SamplingFraction: 0.5},
+				},
+			},
+			want: []string{unsupportedEndpoint, noProfile},
 		},
 	}
 
@@ -87,15 +141,12 @@ func TestValidateServingTelemetryConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			diags := ValidateServingTelemetryConfig().Apply(t.Context(), endpointBundle(tt.endpoint))
 
-			if !tt.wantErr {
-				assert.Empty(t, diags)
-				return
+			require.Len(t, diags, len(tt.want))
+			for i, summary := range tt.want {
+				assert.Equal(t, diag.Error, diags[i].Severity)
+				assert.Equal(t, summary, diags[i].Summary)
+				assert.Equal(t, "resources.model_serving_endpoints.my_endpoint.telemetry_config", diags[i].Paths[0].String())
 			}
-
-			require.Len(t, diags, 1)
-			assert.Equal(t, diag.Error, diags[0].Severity)
-			assert.Equal(t, "telemetry_config is not supported on an endpoint that does not serve a model", diags[0].Summary)
-			assert.Equal(t, "resources.model_serving_endpoints.my_endpoint.telemetry_config", diags[0].Paths[0].String())
 		})
 	}
 }

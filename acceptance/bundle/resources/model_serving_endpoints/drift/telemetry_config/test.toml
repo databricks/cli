@@ -3,4 +3,10 @@ RecordRequests = true
 # Covers the direct engine's telemetry_config classification and update path. Terraform is
 # excluded because the provider types sampling_fraction as an integer while the API takes a
 # fraction in [0.0, 1.0], so a terraform deploy truncates 0.5 to 0 and drops it.
+#
+# Local only: telemetry is supported only on an endpoint with a custom served model, which
+# needs a registered UC model and roughly ten minutes to provision, and every telemetry
+# PATCH then locks the endpoint for another two to three minutes. The fake's behaviour was
+# recorded against a real workspace instead; see the comments in
+# libs/testserver/serving_endpoints.go.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

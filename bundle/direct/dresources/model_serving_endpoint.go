@@ -325,6 +325,7 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 
 func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
 	var err error
+	updated := false
 
 	// Terraform makes these API calls sequentially. We do the same here.
 	// It's an unknown as of 1st Dec 2025 if these APIs are safe to make in parallel. (we did not check)
@@ -334,6 +335,7 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 		if err != nil {
 			return nil, err
 		}
+		updated = true
 	}
 
 	if entry.Changes.HasChange(pathAiGateway) {
@@ -341,6 +343,7 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 		if err != nil {
 			return nil, err
 		}
+		updated = true
 	}
 
 	if entry.Changes.HasChange(pathConfig) {
@@ -348,6 +351,7 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 		if err != nil {
 			return nil, err
 		}
+		updated = true
 	}
 
 	if entry.Changes.HasChange(pathEmailNotifications) {
@@ -355,9 +359,21 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 		if err != nil {
 			return nil, err
 		}
+		updated = true
 	}
 
 	if entry.Changes.HasChange(pathTelemetryConfig) {
+		// Unlike the calls above, the telemetry configuration API refuses to run
+		// concurrently with an in-flight update ("Endpoint <name> is currently being
+		// updated"), and each of those calls starts one. Wait for the endpoint to settle
+		// first; WaitAfterUpdate only runs once DoUpdate has returned.
+		if updated {
+			_, err = r.client.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, id, 35*time.Minute, nil)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		err = r.updateTelemetryConfig(ctx, id, config.TelemetryConfig)
 		if err != nil {
 			return nil, err

@@ -3,10 +3,10 @@ echo "*" > .gitignore
 title "Initial deployment"
 trace $CLI bundle deploy
 
-title "Plan converges: backend-assigned fields are not drift"
+title "Plan converges: the profile and inference table the backend named are not drift"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
-title "Editing sampling_fraction is a real change"
+title "Editing sampling_fraction is a real change: it round trips through GET"
 update_file.py databricks.yml "sampling_fraction: 0.5" "sampling_fraction: 0.9"
 trace $CLI bundle plan --output json | jq '.plan[].changes'
 
@@ -16,8 +16,16 @@ trace $CLI bundle deploy
 title "Plan converges again"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
+title "Editing table_names is a real change even though GET never echoes it"
+update_file.py databricks.yml "main.default.test_logs" "main.default.test_logs_v2"
+trace $CLI bundle plan --output json | jq '.plan[].changes'
+trace $CLI bundle deploy
+
+title "Plan converges after the tables changed"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+
 title "Removing telemetry_config from the bundle removes it remotely"
-update_file.py databricks.yml $'      telemetry_config:\n        inference_table_config:\n          sampling_fraction: 0.9\n' ''
+update_file.py databricks.yml $'      telemetry_config:\n        table_names:\n          logs_table: main.default.test_logs_v2\n          traces_table: main.default.test_traces\n          metrics_table: main.default.test_metrics\n          annotations_table: main.default.test_annotations\n        inference_table_config:\n          sampling_fraction: 0.9\n' ''
 trace $CLI bundle plan --output json | jq '.plan[].changes'
 trace $CLI bundle deploy
 # MSYS_NO_PATHCONV=1 stops Git Bash on Windows from rewriting the leading-slash

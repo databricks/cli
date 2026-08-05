@@ -1,0 +1,17 @@
+bundle:
+  name: "model_serving_telemetry"
+
+resources:
+  model_serving_endpoints:
+    # The endpoint supports telemetry, but an inference_table_config on its own names
+    # no profile, so the API discards it instead of applying the sampling fraction.
+    endpoint1:
+      name: "test-endpoint"
+      config:
+        served_entities:
+          - name: prod
+            entity_name: main.default.test_model
+            entity_version: "1"
+      telemetry_config:
+        inference_table_config:
+          sampling_fraction: 0.5

@@ -8,12 +8,10 @@ resources:
       config:
         served_entities:
           - name: prod
-            external_model:
-              name: gpt-4o-mini
-              provider: openai
-              task: llm/v1/chat
-              openai_config:
-                openai_api_key_plaintext: sk-test-plaintext-key
+            entity_name: main.default.test_model
+            entity_version: "1"
+            workload_size: Small
+            scale_to_zero_enabled: true
         traffic_config:
           routes:
             - served_model_name: prod

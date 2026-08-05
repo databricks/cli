@@ -6,19 +6,25 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Plan converges: backend-assigned fields are not drift
+=== Plan converges: the profile and inference table the backend named are not drift
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== Editing sampling_fraction is a real change
+=== Editing sampling_fraction is a real change: it round trips through GET
 >>> [CLI] bundle plan --output json
 {
-  "config.served_entities[0].external_model.openai_config.openai_api_key_plaintext": {
+  "config.traffic_config": {
     "action": "skip",
-    "reason": "input_only",
-    "old": "sk-test-plaintext-key",
-    "new": "sk-test-plaintext-key",
-    "remote": ""
+    "reason": "backend_default",
+    "remote": {
+      "routes": [
+        {
+          "served_entity_name": "prod",
+          "served_model_name": "prod",
+          "traffic_percentage": 100
+        }
+      ]
+    }
   },
   "description": {
     "action": "skip",
@@ -33,13 +39,29 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "telemetry_config.inference_table_config.name": {
     "action": "skip",
     "reason": "spec:output_only",
-    "remote": "main.default.test-endpoint_payload"
+    "remote": "main.default.test_logs_payload"
   },
   "telemetry_config.inference_table_config.sampling_fraction": {
     "action": "update",
     "old": 0.5,
     "new": 0.9,
     "remote": 0.5
+  },
+  "telemetry_config.table_names": {
+    "action": "skip",
+    "reason": "input_only",
+    "old": {
+      "annotations_table": "main.default.test_annotations",
+      "logs_table": "main.default.test_logs",
+      "metrics_table": "main.default.test_metrics",
+      "traces_table": "main.default.test_traces"
+    },
+    "new": {
+      "annotations_table": "main.default.test_annotations",
+      "logs_table": "main.default.test_logs",
+      "metrics_table": "main.default.test_metrics",
+      "traces_table": "main.default.test_traces"
+    }
   },
   "telemetry_config.telemetry_profile_id": {
     "action": "skip",
@@ -59,15 +81,89 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
+=== Editing table_names is a real change even though GET never echoes it
+>>> [CLI] bundle plan --output json
+{
+  "config.traffic_config": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "routes": [
+        {
+          "served_entity_name": "prod",
+          "served_model_name": "prod",
+          "traffic_percentage": 100
+        }
+      ]
+    }
+  },
+  "description": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": ""
+  },
+  "route_optimized": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": false
+  },
+  "telemetry_config.inference_table_config.name": {
+    "action": "skip",
+    "reason": "spec:output_only",
+    "remote": "main.default.test_logs_payload"
+  },
+  "telemetry_config.table_names": {
+    "action": "update",
+    "old": {
+      "annotations_table": "main.default.test_annotations",
+      "logs_table": "main.default.test_logs",
+      "metrics_table": "main.default.test_metrics",
+      "traces_table": "main.default.test_traces"
+    },
+    "new": {
+      "annotations_table": "main.default.test_annotations",
+      "logs_table": "main.default.test_logs_v2",
+      "metrics_table": "main.default.test_metrics",
+      "traces_table": "main.default.test_traces"
+    }
+  },
+  "telemetry_config.table_names.logs_table": {
+    "action": "update",
+    "old": "main.default.test_logs",
+    "new": "main.default.test_logs_v2"
+  },
+  "telemetry_config.telemetry_profile_id": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "[UUID]"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Plan converges after the tables changed
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
 === Removing telemetry_config from the bundle removes it remotely
 >>> [CLI] bundle plan --output json
 {
-  "config.served_entities[0].external_model.openai_config.openai_api_key_plaintext": {
+  "config.traffic_config": {
     "action": "skip",
-    "reason": "input_only",
-    "old": "sk-test-plaintext-key",
-    "new": "sk-test-plaintext-key",
-    "remote": ""
+    "reason": "backend_default",
+    "remote": {
+      "routes": [
+        {
+          "served_entity_name": "prod",
+          "served_model_name": "prod",
+          "traffic_percentage": 100
+        }
+      ]
+    }
   },
   "description": {
     "action": "skip",
@@ -84,11 +180,17 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "old": {
       "inference_table_config": {
         "sampling_fraction": 0.9
+      },
+      "table_names": {
+        "annotations_table": "main.default.test_annotations",
+        "logs_table": "main.default.test_logs_v2",
+        "metrics_table": "main.default.test_metrics",
+        "traces_table": "main.default.test_traces"
       }
     },
     "remote": {
       "inference_table_config": {
-        "name": "main.default.test-endpoint_payload",
+        "name": "main.default.test_logs_v2_payload",
         "sampling_fraction": 0.9
       },
       "telemetry_profile_id": "[UUID]"
@@ -117,30 +219,24 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "config": {
       "served_entities": [
         {
-          "external_model": {
-            "name": "gpt-4o-mini",
-            "openai_config": {
-              "openai_api_key_plaintext": "sk-test-plaintext-key"
-            },
-            "provider": "openai",
-            "task": "llm/v1/chat"
-          },
-          "name": "prod"
+          "entity_name": "main.default.test_model",
+          "entity_version": "1",
+          "name": "prod",
+          "scale_to_zero_enabled": true,
+          "workload_size": "Small"
         }
-      ],
-      "traffic_config": {
-        "routes": [
-          {
-            "served_model_name": "prod",
-            "traffic_percentage": 100
-          }
-        ]
-      }
+      ]
     },
     "name": "test-endpoint",
     "telemetry_config": {
       "inference_table_config": {
         "sampling_fraction": 0.5
+      },
+      "table_names": {
+        "annotations_table": "main.default.test_annotations",
+        "logs_table": "main.default.test_logs",
+        "metrics_table": "main.default.test_metrics",
+        "traces_table": "main.default.test_traces"
       }
     }
   }
@@ -152,6 +248,29 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "telemetry_config": {
       "inference_table_config": {
         "sampling_fraction": 0.9
+      },
+      "table_names": {
+        "annotations_table": "main.default.test_annotations",
+        "logs_table": "main.default.test_logs",
+        "metrics_table": "main.default.test_metrics",
+        "traces_table": "main.default.test_traces"
+      }
+    }
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config",
+  "body": {
+    "telemetry_config": {
+      "inference_table_config": {
+        "sampling_fraction": 0.9
+      },
+      "table_names": {
+        "annotations_table": "main.default.test_annotations",
+        "logs_table": "main.default.test_logs_v2",
+        "metrics_table": "main.default.test_metrics",
+        "traces_table": "main.default.test_traces"
       }
     }
   }
