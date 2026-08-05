@@ -86,9 +86,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		// Gated on JSON output to keep the text output unchanged: the success
 		// message is already printed by Materialize.
 		if root.OutputType(cmd) == flags.OutputJSON {
-			if result := tmpl.Writer.InitResult(); result != nil {
-				return cmdio.Render(ctx, result)
-			}
+			return cmdio.Render(ctx, tmpl.Writer.InitResult())
 		}
 		return nil
 	}

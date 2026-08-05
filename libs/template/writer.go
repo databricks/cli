@@ -54,7 +54,7 @@ type Writer interface {
 	LogTelemetry(ctx context.Context)
 
 	// InitResult returns what the template materialized. It must be called after
-	// Materialize; it returns nil if the template was not materialized.
+	// a successful Materialize.
 	InitResult() *InitResult
 }
 
@@ -182,11 +182,6 @@ func (tmpl *defaultWriter) Materialize(ctx context.Context, reader Reader) error
 }
 
 func (tmpl *defaultWriter) InitResult() *InitResult {
-	// The renderer is only set once the template has been materialized.
-	if tmpl.renderer == nil {
-		return nil
-	}
-
 	outputs := slices.Clone(tmpl.renderer.persistedPaths)
 	slices.Sort(outputs)
 
