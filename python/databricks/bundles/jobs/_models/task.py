@@ -111,10 +111,9 @@ class Task:
 
     ai_runtime_task: VariableOrOptional[AiRuntimeTask] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The task runs a multi-node GPU compute workload on Databricks AI Runtime.
-    External-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.
+    [Public Preview] The task runs a multi-gpu compute workload on Databricks AI Runtime. Specify
+    the accelerator type and count, the command to run, and where the workload's
+    code and MLflow output are stored.
     """
 
     alert_task: VariableOrOptional[AlertTask] = None
@@ -349,10 +348,9 @@ class TaskDict(TypedDict, total=False):
 
     ai_runtime_task: VariableOrOptional[AiRuntimeTaskParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The task runs a multi-node GPU compute workload on Databricks AI Runtime.
-    External-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.
+    [Public Preview] The task runs a multi-gpu compute workload on Databricks AI Runtime. Specify
+    the accelerator type and count, the command to run, and where the workload's
+    code and MLflow output are stored.
     """
 
     alert_task: VariableOrOptional[AlertTaskParam]

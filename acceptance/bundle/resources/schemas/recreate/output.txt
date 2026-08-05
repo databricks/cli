@@ -63,7 +63,7 @@ Deployment complete!
 }
 
 >>> musterr [CLI] schemas get main.myschema
-Error: Resource catalog.SchemaInfo not found: main.myschema
+Error: Schema 'main.myschema' does not exist.
 
 >>> [CLI] schemas get newmain.myschema
 {

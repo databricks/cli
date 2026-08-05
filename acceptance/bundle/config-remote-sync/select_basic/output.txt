@@ -59,14 +59,14 @@ Resource: resources.jobs.job_two
 === An unknown resource id alone is rejected (no match at all must not silently succeed)
 
 >>> [CLI] bundle config-remote-sync --select-ids jobs:no-such-id-123
-Error: no deployed jobs resource with id no-such-id-123
+Error: no deployed jobs resource with id no-such-id-123; deployed jobs ids in state: [JOB_ID], [JOB_ID]
 
 Exit code: 1
 
 === An id that exists under a different type matches nothing and is rejected too
 
 >>> [CLI] bundle config-remote-sync --select-ids pipelines:[JOB_ONE_ID]
-Error: no deployed pipelines resource with id [JOB_ONE_ID]
+Error: no deployed pipelines resource with id [JOB_ONE_ID]; the deployment state contains no pipelines resources (deployed resources by type: jobs=2)
 
 Exit code: 1
 
