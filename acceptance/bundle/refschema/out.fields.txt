@@ -3534,22 +3534,22 @@ resources.secret_scopes.*.permissions.acls[*].principal	string	ALL
 resources.secret_scopes.*.permissions.scope_name	string	ALL
 resources.secrets.*.catalog_name	string	ALL
 resources.secrets.*.comment	string	ALL
-resources.secrets.*.create_time	*time.Time	REMOTE	STATE
-resources.secrets.*.created_by	string	REMOTE	STATE
-resources.secrets.*.effective_owner	string	REMOTE	STATE
-resources.secrets.*.effective_value	string	REMOTE	STATE
+resources.secrets.*.create_time	*time.Time	ALL
+resources.secrets.*.created_by	string	ALL
+resources.secrets.*.effective_owner	string	ALL
+resources.secrets.*.effective_value	string	ALL
 resources.secrets.*.expire_time	*time.Time	ALL
-resources.secrets.*.full_name	string	REMOTE	STATE
+resources.secrets.*.full_name	string	ALL
 resources.secrets.*.id	string	INPUT
 resources.secrets.*.lifecycle	resources.Lifecycle	INPUT
 resources.secrets.*.lifecycle.prevent_destroy	bool	INPUT
-resources.secrets.*.metastore_id	string	REMOTE	STATE
+resources.secrets.*.metastore_id	string	ALL
 resources.secrets.*.modified_status	string	INPUT
 resources.secrets.*.name	string	ALL
-resources.secrets.*.owner	string	REMOTE	STATE
+resources.secrets.*.owner	string	ALL
 resources.secrets.*.schema_name	string	ALL
-resources.secrets.*.update_time	*time.Time	REMOTE	STATE
-resources.secrets.*.updated_by	string	REMOTE	STATE
+resources.secrets.*.update_time	*time.Time	ALL
+resources.secrets.*.updated_by	string	ALL
 resources.secrets.*.url	string	INPUT
 resources.secrets.*.value	string	ALL
 resources.secrets.*.grants.full_name	string	ALL

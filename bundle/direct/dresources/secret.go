@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -38,10 +37,6 @@ func (*ResourceSecret) New(client *databricks.WorkspaceClient) *ResourceSecret {
 }
 
 func (*ResourceSecret) PrepareState(input *resources.Secret) *SecretState {
-	var expireTime *sdktime.Time
-	if input.ExpireTime != nil {
-		expireTime = sdktime.New(*input.ExpireTime)
-	}
 	return &SecretState{
 		Secret: catalog.Secret{
 			CatalogName:     input.CatalogName,
@@ -49,7 +44,7 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *SecretState {
 			Name:            input.Name,
 			Value:           "",
 			Comment:         input.Comment,
-			ExpireTime:      expireTime,
+			ExpireTime:      input.ExpireTime,
 			Owner:           "",
 			CreateTime:      nil,
 			CreatedBy:       "",

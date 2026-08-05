@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"time"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
@@ -16,29 +15,7 @@ import (
 
 type Secret struct {
 	BaseResource
-
-	// The name of the catalog where the schema and the secret reside.
-	CatalogName string `json:"catalog_name"`
-
-	// The name of the schema where the secret resides.
-	SchemaName string `json:"schema_name"`
-
-	// The name of the secret, relative to its parent schema.
-	Name string `json:"name"`
-
-	// The secret value to store. This field must be a variable reference (e.g., ${var.my_secret})
-	// to prevent leaking secrets in configuration files. Plain text values are not allowed.
-	// The maximum size is 60 KiB (pre-encryption).
-	Value string `json:"value" bundle:"sensitive"`
-
-	// User-provided free-form text description of the secret.
-	Comment string `json:"comment,omitempty"`
-
-	// User-provided expiration time of the secret. This field indicates when
-	// the secret should no longer be used and may be displayed as a warning in
-	// the UI. It is purely informational and does not trigger any automatic
-	// actions or affect the secret's lifecycle.
-	ExpireTime *time.Time `json:"expire_time,omitempty"`
+	catalog.Secret
 
 	// List of grants to apply on this secret.
 	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
