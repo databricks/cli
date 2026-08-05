@@ -1,11 +1,6 @@
-# Invariant fuzzing: generate a random config per seed and run the real invariant script, which
-# reaches the generator through the helper overrides in script.prepare. Those scripts print
-# INPUT_CONFIG_OK once a config deploys, so a non-zero result before the marker is a rejection;
-# a panic anywhere, or a failure after it, is a bug.
-#
-# This is a harness over the invariant targets in ../invariant, not an invariant of its own:
-# FUZZ_TARGET picks which one runs, and run_fuzz.py owns the seed loop and the outcome
-# classification.
+# Invariant fuzzing: generate a random config per seed and run a real invariant target from
+# ../invariant, which reaches the generator through the helper overrides in script.prepare.
+# run_fuzz.py owns the seed loop and the outcome classification; see README.md.
 
 # no_drift/script reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
 export READPLAN=""
@@ -27,8 +22,7 @@ seed_body() {
     source "$INVARIANT_DIR/$FUZZ_TARGET/script"
 }
 
-# run_fuzz.py spawns a fresh bash per seed, so export seed_body and the harness helpers it calls
-# (trace).
+# run_fuzz.py spawns a fresh bash per seed, so export seed_body and the helpers it calls (trace).
 export -f $(compgen -A function)
 
 run_fuzz.py

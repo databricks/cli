@@ -49,12 +49,10 @@ def main():
             sys.stderr.write(f"{name}: base did not parse to a config with resources\n")
             failed = True
             continue
-        # load -> emit -> load is a fixed point.
         if load_yaml(to_yaml(parsed)) != parsed:
             sys.stderr.write(f"{name}: loader is not a round-trip fixed point\n")
             failed = True
 
-    # Mutation must be reproducible for a fixed seed.
     for seed in range(5):
         a = to_yaml(mutate(load_yaml(render("volume")), seed))
         b = to_yaml(mutate(load_yaml(render("volume")), seed))

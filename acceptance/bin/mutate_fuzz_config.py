@@ -52,11 +52,10 @@ def scalar(text):
         return []
     if text == "{}":
         return {}
-    # Populated flow style is the one shape this loader cannot represent. Reading "[id]" as the
-    # string "[id]" would turn a list into a scalar, and load -> emit -> load stays a fixed point,
-    # so the round-trip check in mutate_fuzz_config_check.py cannot see it either: every seed for
-    # that base would just be rejected. Exit instead, so adding such a base to MUTATE_BASES fails
-    # the selftest rather than silently costing coverage.
+    # Populated flow style is the one shape this loader cannot represent: "[id]" would read back as
+    # the string "[id]", turning a list into a scalar, and load -> emit -> load stays a fixed point,
+    # so the round-trip check cannot see it either. Exit so a new MUTATE_BASES entry fails the
+    # selftest rather than silently costing coverage.
     if text[0] in "[{":
         sys.exit(f"mutate_fuzz_config: flow-style value is not supported: {text!r}")
     if text == "true":
