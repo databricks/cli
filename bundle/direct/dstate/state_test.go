@@ -20,24 +20,43 @@ func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil, nil))
 
 	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{"key": "val"}, nil))
 	mustFinalize(t, &db)
 
 	// Re-open and verify persisted data.
 	var db2 DeploymentState
-	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
+	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(false), WithWrite(false), nil, nil))
 	assert.Equal(t, 1, db2.Data.Serial)
 	assert.Equal(t, "123", db2.GetResourceID("jobs.my_job"))
 	mustFinalize(t, &db2)
+}
+
+func TestDeploymentIDPersistsAcrossOpen(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil, nil))
+	assert.Empty(t, db.GetDeploymentID())
+
+	// The deployment ID is set during deploy (after CreateDeployment) and
+	// persisted by Finalize even though it is not part of the WAL header.
+	db.SetDeploymentID("server-assigned-id")
+	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{}, nil))
+	mustFinalize(t, &db)
+
+	var reopened DeploymentState
+	require.NoError(t, reopened.Open(t.Context(), path, WithRecovery(false), WithWrite(false), nil, nil))
+	assert.Equal(t, "server-assigned-id", reopened.GetDeploymentID())
+	mustFinalize(t, &reopened)
 }
 
 func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil, nil))
 	mustFinalize(t, &db)
 
 	_, err := os.Stat(path)
@@ -93,10 +112,10 @@ func TestPanicOnDoubleOpen(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil, nil))
 
 	assert.Panics(t, func() {
-		_ = db.Open(t.Context(), path, WithRecovery(true), WithWrite(true))
+		_ = db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil, nil)
 	})
 	mustFinalize(t, &db)
 }
@@ -107,12 +126,12 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 
 	// Commit serial 1 with one resource.
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil, nil))
 	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{}, nil))
 	mustFinalize(t, &db)
 
 	var committed DeploymentState
-	require.NoError(t, committed.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
+	require.NoError(t, committed.Open(t.Context(), path, WithRecovery(false), WithWrite(false), nil, nil))
 	lineage := committed.Data.Lineage
 	require.Equal(t, 1, committed.Data.Serial)
 	mustFinalize(t, &committed)
@@ -128,7 +147,7 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 	require.NoError(t, os.WriteFile(walPath, append(headerLine, '\n'), 0o600))
 
 	var recovered DeploymentState
-	require.NoError(t, recovered.Open(t.Context(), path, WithRecovery(true), WithWrite(false)))
+	require.NoError(t, recovered.Open(t.Context(), path, WithRecovery(true), WithWrite(false), nil, nil))
 	assert.Equal(t, 1, recovered.Data.Serial)
 	assert.Equal(t, "123", recovered.GetResourceID("jobs.my_job"))
 	assert.NoFileExists(t, walPath)
@@ -171,17 +190,17 @@ func TestDeleteState(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil, nil))
 	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{}, nil))
 	mustFinalize(t, &db)
 
 	var db2 DeploymentState
-	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil, nil))
 	require.NoError(t, db2.DeleteState("jobs.my_job"))
 	mustFinalize(t, &db2)
 
 	var db3 DeploymentState
-	require.NoError(t, db3.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
+	require.NoError(t, db3.Open(t.Context(), path, WithRecovery(false), WithWrite(false), nil, nil))
 	assert.Equal(t, 2, db3.Data.Serial)
 	assert.Empty(t, db3.GetResourceID("jobs.my_job"))
 	mustFinalize(t, &db3)
@@ -193,7 +212,7 @@ func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
 	// Fresh state opened read-only, as the deploy does before planning: no
 	// lineage yet.
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false)))
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false), nil, nil))
 	require.Empty(t, db.Data.Lineage)
 
 	// GetOrInitLineage initializes the lineage and makes it readable before any
@@ -210,7 +229,7 @@ func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
 
 	// Re-open: the persisted lineage matches the one read before the write.
 	var reopened DeploymentState
-	require.NoError(t, reopened.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
+	require.NoError(t, reopened.Open(t.Context(), path, WithRecovery(false), WithWrite(false), nil, nil))
 	assert.Equal(t, lineage, reopened.Data.Lineage)
 	mustFinalize(t, &reopened)
 }

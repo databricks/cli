@@ -1,0 +1,15 @@
+title "Deploy: the server assigns the deployment ID, and a version + create operation are recorded"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --sort
+
+title "The server-assigned deployment ID is persisted in the local state file"
+trace jq .deployment_id .databricks/bundle/default/resources.json
+
+title "Redeploy after deleting the local cache: the deployment ID is recovered from remote state, the same deployment is reused, and the version increments (no new CreateDeployment)"
+rm -rf .databricks
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --sort
+
+title "Destroy: a destroy version and delete operation are recorded, then the deployment is deleted"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //api/2.0/bundle --sort

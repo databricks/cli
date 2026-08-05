@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -24,6 +25,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
@@ -164,7 +166,17 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	// lock is acquired here
+	//
+	// Set up DMS recording of this deployment as a version. The version is not
+	// created until the plan is approved (below), so a cancelled deploy records
+	// nothing; the deferred CompleteVersion is a no-op until CreateVersion runs.
+	// CompleteVersion is deferred before lock.Release so it runs while the lock
+	// is still held (defers run last-in-first-out).
+	recorder := newDeploymentRecorder(ctx, b, stateEngine, dms.VersionTypeDeploy)
 	defer func() {
+		if err := recorder.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
@@ -258,6 +270,26 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 	if haveApproval {
+		// Record the DMS version now that the plan is approved and the state WAL
+		// has been opened. CreateVersion requests version_id == last_version_id + 1;
+		// the server returns ABORTED if a concurrent deploy advanced the deployment
+		// since the plan was computed, so a stale plan is not applied.
+		if err := recorder.CreateVersion(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		if recorder != nil {
+			// On a first deploy the server assigned the deployment ID; persist it in
+			// state (Finalize writes it to disk) so later deploys reuse the record.
+			// Record operations under the version just created so DMS holds the
+			// deployed resource state.
+			b.DeploymentBundle.StateDB.SetDeploymentID(recorder.DeploymentID())
+			b.DeploymentBundle.OpRec = direct.NewOperationRecorder(
+				b.WorkspaceClient(ctx).BundleDeployments,
+				recorder.DeploymentID(),
+				recorder.Version(),
+			)
+		}
 		deployCore(ctx, b, plan, stateEngine, requestedEngine)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")

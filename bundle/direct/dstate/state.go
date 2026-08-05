@@ -19,6 +19,8 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structwalk"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/google/uuid"
 )
 
@@ -79,6 +81,13 @@ type Header struct {
 	CLIVersion   string `json:"cli_version"`
 	Lineage      string `json:"lineage"`
 	Serial       int    `json:"serial"`
+
+	// DeploymentID is the ID the deployment metadata service (DMS) assigned to
+	// this deployment. Unlike Lineage (a locally generated identifier for the
+	// state file), it is minted server-side by CreateDeployment and stored here so
+	// later deploys can find the same DMS deployment record and read its state.
+	// Empty/omitted until the bundle first records to DMS.
+	DeploymentID string `json:"deployment_id,omitempty"`
 
 	// Features maps each feature flag this state depends on to a (currently empty)
 	// value. This CLI writes no features; it only reads the field to detect a state
@@ -209,6 +218,25 @@ func (db *DeploymentState) GetOrInitLineage() string {
 	return db.Data.Lineage
 }
 
+// GetDeploymentID returns the DMS deployment ID recorded in the state, or an
+// empty string if this bundle has not yet recorded a deployment to DMS.
+func (db *DeploymentState) GetDeploymentID() string {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.Data.DeploymentID
+}
+
+// SetDeploymentID stores the DMS-assigned deployment ID in the in-memory state
+// header. It is set during deploy, after CreateDeployment returns the
+// server-generated ID, and persisted to the state file by Finalize. Storing it
+// on db.Data (not the WAL header, which is written before the ID is known)
+// means the subsequent state write carries it forward.
+func (db *DeploymentState) SetDeploymentID(id string) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.Data.DeploymentID = id
+}
+
 type (
 	// If true, then Open reads the WAL and merges it in the state. If false, and WAL is present, Open returns an error.
 	WithRecovery bool
@@ -218,7 +246,19 @@ type (
 	WithWrite bool
 )
 
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite) error {
+// Open reads the deployment state from disk (and recovers the WAL when
+// withRecovery is set). When dmsClient is non-nil, the deployment metadata
+// service is the source of truth for resource state: if DMS holds a
+// successfully completed version for this deployment, the resources read from
+// the file are replaced with the ones recorded in DMS. The local identity
+// (lineage, serial, and deployment ID) always comes from the file, since that
+// is what the write path increments and carries forward. A nil dmsClient keeps
+// the behavior file-only.
+//
+// dmsCfg accompanies dmsClient (both come from the same workspace client) and
+// is used only for a temporary raw read of last_successful_version_id; see the
+// TODO in deploymentHasSuccessfulVersion.
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsClient bundledeployments.BundleDeploymentsInterface, dmsCfg *sdkconfig.Config) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -264,6 +304,12 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 
 	if err := migrateState(&db.Data); err != nil {
 		return fmt.Errorf("migrating state %s: %w", path, err)
+	}
+
+	if dmsClient != nil && db.Data.DeploymentID != "" {
+		if err := db.overlayDMSState(ctx, dmsClient, dmsCfg); err != nil {
+			return err
+		}
 	}
 
 	if withWrite {

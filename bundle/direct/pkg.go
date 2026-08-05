@@ -44,6 +44,11 @@ type DeploymentBundle struct {
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
+
+	// OpRec records each applied resource operation with the deployment metadata
+	// service (DMS). It is nil unless the bundle opts into recording deployment
+	// history, in which case the phases package sets it after CreateVersion.
+	OpRec opRecorder
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.
