@@ -950,6 +950,36 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	return Response{Body: run}
 }
 
+// JobsCancelRun cancels a run that is still going. The real API settles the run
+// asynchronously; doing it at once is enough for the caller, which polls runs/get.
+func (s *FakeWorkspace) JobsCancelRun(req Request) Response {
+	var request jobs.CancelRun
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+
+	defer s.LockUnlock()()
+
+	run, ok := s.JobRuns[request.RunId]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	// A run that already finished keeps the outcome it reached.
+	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
+		run.State = &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateCanceled,
+		}
+		s.JobRuns[request.RunId] = run
+	}
+
+	return Response{}
+}
+
 func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {
 	var request jobs.DeleteRun
 	if err := json.Unmarshal(req.Body, &request); err != nil {

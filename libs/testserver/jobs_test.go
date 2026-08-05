@@ -183,6 +183,44 @@ func TestJobsGetRun_TaskWithoutCodeDoesNotFailTheRun(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, getRun(t, workspace, runID).State.ResultState)
 }
 
+// An interrupted deploy leaves the run going, and the CLI cancels it before
+// deleting it, since jobs/runs/delete rejects an active run.
+func TestJobsCancelRun_SettlesAnActiveRun(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	jobID := createJob(t, workspace, jobs.Task{
+		TaskKey:      "main",
+		NotebookTask: &jobs.NotebookTask{NotebookPath: "/missing-notebook"},
+	})
+	runID := runNow(t, workspace, jobs.RunNow{JobId: jobID}).Body.(jobs.RunNowResponse).RunId
+
+	body, err := json.Marshal(jobs.CancelRun{RunId: runID})
+	require.NoError(t, err)
+	require.Equal(t, 0, workspace.JobsCancelRun(Request{Body: body}).StatusCode)
+
+	run := getRun(t, workspace, runID)
+	assert.Equal(t, jobs.RunLifeCycleStateTerminated, run.State.LifeCycleState)
+	assert.Equal(t, jobs.RunResultStateCanceled, run.State.ResultState)
+}
+
+func TestJobsCancelRun_LeavesAFinishedRunAlone(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	jobID := createJob(t, workspace, jobs.Task{
+		TaskKey:      "main",
+		NotebookTask: &jobs.NotebookTask{NotebookPath: "/missing-notebook"},
+	})
+	runID := runNow(t, workspace, jobs.RunNow{JobId: jobID}).Body.(jobs.RunNowResponse).RunId
+
+	// The first poll settles the run, the way a completed deploy leaves it.
+	getRun(t, workspace, runID)
+	require.Equal(t, jobs.RunResultStateSuccess, getRun(t, workspace, runID).State.ResultState)
+
+	body, err := json.Marshal(jobs.CancelRun{RunId: runID})
+	require.NoError(t, err)
+	require.Equal(t, 0, workspace.JobsCancelRun(Request{Body: body}).StatusCode)
+
+	assert.Equal(t, jobs.RunResultStateSuccess, getRun(t, workspace, runID).State.ResultState)
+}
+
 func TestJobsSubmit_RejectsInvalidGitProvider(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
