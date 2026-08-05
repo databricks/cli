@@ -16,8 +16,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class DeploymentSpec:
     """
-    :meta private: [EXPERIMENTAL]
-
     DeploymentSpec: configuration for one deployment within an AiRuntimeTask.
     Each entry in `AiRuntimeTask.deployments` describes a group of nodes that
     share the same command and compute. Many single-program training
@@ -28,9 +26,7 @@ class DeploymentSpec:
 
     command_path: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Workspace path of the script to run on each node in this deployment.
+    [Public Preview] Workspace path of the script to run on each node in this deployment.
     Upload the script to this path and supply the path here. When the task
     runs, the file at this path is run on each node; if it fails, the task
     fails with its exit code.
@@ -49,16 +45,12 @@ class DeploymentSpec:
 
     compute: VariableOr[ComputeSpec]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Compute resources allocated to each node in this deployment.
+    [Public Preview] Compute resources allocated to each node in this deployment.
     """
 
     name: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Optional human-readable name for this deployment (for example, `driver`,
+    [Public Preview] Optional human-readable name for this deployment (for example, `driver`,
     `worker`, `param_server`). Used for log and UI display. Distinct names
     are recommended so deployments can be told apart, but uniqueness is not
     enforced.
@@ -77,9 +69,7 @@ class DeploymentSpecDict(TypedDict, total=False):
 
     command_path: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Workspace path of the script to run on each node in this deployment.
+    [Public Preview] Workspace path of the script to run on each node in this deployment.
     Upload the script to this path and supply the path here. When the task
     runs, the file at this path is run on each node; if it fails, the task
     fails with its exit code.
@@ -98,16 +88,12 @@ class DeploymentSpecDict(TypedDict, total=False):
 
     compute: VariableOr[ComputeSpecParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Compute resources allocated to each node in this deployment.
+    [Public Preview] Compute resources allocated to each node in this deployment.
     """
 
     name: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Optional human-readable name for this deployment (for example, `driver`,
+    [Public Preview] Optional human-readable name for this deployment (for example, `driver`,
     `worker`, `param_server`). Used for log and UI display. Distinct names
     are recommended so deployments can be told apart, but uniqueness is not
     enforced.
