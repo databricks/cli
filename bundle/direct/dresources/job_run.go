@@ -331,7 +331,7 @@ func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, _ *JobRunState
 }
 
 // OverrideChangeDesc downgrades result_state drift to an update while the run is
-// still going: recreating would cancel a run that may yet succeed. A run that
+// still going, so a run that may yet succeed is adopted and waited on. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
