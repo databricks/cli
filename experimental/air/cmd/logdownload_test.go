@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -374,20 +375,99 @@ func truncatingServer(t *testing.T) *httptest.Server {
 	return srv
 }
 
-func TestDownloadNodeLogReportsTruncation(t *testing.T) {
+func TestDownloadNodeLogReportsFailedChunk(t *testing.T) {
 	w := newTestWorkspaceClient(t, truncatingServer(t).URL)
 	dir := t.TempDir()
 
 	// Chunk 0 succeeded and chunk 1 failed: keep the bytes, but return an error
-	// so the truncation isn't silent.
+	// so the gap isn't silent.
 	path, err := downloadNodeLog(t.Context(), w, "run1", 0, 0, false, dir)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "truncated at chunk 1")
+	assert.Contains(t, err.Error(), "chunk(s) [1]")
 	require.NotEmpty(t, path)
 
 	got, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Equal(t, "first chunk\n", string(got))
+}
+
+// middleGapServer serves three chunks for node 0 and fails only the middle one,
+// so the walk has to continue past a gap to reach the last chunk.
+func middleGapServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	var base string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.0/mlflow/artifacts/list":
+			p := r.URL.Query().Get("path")
+			if p == "logs" {
+				_, _ = w.Write([]byte(`{"files": [{"path": "logs/node_0", "is_dir": true}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"files": [
+				{"path": "` + p + `/logs-0.chunk.txt"},
+				{"path": "` + p + `/logs-1.chunk.txt"},
+				{"path": "` + p + `/logs-2.chunk.txt"}
+			]}`))
+		case "/api/2.0/mlflow/artifacts/credentials-for-read":
+			p := r.URL.Query().Get("path")
+			if strings.HasSuffix(p, "logs-1.chunk.txt") {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(`{"error_code": "INTERNAL", "message": "boom"}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"credential_infos": [{"signed_uri": "` + base + `/presigned?p=` + p + `"}]}`))
+		case "/presigned":
+			_, _ = w.Write([]byte(path.Base(r.URL.Query().Get("p")) + "\n"))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	base = srv.URL
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestDownloadNodeLogSkipsGapAndKeepsTail(t *testing.T) {
+	w := newTestWorkspaceClient(t, middleGapServer(t).URL)
+	dir := t.TempDir()
+
+	// The tail usually carries the failure signature, so a bad middle chunk must
+	// not cost us the last one.
+	p, err := downloadNodeLog(t.Context(), w, "run1", 0, 0, false, dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "chunk(s) [1]")
+
+	got, err := os.ReadFile(p)
+	require.NoError(t, err)
+	assert.Equal(t, "logs-0.chunk.txt\nlogs-2.chunk.txt\n", string(got))
+}
+
+func TestDownloadNodeLogErrorsWhenEveryChunkFails(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.0/mlflow/artifacts/list":
+			p := r.URL.Query().Get("path")
+			if p == "logs" {
+				_, _ = w.Write([]byte(`{"files": [{"path": "logs/node_0", "is_dir": true}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"files": [{"path": "` + p + `/logs-0.chunk.txt"}]}`))
+		case "/api/2.0/mlflow/artifacts/credentials-for-read":
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error_code": "INTERNAL", "message": "boom"}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	// Nothing downloaded because of failures, not because the node was silent:
+	// report it rather than returning an empty "no logs" result.
+	p, err := downloadNodeLog(t.Context(), newTestWorkspaceClient(t, srv.URL), "run1", 0, 0, false, t.TempDir())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "every chunk failed")
+	assert.Empty(t, p)
 }
 
 func TestDownloadAllNodeLogsKeepsTruncatedNode(t *testing.T) {
@@ -400,5 +480,5 @@ func TestDownloadAllNodeLogsKeepsTruncatedNode(t *testing.T) {
 	require.Contains(t, nodeLogs, 0)
 	assert.FileExists(t, nodeLogs[0])
 	require.Contains(t, failures, 0)
-	assert.Contains(t, failures[0], "truncated at chunk 1")
+	assert.Contains(t, failures[0], "chunk(s) [1]")
 }

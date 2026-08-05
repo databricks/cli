@@ -11,6 +11,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"golang.org/x/sync/errgroup"
@@ -173,10 +174,11 @@ func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlf
 }
 
 // downloadNodeLog streams a node's chunks in order into dir/logs/node_<n>.log,
-// returning the path, or "" if the node logged nothing. A partial download
-// returns both a path and an error. The bytes are copied verbatim: a download
-// should reproduce the log exactly, so it must not round-trip through lines
-// (which would rewrite line endings and cap long lines).
+// returning the path, or "" if the node logged nothing. A failed chunk is skipped
+// rather than ending the walk, so a partial download returns both a path and an
+// error naming the gaps. The bytes are copied verbatim: a download should
+// reproduce the log exactly, so it must not round-trip through lines (which would
+// rewrite line endings and cap long lines).
 func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string, node, attempt int, withAttempt bool, dir string) (string, error) {
 	logDir := constructLogPath(node, attempt, withAttempt)
 	chunks, err := listLogChunks(ctx, w, mlflowRunID, logDir)
@@ -199,24 +201,33 @@ func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowR
 	}
 	defer f.Close()
 
+	// Skip a failed chunk and keep going: the tail usually holds the failure
+	// signature, so losing it to an early bad chunk is worse than a gap. Cancellation
+	// still aborts, since every remaining chunk would fail too.
 	var written int64
+	var missing []int
 	for _, chunk := range chunks {
 		n, err := copyArtifactTo(ctx, w, mlflowRunID, chunk.path, f)
-		if err != nil {
-			// Stop at the first gap rather than splicing non-adjacent chunks.
-			if written == 0 {
-				os.Remove(outPath)
-				return "", err
-			}
-			// Keep the bytes so far, but report it: a log cut short silently
-			// reads as complete.
-			return outPath, fmt.Errorf("truncated at chunk %d: %w", chunk.index, err)
+		switch {
+		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+			os.Remove(outPath)
+			return "", err
+		case err != nil:
+			log.Debugf(ctx, "air logs: node %d chunk %d failed: %v", node, chunk.index, err)
+			missing = append(missing, chunk.index)
+		default:
+			written += n
 		}
-		written += n
 	}
 	if written == 0 {
 		os.Remove(outPath)
+		if len(missing) > 0 {
+			return "", fmt.Errorf("every chunk failed to download (%d total)", len(missing))
+		}
 		return "", nil
+	}
+	if len(missing) > 0 {
+		return outPath, fmt.Errorf("incomplete: chunk(s) %v failed to download", missing)
 	}
 	return outPath, nil
 }
