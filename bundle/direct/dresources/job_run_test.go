@@ -120,6 +120,109 @@ func TestJobRunWaitReportsFailedTask(t *testing.T) {
 	assert.NotContains(t, err.Error(), `task "ok"`)
 }
 
+// Without the deprecated per-task state, a failed task is told apart from a
+// skipped one by its termination details.
+func TestJobRunWaitReportsFailedTaskWithoutDeprecatedState(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+		return jobs.Run{
+			RunId: 123,
+			JobId: 456,
+			State: &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateTerminated,
+				ResultState:    jobs.RunResultStateFailed,
+			},
+			Tasks: []jobs.RunTask{
+				{TaskKey: "main", RunId: 999, Status: &jobs.RunStatus{
+					State: jobs.RunLifecycleStateV2StateTerminated,
+					TerminationDetails: &jobs.TerminationDetails{
+						Type:    jobs.TerminationTypeTypeClientError,
+						Code:    jobs.TerminationCodeCodeRunExecutionError,
+						Message: "Workload failed, see run output for details",
+					},
+				}},
+				// Never ran, so it has no error of its own to report.
+				{TaskKey: "downstream", RunId: 1000, Status: &jobs.RunStatus{
+					State: jobs.RunLifecycleStateV2StateTerminated,
+					TerminationDetails: &jobs.TerminationDetails{
+						Type: jobs.TerminationTypeTypeClientError,
+						Code: jobs.TerminationCodeCodeSkipped,
+					},
+				}},
+			},
+		}
+	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
+		return jobs.RunOutput{Error: "RuntimeError: intentional failure"}
+	})
+
+	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
+
+	require.ErrorContains(t, err, `task "main": RuntimeError: intentional failure`)
+	assert.NotContains(t, err.Error(), `task "downstream"`)
+}
+
+// When the run output carries no error, the termination message stands in.
+func TestJobRunWaitFallsBackToTheTerminationMessage(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+		return jobs.Run{
+			RunId: 123,
+			JobId: 456,
+			State: &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateTerminated,
+				ResultState:    jobs.RunResultStateFailed,
+			},
+			Tasks: []jobs.RunTask{
+				{TaskKey: "main", RunId: 999, Status: &jobs.RunStatus{
+					State: jobs.RunLifecycleStateV2StateTerminated,
+					TerminationDetails: &jobs.TerminationDetails{
+						Type:    jobs.TerminationTypeTypeCloudFailure,
+						Code:    jobs.TerminationCodeCodeCloudFailure,
+						Message: "the cloud provider ran out of capacity",
+					},
+				}},
+			},
+		}
+	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
+		return jobs.RunOutput{}
+	})
+
+	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
+
+	require.ErrorContains(t, err, `task "main": the cloud provider ran out of capacity`)
+}
+
+// The same fallback for a task still reported through the deprecated state.
+func TestJobRunWaitFallsBackToTheTaskMessage(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+		return jobs.Run{
+			RunId: 123,
+			JobId: 456,
+			State: &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateTerminated,
+				ResultState:    jobs.RunResultStateFailed,
+			},
+			Tasks: []jobs.RunTask{
+				{TaskKey: "main", RunId: 999, State: &jobs.RunState{
+					LifeCycleState: jobs.RunLifeCycleStateTerminated,
+					ResultState:    jobs.RunResultStateFailed,
+					StateMessage:   "Workload failed, see run output for details",
+				}},
+			},
+		}
+	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
+		return jobs.RunOutput{}
+	})
+
+	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
+
+	require.ErrorContains(t, err, `task "main": Workload failed, see run output for details`)
+}
+
 func TestJobRunWaitFailsOnSkipped(t *testing.T) {
 	// A skipped run has no result_state, so the lifecycle state is reported.
 	client := jobRunClient(t, &jobs.RunState{
