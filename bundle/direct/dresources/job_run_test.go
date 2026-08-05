@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -358,6 +359,45 @@ func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
 			assert.Equal(t, outcome, state.ResultState)
 		})
 	}
+}
+
+// A run that has not finished has no outcome to compare against, so the
+// recreate the planner derives from result_state drift has to become the update
+// that adopts it. Every other state keeps the recreate, which re-runs the job.
+func TestJobRunOverrideChangeDescOnlyAdoptsAnUnfinishedRun(t *testing.T) {
+	tests := []struct {
+		lifecycle jobs.RunLifeCycleState
+		want      deployplan.ActionType
+	}{
+		{jobs.RunLifeCycleStateRunning, deployplan.Update},
+		{jobs.RunLifeCycleStatePending, deployplan.Update},
+		{jobs.RunLifeCycleStateTerminated, deployplan.Recreate},
+		{jobs.RunLifeCycleStateSkipped, deployplan.Recreate},
+		{jobs.RunLifeCycleStateInternalError, deployplan.Recreate},
+	}
+
+	for _, test := range tests {
+		t.Run(string(test.lifecycle), func(t *testing.T) {
+			change := ChangeDesc{Action: deployplan.Recreate}
+			remote := &JobRunRemote{State: &jobs.RunState{LifeCycleState: test.lifecycle}}
+
+			err := (&ResourceJobRun{}).OverrideChangeDesc(t.Context(), structpath.MustParsePath("result_state"), &change, remote)
+
+			require.NoError(t, err)
+			assert.Equal(t, test.want, change.Action)
+		})
+	}
+}
+
+// Only result_state carries the outcome; drift on anything else is left alone.
+func TestJobRunOverrideChangeDescLeavesOtherFieldsAlone(t *testing.T) {
+	change := ChangeDesc{Action: deployplan.Recreate}
+	remote := &JobRunRemote{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}
+
+	err := (&ResourceJobRun{}).OverrideChangeDesc(t.Context(), structpath.MustParsePath("job_id"), &change, remote)
+
+	require.NoError(t, err)
+	assert.Equal(t, deployplan.Recreate, change.Action)
 }
 
 // resources.yml ignores remote drift on everything the RunNow request carries,
