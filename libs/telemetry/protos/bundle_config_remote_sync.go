@@ -54,6 +54,14 @@ type BundleConfigRemoteSyncEvent struct {
 	FilesChangedCount int64 `json:"files_changed_count,omitempty"`
 	FilesWrittenCount int64 `json:"files_written_count,omitempty"`
 
+	// Number of detected changes that were not written back because they could
+	// not be attributed to a single source location (e.g. a sequence element
+	// defined in both a top-level block and a target override). These are
+	// counted in ChangesTotal: a nonzero value means the command reported
+	// changes it did not apply. Distinct from the "skip" operation filtered out
+	// during change detection, which never reaches ChangesTotal.
+	SkippedChangesCount int64 `json:"skipped_changes_count,omitempty"`
+
 	// Variable-reference restoration counts for the two mechanisms that can
 	// write a current-target-scoped reference into a shared file (the source of
 	// the cross-target "reference does not exist" failures).
