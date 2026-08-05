@@ -258,7 +258,14 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	//    The server refuses the overwrite even though the caller asked for
 	//    it; from the caller's perspective the path is occupied, so we
 	//    surface this as already-exists.
-	if errors.Is(err, apierr.ErrResourceAlreadyExists) || errors.Is(err, apierr.ErrAlreadyExists) {
+	// ErrResourceConflict covers every 409 regardless of error_code, including
+	// the bare 409 the workspace returns with only a message. ErrAlreadyExists
+	// alone would miss those: it and ErrResourceConflict are siblings under the
+	// SDK's error mapping, so a 409 without an error_code unwraps to the parent
+	// only. ErrResourceAlreadyExists is listed separately because the
+	// RESOURCE_ALREADY_EXISTS case arrives as a 400, which no status mapping
+	// resolves to a conflict.
+	if errors.Is(err, apierr.ErrResourceConflict) || errors.Is(err, apierr.ErrResourceAlreadyExists) {
 		return fileAlreadyExistsError{absPath}
 	}
 	if errors.Is(err, apierr.ErrInvalidParameterValue) {
@@ -283,6 +290,23 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 			//    Once the lag clears this can narrow to "node type" alone,
 			//    but it cannot be dropped until webapp attaches details too.
 			if strings.Contains(aerr.Message, "type mismatch") || strings.Contains(aerr.Message, "node type") {
+				return fileAlreadyExistsError{absPath}
+			}
+		}
+	}
+
+	// This API returns 400 if the file already exists when the object type is notebook.
+	// Both the historical "Path (<path>) already exists." format and the newer
+	// "RESOURCE_ALREADY_EXISTS: <path> already exists. ..." format end with the same
+	// "already exists." marker; the JSON error_code is empty in both. The new format
+	// might not have been rolled out to all workspaces yet, so we anchor on the shared
+	// marker and return absPath rather than parsing the message.
+	//
+	// An empty error_code unwraps to ErrBadRequest by status alone, so this is checked
+	// after the ErrInvalidParameterValue branch above rather than before it.
+	if errors.Is(err, apierr.ErrBadRequest) {
+		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
+			if strings.Contains(aerr.Message, "already exists.") {
 				return fileAlreadyExistsError{absPath}
 			}
 		}
