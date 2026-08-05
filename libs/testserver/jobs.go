@@ -46,11 +46,11 @@ func (e *taskFailure) Error() string {
 }
 
 // newTaskFailure takes the exception from the last line of the task's output,
-// where a Python traceback ends.
-func newTaskFailure(output string) *taskFailure {
+// where a Python traceback ends, or err if the task wrote nothing.
+func newTaskFailure(err error, output string) *taskFailure {
 	trimmed := strings.TrimRight(output, "\r\n")
 	lastLine := strings.TrimSpace(trimmed[strings.LastIndex(trimmed, "\n")+1:])
-	return &taskFailure{message: lastLine, trace: trimmed}
+	return &taskFailure{message: cmp.Or(lastLine, err.Error()), trace: trimmed}
 }
 
 // venvPython returns the path to the Python executable in a venv.
@@ -679,7 +679,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(output), newTaskFailure(string(output))
+		return string(output), newTaskFailure(err, string(output))
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
@@ -767,7 +767,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(output), newTaskFailure(string(output))
+		return string(output), newTaskFailure(err, string(output))
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
@@ -813,7 +813,7 @@ func (s *FakeWorkspace) executeSparkPythonTask(task jobs.Task) (string, error) {
 
 	output, err := exec.Command(venvPython(env.venvDir), runArgs...).CombinedOutput()
 	if err != nil {
-		return string(output), newTaskFailure(string(output))
+		return string(output), newTaskFailure(err, string(output))
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
