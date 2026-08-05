@@ -1,3 +1,8 @@
+//go:build unix
+
+// The second-signal escape hatch is a Unix signal-delivery behavior: the test
+// re-execs itself and sends SIGINT/SIGTERM, which os/signal does not support on
+// Windows (the CLI's own signal handling there is likewise a no-op path).
 package environments
 
 import (
@@ -27,6 +32,8 @@ func TestMain(m *testing.M) {
 		os.Exit(m.Run())
 	}
 
+	// TestMain has no *testing.T, so t.Context() is unavailable here.
+	//nolint:gocritic
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	stop := watchInterruptSignals(ctx, cancel)
@@ -107,7 +114,7 @@ func TestWatchInterruptSignalsSecondSignalStillKills(t *testing.T) {
 // must return (joining its goroutine) rather than leaving it parked on the
 // channel for the life of the process.
 func TestWatchInterruptSignalsStopsWithoutSignal(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	stop := watchInterruptSignals(ctx, cancel)
 

@@ -95,16 +95,19 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 		// conflict while the user gives up and hits Ctrl-C), and that cause is the
 		// only diagnostic there is.
 		if ctx.Err() != nil && p.res.Error != nil {
+			// Snapshot the phase's error *before* overwriting Code/Msg below. uvFailure
+			// folds uv's stderr — the actual diagnostic (e.g. a dependency-conflict
+			// "no solution found") — into Msg, so wrapping only the inner .Err would
+			// drop it, leaving less than main in exactly the racing-failure case this
+			// is meant to preserve. Wrapping the whole original PipelineError keeps
+			// Msg (stderr and all) in the chain.
+			orig := &PipelineError{Code: p.res.Error.Code, Msg: p.res.Error.Msg, Err: p.res.Error.Err}
 			p.res.Error.Code = ErrCanceled
 			p.res.Error.Msg = "interrupted"
-			// Two %w verbs keep both the context error and the phase's cause
-			// matchable by errors.Is, on one line — errors.Join would embed a
-			// newline and break the single-line phase row text mode prints.
-			cause := ctx.Err()
-			if inner := p.res.Error.Err; inner != nil {
-				cause = fmt.Errorf("%w; %w", ctx.Err(), inner)
-			}
-			p.res.Error.Err = cause
+			// Two %w verbs keep both the context error and the phase's original error
+			// matchable by errors.Is, on one line — errors.Join would embed a newline
+			// and break the single-line phase row text mode prints.
+			p.res.Error.Err = fmt.Errorf("%w; %w", ctx.Err(), orig)
 			// fail() already snapshotted the pre-reclassification text into the
 			// errored phase's Detail, which is what text mode prints. Re-sync it so
 			// text and --json agree on cancellation (see PipelineError.MarshalJSON).
