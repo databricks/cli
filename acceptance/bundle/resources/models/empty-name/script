@@ -1,1 +1,6 @@
-trace musterr $CLI bundle deploy
+# The deploy fails, but only after the bundle files are uploaded, so the bundle
+# name carries $UNIQUE_NAME to keep concurrent cloud legs off each other's root
+# path and let the run-wide sweeper find what is left behind.
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt

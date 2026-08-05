@@ -5,6 +5,5 @@ Cloud = true
 RecordRequests = false
 Ignore = [".databricks"]
 
-# The error surface is the same on both engines, but terraform wraps it in its
-# own output; keep a single golden.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# Both engines reach the create call and surface the backend message, so both are
+# worth covering; terraform wraps it in its own output, hence the per-engine goldens.

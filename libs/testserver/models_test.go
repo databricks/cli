@@ -16,14 +16,16 @@ func TestModelRegistryCreateModel_RejectsEmptyName(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, 400, response.StatusCode)
 
+	// The rejected model must not be stored: that is the original bug, where a
+	// deploy appeared to succeed and the next plan saw the resource as missing.
+	// Checked before the require below so it is still reported when the rejection
+	// is missing altogether.
+	assert.Empty(t, workspace.ModelRegistryModels)
+
 	body, ok := response.Body.(map[string]string)
 	require.True(t, ok)
 	assert.Equal(t, "INVALID_PARAMETER_VALUE", body["error_code"])
 	assert.Contains(t, body["message"], "cannot be empty strings")
-
-	// The rejected model must not be stored: that is the original bug, where a
-	// deploy appeared to succeed and the next plan saw the resource as missing.
-	assert.Empty(t, workspace.ModelRegistryModels)
 }
 
 func TestModelRegistryCreateModel_AllowsNonEmptyName(t *testing.T) {

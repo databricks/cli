@@ -6,6 +6,6 @@ RequiresUnityCatalog = true
 RecordRequests = false
 Ignore = [".databricks"]
 
-# The error surface is the same on both engines, but terraform wraps it in its
-# own output; keep a single golden.
+# Catalog resources are only supported by the direct engine, which rejects them
+# before any API call on terraform, so there is nothing to assert there.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

@@ -25,7 +25,8 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 	}
 
 	// UC rejects an empty name (message verbatim from a real workspace); the fake would
-	// otherwise store a catalog the CLI can never read back.
+	// otherwise store a catalog the CLI can never read back. Only the empty name trips
+	// this check, though the backend's canned error also lists other invalid characters.
 	if createRequest.Name == "" {
 		return Response{
 			StatusCode: http.StatusBadRequest,
