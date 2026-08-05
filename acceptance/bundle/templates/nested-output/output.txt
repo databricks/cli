@@ -1,7 +1,6 @@
 {
-  "template_name": "custom",
-  "output_dir": "[TEST_TMP_DIR]/output",
-  "bundle_roots": [
-    "projects/alpha/yz"
+  "outputs": [
+    "projects/alpha/yz/databricks.yml",
+    "projects/alpha/yz/src/yz.py"
   ]
 }
