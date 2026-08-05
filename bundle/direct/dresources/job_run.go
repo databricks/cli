@@ -181,8 +181,10 @@ func (r *ResourceJobRun) waitForRun(ctx context.Context, id string) (*JobRunRemo
 	// Every state is logged, but only the outcome is reported: how many states a
 	// run passes through varies with its compute, and output has to stay reproducible.
 	var logged jobs.RunState
-	// The poll returns the run in whatever state it settles in, so runFailedError
-	// can name the task that failed.
+	// Not the SDK's WaitGetRunJobTerminatedOrSkipped: it discards the run on
+	// INTERNAL_ERROR, the state a run whose task failed lands in, leaving
+	// runFailedError nothing to name the failing task from. This poll returns the
+	// run in whatever state it settles in.
 	run, err := retries.Poll(ctx, jobRunTimeout, func() (*jobs.Run, *retries.Err) {
 		var req jobs.GetRunRequest
 		req.RunId = runID
@@ -223,11 +225,8 @@ func (r *ResourceJobRun) waitForRun(ctx context.Context, id string) (*JobRunRemo
 // runFailedError reports why the run did not succeed, naming each failed task
 // and the error it reported.
 func (r *ResourceJobRun) runFailedError(ctx context.Context, run *jobs.Run) error {
-	outcome := string(run.State.ResultState)
-	if outcome == "" {
-		// A skipped run has no result_state; report the lifecycle state.
-		outcome = string(run.State.LifeCycleState)
-	}
+	// A skipped run has no result_state; report the lifecycle state.
+	outcome := cmp.Or(string(run.State.ResultState), string(run.State.LifeCycleState))
 	var msg strings.Builder
 	// The framework already prefixes the resource key and the run id.
 	fmt.Fprintf(&msg, "run did not succeed: %s", outcome)
