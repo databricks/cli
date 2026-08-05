@@ -346,8 +346,8 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 	}
 	unbindableResources := map[string]bool{
-		"model":     true,
-		"snapshots": true,
+		"model":    true,
+		"snapshot": true,
 	}
 
 	ctx := t.Context()
