@@ -2,9 +2,6 @@ export DASHBOARD_DISPLAY_NAME="test bundle-deploy-dashboard $UNIQUE_NAME)"
 envsubst < databricks.yml.tmpl > databricks.yml
 
 # Deploy the dashboard. The dashboard will be created but publish will fail because the warehouse does not exist.
-# The deploy is not traced because its command line differs by READPLAN (--plan vs none), and
-# out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt is shared by both variants. Applying a saved plan must
-# reach the same publish failure and the same cleanup DELETE.
 $CLI bundle plan -o json > tmp.plan.json
 errcode $CLI bundle deploy $(readplanarg tmp.plan.json) &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 

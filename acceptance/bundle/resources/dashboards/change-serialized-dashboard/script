@@ -4,10 +4,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Deploy the dashboard and capture the ID.
-# The deploy is not traced because its command line differs by READPLAN (--plan vs none).
-# With READPLAN=1 it applies the saved plan, which must send the same full
-# serialized_dashboard as an in-memory plan.
+# Deploy the dashboard and capture the ID
 deploy_dashboard() {
     envsubst < databricks.yml.tmpl > databricks.yml
     envsubst < dashboard.tmpl > dash.lvdash.json

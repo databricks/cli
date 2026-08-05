@@ -13,9 +13,8 @@ trap cleanupRemoveDashboard EXIT
 
 trace $CLI bundle deployment bind dashboard1 "${DASHBOARD_ID}" --auto-approve
 
-# Not traced: the deploy command line differs by READPLAN (--plan vs none). Bind writes
-# state without going through DoCreate/DoUpdate, so deploying a saved plan after a bind
-# must still send the full serialized_dashboard — the lakeview get below reads it back.
+# Bind writes state without going through DoCreate/DoUpdate, so a saved-plan deploy after
+# a bind must still send the full serialized_dashboard; the lakeview get below reads it back.
 $CLI bundle plan -o json > tmp.plan.json
 $CLI bundle deploy $(readplanarg tmp.plan.json)
 
