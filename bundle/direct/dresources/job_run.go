@@ -11,8 +11,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -28,8 +30,8 @@ const jobRunTimeout = 24 * time.Hour
 type JobRunState struct {
 	jobs.RunNow
 
-	// Always SUCCESS, never read from the config: a run that did not succeed
-	// differs from the remote and is re-triggered by recreate_on_changes.
+	// Always SUCCESS, never read from the config: it is the outcome the remote is
+	// compared against, which OverrideChangeDesc turns into a recreate or a wait.
 	ResultState jobs.RunResultState `json:"result_state,omitempty"`
 }
 
@@ -163,6 +165,17 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 // WaitAfterCreate blocks until the run finishes, so a resource referencing its
 // output (e.g. state.result_state) sees a settled run. Only SUCCESS continues the deploy.
 func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobRunState) (*JobRunRemote, error) {
+	return r.waitForRun(ctx, id)
+}
+
+// WaitAfterUpdate blocks on the run the deploy adopted, so an interrupted wait
+// is resumed rather than restarted.
+func (r *ResourceJobRun) WaitAfterUpdate(ctx context.Context, id string, _ *JobRunState) (*JobRunRemote, error) {
+	return r.waitForRun(ctx, id)
+}
+
+// waitForRun polls the run until it stops, and fails unless it succeeded.
+func (r *ResourceJobRun) waitForRun(ctx context.Context, id string) (*JobRunRemote, error) {
 	runID, err := parseRunID(id)
 	if err != nil {
 		return nil, err
@@ -316,8 +329,25 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 	}
 }
 
-// DoUpdate is intentionally not implemented: a run can't be modified in place,
-// so any change recreates it (delete + a fresh RunNow).
+// DoUpdate has nothing to do: a run can't be modified. The plan asks for an
+// update only to adopt a run that is still going; WaitAfterUpdate waits on it.
+func (*ResourceJobRun) DoUpdate(_ context.Context, _ string, _ *JobRunState, _ *PlanEntry) (*JobRunRemote, error) {
+	return nil, nil
+}
+
+// OverrideChangeDesc downgrades result_state drift to an update while the run is
+// still going: recreating would cancel a run that may yet succeed. A run that
+// stopped without succeeding keeps its recreate. A SKIPPED run reports no
+// result_state either, so the lifecycle state is what tells the two apart.
+func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
+	// The planner passes no remote state when the run could not be read.
+	if path.String() != "result_state" || remote == nil || runIsTerminal(remote.State.LifeCycleState) {
+		return nil
+	}
+	change.Action = deployplan.Update
+	change.Reason = "run in progress"
+	return nil
+}
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the
 // recreate path. The API rejects a still-active run, which an interrupted wait

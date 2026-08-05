@@ -308,51 +308,76 @@ func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, value)
 }
 
-// References are served from the remote state cache only for a run the plan
-// skips, and any outcome other than the required SUCCESS is a recreate.
-func TestJobRunOutcomeIsDrift(t *testing.T) {
+// jobRunResultStateAction classifies the result_state drift of a run in the given
+// state. Old == New because a deploy records the outcome it asked for, and only
+// the remote says whether the run reached it.
+func jobRunResultStateAction(t *testing.T, state *jobs.RunState) *deployplan.ChangeDesc {
+	t.Helper()
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
 
-	for name, remote := range map[string]jobs.RunResultState{
-		"FAILED":   jobs.RunResultStateFailed,
-		"CANCELED": jobs.RunResultStateCanceled,
-		"TIMEDOUT": jobs.RunResultStateTimedout,
-		// A run that is still going reports no result at all.
-		"no result yet": "",
+	remote := &dresources.JobRunRemote{RunId: 123, ResultState: state.ResultState, State: state}
+	changes := deployplan.Changes{"result_state": &deployplan.ChangeDesc{
+		Old:    jobs.RunResultStateSuccess,
+		New:    jobs.RunResultStateSuccess,
+		Remote: state.ResultState,
+	}}
+
+	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, remote))
+	return changes["result_state"]
+}
+
+// References are served from the remote state cache only for a run the plan
+// skips, so a run that stopped without succeeding has to be re-triggered.
+func TestJobRunFinishedWithoutSuccessIsRecreate(t *testing.T) {
+	for name, state := range map[string]*jobs.RunState{
+		"FAILED": {
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateFailed,
+		},
+		"CANCELED": {
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateCanceled,
+		},
+		"TIMEDOUT": {
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateTimedout,
+		},
+		// A skipped run never ran, so it reports no result_state at all — the same
+		// as a run still going. Only the lifecycle state tells the two apart.
+		"SKIPPED": {LifeCycleState: jobs.RunLifeCycleStateSkipped},
 	} {
 		t.Run(name, func(t *testing.T) {
-			// Old == New: a deploy records the outcome it asked for, and only the
-			// remote says the run missed it.
-			changes := deployplan.Changes{"result_state": &deployplan.ChangeDesc{
-				Old:    jobs.RunResultStateSuccess,
-				New:    jobs.RunResultStateSuccess,
-				Remote: remote,
-			}}
+			assert.Equal(t, deployplan.Recreate, jobRunResultStateAction(t, state).Action)
+		})
+	}
+}
 
-			err := addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil)
+// A run that has not stopped yet may still succeed, so the deploy adopts it and
+// waits instead of cancelling it and triggering a replacement.
+func TestJobRunInProgressIsUpdate(t *testing.T) {
+	for _, lifeCycleState := range []jobs.RunLifeCycleState{
+		jobs.RunLifeCycleStatePending,
+		jobs.RunLifeCycleStateRunning,
+		jobs.RunLifeCycleStateTerminating,
+	} {
+		t.Run(string(lifeCycleState), func(t *testing.T) {
+			change := jobRunResultStateAction(t, &jobs.RunState{LifeCycleState: lifeCycleState})
 
-			require.NoError(t, err)
-			assert.Equal(t, deployplan.Recreate, changes["result_state"].Action)
+			assert.Equal(t, deployplan.Update, change.Action)
+			assert.Equal(t, "run in progress", change.Reason)
 		})
 	}
 }
 
 // The run reached the required outcome, so the plan can skip it.
 func TestJobRunSucceededOutcomeIsNotDrift(t *testing.T) {
-	adapters, err := dresources.InitAll(nil)
-	require.NoError(t, err)
+	change := jobRunResultStateAction(t, &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateTerminated,
+		ResultState:    jobs.RunResultStateSuccess,
+	})
 
-	changes := deployplan.Changes{"result_state": &deployplan.ChangeDesc{
-		Old:    jobs.RunResultStateSuccess,
-		New:    jobs.RunResultStateSuccess,
-		Remote: jobs.RunResultStateSuccess,
-	}}
-
-	err = addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil)
-
-	require.NoError(t, err)
-	assert.Equal(t, deployplan.Skip, changes["result_state"].Action)
+	assert.Equal(t, deployplan.Skip, change.Action)
 }
 
 // bundleWithSkippedJobRun sets up a deploy whose plan skips the run, so

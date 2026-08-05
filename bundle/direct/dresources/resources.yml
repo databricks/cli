@@ -142,7 +142,7 @@ resources:
     # Every jobs.RunNow field is listed, so nothing the request carries is drift.
     # TestJobRunIgnoresEveryRequestField keeps the list in step with the SDK.
     # result_state is not in the list: comparing it against the remote is what
-    # re-triggers a run that did not succeed.
+    # makes a run that has not succeeded visible to the plan.
     ignore_remote_changes:
       - field: job_id
         reason: immutable
@@ -177,7 +177,8 @@ resources:
         reason: not_returned_by_api
     # A run is immutable and fire-once, so any change recreates it. Omitting
     # `field` matches every field (root; see TestFieldRuleOmittedIsRoot).
-    # `field: ""` would instead match nothing.
+    # `field: ""` would instead match nothing. The one exception is a run that is
+    # still going, which ResourceJobRun.OverrideChangeDesc downgrades to an update.
     recreate_on_changes:
       - reason: immutable
 
