@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/auth"
@@ -21,8 +20,7 @@ import (
 )
 
 // Prefix of the workspace file system mount, as seen from a DBR session.
-// Overridden by tests, which cannot create files under the real mount point.
-var workspaceMountPrefix = "/Workspace/"
+const workspaceMountPrefix = "/Workspace/"
 
 type RepositoryInfo struct {
 	// Various metadata about the repo. Each could be "" if it could not be read. No error is returned for such case.
@@ -55,7 +53,7 @@ type response struct {
 func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
 	var info RepositoryInfo
 	var err error
-	if isWorkspaceMountPath(path) && dbr.RunsOnRuntime(ctx) && !hasDotGit(ctx, path) {
+	if strings.HasPrefix(path, workspaceMountPrefix) && dbr.RunsOnRuntime(ctx) && !hasDotGit(ctx, path) {
 		info, err = fetchRepositoryInfoAPI(ctx, path, w)
 	} else {
 		info, err = fetchRepositoryInfoDotGit(ctx, path)
@@ -149,15 +147,9 @@ func hasDotGit(ctx context.Context, path string) bool {
 
 // findDotGitBelow returns the directory holding .git at or below dir, stopping before
 // ceiling, or "" if there is none. A non-nil error means the lookup itself failed.
-// ceiling is compared in slash form, so it matches regardless of separator.
 func findDotGitBelow(dir, ceiling string) (string, error) {
-	dir, err := filepath.Abs(dir)
-	if err != nil {
-		return "", err
-	}
-
-	for filepath.ToSlash(dir) != ceiling {
-		_, err := os.Stat(filepath.Join(dir, GitDirectoryName))
+	for dir != ceiling {
+		_, err := os.Stat(path.Join(dir, GitDirectoryName))
 		if err == nil {
 			return dir, nil
 		}
@@ -165,7 +157,7 @@ func findDotGitBelow(dir, ceiling string) (string, error) {
 			return "", err
 		}
 
-		next := filepath.Dir(dir)
+		next := path.Dir(dir)
 		if dir == next {
 			return "", nil
 		}
@@ -174,17 +166,11 @@ func findDotGitBelow(dir, ceiling string) (string, error) {
 	return "", nil
 }
 
-// isWorkspaceMountPath reports whether path lives on the workspace mount. Compared in
-// slash form so a Windows-style path is recognised too.
-func isWorkspaceMountPath(path string) bool {
-	return strings.HasPrefix(filepath.ToSlash(path), workspaceMountPrefix)
-}
-
-// ownerRoot returns the workspace directory that owns path's Git folders, e.g.
+// ownerRoot returns the workspace directory that owns p's Git folders, e.g.
 // /Workspace/Users/me@databricks.com or /Workspace/Shared. Git folders are created
-// inside it, never at it. The result is in slash form, like every workspace path.
-func ownerRoot(path string) string {
-	rest, ok := strings.CutPrefix(filepath.ToSlash(path), workspaceMountPrefix)
+// inside it, never at it.
+func ownerRoot(p string) string {
+	rest, ok := strings.CutPrefix(p, workspaceMountPrefix)
 	if !ok {
 		return strings.TrimSuffix(workspaceMountPrefix, "/")
 	}
@@ -204,7 +190,7 @@ func ownerRoot(path string) string {
 }
 
 func ensureWorkspacePrefix(p string) string {
-	if !isWorkspaceMountPath(p) {
+	if !strings.HasPrefix(p, workspaceMountPrefix) {
 		return path.Join("/Workspace", p)
 	}
 	return p
