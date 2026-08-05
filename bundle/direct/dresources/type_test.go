@@ -54,12 +54,6 @@ var knownMissingInRemoteType = map[string][]string{
 	"vector_search_endpoints": {
 		"usage_policy_id",
 	},
-	// fingerprint is a locally-computed SHA-256 digest of the secret value used
-	// to detect value changes without storing the plaintext. The remote API never
-	// returns it, so it is intentionally absent from RemoteType.
-	"secrets": {
-		"fingerprint",
-	},
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.

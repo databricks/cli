@@ -50,6 +50,7 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		Name:           inputSecret.Name,
 		FullName:       fullName,
 		Value:          inputSecret.Value,
+		EffectiveValue: inputSecret.Value,
 		Comment:        inputSecret.Comment,
 		Owner:          inputSecret.Owner,
 		ExpireTime:     inputSecret.ExpireTime,
