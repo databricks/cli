@@ -71,5 +71,5 @@ Add a changelog fragment under `.nextchanges/` when your change is user-visible.
 **How to add:**
 - Create `.nextchanges/<section>/<name>.md`, picking the section folder that fits: `cli`, `bundles`, `dependency-updates`, `notable-changes`, or `api-changes`. `<name>` is arbitrary (a feature name or your PR number) — just keep it unique.
 - Write one or two sentences in user-facing language, no Jira links. The leading `* ` is optional. Match the voice and tense of existing changelog entries.
-- A PR link is optional: write `(#NNNN)` (with NNNN being the PR number) in the text and it's expanded to a full link automatically.
+- You don't need a PR link: the `nextchanges PR link` workflow adds one to each fragment the PR adds and pushes it onto the branch (skipping fork PRs, and any entry that already mentions a `#NNNN`). To point at a different PR or an issue, write `(#NNNN)` yourself; it's expanded to a full link automatically.
 - See `.nextchanges/README.md` for details.
