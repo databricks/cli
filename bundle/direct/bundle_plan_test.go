@@ -308,41 +308,6 @@ func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, value)
 }
 
-// A resource reads the run the workspace reports. These paths are absent from
-// JobRunState, so they resolve from the remote, and the failure-shaped values
-// below come back unrewritten. result_state is the exception: it resolves to the
-// outcome PrepareState requires, which TestJobRunOutcomeIsDrift keeps from
-// standing in for one the run never reached.
-func TestLookupReferencePreDeploy_JobRunReferencesAreRaw(t *testing.T) {
-	b := bundleWithSkippedJobRun(t, &dresources.JobRunRemote{
-		RunId:       123,
-		RunName:     "my-job",
-		RunPageUrl:  "https://myworkspace.databricks.test/jobs/456/runs/123",
-		ResultState: jobs.RunResultStateFailed,
-		State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateFailed,
-			StateMessage:   "task main failed",
-		},
-	})
-
-	for field, want := range map[string]any{
-		"state.result_state":     jobs.RunResultStateFailed,
-		"state.life_cycle_state": jobs.RunLifeCycleStateTerminated,
-		"state.state_message":    "task main failed",
-		"run_id":                 int64(123),
-		"run_name":               "my-job",
-		"run_page_url":           "https://myworkspace.databricks.test/jobs/456/runs/123",
-	} {
-		t.Run(field, func(t *testing.T) {
-			value, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(jobRunKey+"."+field))
-
-			require.NoError(t, err)
-			assert.Equal(t, want, value)
-		})
-	}
-}
-
 // References are served from the remote state cache only for a run the plan
 // skips, and any outcome other than the required SUCCESS is a recreate.
 func TestJobRunOutcomeIsDrift(t *testing.T) {

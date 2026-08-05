@@ -1035,19 +1035,18 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			"unexpected differences between remappedState and remappedRemoteStateFromCreate")
 	}
 
-	// Only a job run's state moves while WaitAfterCreate blocks, and its result_state
-	// fills in only then, so its field checks below need the settled state.
-	waitSettlesState := group == "job_runs"
-
 	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitCreate != nil {
-		if waitSettlesState {
-			remappedState, err = adapter.RemapState(remoteStateFromWaitCreate)
-			require.NoError(t, err)
-		} else {
-			require.Equal(t, remote, remoteStateFromWaitCreate)
-		}
+		// The resource can move while the wait blocks (a job run only settles
+		// then), so the field checks below use what the wait reports. It must
+		// match a read taken right after it.
+		remotePostWait, err := adapter.DoRead(ctx, createdID)
+		require.NoError(t, err)
+		require.Equal(t, remotePostWait, remoteStateFromWaitCreate)
+
+		remappedState, err = adapter.RemapState(remoteStateFromWaitCreate)
+		require.NoError(t, err)
 	}
 
 	if adapter.HasDoUpdate() {
