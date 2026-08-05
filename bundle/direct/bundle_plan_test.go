@@ -354,7 +354,7 @@ func TestJobRunFinishedWithoutSuccessIsRecreate(t *testing.T) {
 }
 
 // A run that has not stopped yet may still succeed, so the deploy adopts it and
-// waits instead of cancelling it and triggering a replacement.
+// waits for it.
 func TestJobRunInProgressIsUpdate(t *testing.T) {
 	for _, lifeCycleState := range []jobs.RunLifeCycleState{
 		jobs.RunLifeCycleStatePending,
