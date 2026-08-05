@@ -1,0 +1,40 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve; }
+trap cleanup EXIT
+$CLI bundle deploy
+
+job_id="$(read_id.py ambiguous_single_block_job)"
+
+title "Rename alpha -> zzz and beta -> aaa, and point gamma at the new keys"
+edit_resource.py jobs $job_id <<PYEDIT
+for task in r["tasks"]:
+    if task["task_key"] == "alpha":
+        task["task_key"] = "zzz"
+    elif task["task_key"] == "beta":
+        task["task_key"] = "aaa"
+    elif task["task_key"] == "gamma":
+        task["depends_on"] = [{"task_key": "zzz"}, {"task_key": "aaa"}]
+PYEDIT
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync --save
+
+title "Both renames apply and depends_on follows them"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+echo
+echo "=== Checking for old task keys (should be gone if renames applied):"
+errcode trace grep -c "task_key: alpha" databricks.yml || echo "alpha: NOT FOUND (good)"
+errcode trace grep -c "task_key: beta" databricks.yml || echo "beta: NOT FOUND (good)"
+echo
+echo "=== Checking for new task keys:"
+errcode trace grep -c "task_key: zzz" databricks.yml || echo "zzz: NOT FOUND (BAD)"
+errcode trace grep -c "task_key: aaa" databricks.yml || echo "aaa: NOT FOUND (BAD)"
+echo
+echo "=== Checking depends_on (gamma's dependencies):"
+errcode trace grep -A5 "task_key: gamma" databricks.yml | grep -A5 "depends_on"
+rm databricks.yml.backup

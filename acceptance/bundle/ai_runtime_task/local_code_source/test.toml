@@ -1,0 +1,12 @@
+RecordRequests = true
+
+Ignore = [
+    '.databricks',
+]
+
+# The archive is content-addressed: <dir>_<sha256[:16]>.tar.gz. The hash is stable
+# given the committed inputs, but collapse it to a token so the test does not pin a
+# specific digest. Matches both src_ and src2_ archives.
+[[Repls]]
+Old = '(src2?)_[0-9a-f]{16}\.tar\.gz'
+New = '$1_[SNAPSHOT].tar.gz'

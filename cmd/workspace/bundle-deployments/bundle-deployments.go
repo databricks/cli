@@ -177,29 +177,21 @@ func newCreateDeployment() *cobra.Command {
 	cmd.Flags().Var(&createDeploymentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: git_info
-	cmd.Flags().StringVar(&createDeploymentReq.Deployment.InitialParentPath, "initial-parent-path", createDeploymentReq.Deployment.InitialParentPath, `The workspace path of the folder where the deployment is initially created.`)
+	cmd.Flags().StringVar(&createDeploymentReq.Deployment.InitialParentPath, "initial-parent-path", createDeploymentReq.Deployment.InitialParentPath, `The workspace path of the existing folder where the deployment is initially created.`)
 	// TODO: complex arg: workspace_info
 
-	cmd.Use = "create-deployment DEPLOYMENT_ID"
+	cmd.Use = "create-deployment"
 	cmd.Short = `Create a deployment.`
 	cmd.Long = `Create a deployment.
 
-  Creates a new deployment in the workspace.
-
-  The caller must provide a deployment_id which becomes the final component of
-  the deployment's resource name. If a deployment with the same ID already
-  exists, the server returns ALREADY_EXISTS.
-
-  Arguments:
-    DEPLOYMENT_ID: The ID to use for the deployment, which will become the final component of
-      the deployment's resource name (i.e. deployments/{deployment_id}).`
+  Creates a new deployment in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -220,7 +212,6 @@ func newCreateDeployment() *cobra.Command {
 				}
 			}
 		}
-		createDeploymentReq.DeploymentId = args[0]
 
 		response, err := w.BundleDeployments.CreateDeployment(ctx, createDeploymentReq)
 		if err != nil {
@@ -471,11 +462,6 @@ func newDeleteDeployment() *cobra.Command {
 	cmd.Long = `Delete a deployment.
 
   Deletes a deployment.
-
-  The deployment is marked as deleted. It and all its children (versions and
-  their operations) will be permanently deleted after the retention policy
-  expires. If the deployment has an in-progress version, the server returns
-  RESOURCE_CONFLICT.
 
   Arguments:
     NAME: Resource name of the deployment to delete. Format:

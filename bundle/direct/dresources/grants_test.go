@@ -74,3 +74,41 @@ func TestBuildGrantChanges(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeAssignments(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []catalog.PrivilegeAssignment
+		expected []catalog.PrivilegeAssignment
+	}{
+		{
+			name: "sorts privileges",
+			input: []catalog.PrivilegeAssignment{
+				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeUseSchema, catalog.PrivilegeApplyTag}},
+			},
+			expected: []catalog.PrivilegeAssignment{
+				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag, catalog.PrivilegeUseSchema}},
+			},
+		},
+		{
+			// Regression test for #6030: ALL_PRIVILEGES implies every concrete
+			// privilege, so a principal holding it collapses to just
+			// ALL_PRIVILEGES. Applied to both config and remote, this stops the
+			// backend's extra concrete privileges from showing as drift.
+			name: "collapses ALL_PRIVILEGES with concrete privileges",
+			input: []catalog.PrivilegeAssignment{
+				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog, catalog.PrivilegeAllPrivileges, catalog.PrivilegeCreateSchema}},
+			},
+			expected: []catalog.PrivilegeAssignment{
+				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeAllPrivileges}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			normalizeAssignments(tt.input)
+			assert.Equal(t, tt.expected, tt.input)
+		})
+	}
+}

@@ -225,6 +225,15 @@ func AddDefaultHandlers(server *Server) {
 
 		defer req.Workspace.LockUnlock()()
 
+		// The API rejects creating a directory where a file already exists; it is
+		// idempotent only over directories. Mirror that so callers observe the 409.
+		if _, isFile := req.Workspace.files[dirPath]; isFile {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": "The given path points to an existing file. This API does not support operations on files."},
+			}
+		}
+
 		// Create directory and all parent directories.
 		for dir := dirPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
 			if _, exists := req.Workspace.directories[dir]; !exists {
@@ -470,7 +479,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Apps, req.Vars["name"])
+		return req.Workspace.AppsGet(req.Vars["name"])
 	})
 
 	server.Handle("POST", "/api/2.0/apps", func(req Request) any {
@@ -482,7 +491,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/apps/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Apps, req.Vars["name"])
+		return req.Workspace.AppsDelete(req.Vars["name"])
 	})
 
 	// Schemas:
@@ -1008,7 +1017,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
+		return req.Workspace.VectorSearchIndexDelete(req.Vars["index_name"])
 	})
 
 	// Generic permissions endpoints

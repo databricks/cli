@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/environments"
@@ -415,4 +416,69 @@ func TestTailWriterRetainsTail(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "ab", w.String())
 	})
+}
+
+func TestBuildSshTunnelEvent(t *testing.T) {
+	tests := []struct {
+		name string
+		opts ClientOptions
+		want protos.SshTunnelEvent
+	}{
+		{
+			name: "dedicated cluster via raw SSH client",
+			opts: ClientOptions{ClusterID: "abc-123", AutoStartCluster: true},
+			want: protos.SshTunnelEvent{
+				ComputeType:      protos.SshTunnelComputeTypeDedicated,
+				ClientMode:       protos.SshTunnelClientModeSSH,
+				AutoStartCluster: true,
+			},
+		},
+		{
+			name: "serverless with accelerator",
+			opts: ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10"},
+			want: protos.SshTunnelEvent{
+				ComputeType:     protos.SshTunnelComputeTypeServerless,
+				AcceleratorType: "GPU_1xA10",
+				ClientMode:      protos.SshTunnelClientModeSSH,
+			},
+		},
+		{
+			name: "proxy mode takes precedence over IDE",
+			opts: ClientOptions{ConnectionName: "my-conn", ProxyMode: true, IDE: "vscode"},
+			want: protos.SshTunnelEvent{
+				ComputeType: protos.SshTunnelComputeTypeServerless,
+				IdeType:     "vscode",
+				ClientMode:  protos.SshTunnelClientModeProxy,
+			},
+		},
+		{
+			name: "IDE mode",
+			opts: ClientOptions{ConnectionName: "my-conn", IDE: "cursor"},
+			want: protos.SshTunnelEvent{
+				ComputeType: protos.SshTunnelComputeTypeServerless,
+				IdeType:     "cursor",
+				ClientMode:  protos.SshTunnelClientModeIDE,
+			},
+		},
+		{
+			// The raw --base-environment value can carry PII, so only its presence is recorded.
+			name: "custom base environment records presence only",
+			opts: ClientOptions{ConnectionName: "my-conn", BaseEnvironment: "/Workspace/Users/me@example.com/env.yaml"},
+			want: protos.SshTunnelEvent{
+				ComputeType:        protos.SshTunnelComputeTypeServerless,
+				ClientMode:         protos.SshTunnelClientModeSSH,
+				HasBaseEnvironment: true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildSshTunnelEvent(tt.opts, true, true, 1500)
+			tt.want.IsSuccess = true
+			tt.want.IsReconnect = true
+			tt.want.ServerStartTimeMs = 1500
+			assert.Equal(t, &tt.want, got)
+		})
+	}
 }

@@ -1,7 +1,0 @@
-preflight  ok  check
-resolve    error  resolving job 12345: job 12345 has job clusters with differing spark_version; pass --cluster-id or --serverless-version explicitly to disambiguate
-fetch      pending
-merge      pending
-provision  pending
-validate   pending
-For more detail, re-run with --debug, or --output json to share a structured report.

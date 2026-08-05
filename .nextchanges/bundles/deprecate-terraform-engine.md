@@ -1,0 +1,1 @@
+The terraform deployment engine is deprecated and will stop working in a future version of the CLI. Setting `bundle.engine: terraform` now emits a deprecation warning. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine.

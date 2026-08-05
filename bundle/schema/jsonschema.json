@@ -101,6 +101,12 @@
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
+                      "parameters": {
+                        "description": "[Private Preview] Query parameters bound when executing the alert query, referenced in the\nquery text with `:name` syntax. Static values only.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.AlertStatementParameter",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
                       "parent_path": {
                         "description": "The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.",
                         "$ref": "#/$defs/string"
@@ -422,6 +428,10 @@
                       "data_security_mode": {
                         "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode"
+                      },
+                      "dependency_mode": {
+                        "description": "[Beta] Controls dependency configuration for the cluster.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DependencyMode"
                       },
                       "docker_image": {
                         "description": "Custom docker image BYOC",
@@ -2088,6 +2098,9 @@
                       "existing_pipeline_id": {
                         "$ref": "#/$defs/string"
                       },
+                      "extra_columns": {
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecExtraColumn"
+                      },
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
@@ -2649,11 +2662,11 @@
                       },
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission",
                         "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "target_qps": {
-                        "description": "[Public Preview] Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
+                        "description": "Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
                         "$ref": "#/$defs/int64"
                       },
                       "usage_policy_id": {
@@ -2667,6 +2680,35 @@
                     "required": [
                       "endpoint_type",
                       "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.VectorSearchEndpointPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorSearchEndpointPermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
                     ]
                   },
                   {
@@ -4266,11 +4308,6 @@
                     "MEDIUM",
                     "LARGE",
                     "XLARGE"
-                  ],
-                  "enumDescriptions": [
-                    "",
-                    "",
-                    "[Private Preview]"
                   ]
                 },
                 {
@@ -5190,7 +5227,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.AzureAvailability"
                     },
                     "capacity_reservation_group": {
-                      "description": "[Public Preview] The Azure capacity reservation group resource ID to use for launching VMs.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
+                      "description": "The Azure capacity reservation group resource ID to use for launching VMs.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
                       "$ref": "#/$defs/string"
                     },
                     "first_on_demand": {
@@ -5338,6 +5375,10 @@
                     "data_security_mode": {
                       "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode"
+                    },
+                    "dependency_mode": {
+                      "description": "[Beta] Controls dependency configuration for the cluster.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DependencyMode"
                     },
                     "docker_image": {
                       "description": "Custom docker image BYOC",
@@ -5518,6 +5559,28 @@
                   "additionalProperties": false,
                   "required": [
                     "destination"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.DependencyMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Controls dependency configuration for the cluster.\n\n* `DEPENDENCY_MODE_AUTO`: Databricks will choose the most appropriate dependency mode based on your compute configuration.\n* `DEPENDENCY_MODE_ENVIRONMENTS`: Enables a unified dependency management experience across classic and serverless, resulting in increased stability and performance. Supported only on DBR 19+ in Standard access mode.\n* `DEPENDENCY_MODE_CLUSTER_LIBRARIES`: Legacy mode: dependencies come from cluster libraries and init scripts.",
+                  "enum": [
+                    "DEPENDENCY_MODE_ENVIRONMENTS",
+                    "DEPENDENCY_MODE_CLUSTER_LIBRARIES",
+                    "DEPENDENCY_MODE_AUTO"
+                  ],
+                  "enumDescriptions": [
+                    "[Beta] Enables a unified dependency management experience across classic and serverless, resulting in increased stability and performance. Supported only on DBR 19+ in Standard access mode.",
+                    "[Beta] Legacy mode: dependencies come from cluster libraries and init scripts.",
+                    "[Beta] \u003cDatabricks\u003e will choose the most appropriate dependency mode based on your compute configuration."
                   ]
                 },
                 {
@@ -5926,7 +5989,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.InstancePoolAzureAttributesAvailability"
                     },
                     "capacity_reservation_group": {
-                      "description": "[Public Preview] The Azure capacity reservation group resource ID to use for launching VMs in this pool.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nNOTE: Omitting this field will clear any existing configured capacity reservation group on the pool.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
+                      "description": "The Azure capacity reservation group resource ID to use for launching VMs in this pool.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nNOTE: Omitting this field will clear any existing configured capacity reservation group on the pool.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
                       "$ref": "#/$defs/string"
                     },
                     "spot_bid_max_price": {
@@ -6684,7 +6747,7 @@
                       "doNotSuggest": true
                     },
                     "size": {
-                      "description": "[Private Preview] Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\nor PG_SPECIFIC_TYPE_HALFVEC (specifies the vector dimension, e.g., 1024).",
+                      "description": "[Private Preview] Size parameter for the target type, for types that take one (e.g. vector\ndimension, varchar length). Required when the chosen pg_type needs a size.",
                       "$ref": "#/$defs/int",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
@@ -6846,6 +6909,12 @@
                   "type": "object",
                   "description": "AiRuntimeTask: multi-node GPU compute task definition for Databricks AI\nRuntime workloads.\n\nJobs-framework-level concepts (retries, per-task timeout, idempotency\ntoken, usage/budget policy, permissions) live on the surrounding\nTaskSettings / run-submit request and are intentionally NOT duplicated\nhere. Users compose `ai_runtime_task` with the standard Jobs/DABs task\nwrapper to get those.",
                   "properties": {
+                    "code_source_path": {
+                      "description": "[Private Preview] Workspace or UC volume path of the code-source archive, unpacked on\neach node and exposed through `$CODE_SOURCE`. Set by first-party\ntooling; not for direct callers.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "deployments": {
                       "description": "[Private Preview] Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.DeploymentSpec",
@@ -7622,6 +7691,12 @@
                     "new_cluster": {
                       "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec"
+                    },
+                    "serverless_compute_id": {
+                      "description": "[Private Preview] The ID of the serverless compute object to bind this cluster to. At most one\nJobCluster per job may set this field; the rate limit defined on the referenced\nserverless compute applies across all tasks bound to this cluster.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -9543,7 +9618,7 @@
                       "doNotSuggest": true
                     },
                     "table_prefix": {
-                      "description": "[Private Preview] The prefix for the trace tables, which are named\n`{catalog}.{schema}.{table_prefix}_otel_*`. May only contain letters,\ndigits, and underscores, and may be at most 238 characters. When unset, a\nserver-generated prefix derived from the experiment ID is used.",
+                      "description": "[Private Preview] The prefix for the trace tables, which are named\n`{catalog}.{schema}.{table_prefix}_otel_*`. May only contain letters,\ndigits, and underscores, and may be at most 238 characters. When unset, a\nserver-generated prefix derived from the experiment ID is used and this\nfield stays empty on read; the resolved value is always available in\n`effective_table_prefix`.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
@@ -9663,6 +9738,12 @@
                     "outlook_options": {
                       "description": "[Private Preview] Outlook specific options for ingestion",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "reddit_ads_options": {
+                      "description": "[Private Preview] Reddit Ads specific options for ingestion",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RedditAdsOptions",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },
@@ -10337,6 +10418,33 @@
                     "table_configuration": {
                       "description": "[Public Preview] Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.IngestionPipelineDefinitionFanoutOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Fanout configuration for multi-table routing from streaming sources.\nRoutes each input record to a destination table based on a routing\nkey derived from the record. The key value becomes the table name\nsuffix: {destination_catalog}.{destination_schema}.{key_value}.",
+                  "properties": {
+                    "fanout_by": {
+                      "description": "[Private Preview] Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "transforms": {
+                      "description": "[Private Preview] Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -11239,6 +11347,66 @@
                 }
               ]
             },
+            "pipelines.RedditAdsOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Reddit Ads specific options for ingestion",
+                  "properties": {
+                    "custom_report_options": {
+                      "description": "[Private Preview] (Optional) Custom report definition. When set, the table is treated as a\nuser-defined Reddit Ads custom report. When unset, the table must match\none of the connector's prebuilt sources.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RedditAdsOptionsRedditAdsCustomReportOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "lookback_window_days": {
+                      "description": "[Private Preview] (Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.\nIf not specified, defaults to 30 days.",
+                      "$ref": "#/$defs/int",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sync_start_date": {
+                      "description": "[Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, defaults to 2 years ago.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.RedditAdsOptionsRedditAdsCustomReportOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "User-defined custom report for the Reddit Ads connector.\nApplies only to the custom_report table — prebuilt tables ignore this.",
+                  "properties": {
+                    "breakdowns": {
+                      "description": "[Private Preview] (Optional) Breakdown dimensions to group report data by.\nExamples: CAMPAIGN_ID, DATE, COUNTRY, REGION, AD_ID.\nMust include at least one time dimension (DATE or HOUR).",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "fields": {
+                      "description": "[Private Preview] (Optional) Fields to include in the report (maps to the Reddit Ads API `fields` parameter).\nExamples: IMPRESSIONS, CLICKS, SPEND, CPC, CTR.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.ReportSpec": {
               "oneOf": [
                 {
@@ -11352,6 +11520,12 @@
                     "destination_schema": {
                       "description": "[Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.",
                       "$ref": "#/$defs/string"
+                    },
+                    "fanout_options": {
+                      "description": "[Private Preview] Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionFanoutOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     },
                     "source_catalog": {
                       "description": "[Public Preview] The source catalog name. Might be optional depending on the type of source.",
@@ -12125,6 +12299,67 @@
                 }
               ]
             },
+            "postgres.SyncedTableSyncedTableSpecExtraColumn": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "An extra PostgreSQL column to add to the synced table.",
+                  "properties": {
+                    "column_name": {
+                      "description": "[Private Preview] Name of the column.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "column_type": {
+                      "description": "[Private Preview] PostgreSQL type of the column, for example \"tsvector\" or \"vector(1024)\".",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "compute": {
+                      "description": "[Private Preview] SQL expression used to compute the column's value, for example\n\"to_tsvector('english', content)\".",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "maintenance": {
+                      "description": "[Private Preview] How the column's value is populated and kept up to date.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "column_name",
+                    "column_type"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "How the column's value is populated and kept up to date.",
+                  "enum": [
+                    "STORED_GENERATED"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "postgres.SyncedTableSyncedTableSpecPgSpecificType": {
               "oneOf": [
                 {
@@ -12180,7 +12415,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecPgSpecificType"
                     },
                     "size": {
-                      "description": "[Beta] Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\nor PG_SPECIFIC_TYPE_HALFVEC (specifies the vector dimension, e.g., 1024).",
+                      "description": "[Beta] Size parameter for the target type, for types that take one (e.g. vector\ndimension, varchar length). Required when the chosen pg_type needs a size.",
                       "$ref": "#/$defs/int"
                     }
                   },
@@ -13374,6 +13609,14 @@
                     "inference_table_config": {
                       "description": "[Public Preview] Configuration for inference table payload logging, including sampling.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.TelemetryInferenceTableConfig"
+                    },
+                    "table_names": {
+                      "description": "[Public Preview] The Unity Catalog tables to which endpoint telemetry (logs, traces, and metrics) is exported.\nProvide this to create a new telemetry profile for the endpoint from the given tables.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.UnityCatalogTableNames"
+                    },
+                    "telemetry_profile_id": {
+                      "description": "[Public Preview] The ID of an existing telemetry profile to apply to this endpoint. Provide this to reuse a\ntelemetry profile that has already been created, instead of specifying table_names.",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -13411,6 +13654,36 @@
                     "routes": {
                       "description": "The list of routes that define traffic to each served entity.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.Route"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.UnityCatalogTableNames": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "annotations_table": {
+                      "description": "[Public Preview] The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported annotations.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "logs_table": {
+                      "description": "[Public Preview] The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported logs.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "metrics_table": {
+                      "description": "[Public Preview] The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported metrics.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "traces_table": {
+                      "description": "[Public Preview] The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported traces (spans).",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -13467,6 +13740,42 @@
                   "enum": [
                     "ACTIVE",
                     "DELETED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertStatementParameter": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Redash-owned copy of the internal StatementParameter for the external AlertV2 API.\nThe internal `ordinal` and `args` fields are intentionally omitted: the public API\nsupports only flat, named scalar parameters; complex types (ARRAY, MAP, STRUCT) are\nnot supported. This mirrors SEA's public StatementParameter schema, see:\ncmdexec/sql-exec-api/proto/sql_exec_api_service.proto:763-779",
+                  "properties": {
+                    "name": {
+                      "description": "[Private Preview] The name of the parameter, referenced in the query as `:name`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "type": {
+                      "description": "[Private Preview] The SQL data type of the parameter, e.g. STRING, INT, or DATE. Defaults to STRING. This is a\nstring rather than an enum because scalar subtypes such as DECIMAL(10, 4) cannot be enumerated.\nComplex types such as ARRAY, MAP, and STRUCT are not supported.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "value": {
+                      "description": "[Private Preview] The bound value for the parameter, given as a string. If omitted, the value is interpreted as NULL.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
                   ]
                 },
                 {
@@ -14029,6 +14338,23 @@
                   "enumDescriptions": [
                     "An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.",
                     "An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates."
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "vectorsearch.VectorSearchEndpointPermissionLevel": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Permission level",
+                  "enum": [
+                    "CAN_CREATE",
+                    "CAN_MANAGE",
+                    "CAN_USE"
                   ]
                 },
                 {
@@ -14884,6 +15210,20 @@
                       "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
                     }
                   ]
+                },
+                "resources.VectorSearchEndpointPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
                 }
               },
               "config.ArtifactFile": {
@@ -15408,6 +15748,20 @@
                   }
                 ]
               },
+              "pipelines.Transformer": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "postgres.ProjectCustomTag": {
                 "oneOf": [
                   {
@@ -15428,6 +15782,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "postgres.SyncedTableSyncedTableSpecExtraColumn": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecExtraColumn"
                     }
                   },
                   {
@@ -15526,6 +15894,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "sql.AlertStatementParameter": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertStatementParameter"
                     }
                   },
                   {

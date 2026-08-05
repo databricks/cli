@@ -166,3 +166,49 @@ func TestHasWorkspaceIDInHostname(t *testing.T) {
 		})
 	}
 }
+
+func TestModernizeJobRunPageURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		raw      string
+		expected string
+	}{
+		{
+			"legacy fragment form preserves workspace selector",
+			"https://myworkspace.databricks.test/?o=900800700600#job/123/run/456",
+			"https://myworkspace.databricks.test/jobs/123/runs/456?o=900800700600",
+		},
+		{
+			"no workspace selector",
+			"https://myworkspace.databricks.test/#job/123/run/456",
+			"https://myworkspace.databricks.test/jobs/123/runs/456",
+		},
+		{
+			"http host with port",
+			"http://127.0.0.1:8080/?o=900800700600#job/1/run/2",
+			"http://127.0.0.1:8080/jobs/1/runs/2?o=900800700600",
+		},
+		// The conversion is cosmetic, so any other format passes through unchanged.
+		{
+			"already modern path is left as-is",
+			"https://myworkspace.databricks.test/jobs/123/runs/456?o=900800700600",
+			"https://myworkspace.databricks.test/jobs/123/runs/456?o=900800700600",
+		},
+		{
+			"incomplete fragment is left as-is",
+			"https://myworkspace.databricks.test/?o=900800700600#job/123",
+			"https://myworkspace.databricks.test/?o=900800700600#job/123",
+		},
+		{
+			"empty job id is left as-is",
+			"https://myworkspace.databricks.test/?o=900800700600#job//run/456",
+			"https://myworkspace.databricks.test/?o=900800700600#job//run/456",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, ModernizeJobRunPageURL(tt.raw))
+		})
+	}
+}

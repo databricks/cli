@@ -58,18 +58,14 @@ Resource: resources.jobs.my_job
 +            - samples.nyctaxi.trips
        environments:
          - environment_key: default
-@@ -25,14 +31,14 @@
+@@ -25,5 +31,5 @@
                - ./*.whl
        job_clusters:
 -        - job_cluster_key: test_cluster
 +        - job_cluster_key: test_cluster_renamed
            new_cluster:
--            spark_version: [[DEFAULT_SPARK_VERSION]]
-             node_type_id: [NODE_TYPE_ID]
-             num_workers: 1
-+            spark_version: [[DEFAULT_SPARK_VERSION]]
-       tasks:
-         - task_key: main
+             spark_version: [[DEFAULT_SPARK_VERSION]]
+@@ -34,5 +40,5 @@
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/notebook
 -          job_cluster_key: test_cluster
@@ -105,7 +101,16 @@ Resource: resources.jobs.my_job
     }
   ],
   "files_changed_count": 1,
-  "files_written_count": 1
+  "files_written_count": 1,
+  "state_serial": 1,
+  "state_lineage": "[UUID]",
+  "state_source": "local",
+  "states_available_count": 2,
+  "state_resource_ids": {
+    "resource_job_ids": [
+      "[MY_JOB_ID]"
+    ]
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve

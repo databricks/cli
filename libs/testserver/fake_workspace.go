@@ -128,6 +128,14 @@ func nowMilli() int64 {
 	return lastNowMilli
 }
 
+// nextTimestamp returns a strictly-increasing RFC3339 timestamp with nanosecond
+// precision. The sub-second component keeps distinct events ordered even within the
+// same wall-clock second, which the dashboard publish lifecycle relies on to compare
+// a draft's update_time against a published revision's revision_create_time.
+func nextTimestamp() string {
+	return time.Unix(0, nowNano()).UTC().Format(time.RFC3339Nano)
+}
+
 func nextUUID() string {
 	var b [16]byte
 	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
@@ -192,6 +200,11 @@ type FakeWorkspace struct {
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
+
+	// VectorSearchIndexesPendingDeletion counts how many further CREATEs an
+	// already-deleted index name must reject with "pending deletion". See
+	// VectorSearchIndexDelete.
+	VectorSearchIndexesPendingDeletion map[string]int
 
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
@@ -395,7 +408,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				SingleUserName:   TestUser.UserName,
 			},
 		},
-		InstancePools: map[string]compute.GetInstancePool{},
+		InstancePools:                      map[string]compute.GetInstancePool{},
+		VectorSearchIndexesPendingDeletion: map[string]int{},
 	}
 }
 

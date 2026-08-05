@@ -1,0 +1,72 @@
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, TypedDict
+
+from databricks.bundles.core._transform import _transform
+from databricks.bundles.core._transform_to_json import _transform_to_json_value
+from databricks.bundles.core._variable import VariableOrList
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+
+@dataclass(kw_only=True)
+class RedditAdsOptionsRedditAdsCustomReportOptions:
+    """
+    :meta private: [EXPERIMENTAL]
+
+    User-defined custom report for the Reddit Ads connector.
+    Applies only to the custom_report table — prebuilt tables ignore this.
+    """
+
+    breakdowns: VariableOrList[str] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Breakdown dimensions to group report data by.
+    Examples: CAMPAIGN_ID, DATE, COUNTRY, REGION, AD_ID.
+    Must include at least one time dimension (DATE or HOUR).
+    """
+
+    fields: VariableOrList[str] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Fields to include in the report (maps to the Reddit Ads API `fields` parameter).
+    Examples: IMPRESSIONS, CLICKS, SPEND, CPC, CTR.
+    """
+
+    @classmethod
+    def from_dict(
+        cls, value: "RedditAdsOptionsRedditAdsCustomReportOptionsDict"
+    ) -> "Self":
+        return _transform(cls, value)
+
+    def as_dict(self) -> "RedditAdsOptionsRedditAdsCustomReportOptionsDict":
+        return _transform_to_json_value(self)  # type:ignore
+
+
+class RedditAdsOptionsRedditAdsCustomReportOptionsDict(TypedDict, total=False):
+    """"""
+
+    breakdowns: VariableOrList[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Breakdown dimensions to group report data by.
+    Examples: CAMPAIGN_ID, DATE, COUNTRY, REGION, AD_ID.
+    Must include at least one time dimension (DATE or HOUR).
+    """
+
+    fields: VariableOrList[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Fields to include in the report (maps to the Reddit Ads API `fields` parameter).
+    Examples: IMPRESSIONS, CLICKS, SPEND, CPC, CTR.
+    """
+
+
+RedditAdsOptionsRedditAdsCustomReportOptionsParam = (
+    RedditAdsOptionsRedditAdsCustomReportOptionsDict
+    | RedditAdsOptionsRedditAdsCustomReportOptions
+)

@@ -95,6 +95,24 @@ If the only reason for divergence is a server-side default that one engine sets 
 
 **RULE: `EnvMatrix.<VAR> = []` removes that variable from the inherited matrix** (see `ExpandEnvMatrix` in `acceptance/internal/config.go`). The root `test.toml` matrixes `DATABRICKS_BUNDLE_ENGINE = [terraform, direct]`, so a non-bundle test opts out of both engine runs with `EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []`. The `out.test.toml` snapshot of inherited values is generated and committed by design.
 
+**RULE: Write matrix variables in dotted form (`EnvMatrix.<VAR> = [...]`) at the top of `test.toml`, not under a `[EnvMatrix]` header.** In TOML every key after a `[EnvMatrix]` header belongs to that table until the next header — a blank line does not end it. So a top-level key like `Ignore` placed below `[EnvMatrix]` is silently parsed as `EnvMatrix.Ignore` (a bogus matrix variable) instead of the real top-level field, and the test runs with the field unset. Dotted form keeps each key's table explicit and is immune to ordering:
+
+GOOD:
+
+```toml
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Ignore = ["databricks.yml"]
+```
+
+BAD:
+
+```toml
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = ["databricks.yml"]   # parsed as EnvMatrix.Ignore, not top-level Ignore
+```
+
 **RULE: If a test's `out.test.toml` is still in the older `[EnvMatrix]` block format, a regen rewrites it to the inline form and the post-test `git diff --exit-code` check fails** ("out.test.toml files that are out of date"). Regenerate just those files with `go test ./acceptance -run "^TestAccept$" -only-out-test-toml`, then commit.
 
 ### Reference

@@ -29,6 +29,7 @@ and proxies them to local SSH daemon processes.`,
 	var secretScopeName string
 	var authorizedKeySecretName string
 	var serverless bool
+	var usagePolicyID string
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID")
 	cmd.MarkFlagRequired("cluster")
@@ -43,6 +44,7 @@ and proxies them to local SSH daemon processes.`,
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down after no pings from clients")
 	cmd.Flags().StringVar(&version, "version", "", "Client version of the Databricks CLI")
 	cmd.Flags().BoolVar(&serverless, "serverless", false, "Enable serverless mode for Jupyter initialization")
+	cmd.Flags().StringVar(&usagePolicyID, "usage-policy-id", "", "Usage policy ID the job was submitted with")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// The server can be executed under a directory with an invalid bundle configuration.
@@ -71,6 +73,7 @@ and proxies them to local SSH daemon processes.`,
 			DefaultPort:             defaultServerPort,
 			PortRange:               serverPortRange,
 			Serverless:              serverless,
+			UsagePolicyID:           usagePolicyID,
 		}
 		return server.Run(ctx, wsc, opts)
 	}

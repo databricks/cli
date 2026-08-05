@@ -1625,6 +1625,9 @@ resources:
         "existing_pipeline_id":
           "description": |-
             PLACEHOLDER
+        "extra_columns":
+          "description": |-
+            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1991,6 +1994,19 @@ resources:
               - level: CAN_RUN
                 service_principal_name: 123456-abcdef
             ```
+          "$fields":
+            "group_name":
+              "description": |-
+                PLACEHOLDER
+            "level":
+              "description": |-
+                PLACEHOLDER
+            "service_principal_name":
+              "description": |-
+                PLACEHOLDER
+            "user_name":
+              "description": |-
+                PLACEHOLDER
     "vector_search_indexes":
       "description": |-
         PLACEHOLDER

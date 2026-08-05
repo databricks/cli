@@ -1,0 +1,60 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+pipeline_id="$(read_id.py split_pipeline)"
+
+
+# Length-preserving field edits on both elements of a positional list that is
+# split across two blocks. Each edit must land in its own block.
+title "Edit num_workers on the top-level cluster and on the target cluster"
+edit_resource.py pipelines $pipeline_id <<EOF
+for cluster in r["clusters"]:
+    if cluster["label"] == "default":
+        cluster["num_workers"] = 5
+    if cluster["label"] == "maintenance":
+        cluster["num_workers"] = 3
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "default updates top-level, maintenance updates the target block"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+
+# A length change on a split positional list. Pipeline clusters carry no keyed-slice
+# registration, so they diff by index and a removal arrives as field-level deletes
+# rather than as the removal of an element. The surviving top-level cluster must be
+# untouched.
+#
+# KNOWN GAP: the removal strips the target cluster's fields but leaves the
+# "- label: maintenance" entry behind, so the element is not actually removed. The
+# grep below records that remnant rather than asserting it away.
+title "Remove the target-block cluster (length change)"
+edit_resource.py pipelines $pipeline_id <<EOF
+r["clusters"] = [c for c in r["clusters"] if c["label"] != "maintenance"]
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "The top-level cluster is untouched; the target entry is left as a remnant"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+errcode trace grep -c "label: default" databricks.yml
+errcode trace grep -c "label: maintenance" databricks.yml
+errcode trace grep -c "num_workers" databricks.yml
+rm databricks.yml.backup

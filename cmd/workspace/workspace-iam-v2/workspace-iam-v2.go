@@ -73,6 +73,7 @@ func newCreateWorkspaceAssignmentDetailProxy() *cobra.Command {
 
 	cmd.Flags().Var(&createWorkspaceAssignmentDetailProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "create-workspace-assignment-detail-proxy PRINCIPAL_ID"
@@ -704,6 +705,7 @@ func newUpdateWorkspaceAssignmentDetailProxy() *cobra.Command {
 
 	cmd.Flags().Var(&updateWorkspaceAssignmentDetailProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "update-workspace-assignment-detail-proxy PRINCIPAL_ID UPDATE_MASK PRINCIPAL_ID"

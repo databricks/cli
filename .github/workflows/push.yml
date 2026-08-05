@@ -137,6 +137,21 @@ jobs:
         with:
           cache-key: test-${{ matrix.deployment }}
 
+      # Make origin/main available with enough history for `git diff --merge-base
+      # origin/main`, which the acceptance subset selector uses to always run the
+      # tests this PR adds/changes on the windows/macOS cells. actions/checkout does
+      # a shallow single-ref clone by default, so origin/main is otherwise absent and
+      # the diff fails, silently disabling change detection. This must run AFTER
+      # setup-build-environment, whose own checkout would re-shallow the repo. Only
+      # PRs subset tests, so the fetch is unnecessary elsewhere.
+      - name: Fetch origin/main for change detection
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --unshallow origin
+          fi
+
       - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}

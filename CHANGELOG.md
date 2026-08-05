@@ -1,5 +1,28 @@
 # Version changelog
 
+## Release v1.10.0 (2026-07-29)
+
+### CLI
+
+ * `ssh connect` now supports specifying a serverless usage policy with `--usage-policy-id`
+
+### Bundles
+
+ * Fixed `bundle deploy`/`bundle destroy` failing when an app enters the transient DELETING state between plan and apply (e.g. with a saved plan); the delete is now treated as complete instead of erroring (direct engine only).
+ * Fixed `bundle deploy`/`bundle destroy` failing when an app is still in the transient DELETING state; the delete is now treated as complete instead of erroring (direct engine only).
+ * `bundle destroy --force-lock` now proceeds without a deployment lock when the workspace directory is at its child-node limit and cannot accept the lock file, so a deployment can still be torn down when the workspace is full.
+ * Empty-string values on optional (omitempty) resource fields are now dropped before deployment instead of being sent to the backend. This fixes deploys failing with errors like `'' is not a valid cluster policy ID` when a field such as `policy_id` was set to `""` (often via a variable that resolved to an empty string). The behavior now matches between the terraform and direct engines and is reflected in `bundle validate -o json`.
+ * `bundle validate` and `bundle deploy` now reject a grant that is missing a `principal` with an error instead of a warning. Previously the deploy would start and, on the direct engine, create the securable before the grants PATCH failed (`400 INVALID_PARAMETER_VALUE`), leaving a partially-applied deployment.
+ * `bundle validate` and `bundle deploy` now reject a grant with an empty `privileges` list with an error. Previously, on the direct engine, such a grant never converged: the backend drops principals with no privileges, so every subsequent `bundle plan` reported the grant as a perpetual update.
+ * Fixes [#6030](https://github.com/databricks/cli/issues/6030): spurious `update` on catalog/schema/volume grants (direct engine); a principal granted `ALL_PRIVILEGES` no longer drifts when the backend also reports the concrete privileges it implies ([#6064](https://github.com/databricks/cli/pull/6064)).
+ * Use vector search endpoint permission types that are supported by the backend ([#6022](https://github.com/databricks/cli/pull/6022)).
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.160.0 to v0.165.0.
+ * Upgrade Terraform provider to 1.123.0
+
+
 ## Release v1.9.0 (2026-07-22)
 
 ### CLI

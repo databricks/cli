@@ -92,6 +92,45 @@ func JobRunURL(baseURL url.URL, jobID, runID string) string {
 	return baseURL.String()
 }
 
+// ModernizeJobRunPageURL converts the legacy run URL returned by the Jobs API
+//
+//	https://<host>/?o=<id>#job/<jobID>/run/<runID>
+//
+// into the modern path form
+//
+//	https://<host>/jobs/<jobID>/runs/<runID>?o=<id>
+//
+// so that non-admin users permitted to view the run are not redirected to the
+// workspace homepage. See https://github.com/databricks/cli/issues/5142. The
+// workspace selector query param (o) is preserved as-is. The conversion is
+// cosmetic, so the original URL is returned on the rare chance the format is
+// unexpected.
+func ModernizeJobRunPageURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+
+	jobID, runID, ok := parseLegacyRunFragment(u.Fragment)
+	if !ok {
+		return raw
+	}
+
+	u.Fragment = ""
+	u.Path = "/" + JobRunPath(jobID, runID)
+	return u.String()
+}
+
+// parseLegacyRunFragment extracts the job and run IDs from a legacy run URL
+// fragment of the form "job/<jobID>/run/<runID>".
+func parseLegacyRunFragment(fragment string) (jobID, runID string, ok bool) {
+	parts := strings.Split(fragment, "/")
+	if len(parts) != 4 || parts[0] != "job" || parts[2] != "run" || parts[1] == "" || parts[3] == "" {
+		return "", "", false
+	}
+	return parts[1], parts[3], true
+}
+
 // ResourceURL constructs a workspace URL for a named resource type and ID.
 func ResourceURL(baseURL url.URL, resourceType, id string) string {
 	resourceType = resolveAlias(resourceType)

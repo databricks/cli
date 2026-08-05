@@ -23,6 +23,7 @@ View at: [DATABRICKS_URL]/jobs/runs/555
     "tasks": [
       {
         "ai_runtime_task": {
+          "code_source_path": "/Workspace/Users/[USERNAME]/.air/repo_snapshots/001/[SNAPSHOT_TARBALL]",
           "deployments": [
             {
               "command_path": "/Workspace/Users/[USERNAME]/.air/cli_launch/submit-smoke/submit-smoke_[RUN_ID]/command.sh",

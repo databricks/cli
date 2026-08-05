@@ -1109,11 +1109,28 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// Apps DoDelete is fire-and-forget: the API returns success while the app
+	// sits in DELETING state for up to ~20 minutes before the record is removed.
+	// A GET on the DELETING app returns the app, not 404 -- the testserver
+	// mirrors that in libs/testserver/apps.go. DoRead therefore still succeeds
+	// here; the planner treats this transient state as gone via ResourceApp.IsGone
+	// so delete/destroy stay idempotent (acceptance/bundle/invariant/{delete,destroy}_idempotent).
+	deleteLeavesDeleting := group == "apps"
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
-	if deleteIsNoop {
+	switch {
+	case deleteIsNoop:
 		require.NoError(t, err)
-	} else {
+		// The resource genuinely still exists, so it must not report as gone.
+		assert.False(t, adapter.IsGone(remoteAfterDelete))
+	case deleteLeavesDeleting:
+		require.NoError(t, err)
+		require.NotNil(t, remoteAfterDelete)
+		// IsGone lets the planner short-circuit the second delete on this
+		// transient DELETING state; this is what keeps the delete/destroy
+		// invariant tests idempotent, so assert the contract directly.
+		assert.True(t, adapter.IsGone(remoteAfterDelete))
+	default:
 		require.Error(t, err)
 		require.Nil(t, remoteAfterDelete)
 	}

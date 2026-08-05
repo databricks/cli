@@ -49,10 +49,9 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 		return nil, fmt.Errorf("expected *[]catalog.PrivilegeAssignment, got %T", inputConfig)
 	}
 
-	// Backend sorts privileges, so we sort here as well.
-	for i := range *grantsPtr {
-		slices.Sort((*grantsPtr)[i].Privileges)
-	}
+	// Normalize the same way as DoRead (sort, collapse ALL_PRIVILEGES) so the
+	// config and the value read back compare equal.
+	normalizeAssignments(*grantsPtr)
 
 	return &structvar.StructVar{
 		Value: &GrantsState{
@@ -223,7 +222,26 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 		}
 		pageToken = resp.NextPageToken
 	}
+	// Normalize the same way as the config side (sort, collapse ALL_PRIVILEGES)
+	// so the two compare equal and we don't report false drift.
+	normalizeAssignments(assignments)
 	return assignments, nil
+}
+
+// normalizeAssignments sorts each assignment's privileges (the backend sorts
+// them, so we match that) and collapses a principal holding ALL_PRIVILEGES down
+// to just ALL_PRIVILEGES. The collapse is applied to both the config and read
+// sides, so config granting only ALL_PRIVILEGES matches a backend that reports
+// ALL_PRIVILEGES plus the concrete privileges it implies, instead of reporting a
+// perpetual update.
+func normalizeAssignments(assignments []catalog.PrivilegeAssignment) {
+	for i := range assignments {
+		if slices.Contains(assignments[i].Privileges, catalog.PrivilegeAllPrivileges) {
+			assignments[i].Privileges = []catalog.Privilege{catalog.PrivilegeAllPrivileges}
+			continue
+		}
+		slices.Sort(assignments[i].Privileges)
+	}
 }
 
 func extractGrantResourceType(node string) (string, error) {

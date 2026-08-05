@@ -42,7 +42,7 @@ func snapshotCodeSource(ctx context.Context, w *databricks.WorkspaceClient, snap
 		return snapshotResult{}, err
 	}
 
-	up, err := newSnapshotUploader(w, snap, userDir, funcDir, filepath.Base(repoPath))
+	up, err := newSnapshotUploader(ctx, w, snap, userDir, funcDir, filepath.Base(repoPath))
 	if err != nil {
 		return snapshotResult{}, err
 	}
@@ -255,7 +255,7 @@ func fileExists(ctx context.Context, store filer.Filer, name string) (bool, erro
 // newSnapshotUploader builds the uploader for a submission. The tarball store is a
 // Volume (when remote_volume is set) or the user's repo_snapshots workspace dir;
 // sidecars always go to the run's funcDir in the workspace.
-func newSnapshotUploader(w *databricks.WorkspaceClient, snap *snapshotSourceConfig, userDir, funcDir, dirName string) (snapshotUploader, error) {
+func newSnapshotUploader(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, userDir, funcDir, dirName string) (snapshotUploader, error) {
 	sidecarStore, err := filer.NewWorkspaceFilesClient(w, funcDir)
 	if err != nil {
 		return snapshotUploader{}, err
@@ -263,7 +263,7 @@ func newSnapshotUploader(w *databricks.WorkspaceClient, snap *snapshotSourceConf
 
 	if snap.RemoteVolume != nil {
 		tarBase := strings.TrimRight(*snap.RemoteVolume, "/")
-		tarStore, err := filer.NewFilesClient(w, tarBase)
+		tarStore, err := filer.NewFilesClient(ctx, w, tarBase)
 		if err != nil {
 			return snapshotUploader{}, err
 		}
