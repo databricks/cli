@@ -1,0 +1,1 @@
+* `databricks auth profiles` is now a fast, offline listing of the configured profiles. It no longer validates credentials or contacts the workspace, so the `Valid` column and the `--skip-validate` flag have been removed. Use `databricks auth describe` to check whether a profile can authenticate ([#5216](https://github.com/databricks/cli/pull/5216)).

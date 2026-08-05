@@ -10,7 +10,7 @@ title "Settings after first switch\n"
 cat "./home/.databrickscfg" | grep -A1 __settings__
 
 title "Profiles after first switch\n"
-trace $CLI auth profiles --skip-validate
+trace $CLI auth profiles
 
 title "Switch to profile-b\n"
 trace $CLI auth switch --profile profile-b
@@ -19,7 +19,7 @@ title "Settings after second switch\n"
 cat "./home/.databrickscfg" | grep -A1 __settings__
 
 title "Profiles after second switch\n"
-trace $CLI auth profiles --skip-validate
+trace $CLI auth profiles
 
 # Track the final .databrickscfg to surface changes.
 cp "./home/.databrickscfg" "./out.databrickscfg"

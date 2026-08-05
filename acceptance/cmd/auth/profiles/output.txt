@@ -6,16 +6,14 @@
       "name": "workspace-profile",
       "host": "https://workspace.cloud.databricks.test",
       "cloud": "aws",
-      "auth_type": "",
-      "valid": false
+      "auth_type": ""
     },
     {
       "name": "account-profile",
       "host": "https://accounts.cloud.databricks.test",
       "account_id": "test-account-123",
       "cloud": "aws",
-      "auth_type": "",
-      "valid": false
+      "auth_type": ""
     },
     {
       "name": "unified-profile",
@@ -23,8 +21,13 @@
       "account_id": "unified-account-456",
       "workspace_id": "[NUMID]",
       "cloud": "aws",
-      "auth_type": "",
-      "valid": false
+      "auth_type": ""
     }
   ]
 }
+
+=== Profiles with workspace_id (table output)
+Name               Host
+workspace-profile  https://workspace.cloud.databricks.test
+account-profile    https://accounts.cloud.databricks.test
+unified-profile    https://unified.databricks.test
