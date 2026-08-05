@@ -4,10 +4,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# The deploy waits for the run by polling runs/get. Failing that first poll with a
-# status the CLI does not retry ends the wait with the run still going, which is
-# what an interrupted deploy leaves behind: the run id is recorded in the state,
-# but no outcome was ever observed.
+# The fault hits the poll, not the run: it ends the deploy's wait while leaving the
+# run going, which is what an interrupted deploy leaves behind: the run id is
+# recorded in the state, but no outcome was ever observed.
 fault.py "GET /api/2.2/jobs/runs/get" 403 0 1
 
 title "the deploy stops waiting before the run finishes"
