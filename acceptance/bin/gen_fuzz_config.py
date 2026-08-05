@@ -15,8 +15,14 @@ import random
 import re
 import sys
 
-# The schema is recursive (e.g. task -> for_each_task -> task); cap the walk.
+# Depth past which optional properties are no longer emitted, to keep configs from exploding.
 MAX_DEPTH = 6
+
+# Hard cap on the walk. MAX_DEPTH gates optional properties only; required ones and map values
+# recurse regardless, so a required-only cycle in the recursive schema (e.g. task ->
+# for_each_task -> task) would recurse until the stack gives out. Fail loudly instead: that is a
+# schema or generator problem, not something to silently truncate.
+MAX_RECURSION = 30
 
 # The ${...} interpolation branch the schema wraps every field in (see
 # bundle/internal/schema/main.go addInterpolationPatterns); we emit concrete values.
@@ -205,6 +211,9 @@ class Generator:
         return False
 
     def gen(self, schema, depth, name=""):
+        if depth > MAX_RECURSION:
+            sys.exit(f"gen_fuzz_config: schema walk exceeded {MAX_RECURSION} levels at {name!r}")
+
         # A Genie space body is free-form but the backend rejects unknown keys, so emit the minimal
         # accepted body instead of a random object.
         if name == "serialized_space":
@@ -321,7 +330,9 @@ class Generator:
         if name == "schema_name":
             return DEFAULT_SCHEMA
         if name == "warehouse_id":
-            return os.environ.get("TEST_DEFAULT_WAREHOUSE_ID", "")
+            # Always set by the acceptance harness (see acceptance_test.go); an empty one here
+            # would silently reject every warehouse-backed seed instead of failing.
+            return os.environ["TEST_DEFAULT_WAREHOUSE_ID"]
         if name == "notebook_path":
             return NOTEBOOK_PATH
         if name == "source_code_path":

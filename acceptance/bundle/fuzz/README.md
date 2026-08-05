@@ -33,4 +33,8 @@ log names the route the CLI could not reach.
 Since the schema comes from the CLI under test, an unrelated struct change can shift a
 seed onto a new config. A failure is a real CLI bug (panic, internal error, or drift),
 not flakiness; the failing seed's `LOG.repro` prints a ready-to-run repro, of the form
-`FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_TARGET=no_drift FUZZ_MODE=generate task test-fuzz`.
+`FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_TARGET=no_drift FUZZ_MODE=generate FUZZ_CHECK_DRIFT=0 task test-fuzz`.
+
+`FUZZ_CHECK_DRIFT` is part of the repro because it selects the oracle: at `0` (the committed run)
+`invariant_verify_no_drift` is replaced with a plan-determinism diff, and at `1` (`task test-fuzz`
+and the nightly) the exact check from ../invariant runs unchanged.
