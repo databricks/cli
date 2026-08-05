@@ -1,8 +1,8 @@
 # Shared setup for the invariant targets; each script keeps only the invariant it asserts.
 
-# Root of configs/ and data/. Defaults to this directory for the targets below, which inherit this
-# file as their parent. A caller outside the subtree sources this file directly and sets the
-# variable first. Exported because the fuzzer runs each seed in a fresh bash.
+# Root of configs/ and data/. For the targets in this subtree $TESTDIR is the target directory, so
+# the default resolves here; a caller outside the subtree sets it before sourcing. Exported because
+# the fuzzer runs each seed in a fresh bash.
 export INVARIANT_DIR="${INVARIANT_DIR:-$TESTDIR/..}"
 
 invariant_cleanup() {

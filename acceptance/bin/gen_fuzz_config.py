@@ -19,9 +19,8 @@ import sys
 MAX_DEPTH = 6
 
 # Hard cap on the walk. MAX_DEPTH gates optional properties only; required ones and map values
-# recurse regardless, so a required-only cycle in the recursive schema (e.g. task ->
-# for_each_task -> task) would recurse until the stack gives out. Fail loudly instead: that is a
-# schema or generator problem, not something to silently truncate.
+# recurse regardless, so a required-only cycle (task -> for_each_task -> task) would exhaust the
+# stack. Fail loudly: that is a schema or generator bug, not something to silently truncate.
 MAX_RECURSION = 30
 
 # The ${...} interpolation branch the schema wraps every field in (see
@@ -31,9 +30,9 @@ INTERPOLATION_MARKER = "\\$\\{"
 # Keep in sync with libs/jsonschema.Type. gen_scalar exits on anything else.
 SCALAR_TYPES = {"boolean", "integer", "number", "string"}
 
-# Cross-resource refs must resolve on every workspace (fake server and real UC). "main"/"default"
-# are the standard seeded catalog/schema; a random name deploys on the fake server but real UC
-# rejects it (CATALOG_DOES_NOT_EXIST), dropping the config.
+# Cross-resource refs must resolve on every workspace. "main"/"default" are the standard seeded
+# catalog/schema; a random name deploys on the fake server but real UC rejects it
+# (CATALOG_DOES_NOT_EXIST), dropping the config.
 DEFAULT_CATALOG = "main"
 DEFAULT_SCHEMA = "default"
 

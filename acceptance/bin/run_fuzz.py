@@ -31,12 +31,11 @@ from pathlib import Path
 SEED_TIMEOUT = float(os.environ.get("FUZZ_SEED_TIMEOUT", "180"))
 
 # Overall budget (seconds): stop starting new seeds past it and exit cleanly, so a slow-but-
-# progressing variant isn't force-killed at the per-script Timeout and read as a failure. Measured
-# from this script rather than from fuzz/script, so it excludes the one-off schema dump. 900s
+# progressing variant isn't force-killed at the per-script Timeout and read as a failure. 900s
 # leaves margin under the 20m test.toml Timeout. Set FUZZ_TIME_BUDGET=0 to disable.
 BUDGET = float(os.environ.get("FUZZ_TIME_BUDGET", "900"))
 
-# Grace period between the SIGQUIT that asks Go for a goroutine dump and the SIGKILL backstop.
+# Grace period between SIGQUIT and the SIGKILL backstop.
 QUIT_GRACE = 10
 
 TARGET = os.environ["FUZZ_TARGET"]
@@ -44,15 +43,14 @@ MODE = os.environ["FUZZ_MODE"]
 
 # Which no-drift oracle script.prepare installed. Part of the repro because the two disagree: the
 # committed run leaves this at 0 and gets the plan-determinism diff, while task test-fuzz defaults
-# it to 1 and gets the exact check, so a repro that omitted it would not rerun what failed.
+# it to 1 and gets the exact check.
 CHECK_DRIFT = os.environ.get("FUZZ_CHECK_DRIFT", "0")
 
 POSIX = os.name == "posix"
 
-# Resolved rather than passed as a bare name: on Windows, CreateProcess searches System32 before
-# PATH, so "bash" there is the WSL launcher stub, which exits non-zero with no distribution
-# installed and every seed reads as rejected. shutil.which searches PATH only, so it finds the same
-# bash the harness runs this script under.
+# Resolved rather than passed as a bare name: on Windows, CreateProcess searches System32 first,
+# where "bash" is the WSL launcher stub, which exits non-zero with no distribution installed and
+# makes every seed read as rejected. shutil.which searches PATH, finding the bash we run under.
 BASH = shutil.which("bash")
 
 

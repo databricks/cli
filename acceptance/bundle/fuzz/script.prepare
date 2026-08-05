@@ -23,9 +23,9 @@ invariant_render() {
 # does not depend on server fidelity: planning is deterministic, so two consecutive plans of the
 # same state must be byte-identical. Nightly runs set FUZZ_CHECK_DRIFT=1 to keep the exact check.
 #
-# Compared against 0 rather than tested for emptiness so that run_fuzz.py's repro command can
-# name the oracle the failing run used; `FUZZ_CHECK_DRIFT= task test-fuzz` would be re-defaulted
-# to 1 by the task's ${FUZZ_CHECK_DRIFT:-1}.
+# Tested against 0 rather than for emptiness so run_fuzz.py's repro can select this oracle with an
+# explicit FUZZ_CHECK_DRIFT=0; an empty value is re-defaulted to 1 by the task's
+# ${FUZZ_CHECK_DRIFT:-1}.
 if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
     invariant_verify_no_drift() {
         # Compare only when both plans succeed -- a plan that fails on an unmodeled read is a gap
