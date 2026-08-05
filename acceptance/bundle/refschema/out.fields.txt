@@ -3482,7 +3482,7 @@ resources.snapshots.*.acl[*].user_name	string	INPUT	STATE
 resources.snapshots.*.bundle_id	string	INPUT	STATE
 resources.snapshots.*.full_path	string	REMOTE	STATE
 resources.snapshots.*.relative_path	string	REMOTE	STATE
-resources.snapshots.*.remote_root	string	INPUT
+resources.snapshots.*.remote_root	string	INPUT	STATE
 resources.snapshots.*.zip_content	string	INPUT
 resources.sql_warehouses.*.auto_stop_mins	int	ALL
 resources.sql_warehouses.*.channel	*sql.Channel	ALL
