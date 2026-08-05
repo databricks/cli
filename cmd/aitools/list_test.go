@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -204,16 +205,24 @@ func TestBuildAgentEntriesReportsSkillsOnlyAgentFromDisk(t *testing.T) {
 	// reported from disk, versioned by the scope's recorded release.
 	home := t.TempDir()
 	ctx := env.WithUserHomeDir(t.Context(), home)
-	// Pin XDG_CONFIG_HOME so OpenCode's config dir resolves under the temp home
-	// rather than the developer's real ~/.config.
-	ctx = env.Set(ctx, "XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 
-	// OpenCode is skills-only; its global skills dir is $XDG_CONFIG_HOME/opencode/skills.
+	// On Windows, openCodeConfigDir checks APPDATA first; on other platforms,
+	// it checks XDG_CONFIG_HOME. Override the platform-specific setting to route
+	// config discovery to a temp directory so the test controls where the function
+	// looks for skills, regardless of system defaults.
+	configDir := filepath.Join(home, ".config")
+	if runtime.GOOS == "windows" {
+		ctx = env.Set(ctx, "APPDATA", configDir)
+	} else {
+		ctx = env.Set(ctx, "XDG_CONFIG_HOME", configDir)
+	}
+
+	// OpenCode is skills-only; its global skills dir is configDir/opencode/skills.
 	// The CLI installs skills there as symlinks to the canonical store, so build
 	// the symlink to exercise the real on-disk shape.
 	canonical := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-jobs")
 	require.NoError(t, os.MkdirAll(canonical, 0o755))
-	skillsDir := filepath.Join(home, ".config", "opencode", "skills")
+	skillsDir := filepath.Join(configDir, "opencode", "skills")
 	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
 	require.NoError(t, os.Symlink(canonical, filepath.Join(skillsDir, "databricks-jobs")))
 
