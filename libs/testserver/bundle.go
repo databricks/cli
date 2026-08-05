@@ -308,6 +308,9 @@ func (s *FakeWorkspace) ListResources(deploymentID string) Response {
 func dmsNotFound(what string) Response {
 	return Response{
 		StatusCode: 404,
+		// Content-Type is required for the SDK to parse the body into a typed error,
+		// which is what callers match against apierr.ErrResourceDoesNotExist.
+		Headers: map[string][]string{"Content-Type": {"application/json"}},
 		Body: map[string]string{
 			"error_code": "RESOURCE_DOES_NOT_EXIST",
 			"message":    what + " does not exist",

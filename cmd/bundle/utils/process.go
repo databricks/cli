@@ -258,8 +258,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				statemgmt.Load(state, modes...),
 			}
 			// InitializeURLs makes an extra API call; only run it when URLs are needed.
+			// InitializeDeploymentHistory likewise, and only for bundles that record it.
 			if opts.InitIDs {
-				mutators = append(mutators, mutator.InitializeURLs())
+				mutators = append(mutators, mutator.InitializeURLs(), mutator.InitializeDeploymentHistory())
 			}
 			bundle.ApplySeqContext(ctx, b, mutators...)
 			if logdiag.HasError(ctx) {

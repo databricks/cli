@@ -4,7 +4,8 @@ trace print_requests.py //api/2.0/bundle --sort
 
 title "The failed resource is listed without a resource_id or state, so a later deploy plans to create it rather than treating it as already deployed"
 # The deployment ID is the workspace node's ID; read it back the way the CLI does.
-deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record-failure/default/state/resources.deployment.json" -o json | jq -r .object_id)
+# Extracted with python, not jq: the ID exceeds 2^53 and jq 1.6 rounds it.
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record-failure/default/state/resources.deployment.json" -o json | python3 -c 'import sys,json; print(json.load(sys.stdin)["object_id"])')
 trace $CLI api get "/api/2.0/bundle/deployments/${deployment_id}/resources"
 
 title "Redeploying from DMS state alone still creates the failed resource: it was never applied, so it must not be skipped as unchanged"
