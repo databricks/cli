@@ -21,19 +21,29 @@ src/train.py
 
 === both code_source_paths point into the bundle .air_snapshots, command_paths rewritten, deps on environments spec
 
->>> print_requests.py --sort --del-field raw_body //.air_snapshots/ //jobs/create
+>>> print_requests.py --sort //workspace/import //jobs/create
 {
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz",
-  "q": {
-    "overwrite": "true"
+  "path": "/api/2.0/workspace/import",
+  "body": {
+    "multipart_form": {
+      "content": "[binary content 189 bytes]",
+      "format": "AUTO",
+      "overwrite": "true",
+      "path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz"
+    }
   }
 }
 {
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz",
-  "q": {
-    "overwrite": "true"
+  "path": "/api/2.0/workspace/import",
+  "body": {
+    "multipart_form": {
+      "content": "[binary content 273 bytes]",
+      "format": "AUTO",
+      "overwrite": "true",
+      "path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz"
+    }
   }
 }
 {
@@ -114,12 +124,17 @@ Updated jobs.train
 Files: 4 uploaded, 1 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --sort --del-field raw_body //.air_snapshots/
+>>> print_requests.py --sort //workspace/import
 {
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz",
-  "q": {
-    "overwrite": "true"
+  "path": "/api/2.0/workspace/import",
+  "body": {
+    "multipart_form": {
+      "content": "[binary content 276 bytes]",
+      "format": "AUTO",
+      "overwrite": "true",
+      "path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz"
+    }
   }
 }
 
