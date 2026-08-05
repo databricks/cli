@@ -168,12 +168,6 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	return r.waitForRun(ctx, id)
 }
 
-// WaitAfterUpdate blocks on the run the deploy adopted, so an interrupted wait
-// is resumed rather than restarted.
-func (r *ResourceJobRun) WaitAfterUpdate(ctx context.Context, id string, _ *JobRunState) (*JobRunRemote, error) {
-	return r.waitForRun(ctx, id)
-}
-
 // waitForRun polls the run until it stops, and fails unless it succeeded.
 func (r *ResourceJobRun) waitForRun(ctx context.Context, id string) (*JobRunRemote, error) {
 	runID, err := parseRunID(id)
@@ -329,10 +323,11 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 	}
 }
 
-// DoUpdate has nothing to do: a run can't be modified. The plan asks for an
-// update only to adopt a run that is still going; WaitAfterUpdate waits on it.
-func (*ResourceJobRun) DoUpdate(_ context.Context, _ string, _ *JobRunState, _ *PlanEntry) (*JobRunRemote, error) {
-	return nil, nil
+// DoUpdate adopts a run that is still going. A run can't be modified, so the
+// only work an update does is finish the wait an interrupted deploy abandoned,
+// which is the only reason the plan asks for one.
+func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, _ *JobRunState, _ *PlanEntry) (*JobRunRemote, error) {
+	return r.waitForRun(ctx, id)
 }
 
 // OverrideChangeDesc downgrades result_state drift to an update while the run is
