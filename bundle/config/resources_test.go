@@ -242,9 +242,11 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Secrets: map[string]*resources.Secret{
 			"my_secret": {
-				CatalogName: "main",
-				SchemaName:  "default",
-				Name:        "my_secret",
+				Secret: catalog.Secret{
+					CatalogName: "main",
+					SchemaName:  "default",
+					Name:        "my_secret",
+				},
 			},
 		},
 		SqlWarehouses: map[string]*resources.SqlWarehouse{

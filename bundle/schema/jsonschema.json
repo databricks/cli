@@ -2415,18 +2415,19 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "A secret stored in Unity Catalog. Secrets are three-level namespace objects\n(catalog.schema.secret) that securely store sensitive credential data such as\npasswords, tokens, and keys.",
                     "properties": {
                       "catalog_name": {
-                        "description": "The name of the catalog where the schema and the secret reside.",
+                        "description": "[Public Preview] The name of the catalog where the schema and the secret reside.",
                         "$ref": "#/$defs/string"
                       },
                       "comment": {
-                        "description": "User-provided free-form text description of the secret.",
+                        "description": "[Public Preview] User-provided free-form text description of the secret.",
                         "$ref": "#/$defs/string"
                       },
                       "expire_time": {
-                        "description": "User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.",
-                        "$ref": "#/$defs/time.Time"
+                        "description": "[Public Preview] User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
                       "grants": {
                         "description": "The grants to apply on this secret.",
@@ -2437,23 +2438,27 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "The name of the secret, relative to its parent schema.",
+                        "description": "[Public Preview] The name of the secret, relative to its parent schema.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "owner": {
+                        "description": "[Public Preview] The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
                         "$ref": "#/$defs/string"
                       },
                       "schema_name": {
-                        "description": "The name of the schema where the secret resides.",
+                        "description": "[Public Preview] The name of the schema where the secret resides.",
                         "$ref": "#/$defs/string"
                       },
                       "value": {
-                        "description": "The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.",
+                        "description": "[Public Preview] The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.",
                         "$ref": "#/$defs/string"
                       }
                     },
                     "additionalProperties": false,
                     "required": [
                       "catalog_name",
-                      "schema_name",
                       "name",
+                      "schema_name",
                       "value"
                     ]
                   },
@@ -16056,18 +16061,6 @@
     },
     "string": {
       "type": "string"
-    },
-    "time.Time": {
-      "oneOf": [
-        {
-          "type": "object",
-          "additionalProperties": false
-        },
-        {
-          "type": "string",
-          "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-        }
-      ]
     }
   },
   "type": "object",
