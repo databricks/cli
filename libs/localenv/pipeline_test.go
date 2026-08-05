@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
@@ -219,6 +220,70 @@ func TestPipelineReportsCancellationNotProvisionFailure(t *testing.T) {
 
 	// Both causes render on one line: a phase row is a single line of output.
 	assert.NotContains(t, pe.Error(), "\n", "the error must stay single-line")
+}
+
+func TestPipelineSurfacesMergeWarnings(t *testing.T) {
+	// writeProject pins requires-python ">=3.10" and databricks-connect ~=16.0.0,
+	// while the server's constraint pins "==3.12.*" and ~=17.2.0 — so a merge
+	// overrides both, and the result must carry the two override warnings.
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, []string{WarnRequiresPythonOverridden, WarnDBConnectPinOverridden}, codes(res.Warnings))
+}
+
+func TestPipelineGreenfieldHasNoWarnings(t *testing.T) {
+	// A greenfield project has nothing of the user's to override.
+	dir := t.TempDir()
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, res.Warnings)
+	assert.True(t, res.Greenfield)
+}
+
+func TestPipelineReportsDurationFromInjectedClock(t *testing.T) {
+	// The injected clock advances 250ms between the first call (start) and the
+	// second (deferred end), so durationMs is deterministic — not 0, not wall time.
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	base := time.Unix(1_700_000_000, 0)
+	var calls int
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		Now: func() time.Time {
+			calls++
+			if calls == 1 {
+				return base
+			}
+			return base.Add(250 * time.Millisecond)
+		},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, int64(250), res.DurationMs)
 }
 
 func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {

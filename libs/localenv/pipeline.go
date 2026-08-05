@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/hexops/gotextdiff"
@@ -53,8 +54,21 @@ type Pipeline struct {
 	Compute           ComputeClient
 	PM                PackageManager
 
+	// Now returns the current time; it exists so tests can inject a deterministic
+	// clock (acceptance goldens would otherwise carry a real, changing durationMs).
+	// nil means time.Now — see now().
+	Now func() time.Time
+
 	// res accumulates phase statuses and result fields as the run progresses.
 	res *Result
+}
+
+// now returns the current time via the injected clock, defaulting to time.Now.
+func (p *Pipeline) now() time.Time {
+	if p.Now != nil {
+		return p.Now()
+	}
+	return time.Now()
 }
 
 // Run executes all pipeline phases in order and returns a fully populated Result.
@@ -80,6 +94,12 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	p.res.DryRun = p.Check
 	// Phases start as pending and flip to ok/error as the run progresses.
 	p.res.Phases = initialPhases()
+
+	// Measure wall time across every exit path (success and failure alike) so the
+	// --json durationMs reflects the whole pipeline. Injected clock keeps it
+	// deterministic under test.
+	start := p.now()
+	defer func() { p.res.DurationMs = p.now().Sub(start).Milliseconds() }()
 
 	if err := p.run(ctx); err != nil {
 		// A cancelled context means the user or parent interrupted us (SIGINT/
@@ -307,6 +327,11 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		if err != nil {
 			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
+		// Surface merge-quality warnings (overridden pins, conflicting user
+		// constraints) from the pre-merge file. Greenfield has nothing of the
+		// user's to override, so it is skipped. This runs for both dry-run and real
+		// runs so the --json consumer sees the same warnings either way.
+		p.res.Warnings = append(p.res.Warnings, detectMergeWarnings(baseBytes, effective)...)
 	}
 
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does

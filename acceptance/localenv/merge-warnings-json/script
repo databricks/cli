@@ -1,0 +1,14 @@
+# A pre-existing project whose pins conflict with the env constraints: an older
+# requires-python and databricks-connect, plus a dependency pinned outside the
+# env's constraint range. The dry-run merge should surface all three warnings.
+cat > pyproject.toml <<'PYPROJECT'
+[project]
+name = "existing"
+requires-python = ">=3.10"
+dependencies = ["pyarrow==17.0.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.1.0"]
+PYPROJECT
+
+trace $CLI environments setup-local --serverless-version 4 --dry-run --output json

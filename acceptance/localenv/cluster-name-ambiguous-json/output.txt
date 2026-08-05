@@ -38,5 +38,5 @@
     "message": "resolving cluster name \"dup\": there are 2 active clusters named \"dup\"; use --cluster-id to disambiguate",
     "diskMutated": false
   },
-  "durationMs": 0
+  "durationMs": [DURATION_MS]
 }

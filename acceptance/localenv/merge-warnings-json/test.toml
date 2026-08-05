@@ -1,0 +1,21 @@
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# The script writes a pre-existing pyproject.toml to trigger the merge path; it is
+# an input the test creates, not a golden to compare.
+Ignore = ["pyproject.toml"]
+
+[Env]
+DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
+
+[[Server]]
+Pattern = "GET /serverless/serverless-v4/pyproject.toml"
+Response.Body = '''
+[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+
+[tool.uv]
+constraint-dependencies = ["pyarrow~=21.0.0", "pandas<3"]
+'''
