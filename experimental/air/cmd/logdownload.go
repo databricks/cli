@@ -82,7 +82,7 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 	ids := mlflowIDs(ctx, w, run)
 	if ids == nil || ids.RunID == "" {
 		emitNoLogs(out, req, status)
-		return status.succeeded(), nil
+		return status.downloadOutcome(), nil
 	}
 
 	dir, err := filepath.Abs(req.downloadTo)
@@ -107,7 +107,7 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 
 	if len(nodeLogs) == 0 {
 		emitNoLogs(out, req, status)
-		return status.succeeded(), nil
+		return status.downloadOutcome(), nil
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Downloaded logs from %d of %d node(s) to %s", len(nodeLogs), len(nodes), dir))
@@ -119,7 +119,7 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("  node %d: %s%s", node, nodeLogs[node], suffix))
 	}
-	return status.succeeded(), nil
+	return status.downloadOutcome(), nil
 }
 
 // downloadAllNodeLogs downloads the nodes' logs in parallel. It returns a

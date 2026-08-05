@@ -93,6 +93,13 @@ func (s logRunStatus) succeeded() bool {
 	return s.resultState == "SUCCESS"
 }
 
+// downloadOutcome is the exit status for a one-shot fetch, which unlike streaming
+// can run against an active run. An active run has no result state yet, and
+// not-yet-finished is not a failure, so only a terminal run decides the exit code.
+func (s logRunStatus) downloadOutcome() bool {
+	return !s.terminal() || s.succeeded()
+}
+
 // resolveRunStatus fetches a run's state and projects it onto logRunStatus. An
 // unknown run id surfaces as apierr.ErrResourceDoesNotExist.
 func resolveRunStatus(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (logRunStatus, error) {
@@ -333,7 +340,7 @@ func (st *bricklensStreamer) drainStatic(toSec int64) (bool, error) {
 	if !st.firstLogSeen {
 		st.emitNoLogs()
 	}
-	return st.status.succeeded(), nil
+	return st.status.downloadOutcome(), nil
 }
 
 // tailTarget is the number of lines a tail keeps. A negative tailLines means

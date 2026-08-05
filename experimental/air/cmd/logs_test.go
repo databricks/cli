@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -234,10 +233,10 @@ func TestLogsPastRetryOfActiveRunIsStatic(t *testing.T) {
 
 	// --retry 0 on a RUNNING run whose latest attempt is 1: the past attempt's
 	// logs render once instead of following the run (which would never terminate).
-	// The run has no SUCCESS result yet, so it still exits non-zero via
-	// ErrAlreadyPrinted; the logs are printed regardless.
+	// The run is still active, so there is no failure to report — printing the
+	// logs succeeded, and the command exits 0.
 	err := runLogs(ctx, cmd, logRequest{runID: 9, node: 0, attempt: 0, tailLines: -1})
-	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	require.NoError(t, err)
 	assert.Equal(t, "retry 0 log\n", buf.String())
 
 	// Exactly one runs/get: the initial status resolve in runLogs. The static

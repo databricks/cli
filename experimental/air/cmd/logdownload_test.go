@@ -482,3 +482,29 @@ func TestDownloadAllNodeLogsKeepsTruncatedNode(t *testing.T) {
 	require.Contains(t, failures, 0)
 	assert.Contains(t, failures[0], "chunk(s) [1]")
 }
+
+func TestDownloadOutcomeTreatsActiveRunAsSuccess(t *testing.T) {
+	// An active run has no result state yet. Fetching its logs succeeded, so the
+	// command must exit 0 rather than report the run as failed.
+	for _, lc := range []string{"RUNNING", "PENDING", "QUEUED", "BLOCKED"} {
+		assert.True(t, logRunStatus{lifeCycleState: lc}.downloadOutcome(), lc)
+	}
+
+	// A terminal run still decides the exit code by its outcome.
+	assert.True(t, logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS"}.downloadOutcome())
+	assert.False(t, logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED"}.downloadOutcome())
+	assert.False(t, logRunStatus{lifeCycleState: "TERMINATED", resultState: "CANCELED"}.downloadOutcome())
+	assert.False(t, logRunStatus{lifeCycleState: "INTERNAL_ERROR"}.downloadOutcome())
+}
+
+func TestDownloadLogsActiveRunExitsZero(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	w := newTestWorkspaceClient(t, fullDownloadServer(t).URL)
+
+	// Downloading a still-running run's logs is not a failure.
+	success, err := downloadLogs(ctx, w, &bytes.Buffer{},
+		logRequest{runID: 123, attempt: -1, downloadTo: t.TempDir()},
+		logRunStatus{lifeCycleState: "RUNNING"})
+	require.NoError(t, err)
+	assert.True(t, success)
+}
