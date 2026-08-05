@@ -78,7 +78,7 @@ type listOutput struct {
 
 // agentEntry is one agent in `list --output json`. The JSON carries an entry for
 // every registry agent so the extension sees the full set; the text view still
-// lists only managed agents with a recorded install, so these fields are additive.
+// lists only agents with a plugin install, so these fields are additive.
 type agentEntry struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
@@ -87,13 +87,29 @@ type agentEntry struct {
 	// Detected is the CLI's presence verdict (Agent.IsPreselected), so consumers get
 	// the same answer the CLI would act on.
 	Detected bool `json:"detected"`
-	// Installed maps CLI scope -> the plugin recorded there; always present, empty
-	// when nothing is recorded, matching the skills shape.
-	Installed map[string]pluginInfo `json:"installed"`
+	// Installed maps CLI scope -> the install found there; always present, empty
+	// when nothing is installed, matching the skills shape.
+	Installed map[string]installInfo `json:"installed"`
 }
 
-// pluginInfo is the per-scope plugin record surfaced in list output.
-type pluginInfo struct {
+// hasPluginInstall reports whether any scope holds a databricks plugin install
+// (as opposed to raw skill files).
+func (a agentEntry) hasPluginInstall() bool {
+	for _, info := range a.Installed {
+		if info.Delivery == deliveryPlugin.String() {
+			return true
+		}
+	}
+	return false
+}
+
+// installInfo is one agent's install in one CLI scope: how the databricks tools
+// were delivered there, and the version recorded for that delivery.
+type installInfo struct {
+	// Delivery is deliveryPlugin ("plugin") when the CLI installed the databricks
+	// plugin through the agent's own CLI, or deliverySkills ("skills") when raw
+	// skill files were installed instead.
+	Delivery    string `json:"delivery"`
 	Version     string `json:"version,omitempty"`
 	NativeScope string `json:"native_scope,omitempty"`
 }
@@ -206,7 +222,7 @@ func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
 
 // buildAgentEntries reports state for every supported agent in the registry:
 // detection (binary on PATH and config dir on disk), whether the CLI can manage
-// a databricks plugin for it, and the per-scope install recorded by the CLI.
+// a databricks plugin for it, and the per-scope install found for it.
 // states maps CLI scope -> install state and must contain only non-nil states;
 // the caller filters scopes it did not load. Status across scopes is left for
 // the renderer (and JSON consumers) to derive from the per-scope versions, so no
@@ -221,20 +237,27 @@ func buildAgentEntries(ctx context.Context, states map[string]*installer.Install
 			Detected:    a.IsPreselected(ctx),
 		}
 
-		// Always emit an installed map, empty when nothing is recorded, so the
+		// Always emit an installed map, empty when nothing is installed, so the
 		// JSON shape matches skillEntry ("installed": {}) rather than omitting it.
-		entry.Installed = map[string]pluginInfo{}
+		entry.Installed = map[string]installInfo{}
 		for scope, st := range states {
 			if rec, ok := st.Plugins[a.Name]; ok {
-				entry.Installed[scope] = pluginInfo{Version: rec.Version, NativeScope: rec.Scope}
+				entry.Installed[scope] = installInfo{
+					Delivery:    deliveryPlugin.String(),
+					Version:     rec.Version,
+					NativeScope: rec.Scope,
+				}
 				continue
 			}
-			// Skills-only agents (Plugin == nil) never get a plugin record: their
-			// skills are symlinked/copied into the agent's own skills dir instead.
-			// Detect the install from disk and report the scope's recorded release
-			// as the version, so JSON consumers see them as installed too.
-			if a.Plugin == nil && agentHasSkillsInScope(ctx, a, scope) {
-				entry.Installed[scope] = pluginInfo{Version: installer.DisplaySkillsVersion(st.Release)}
+			// A skills install produces no plugin record, so fall back to the
+			// agent's own skills dir on disk. This covers both skills-only agents
+			// (Plugin == nil) and plugin-capable agents installed with
+			// --skills-only, which are otherwise indistinguishable here.
+			if agentHasSkillsInScope(ctx, a, scope) {
+				entry.Installed[scope] = installInfo{
+					Delivery: deliverySkills.String(),
+					Version:  installer.DisplaySkillsVersion(st.Release),
+				}
 			}
 		}
 
@@ -245,7 +268,7 @@ func buildAgentEntries(ctx context.Context, states map[string]*installer.Install
 
 // agentHasSkillsInScope reports whether databricks skills are present in the
 // agent's own skills directory for the given CLI scope. It is the on-disk
-// install signal for skills-only agents, which have no plugin record to consult.
+// install signal for skills installs, which have no plugin record to consult.
 func agentHasSkillsInScope(ctx context.Context, a *agents.Agent, scope string) bool {
 	if scope == installer.ScopeProject {
 		if !a.SupportsProjectScope {
@@ -306,12 +329,14 @@ func renderListText(ctx context.Context, out listOutput, scope string) {
 		}
 	}
 
-	// The text view keeps its original "Plugin installs:" section: only managed
-	// agents with a recorded install are shown here. The richer per-agent
-	// detection state (every registry agent) is JSON-only, for the extension.
+	// The text view keeps its original "Plugin installs:" section: only agents with
+	// a recorded plugin install are shown here, so an agent whose only install is
+	// raw skills isn't labelled as a plugin (its skills show in the table below).
+	// The richer per-agent detection state (every registry agent, skills installs
+	// included) is JSON-only, for the extension.
 	var pluginInstalls []agentEntry
 	for _, a := range out.Agents {
-		if a.Managed && len(a.Installed) > 0 {
+		if a.hasPluginInstall() {
 			pluginInstalls = append(pluginInstalls, a)
 		}
 	}
@@ -358,12 +383,14 @@ func renderSkillTable(skills []skillEntry, bothScopes bool) string {
 // agentStatusLabel renders the text-view status for an agent, collapsing the
 // per-scope plugin records into a single line. A stale scope (version !=
 // release) is surfaced over an up-to-date one so an outdated install is never
-// hidden; project is preferred when every scope matches release.
+// hidden; project is preferred when every scope matches release. Skills installs
+// are skipped: this line reports the plugin, and their versions would otherwise
+// decide the status of an agent that also has a plugin in another scope.
 func agentStatusLabel(a agentEntry, release string) string {
 	version, upToDate := "", true
 	for _, scope := range []string{installer.ScopeProject, installer.ScopeGlobal} {
 		info, ok := a.Installed[scope]
-		if !ok {
+		if !ok || info.Delivery != deliveryPlugin.String() {
 			continue
 		}
 		stale := info.Version != release

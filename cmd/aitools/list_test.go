@@ -117,13 +117,13 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 				DisplayName: "Claude Code",
 				Managed:     true,
 				Detected:    true,
-				Installed:   map[string]pluginInfo{installer.ScopeGlobal: {Version: "0.2.6"}},
+				Installed:   map[string]installInfo{installer.ScopeGlobal: {Delivery: "plugin", Version: "0.2.6"}},
 			},
 			{
 				Name:        "cursor",
 				DisplayName: "Cursor",
 				Managed:     false,
-				Installed:   map[string]pluginInfo{},
+				Installed:   map[string]installInfo{},
 			},
 		},
 	}
@@ -148,6 +148,7 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 	installed := first["installed"].(map[string]any)
 	global := installed["global"].(map[string]any)
 	assert.Equal(t, "0.2.6", global["version"])
+	assert.Equal(t, "plugin", global["delivery"])
 
 	// A not-installed agent emits "installed": {} rather than omitting the key,
 	// matching the skills shape.
@@ -229,10 +230,75 @@ func TestBuildAgentEntriesReportsSkillsOnlyAgentFromDisk(t *testing.T) {
 	opencode := byName["opencode"]
 	assert.False(t, opencode.Managed)
 	assert.Equal(t, "0.2.6", opencode.Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "skills", opencode.Installed[installer.ScopeGlobal].Delivery)
 
 	// A skills-only agent with nothing on disk stays empty.
 	require.Contains(t, byName, "cursor")
 	assert.Empty(t, byName["cursor"].Installed)
+}
+
+func TestBuildAgentEntriesReportsSkillsOnlyInstallForPluginAgent(t *testing.T) {
+	// `install --skills-only` gives a plugin-capable agent skills on disk and no
+	// plugin record, so the on-disk fallback must fire for it too rather than
+	// reporting it as not installed.
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+
+	canonical := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-jobs")
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	skillsDir := filepath.Join(home, ".claude", "skills")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	require.NoError(t, os.Symlink(canonical, filepath.Join(skillsDir, "databricks-jobs")))
+
+	entries := buildAgentEntries(ctx, map[string]*installer.InstallState{
+		installer.ScopeGlobal: {Release: "0.2.6"},
+	})
+	byName := map[string]agentEntry{}
+	for _, e := range entries {
+		byName[e.Name] = e
+	}
+
+	require.Contains(t, byName, "claude-code")
+	cc := byName["claude-code"]
+	assert.True(t, cc.Managed)
+	assert.Equal(t, "skills", cc.Installed[installer.ScopeGlobal].Delivery)
+	assert.Equal(t, "0.2.6", cc.Installed[installer.ScopeGlobal].Version)
+
+	// A skills install is not a plugin install, so the text view's "Plugin
+	// installs:" section must not claim one.
+	assert.False(t, cc.hasPluginInstall())
+}
+
+func TestBuildAgentEntriesPrefersPluginRecordOverSkillsOnDisk(t *testing.T) {
+	// An agent can have both a plugin record and leftover skills on disk (e.g. a
+	// --skills-only install later replaced by the plugin). The recorded plugin is
+	// authoritative for the scope.
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+
+	canonical := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-jobs")
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	skillsDir := filepath.Join(home, ".claude", "skills")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	require.NoError(t, os.Symlink(canonical, filepath.Join(skillsDir, "databricks-jobs")))
+
+	entries := buildAgentEntries(ctx, map[string]*installer.InstallState{
+		installer.ScopeGlobal: {
+			Release: "0.2.6",
+			Plugins: map[string]installer.PluginRecord{
+				"claude-code": {Plugin: "databricks", Version: "0.2.5", Scope: "user"},
+			},
+		},
+	})
+	byName := map[string]agentEntry{}
+	for _, e := range entries {
+		byName[e.Name] = e
+	}
+
+	cc := byName["claude-code"]
+	assert.Equal(t, "plugin", cc.Installed[installer.ScopeGlobal].Delivery)
+	assert.Equal(t, "0.2.5", cc.Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "user", cc.Installed[installer.ScopeGlobal].NativeScope)
 }
 
 func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {
@@ -457,7 +523,7 @@ func TestRenderListTextShowsPluginInstallsBeforeRawSkills(t *testing.T) {
 				DisplayName: "Claude Code",
 				Managed:     true,
 				Detected:    true,
-				Installed:   map[string]pluginInfo{installer.ScopeGlobal: {Version: "0.2.6", NativeScope: "user"}},
+				Installed:   map[string]installInfo{installer.ScopeGlobal: {Delivery: "plugin", Version: "0.2.6", NativeScope: "user"}},
 			},
 			{
 				Name:        "cursor",
