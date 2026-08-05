@@ -3,8 +3,7 @@ bundle:
 
 resources:
   model_serving_endpoints:
-    # The endpoint supports telemetry, but an inference_table_config on its own names
-    # no profile, so the API discards it instead of applying the sampling fraction.
+    # Telemetry is supported here, but a config naming no profile is discarded.
     endpoint1:
       name: "test-endpoint"
       config:

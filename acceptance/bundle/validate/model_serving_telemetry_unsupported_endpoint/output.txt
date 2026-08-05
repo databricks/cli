@@ -6,7 +6,7 @@ The serving endpoints telemetry configuration API only supports endpoints with c
 
 Error: telemetry_config is only supported on an endpoint that serves a registered model
   at resources.model_serving_endpoints.endpoint2.telemetry_config
-  in databricks.yml:27:9
+  in databricks.yml:26:9
 
 The serving endpoints telemetry configuration API only supports endpoints with custom served models, so it rejects an endpoint that serves nothing or only external models. Add a served entity with entity_name, or remove telemetry_config.
 
@@ -18,7 +18,7 @@ The serving endpoints API identifies a telemetry configuration by the Unity Cata
 
 Error: telemetry_config must set table_names or telemetry_profile_id
   at resources.model_serving_endpoints.endpoint2.telemetry_config
-  in databricks.yml:27:9
+  in databricks.yml:26:9
 
 The serving endpoints API identifies a telemetry configuration by the Unity Catalog tables to create a profile from (table_names) or by an existing profile (telemetry_profile_id). Given neither, it discards the configuration instead of applying it.
 

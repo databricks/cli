@@ -363,10 +363,9 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 	}
 
 	if entry.Changes.HasChange(pathTelemetryConfig) {
-		// Unlike the calls above, the telemetry configuration API refuses to run
-		// concurrently with an in-flight update ("Endpoint <name> is currently being
-		// updated"), and each of those calls starts one. Wait for the endpoint to settle
-		// first; WaitAfterUpdate only runs once DoUpdate has returned.
+		// The telemetry API rejects an endpoint that is still applying an earlier update,
+		// and every call above starts one. WaitAfterUpdate runs only after DoUpdate
+		// returns, so settle here.
 		if updated {
 			_, err = r.client.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, id, 35*time.Minute, nil)
 			if err != nil {

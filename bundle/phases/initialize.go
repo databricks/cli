@@ -185,8 +185,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 
-		// Validate that telemetry_config is only set on serving endpoints that serve a model.
-		// The API rejects it on any other endpoint, and only once the plan applies it.
+		// Validate that telemetry_config is in a form the serving endpoints API applies.
+		// It rejects or silently discards the rest, and only once the plan applies it.
 		validate.ValidateServingTelemetryConfig(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)

@@ -29,8 +29,7 @@ func endpointBundle(endpoint serving.CreateServingEndpoint) *bundle.Bundle {
 	}
 }
 
-// telemetryConfig returns a configuration that names the tables to create a profile
-// from, which is the form the API accepts.
+// telemetryConfig names the tables to create a profile from, the form the API accepts.
 func telemetryConfig() *serving.TelemetryConfig {
 	return &serving.TelemetryConfig{
 		TableNames: &serving.UnityCatalogTableNames{LogsTable: "main.default.logs"},
@@ -93,8 +92,7 @@ func TestValidateServingTelemetryConfig(t *testing.T) {
 			want: []string{unsupportedEndpoint},
 		},
 		{
-			// The API types this endpoint as EXTERNAL_MODELS and rejects telemetry on it,
-			// even though it does serve something.
+			// Rejected as EXTERNAL_MODELS, even though the endpoint does serve something.
 			name: "telemetry with only an external model",
 			endpoint: serving.CreateServingEndpoint{
 				Name:            "my_endpoint",
@@ -113,8 +111,7 @@ func TestValidateServingTelemetryConfig(t *testing.T) {
 			want: []string{unsupportedEndpoint},
 		},
 		{
-			// The API discards a configuration that names no profile, so sampling on its
-			// own never takes effect.
+			// Discarded by the API, so the sampling fraction never takes effect.
 			name: "telemetry with only an inference table config",
 			endpoint: serving.CreateServingEndpoint{
 				Name: "my_endpoint",

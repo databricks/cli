@@ -285,11 +285,9 @@ resources:
       # Accepted on write but not returned by GET.
       - field: config.served_entities[*].burst_scaling_enabled
         reason: input_only
-      # The backend creates a telemetry profile from these tables and reports back the
-      # resulting telemetry_profile_id instead; the table names themselves are never
-      # echoed, so remote reads back empty and a config that sets them never converges.
-      # inference_table_config is deliberately not listed: sampling_fraction does round
-      # trip, so it is subject to normal drift detection.
+      # The backend reports back only the telemetry_profile_id it creates from these tables,
+      # never the tables themselves, so remote reads back empty. inference_table_config is
+      # deliberately not listed: sampling_fraction does round trip.
       - field: telemetry_config.table_names
         reason: input_only
       # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
@@ -323,16 +321,12 @@ resources:
       - field: rate_limits
         reason: not_implemented
     backend_defaults:
-      # The backend creates a telemetry profile from table_names and echoes its ID back on
-      # GET. Users may also pin an existing profile, so drift still applies when
-      # telemetry_profile_id is set locally.
+      # The backend assigns telemetry_profile_id when it creates the profile from table_names.
       #
-      # The rule covers the whole subtree rather than just telemetry_profile_id: when
-      # telemetry_config is absent locally, structdiff reports the populated remote as one
-      # change on the parent path, which no child rule matches. Without this the change
-      # becomes an update and DoUpdate sends a PATCH with no telemetry_config, removing a
-      # configuration the bundle never managed. A genuine removal is unaffected because it
-      # has a non-nil old value.
+      # The rule covers the whole subtree, not just that field: with no local
+      # telemetry_config, structdiff reports the remote as one change on the parent path,
+      # which no child rule matches, and DoUpdate would then PATCH it away. A genuine
+      # removal still applies, since it carries a non-nil old value.
       - field: telemetry_config
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383

@@ -35,14 +35,10 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 	return entities
 }
 
-// applyTelemetryConfig mirrors the backend: a telemetry configuration is identified by an
-// existing telemetry_profile_id or by the table_names to create a profile from. Given
-// neither, the API returns 200 and applies nothing, so an inference_table_config on its
-// own leaves the endpoint's telemetry untouched rather than setting or clearing it.
-//
-// What is echoed back is the profile ID plus, when the caller supplied one, the inference
-// table config carrying the table name the backend derives from logs_table. table_names
-// itself is never returned.
+// applyTelemetryConfig mirrors the backend: a configuration is identified by an existing
+// telemetry_profile_id or by the table_names to create a profile from, and one naming
+// neither returns 200 and applies nothing. What comes back is the profile ID, plus
+// inference_table_config if the caller supplied one; never table_names.
 func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.TelemetryConfig {
 	if config == nil {
 		return nil
@@ -53,15 +49,13 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 
 	applied := serving.TelemetryConfig{TelemetryProfileId: config.TelemetryProfileId}
 	if applied.TelemetryProfileId == "" {
-		// New tables mean a new profile, so this does not carry over the endpoint's
-		// current profile ID.
+		// New tables mean a new profile, not the endpoint's current one.
 		applied.TelemetryProfileId = nextUUID()
 	}
 	if config.InferenceTableConfig != nil {
 		inferenceTable := *config.InferenceTableConfig
-		// Only the table_names form was observed against a real workspace. A patch that
-		// reuses a profile by ID does not name the tables, and what the backend reports as
-		// the inference table name in that case is unverified, so leave it empty.
+		// Left empty for a patch that reuses a profile by ID: it does not name the tables,
+		// and what the backend reports as the name there was never observed.
 		if config.TableNames != nil {
 			inferenceTable.Name = config.TableNames.LogsTable + "_payload"
 		}
@@ -71,9 +65,8 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 	return &applied
 }
 
-// telemetrySupported mirrors the backend, which serves telemetry only for custom served
-// models and rejects an endpoint that serves nothing ('NO_CONFIG') or only proxies
-// external models ('EXTERNAL_MODELS').
+// telemetrySupported mirrors the backend, which supports telemetry only on custom served
+// models, and returns the endpoint type the backend names when it rejects one.
 func telemetrySupported(endpoint serving.ServingEndpointDetailed) (string, bool) {
 	if endpoint.Config == nil || len(endpoint.Config.ServedEntities) == 0 {
 		return "NO_CONFIG", false
@@ -286,8 +279,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		ForceSendFields: append(createReq.ForceSendFields, "PermissionLevel", "RouteOptimized", "Description"),
 	}
 
-	// Unlike the telemetry configuration API, create does not fail on an endpoint that
-	// cannot carry telemetry; it drops the field.
+	// Unlike the telemetry API, create drops telemetry it cannot apply instead of failing.
 	if _, ok := telemetrySupported(endpoint); !ok {
 		endpoint.TelemetryConfig = nil
 	}

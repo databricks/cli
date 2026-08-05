@@ -10,8 +10,7 @@ resources:
         inference_table_config:
           sampling_fraction: 0.5
 
-    # Typed EXTERNAL_MODELS by the API: it serves something, but telemetry is still
-    # only supported for custom served models.
+    # Typed EXTERNAL_MODELS by the API: it serves something, but not a custom model.
     endpoint2:
       name: "test-endpoint-2"
       config:
