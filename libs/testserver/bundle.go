@@ -190,11 +190,26 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		return dmsAborted("previous_version_id is outdated; the deployment's most recent version is " + d.deployment.LastVersionId)
 	}
 
+	// bundle_root_path is relative to git_folder_path, so the service rejects a
+	// workspace_info that carries one without the other.
+	if ws := version.WorkspaceInfo; ws != nil && (ws.GitFolderPath == "") != (ws.BundleRootPath == "") {
+		return dmsInvalidArgument("workspace_info.git_folder_path and workspace_info.bundle_root_path must be set together")
+	}
+
 	d.deployment.LastVersionId = versionID
 	version.Name = "deployments/" + deploymentID + "/versions/" + versionID
 	version.VersionId = versionID
 	version.Status = bundledeployments.VersionStatusVersionStatusInProgress
 	d.versions[versionID] = &version
+
+	// The service denormalizes the version's provenance onto the deployment, which
+	// is where the read APIs serve it from. display_name is excluded: the service
+	// keeps that on the deployment's workspace node instead.
+	d.deployment.TargetName = version.TargetName
+	d.deployment.DeploymentMode = version.DeploymentMode
+	d.deployment.GitInfo = version.GitInfo
+	d.deployment.WorkspaceInfo = version.WorkspaceInfo
+
 	return Response{Body: version}
 }
 

@@ -1,0 +1,15 @@
+bundle:
+  name: dms-provenance
+
+experimental:
+  record_deployment_history: true
+
+targets:
+  dev:
+    default: true
+    mode: development
+
+resources:
+  jobs:
+    foo:
+      name: foo

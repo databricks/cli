@@ -1,0 +1,4 @@
+# git-repo-init creates a repo in the test directory so the deploy has git provenance.
+Ignore = [
+    '.git',
+]

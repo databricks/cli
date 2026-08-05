@@ -46,6 +46,12 @@ type createVersionRequest struct {
 	// PreviousVersionId is the deployment's most recent version, unset for a
 	// deployment's first version.
 	PreviousVersionId string `json:"previous_version_id,omitempty"`
+	// DeploymentMode is the bundle target's mode, unset when the target sets none.
+	DeploymentMode bundledeployments.DeploymentMode `json:"deployment_mode,omitempty"`
+	// GitInfo and WorkspaceInfo record where the deployed source came from and
+	// where it landed. The service denormalizes both onto the deployment.
+	GitInfo       *bundledeployments.GitInfo       `json:"git_info,omitempty"`
+	WorkspaceInfo *bundledeployments.WorkspaceInfo `json:"workspace_info,omitempty"`
 }
 
 // versionCreator creates a version under a deployment. It exists because the
@@ -91,6 +97,7 @@ type Recorder struct {
 	targetName   string
 	displayName  string
 	versionType  VersionType
+	provenance   Provenance
 
 	// populated by CreateVersion
 	versionNum    int64
@@ -117,6 +124,18 @@ type RecorderOptions struct {
 	TargetName  string
 	DisplayName string
 	VersionType VersionType
+	// Provenance records where the deployed source came from; see Provenance.
+	Provenance Provenance
+}
+
+// Provenance is what a version records about the source it deployed and where it
+// landed. The service denormalizes these onto the deployment, so they describe the
+// deployment as of its most recent version.
+type Provenance struct {
+	// Mode is the bundle target's mode, empty when the target sets none.
+	Mode      bundledeployments.DeploymentMode
+	Git       *bundledeployments.GitInfo
+	Workspace *bundledeployments.WorkspaceInfo
 }
 
 // NewRecorder returns a Recorder for the deployment described by opts.
@@ -129,6 +148,7 @@ func NewRecorder(opts RecorderOptions) *Recorder {
 		targetName:   opts.TargetName,
 		displayName:  opts.DisplayName,
 		versionType:  opts.VersionType,
+		provenance:   opts.Provenance,
 	}
 }
 
@@ -235,6 +255,10 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 			Name: "deployments/" + r.deploymentID,
 		})
 		switch {
+		case getErr == nil && dep.LastVersionId == "":
+			// The record exists but carries no version: a deploy whose first version was
+			// rejected still leaves the record behind. Retry at version 1.
+			versionID = "1"
 		case getErr == nil:
 			lastVersion, parseErr := strconv.ParseInt(dep.LastVersionId, 10, 64)
 			if parseErr != nil {
@@ -280,6 +304,9 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 		TargetName:        r.targetName,
 		DisplayName:       r.displayName,
 		PreviousVersionId: previousVersionID,
+		DeploymentMode:    r.provenance.Mode,
+		GitInfo:           r.provenance.Git,
+		WorkspaceInfo:     r.provenance.Workspace,
 	})
 	if versionErr != nil {
 		return "", fmt.Errorf("failed to create deployment version: %w", versionErr)
