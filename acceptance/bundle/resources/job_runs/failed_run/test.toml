@@ -3,8 +3,7 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # Runs the failing job for real, so the message the deploy names the task with is
-# one a workspace reported rather than one the test server wrote. Serverless needs
-# Unity Catalog.
+# one a workspace reported. Serverless needs Unity Catalog.
 Cloud = true
 RequiresUnityCatalog = true
 
