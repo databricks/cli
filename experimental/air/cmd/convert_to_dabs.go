@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -26,8 +27,8 @@ import (
 // schema-valid ai_runtime_task (the SDK jobs.AiRuntimeTask — experiment +
 // deployments[].{command_path,compute} + code_source_path, with framework fields
 // like retries/timeout on the surrounding task) and writes command.sh plus the
-// env_vars.json / secret_env_vars.json / hyperparameters.yaml sidecars at the
-// bundle root. It does NOT package, snapshot, or upload anything.
+// env_vars.json / secret_env_vars.json / hyperparameters.yaml sidecars into
+// generated_artifacts/. It does NOT package, snapshot, or upload anything.
 //
 // code_source_path is emitted as the source directory relative to the bundle (the
 // bundle root defaults to the YAML's directory, which contains it). At deploy the
@@ -39,6 +40,12 @@ import (
 // dabsTargetName is the single default target emitted; a development-mode target
 // is the conventional starting point for a generated bundle.
 const dabsTargetName = "dev"
+
+// generatedArtifactsDir holds command.sh and the env/secret/param sidecars, kept
+// apart from the user's tree so sync.paths can list it without the code directory.
+// The server derives the sidecar paths from command_path's parent, so they must
+// stay beside command.sh.
+const generatedArtifactsDir = "generated_artifacts"
 
 func newConvertToDabsCommand() *cobra.Command {
 	var (
@@ -100,7 +107,7 @@ does not contact the workspace.`,
 // run config. It reads only what the run path's buildArtifacts reads, so the
 // mapping is unit-testable in isolation. Returns the bundle root as a
 // map[string]dyn.Value (ready for yamlsaver) and the loose artifacts (command.sh +
-// env/secret/param sidecars) to write at the bundle root. It does not touch the
+// env/secret/param sidecars) to write under generated_artifacts/. It does not touch the
 // code_source; the deploy-time aicode mutator packages it in place.
 func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir string) (map[string]dyn.Value, []uploadItem, error) {
 	// idempotency_token is intentionally not mapped: it dedups a single runs/submit
@@ -214,7 +221,7 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	// it: libraries.IsLibraryLocal classifies a bare, extensionless path as a PyPI
 	// package name, which would deploy a path the backend can't resolve.
 	deployment := map[string]dyn.Value{
-		"command_path": nv(localBundlePath(commandScriptName), 1),
+		"command_path": nv(localBundlePath(path.Join(generatedArtifactsDir, commandScriptName)), 1),
 		"compute": nv(map[string]dyn.Value{
 			"accelerator_type":  nv(cfg.Compute.AcceleratorType, 1),
 			"accelerator_count": nv(cfg.Compute.NumAccelerators, 2),
@@ -300,17 +307,23 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 		"bundle": nv(map[string]dyn.Value{
 			"name": nv(name, 1),
 		}, 1),
+		// sync.paths replaces the default of syncing the whole bundle root. The code
+		// directory is omitted deliberately: deploy still packages it into the
+		// snapshot tarball, so syncing it too would upload the tree twice.
+		"sync": nv(map[string]dyn.Value{
+			"paths": nv([]dyn.Value{nv(generatedArtifactsDir, 1)}, 1),
+		}, 2),
 		"targets": nv(map[string]dyn.Value{
 			dabsTargetName: nv(map[string]dyn.Value{
 				"mode":    nv("development", 1),
 				"default": nv(true, 2),
 			}, 1),
-		}, 2),
+		}, 3),
 		"resources": nv(map[string]dyn.Value{
 			"jobs": nv(map[string]dyn.Value{
 				bundleResourceKey(name): nv(job, 1),
 			}, 1),
-		}, 3),
+		}, 4),
 	}
 	return rootValue
 }
@@ -446,13 +459,18 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 	// overwrite of edits they may have made. The hint names --force rather than
 	// --output-dir: the code_source must live inside the bundle dir, so redirecting
 	// the output usually isn't a usable escape hatch for an in-place conversion.
+	artifactDir := filepath.Join(dir, generatedArtifactsDir)
+	if err := os.MkdirAll(artifactDir, 0o700); err != nil {
+		return nil, err
+	}
 	writeFile := func(name string, data []byte) error {
+		target := filepath.Join(artifactDir, name)
 		if !force {
-			if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
-				return fmt.Errorf("%s already exists in %s; pass --force to overwrite or remove it", name, dir)
+			if _, err := os.Stat(target); err == nil {
+				return fmt.Errorf("%s already exists in %s; pass --force to overwrite or remove it", name, artifactDir)
 			}
 		}
-		return os.WriteFile(filepath.Join(dir, name), data, 0o600)
+		return os.WriteFile(target, data, 0o600)
 	}
 
 	bundlePath := filepath.Join(dir, "databricks.yml")
@@ -471,12 +489,12 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 	}
 	written := []string{"databricks.yml"}
 
-	// Loose launch artifacts (command.sh + sidecars) at the bundle root.
+	// Launch artifacts (command.sh + sidecars) under generated_artifacts/.
 	for _, item := range artifacts {
 		if err := writeFile(item.name, item.data); err != nil {
 			return nil, fmt.Errorf("failed to write %s: %w", item.name, err)
 		}
-		written = append(written, item.name)
+		written = append(written, path.Join(generatedArtifactsDir, item.name))
 	}
 
 	return written, nil

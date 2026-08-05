@@ -117,7 +117,7 @@ environment:
 	assert.Equal(t, "./src", get(t, root, art+".code_source_path").MustString())
 
 	dep := art + ".deployments[0]"
-	assert.Equal(t, "./"+commandScriptName, get(t, root, dep+".command_path").MustString())
+	assert.Equal(t, "./"+generatedArtifactsDir+"/"+commandScriptName, get(t, root, dep+".command_path").MustString())
 	assert.Equal(t, "GPU_1xH100", get(t, root, dep+".compute.accelerator_type").MustString())
 	assert.Equal(t, int64(1), get(t, root, dep+".compute.accelerator_count").MustInt())
 
@@ -139,6 +139,33 @@ environment:
 
 // Optional fields are omitted rather than emitted empty: no code_source means no
 // code_source_path; unset retries/timeout means no wrapper fields.
+// sync.paths lists only the generated-artifacts dir. The code directory must be
+// absent: deploy packages it into the snapshot tarball, so syncing it as loose
+// files too would upload the whole tree a second time.
+func TestConvertToDabsSyncPathsExcludesCodeDir(t *testing.T) {
+	cfg := minimalConfig + `
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ./src
+`
+	path := writeConfigFile(t, "run.yaml", cfg)
+	require.NoError(t, os.MkdirAll(filepath.Join(filepath.Dir(path), "src"), 0o700))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.NoError(t, err)
+
+	paths := get(t, root, "sync.paths").MustSequence()
+	require.Len(t, paths, 1)
+	assert.Equal(t, generatedArtifactsDir, paths[0].MustString())
+
+	// The task still points at the code dir; only the sync set omits it.
+	task := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
+	assert.Equal(t, "./src", get(t, root, task+".code_source_path").MustString())
+}
+
 func TestConvertToDabsOmitsUnsetFields(t *testing.T) {
 	path := writeConfigFile(t, "run.yaml", minimalConfig)
 	loaded, err := loadRunConfig(path)
@@ -154,7 +181,7 @@ func TestConvertToDabsOmitsUnsetFields(t *testing.T) {
 	assert.False(t, has(root, task+".ai_runtime_task.code_source_path"))
 	assert.False(t, has(root, task+".ai_runtime_task.mlflow_run"))
 	// The command still needs a home even without code_source.
-	assert.Equal(t, "./"+commandScriptName, get(t, root, task+".ai_runtime_task.deployments[0].command_path").MustString())
+	assert.Equal(t, "./"+generatedArtifactsDir+"/"+commandScriptName, get(t, root, task+".ai_runtime_task.deployments[0].command_path").MustString())
 
 	// Even with no environment block, the default runtime version is pinned (what
 	// `air run` would have used) rather than emitting an empty environment spec.

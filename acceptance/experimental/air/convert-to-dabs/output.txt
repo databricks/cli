@@ -3,7 +3,7 @@
 >>> [CLI] experimental air convert-to-dabs train.yaml
 Wrote a Databricks Asset Bundle to .:
   databricks.yml
-  command.sh
+  generated_artifacts/command.sh
 
 To deploy and run this workload as a bundle:
   1. [CLI] bundle validate
@@ -22,6 +22,9 @@ job and its uploaded files with:
 >>> cat databricks.yml
 bundle:
   name: torchrun-a10-smoke-test
+sync:
+  paths:
+    - generated_artifacts
 targets:
   dev:
     mode: development
@@ -36,7 +39,7 @@ resources:
           ai_runtime_task:
             experiment: torchrun-a10-smoke-test
             deployments:
-              - command_path: ./command.sh
+              - command_path: ./generated_artifacts/command.sh
                 compute:
                   accelerator_type: GPU_1xA10
                   accelerator_count: 1
@@ -49,7 +52,7 @@ resources:
               - numpy
 
 === the generated command.sh carries the run command
->>> cat command.sh
+>>> cat generated_artifacts/command.sh
 torchrun --nproc_per_node=1 train.py
 === the emitted bundle validates
 >>> [CLI] bundle validate
@@ -71,7 +74,7 @@ Exit code: 1
 >>> [CLI] experimental air convert-to-dabs train.yaml --force
 Wrote a Databricks Asset Bundle to .:
   databricks.yml
-  command.sh
+  generated_artifacts/command.sh
 
 To deploy and run this workload as a bundle:
   1. [CLI] bundle validate

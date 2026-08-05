@@ -5,7 +5,7 @@ title "emitted databricks.yml (code_source_path points at ./src; no code is copi
 trace cat databricks.yml
 
 title "the generated command.sh carries the run command"
-trace cat command.sh
+trace cat generated_artifacts/command.sh
 
 title "the emitted bundle validates"
 trace $CLI bundle validate
