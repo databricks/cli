@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -239,23 +240,18 @@ func (r *ResourceJobRun) runFailedError(ctx context.Context, run *jobs.Run) erro
 // one per task key: a task the Jobs API retried is reported once per attempt, and
 // only its last one says how the run ended up.
 func lastFailedAttempts(tasks []jobs.RunTask) []jobs.RunTask {
-	latest := make(map[string]jobs.RunTask)
-	var keys []string
+	var result []jobs.RunTask
 	for _, task := range tasks {
 		if !taskFailed(task) {
 			continue
 		}
-		previous, seen := latest[task.TaskKey]
-		if !seen {
-			keys = append(keys, task.TaskKey)
+		i := slices.IndexFunc(result, func(seen jobs.RunTask) bool { return seen.TaskKey == task.TaskKey })
+		switch {
+		case i < 0:
+			result = append(result, task)
+		case task.AttemptNumber > result[i].AttemptNumber:
+			result[i] = task
 		}
-		if !seen || task.AttemptNumber > previous.AttemptNumber {
-			latest[task.TaskKey] = task
-		}
-	}
-	result := make([]jobs.RunTask, 0, len(keys))
-	for _, key := range keys {
-		result = append(result, latest[key])
 	}
 	return result
 }
