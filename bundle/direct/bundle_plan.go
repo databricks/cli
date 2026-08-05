@@ -976,12 +976,13 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		// New nodes only: a node with state must stay in the plan, otherwise emptying it plans nothing.
+		// Apply drops the state entry once the node is empty, so it is skipped from then on.
 		if _, hasState := db.State[node]; !hasState {
-			skip, err := adapter.SkipCreate(newStateConfig)
+			empty, err := adapter.IsEmptyState(newStateConfig)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", prefix, err)
 			}
-			if skip {
+			if empty {
 				continue
 			}
 		}

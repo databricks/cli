@@ -6,5 +6,4 @@ resources:
     grants_schema:
       name: schema_remove_all_$UNIQUE_NAME
       catalog_name: main
-      grants: # TO_EMPTY
-        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_EMPTY
+      grants: [{ principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] }]

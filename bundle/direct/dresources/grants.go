@@ -76,9 +76,10 @@ func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
 	return state
 }
 
-// SkipCreate reports an empty grants list as a no-op: nothing to grant, and Terraform
-// records no databricks_grants resource for it, so migrated bundles have no state entry.
-func (*ResourceGrants) SkipCreate(state *GrantsState) bool {
+// IsEmptyState reports an empty grants list as no resource at all: nothing to grant, and
+// Terraform records no databricks_grants resource for it either, so migrated bundles have
+// no state entry.
+func (*ResourceGrants) IsEmptyState(state *GrantsState) bool {
 	return len(state.EmbeddedSlice) == 0
 }
 

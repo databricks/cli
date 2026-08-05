@@ -12,16 +12,15 @@ trace $CLI grants get schema main.schema_remove_all_$UNIQUE_NAME | gron.py --noi
 # Empty the whole list. The grants node has state here, so it must stay in the plan
 # and revoke; dropping it would move it to the delete branch where grants' no-op
 # DoDelete silently keeps the grant.
-grep -v 'TO_EMPTY' databricks.yml > tmp.yml && mv tmp.yml databricks.yml
-echo '      grants: []' >> databricks.yml
+update_file.py databricks.yml 'grants: [{ principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] }]' 'grants: []'
 
 trace $CLI bundle deploy
 trace $CLI grants get schema main.schema_remove_all_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py '!deco-test-user@databricks.com'
 
-# Per-engine: direct keeps the emptied grants node in state and reports it as unchanged,
-# terraform has no grants resource left to report.
+# The revoking deploy drops the emptied grants node from state, so from here on both
+# engines plan the schema alone.
 {
     trace $CLI bundle plan
     trace $CLI bundle deploy
     trace $CLI bundle plan
-} &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+} &> out.plan.txt

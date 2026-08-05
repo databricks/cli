@@ -56,10 +56,11 @@ type IResource interface {
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
-	// [Optional] SkipCreate reports that creating newState is a no-op, so the planner omits the
-	// node instead of planning a create. Only consulted for nodes without a state entry.
-	// Example: func (*ResourceGrants) SkipCreate(state *GrantsState) bool
-	SkipCreate(newState any) bool
+	// [Optional] IsEmptyState reports that newState describes no resource at all: the planner
+	// omits the node instead of planning a create, and apply drops the state entry instead of
+	// persisting one, so both engines converge on "this node does not exist".
+	// Example: func (*ResourceGrants) IsEmptyState(state *GrantsState) bool
+	IsEmptyState(newState any) bool
 
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
@@ -108,7 +109,7 @@ type Adapter struct {
 	doCreate     *calladapt.BoundCaller
 
 	// Optional:
-	skipCreate         *calladapt.BoundCaller
+	isEmptyState       *calladapt.BoundCaller
 	doUpdate           *calladapt.BoundCaller
 	doUpdateWithID     *calladapt.BoundCaller
 	waitAfterCreate    *calladapt.BoundCaller
@@ -142,7 +143,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		doRefresh:               nil,
 		doDelete:                nil,
 		doCreate:                nil,
-		skipCreate:              nil,
+		isEmptyState:            nil,
 		doUpdate:                nil,
 		doUpdateWithID:          nil,
 		doResize:                nil,
@@ -212,7 +213,7 @@ func (a *Adapter) initMethods(resource any) error {
 
 	// Optional methods with varying signatures:
 
-	a.skipCreate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "SkipCreate")
+	a.isEmptyState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IsEmptyState")
 	if err != nil {
 		return err
 	}
@@ -325,8 +326,8 @@ func (a *Adapter) validate() error {
 	}
 	validations = append(validations, "DoCreate remoteState return", a.doCreate.OutTypes[1], remoteType)
 
-	if a.skipCreate != nil {
-		validations = append(validations, "SkipCreate newState", a.skipCreate.InTypes[0], stateType)
+	if a.isEmptyState != nil {
+		validations = append(validations, "IsEmptyState newState", a.isEmptyState.InTypes[0], stateType)
 	}
 
 	// Validate DoUpdate: must return (remoteType, error) if implemented
@@ -486,13 +487,13 @@ func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, erro
 	return id, remoteState, nil
 }
 
-// SkipCreate reports whether creating newState is a no-op; false if not implemented.
-func (a *Adapter) SkipCreate(newState any) (bool, error) {
-	if a.skipCreate == nil {
+// IsEmptyState reports whether newState describes no resource; false if not implemented.
+func (a *Adapter) IsEmptyState(newState any) (bool, error) {
+	if a.isEmptyState == nil {
 		return false, nil
 	}
 
-	outs, err := a.skipCreate.Call(newState)
+	outs, err := a.isEmptyState.Call(newState)
 	if err != nil {
 		return false, err
 	}

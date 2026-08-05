@@ -77,7 +77,7 @@ func TestBuildGrantChanges(t *testing.T) {
 }
 
 // Calls through the adapter so the optional-method wiring is covered too.
-func TestGrantsSkipCreate(t *testing.T) {
+func TestGrantsIsEmptyState(t *testing.T) {
 	tests := []struct {
 		name     string
 		state    *GrantsState
@@ -110,21 +110,21 @@ func TestGrantsSkipCreate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			skip, err := adapter.SkipCreate(tt.state)
+			empty, err := adapter.IsEmptyState(tt.state)
 			require.NoError(t, err)
-			assert.Equal(t, tt.expected, skip)
+			assert.Equal(t, tt.expected, empty)
 		})
 	}
 }
 
-// Resources without SkipCreate always need a create.
-func TestSkipCreateNotImplemented(t *testing.T) {
+// Resources without IsEmptyState are never treated as empty.
+func TestIsEmptyStateNotImplemented(t *testing.T) {
 	adapter, err := NewAdapter(SupportedResources["schemas"], "schemas", nil)
 	require.NoError(t, err)
 
-	skip, err := adapter.SkipCreate(&catalog.CreateSchema{Name: "myschema"})
+	empty, err := adapter.IsEmptyState(&catalog.CreateSchema{Name: "myschema"})
 	require.NoError(t, err)
-	assert.False(t, skip)
+	assert.False(t, empty)
 }
 
 func TestNormalizeAssignments(t *testing.T) {
