@@ -21,6 +21,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/files"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -266,6 +267,23 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	}
 }
 
+// MapGetUC is MapGet for Unity Catalog securables. The CLI surfaces the API's
+// message verbatim, and UC words it as "Volume 'main.s.v' does not exist."
+func MapGetUC[T any](w *FakeWorkspace, collection map[string]T, key, securable string) Response {
+	defer w.LockUnlock()()
+
+	value, ok := collection[key]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("%s '%s' does not exist.", securable, key)},
+		}
+	}
+	return Response{
+		Body: value,
+	}
+}
+
 func MapList[K comparable, T any](w *FakeWorkspace, collection map[K]T, responseFieldName string) Response {
 	defer w.LockUnlock()()
 
@@ -455,15 +473,29 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	defer s.LockUnlock()()
 
+	// The real API collapses duplicate slashes, so look up the cleaned path.
+	cleaned := path.Clean(listPath)
+
+	// The real API 404s on a missing path rather than reporting an empty directory.
+	// Repos are listable but tracked outside s.directories, so admit them too.
+	_, isDir := s.directories[cleaned]
+	_, isRepo := s.repoIdByPath[cleaned]
+	if !isDir && !isRepo {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", listPath)},
+		}
+	}
+
 	var objects []workspace.ObjectInfo
 
 	for filePath, entry := range s.files {
-		if path.Dir(filePath) == listPath {
+		if path.Dir(filePath) == cleaned {
 			objects = append(objects, entry.Info)
 		}
 	}
 	for dirPath, dirInfo := range s.directories {
-		if dirPath != listPath && path.Dir(dirPath) == listPath {
+		if dirPath != cleaned && path.Dir(dirPath) == cleaned {
 			objects = append(objects, dirInfo)
 		}
 	}
@@ -475,6 +507,71 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	return Response{
 		Body: workspace.ListResponse{Objects: objects},
 	}
+}
+
+// FsListDirectory implements GET /api/2.0/fs/directories/{path}. A path that is
+// not a directory, including one pointing at a file, is a 404, as it is for HEAD.
+func (s *FakeWorkspace) FsListDirectory(dirPath string) Response {
+	if !strings.HasPrefix(dirPath, "/") {
+		dirPath = "/" + dirPath
+	}
+
+	defer s.LockUnlock()()
+
+	if _, isDir := s.directories[dirPath]; !isDir {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": "directory does not exist"},
+		}
+	}
+
+	var contents []files.DirectoryEntry
+
+	for filePath, entry := range s.files {
+		if path.Dir(filePath) == dirPath {
+			contents = append(contents, files.DirectoryEntry{
+				Name:     path.Base(filePath),
+				Path:     filePath,
+				FileSize: int64(len(entry.Data)),
+			})
+		}
+	}
+	for childPath := range s.directories {
+		if childPath != dirPath && path.Dir(childPath) == dirPath {
+			contents = append(contents, files.DirectoryEntry{
+				Name:        path.Base(childPath),
+				Path:        childPath,
+				IsDirectory: true,
+			})
+		}
+	}
+
+	slices.SortFunc(contents, func(a, b files.DirectoryEntry) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+
+	return Response{
+		Body: files.ListDirectoryResponse{Contents: contents},
+	}
+}
+
+// FsDeleteFile implements DELETE /api/2.0/fs/files/{path}.
+func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
+	if !strings.HasPrefix(filePath, "/") {
+		filePath = "/" + filePath
+	}
+
+	defer s.LockUnlock()()
+
+	if _, exists := s.files[filePath]; !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": "file does not exist"},
+		}
+	}
+
+	delete(s.files, filePath)
+	return Response{}
 }
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {

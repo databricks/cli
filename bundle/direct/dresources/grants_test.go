@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildGrantChanges(t *testing.T) {
@@ -73,6 +74,57 @@ func TestBuildGrantChanges(t *testing.T) {
 			assert.Equal(t, tt.expected, buildGrantChanges(tt.desired, tt.removed))
 		})
 	}
+}
+
+// Calls through the adapter so the optional-method wiring is covered too.
+func TestGrantsIsEmptyState(t *testing.T) {
+	tests := []struct {
+		name     string
+		state    *GrantsState
+		expected bool
+	}{
+		{
+			name:     "empty grants list",
+			state:    &GrantsState{SecurableType: "schema", EmbeddedSlice: []catalog.PrivilegeAssignment{}},
+			expected: true,
+		},
+		{
+			name:     "unset grants list",
+			state:    &GrantsState{SecurableType: "schema"},
+			expected: true,
+		},
+		{
+			name: "one assignment",
+			state: &GrantsState{
+				SecurableType: "schema",
+				EmbeddedSlice: []catalog.PrivilegeAssignment{
+					{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeSelect}},
+				},
+			},
+			expected: false,
+		},
+	}
+
+	adapter, err := NewAdapter(SupportedResources["schemas.grants"], "schemas.grants", nil)
+	require.NoError(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			empty, err := adapter.IsEmptyState(tt.state)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, empty)
+		})
+	}
+}
+
+// Resources without IsEmptyState are never treated as empty.
+func TestIsEmptyStateNotImplemented(t *testing.T) {
+	adapter, err := NewAdapter(SupportedResources["schemas"], "schemas", nil)
+	require.NoError(t, err)
+
+	empty, err := adapter.IsEmptyState(&catalog.CreateSchema{Name: "myschema"})
+	require.NoError(t, err)
+	assert.False(t, empty)
 }
 
 func TestNormalizeAssignments(t *testing.T) {

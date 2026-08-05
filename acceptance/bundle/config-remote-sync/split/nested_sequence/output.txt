@@ -1,0 +1,38 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Add a library to a task that is not first after the merge sort
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.nested_job
+  tasks[task_key='second'].libraries: replace
+
+
+
+=== The new library lands on the task that received it
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -19,4 +19,6 @@
+             - pypi:
+                 package: urllib3
++            - pypi:
++                package: pyyaml
+
+ targets:
+
+>>> grep -c pyyaml databricks.yml
+1
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.nested_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!

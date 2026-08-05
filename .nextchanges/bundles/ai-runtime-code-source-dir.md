@@ -1,0 +1,1 @@
+For jobs where `ai_runtime_task.code_source_path` is a relative path to a local directory, the directory is now packaged into a tarball (honoring `.gitignore` and `sync.include`/`sync.exclude`), uploaded during deployment, and `code_source_path` is rewritten to the uploaded workspace path.
