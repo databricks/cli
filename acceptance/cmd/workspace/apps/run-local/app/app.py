@@ -1,6 +1,7 @@
 import http.server
 import json
 import os
+import threading
 
 # Standard library only: acceptance tests run with the network disabled, so the
 # app cannot install anything from PyPI.
@@ -16,17 +17,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
-        self.wfile.flush()
 
-        # Exit only once the response is on the wire, so curl does not see a dropped connection.
+        # shutdown() blocks until serve_forever() returns, which cannot happen until this
+        # handler returns, so it has to run on another thread. Stopping the loop rather
+        # than exiting the process lets the connection close cleanly, otherwise the client
+        # can see a reset instead of the response we just wrote.
         if shutdown:
-            os._exit(0)
+            threading.Thread(target=server.shutdown, daemon=True).start()
 
     def log_message(self, fmt, *args):
         pass
 
 
+# Bind before printing, so the message can never appear while the port is still closed.
 server = http.server.HTTPServer(("127.0.0.1", int(os.environ["DATABRICKS_APP_PORT"])), Handler)
-# Printed only once the socket is listening, so the test can use it as a readiness signal.
 print("Python app has started with: " + os.environ["TEST"], flush=True)
 server.serve_forever()

@@ -5,10 +5,8 @@ RecordRequests = false
 # The command is unrelated to bundle deployment, so run it once rather than per engine.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
+# The ports are registered as replacements by the script, which is where they are allocated.
+
 [[Repls]]
 Old='curl/[0-9]+\.[0-9]+\.[0-9]+'
 New='curl/(version)'
-
-[[Repls]]
-Old='127.0.0.1:[0-9]+'
-New='127.0.0.1:$(port)'

@@ -14,12 +14,15 @@ Running command: python -c print('Hello, world')
 >>> grep -x Hello, world ../LOG.entry-point
 Hello, world
 
-=== Starting the app in the background
-
 === Proxy forwards to the app and injects the identity headers
 
->>> retry --until X-Forwarded-Email curl -sS http://127.0.0.1:$(port)
-{"Accept": "*/*", "Accept-Encoding": "gzip", "Host": "127.0.0.1:$(port)", "User-Agent": "curl/(version)", "X-Forwarded-Email": "[USERNAME]", "X-Forwarded-Host": "localhost", "X-Forwarded-Preferred-Username": "", "X-Forwarded-User": "[USERNAME]", "X-Real-Ip": "127.0.0.1", "X-Request-Id": "[UUID]"}
+>>> retry --until X-Forwarded-Email curl -sS http://127.0.0.1:[PROXY_PORT]
+{"Accept": "*/*", "Accept-Encoding": "gzip", "Host": "127.0.0.1:[APP_PORT]", "User-Agent": "curl/(version)", "X-Forwarded-Email": "[USERNAME]", "X-Forwarded-Host": "localhost", "X-Forwarded-Preferred-Username": "", "X-Forwarded-User": "[USERNAME]", "X-Real-Ip": "127.0.0.1", "X-Request-Id": "[UUID]"}
+
+=== Proxy URL is reported on the port that was asked for
+
+>>> grep -x To access your app go to http://localhost:[PROXY_PORT] LOG.run
+To access your app go to http://localhost:[PROXY_PORT]
 
 === App picked up the env var from app.yml
 
@@ -28,4 +31,4 @@ Python app has started with: test
 
 === Shutting the app down
 
->>> curl -sS -o /dev/null http://127.0.0.1:$(port)/shutdown
+>>> curl -sS -o /dev/null http://127.0.0.1:[PROXY_PORT]/shutdown

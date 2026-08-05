@@ -2,6 +2,8 @@ cd app
 
 # Ports are allocated per run so that tests in parallel worktrees do not collide.
 read -r APP_PORT PROXY_PORT ENTRY_POINT_PORT <<< "$(free_port.py 3)"
+add_repl.py "$APP_PORT" APP_PORT
+add_repl.py "$PROXY_PORT" PROXY_PORT
 
 # The app and the proxy start asynchronously; allow up to 15s for them to come up.
 export RETRY_MAX_ATTEMPTS=30
@@ -10,18 +12,20 @@ title "Env var with valueFrom cannot be resolved locally\n"
 trace errcode $CLI apps run-local --entry-point value-from.yml 2>&1
 
 title "Entry point overrides the command from app.yml\n"
-$CLI apps run-local --entry-point test.yml --port "$ENTRY_POINT_PORT" &> ../LOG.entry-point
+trace $CLI apps run-local --entry-point test.yml --port "$ENTRY_POINT_PORT" &> ../LOG.entry-point
 trace grep -x "Running command: python -c print('Hello, world')" ../LOG.entry-point
 trace grep -x "Hello, world" ../LOG.entry-point
 
-title "Starting the app in the background\n"
-$CLI apps run-local --port "$PROXY_PORT" --app-port "$APP_PORT" &> ../LOG.run &
+trace $CLI apps run-local --port "$PROXY_PORT" --app-port "$APP_PORT" &> ../LOG.run &
 PID=$!
 trap 'kill $PID 2>/dev/null || true' EXIT
 cd ..
 
 title "Proxy forwards to the app and injects the identity headers\n"
 trace retry --until X-Forwarded-Email curl -sS "http://127.0.0.1:$PROXY_PORT"
+
+title "Proxy URL is reported on the port that was asked for\n"
+trace grep -x "To access your app go to http://localhost:$PROXY_PORT" LOG.run
 
 title "App picked up the env var from app.yml\n"
 trace grep -x "Python app has started with: test" LOG.run
