@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -125,6 +123,13 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		// specific revision therefore isn't supported; check it out before converting.
 		if snap.Git != nil {
 			return nil, nil, errors.New("code_source.snapshot.git is not supported by convert-to-dabs; deploy packages your working tree as-is, so check out the revision you want (git checkout <ref>) before converting")
+		}
+		// include_paths narrows the archive to a subset of root_path. The bundle has no
+		// per-code-source equivalent: deploy packages the whole directory, filtered by
+		// .gitignore and the bundle-wide sync.include/sync.exclude. Silently dropping it
+		// would upload files the user meant to leave out.
+		if len(snap.IncludePaths) > 0 {
+			return nil, nil, errors.New("code_source.snapshot.include_paths is not supported by convert-to-dabs; deploy packages the whole directory, so narrow it with sync.exclude in the bundle (or a .gitignore) instead")
 		}
 	}
 
@@ -348,21 +353,10 @@ func bundleEnvironmentDeps(ctx context.Context, cfg *runConfig, configPath strin
 	return version, doc.Dependencies
 }
 
-// bundleResourceKey derives a job resource key from the experiment name. The key
-// is emitted as an unquoted YAML map key, and DABs' strict loader rejects a key
-// that parses as a non-string scalar (a purely numeric name like "12345" -> !!int,
-// or "true"/"null"). experiment_name allows exactly [alphanumeric, -, _], so the
-// only unsafe keys are those that YAML types as int/float/bool/null; prefix those
-// with "job_" to force a string key. The human-facing name/experiment fields keep
-// the original value (yamlsaver quotes them as scalar string values).
+// bundleResourceKey is the job resource key for an experiment name: the name
+// itself. A name that YAML would type as a non-string scalar (a numeric "12345",
+// or "true"/"null") is emitted quoted by yamlsaver, so it stays a valid string key.
 func bundleResourceKey(name string) string {
-	switch strings.ToLower(name) {
-	case "true", "false", "null":
-		return "job_" + name
-	}
-	if _, err := strconv.ParseFloat(name, 64); err == nil {
-		return "job_" + name
-	}
 	return name
 }
 

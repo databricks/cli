@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 // Re-running a conversion into a dir that already holds a generated bundle is
@@ -348,33 +349,67 @@ permissions:
 	assert.Equal(t, "eng", perms[1].Get("group_name").MustString())
 }
 
-// A numeric or reserved-word experiment_name would be an unquoted YAML map key
-// that DABs' strict loader rejects (!!int / !!bool). The job resource key is
-// prefixed to stay a string, while name/experiment keep the original value.
+// The job resource key is the experiment name as-is. A name that YAML would type
+// as a non-string scalar ("12345" -> !!int, "true" -> !!bool) must be emitted
+// quoted, or the bundle loader rejects the key with "invalid key tag".
 func TestConvertToDabsSafeJobKey(t *testing.T) {
-	cases := map[string]string{
-		"12345": "job_12345",
-		"1.5e3": "job_1.5e3",
-		"true":  "job_true",
-		"null":  "job_null",
+	for _, name := range []string{"12345", "1.5e3", "true", "null", "my-run_1"} {
+		assert.Equal(t, name, bundleResourceKey(name), "key for %q", name)
 	}
-	for name, wantKey := range cases {
-		assert.Equal(t, wantKey, bundleResourceKey(name), "key for %q", name)
-	}
-	// A normal name is used as-is.
-	assert.Equal(t, "my-run_1", bundleResourceKey("my-run_1"))
 
-	// End to end: a numeric name lands under the prefixed key, but name/experiment
-	// keep the numeric string value.
-	cfg := "experiment_name: \"12345\"\ncommand: python t.py\n" +
-		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n"
-	path := writeConfigFile(t, "run.yaml", cfg)
+	for _, name := range []string{"12345", "true", "my-run_1"} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			cfg := "experiment_name: \"" + name + "\"\ncommand: python t.py\n" +
+				"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n"
+			path := filepath.Join(dir, "run.yaml")
+			require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+			loaded, err := loadRunConfig(path)
+			require.NoError(t, err)
+
+			root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+			require.NoError(t, err)
+			// The key is the raw name; name/experiment keep the same value.
+			jobs, err := dyn.GetByPath(dyn.V(root), dyn.MustPathFromString("resources.jobs"))
+			require.NoError(t, err)
+			job := jobs.Get(name)
+			require.True(t, job.IsValid(), "job must be keyed by %q", name)
+			assert.Equal(t, name, job.Get("name").MustString())
+
+			// The emitted YAML must load back with the key still a string.
+			_, err = writeBundle(t.Context(), loaded, path, dir, true)
+			require.NoError(t, err)
+			emitted, err := os.ReadFile(filepath.Join(dir, "databricks.yml"))
+			require.NoError(t, err)
+			var doc struct {
+				Resources struct {
+					Jobs map[string]struct {
+						Name string `yaml:"name"`
+					} `yaml:"jobs"`
+				} `yaml:"resources"`
+			}
+			require.NoError(t, yaml.Unmarshal(emitted, &doc), "emitted YAML must parse:\n%s", emitted)
+			require.Contains(t, doc.Resources.Jobs, name, "job key must load as the string %q:\n%s", name, emitted)
+		})
+	}
+}
+
+// include_paths narrows the archive to a subset of root_path, which a bundle can't
+// express per code source. Rejected rather than silently uploading the whole dir.
+func TestConvertToDabsRejectsIncludePaths(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
+	cfg := "experiment_name: inc\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
+		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: ./src\n" +
+		"    include_paths:\n      - keep\n"
+	path := filepath.Join(dir, "run.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
-	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
-	require.NoError(t, err)
-	assert.Equal(t, "12345", get(t, root, "resources.jobs.job_12345.name").MustString())
-	assert.Equal(t, "12345", get(t, root, "resources.jobs.job_12345.tasks[0].ai_runtime_task.experiment").MustString())
+
+	_, _, err = convertToDabs(t.Context(), loaded, path, dir)
+	require.ErrorContains(t, err, "include_paths is not supported")
 }
 
 func TestConvertToDabsRejectsUnsupported(t *testing.T) {

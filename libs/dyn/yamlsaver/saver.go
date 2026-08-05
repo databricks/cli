@@ -92,7 +92,14 @@ func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, 
 		for _, pair := range pairs {
 			pk := pair.Key
 			pv := pair.Value
-			node := yaml.Node{Kind: yaml.ScalarNode, Value: pk.MustString(), Style: style}
+			// Quote a key that would otherwise round-trip as a non-string scalar (a
+			// numeric map key like "12345" loads as !!int, which the bundle loader
+			// rejects). Values get the same treatment below via isScalarValueInString.
+			keyStyle := style
+			if isScalarValueInString(pk) {
+				keyStyle = yaml.DoubleQuotedStyle
+			}
+			node := yaml.Node{Kind: yaml.ScalarNode, Value: pk.MustString(), Style: keyStyle}
 			var nestedNodeStyle yaml.Style
 			if customStyle, ok := s.hasStyle(pk.MustString()); ok {
 				nestedNodeStyle = customStyle
