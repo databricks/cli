@@ -1,0 +1,26 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+trace $CLI grants get schema main.schema_remove_all_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py 'deco-test-user@databricks.com'
+
+# Empty the whole list. The grants node has state here, so it must stay in the plan
+# and revoke; dropping it would move it to the delete branch where grants' no-op
+# DoDelete silently keeps the grant.
+update_file.py databricks.yml 'grants: [{ principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] }]' 'grants: []'
+
+trace $CLI bundle deploy
+trace $CLI grants get schema main.schema_remove_all_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py '!deco-test-user@databricks.com'
+
+# The revoking deploy drops the emptied grants node from state, so from here on both
+# engines plan the schema alone.
+{
+    trace $CLI bundle plan
+    trace $CLI bundle deploy
+    trace $CLI bundle plan
+} &> out.plan.txt
