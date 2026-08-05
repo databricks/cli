@@ -54,7 +54,7 @@ var knownMissingInRemoteType = map[string][]string{
 	"vector_search_endpoints": {
 		"usage_policy_id",
 	},
-	"snapshots": {
+	"internal_immutable_snapshots": {
 		"bundle_id",
 		"acl",
 		"remote_root",
@@ -96,7 +96,7 @@ var knownMissingInStateType = map[string][]string{
 		"keyvault_metadata",
 		"name",
 	},
-	"snapshots": {
+	"internal_immutable_snapshots": {
 		"zip_content",
 	},
 }

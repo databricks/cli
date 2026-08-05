@@ -17,8 +17,6 @@ const fileLimitWarning = 1000
 
 type snapshotUpload struct {
 	skipZip bool
-	// uploader allows test injection of a custom SnapshotUploader.
-	uploader snapshot.SnapshotUploader
 }
 
 // PlanUpload returns a mutator that builds the bundle zip, uploads it via
@@ -32,13 +30,9 @@ func (m *snapshotUpload) Name() string {
 }
 
 func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	uploader := m.uploader
-	if uploader == nil {
-		var err error
-		uploader, err = snapshot.NewSnapshotUploader(b.WorkspaceClient(ctx))
-		if err != nil {
-			return diag.FromErr(err)
-		}
+	uploader, err := snapshot.NewSnapshotClient(b.WorkspaceClient(ctx))
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	remoteRoot, err := uploader.GetSnapshotRootPath(ctx)
@@ -86,7 +80,7 @@ func SyncZipContent(b *bundle.Bundle) {
 	if snap == nil || snap.ZipContent == "" {
 		return
 	}
-	sv, ok := b.DeploymentBundle.StateCache.Load("resources.snapshots.immutable")
+	sv, ok := b.DeploymentBundle.StateCache.Load("resources.internal_immutable_snapshots.immutable")
 	if !ok {
 		return
 	}

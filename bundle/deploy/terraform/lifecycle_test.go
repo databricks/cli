@@ -22,7 +22,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 		"job_runs",
 		"vector_search_endpoints",
 		"vector_search_indexes",
-		"snapshots",
+		"internal_immutable_snapshots",
 	}
 
 	for resourceType := range supportedResources {

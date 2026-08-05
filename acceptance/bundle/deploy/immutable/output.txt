@@ -49,7 +49,7 @@ Building python_artifact...
   }
 ]
 
->>> jq .plan["resources.snapshots.immutable"] plan.json
+>>> jq .plan["resources.internal_immutable_snapshots.immutable"] plan.json
 {
   "action": "create",
   "new_state": {
@@ -91,7 +91,7 @@ Deployment complete!
 >>> [CLI] bundle plan -o json
 Building python_artifact...
 
->>> jq .plan["resources.snapshots.immutable"] plan.json
+>>> jq .plan["resources.internal_immutable_snapshots.immutable"] plan.json
 {
   "action": "recreate",
   "new_state": {

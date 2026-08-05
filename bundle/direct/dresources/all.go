@@ -67,7 +67,7 @@ var SupportedResources = map[string]any{
 	"vector_search_indexes.grants": (*ResourceGrants)(nil),
 
 	// Internal resources
-	"snapshots": (*ResourceSnapshot)(nil),
+	"internal_immutable_snapshots": (*ResourceSnapshot)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

@@ -3473,17 +3473,17 @@ resources.secret_scopes.*.permissions.acls[*]	workspace.AclItem	ALL
 resources.secret_scopes.*.permissions.acls[*].permission	workspace.AclPermission	ALL
 resources.secret_scopes.*.permissions.acls[*].principal	string	ALL
 resources.secret_scopes.*.permissions.scope_name	string	ALL
-resources.snapshots.*.acl	[]snapshot.ACLEntry	INPUT	STATE
-resources.snapshots.*.acl[*]	snapshot.ACLEntry	INPUT	STATE
-resources.snapshots.*.acl[*].group_name	string	INPUT	STATE
-resources.snapshots.*.acl[*].permission_level	string	INPUT	STATE
-resources.snapshots.*.acl[*].service_principal_name	string	INPUT	STATE
-resources.snapshots.*.acl[*].user_name	string	INPUT	STATE
-resources.snapshots.*.bundle_id	string	INPUT	STATE
-resources.snapshots.*.full_path	string	REMOTE	STATE
-resources.snapshots.*.relative_path	string	REMOTE	STATE
-resources.snapshots.*.remote_root	string	INPUT	STATE
-resources.snapshots.*.zip_content	string	INPUT
+resources.internal_immutable_snapshots.*.acl	[]snapshot.ACLEntry	INPUT	STATE
+resources.internal_immutable_snapshots.*.acl[*]	snapshot.ACLEntry	INPUT	STATE
+resources.internal_immutable_snapshots.*.acl[*].group_name	string	INPUT	STATE
+resources.internal_immutable_snapshots.*.acl[*].permission_level	string	INPUT	STATE
+resources.internal_immutable_snapshots.*.acl[*].service_principal_name	string	INPUT	STATE
+resources.internal_immutable_snapshots.*.acl[*].user_name	string	INPUT	STATE
+resources.internal_immutable_snapshots.*.bundle_id	string	INPUT	STATE
+resources.internal_immutable_snapshots.*.full_path	string	REMOTE	STATE
+resources.internal_immutable_snapshots.*.relative_path	string	REMOTE	STATE
+resources.internal_immutable_snapshots.*.remote_root	string	INPUT	STATE
+resources.internal_immutable_snapshots.*.zip_content	string	INPUT
 resources.sql_warehouses.*.auto_stop_mins	int	ALL
 resources.sql_warehouses.*.channel	*sql.Channel	ALL
 resources.sql_warehouses.*.channel.dbsql_version	string	ALL

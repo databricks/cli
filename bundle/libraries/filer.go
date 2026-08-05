@@ -27,7 +27,7 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 	uploadPath := path.Join(b.Config.Workspace.ArtifactPath, InternalDirName)
 	uploadPath = ensureWorkspaceOrVolumesPrefix(uploadPath)
 	if b.IsImmutableFolder() {
-		uploadPath = path.Join("${resources.snapshots.immutable.full_path}", "artifacts", InternalDirName)
+		uploadPath = path.Join("${resources.internal_immutable_snapshots.immutable.full_path}", "artifacts", InternalDirName)
 	}
 
 	switch {
@@ -47,7 +47,7 @@ func GetFilerForLibrariesCleanup(ctx context.Context, b *bundle.Bundle) (filer.F
 
 	artifactPath = ensureWorkspaceOrVolumesPrefix(artifactPath)
 	if b.IsImmutableFolder() {
-		artifactPath = path.Join("${resources.snapshots.immutable.full_path}", "artifacts")
+		artifactPath = path.Join("${resources.internal_immutable_snapshots.immutable.full_path}", "artifacts")
 	}
 
 	switch {

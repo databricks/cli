@@ -3,6 +3,7 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,25 +13,25 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/snapshot"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/vfs"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type mockUploader struct{ path string }
-
-func (m *mockUploader) Upload(_ context.Context, _, _ string, _ []snapshot.ACLEntry, _ []byte) (*snapshot.SnapshotInfo, error) {
-	return &snapshot.SnapshotInfo{Path: m.path}, nil
-}
-
-func (m *mockUploader) Get(_ context.Context, _ string) (*snapshot.SnapshotInfo, error) {
-	return &snapshot.SnapshotInfo{Path: m.path}, nil
-}
-
-func (m *mockUploader) GetSnapshotRootPath(_ context.Context) (string, error) {
-	return filepath.Join(m.path, "snapshots"), nil
+func setupTestClient(t *testing.T) *databricks.WorkspaceClient {
+	t.Helper()
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:               server.URL,
+		Token:              "testtoken",
+		RateLimitPerSecond: math.MaxInt,
+	})
+	require.NoError(t, err)
+	return client
 }
 
 func makeBundle(t *testing.T, nFiles int) *bundle.Bundle {
@@ -68,7 +69,8 @@ func testContext(t *testing.T) context.Context {
 
 func TestUploadWarnsAboveFileLimit(t *testing.T) {
 	b := makeBundle(t, fileLimitWarning+1)
-	m := &snapshotUpload{uploader: &mockUploader{path: "/snapshots/test"}}
+	b.SetWorkpaceClient(setupTestClient(t))
+	m := &snapshotUpload{}
 
 	diags := m.Apply(testContext(t), b)
 
@@ -79,7 +81,8 @@ func TestUploadWarnsAboveFileLimit(t *testing.T) {
 
 func TestUploadNoWarningBelowFileLimit(t *testing.T) {
 	b := makeBundle(t, 5)
-	m := &snapshotUpload{uploader: &mockUploader{path: "/snapshots/test"}}
+	b.SetWorkpaceClient(setupTestClient(t))
+	m := &snapshotUpload{}
 
 	diags := m.Apply(testContext(t), b)
 

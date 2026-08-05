@@ -798,9 +798,6 @@ resources:
       # The Vector Search API assigns index_subtype when the config omits it
       - field: index_subtype
 
-  snapshots:
+  internal_immutable_snapshots:
     recreate_on_changes:
-      - field: full_path
-        reason: immutable
-      - field: relative_path
-        reason: immutable
+      - reason: immutable

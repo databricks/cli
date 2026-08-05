@@ -9,7 +9,7 @@ import (
 )
 
 type ResourceSnapshot struct {
-	uploader snapshot.SnapshotUploader
+	uploader *snapshot.SnapshotClient
 }
 
 type SnapshotState struct {
@@ -34,7 +34,7 @@ func (s *ResourceSnapshot) New(client *databricks.WorkspaceClient) *ResourceSnap
 		}
 	}
 
-	uploader, err := snapshot.NewSnapshotUploader(client)
+	uploader, err := snapshot.NewSnapshotClient(client)
 	if err != nil {
 		panic(err)
 	}

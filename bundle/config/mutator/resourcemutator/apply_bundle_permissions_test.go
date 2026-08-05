@@ -35,7 +35,7 @@ var unsupportedResources = []string{
 	"postgres_synced_tables",
 	"vector_search_indexes",
 	"job_runs",
-	"snapshots",
+	"internal_immutable_snapshots",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {

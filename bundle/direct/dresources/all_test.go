@@ -299,7 +299,7 @@ var testConfig map[string]any = map[string]any{
 		}},
 	},
 
-	"snapshots": &resources.Snapshot{
+	"internal_immutable_snapshots": &resources.Snapshot{
 		RemoteRoot: "/Workspace/Users/" + testserver.TestUserSP.UserName + "/.snapshots",
 		BundleID:   "test-bundle-id",
 		ACL:        []snapshot.ACLEntry{{UserName: "user@example.com", PermissionLevel: "CAN_READ"}},
@@ -1095,7 +1095,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
-	isImmutable := strings.HasSuffix(group, "snapshots")
+	isImmutable := strings.HasSuffix(group, "internal_immutable_snapshots")
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
 	// A GET on the DELETING app returns the app, not 404 -- the testserver

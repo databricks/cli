@@ -138,7 +138,7 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 		"postgres_projects":  true,
 		"postgres_roles":     true,
 		"secret_scopes":      true,
-		"snapshots":          true,
+		"internal_immutable_snapshots": true,
 	}
 
 	supported := SupportedResources()
@@ -346,8 +346,8 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 	}
 	unbindableResources := map[string]bool{
-		"model":    true,
-		"snapshot": true,
+		"model":                        true,
+		"internal_immutable_snapshot":  true,
 	}
 
 	ctx := t.Context()

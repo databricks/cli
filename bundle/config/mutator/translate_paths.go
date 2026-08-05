@@ -322,7 +322,7 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
 	switch {
 	case b.IsImmutableFolder():
-		t.remoteRoot = "${resources.snapshots.immutable.full_path}/files"
+		t.remoteRoot = "${resources.internal_immutable_snapshots.immutable.full_path}/files"
 	case config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment):
 		t.remoteRoot = t.b.SyncRootPath
 	default:
