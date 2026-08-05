@@ -3480,7 +3480,6 @@ resources.secrets.*.created_by	string	REMOTE	STATE
 resources.secrets.*.effective_owner	string	REMOTE	STATE
 resources.secrets.*.effective_value	string	REMOTE	STATE
 resources.secrets.*.expire_time	*time.Time	ALL
-resources.secrets.*.fingerprint	string	STATE
 resources.secrets.*.full_name	string	REMOTE	STATE
 resources.secrets.*.id	string	INPUT
 resources.secrets.*.lifecycle	resources.Lifecycle	INPUT
