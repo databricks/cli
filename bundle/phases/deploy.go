@@ -228,6 +228,22 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	// Create the version before planning: the plan snapshots the resource config,
+	// so the deployment and version have to be stamped onto the resources before it
+	// is computed or the applied resources would not carry them. A cancelled deploy
+	// therefore leaves a version behind, completed as a failure by the deferred
+	// CompleteVersion.
+	if err := recorder.CreateVersion(ctx); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if recorder != nil {
+		bundle.ApplyContext(ctx, b, metadata.AnnotateDeploymentVersion(recorder.DeploymentID(), recorder.Version()))
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	planFromFile := plan != nil
 	if plan == nil {
 		// State is already open for read by process.go (for direct engine)
@@ -271,18 +287,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 	if haveApproval {
-		// Record the DMS version now that the plan is approved and the state WAL
-		// has been opened. CreateVersion requests version_id == last_version_id + 1;
-		// the server returns ABORTED if a concurrent deploy advanced the deployment
-		// since the plan was computed, so a stale plan is not applied.
-		if err := recorder.CreateVersion(ctx); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
 		if recorder != nil {
-			// Record operations under the version just created so DMS holds the
-			// deployed resource state. On a first deploy the deployment ID was only
-			// assigned by CreateVersion above, so this must come after it.
+			// Record operations under the version created before planning, so DMS holds
+			// the deployed resource state.
 			b.DeploymentBundle.OpRec = direct.NewOperationRecorder(
 				b.WorkspaceClient(ctx).BundleDeployments,
 				recorder.DeploymentID(),
