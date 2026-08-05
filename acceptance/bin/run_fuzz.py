@@ -15,6 +15,7 @@ LOG.repro and exits non-zero. Nothing is written to stdout: the committed run as
 
 FUZZ_TARGET and FUZZ_MODE come from the test.toml matrix; FUZZ_SEED_START, FUZZ_SEED_COUNT,
 FUZZ_SEED_TIMEOUT and FUZZ_TIME_BUDGET are optional knobs the caller sets (see task test-fuzz).
+FUZZ_CHECK_DRIFT is read only to name the oracle in the repro; script.prepare acts on it.
 """
 
 import os
@@ -40,6 +41,11 @@ QUIT_GRACE = 10
 
 TARGET = os.environ["FUZZ_TARGET"]
 MODE = os.environ["FUZZ_MODE"]
+
+# Which no-drift oracle script.prepare installed. Part of the repro because the two disagree: the
+# committed run leaves this at 0 and gets the plan-determinism diff, while task test-fuzz defaults
+# it to 1 and gets the exact check, so a repro that omitted it would not rerun what failed.
+CHECK_DRIFT = os.environ.get("FUZZ_CHECK_DRIFT", "0")
 
 POSIX = os.name == "posix"
 
@@ -89,6 +95,19 @@ def run_seed(seed_dir, seed):
             return proc.wait(), True
 
 
+def oracle_verdict(seed_dir):
+    """The no-drift oracle's own verdict, if it reached one. Empty if it never ran or was happy."""
+    # Both oracles report a violation in a form only they produce, so a seed that broke the
+    # invariant is still recognisable when it also touched a route the testserver lacks.
+    if b"Unexpected action=" in read(seed_dir / "LOG.check"):
+        # verify_no_drift.py, the exact check shared with the curated invariant targets.
+        return "planned a change after deploy"
+    if read(seed_dir / "LOG.plan.determinism.diff").strip():
+        # The plan-determinism diff script.prepare substitutes when FUZZ_CHECK_DRIFT is 0.
+        return "planned differently on two consecutive runs"
+    return ""
+
+
 def classify(seed_dir):
     """Classify a seed that exited non-zero. Returns its kind and, for a failure, the reason."""
     # The generator only writes to stderr when it fails: our bug, not a rejected config.
@@ -102,6 +121,12 @@ def classify(seed_dir):
     # A panic or internal error anywhere is a bug even if the CLI then rejects the config.
     if b"panic:" in logs or b"internal error" in logs:
         return "bug", "panicked or hit an internal error"
+
+    # Before the gap marker: the cleanup destroy runs on every seed, so an unmodeled delete route
+    # puts that marker in the logs of seeds whose invariant genuinely failed.
+    verdict = oracle_verdict(seed_dir)
+    if verdict:
+        return "bug", verdict
 
     # Marker body of the catch-all stubs in fuzz/test.toml: the route is one the testserver does
     # not model. Checked before the marker below, else an unmodeled route reached during plan or
@@ -128,7 +153,8 @@ def fail(seed, kind, reason, prefix=""):
     # The repro goes to a file because the harness rewrites env-var values in stdout.
     Path("LOG.repro").write_text(
         f"fuzz: seed {seed} {reason}, reproduce with: {prefix}FUZZ_SEED_START={seed} "
-        f"FUZZ_SEED_COUNT=1 FUZZ_TARGET={TARGET} FUZZ_MODE={MODE} task test-fuzz\n"
+        f"FUZZ_SEED_COUNT=1 FUZZ_TARGET={TARGET} FUZZ_MODE={MODE} "
+        f"FUZZ_CHECK_DRIFT={CHECK_DRIFT} task test-fuzz\n"
     )
     sys.exit(1)
 
