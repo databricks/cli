@@ -25,7 +25,12 @@ permissions:
 
 jobs:
   add-link:
-    runs-on: ubuntu-latest
+    # The databricks org has an IP allow list, and GitHub-hosted runners are not
+    # on it: `gh api` from ubuntu-latest fails with HTTP 403. Every workflow here
+    # that calls the API runs on this group for the same reason.
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     # Forks: the head branch lives in the contributor's repository and is not
     # ours to push to, so those PRs are left to review. The label is the escape
