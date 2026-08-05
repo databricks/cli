@@ -99,13 +99,18 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 	if err != nil {
 		return false, err
 	}
-	// Reported before the no-logs check, so a run whose every node failed explains
-	// why instead of looking like a run that never logged.
 	for _, node := range sortedNodeKeys(failures) {
 		cmdio.LogString(ctx, fmt.Sprintf("warning: node %d: %s", node, failures[node]))
 	}
 
 	if len(nodeLogs) == 0 {
+		// "No logs available" would be a lie when the logs exist but couldn't be
+		// fetched. The warnings above go to stderr, which a -o json consumer reading
+		// stdout never sees, so fail instead of reporting an empty run.
+		if len(failures) > 0 {
+			return false, fmt.Errorf("failed to download logs from any of %d node(s): %s",
+				len(nodes), failures[sortedNodeKeys(failures)[0]])
+		}
 		emitNoLogs(out, req, status)
 		return status.downloadOutcome(), nil
 	}

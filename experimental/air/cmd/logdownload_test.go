@@ -508,3 +508,47 @@ func TestDownloadLogsActiveRunExitsZero(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, success)
 }
+
+// allNodesFailServer serves a FAILED 2-node run whose chunk credentials all 404,
+// so every node's download fails.
+func allNodesFailServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{"run_id": 123, "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED"},
+				"tasks": [{"run_id": 456, "ai_runtime_task": {"deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 2}}]}}]}`))
+		case "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}`))
+		case "/api/2.0/mlflow/artifacts/list":
+			p := r.URL.Query().Get("path")
+			if p == "logs" {
+				_, _ = w.Write([]byte(`{"files": [{"path": "logs/node_0", "is_dir": true}, {"path": "logs/node_1", "is_dir": true}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"files": [{"path": "` + p + `/logs-0.chunk.txt"}]}`))
+		case "/api/2.0/mlflow/artifacts/credentials-for-read":
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error_code": "NOT_FOUND", "message": "gone"}`))
+		default:
+			_, _ = w.Write([]byte(`{"userName": "u@example.com"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestDownloadLogsAllNodesFailedIsNotReportedAsNoLogs(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	w := newTestWorkspaceClient(t, allNodesFailServer(t).URL)
+	var stdout bytes.Buffer
+
+	// The logs exist but couldn't be fetched. Reporting "No logs available" would
+	// tell a caller the run produced nothing, so this fails instead.
+	_, err := downloadLogs(ctx, w, &stdout,
+		logRequest{runID: 123, attempt: -1, downloadTo: t.TempDir(), jsonOutput: true},
+		logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to download logs from any of 2 node(s)")
+	assert.NotContains(t, stdout.String(), "No logs available")
+}
