@@ -27,6 +27,8 @@ permissions:
 jobs:
   preview:
     runs-on: ubuntu-latest
+    env:
+      NEXTCHANGES_DIR: '.nextchanges'
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -46,7 +48,7 @@ jobs:
           # Render into a variable first so a renderer error fails this step
           # (rather than being swallowed by a pipe), then emit the .md directly
           # into the job summary so GitHub renders it as the changelog.
-          preview=$(uv run --locked internal/genkit/release_tagging.py --preview)
+          preview=$(uv run --locked internal/genkit/tagging.py --preview)
           {
             echo '## Changelog preview'
             echo ''

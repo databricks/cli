@@ -37,49 +37,59 @@ func newParser(schemas map[string]*clijson.SchemaJSON) *annotationParser {
 
 // This function checks if the input type:
 // 1. Is a Databricks Go SDK type.
-// 2. Has a Databricks Go SDK type embedded in it.
+// 2. Has a Databricks Go SDK type embedded in it, at any depth.
 //
 // If the above conditions are met, the function returns the schema
 // corresponding to the Databricks Go SDK type from the spec.
+//
+// Embedded structs are traversed breadth first, mirroring how
+// [jsonschema.FromType] flattens them, so the shallowest SDK type present in
+// the spec wins. Traversing past the first level matters because some resources
+// wrap the SDK spec in an intermediate struct rather than embedding it directly
+// (e.g. PostgresProject -> PostgresProjectConfig -> postgres.ProjectSpec).
 func (p *annotationParser) findRef(typ reflect.Type) (*clijson.SchemaJSON, bool) {
-	typs := []reflect.Type{typ}
+	bfsQueue := []reflect.Type{typ}
 
-	// Check for embedded Databricks Go SDK types.
-	if typ.Kind() == reflect.Struct {
-		for field := range typ.Fields() {
+	for len(bfsQueue) > 0 {
+		ctyp := bfsQueue[0]
+		bfsQueue = bfsQueue[1:]
+
+		if ref, ok := p.lookupSDKType(ctyp); ok {
+			return ref, true
+		}
+
+		if ctyp.Kind() != reflect.Struct {
+			continue
+		}
+
+		for field := range ctyp.Fields() {
 			if !field.Anonymous {
 				continue
 			}
 
 			// Deference current type if it's a pointer.
-			ctyp := field.Type
-			for ctyp.Kind() == reflect.Pointer {
-				ctyp = ctyp.Elem()
+			ftyp := field.Type
+			for ftyp.Kind() == reflect.Pointer {
+				ftyp = ftyp.Elem()
 			}
 
-			typs = append(typs, ctyp)
+			bfsQueue = append(bfsQueue, ftyp)
 		}
-	}
-
-	for _, ctyp := range typs {
-		// Skip if it's not a Go SDK type.
-		if !strings.HasPrefix(ctyp.PkgPath(), "github.com/databricks/databricks-sdk-go") {
-			continue
-		}
-
-		pkgName := path.Base(ctyp.PkgPath())
-		k := fmt.Sprintf("%s.%s", pkgName, ctyp.Name())
-
-		// Skip if the type is not in the spec.
-		if _, ok := p.ref[k]; !ok {
-			continue
-		}
-
-		// Return the first Go SDK type found in the spec.
-		return p.ref[k], true
 	}
 
 	return nil, false
+}
+
+// lookupSDKType returns the spec schema for a Databricks Go SDK type, if the
+// spec defines one for it.
+func (p *annotationParser) lookupSDKType(typ reflect.Type) (*clijson.SchemaJSON, bool) {
+	if !strings.HasPrefix(typ.PkgPath(), "github.com/databricks/databricks-sdk-go") {
+		return nil, false
+	}
+
+	k := fmt.Sprintf("%s.%s", path.Base(typ.PkgPath()), typ.Name())
+	ref, ok := p.ref[k]
+	return ref, ok
 }
 
 // normalizeLaunchStage validates the contract's launch stage and drops GA so it

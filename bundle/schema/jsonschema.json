@@ -1793,12 +1793,15 @@
                     "type": "object",
                     "properties": {
                       "branch_id": {
+                        "description": "The ID to use for the branch; becomes the final component of the branch's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `development` becomes `projects/my-app/branches/development`.",
                         "$ref": "#/$defs/string"
                       },
                       "expire_time": {
+                        "description": "[Beta] Absolute expiration timestamp. When set, the branch will expire at this time.\nMutually exclusive with `ttl` and `no_expiry`. When updating, use `spec.expiration` in the update_mask.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
                       "is_protected": {
+                        "description": "[Beta] When set to true, protects the branch from deletion and reset. Associated compute endpoints and the project cannot be deleted while the branch is protected.",
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
@@ -1806,27 +1809,35 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "no_expiry": {
+                        "description": "[Beta] Explicitly disable expiration. When set to true, the branch will not expire.\nIf set to false, the request is invalid; provide either ttl or expire_time instead.\nMutually exclusive with `expire_time` and `ttl`. When updating, use `spec.expiration` in the update_mask.",
                         "$ref": "#/$defs/bool"
                       },
                       "parent": {
+                        "description": "The project containing this branch (API resource hierarchy). Format: projects/{project_id}\n\nThis field indicates where the branch exists in the resource hierarchy. For point-in-time branching from another branch, see `source_branch`.",
                         "$ref": "#/$defs/string"
                       },
                       "purge_on_delete": {
+                        "description": "When true, permanently delete the branch when the bundle is destroyed. When false or unset, the branch is soft deleted and can be restored within its retention window.",
                         "$ref": "#/$defs/bool"
                       },
                       "replace_existing": {
+                        "description": "When true, take over an existing branch with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a branch that already exists on the project (for example, the production branch created with the project) under bundle management. Only takes effect when the branch is created.",
                         "$ref": "#/$defs/bool"
                       },
                       "source_branch": {
+                        "description": "[Beta] The name of the source branch from which this branch was created (data lineage for point-in-time recovery).\nIf not specified, defaults to the project's default branch.\nFormat: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "source_branch_lsn": {
+                        "description": "[Beta] The Log Sequence Number (LSN) on the source branch from which this branch was created.",
                         "$ref": "#/$defs/string"
                       },
                       "source_branch_time": {
+                        "description": "[Beta] The point in time on the source branch from which this branch was created.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
                       "ttl": {
+                        "description": "[Beta] Relative time-to-live duration. When set, the branch will expire at creation_time + ttl.\nMutually exclusive with `expire_time` and `no_expiry`. When updating, use `spec.expiration` in the update_mask.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       }
                     },
@@ -1846,14 +1857,18 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "The desired state of the Catalog.",
                     "properties": {
                       "branch": {
+                        "description": "[Beta] The resource path of the branch associated with the catalog.\n\nFormat: projects/{project_id}/branches/{branch_id}.",
                         "$ref": "#/$defs/string"
                       },
                       "catalog_id": {
+                        "description": "The ID of the catalog in Unity Catalog; becomes the full resource name. For example, `my_catalog` becomes `catalogs/my_catalog`.",
                         "$ref": "#/$defs/string"
                       },
                       "create_database_if_missing": {
+                        "description": "[Beta] If set to true, the specified postgres_database is created on behalf of the calling user\nif it does not already exist. In this case, the calling user has a role created for\nthem in Postgres if they do not already have one.\n\nDefaults to false, meaning that the request fails if the specified postgres_database does not already exist.",
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
@@ -1861,6 +1876,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "postgres_database": {
+                        "description": "[Beta] The name of the Postgres database inside the specified Lakebase project and branch to be associated with the UC catalog.\nThis database must already exist, unless create_database_if_missing is set to true on creation.\n\nA database can only be registered with one UC catalog at a time.\nTo re-register a database with a different catalog, the existing catalog must be deleted first.\n\nA child branch inherits the fact of parent's registration. This means the same-named database\nin a child branch cannot be registered with a second catalog\nwhile the parent's registration exists. To allow registering the database of a child branch,\ndrop and recreate the database on the child branch.\nThis removes the fact of parent's registration from this branch only.\n\nDoing Point In Time Restore (PITR) prior to the moment before the Postgres DB was registered\nin the Catalog drops the fact of registration of the database. So the user should avoid doing so.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1882,6 +1898,7 @@
                     "type": "object",
                     "properties": {
                       "database_id": {
+                        "description": "The ID to use for the database; becomes the final component of the database's resource name and the database name in Postgres. Must be 4-63 characters and use only characters available in DNS names, as defined by RFC 1123. If not specified, it is generated automatically.",
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
@@ -1889,9 +1906,11 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent": {
+                        "description": "The branch containing this database. Format: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "postgres_database": {
+                        "description": "[Beta] The name of the Postgres database.\n\nThis expects a valid Postgres identifier as specified in the link below.\nhttps://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS\nRequired when creating the Database.\n\nTo rename, pass a valid postgres identifier when updating the Database.",
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
@@ -1899,6 +1918,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "role": {
+                        "description": "[Beta] The name of the role that owns the database.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}\n\nTo change the owner, pass valid existing Role name when updating the Database\n\nA database always has an owner.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1921,21 +1941,27 @@
                     "type": "object",
                     "properties": {
                       "autoscaling_limit_max_cu": {
+                        "description": "[Beta] The maximum number of Compute Units. The maximum value is 64.\nThe difference between the minimum and maximum Compute Units (max - min) must not exceed 16.",
                         "$ref": "#/$defs/float64"
                       },
                       "autoscaling_limit_min_cu": {
+                        "description": "[Beta] The minimum number of Compute Units. Minimum value is 0.5.",
                         "$ref": "#/$defs/float64"
                       },
                       "disabled": {
+                        "description": "[Beta] Whether to restrict connections to the compute endpoint.\nEnabling this option schedules a suspend compute operation.\nA disabled compute endpoint cannot be enabled by a connection or\nconsole action.",
                         "$ref": "#/$defs/bool"
                       },
                       "endpoint_id": {
+                        "description": "The ID to use for the endpoint; becomes the final component of the endpoint's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `primary` becomes `projects/my-app/branches/development/endpoints/primary`.",
                         "$ref": "#/$defs/string"
                       },
                       "endpoint_type": {
+                        "description": "[Beta] The endpoint type. A branch can only have one READ_WRITE endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointType"
                       },
                       "group": {
+                        "description": "[Beta] Settings for optional HA configuration of the endpoint. If unspecified, the endpoint defaults\nto non HA settings, with a single compute backing the endpoint (and no readable secondaries\nfor Read/Write endpoints).",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec"
                       },
                       "lifecycle": {
@@ -1943,18 +1969,23 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "no_suspension": {
+                        "description": "[Beta] When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.\nMutually exclusive with `suspend_timeout_duration`. When updating, use `spec.suspension` in the update_mask.",
                         "$ref": "#/$defs/bool"
                       },
                       "parent": {
+                        "description": "The branch containing this endpoint (API resource hierarchy). Format: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
+                        "description": "When true, take over an existing endpoint with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring an endpoint that already exists on the branch (for example, the primary read-write endpoint created with the branch) under bundle management. Only takes effect when the endpoint is created.",
                         "$ref": "#/$defs/bool"
                       },
                       "settings": {
+                        "description": "[Beta] A collection of settings for a compute endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings"
                       },
                       "suspend_timeout_duration": {
+                        "description": "[Beta] Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).\nMutually exclusive with `no_suspension`. When updating, use `spec.suspension` in the update_mask.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       }
                     },
@@ -1977,24 +2008,31 @@
                     "type": "object",
                     "properties": {
                       "budget_policy_id": {
+                        "description": "[Beta] The desired budget policy to associate with the project.\nSee status.budget_policy_id for the policy that is actually applied to the project.",
                         "$ref": "#/$defs/string"
                       },
                       "custom_tags": {
+                        "description": "[Beta] Custom tags to associate with the project. Forwarded to LBM for billing and cost tracking.\nTo update tags, provide the new tag list and include \"spec.custom_tags\" in the update_mask.\nTo clear all tags, provide an empty list and include \"spec.custom_tags\" in the update_mask.\nTo preserve existing tags, omit this field from the update_mask (or use wildcard \"*\" which auto-excludes empty tags).",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag"
                       },
                       "default_branch": {
+                        "description": "[Beta] The full resource path for the default branch of the project\nFormat: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "default_endpoint_settings": {
+                        "description": "[Beta] A collection of settings for a compute endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
                       },
                       "display_name": {
+                        "description": "[Beta] Human-readable project name. Length should be between 1 and 256 characters.",
                         "$ref": "#/$defs/string"
                       },
                       "enable_pg_native_login": {
+                        "description": "[Beta] Whether to enable PG native password login on all endpoints in this project. Defaults to false.",
                         "$ref": "#/$defs/bool"
                       },
                       "history_retention_duration": {
+                        "description": "[Beta] The number of seconds to retain the shared history for point in time recovery for all branches in this project. Value should be between 172800s (2 days) and 3024000s (35 days).",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       },
                       "lifecycle": {
@@ -2007,12 +2045,15 @@
                         "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "pg_version": {
+                        "description": "[Beta] The major Postgres version number. The set of supported versions may vary; consult the API documentation for currently accepted values.",
                         "$ref": "#/$defs/int"
                       },
                       "project_id": {
+                        "description": "The ID to use for the project; becomes the final component of the project's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `my-app` becomes `projects/my-app`.",
                         "$ref": "#/$defs/string"
                       },
                       "purge_on_delete": {
+                        "description": "When true, permanently delete the project when the bundle is destroyed. When false or unset, the project is soft deleted and can be restored within its retention window.",
                         "$ref": "#/$defs/bool"
                       }
                     },
@@ -2033,15 +2074,15 @@
                     "type": "object",
                     "properties": {
                       "attributes": {
-                        "description": "The desired API-exposed Postgres role attributes to associate with the role.",
+                        "description": "[Beta] The desired API-exposed Postgres role attributes to associate with the role.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAttributes"
                       },
                       "auth_method": {
-                        "description": "How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.",
+                        "description": "[Beta] How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAuthMethod"
                       },
                       "identity_type": {
-                        "description": "The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.",
+                        "description": "[Beta] The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleIdentityType"
                       },
                       "lifecycle": {
@@ -2049,7 +2090,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "membership_roles": {
-                        "description": "Standard roles that this role is a member of.",
+                        "description": "[Beta] Standard roles that this role is a member of.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
                       },
                       "parent": {
@@ -2057,7 +2098,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "postgres_role": {
-                        "description": "The name of the Postgres role. Required when creating the role.",
+                        "description": "[Beta] The name of the Postgres role. Required when creating the role.",
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
@@ -2087,46 +2128,63 @@
                     "type": "object",
                     "properties": {
                       "accelerated_sync": {
-                        "$ref": "#/$defs/bool"
+                        "description": "[Private Preview] When true, enables accelerated sync mode for the initial data load.\nThis significantly improves performance for large tables.\nRequires workspace-level enablement through Lakebase Accelerated Sync preview.",
+                        "$ref": "#/$defs/bool",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "branch": {
+                        "description": "[Beta] The full resource name the branch associated with the table.\n\nFormat: \"projects/{project_id}/branches/{branch_id}\".",
                         "$ref": "#/$defs/string"
                       },
                       "create_database_objects_if_missing": {
+                        "description": "[Beta] If true, the synced table's logical database and schema resources in PG\nwill be created if they do not already exist.\nThe request will fail if this is false and the database/schema do not exist.\n\nDefaults to true if omitted.",
                         "$ref": "#/$defs/bool"
                       },
                       "existing_pipeline_id": {
+                        "description": "[Beta] ID of an existing pipeline to bin-pack this synced table into.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned via the top level pipeline_id attribute.",
                         "$ref": "#/$defs/string"
                       },
                       "extra_columns": {
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecExtraColumn"
+                        "description": "[Private Preview] Extra PostgreSQL-only columns to add to the synced table.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecExtraColumn",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "new_pipeline_spec": {
+                        "description": "[Beta] Specification for creating a new pipeline.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned via the top level pipeline_id attribute.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.NewPipelineSpec"
                       },
                       "postgres_database": {
+                        "description": "[Beta] The Postgres database name where the synced table will be created in.\n\nIf this synced table is created inside a Lakebase Catalog, this attribute can be omitted on creation and is inferred\nfrom the postgres_database associated with the Lakebase Catalog. If specified when inside a Lakebase Catalog, the value must match.\n\nA value must be specified when creating a synced table inside a Standard Catalog.",
                         "$ref": "#/$defs/string"
                       },
                       "primary_key_columns": {
+                        "description": "[Beta] Primary Key columns to be used for data insert/update in the destination.",
                         "$ref": "#/$defs/slice/string"
                       },
                       "scheduling_policy": {
+                        "description": "[Beta] Scheduling policy of the underlying pipeline.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy"
                       },
                       "source_table_full_name": {
+                        "description": "[Beta] Three-part (catalog, schema, table) name of the source Delta table.\n\nFor the corresponding destination table, use any of the two:\n\n* synced_table_id used at the creation of the SyncedTable\n* \"name\" consisting of \"synced_tables/\" prefix and the full name of the destination table.",
                         "$ref": "#/$defs/string"
                       },
                       "synced_table_id": {
+                        "description": "The ID to use for the synced table; becomes the final component of the synced table's resource name. It is the synced table name, a `{catalog}.{schema}.{table}` tuple of Unity Catalog entity names.\n\nIt names both an online view in Unity Catalog, accessible through Lakehouse Federation, and a Postgres table named `{table}` in schema `{schema}` in the connected Postgres database.",
                         "$ref": "#/$defs/string"
                       },
                       "timeseries_key": {
+                        "description": "[Beta] Time series key to deduplicate (tie-break) rows with the same primary key.",
                         "$ref": "#/$defs/string"
                       },
                       "type_overrides": {
+                        "description": "[Beta] Override the default Delta-\u003ePG type mapping for specific columns.\nA TypeOverride with PG_SPECIFIC_TYPE_UNSPECIFIED is rejected; a valid pg_type must be set.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecTypeOverride"
                       }
                     },
@@ -3346,6 +3404,7 @@
                       "markdownDescription": "The pipeline definitions for the bundle, where each key is the name of the pipeline. See [pipelines](https://docs.databricks.com/dev-tools/bundles/resources.html#pipelines)."
                     },
                     "postgres_branches": {
+                      "description": "The Postgres branch definitions for the bundle, where each key is the name of the branch. Each entry defines a branch of a Lakebase Autoscaling project, holding its own copy of the project's databases and roles.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
                     },
                     "postgres_catalogs": {
@@ -3353,15 +3412,19 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
                     },
                     "postgres_databases": {
+                      "description": "The Postgres database definitions for the bundle, where each key is the name of the database. Each entry defines a database on a Lakebase Autoscaling branch.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresDatabase"
                     },
                     "postgres_endpoints": {
+                      "description": "The Postgres endpoint definitions for the bundle, where each key is the name of the endpoint. Each entry defines a compute endpoint that serves queries for a Lakebase Autoscaling branch.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint"
                     },
                     "postgres_projects": {
+                      "description": "The Postgres project definitions for the bundle, where each key is the name of the project. Each entry defines a Lakebase Autoscaling project, the top-level container for branches, endpoints, databases, and roles.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
                     },
                     "postgres_roles": {
+                      "description": "The Postgres role definitions for the bundle, where each key is the name of the role. Each entry defines a role on a Lakebase Autoscaling branch, optionally backed by a Databricks identity.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresRole"
                     },
                     "postgres_synced_tables": {
@@ -12217,15 +12280,15 @@
                   "description": "Attributes that can be granted to a Postgres role. We are only implementing a subset for now, see xref:\nhttps://www.postgresql.org/docs/16/sql-createrole.html\nThe values follow Postgres keyword naming e.g. CREATEDB, BYPASSRLS, etc. which is why they don't include typical\nunderscores between words.",
                   "properties": {
                     "bypassrls": {
-                      "description": "[Beta]",
+                      "description": "[Beta] Grants the Postgres `BYPASSRLS` attribute, which lets the role bypass every row-level security policy.",
                       "$ref": "#/$defs/bool"
                     },
                     "createdb": {
-                      "description": "[Beta]",
+                      "description": "[Beta] Grants the Postgres `CREATEDB` attribute, which lets the role create databases.",
                       "$ref": "#/$defs/bool"
                     },
                     "createrole": {
-                      "description": "[Beta]",
+                      "description": "[Beta] Grants the Postgres `CREATEROLE` attribute, which lets the role create, alter, and drop other roles.",
                       "$ref": "#/$defs/bool"
                     }
                   },
