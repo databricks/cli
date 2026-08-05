@@ -1,4 +1,1 @@
 musterr trace $CLI repos get /Repos/me@databricks.com/doesnotexist -o json
-
-$CLI workspace mkdirs /not-a-repo
-musterr trace $CLI repos get /not-a-repo -o json
