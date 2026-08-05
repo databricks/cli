@@ -164,20 +164,32 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	// Use Workspace.Upload (multipart /api/2.0/workspace/import) instead of the
-	// JSON-body variant of the same endpoint, which caps payloads at 10 MiB for
-	// AUTO format (databricks.webapp.autoExportFormatLimitBytes). The multipart
-	// variant has been verified against a real workspace at 450 MB for regular
-	// files — strictly better than the previous /workspace-files/import-file
-	// endpoint, which has a 200 MiB body cap
-	// (databricks.workspaceFilesystem.maxImportSizeBytes) plus a 305s server-side
-	// request timeout that cuts off uploads above ~400 MB at typical bandwidth.
+	// Use Workspace.Upload (multipart /api/2.0/workspace/import) rather than
+	// Workspace.Import (the JSON-body variant of the same endpoint). The JSON
+	// variant sends content base64-encoded in a `content` field that is capped
+	// at 10 MB, returning MAX_NOTEBOOK_SIZE_EXCEEDED above it; the multipart
+	// variant posts the bytes as a file part instead and is bounded only by the
+	// 500 MB workspace file size limit. See the `content` field description in
+	// .codegen/cli.json (workspace.Import) and
+	// https://docs.databricks.com/aws/en/files/workspace ("Workspace file size
+	// is limited to 500MB").
 	//
-	// Notebook content (any payload with a `# Databricks notebook source` header
-	// detected by format=AUTO) hits a separate 10 MiB cap on the server
-	// (databricks.notebook.maxNotebookSizeBytes). Both /workspace-files/import-file
-	// and /workspace/import enforce this same cap, so switching from the former
-	// to the latter does not regress maximum notebook upload size.
+	// Because format=AUTO lets the server classify each payload, the applicable
+	// limit depends on how the content is classified, not on our request:
+	//
+	//   - Regular file: 500 MB.
+	//   - Notebook in a source format, i.e. content whose extension and
+	//     "Databricks notebook source" header make AUTO import it as a
+	//     notebook: 10 MB.
+	//   - Notebook in IPYNB format: 100 MB.
+	//
+	// Notebook limits are documented at
+	// https://docs.databricks.com/aws/en/notebooks/notebook-limitations
+	// ("Import and export is supported for IPYNB notebooks up to 100 MB" and up
+	// to 10 MB for other formats). They are enforced by the workspace for both
+	// /workspace/import and the /workspace-files/import-file endpoint this
+	// replaced, so migrating between the two does not change the maximum
+	// uploadable notebook size.
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	uploadOpts := []func(*workspace.Import){
 		workspace.UploadFormat(workspace.ImportFormatAuto),

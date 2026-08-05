@@ -1,6 +1,6 @@
 # Confidence checks that /workspace/import is a drop-in for the legacy import-file:
 # verify the CLI's multipart upload pipeline handles the cases that differ between the
-# two endpoints — large content (>10 MiB), empty content, varied extensions/object types,
+# two endpoints — large content (>10 MB), empty content, varied extensions/object types,
 # and non-ASCII / spaced filenames in the multipart `path` field.
 
 # Exclude framework-generated and script-internal files from the sync. We only want the
@@ -14,8 +14,9 @@ test.toml
 .databricks
 EOF
 
-# 12 MiB binary file. The legacy /workspace/import JSON-body cap is 10 MiB; multipart has
-# no such cap. Generated dynamically to keep the repo small.
+# 12 MiB binary file, over the 10 MB cap on the JSON-body variant's base64 `content`
+# field. The multipart variant this test exercises has no such cap. Generated
+# dynamically to keep the repo small.
 python3 -c "open('large.bin', 'wb').write(b'\\0' * (12 * 1024 * 1024))"
 
 # Empty file (multipart encodes an empty `content` part — distinct from JSON's empty string).
