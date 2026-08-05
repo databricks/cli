@@ -284,6 +284,10 @@ func AddDefaultHandlers(server *Server) {
 		return Response{StatusCode: 404}
 	})
 
+	server.Handle("GET", "/api/2.0/fs/directories/{path...}", func(req Request) any {
+		return req.Workspace.FsListDirectory(req.Vars["path"])
+	})
+
 	server.Handle("HEAD", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		if req.Workspace.FileExists(path) {
@@ -326,6 +330,10 @@ func AddDefaultHandlers(server *Server) {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
 		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
+	})
+
+	server.Handle("DELETE", "/api/2.0/fs/files/{path...}", func(req Request) any {
+		return req.Workspace.FsDeleteFile(req.Vars["path"])
 	})
 
 	server.Handle("GET", "/api/2.0/fs/files/{path...}", func(req Request) any {
@@ -572,7 +580,7 @@ func AddDefaultHandlers(server *Server) {
 	// Schemas:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
+		return MapGetUC(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"], "Schema")
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/schemas", func(req Request) any {
@@ -654,7 +662,7 @@ func AddDefaultHandlers(server *Server) {
 	// Volumes:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+		return MapGetUC(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"], "Volume")
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req Request) any {
