@@ -4,8 +4,6 @@ from typing import Literal
 
 class ComputeSpecAcceleratorType(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     Hardware accelerator type for the AiRuntime workload. Per-node
     accelerator count is encoded in the value name (e.g. `GPU_8xH100` means
     8 H100s per node).

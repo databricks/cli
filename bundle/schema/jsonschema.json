@@ -6922,28 +6922,20 @@
                       "doNotSuggest": true
                     },
                     "deployments": {
-                      "description": "[Private Preview] Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.DeploymentSpec",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.DeploymentSpec"
                     },
                     "experiment": {
-                      "description": "[Private Preview] MLflow experiment name for this run. If an experiment with this name\nalready exists under the calling user, the run is appended to it;\notherwise a new experiment is created. To target a specific MLflow\nstorage location (for example, when running as a service principal), set\n`mlflow_experiment_directory`.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] MLflow experiment name for this run. If an experiment with this name\nalready exists under the calling user, the run is appended to it;\notherwise a new experiment is created. To target a specific MLflow\nstorage location (for example, when running as a service principal), set\n`mlflow_experiment_directory`.",
+                      "$ref": "#/$defs/string"
                     },
                     "mlflow_experiment_directory": {
-                      "description": "[Private Preview] Optional workspace directory under which the MLflow experiment named in\n`experiment` is created. Must start with `/Workspace`. Set this when\nrunning as a service principal that has no default user directory; for\nregular users the experiment defaults to the user's home directory.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Optional workspace directory under which the MLflow experiment named in\n`experiment` is created. Must start with `/Workspace`. Set this when\nrunning as a service principal that has no default user directory; for\nregular users the experiment defaults to the user's home directory.",
+                      "$ref": "#/$defs/string"
                     },
                     "mlflow_run": {
-                      "description": "[Private Preview] Optional display name for the MLflow run created under `experiment`. If\nomitted, MLflow generates a default name.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Optional display name for the MLflow run created under `experiment`. If\nomitted, MLflow generates a default name.",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false,
@@ -7125,16 +7117,12 @@
                   "description": "ComputeSpec: compute configuration — accelerator type and total\naccelerator count across all nodes.",
                   "properties": {
                     "accelerator_count": {
-                      "description": "[Private Preview] Total number of accelerators across all nodes. Must be a positive\nmultiple of the per-node accelerator count encoded in `accelerator_type`.\nFor example, `GPU_8xH100` with `accelerator_count: 16` allocates 2 nodes\n(8 GPUs per node).",
-                      "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Total number of accelerators across all nodes. Must be a positive\nmultiple of the per-node accelerator count encoded in `accelerator_type`.\nFor example, `GPU_8xH100` with `accelerator_count: 16` allocates 2 nodes\n(8 GPUs per node).",
+                      "$ref": "#/$defs/int"
                     },
                     "accelerator_type": {
-                      "description": "[Private Preview] Hardware accelerator type (for example, `GPU_1xA10` or `GPU_8xH100`).\nThe number of accelerators per node is encoded in the enum value —\n`GPU_8xH100` means 8 H100 GPUs per node.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeSpecAcceleratorType",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Hardware accelerator type (for example, `GPU_1xA10` or `GPU_8xH100`).\nThe number of accelerators per node is encoded in the enum value —\n`GPU_8xH100` means 8 H100 GPUs per node.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeSpecAcceleratorType"
                     }
                   },
                   "additionalProperties": false,
@@ -7160,9 +7148,9 @@
                     "GPU_8xH100"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -7433,22 +7421,16 @@
                   "description": "DeploymentSpec: configuration for one deployment within an AiRuntimeTask.\nEach entry in `AiRuntimeTask.deployments` describes a group of nodes that\nshare the same command and compute. Many single-program training\nalgorithms use a single entry where every node runs the same command;\nrole-split workloads (driver + worker, parameter server, separate eval\nnode, etc.) use multiple entries.",
                   "properties": {
                     "command_path": {
-                      "description": "[Private Preview] Workspace path of the script to run on each node in this deployment.\nUpload the script to this path and supply the path here. When the task\nruns, the file at this path is run on each node; if it fails, the task\nfails with its exit code.\n\nExample script contents:\n\n# Plain Python:\npython train.py --epochs 10\n\n# Multi-GPU via accelerate:\naccelerate launch train.py --config config.yaml\n\n# Distributed via torchrun:\ntorchrun --nproc_per_node=8 train.py",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Workspace path of the script to run on each node in this deployment.\nUpload the script to this path and supply the path here. When the task\nruns, the file at this path is run on each node; if it fails, the task\nfails with its exit code.\n\nExample script contents:\n\n# Plain Python:\npython train.py --epochs 10\n\n# Multi-GPU via accelerate:\naccelerate launch train.py --config config.yaml\n\n# Distributed via torchrun:\ntorchrun --nproc_per_node=8 train.py",
+                      "$ref": "#/$defs/string"
                     },
                     "compute": {
-                      "description": "[Private Preview] Compute resources allocated to each node in this deployment.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeSpec",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Compute resources allocated to each node in this deployment.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeSpec"
                     },
                     "name": {
-                      "description": "[Private Preview] Optional human-readable name for this deployment (for example, `driver`,\n`worker`, `param_server`). Used for log and UI display. Distinct names\nare recommended so deployments can be told apart, but uniqueness is not\nenforced.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Optional human-readable name for this deployment (for example, `driver`,\n`worker`, `param_server`). Used for log and UI display. Distinct names\nare recommended so deployments can be told apart, but uniqueness is not\nenforced.",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false,
@@ -9115,10 +9097,8 @@
                   "type": "object",
                   "properties": {
                     "ai_runtime_task": {
-                      "description": "[Private Preview] The task runs a multi-node GPU compute workload on Databricks AI Runtime.\nExternal-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiRuntimeTask",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] The task runs a multi-gpu compute workload on Databricks AI Runtime. Specify\nthe accelerator type and count, the command to run, and where the workload's\ncode and MLflow output are stored.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiRuntimeTask"
                     },
                     "alert_task": {
                       "description": "[Public Preview] The task evaluates a Databricks alert and sends notifications to subscribers\nwhen the `alert_task` field is present.",

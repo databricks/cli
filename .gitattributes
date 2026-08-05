@@ -45,6 +45,7 @@ cmd/account/workspace-network-configuration/workspace-network-configuration.go l
 cmd/account/workspaces/workspaces.go linguist-generated=true
 cmd/workspace/access-control/access-control.go linguist-generated=true
 cmd/workspace/agent-bricks/agent-bricks.go linguist-generated=true
+cmd/workspace/ai-gateway/ai-gateway.go linguist-generated=true
 cmd/workspace/ai-search/ai-search.go linguist-generated=true
 cmd/workspace/aibi-dashboard-embedding-access-policy/aibi-dashboard-embedding-access-policy.go linguist-generated=true
 cmd/workspace/aibi-dashboard-embedding-approved-domains/aibi-dashboard-embedding-approved-domains.go linguist-generated=true
