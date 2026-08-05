@@ -38,6 +38,21 @@ const (
 	deliverySkip
 )
 
+// String returns the delivery name used in `list --output json`, so the install
+// plan and the list output name the same thing the same way.
+func (d delivery) String() string {
+	switch d {
+	case deliveryPlugin:
+		return "plugin"
+	case deliverySkills:
+		return "skills"
+	case deliverySkip:
+		return "skip"
+	default:
+		return "unknown"
+	}
+}
+
 // agentPlanItem is the resolved plan for one agent: what we'll do and why.
 type agentPlanItem struct {
 	agent    *agents.Agent

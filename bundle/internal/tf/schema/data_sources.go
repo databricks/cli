@@ -9,6 +9,12 @@ type DataSources struct {
 	AccountNetworkPolicy                        map[string]any `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2              map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                            map[string]any `json:"databricks_account_setting_v2,omitempty"`
+	AiGatewayMcpService                         map[string]any `json:"databricks_ai_gateway_mcp_service,omitempty"`
+	AiGatewayMcpServices                        map[string]any `json:"databricks_ai_gateway_mcp_services,omitempty"`
+	AiGatewayModelProviderService               map[string]any `json:"databricks_ai_gateway_model_provider_service,omitempty"`
+	AiGatewayModelProviderServices              map[string]any `json:"databricks_ai_gateway_model_provider_services,omitempty"`
+	AiGatewayModelService                       map[string]any `json:"databricks_ai_gateway_model_service,omitempty"`
+	AiGatewayModelServices                      map[string]any `json:"databricks_ai_gateway_model_services,omitempty"`
 	AiSearchEndpoint                            map[string]any `json:"databricks_ai_search_endpoint,omitempty"`
 	AiSearchEndpoints                           map[string]any `json:"databricks_ai_search_endpoints,omitempty"`
 	AiSearchIndex                               map[string]any `json:"databricks_ai_search_index,omitempty"`
@@ -171,6 +177,12 @@ func NewDataSources() *DataSources {
 		AccountNetworkPolicy:            make(map[string]any),
 		AccountSettingUserPreferenceV2:  make(map[string]any),
 		AccountSettingV2:                make(map[string]any),
+		AiGatewayMcpService:             make(map[string]any),
+		AiGatewayMcpServices:            make(map[string]any),
+		AiGatewayModelProviderService:   make(map[string]any),
+		AiGatewayModelProviderServices:  make(map[string]any),
+		AiGatewayModelService:           make(map[string]any),
+		AiGatewayModelServices:          make(map[string]any),
 		AiSearchEndpoint:                make(map[string]any),
 		AiSearchEndpoints:               make(map[string]any),
 		AiSearchIndex:                   make(map[string]any),

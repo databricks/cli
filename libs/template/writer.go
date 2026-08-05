@@ -23,6 +23,23 @@ const (
 	schemaFileName  = "databricks_template_schema.json"
 )
 
+// InitResult describes what a template materialized. It is reported by
+// `bundle init -o json`.
+//
+// The field names are part of the CLI's JSON output contract; renaming one is a
+// breaking change for callers. New fields must be additive so that consumers
+// tolerate older CLI versions that do not emit them.
+type InitResult struct {
+	// The files the template wrote, relative to the output directory,
+	// slash-separated and sorted. Files removed by a {{skip}} directive are not
+	// listed.
+	//
+	// The paths are relative rather than absolute, and slash-separated rather
+	// than OS-specific, so that the contract is identical for the local and
+	// workspace filers.
+	Outputs []string `json:"outputs"`
+}
+
 type Writer interface {
 	// Configure the writer with:
 	// 1. The path to the config file (if any) that contains input values for the
@@ -35,6 +52,10 @@ type Writer interface {
 
 	// Log telemetry for the template initialization event.
 	LogTelemetry(ctx context.Context)
+
+	// InitResult returns what the template materialized. It must be called after
+	// a successful Materialize.
+	InitResult() *InitResult
 }
 
 type defaultWriter struct {
@@ -158,6 +179,13 @@ func (tmpl *defaultWriter) Materialize(ctx context.Context, reader Reader) error
 	}
 
 	return tmpl.printSuccessMessage(ctx)
+}
+
+func (tmpl *defaultWriter) InitResult() *InitResult {
+	outputs := slices.Clone(tmpl.renderer.persistedPaths)
+	slices.Sort(outputs)
+
+	return &InitResult{Outputs: outputs}
 }
 
 func (tmpl *defaultWriter) LogTelemetry(ctx context.Context) {
