@@ -69,62 +69,20 @@ Exit code: 1
 }
 
 >>> [CLI] bundle plan -o json
-Warning: dashboard "dashboard1" has been modified remotely
-  at resources.dashboards.dashboard1
-  in databricks.yml:7:7
-
-This dashboard has been modified remotely since the last bundle deployment.
-These modifications are untracked and will be overwritten on deploy.
-
-Make sure that the local dashboard definition matches what you intend to deploy
-before proceeding with the deployment.
-
-To overwrite the remote changes with your local version, use --force.
-The remote modifications will be lost.
-
 json.plan.resources.dashboards.dashboard1.new_state.value.published = true;
 json.plan.resources.dashboards.dashboard1.remote_state.etag = "[ETAG_2]";
 json.plan.resources.dashboards.dashboard1.remote_state.published = false;
-json.plan.resources.dashboards.dashboard1.changes.etag.action = "update";
-json.plan.resources.dashboards.dashboard1.changes.etag.old = "[ETAG_1]";
+json.plan.resources.dashboards.dashboard1.changes.etag.action = "skip";
+json.plan.resources.dashboards.dashboard1.changes.etag.reason = "custom";
+json.plan.resources.dashboards.dashboard1.changes.etag.old = "[ETAG_2]";
 json.plan.resources.dashboards.dashboard1.changes.etag.remote = "[ETAG_2]";
 json.plan.resources.dashboards.dashboard1.changes.published.action = "update";
-json.plan.resources.dashboards.dashboard1.changes.published.old = true;
+json.plan.resources.dashboards.dashboard1.changes.published.old = false;
 json.plan.resources.dashboards.dashboard1.changes.published.new = true;
 json.plan.resources.dashboards.dashboard1.changes.published.remote = false;
 json.plan.resources.dashboards.dashboard1.changes.serialized_dashboard.reason = "etag_based";
 
 >>> [CLI] bundle deploy
-Error: dashboard "dashboard1" has been modified remotely
-  at resources.dashboards.dashboard1
-  in databricks.yml:7:7
-
-This dashboard has been modified remotely since the last bundle deployment.
-These modifications are untracked and will be overwritten on deploy.
-
-Make sure that the local dashboard definition matches what you intend to deploy
-before proceeding with the deployment.
-
-To overwrite the remote changes with your local version, use --force.
-The remote modifications will be lost.
-
-
-Exit code: 1
-
->>> print_requests.py //lakeview/dashboards
-
->>> [CLI] lakeview get [DASHBOARD1_ID]
-{
-  "display_name": "my dashboard renamed",
-  "etag": "[ETAG_2]"
-}
-
->>> [CLI] lakeview get-published [DASHBOARD1_ID]
-{
-  "display_name": "my dashboard"
-}
-
->>> [CLI] bundle deploy --force
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
 Deploying resources...
 Updating deployment state...
@@ -153,7 +111,7 @@ Deployment complete!
 >>> [CLI] lakeview get [DASHBOARD1_ID]
 {
   "display_name": "my dashboard renamed",
-  "etag": "[ETAG_3]"
+  "etag": "[ETAG_2]"
 }
 
 >>> [CLI] lakeview get-published [DASHBOARD1_ID]

@@ -355,7 +355,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *StateSaver, co
 	return createResp.DashboardId, responseToState(createResp, publishResp, dashboard.SerializedDashboard, config.Published), nil
 }
 
-func (r *ResourceDashboard) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {
+func (r *ResourceDashboard) DoUpdate(ctx context.Context, engine *StateSaver, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return nil, err
@@ -375,14 +375,14 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, _ *StateSaver, id stri
 		return nil, err
 	}
 
-	// Persist the etag in state.
-	// Note: we intentionally do NOT save state here with Published=false before
-	// publishing. If we did, and publish fails, the next plan would see
-	// remote.Published=true == desired=true and skip (remote_already_set), making
-	// the stale published content permanently unrecoverable, even with --force.
-	// By not saving, state retains the pre-update etag; the next plan detects the
-	// etag mismatch as "modified remotely" and blocks — recoverable with --force.
+	// Persist the new etag and Published=false before publishing: the update bumped the
+	// draft, so the previously-published content is now stale. If the publish below
+	// fails, the next plan compares the desired Published=true against a remote that
+	// DoRead reports as false (revision_create_time < update_time) and republishes on a
+	// plain deploy. Saving the post-update etag also keeps state in sync with remote, so
+	// CheckDashboardsModifiedRemotely does not misreport this as an out-of-band edit.
 	config.Etag = updateResp.Etag
+	SaveStateWith(ctx, engine, id, config, &config.Published, false)
 
 	var publishResp *dashboards.PublishedDashboard
 	// Note, today config.Published is always true (we do not have this field in input config).
