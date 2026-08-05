@@ -175,6 +175,27 @@ func TestPipelineReportsCancellationNotProvisionFailure(t *testing.T) {
 	assert.False(t, res.OK)
 	// The wrapped cause is the context error, so errors.Is works upstream.
 	assert.ErrorIs(t, pe, context.Canceled)
+
+	// The phase's own error is kept as a second cause, not discarded: a genuine
+	// failure can race with the signal, and it is the only diagnostic there is.
+	assert.Contains(t, pe.Error(), "signal: terminated",
+		"the phase's cause must survive the reclassification")
+
+	// Text mode prints the errored phase's Detail while --json prints the error
+	// object; they must agree (see PipelineError.MarshalJSON). Detail is set when
+	// the phase fails, i.e. before the reclassification, so this catches a stale one.
+	var detail string
+	for _, ph := range res.Phases {
+		if ph.Phase == PhaseProvision {
+			detail = ph.Detail
+		}
+	}
+	assert.Equal(t, pe.Error(), detail, "text-mode phase detail must match the JSON error")
+	assert.NotContains(t, detail, "provision failed",
+		"a Ctrl-C must not read as a provision failure in text mode")
+
+	// Both causes render on one line: a phase row is a single line of output.
+	assert.NotContains(t, pe.Error(), "\n", "the error must stay single-line")
 }
 
 func TestPipelineCheckReRunPlanMatchesRealRun(t *testing.T) {

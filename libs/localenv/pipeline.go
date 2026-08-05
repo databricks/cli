@@ -89,10 +89,26 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 		// broke. Reclassify to E_CANCELED here — the single funnel where ctx is in
 		// scope — keeping the recorded FailurePhase and diskMutated so the consumer
 		// still knows where we stopped and whether disk was touched.
+		//
+		// The phase's own error is kept as the wrapped cause rather than replaced:
+		// a real failure can race with the signal (uv sync failing on a dependency
+		// conflict while the user gives up and hits Ctrl-C), and that cause is the
+		// only diagnostic there is.
 		if ctx.Err() != nil && p.res.Error != nil {
 			p.res.Error.Code = ErrCanceled
 			p.res.Error.Msg = "interrupted"
-			p.res.Error.Err = ctx.Err()
+			// Two %w verbs keep both the context error and the phase's cause
+			// matchable by errors.Is, on one line — errors.Join would embed a
+			// newline and break the single-line phase row text mode prints.
+			cause := ctx.Err()
+			if inner := p.res.Error.Err; inner != nil {
+				cause = fmt.Errorf("%w; %w", ctx.Err(), inner)
+			}
+			p.res.Error.Err = cause
+			// fail() already snapshotted the pre-reclassification text into the
+			// errored phase's Detail, which is what text mode prints. Re-sync it so
+			// text and --json agree on cancellation (see PipelineError.MarshalJSON).
+			p.syncFailureDetail()
 			return p.res, p.res.Error
 		}
 		return p.res, err
@@ -485,6 +501,22 @@ func (p *Pipeline) fail(phase PhaseName, diskMutated bool, pe *PipelineError) er
 	}
 	p.res.Error = pe
 	return pe
+}
+
+// syncFailureDetail re-copies the recorded error's text into its phase's Detail.
+// fail() sets Detail when the failure happens; a caller that rewrites the error
+// afterwards (Run's E_CANCELED reclassification) must call this so text output —
+// which prints Detail — keeps agreeing with the --json error object.
+func (p *Pipeline) syncFailureDetail() {
+	if p.res.Error == nil {
+		return
+	}
+	for i := range p.res.Phases {
+		if p.res.Phases[i].Phase == p.res.Error.FailurePhase {
+			p.res.Phases[i].Detail = p.res.Error.Error()
+			return
+		}
+	}
 }
 
 // asPipelineError returns err as a *PipelineError if it already is one, otherwise

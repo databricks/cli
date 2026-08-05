@@ -54,30 +54,55 @@ func addComputeFlags(cmd *cobra.Command) {
 	// consumer relies on, instead of a bare pre-RunE Cobra error.
 }
 
-// runPipeline builds and runs the setup-local Pipeline.
-func runPipeline(cmd *cobra.Command) error {
-	// The CLI root doesn't cancel ctx on signals, so handle them here: the first
-	// SIGINT (Ctrl-C) or SIGTERM (how a supervisor, CI timeout, or VS Code stops
-	// the child) cancels ctx, which propagates to the uv subprocesses the pipeline
-	// spawns so they are reaped instead of orphaned mid-provision.
-	//
-	// We use signal.Notify + cancel() rather than signal.NotifyContext on purpose:
-	// NotifyContext suppresses the default signal disposition for the rest of the
-	// process, so a second Ctrl-C would do nothing during the group's SIGKILL grace
-	// window (WithProcessGroup also moves uv out of the foreground process group, so
-	// the tty no longer delivers Ctrl-C to it directly — this handler is the only
-	// path). Leaving the default disposition intact means a second signal still
-	// terminates the CLI immediately, preserving the user's escape hatch. Mirrors
-	// experimental/ssh/internal/client and cmd/apps/run_local.
-	ctx, cancel := context.WithCancel(cmd.Context())
-	defer cancel()
+// watchInterruptSignals cancels ctx on the first SIGINT (Ctrl-C) or SIGTERM (how
+// a supervisor, CI timeout, or VS Code stops the child), which propagates to the
+// uv subprocesses the pipeline spawns so they are reaped instead of orphaned
+// mid-provision. The CLI root installs no signal handler of its own.
+//
+// The returned stop function uninstalls the handler and joins the goroutine; the
+// caller must defer it.
+//
+// The handler must give the *second* signal back to the OS. signal.Notify (like
+// signal.NotifyContext, which wraps it) disables the default disposition for
+// SIGINT/SIGTERM for as long as the channel stays registered, so without the
+// signal.Stop below a second Ctrl-C is merely buffered and dropped: the user
+// would have no way to abort during the process group's SIGKILL grace window.
+// Stopping the relay as soon as the first signal lands restores SIG_DFL, so a
+// second signal terminates the CLI immediately. That matters more here than in
+// most commands because WithProcessGroup moves uv out of the foreground process
+// group, so the tty no longer delivers Ctrl-C to it directly — this handler is
+// the only delivery path.
+func watchInterruptSignals(ctx context.Context, cancel context.CancelFunc) func() {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	defer signal.Stop(sigCh)
+
+	done := make(chan struct{})
 	go func() {
-		<-sigCh
-		cancel()
+		defer close(done)
+		// Selecting on ctx.Done() too lets the goroutine exit on the normal (no
+		// signal) path rather than blocking on sigCh for the rest of the process:
+		// signal.Stop unregisters the channel but never closes it.
+		select {
+		case <-sigCh:
+			signal.Stop(sigCh)
+			cancel()
+		case <-ctx.Done():
+		}
 	}()
+
+	return func() {
+		signal.Stop(sigCh)
+		// Wake the goroutine in case neither sigCh nor ctx.Done has fired.
+		cancel()
+		<-done
+	}
+}
+
+// runPipeline builds and runs the setup-local Pipeline.
+func runPipeline(cmd *cobra.Command) error {
+	ctx, cancel := context.WithCancel(cmd.Context())
+	defer cancel()
+	defer watchInterruptSignals(ctx, cancel)()
 
 	cluster, _ := cmd.Flags().GetString("cluster-id")
 	clusterName, _ := cmd.Flags().GetString("cluster-name")
