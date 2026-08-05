@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Confirms directory entries derived from workspace object infos report the
+// name, type, and size of each object type the workspace can return.
 func TestWorkspaceFilesDirEntry(t *testing.T) {
 	entries := wsfsDirEntriesFromObjectInfos([]workspace.ObjectInfo{
 		{
@@ -68,6 +70,8 @@ func TestWorkspaceFilesDirEntry(t *testing.T) {
 	assert.True(t, i2.IsDir())
 }
 
+// Confirms the workspace ID routing header is set only when the client config
+// carries a workspace ID, and that a nil workspace client yields no headers.
 func TestWorkspaceFilesClientWorkspaceIDHeaders(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -104,6 +108,11 @@ func TestWorkspaceFilesClientWorkspaceIDHeaders(t *testing.T) {
 	})
 }
 
+// Confirms Write uploads through Workspace.Upload with format=AUTO, and that
+// the overwrite flag is set only when OverwriteIfExists is passed. AUTO is what
+// lets the server decide between storing content as a file or a notebook, so
+// the format is asserted explicitly rather than left to the SDK default
+// (SOURCE), which would import every file as a notebook.
 func TestWorkspaceFilesClientWriteSuccess(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -157,6 +166,11 @@ func TestWorkspaceFilesClientWriteSuccess(t *testing.T) {
 	}
 }
 
+// Confirms each error /workspace/import returns is translated to the filer's
+// own error type, and that unrecognized errors pass through unchanged. The
+// endpoint signals an occupied path with three different status/error_code
+// combinations (see the comment on Write), so all three are covered here to
+// pin the mapping the rest of the CLI relies on.
 func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -287,6 +301,8 @@ func writeWithImportError(t *testing.T, body map[string]any) error {
 	return err
 }
 
+// Confirms a type-mismatch collision is recognized from the structured
+// AIP-193 ErrorInfo reason, independent of the error message wording.
 func TestWorkspaceFilesClientWriteTypeMismatchReason(t *testing.T) {
 	// The message is deliberately one the fallback string match does not
 	// recognize, to prove the branch fires on the structured reason alone.
@@ -306,6 +322,8 @@ func TestWorkspaceFilesClientWriteTypeMismatchReason(t *testing.T) {
 	assert.ErrorAs(t, err, &target)
 }
 
+// Confirms an ErrorInfo carrying some other reason is not mistaken for a path
+// collision, so the reason check above cannot swallow unrelated failures.
 func TestWorkspaceFilesClientWriteUnrelatedReasonPassesThrough(t *testing.T) {
 	err := writeWithImportError(t, map[string]any{
 		"error_code": "INVALID_PARAMETER_VALUE",
@@ -323,6 +341,10 @@ func TestWorkspaceFilesClientWriteUnrelatedReasonPassesThrough(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, aerr.StatusCode)
 }
 
+// Confirms a 404 from a missing parent directory triggers a mkdirs call and a
+// retry of the upload when CreateParentDirectories is passed. The retry re-reads
+// the buffered body, so this also covers that the content survives the second
+// attempt.
 func TestWorkspaceFilesClientWriteCreatesParentDirectories(t *testing.T) {
 	mw := mocks.NewMockWorkspaceClient(t)
 	workspaceApi := mw.GetMockWorkspaceAPI()
@@ -346,6 +368,8 @@ func TestWorkspaceFilesClientWriteCreatesParentDirectories(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// Confirms a workspace get-status payload unmarshals into wsfsFileInfo and that
+// the fs.FileInfo methods derived from it report the expected values.
 func TestWorkspaceFilesClient_wsfsUnmarshal(t *testing.T) {
 	payload := `
 		{
@@ -412,6 +436,8 @@ func statWithError(t *testing.T, statusCode int, errorCode string) error {
 	return err
 }
 
+// Confirms a 403 from get-status surfaces as an APIError rather than being
+// remapped, so callers can distinguish it from a missing file.
 func TestWorkspaceFilesClientStatForbidden(t *testing.T) {
 	err := statWithError(t, 403, "PERMISSION_DENIED")
 	var apiErr *apierr.APIError
@@ -419,6 +445,8 @@ func TestWorkspaceFilesClientStatForbidden(t *testing.T) {
 	assert.Equal(t, 403, apiErr.StatusCode)
 }
 
+// Confirms a 500 from get-status surfaces as an APIError and is not treated as
+// a missing file.
 func TestWorkspaceFilesClientStatInternalError(t *testing.T) {
 	err := statWithError(t, 500, "INTERNAL_ERROR")
 	var apiErr *apierr.APIError
@@ -426,6 +454,8 @@ func TestWorkspaceFilesClientStatInternalError(t *testing.T) {
 	assert.Equal(t, 500, apiErr.StatusCode)
 }
 
+// Confirms RESOURCE_DOES_NOT_EXIST maps to fs.ErrNotExist so the filer plugs
+// into the io/fs error conventions callers check against.
 func TestWorkspaceFilesClientStatNotFound(t *testing.T) {
 	err := statWithError(t, 404, "RESOURCE_DOES_NOT_EXIST")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
