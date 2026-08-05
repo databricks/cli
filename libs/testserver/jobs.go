@@ -27,15 +27,12 @@ var errNoCodeInWorkspace = errors.New("task code is not in the workspace")
 
 // taskFailureMessage is what a real workspace reports for a task that failed: a
 // generic pointer at the run output, on both the task and the run. Measured on
-// serverless against a spark_python_task that raises. The run-level message
-// wraps it as "Task <key> failed with message: <this>." and ends in a period,
-// which the task-level one does not.
+// serverless against a spark_python_task that raises. The run-level message wraps
+// it as "Task <key> failed with message: <this>." with a trailing period.
 const taskFailureMessage = "Workload failed, see run output for details"
 
 // taskFailure splits a failed task's output the way jobs/runs/get-output does:
-// error carries the exception, error_trace the traceback. Reporting the whole
-// output as the error instead would leak this server's own wording into the
-// message a deploy names the task with.
+// error carries the exception, error_trace the traceback.
 type taskFailure struct {
 	message string
 	trace   string
@@ -950,8 +947,8 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	return Response{Body: run}
 }
 
-// JobsCancelRun cancels a run that is still going. The real API settles the run
-// asynchronously; doing it at once is enough for the caller, which polls runs/get.
+// JobsCancelRun settles a run that is still going. The real API cancels
+// asynchronously; the caller polls runs/get either way.
 func (s *FakeWorkspace) JobsCancelRun(req Request) Response {
 	var request jobs.CancelRun
 	if err := json.Unmarshal(req.Body, &request); err != nil {

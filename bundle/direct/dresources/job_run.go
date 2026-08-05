@@ -171,13 +171,11 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	// A run can take hours, so report the run page as soon as it is known. pageURL
 	// outlives the poll so an abandoned wait can still link the run.
 	var pageURL string
-	// Every state the run passes through is logged, but only its outcome is
-	// reported: how many states a run passes through varies with how long its
-	// compute takes to start, and a deploy's output has to stay reproducible.
+	// Every state is logged, but only the outcome is reported: how many states a
+	// run passes through varies with its compute, and output has to stay reproducible.
 	var logged jobs.RunState
-	// Polled here rather than through the SDK waiter, which halts with an error of
-	// its own on the INTERNAL_ERROR a run whose task failed reports, hiding the
-	// task that failed.
+	// The poll returns the run in whatever state it settles in, so runFailedError
+	// can name the task that failed.
 	run, err := retries.Poll(ctx, jobRunTimeout, func() (*jobs.Run, *retries.Err) {
 		var req jobs.GetRunRequest
 		req.RunId = runID
@@ -208,7 +206,7 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 		return nil, fmt.Errorf("%w%s", err, runPageLine(pageURL))
 	}
 	if run.State.ResultState != jobs.RunResultStateSuccess {
-		// The error names the outcome, so it is not reported twice.
+		// The error names the outcome.
 		return nil, r.runFailedError(ctx, run)
 	}
 	reportRunLine(ctx, runID, string(run.State.ResultState))
@@ -342,8 +340,8 @@ func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *JobRunState
 	return r.client.Jobs.DeleteRunByRunId(ctx, runID)
 }
 
-// cancelRun cancels a run and waits for it to settle. Cancellation is
-// asynchronous, so a delete issued right after would still be rejected.
+// cancelRun cancels a run and waits for it to settle, since cancellation is
+// asynchronous and the delete that follows needs a settled run.
 func (r *ResourceJobRun) cancelRun(ctx context.Context, runID int64) error {
 	waiter, err := r.client.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID})
 	if err != nil {
