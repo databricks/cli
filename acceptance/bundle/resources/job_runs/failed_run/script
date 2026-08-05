@@ -18,6 +18,7 @@ title "the failed run is recorded, and not having succeeded is drift"
 trace read_id.py my_run
 trace $CLI bundle plan
 
+# Name the job too, so the run-now bodies below say which number it is.
 read_id.py my_job > /dev/null
 
 # The recreate re-runs the job instead of accepting the recorded failure.

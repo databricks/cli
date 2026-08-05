@@ -16,32 +16,6 @@ type JobProgressEvent struct {
 	State     jobs.RunState `json:"state"`
 }
 
-// JobStateTracker turns the polls of a job run into one event per state change.
-type JobStateTracker struct {
-	prev *jobs.RunState
-}
-
-// Poll returns the event to report, or nil when the state has not changed. first
-// is true for the state the run is seen in initially, where callers also report
-// the run page URL.
-func (t *JobStateTracker) Poll(run *jobs.Run) (event *JobProgressEvent, first bool) {
-	if run.State == nil {
-		return nil, false
-	}
-	first = t.prev == nil
-	if !first && t.prev.LifeCycleState == run.State.LifeCycleState && t.prev.ResultState == run.State.ResultState {
-		return nil, false
-	}
-	t.prev = run.State
-	return &JobProgressEvent{
-		Timestamp: time.Now(),
-		JobId:     run.JobId,
-		RunId:     run.RunId,
-		RunName:   run.RunName,
-		State:     *run.State,
-	}, first
-}
-
 func (event *JobProgressEvent) String() string {
 	result := strings.Builder{}
 	result.WriteString(event.Timestamp.Format("2006-01-02 15:04:05") + " ")

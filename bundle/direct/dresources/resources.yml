@@ -139,42 +139,45 @@ resources:
       - field: job_clusters[*].new_cluster.data_security_mode
 
   job_runs:
-    # Every jobs.RunNow field: the request cannot drift, and GetRun does not echo
-    # it back faithfully (job_parameters come back resolved against the job's
-    # defaults, request-only fields not at all). TestJobRunIgnoresEveryRequestField
-    # keeps the list in step with the SDK. result_state is left out on purpose:
-    # comparing it against the remote re-triggers a run that did not succeed.
+    # Every jobs.RunNow field is listed, so nothing the request carries is drift.
+    # TestJobRunIgnoresEveryRequestField keeps the list in step with the SDK.
+    # result_state is left out on purpose: comparing it against the remote
+    # re-triggers a run that did not succeed.
     ignore_remote_changes:
-      - field: dbt_commands
-        reason: immutable
-      - field: idempotency_token
-        reason: immutable
-      - field: jar_params
-        reason: immutable
       - field: job_id
         reason: immutable
+      # GetRun reports job_parameters resolved against the job's defaults, and
+      # nests the rest under overriding_parameters.
+      - field: dbt_commands
+        reason: effective_vs_requested
+      - field: jar_params
+        reason: effective_vs_requested
       - field: job_parameters
-        reason: immutable
+        reason: effective_vs_requested
       - field: notebook_params
-        reason: immutable
-      - field: only
-        reason: immutable
-      - field: performance_target
-        reason: immutable
+        reason: effective_vs_requested
       - field: pipeline_params
-        reason: immutable
+        reason: effective_vs_requested
       - field: python_named_params
-        reason: immutable
+        reason: effective_vs_requested
       - field: python_params
-        reason: immutable
-      - field: queue
-        reason: immutable
+        reason: effective_vs_requested
       - field: spark_submit_params
-        reason: immutable
+        reason: effective_vs_requested
       - field: sql_params
-        reason: immutable
+        reason: effective_vs_requested
+      # Fields the run-now request carries that GetRun never reports back.
+      - field: idempotency_token
+        reason: not_returned_by_api
+      - field: only
+        reason: not_returned_by_api
+      - field: performance_target
+        reason: not_returned_by_api
+      - field: queue
+        reason: not_returned_by_api
     # A run is immutable and fire-once, so any change recreates it. Omitting
     # `field` matches every field (root; see TestFieldRuleOmittedIsRoot).
+    # `field: ""` would instead match nothing.
     recreate_on_changes:
       - reason: immutable
 
