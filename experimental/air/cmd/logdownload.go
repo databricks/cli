@@ -101,7 +101,7 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 	// Reported before the no-logs check, so a run whose every node failed explains
 	// why instead of looking like a run that never logged.
 	for _, node := range sortedNodeKeys(failures) {
-		cmdio.LogString(ctx, fmt.Sprintf("warning: node %d logs could not be downloaded: %s", node, failures[node]))
+		cmdio.LogString(ctx, fmt.Sprintf("warning: node %d: %s", node, failures[node]))
 	}
 
 	if len(nodeLogs) == 0 {
@@ -111,15 +111,20 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 
 	cmdio.LogString(ctx, fmt.Sprintf("Downloaded logs from %d of %d node(s) to %s", len(nodeLogs), len(nodes), dir))
 	for _, node := range sortedNodeKeys(nodeLogs) {
-		cmdio.LogString(ctx, fmt.Sprintf("  node %d: %s", node, nodeLogs[node]))
+		// Flag it on the file's own line, not just in the warning above.
+		suffix := ""
+		if _, truncated := failures[node]; truncated {
+			suffix = " (incomplete)"
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("  node %d: %s%s", node, nodeLogs[node], suffix))
 	}
 	return status.succeeded(), nil
 }
 
 // downloadAllNodeLogs downloads the nodes' logs in parallel. It returns a
 // node->path map for the nodes that had logs and a node->reason map for those
-// that failed. The log-dir layout is run-wide, so it is probed once here rather
-// than by every worker.
+// that failed; a truncated node appears in both. The log-dir layout is run-wide,
+// so it is probed once here rather than by every worker.
 func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, dir string, nodes []int, attempt int) (map[int]string, map[int]string, error) {
 	// -1 (latest) maps to attempt 0's directory, as on the streaming path.
 	attemptDir := max(attempt, 0)
@@ -140,8 +145,10 @@ func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlf
 				// Interrupting the command must not look like a node with no logs.
 				return err
 			case err != nil:
-				// One bad node shouldn't abort the rest of the download.
+				// One bad node shouldn't abort the rest. A truncated node
+				// returns a path as well as an error, so keep both.
 				reasons[i] = err.Error()
+				paths[i] = path
 			default:
 				paths[i] = path
 			}
@@ -166,9 +173,10 @@ func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlf
 }
 
 // downloadNodeLog streams a node's chunks in order into dir/logs/node_<n>.log,
-// returning the path, or "" if the node logged nothing. The bytes are copied
-// verbatim: a download should reproduce the log exactly, so it must not round-trip
-// through lines (which would rewrite line endings and cap long lines).
+// returning the path, or "" if the node logged nothing. A partial download
+// returns both a path and an error. The bytes are copied verbatim: a download
+// should reproduce the log exactly, so it must not round-trip through lines
+// (which would rewrite line endings and cap long lines).
 func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string, node, attempt int, withAttempt bool, dir string) (string, error) {
 	logDir := constructLogPath(node, attempt, withAttempt)
 	chunks, err := listLogChunks(ctx, w, mlflowRunID, logDir)
@@ -200,7 +208,9 @@ func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowR
 				os.Remove(outPath)
 				return "", err
 			}
-			break
+			// Keep the bytes so far, but report it: a log cut short silently
+			// reads as complete.
+			return outPath, fmt.Errorf("truncated at chunk %d: %w", chunk.index, err)
 		}
 		written += n
 	}

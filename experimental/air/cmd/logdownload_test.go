@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -336,4 +337,68 @@ func TestDownloadAllNodeLogsAttemptPrefixedLayout(t *testing.T) {
 	body, err := os.ReadFile(nodeLogs[0])
 	require.NoError(t, err)
 	assert.Contains(t, string(body), "logs/attempt_0/node_0")
+}
+
+// truncatingServer lists two chunks for node 0 but fails the second one's
+// credential request, so the node downloads partially.
+func truncatingServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	var base string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.0/mlflow/artifacts/list":
+			p := r.URL.Query().Get("path")
+			if p == "logs" {
+				_, _ = w.Write([]byte(`{"files": [{"path": "logs/node_0", "is_dir": true}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"files": [
+				{"path": "` + p + `/logs-0.chunk.txt"},
+				{"path": "` + p + `/logs-1.chunk.txt"}
+			]}`))
+		case "/api/2.0/mlflow/artifacts/credentials-for-read":
+			if strings.HasSuffix(r.URL.Query().Get("path"), "logs-1.chunk.txt") {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(`{"error_code": "INTERNAL", "message": "boom"}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"credential_infos": [{"signed_uri": "` + base + `/presigned"}]}`))
+		case "/presigned":
+			_, _ = w.Write([]byte("first chunk\n"))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	base = srv.URL
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestDownloadNodeLogReportsTruncation(t *testing.T) {
+	w := newTestWorkspaceClient(t, truncatingServer(t).URL)
+	dir := t.TempDir()
+
+	// Chunk 0 succeeded and chunk 1 failed: keep the bytes, but return an error
+	// so the truncation isn't silent.
+	path, err := downloadNodeLog(t.Context(), w, "run1", 0, 0, false, dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "truncated at chunk 1")
+	require.NotEmpty(t, path)
+
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "first chunk\n", string(got))
+}
+
+func TestDownloadAllNodeLogsKeepsTruncatedNode(t *testing.T) {
+	w := newTestWorkspaceClient(t, truncatingServer(t).URL)
+
+	// A truncated node lands in both maps, so it is still listed as downloaded
+	// while being reported as incomplete.
+	nodeLogs, failures, err := downloadAllNodeLogs(t.Context(), w, "run1", t.TempDir(), []int{0}, -1)
+	require.NoError(t, err)
+	require.Contains(t, nodeLogs, 0)
+	assert.FileExists(t, nodeLogs[0])
+	require.Contains(t, failures, 0)
+	assert.Contains(t, failures[0], "truncated at chunk 1")
 }
