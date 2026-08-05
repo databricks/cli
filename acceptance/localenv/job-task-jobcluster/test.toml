@@ -1,7 +1,7 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE = "$DATABRICKS_HOST"
+DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 
 # A classic task references a shared job cluster by job_cluster_key (rather than
 # an inline new_cluster), so --job-task resolves the version from the job's

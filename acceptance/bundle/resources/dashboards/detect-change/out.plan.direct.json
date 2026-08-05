@@ -25,7 +25,7 @@
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
         "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json",
-        "published": true,
+        "published": false,
         "serialized_dashboard": "{}\n",
         "update_time": "[TIMESTAMP]",
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
@@ -55,6 +55,12 @@
           "action": "skip",
           "reason": "spec:output_only",
           "remote": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json"
+        },
+        "published": {
+          "action": "update",
+          "old": true,
+          "new": true,
+          "remote": false
         },
         "serialized_dashboard": {
           "action": "skip",

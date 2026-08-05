@@ -500,6 +500,66 @@ func TestWriteAndClose(t *testing.T) {
 	}
 }
 
+func TestDownloader_MarkDirectoryForDownload_NotebookGetsExtension(t *testing.T) {
+	ctx := t.Context()
+
+	rootPath := "/pipeline/root"
+	notebookPath := "/pipeline/root/ExploratoryNotebook"
+	filePath := "/pipeline/root/utils.py"
+
+	type listResponse struct {
+		Objects []workspace.ObjectInfo `json:"objects"`
+	}
+
+	w := newTestWorkspaceClient(t, func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/2.0/workspace/list":
+			err := json.NewEncoder(rw).Encode(listResponse{
+				Objects: []workspace.ObjectInfo{
+					{Path: notebookPath, ObjectType: workspace.ObjectTypeNotebook},
+					{Path: filePath, ObjectType: workspace.ObjectTypeFile},
+				},
+			})
+			assert.NoError(t, err)
+		case "/api/2.0/workspace/get-status":
+			path := r.URL.Query().Get("path")
+			switch path {
+			case rootPath:
+				err := json.NewEncoder(rw).Encode(workspace.ObjectInfo{Path: rootPath})
+				assert.NoError(t, err)
+			case notebookPath:
+				err := json.NewEncoder(rw).Encode(workspaceStatus{
+					Language:     workspace.LanguagePython,
+					ObjectType:   workspace.ObjectTypeNotebook,
+					ExportFormat: workspace.ExportFormatSource,
+				})
+				assert.NoError(t, err)
+			case filePath:
+				err := json.NewEncoder(rw).Encode(workspace.ObjectInfo{Path: filePath})
+				assert.NoError(t, err)
+			default:
+				t.Fatalf("unexpected get-status path: %s", path)
+			}
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	})
+
+	dir := "base/dir"
+	sourceDir := filepath.Join(dir, "source")
+	configDir := filepath.Join(dir, "config")
+	downloader := NewDownloader(w, sourceDir, configDir)
+
+	err := downloader.MarkDirectoryForDownload(ctx, &rootPath)
+	require.NoError(t, err)
+
+	assert.Contains(t, downloader.files, filepath.Join(sourceDir, "ExploratoryNotebook.py"))
+	assert.NotContains(t, downloader.files, filepath.Join(sourceDir, "ExploratoryNotebook"))
+	assert.Contains(t, downloader.files, filepath.Join(sourceDir, "utils.py"))
+	assert.Len(t, downloader.files, 2)
+}
+
 func TestDownloader_CleanupOldFiles(t *testing.T) {
 	ctx := t.Context()
 	sourceDir := t.TempDir()

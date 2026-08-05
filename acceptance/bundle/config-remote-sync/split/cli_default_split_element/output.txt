@@ -1,0 +1,41 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== existing_cluster_id is injected by OverrideCompute; the YAML has none
+>>> grep -c existing_cluster_id databricks.yml
+1
+
+=== Edit that locationless field remotely on a two-block task
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.cli_default_job
+  tasks[task_key='shared'].existing_cluster_id: add
+
+
+
+=== The field is added to the block declaring the resource
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -20,4 +20,5 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/nb
++          existing_cluster_id: 0101-000000-remote1
+
+ targets:
+
+>>> grep -c existing_cluster_id: 0101-000000-remote1 databricks.yml
+1
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.cli_default_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!
