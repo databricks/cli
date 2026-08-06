@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/hash"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -292,7 +291,7 @@ func TestFileCacheInvalidJSON(t *testing.T) {
 	}
 
 	// Manually write invalid JSON to the cache file
-	cacheKey, err := hash.OfJSON(fingerprint)
+	cacheKey, err := fingerprintToHash(fingerprint)
 	require.NoError(t, err)
 	cachePath := fc.getCachePath(cacheKey)
 	err = os.WriteFile(cachePath, []byte("invalid json {{{"), 0o600)
@@ -328,7 +327,7 @@ func TestFileCacheCorruptedData(t *testing.T) {
 	}
 
 	// Write valid JSON but wrong type (string instead of int)
-	cacheKey, err := hash.OfJSON(fingerprint)
+	cacheKey, err := fingerprintToHash(fingerprint)
 	require.NoError(t, err)
 	cachePath := fc.getCachePath(cacheKey)
 	err = os.WriteFile(cachePath, []byte(`"not-an-integer"`), 0o600)

@@ -71,7 +71,7 @@ func TestCompactStateMigratesLegacyFullContent(t *testing.T) {
 
 // TestHashStateValue verifies hashStateValue adds the state hash prefix and produces
 // a stable placeholder: the same content always hashes to the same value and
-// different content differs. The hash body itself is covered by libs/hash.
+// different content differs.
 func TestHashStateValue(t *testing.T) {
 	stringHash, err := hashStateValue("hello")
 	require.NoError(t, err)

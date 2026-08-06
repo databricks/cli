@@ -1,12 +1,14 @@
 package dresources
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/databricks/cli/libs/hash"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
@@ -34,12 +36,14 @@ func hashStateValue(v any) (any, error) {
 		return v, nil
 	}
 
-	hashed, err := hash.OfJSON(v)
+	// json.Marshal sorts map keys, so the digest is stable across runs for equal values.
+	data, err := json.Marshal(v)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("marshalling value for hashing: %w", err)
 	}
+	sum := sha256.Sum256(data)
 
-	return stateHashPrefix + hashed, nil
+	return stateHashPrefix + hex.EncodeToString(sum[:]), nil
 }
 
 // CompactState returns a copy of state with every field declared in cfg.HashedInState

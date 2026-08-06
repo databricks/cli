@@ -12,7 +12,6 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/hash"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -156,7 +155,7 @@ func (fc *fileCache) putJSON(ctx context.Context, fingerprint any, data []byte) 
 	if !fc.cacheEnabled {
 		return
 	}
-	cacheKey, err := hash.OfJSON(fingerprint)
+	cacheKey, err := fingerprintToHash(fingerprint)
 	if err != nil {
 		log.Debugf(ctx, "[Local Cache] failed to generate cache key for put: %v", err)
 		return
@@ -170,7 +169,7 @@ func (fc *fileCache) getJSON(ctx context.Context, fingerprint any) ([]byte, bool
 	if !fc.cacheEnabled {
 		return nil, false
 	}
-	cacheKey, err := hash.OfJSON(fingerprint)
+	cacheKey, err := fingerprintToHash(fingerprint)
 	if err != nil {
 		log.Debugf(ctx, "[Local Cache] failed to generate cache key: %v", err)
 		return nil, false
@@ -192,7 +191,7 @@ func (fc *fileCache) addTelemetryMetric(key string) {
 // but always computes and never returns cached values.
 func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, compute func(ctx context.Context) ([]byte, error)) ([]byte, error) {
 	// Convert fingerprint to deterministic hash - this is our cache key
-	cacheKey, err := hash.OfJSON(fingerprint)
+	cacheKey, err := fingerprintToHash(fingerprint)
 	if err != nil {
 		// Fail open: if we can't generate cache key, just compute directly
 		log.Debugf(ctx, "[Local Cache] failed to generate cache key, computing without cache: %v", err)

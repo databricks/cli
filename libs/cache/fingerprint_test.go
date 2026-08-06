@@ -1,0 +1,54 @@
+package cache
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// TestFingerprintStability tests that the fingerprintToHash function returns the same hash for the same input.
+func TestFingerprintStability(t *testing.T) {
+	fingerprint1 := struct {
+		Key string `json:"key"`
+	}{
+		Key: "test-key",
+	}
+
+	fingerprint2 := struct {
+		Key string `json:"key"`
+	}{
+		Key: "test-key2",
+	}
+
+	hash1, err := fingerprintToHash(fingerprint1)
+	require.NoError(t, err)
+	require.Equal(t, "1b329dc07a9fa87da7480f6b10cc917a40a4f460ac82aea3d09df477764f3101", hash1)
+	hash2, err := fingerprintToHash(fingerprint2)
+	require.NoError(t, err)
+	hash1ToCompare, err := fingerprintToHash(fingerprint1)
+	require.NoError(t, err)
+
+	assert.Equal(t, hash1ToCompare, hash1)
+	assert.NotEqual(t, hash1, hash2)
+}
+
+// TestFingerprintMapKeyOrder tests that maps hash independently of key insertion order,
+// which is what makes a map usable as a cache key (json.Marshal sorts map keys).
+func TestFingerprintMapKeyOrder(t *testing.T) {
+	hash1, err := fingerprintToHash(map[string]int{"a": 1, "b": 2})
+	require.NoError(t, err)
+
+	hash2, err := fingerprintToHash(map[string]int{"b": 2, "a": 1})
+	require.NoError(t, err)
+
+	assert.Equal(t, hash1, hash2)
+}
+
+// TestFingerprintUnmarshallable tests that a value json.Marshal rejects is reported as an
+// error rather than silently hashing to a constant.
+func TestFingerprintUnmarshallable(t *testing.T) {
+	hash, err := fingerprintToHash(func() {})
+	assert.Error(t, err)
+	assert.Empty(t, hash)
+}
