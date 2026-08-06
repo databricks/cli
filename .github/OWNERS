@@ -15,9 +15,9 @@
 /cmd/labs/                  @alexott @asnare
 
 # Local environments / DB Connect
-/libs/localenv/             @rugpanov @rclarey @anton-107 @misha-db
-/cmd/environments/          @rugpanov @rclarey @anton-107 @misha-db
-/acceptance/localenv/       @rugpanov @rclarey @anton-107 @misha-db
+/libs/localenv/             team:ide
+/cmd/environments/          team:ide
+/acceptance/localenv/       team:ide
 
 # Apps
 /cmd/apps/                  team:eng-apps-devex
@@ -66,7 +66,7 @@
 
 # Must stay below /integration/: rules are last-match-wins, so the broader
 # team:platform rule above would otherwise take precedence for these paths.
-/integration/cmd/environments/  @rugpanov @rclarey @anton-107 @misha-db
+/integration/cmd/environments/  team:ide
 
 # Internal
 /internal/                  team:platform
