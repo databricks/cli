@@ -391,12 +391,8 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		// backend-managed/input-only), or absent from RemoteType (a guaranteed-nil
 		// placeholder, since RemapState is a dumb copy). Otherwise a coincidental
 		// new == remote (both nil, say) wrongly skips a real local change.
-		//
-		// Exception: a field absent from RemoteType but non-nil in ch.Remote was explicitly
-		// populated by RemapState (e.g. SecretValue from EffectiveValue). That remote value
-		// IS meaningful, so honour RemoteAlreadySet when it matches ch.New.
 		isMissingInRemote := isFieldMissingInRemote(adapter, path)
-		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && (!isMissingInRemote || ch.Remote != nil) {
+		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isMissingInRemote {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
 		} else if allEmpty(ch.Old, ch.New, ch.Remote) {

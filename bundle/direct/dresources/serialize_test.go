@@ -96,12 +96,19 @@ func TestRoundtripFixtureStateType(t *testing.T) {
 // independent of which fields a realistic value would populate. StateType and
 // RemoteType are validated as pointer-to-struct by the adapter, so typeOf always
 // returns a pointer here.
-func testRoundtripAllFields(t *testing.T, label string, typeOf func(*Adapter) reflect.Type) {
+func testRoundtripAllFields(t *testing.T, label string, typeOf func(*Adapter) reflect.Type, skipResources ...string) {
+	skipSet := make(map[string]bool, len(skipResources))
+	for _, r := range skipResources {
+		skipSet[r] = true
+	}
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
 		t.Run(resourceType, func(t *testing.T) {
+			if skipSet[resourceType] {
+				t.Skip("skipped: resource has intentionally non-serializable fields")
+			}
 			v := reflect.New(typeOf(adapter).Elem())
 			fillNonZero(v.Elem(), 0)
 			assertJSONRoundTrip(t, v.Interface(), label+" "+resourceType)
@@ -119,8 +126,11 @@ func TestRoundtripAllFieldsStateType(t *testing.T) {
 // with every field populated. RemoteType is emitted in the plan's "remote_state"
 // field, so a wrapper embedding an SDK type with its own MarshalJSON must define
 // its own or its extra fields vanish.
+//
+// Secrets are excluded: SecretRemote.SecretValue uses json:"-" and is intentionally
+// not written to the plan file since it is sensitive.
 func TestRoundtripAllFieldsRemoteType(t *testing.T) {
-	testRoundtripAllFields(t, "RemoteType", (*Adapter).RemoteType)
+	testRoundtripAllFields(t, "RemoteType", (*Adapter).RemoteType, "secrets")
 }
 
 // fillNonZero recursively populates v with non-zero values so that every
