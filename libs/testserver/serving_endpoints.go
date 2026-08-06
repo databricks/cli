@@ -36,9 +36,8 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 }
 
 // applyTelemetryConfig mirrors the backend: table_names is consumed to create a profile and
-// never echoed back, so a GET returns the profile ID plus the inference_table_config the
-// caller supplied. A config naming neither table_names nor telemetry_profile_id identifies
-// no profile, and the backend reports success while applying nothing.
+// never echoed back, so GET returns the profile ID and the caller's inference_table_config.
+// A config naming neither table_names nor telemetry_profile_id is discarded, reporting success.
 func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.TelemetryConfig {
 	if config == nil {
 		return nil
@@ -297,7 +296,6 @@ func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 	return Response{Body: endpoint}
 }
 
-// endpointUpdating reports whether the endpoint is still applying a config update.
 func endpointUpdating(endpoint serving.ServingEndpointDetailed) bool {
 	return endpoint.State != nil && endpoint.State.ConfigUpdate == serving.EndpointStateConfigUpdateInProgress
 }
