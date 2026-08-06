@@ -187,7 +187,7 @@ func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundl
 	}
 	rel, err := filepath.Rel(bundleAbs, root)
 	if err != nil || !filepath.IsLocal(rel) {
-		return "", fmt.Errorf("code_source root_path %q is not inside the bundle directory %q; run convert-to-dabs with --output-dir set to an ancestor of the code", snap.RootPath, bundleDir)
+		return "", fmt.Errorf("code_source root_path %q is not inside the bundle directory %q; bundle deploy can only upload files under the bundle's sync root. Move the code inside the bundle, or set sync.paths in databricks.yml to a directory that contains both (note that widens what gets synced)", snap.RootPath, bundleDir)
 	}
 	return localBundlePath(filepath.ToSlash(rel)), nil
 }
