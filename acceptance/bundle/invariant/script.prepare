@@ -1,24 +1,22 @@
 # Shared setup for the invariant targets; each script keeps only the invariant it asserts.
 
-# Root of configs/ and data/. For the targets in this subtree $TESTDIR is the target directory, so
-# the default resolves here; a caller outside the subtree sets it before sourcing. Exported because
-# the fuzzer runs each seed in a fresh bash.
+# Root of configs/ and data/. $TESTDIR is the target directory for targets in this subtree; a
+# caller outside it sets this before sourcing. Exported: the fuzzer runs each seed in a fresh bash.
 export INVARIANT_DIR="${INVARIANT_DIR:-$TESTDIR/..}"
 
 invariant_cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy
     cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
 
-    # A caller that generates its own config sets INPUT_CONFIG empty and has no cleanup script. The
-    # default keeps an unbound variable from aborting the trap, which would skip the destroy above.
+    # A generating caller sets INPUT_CONFIG empty and has no cleanup script. The default keeps an
+    # unbound variable from aborting the trap, which would skip the destroy above.
     if [ -n "${INPUT_CONFIG:-}" ] && [ -f "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" ]; then
         source "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" &> LOG.cleanup
     fi
 }
 
-# Separate from invariant_setup so a caller that generates its own config can override the
-# render alone, by redefining it after sourcing this file. Requires a curated INPUT_CONFIG, so a
-# generating caller must replace this function rather than rely on it degrading.
+# Separate from invariant_setup so a generating caller can redefine the render alone after sourcing
+# this file. It needs a curated INPUT_CONFIG, so that caller must replace it, not adjust it.
 invariant_render() {
     cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
 

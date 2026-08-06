@@ -1,14 +1,13 @@
-# Local only: against a real workspace each seed's deploy/migrate/plan/destroy round trip
-# takes minutes and trips SEED_TIMEOUT, and the cloud run leaves FUZZ_CHECK_DRIFT unset, so it
-# would only re-assert the no-panic property the local run already covers.
+# Local only: against a real workspace each seed's deploy/migrate/plan/destroy takes minutes and
+# trips SEED_TIMEOUT, and with FUZZ_CHECK_DRIFT unset it only re-asserts no-panic anyway.
 Cloud = false
 
 # Room for the nightly FUZZ_TIME_BUDGET (run_fuzz.py) plus the last seed's tail.
 Timeout = '20m'
 
-# test.toml only merges along the directory chain, so the engine pin, the ignore patterns and the
-# per-route [[Server]] stubs below are copied from ../invariant/test.toml, where the targets live.
-# fuzz/script fails the test if a stub is added there and not here.
+# test.toml only merges along the directory chain, so the engine pin, ignore patterns and per-route
+# [[Server]] stubs below are copied from ../invariant/test.toml. fuzz/script fails the test if a
+# stub is added there and not here.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [
@@ -24,20 +23,19 @@ Ignore = [
     ".databricks.backup",
 ]
 
-# The idempotency targets assert that a delete or destroy re-run succeeds, which holds regardless of
-# how faithfully the fake server round-trips fields, so they keep their real oracle under fuzzing.
+# The idempotency targets assert a delete or destroy re-run succeeds, which holds however faithfully
+# the fake server round-trips fields, so they keep their real oracle under fuzzing.
 #
-# ../invariant/continue_293 is left out: it deploys with the pinned v0.293.0 binary first, and that
-# version does not know many current fields and resource types, so it would reject most seeds before
-# the current CLI ever ran and the window would measure v0.293.0's schema instead.
+# continue_293 is left out: it deploys with the pinned v0.293.0 binary, which does not know many
+# current fields and types, so it would reject most seeds and measure that version's schema.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "delete_idempotent", "destroy_idempotent"]
 
 # generate = build from the schema; mutate = perturb a curated config. See emit_fuzz_config.py.
 EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
 
-# Generate mode pins name/display_name, so it cannot vary the identifier the delete path reads,
-# and ../invariant/delete_idempotent already covers every resource type. Mutate can hit the
-# identifier and reshape grants/permissions, so it is the mode worth running here.
+# Generate pins name/display_name, so it cannot vary the identifier the delete path reads, and
+# ../invariant/delete_idempotent already covers every type. Mutate can hit that identifier and
+# reshape grants/permissions, so it is the mode worth running here.
 EnvMatrixExclude.no_generate_on_delete_idempotent = ["FUZZ_MODE=generate", "FUZZ_TARGET=delete_idempotent"]
 EnvMatrixExclude.no_generate_on_destroy_idempotent = ["FUZZ_MODE=generate", "FUZZ_TARGET=destroy_idempotent"]
 
@@ -50,15 +48,13 @@ Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"col
 Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
 Response.Body = '{"status": "OK"}'
 
-# Catch-alls, one per method. A route the testserver does not model is a coverage gap for a config
-# nobody wrote by hand, not a missing stub, so these answer it with a marker body run_fuzz.py
-# classifies as a gap, instead of letting the unhandled-request check fail the whole run.
+# Catch-alls, one per method. An unmodeled route is a coverage gap for a config nobody wrote by
+# hand, not a missing stub, so these answer with a marker run_fuzz.py files as a gap instead of
+# failing the whole run on the unhandled-request check.
 #
-# They shadow nothing: wildcard patterns go to ServeMux, which matches most-specific-first, and
-# exact paths are looked up before the mux is consulted (see the Router type doc).
-#
-# No HEAD entry: ServeMux matches a GET pattern for HEAD too, so "HEAD /{path...}" conflicts with
-# every GET wildcard and panics at registration. The GET catch-all answers HEAD anyway.
+# They shadow nothing: wildcards go to ServeMux, which matches most-specific-first, and exact paths
+# are looked up before it (see the Router type doc). No HEAD entry: ServeMux matches a GET pattern
+# for HEAD too, so "HEAD /{path...}" would conflict with every GET wildcard and panic at startup.
 [[Server]]
 Pattern = "GET /{path...}"
 Response.StatusCode = 501

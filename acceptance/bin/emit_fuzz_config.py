@@ -57,9 +57,8 @@ def mutate_base(seed):
 
 
 def main():
-    # to_yaml emits non-ASCII literally, so the redirect this writes into must be UTF-8. Windows
-    # defaults a redirected stdout to the ANSI code page, where the astral-plane probe in
-    # DANGEROUS_STRINGS raises UnicodeEncodeError and every seed reads as a generator failure.
+    # to_yaml emits non-ASCII literally, so this redirect must be UTF-8: on Windows it would
+    # default to the ANSI code page and the astral-plane probe would raise UnicodeEncodeError.
     sys.stdout.reconfigure(encoding="utf-8")
 
     seed = int(os.environ["FUZZ_SEED"])
