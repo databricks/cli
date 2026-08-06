@@ -152,12 +152,22 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 			continue
 		}
 		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" || sf.Name == EmbeddedSliceFieldName {
+		btag := structtag.BundleTag(sf.Tag.Get("bundle"))
+
+		// Sensitive fields use json:"-" to avoid serialization but are diffed
+		// under their Go field name. Allow lookup by Go field name for them.
+		if name == "-" {
+			if btag.Sensitive() && sf.Name == key {
+				return sf, t, true
+			}
 			name = ""
 		}
-		if name != "" && name == key {
+
+		if name == "" || sf.Name == EmbeddedSliceFieldName {
+			continue
+		}
+		if name == key {
 			// Skip fields marked as internal/readonly
-			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
 			if btag.Internal() || btag.ReadOnly() {
 				continue
 			}
