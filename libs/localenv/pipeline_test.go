@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
@@ -154,6 +155,54 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	entries, err := os.ReadDir(cacheDir)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
+}
+
+func TestPipelineReportsDuration(t *testing.T) {
+	// durationMs used to be hardcoded to 0, so a ">= 0" assertion would pass against
+	// the old behavior and prove nothing. Delay the constraint fetch instead: every
+	// run performs it, so the measured duration must exceed that delay while still
+	// fitting inside the wall time observed here.
+	const fetchDelay = 25 * time.Millisecond
+	dir := writeProject(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(fetchDelay)
+		_, _ = w.Write([]byte(sampleToml))
+	}))
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	before := time.Now()
+	res, err := p.Run(t.Context())
+	elapsed := time.Since(before)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, res.DurationMs, fetchDelay.Milliseconds(),
+		"duration must cover the delayed fetch, not report 0")
+	assert.LessOrEqual(t, res.DurationMs, elapsed.Milliseconds(),
+		"duration must not exceed the run's observed wall time")
+}
+
+func TestPipelineReportsDurationOnFailure(t *testing.T) {
+	// The defer must cover the error paths too: a preflight usage error returns
+	// before any phase runs, and that Result still carries a duration for the
+	// --json consumer. Asserting the field is non-negative is trivially true, so
+	// bound it by the observed wall time — that catches an unset or garbage value.
+	dir := writeProject(t)
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Cluster: "abc", Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	before := time.Now()
+	res, err := p.Run(t.Context())
+	elapsed := time.Since(before)
+	require.Error(t, err)
+	assert.LessOrEqual(t, res.DurationMs, elapsed.Milliseconds(),
+		"a failed run must report a plausible duration, not a stale or garbage value")
 }
 
 func TestPipelineReportsCancellationNotProvisionFailure(t *testing.T) {
