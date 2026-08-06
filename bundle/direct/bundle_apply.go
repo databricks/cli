@@ -104,7 +104,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				err = d.Destroy(ctx, &b.StateDB)
 			}
 			if err != nil {
-				opQueue.recordFailure(ctx, resourceKey, action, deletedID, priorState(&b.StateDB, resourceKey), err)
+				_, priorState := priorRecord(&b.StateDB, resourceKey)
+				opQueue.recordFailure(ctx, resourceKey, action, deletedID, priorState, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -138,9 +139,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
-				// GetResourceID is empty for a create that never got an ID, which is
-				// what the service expects for a failed create.
-				opQueue.recordFailure(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), priorState(&b.StateDB, resourceKey), err)
+				// Both are empty for a create that never got an ID, which is what the
+				// service expects for a failed create.
+				priorID, priorState := priorRecord(&b.StateDB, resourceKey)
+				opQueue.recordFailure(ctx, resourceKey, action, priorID, priorState, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}

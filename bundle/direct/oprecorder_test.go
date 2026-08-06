@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"sync"
@@ -95,6 +96,18 @@ func TestNewFailedOperationRecordsError(t *testing.T) {
 	assert.Equal(t, "cluster spec is invalid", op.errorMessage)
 	// The resource was never written, so there is no state to serve back for it.
 	assert.Nil(t, op.state)
+}
+
+func TestNewFailedOperationRecordsPriorStateWithID(t *testing.T) {
+	// A failed recreate has already deleted the resource, so the id must come from
+	// the pre-deploy record alongside the state: the service rejects state without
+	// an id, since state describes a resource that exists.
+	op, err := newFailedOperation(deployplan.Recreate, "main.some_schema", json.RawMessage(`{"state":{"catalog_name":"main"}}`), errors.New("Catalog 'mainx' does not exist"))
+	require.NoError(t, err)
+
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, op.status)
+	assert.Equal(t, "main.some_schema", op.resourceID)
+	assert.JSONEq(t, `{"state":{"catalog_name":"main"}}`, string(op.state))
 }
 
 func TestNewFailedOperationTruncatesLongError(t *testing.T) {

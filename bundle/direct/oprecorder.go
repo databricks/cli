@@ -107,21 +107,26 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, priorSt
 	}, nil
 }
 
-// priorState returns the resource's recorded state from before this deploy, in the
-// same envelope form the success path uploads, or nil when the resource has none
-// (a create). A failed operation reports this unchanged: the resource is whatever it
-// was before the attempt.
-func priorState(db *dstate.DeploymentState, resourceKey string) json.RawMessage {
+// priorRecord returns the resource's id and state from before this deploy, in the
+// same envelope form the success path uploads, or empty values when the resource has
+// no prior record (a create). A failed operation reports these unchanged: the resource
+// is whatever it was before the attempt.
+//
+// Both come from the same pre-deploy entry because the service requires an id
+// alongside state: state describes a resource that exists, so it needs the id to say
+// which one. Reading the id from live state instead would return "" for a failed
+// recreate, whose delete step already dropped it, and the mismatch is rejected.
+func priorRecord(db *dstate.DeploymentState, resourceKey string) (string, json.RawMessage) {
 	entry, ok := db.GetResourceEntry(resourceKey)
 	if !ok || len(entry.State) == 0 {
-		return nil
+		return "", nil
 	}
 
 	raw, err := json.Marshal(dstate.RecordedState{State: entry.State, DependsOn: entry.DependsOn})
 	if err != nil {
-		return nil
+		return "", nil
 	}
-	return raw
+	return entry.ID, raw
 }
 
 // operationUploader records an applied resource operation with DMS. Uploads run
