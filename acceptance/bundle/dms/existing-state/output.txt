@@ -12,7 +12,14 @@ Deployment complete!
 >>> update_file.py databricks.yml record_deployment_history: false record_deployment_history: true
 
 >>> musterr [CLI] bundle deploy
-Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded. Remove experimental.record_deployment_history, or destroy the bundle and deploy it again
+Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again
+
+To keep the existing resources instead, leave experimental.record_deployment_history out
 
 
 === No deployment was created in DMS
@@ -20,7 +27,14 @@ Error: cannot record deployment history for a bundle that already has deployed r
 
 === Still an error after wiping the local cache: deploy pulls the state file back from the workspace, so the resources are still tracked
 >>> musterr [CLI] bundle deploy
-Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded. Remove experimental.record_deployment_history, or destroy the bundle and deploy it again
+Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again
+
+To keep the existing resources instead, leave experimental.record_deployment_history out
 
 
 >>> print_requests.py //api/2.0/bundle --oneline

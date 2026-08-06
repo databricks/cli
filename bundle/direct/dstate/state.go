@@ -293,7 +293,16 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		// older CLI refuses the state instead of deploying against resources it
 		// cannot see.
 		if dmsSource.DeploymentID == "" && len(db.Data.State) > 0 {
-			return fmt.Errorf("cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded. Remove experimental.record_deployment_history, or destroy the bundle and deploy it again", path)
+			// The remedy is ordered deliberately: this error also blocks destroy, so the
+			// setting has to come out first or there is no way to tear the bundle down.
+			return fmt.Errorf(`cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again
+
+To keep the existing resources instead, leave experimental.record_deployment_history out`, path)
 		}
 		if dmsSource.DeploymentID != "" {
 			if err := db.readDMSState(ctx, dmsSource); err != nil {
