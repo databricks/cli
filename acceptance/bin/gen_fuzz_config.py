@@ -269,7 +269,8 @@ class Generator:
                 continue
             if self.should_skip_property(prop_name, prop_schema):
                 continue
-            # Emit optional fields less often deeper down to keep configs from exploding.
+            # Optional fields are sampled, and dropped entirely past MAX_DEPTH, so configs stay
+            # small enough to deploy in the time a seed gets.
             keep = prop_name in required or (depth < MAX_DEPTH and self.rng.random() < 0.35)
             if not keep:
                 continue

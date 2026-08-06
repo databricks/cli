@@ -18,14 +18,12 @@ invariant_render() {
     cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
 }
 
-# A generated config can deploy and still legitimately differ from the fake server, which does
-# not round-trip every field, so the exact check false-positives. Swap in the one oracle that
-# does not depend on server fidelity: planning is deterministic, so two consecutive plans of the
-# same state must be byte-identical. Nightly runs set FUZZ_CHECK_DRIFT=1 to keep the exact check.
+# A generated config can deploy and still legitimately differ from the fake server, which does not
+# round-trip every field, so the exact check false-positives. Substitute the one oracle that does
+# not depend on server fidelity: two consecutive plans of the same state must be byte-identical.
 #
-# Tested against 0 rather than for emptiness so run_fuzz.py's repro can select this oracle with an
-# explicit FUZZ_CHECK_DRIFT=0; an empty value is re-defaulted to 1 by the task's
-# ${FUZZ_CHECK_DRIFT:-1}.
+# Compared against 0 rather than tested for emptiness: `FUZZ_CHECK_DRIFT= task test-fuzz` would be
+# re-defaulted to 1 by the task's ${FUZZ_CHECK_DRIFT:-1}, so the repro passes an explicit 0.
 if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
     invariant_verify_no_drift() {
         set +e

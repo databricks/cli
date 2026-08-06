@@ -8,8 +8,7 @@ Timeout = '20m'
 
 # test.toml only merges along the directory chain, so the engine pin, the ignore patterns and the
 # per-route [[Server]] stubs below are copied from ../invariant/test.toml, where the targets live.
-# A stub added there and not here does not fail this test: the catch-alls at the bottom answer the
-# route and its seeds are recorded as gaps.
+# fuzz/script fails the test if a stub is added there and not here.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [

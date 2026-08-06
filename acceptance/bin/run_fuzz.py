@@ -9,7 +9,7 @@ FUZZ_TARGET, and classifies each outcome:
   gap      - the config needs a route the testserver does not model
   hang     - the seed outlived FUZZ_SEED_TIMEOUT
   bug      - a panic, an internal error, a generator failure, or a config that deployed and then
-             failed the invariant
+             broke the invariant or failed a later command
 
 Every seed adds a line to LOG.summary. A bug or a hang also writes a ready-to-run repro to
 LOG.repro and exits non-zero. Nothing is written to stdout: the committed run asserts empty output.
@@ -20,6 +20,7 @@ FUZZ_CHECK_DRIFT is read only to name the oracle in the repro; script.prepare ac
 """
 
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -36,8 +37,11 @@ SEED_TIMEOUT = float(os.environ.get("FUZZ_SEED_TIMEOUT", "180"))
 # leaves margin under the 20m test.toml Timeout. Set FUZZ_TIME_BUDGET=0 to disable.
 BUDGET = float(os.environ.get("FUZZ_TIME_BUDGET", "900"))
 
-# Grace period between SIGQUIT and the SIGKILL backstop.
+# Seconds between SIGQUIT and the SIGKILL backstop.
 QUIT_GRACE = 10
+
+# Log of the destroy in invariant_cleanup, which every target runs from an EXIT trap.
+CLEANUP_LOG = "LOG.destroy"
 
 TARGET = os.environ["FUZZ_TARGET"]
 MODE = os.environ["FUZZ_MODE"]
@@ -60,8 +64,16 @@ def read(path):
     return path.read_bytes() if path.exists() else b""
 
 
-def concat_logs(seed_dir):
-    return b"".join(read(p) for p in sorted(seed_dir.glob("LOG.*")))
+def concat_logs(seed_dir, skip=()):
+    return b"".join(read(p) for p in sorted(seed_dir.glob("LOG.*")) if p.name not in skip)
+
+
+def killpg(proc, sig):
+    try:
+        os.killpg(proc.pid, sig)
+    except ProcessLookupError:
+        # The seed can exit on its own between the timeout and the signal; it is still a hang.
+        pass
 
 
 def kill_seed(proc):
@@ -70,11 +82,11 @@ def kill_seed(proc):
         proc.kill()
         return
     # SIGQUIT first for Go's goroutine dump, then SIGKILL as a backstop.
-    os.killpg(proc.pid, signal.SIGQUIT)
+    killpg(proc, signal.SIGQUIT)
     try:
         proc.wait(timeout=QUIT_GRACE)
     except subprocess.TimeoutExpired:
-        os.killpg(proc.pid, signal.SIGKILL)
+        killpg(proc, signal.SIGKILL)
 
 
 def run_seed(seed_dir, seed):
@@ -118,21 +130,21 @@ def classify(seed_dir):
         first_line = gen_err.splitlines()[0].decode(errors="replace")
         return "bug", f"could not be generated: {first_line}"
 
-    logs = concat_logs(seed_dir)
-
     # A panic or internal error anywhere is a bug even if the CLI then rejects the config.
+    logs = concat_logs(seed_dir)
     if b"panic:" in logs or b"internal error" in logs:
         return "bug", "panicked or hit an internal error"
 
-    # Before the gap marker: the cleanup destroy runs on every seed, so an unmodeled delete route
-    # puts that marker in the logs of seeds whose invariant genuinely failed.
+    # Before the gap marker: a seed can both break the invariant and touch an unmodeled route, and
+    # the drift verdict is the more specific of the two.
     verdict = oracle_verdict(seed_dir)
     if verdict:
         return "bug", verdict
 
-    # Marker body of the catch-all stubs in fuzz/test.toml. A gap seed has usually deployed first,
-    # so this has to come before the INPUT_CONFIG_OK check below.
-    if b"TESTSERVER_GAP" in logs:
+    # Marker body of the catch-all stubs in fuzz/test.toml. A gap reached after the deploy is still
+    # a gap, so this precedes the INPUT_CONFIG_OK check -- but the cleanup destroy runs only once
+    # the seed has already failed, so counting it would file any post-deploy failure as a gap.
+    if b"TESTSERVER_GAP" in concat_logs(seed_dir, skip={CLEANUP_LOG}):
         return "gap", ""
 
     # The oracle above names a drift failure; anything else here is a command that failed on a
@@ -143,19 +155,28 @@ def classify(seed_dir):
     return "rejected", ""
 
 
-def record(kind, seed):
+def resource_type(seed_dir):
+    """The resource type the seed's config declares, so a window shows which types it covered."""
+    match = re.search(rb"^resources:\n  (\S+):", read(seed_dir / "LOG.config"), re.MULTILINE)
+    return match.group(1).decode() if match else "unknown"
+
+
+def record(kind, seed, seed_dir):
     """One machine-readable line per seed. To a file, not stdout, so empty output still holds."""
     with open("LOG.summary", "a") as f:
-        f.write(f"{kind} seed={seed} target={TARGET} mode={MODE}\n")
+        f.write(f"{kind} seed={seed} target={TARGET} mode={MODE} type={resource_type(seed_dir)}\n")
 
 
-def fail(seed, kind, reason, prefix=""):
-    record(kind, seed)
-    # The repro goes to a file because the harness rewrites env-var values in stdout.
+def fail(seed, seed_dir, kind, reason, prefix=""):
+    record(kind, seed, seed_dir)
+    # The repro goes to a file because the harness rewrites env-var values in stdout. Target and
+    # mode go through ENVFILTER rather than plain env vars: they are EnvMatrix keys, which the
+    # harness sets per variant and would override, re-running all six instead of the one that
+    # failed.
     Path("LOG.repro").write_text(
-        f"fuzz: seed {seed} {reason}, reproduce with: {prefix}FUZZ_SEED_START={seed} "
-        f"FUZZ_SEED_COUNT=1 FUZZ_TARGET={TARGET} FUZZ_MODE={MODE} "
-        f"FUZZ_CHECK_DRIFT={CHECK_DRIFT} task test-fuzz\n"
+        f"fuzz: seed {seed} {reason}, reproduce with: {prefix}"
+        f"ENVFILTER=FUZZ_TARGET={TARGET},FUZZ_MODE={MODE} FUZZ_SEED_START={seed} "
+        f"FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT={CHECK_DRIFT} task test-fuzz\n"
     )
     sys.exit(1)
 
@@ -194,17 +215,17 @@ def main():
 
         returncode, killed = run_seed(seed_dir, seed)
         if returncode == 0:
-            record("deployed", seed)
+            record("deployed", seed, seed_dir)
             continue
 
         # A seed that had to be killed hung, which is distinct from a drift bug.
         if killed:
-            fail(seed, "hang", f"hung (>{SEED_TIMEOUT:g}s)", "FUZZ_SEED_TIMEOUT=0 ")
+            fail(seed, seed_dir, "hang", f"hung (>{SEED_TIMEOUT:g}s)", "FUZZ_SEED_TIMEOUT=0 ")
 
         kind, reason = classify(seed_dir)
         if reason:
-            fail(seed, kind, reason)
-        record(kind, seed)
+            fail(seed, seed_dir, kind, reason)
+        record(kind, seed, seed_dir)
 
     kinds = totals()
 
