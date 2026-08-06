@@ -11,3 +11,11 @@ but works without command completion with earlier versions.
 ```shell
 bash <(curl -fsSL https://raw.githubusercontent.com/databricks/cli/main/internal/bugbash/exec.sh) my-branch
 ```
+
+The branch needs a successful `release-build` run to download a snapshot from. That
+workflow runs on `main` and on any branch named `demo-*` or `bugbash-*`, so push the
+branch under one of those names.
+
+## Feature guides
+
+- [Deployment history recording](./record-deployment-history.md)
