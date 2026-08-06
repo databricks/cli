@@ -130,11 +130,13 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"secrets": &resources.Secret{
-		CatalogName: "main",
-		SchemaName:  "default",
-		Name:        "my_secret",
-		Value:       "my_secret_value",
-		Comment:     "Test secret",
+		Secret: catalog.Secret{
+			CatalogName: "main",
+			SchemaName:  "default",
+			Name:        "my_secret",
+			Value:       "my_secret_value",
+			Comment:     "Test secret",
+		},
 	},
 
 	"secret_scopes": &resources.SecretScope{

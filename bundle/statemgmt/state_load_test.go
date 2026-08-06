@@ -283,9 +283,11 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Secrets: map[string]*resources.Secret{
 				"test_secret": {
-					CatalogName: "main",
-					SchemaName:  "default",
-					Name:        "test_secret",
+					Secret: catalog.Secret{
+						CatalogName: "main",
+						SchemaName:  "default",
+						Name:        "test_secret",
+					},
 				},
 			},
 			SqlWarehouses: map[string]*resources.SqlWarehouse{
@@ -709,14 +711,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			Secrets: map[string]*resources.Secret{
 				"test_secret": {
-					CatalogName: "main",
-					SchemaName:  "default",
-					Name:        "test_secret",
+					Secret: catalog.Secret{
+						CatalogName: "main",
+						SchemaName:  "default",
+						Name:        "test_secret",
+					},
 				},
 				"test_secret_new": {
-					CatalogName: "main",
-					SchemaName:  "default",
-					Name:        "test_secret_new",
+					Secret: catalog.Secret{
+						CatalogName: "main",
+						SchemaName:  "default",
+						Name:        "test_secret_new",
+					},
 				},
 			},
 			SqlWarehouses: map[string]*resources.SqlWarehouse{

@@ -181,9 +181,11 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Secrets: map[string]*resources.Secret{
 					"secret1": {
-						CatalogName: "main",
-						SchemaName:  "default",
-						Name:        "secret1",
+						Secret: catalog.Secret{
+							CatalogName: "main",
+							SchemaName:  "default",
+							Name:        "secret1",
+						},
 					},
 				},
 				SqlWarehouses: map[string]*resources.SqlWarehouse{
