@@ -10,10 +10,10 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// depSpecRe splits a dependency string into its package name and the trailing
-// version specifier (e.g. "pyarrow~=19.0" -> "pyarrow", "~=19.0"). It stops the
-// name at the first PEP 508 separator; extras/markers/urls after the version are
-// out of scope for the conservative conflict check.
+// depSpecRe splits a dependency string into its package name and the remainder
+// (e.g. "pyarrow~=19.0" -> "pyarrow", "~=19.0"). It stops the name at the first
+// PEP 508 separator; splitDepSpec handles the extras and markers that may lead the
+// remainder.
 var depSpecRe = regexp.MustCompile(`^([A-Za-z0-9._-]+)\s*(.*)$`)
 
 // singleClauseRe parses one version clause: an operator and a dotted numeric
@@ -21,14 +21,60 @@ var depSpecRe = regexp.MustCompile(`^([A-Za-z0-9._-]+)\s*(.*)$`)
 // cannot parse this simply is treated as "unknown" and never yields a conflict.
 var singleClauseRe = regexp.MustCompile(`^(>=|<=|==|~=|!=|<|>)?\s*([0-9]+(?:\.[0-9]+)*)`)
 
-// splitDepSpec returns the normalized package name and the raw version specifier
-// portion of a dependency string. ok is false when there is no recognizable name.
+// splitDepSpec returns the normalized package name and the version specifier
+// portion of a dependency string. ok is false when there is no recognizable name,
+// or when the requirement carries an environment marker: a marker makes the
+// dependency conditional on the resolving interpreter, which we do not evaluate,
+// so comparing its range could flag a pin that never applies.
 func splitDepSpec(dep string) (name, spec string, ok bool) {
-	m := depSpecRe.FindStringSubmatch(strings.TrimSpace(dep))
+	dep = strings.TrimSpace(dep)
+	if strings.Contains(dep, ";") {
+		return "", "", false
+	}
+	m := depSpecRe.FindStringSubmatch(dep)
 	if m == nil {
 		return "", "", false
 	}
-	return normalizePackageName(m[1]), strings.TrimSpace(m[2]), true
+	// Extras select optional features and never narrow the version range, so drop
+	// them to expose the specifier underneath ("pkg[a,b]==1.0" -> "==1.0").
+	spec = strings.TrimSpace(m[2])
+	if strings.HasPrefix(spec, "[") {
+		if i := strings.Index(spec, "]"); i >= 0 {
+			spec = strings.TrimSpace(spec[i+1:])
+		}
+	}
+	return normalizePackageName(m[1]), spec, true
+}
+
+// userPyprojectTOML is a permissive view of the fields detectMergeWarnings reads
+// from the *user's* pyproject.toml.
+//
+// It deliberately does not reuse pyprojectTOML: that struct decodes the
+// Databricks-owned constraint artifact, whose shape we control, whereas a user's
+// dependency group may legitimately hold PEP 735 table entries such as
+// {include-group = "test"} alongside requirement strings. Decoding dev as []any
+// (and declaring only the fields actually read) keeps one unrelated entry from
+// failing the whole document and silently dropping every warning.
+type userPyprojectTOML struct {
+	Project struct {
+		RequiresPython string   `toml:"requires-python"`
+		Dependencies   []string `toml:"dependencies"`
+	} `toml:"project"`
+	DependencyGroups struct {
+		Dev []any `toml:"dev"`
+	} `toml:"dependency-groups"`
+}
+
+// devRequirements returns the requirement strings of a dependency group, skipping
+// PEP 735 table entries (include-group) that are not requirements themselves.
+func devRequirements(entries []any) []string {
+	out := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if s, ok := e.(string); ok {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // detectMergeWarnings compares a user's existing pyproject.toml against the
@@ -37,16 +83,18 @@ func splitDepSpec(dep string) (name, spec string, ok bool) {
 // merge; MergeManaged still owns the actual byte edits.
 //
 // It is best-effort: unparseable input yields no warnings rather than an error,
-// because a warning is advisory and must never fail the run. Greenfield projects
-// (no pre-existing content) produce nothing — there is nothing of the user's to
-// override. Warnings are deterministic and ordered (requires-python, then
-// databricks-connect, then constraint conflicts sorted by package) so goldens are
-// stable.
+// because a warning is advisory and must never fail the run. The user's file is
+// decoded through userPyprojectTOML rather than the artifact's stricter
+// pyprojectTOML, so a legitimate PEP 735 table entry cannot suppress the checks
+// that do not depend on it. Greenfield projects (no pre-existing content) produce
+// nothing — there is nothing of the user's to override. Warnings are deterministic
+// and ordered (requires-python, then databricks-connect, then constraint conflicts
+// sorted by package) so goldens are stable.
 func detectMergeWarnings(userPyproject []byte, c Constraints) []Warning {
 	if len(userPyproject) == 0 {
 		return nil
 	}
-	var p pyprojectTOML
+	var p userPyprojectTOML
 	if err := toml.Unmarshal(userPyproject, &p); err != nil {
 		return nil
 	}
@@ -66,7 +114,7 @@ func detectMergeWarnings(userPyproject []byte, c Constraints) []Warning {
 	// the merge replaces it. Only meaningful in default mode (c.DatabricksConnect
 	// is empty in constraints-only, where the dev group is left untouched).
 	if c.DatabricksConnect != "" {
-		for _, entry := range p.DependencyGroups.Dev {
+		for _, entry := range devRequirements(p.DependencyGroups.Dev) {
 			if !isDatabricksConnectDep(entry) {
 				continue
 			}
@@ -94,12 +142,21 @@ func constraintConflicts(userDeps, envConstraints []string) []Warning {
 	if len(userDeps) == 0 || len(envConstraints) == 0 {
 		return nil
 	}
-	// Index the env constraints by normalized package name.
+	// Index the env constraints by normalized package name. Multiple entries for one
+	// package compose as a conjunction, so they are joined with "," rather than
+	// letting the last one win: parseClause treats a multi-clause spec as an unknown
+	// range, which keeps the outcome independent of artifact ordering instead of
+	// deciding against an arbitrary subset of the clauses.
 	envByName := make(map[string]string, len(envConstraints))
 	for _, ec := range envConstraints {
-		if name, spec, ok := splitDepSpec(ec); ok && spec != "" {
-			envByName[name] = spec
+		name, spec, ok := splitDepSpec(ec)
+		if !ok || spec == "" {
+			continue
 		}
+		if prev, dup := envByName[name]; dup {
+			spec = prev + "," + spec
+		}
+		envByName[name] = spec
 	}
 	if len(envByName) == 0 {
 		return nil
@@ -168,6 +225,14 @@ func parseClause(spec string) (clause, bool) {
 			return clause{}, false
 		}
 		rel = append(rel, n)
+	}
+	// PEP 440 requires at least two release segments after "~=" (it expands to
+	// ">=X.Y, ==X.*", which needs a segment to hold fixed). A single-segment base
+	// has no defined range, and compatibleReleaseContains reports "not contained"
+	// for it — which the disjointness callers would read as a proof of disjointness
+	// and report a conflict. Refuse to parse it so it stays an unknown range.
+	if op == "~=" && len(rel) < 2 {
+		return clause{}, false
 	}
 	return clause{op: op, rel: rel}, true
 }

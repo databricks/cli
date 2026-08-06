@@ -84,9 +84,72 @@ func TestDetectMergeWarningsNoConflictWhenCompatible(t *testing.T) {
 requires-python = "==3.12.*"
 dependencies = ["pyarrow==21.0.3"]
 `)
-	// 21.0.3 is inside ~=21.0.0's [21.0, 22.0) range — compatible, no warning.
+	// 21.0.3 is inside ~=21.0.0's [21.0.0, 21.1.0) range — compatible, no warning.
 	c := Constraints{RequiresPython: "==3.12.*", ConstraintDeps: []string{"pyarrow~=21.0.0"}}
 	assert.Empty(t, detectMergeWarnings(user, c))
+}
+
+func TestDetectMergeWarningsIncludeGroupDoesNotSuppress(t *testing.T) {
+	// A PEP 735 {include-group = ...} table is a legal dev-group entry that uv
+	// supports. It must not fail the decode and take every unrelated warning with
+	// it: the requires-python override and the pyarrow conflict below do not depend
+	// on the dev group at all, and MergeManaged rewrites all three regions anyway.
+	user := []byte(`[project]
+requires-python = ">=3.9"
+dependencies = ["pyarrow==19.0.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.1.0", {include-group = "test"}]
+test = []
+`)
+	c := Constraints{
+		RequiresPython:    "==3.12.*",
+		DatabricksConnect: "databricks-connect~=17.2.0",
+		ConstraintDeps:    []string{"pyarrow~=21.0.0"},
+	}
+	assert.Equal(t, []string{
+		WarnRequiresPythonOverridden,
+		WarnDBConnectPinOverridden,
+		WarnUserConstraintConflict,
+	}, codes(detectMergeWarnings(user, c)))
+}
+
+func TestConstraintConflictsDuplicateEnvEntriesAreOrderIndependent(t *testing.T) {
+	// Constraint entries for one package compose as a conjunction. Joining them
+	// yields a multi-clause spec, which is an unknown range — so neither ordering
+	// decides a conflict against just one of the clauses.
+	user := []string{"pyarrow==19.0.0"}
+	assert.Empty(t, constraintConflicts(user, []string{"pyarrow<21", "pyarrow>=20"}))
+	assert.Empty(t, constraintConflicts(user, []string{"pyarrow>=20", "pyarrow<21"}))
+}
+
+func TestSplitDepSpecExtrasAndMarkers(t *testing.T) {
+	// Extras never narrow the version range, so they are stripped and the pin
+	// underneath is still compared.
+	name, spec, ok := splitDepSpec("pyarrow[compute,parquet]==17.0.0")
+	assert.True(t, ok)
+	assert.Equal(t, "pyarrow", name)
+	assert.Equal(t, "==17.0.0", spec)
+
+	// A marker makes the requirement conditional on the resolving interpreter,
+	// which we do not evaluate — so it is skipped rather than compared.
+	_, _, ok = splitDepSpec(`pyarrow==17.0.0; python_version < "3.12"`)
+	assert.False(t, ok)
+
+	// PEP 503 normalization applies to the name on both sides of the lookup.
+	name, spec, ok = splitDepSpec("PyArrow_Extra ==1.0")
+	assert.True(t, ok)
+	assert.Equal(t, "pyarrow-extra", name)
+	assert.Equal(t, "==1.0", spec)
+}
+
+func TestDetectMergeWarningsConflictThroughExtras(t *testing.T) {
+	user := []byte(`[project]
+dependencies = ["pyarrow[compute]==17.0.0"]
+`)
+	c := Constraints{ConstraintDeps: []string{"pyarrow~=21.0.0"}}
+	got := detectMergeWarnings(user, c)
+	assert.Equal(t, []string{WarnUserConstraintConflict}, codes(got))
 }
 
 func TestRangesDisjoint(t *testing.T) {
@@ -106,6 +169,14 @@ func TestRangesDisjoint(t *testing.T) {
 		{">=2.0,<3.0", "==5.0", false, "multi-clause range is treated as unknown"},
 		{"==2.*", "==2.0", false, "wildcards are unparsed — no conflict"},
 		{"", "~=21.0.0", false, "no user spec — nothing to compare"},
+		// PEP 440 requires two release segments after "~=", so a single-segment base
+		// has no defined range. It must stay undecidable rather than being read as a
+		// proof of disjointness: 2.0 and 2.31.0 both plainly satisfy any reading of ~=2.
+		{"~=2", "==2.0", false, "single-segment ~= is malformed — undecidable, not disjoint"},
+		{"==2.0", "~=2", false, "same, with the malformed base on the env side"},
+		{"~=2", "==2.31.0", false, "single-segment ~= never decides a conflict"},
+		{"~=2.0", "==2.31.0", false, "valid ~=2.0 admits 2.31.0 (>=2.0, ==2.*)"},
+		{"~=2.1", "==2.0.5", true, "valid ~=2.1 excludes 2.0.5 (below the floor)"},
 	}
 	for _, tc := range cases {
 		assert.Equalf(t, tc.disjoint, rangesDisjoint(tc.user, tc.env),

@@ -236,8 +236,7 @@ func fetchURL(ctx context.Context, url string) ([]byte, error) {
 // pyprojectTOML mirrors the pyproject.toml fields we care about.
 type pyprojectTOML struct {
 	Project struct {
-		RequiresPython string   `toml:"requires-python"`
-		Dependencies   []string `toml:"dependencies"`
+		RequiresPython string `toml:"requires-python"`
 	} `toml:"project"`
 	DependencyGroups struct {
 		Dev []string `toml:"dev"`
