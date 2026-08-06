@@ -2,7 +2,10 @@ title "submit with inline dependencies"
 trace $CLI experimental air run -f run.yaml
 
 title "only config + command are uploaded; no requirements.yaml"
-trace print_requests.py //api/2.0/workspace-files/import-file --oneline --sort --unique --keep
+# Uploads go to POST /workspace/import, which carries the target filename in the
+# multipart body rather than the URL, so each uploaded path shows up under
+# body.multipart_form.path instead of in the request path.
+trace print_requests.py //api/2.0/workspace/import --oneline --sort --unique --keep
 
 title "declared deps ride on environments[].spec.dependencies"
 trace print_requests.py //api/2.2/jobs/runs/submit
@@ -11,7 +14,7 @@ title "file-form deps: version comes from the requirements file"
 trace $CLI experimental air run -f run-file.yaml
 
 title "file-form deps: the requirements file is not uploaded either"
-trace print_requests.py //api/2.0/workspace-files/import-file --oneline --sort --unique --keep
+trace print_requests.py //api/2.0/workspace/import --oneline --sort --unique --keep
 
 title "file-form deps ride on environments[].spec.dependencies"
 trace print_requests.py //api/2.2/jobs/runs/submit
