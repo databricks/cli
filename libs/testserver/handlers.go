@@ -874,6 +874,30 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SecretsAclsDelete(req)
 	})
 
+	// Unity Catalog base endpoint (used for UC availability check):
+	server.Handle("GET", "/api/2.1/unity-catalog", func(req Request) any {
+		return map[string]any{
+			"metastore_id": "test-metastore-id",
+		}
+	})
+
+	// Unity Catalog Secrets:
+	server.Handle("POST", "/api/2.1/unity-catalog/secrets", func(req Request) any {
+		return req.Workspace.SecretsUcCreateSecret(req)
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcGetSecret(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcUpdateSecret(req)
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcDeleteSecret(req)
+	})
+
 	// Groups:
 	server.Handle("POST", "/api/2.0/preview/scim/v2/Groups", func(req Request) any {
 		return req.Workspace.GroupsCreate(req)

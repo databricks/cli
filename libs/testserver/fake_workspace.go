@@ -210,6 +210,7 @@ type FakeWorkspace struct {
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
 	Acls         map[string][]workspace.AclItem
+	UCSecrets    map[string]catalog.Secret // full_name -> secret (Unity Catalog secrets)
 
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
