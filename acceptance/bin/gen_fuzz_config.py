@@ -59,6 +59,7 @@ PERMISSION_LEVEL = {
     "database_instances": "CAN_USE",
     "experiments": "CAN_READ",
     "genie_spaces": "CAN_READ",
+    "instance_pools": "CAN_ATTACH_TO",
     "jobs": "CAN_VIEW",
     "model_serving_endpoints": "CAN_VIEW",
     "models": "CAN_READ",
@@ -74,7 +75,6 @@ PERMISSION_LEVEL = {
 # exceptions (an external volume's storage_location) need a curated config.
 SKIP_PROPERTY_NAMES = frozenset(
     {
-        "browse_only",
         "created_at",
         "created_by",
         "creator_name",
@@ -177,6 +177,8 @@ class Generator:
         # Top-level resource type, set before generating its element so grants/permissions can pick
         # a value valid for that securable.
         self.rtype = None
+        # Distinguishes the pinned name/display_name values within one config; see gen_scalar.
+        self.name_count = 0
 
     def resolve(self, schema):
         # Follow $ref chains ("#/$defs/.../resources.Job"), indexing $defs by path segment.
@@ -275,6 +277,9 @@ class Generator:
             if not keep:
                 continue
             value = self.gen(prop_schema, depth + 1, prop_name)
+            # Applies to required properties too, and gen_array returns nothing past MAX_DEPTH
+            # regardless of requiredness, so a deep enough required field can go missing and the
+            # CLI rejects the config. That is a normal fuzz outcome, not a lost seed.
             if is_empty(value):
                 continue
             result[prop_name] = value
@@ -357,7 +362,11 @@ class Generator:
             table = re.sub(r"[^0-9a-zA-Z_]", "_", f"fuzz_index_{self.unique}")
             return f"{DEFAULT_CATALOG}.{DEFAULT_SCHEMA}.{table}"
         if name in ("name", "display_name"):
-            return f"fuzz-{name}-{self.unique}"
+            # Numbered, because this pins by leaf name at any depth: an array of named objects
+            # (job parameters, for one) would otherwise repeat one value across its elements and
+            # be rejected as a duplicate, costing every seed that generates one.
+            self.name_count += 1
+            return f"fuzz-{name}-{self.unique}-{self.name_count}"
         # Free-form string with no pinned meaning (description, comment, tag): safe to probe
         # dangerous input here, unlike the pinned fields above.
         if self.rng.random() < DANGEROUS_PROB:
