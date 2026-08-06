@@ -189,11 +189,38 @@ type PhaseStatus struct {
 	Detail string `json:"-"`
 }
 
-// Warning is a non-fatal advisory surfaced in --json "warnings" (spec §6).
+// Warning is a non-fatal advisory surfaced in --json "warnings" (spec §6). Code
+// is a stable, categorical identifier from the closed set below; Message is
+// human-readable text for the text renderer and is not part of the contract.
 type Warning struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
+
+// Warning codes are the closed, categorical set surfaced in --json warnings[].
+// They let a consumer report a count and a code histogram (merge quality) without
+// parsing free-form text. All are emitted from the merge phase, where the fetched
+// env-owned pins can conflict with what the user already had.
+const (
+	// WarnRequiresPythonOverridden: the user's [project].requires-python differed
+	// from the env's pin and was replaced by the managed value.
+	WarnRequiresPythonOverridden = "W_REQUIRES_PYTHON_OVERRIDDEN"
+	// WarnDBConnectPinOverridden: the user's databricks-connect pin sat directly in
+	// the dev group and was replaced by the managed value.
+	WarnDBConnectPinOverridden = "W_DBCONNECT_PIN_OVERRIDDEN"
+	// WarnDBConnectPinDuplicated: the user's databricks-connect pin is reachable
+	// only through a PEP 735 include-group, which the merge does not rewrite, so the
+	// managed pin was added to the dev group alongside it. Unlike an override this
+	// leaves two pins for one package and uv cannot resolve it — a distinct, worse
+	// outcome that needs a manual fix, so it carries its own code.
+	WarnDBConnectPinDuplicated = "W_DBCONNECT_PIN_DUPLICATED"
+	// WarnUserConstraintConflict: a user dependency (in [project].dependencies or the
+	// dev group) pins a package that the env's constraint-dependencies also
+	// constrains, to a provably non-overlapping version range (uv will fail to
+	// resolve). Emitted only when the ranges are provably disjoint; ambiguous cases
+	// are not flagged.
+	WarnUserConstraintConflict = "W_USER_CONSTRAINT_CONFLICT"
+)
 
 // Result is the full outcome of a sync run and the root of the --json object
 // (spec §6). Field order matches the spec's schema so JSON key order is stable.
