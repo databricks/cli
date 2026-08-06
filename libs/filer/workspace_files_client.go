@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"mime/multipart"
 	"net/http"
 	"path"
 	"slices"
@@ -138,6 +139,43 @@ func (w *WorkspaceFilesClient) workspaceIDHeaders() map[string]string {
 	return auth.WorkspaceIDHeaders(w.workspaceClient.Config)
 }
 
+// newImportForm encodes the multipart body for POST /api/2.0/workspace/import
+// and returns it alongside the Content-Type header carrying the generated
+// boundary. Field names and layout match the SDK's Workspace.Upload; format is
+// always AUTO so the server classifies each payload as a file or a notebook.
+// The `language` field Upload derives for source-format uploads is omitted
+// because it only applies to format=SOURCE.
+func newImportForm(absPath string, content []byte, overwrite bool) ([]byte, string, error) {
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+
+	if err := mw.WriteField("path", absPath); err != nil {
+		return nil, "", fmt.Errorf("failed to write path: %w", err)
+	}
+	if err := mw.WriteField("format", string(workspace.ImportFormatAuto)); err != nil {
+		return nil, "", fmt.Errorf("failed to write format: %w", err)
+	}
+	// Upload omits this field entirely when false, and the endpoint defaults to
+	// no overwrite, so only write it when set.
+	if overwrite {
+		if err := mw.WriteField("overwrite", "true"); err != nil {
+			return nil, "", fmt.Errorf("failed to write overwrite: %w", err)
+		}
+	}
+	part, err := mw.CreateFormFile("content", "content")
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create content part: %w", err)
+	}
+	if _, err := part.Write(content); err != nil {
+		return nil, "", fmt.Errorf("failed to write content: %w", err)
+	}
+	if err := mw.Close(); err != nil {
+		return nil, "", fmt.Errorf("failed to finalize multipart body: %w", err)
+	}
+
+	return body.Bytes(), mw.FormDataContentType(), nil
+}
+
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -164,15 +202,14 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	// Use Workspace.Upload (multipart /api/2.0/workspace/import) rather than
-	// Workspace.Import (the JSON-body variant of the same endpoint). The JSON
-	// variant sends content base64-encoded in a `content` field that is capped
-	// at 10 MB, returning MAX_NOTEBOOK_SIZE_EXCEEDED above it; the multipart
-	// variant posts the bytes as a file part instead and is bounded only by the
-	// 500 MB workspace file size limit. See the `content` field description in
-	// .codegen/cli.json (workspace.Import) and
-	// https://docs.databricks.com/aws/en/files/workspace ("Workspace file size
-	// is limited to 500MB").
+	// Post the multipart form of /api/2.0/workspace/import rather than its
+	// JSON-body variant (workspace.Import). The JSON variant sends content
+	// base64-encoded in a `content` field that is capped at 10 MB, returning
+	// MAX_NOTEBOOK_SIZE_EXCEEDED above it; the multipart form posts the bytes as
+	// a file part instead and is bounded only by the 500 MB workspace file size
+	// limit. See the `content` field description in .codegen/cli.json
+	// (workspace.Import) and https://docs.databricks.com/aws/en/files/workspace
+	// ("Workspace file size is limited to 500MB").
 	//
 	// Because format=AUTO lets the server classify each payload, the applicable
 	// limit depends on how the content is classified, not on our request:
@@ -190,14 +227,25 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	// /workspace/import and the /workspace-files/import-file endpoint this
 	// replaced, so migrating between the two does not change the maximum
 	// uploadable notebook size.
+	//
+	// The body is built here rather than via the SDK's Workspace.Upload because
+	// that helper derives the routing header from cfg.WorkspaceID with a bare
+	// != "" check, which sends the CLI-only "none" sentinel as a literal
+	// workspace ID. Going through apiClient.Do keeps the header under
+	// workspaceIDHeaders, which maps that sentinel to no header at all.
 	overwrite := slices.Contains(mode, OverwriteIfExists)
-	uploadOpts := []func(*workspace.Import){
-		workspace.UploadFormat(workspace.ImportFormatAuto),
+	requestBody, contentType, err := newImportForm(absPath, body, overwrite)
+	if err != nil {
+		return err
 	}
-	if overwrite {
-		uploadOpts = append(uploadOpts, workspace.UploadOverwrite())
+
+	headers := w.workspaceIDHeaders()
+	if headers == nil {
+		headers = make(map[string]string)
 	}
-	err = w.workspaceClient.Workspace.Upload(ctx, absPath, bytes.NewReader(body), uploadOpts...)
+	headers["Content-Type"] = contentType
+
+	err = w.apiClient.Do(ctx, http.MethodPost, "/api/2.0/workspace/import", headers, nil, requestBody, nil)
 
 	// Return early on success.
 	if err == nil {
