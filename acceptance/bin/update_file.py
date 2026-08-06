@@ -20,9 +20,12 @@ filename, old, new = sys.argv[1:]
 # call update_file.py on that file.
 assert filename != "output.txt"
 
-data = open(filename).read()
+data = open(filename, newline="").read()
 newdata = data.replace(old, new)
 if newdata == data:
     sys.exit(f"{old=} not found in {filename=}\n{data}")
-with open(filename, "w") as fobj:
+# newline="" on both ends keeps the file's line endings byte-for-byte. Without it
+# Python rewrites every \n as \r\n on Windows, which changes the content of files
+# whose uploaded bytes or hashes a test asserts.
+with open(filename, "w", newline="") as fobj:
     fobj.write(newdata)
