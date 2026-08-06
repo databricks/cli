@@ -957,7 +957,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// Serving Endpoints:
 	server.Handle("GET", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+		return req.Workspace.ServingEndpointGet(req.Vars["name"])
 	})
 
 	server.Handle("POST", "/api/2.0/serving-endpoints", func(req Request) any {

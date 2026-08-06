@@ -14,7 +14,7 @@ import (
 
 const (
 	unsupportedEndpoint = "telemetry_config is only supported on an endpoint that serves a registered model"
-	noProfile           = "telemetry_config must set table_names or telemetry_profile_id"
+	noProfile           = "telemetry_config must name a table in table_names or set telemetry_profile_id"
 )
 
 func endpointBundle(endpoint serving.CreateServingEndpoint) *bundle.Bundle {
@@ -109,6 +109,28 @@ func TestValidateServingTelemetryConfig(t *testing.T) {
 				},
 			},
 			want: []string{unsupportedEndpoint},
+		},
+		{
+			// Names no tables, so nothing identifies the profile.
+			name: "telemetry with an empty table_names",
+			endpoint: serving.CreateServingEndpoint{
+				Name: "my_endpoint",
+				TelemetryConfig: &serving.TelemetryConfig{
+					TableNames: &serving.UnityCatalogTableNames{},
+				},
+				Config: servedModelConfig(),
+			},
+			want: []string{noProfile},
+		},
+		{
+			name: "telemetry with only a traces table",
+			endpoint: serving.CreateServingEndpoint{
+				Name: "my_endpoint",
+				TelemetryConfig: &serving.TelemetryConfig{
+					TableNames: &serving.UnityCatalogTableNames{TracesTable: "main.default.traces"},
+				},
+				Config: servedModelConfig(),
+			},
 		},
 		{
 			// Discarded by the API, so the sampling fraction never takes effect.

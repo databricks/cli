@@ -1,4 +1,4 @@
-Error: telemetry_config must set table_names or telemetry_profile_id
+Error: telemetry_config must name a table in table_names or set telemetry_profile_id
   at resources.model_serving_endpoints.endpoint1.telemetry_config
   in databricks.yml:15:9
 

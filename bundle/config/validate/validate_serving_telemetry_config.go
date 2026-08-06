@@ -39,8 +39,7 @@ func (v *validateServingTelemetryConfig) Apply(_ context.Context, b *bundle.Bund
 		}
 
 		// The telemetry API rejects endpoints typed NO_CONFIG or EXTERNAL_MODELS, but create
-		// drops the field instead of failing, so without this the bundle deploys once and
-		// then fails on every later deploy.
+		// silently drops the field, so without this the bundle deploys once and fails after.
 		if !servesRegisteredModel(endpoint.Config) {
 			addDiag(
 				"telemetry_config is only supported on an endpoint that serves a registered model",
@@ -48,12 +47,11 @@ func (v *validateServingTelemetryConfig) Apply(_ context.Context, b *bundle.Bund
 			)
 		}
 
-		// Create and the telemetry API both report success and apply nothing when the
-		// configuration names no profile, so an inference_table_config on its own would land
-		// in state and show as a perpetual update against an endpoint that never got it.
+		// Create and the telemetry API both report success and apply nothing when the config
+		// names no profile, so an inference_table_config alone would drift forever.
 		if !identifiesTelemetryProfile(endpoint.TelemetryConfig) {
 			addDiag(
-				"telemetry_config must set table_names or telemetry_profile_id",
+				"telemetry_config must name a table in table_names or set telemetry_profile_id",
 				"The serving endpoints API identifies a telemetry configuration by the Unity Catalog tables to create a profile from (table_names) or by an existing profile (telemetry_profile_id). Given neither, it discards the configuration instead of applying it.",
 			)
 		}
@@ -64,15 +62,19 @@ func (v *validateServingTelemetryConfig) Apply(_ context.Context, b *bundle.Bund
 	return diags
 }
 
-// identifiesTelemetryProfile reports whether the configuration names the telemetry
-// profile to use or the tables to create one from.
+// identifiesTelemetryProfile reports whether the configuration names an existing profile
+// or the tables to create one from. An empty table_names names neither.
 func identifiesTelemetryProfile(config *serving.TelemetryConfig) bool {
-	return config.TableNames != nil || config.TelemetryProfileId != ""
+	if config.TelemetryProfileId != "" {
+		return true
+	}
+	t := config.TableNames
+	return t != nil && (t.LogsTable != "" || t.TracesTable != "" || t.MetricsTable != "" || t.AnnotationsTable != "")
 }
 
-// servesRegisteredModel reports whether the endpoint serves at least one registered
-// model, as opposed to nothing at all or only external models. A foundation model is
-// named the same way and is accepted here; create rejects it outright with a clear error.
+// servesRegisteredModel reports whether the endpoint serves at least one registered model,
+// as opposed to nothing or only external models. A foundation model is named the same way
+// and is accepted here; create rejects it outright.
 //
 // ModelServingEndpointFixups has already folded served_models into served_entities.
 func servesRegisteredModel(config *serving.EndpointCoreConfigInput) bool {

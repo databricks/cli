@@ -35,10 +35,9 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 	return entities
 }
 
-// applyTelemetryConfig mirrors the backend: a configuration is identified by an existing
-// telemetry_profile_id or by the table_names to create a profile from, and one naming
-// neither returns 200 and applies nothing. What comes back is the profile ID, plus
-// inference_table_config if the caller supplied one; never table_names.
+// applyTelemetryConfig mirrors the backend: a config naming neither telemetry_profile_id
+// nor table_names returns 200 and applies nothing. What comes back is the profile ID plus
+// inference_table_config if the caller supplied one, never table_names.
 func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.TelemetryConfig {
 	if config == nil {
 		return nil
@@ -54,8 +53,8 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 	}
 	if config.InferenceTableConfig != nil {
 		inferenceTable := *config.InferenceTableConfig
-		// Left empty for a patch that reuses a profile by ID: it does not name the tables,
-		// and what the backend reports as the name there was never observed.
+		// Left empty when the patch reuses a profile by ID: it names no tables, and what
+		// the backend reports there was never observed.
 		if config.TableNames != nil {
 			inferenceTable.Name = config.TableNames.LogsTable + "_payload"
 		}
@@ -72,7 +71,7 @@ func telemetrySupported(endpoint serving.ServingEndpointDetailed) (string, bool)
 		return "NO_CONFIG", false
 	}
 	for _, entity := range endpoint.Config.ServedEntities {
-		if entity.ExternalModel == nil {
+		if entity.ExternalModel == nil && entity.EntityName != "" {
 			return "", true
 		}
 	}
@@ -291,6 +290,38 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	}
 }
 
+// ServingEndpointGet reports an in-progress config update once and then settles the
+// endpoint, so a caller that polls converges and one that does not sees it in flight.
+func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
+	defer s.LockUnlock()()
+
+	endpoint, exists := s.ServingEndpoints[name]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Resource %T not found: %v", endpoint, name)},
+		}
+	}
+
+	if endpointUpdating(endpoint) {
+		// Settle the stored copy for the next read. The response keeps the in-progress
+		// State, since reassigning settled.State leaves endpoint.State pointing at it.
+		settled := endpoint
+		settled.State = &serving.EndpointState{
+			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
+			Ready:        endpoint.State.Ready,
+		}
+		s.ServingEndpoints[name] = settled
+	}
+
+	return Response{Body: endpoint}
+}
+
+// endpointUpdating reports whether the endpoint is still applying a config update.
+func endpointUpdating(endpoint serving.ServingEndpointDetailed) bool {
+	return endpoint.State != nil && endpoint.State.ConfigUpdate == serving.EndpointStateConfigUpdateInProgress
+}
+
 func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
@@ -338,8 +369,10 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 
 	endpoint.Config = config
 	endpoint.LastUpdatedTimestamp = nowMilli()
+	// A config update is asynchronous: until it settles the endpoint reports
+	// IN_PROGRESS, which is what makes a telemetry patch in the same pass fail.
 	endpoint.State = &serving.EndpointState{
-		ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
+		ConfigUpdate: serving.EndpointStateConfigUpdateInProgress,
 		Ready:        serving.EndpointStateReadyNotReady,
 	}
 
@@ -445,6 +478,17 @@ func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name st
 			Body: map[string]string{
 				"error_code": "INVALID_PARAMETER_VALUE",
 				"message":    fmt.Sprintf("Telemetry configuration is not supported for endpoint type '%s'. This API only supports endpoints with custom served models.", endpointType),
+			},
+		}
+	}
+
+	// The telemetry API refuses to run while an earlier update is still applying.
+	if endpointUpdating(endpoint) {
+		return Response{
+			StatusCode: 409,
+			Body: map[string]string{
+				"error_code": "RESOURCE_CONFLICT",
+				"message":    fmt.Sprintf("Endpoint %s is currently updating. Wait for the update to complete before updating its telemetry configuration.", name),
 			},
 		}
 	}

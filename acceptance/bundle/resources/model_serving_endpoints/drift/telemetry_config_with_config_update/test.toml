@@ -1,0 +1,6 @@
+RecordRequests = true
+
+# Guards the wait in DoUpdate: the telemetry API rejects an endpoint still applying an
+# earlier update, so without the wait this deploy fails on the telemetry patch with a 409.
+# Direct engine only, for the same reasons as drift/telemetry_config.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
