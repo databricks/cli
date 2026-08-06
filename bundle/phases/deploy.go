@@ -117,13 +117,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		statemgmt.UploadStateForYamlSync(stateEngine),
 	)
 
-	// Report what was deployed, mirroring "bundle plan". Printed only on success
-	// and after state/metadata have been uploaded, so a state-push failure is not
-	// masked by a success summary.
-	if !logdiag.HasError(ctx) {
-		logDeploySummary(ctx, b, plan)
-	}
-
 	// Once the deploy is complete, dry-run the migration to the direct engine
 	// and record the outcome in telemetry. If the user has opted in to the
 	// direct engine (via bundle.engine or DATABRICKS_BUNDLE_ENGINE) and the
@@ -300,6 +293,14 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
+
+	// Report what was deployed, mirroring "bundle plan". Printed last so it does not
+	// precede (and appear to vouch for) the postdeploy script's output. Printed even
+	// if that script fails: the resources were already applied successfully by then,
+	// so the counts are accurate, and the script's error still propagates. Earlier
+	// failures return above without a summary, since the plan counts would then
+	// describe what was intended rather than what was applied.
+	logDeploySummary(ctx, b, plan)
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {

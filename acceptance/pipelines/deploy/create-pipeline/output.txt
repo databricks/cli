@@ -27,3 +27,7 @@ View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
     "storage": "dbfs:/pipelines/[UUID]"
   }
 }
+
+>>> [CLI] pipelines deploy --quiet
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files...
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
