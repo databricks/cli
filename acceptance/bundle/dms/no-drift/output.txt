@@ -1,0 +1,58 @@
+
+=== Deploy, then plan without touching anything: the deployment stamp must not show as drift
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=1
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== A second deploy is a no-op too: no update request for either resource
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=2
+
+>>> print_requests.py //api/2.2/jobs //api/2.0/pipelines --sort
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "deployment_id": "[NUMID]",
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift/default/state/metadata.json",
+      "version_id": "1"
+    },
+    "edition": "ADVANCED",
+    "name": "bar",
+    "schema": "default",
+    "serverless": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "deployment_id": "[NUMID]",
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift/default/state/metadata.json",
+      "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
