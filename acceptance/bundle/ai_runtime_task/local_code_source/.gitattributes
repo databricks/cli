@@ -1,0 +1,9 @@
+# These files are packaged verbatim into the .air_snapshots tarballs whose
+# uploaded sizes the test asserts, so their line endings must stay \n on every
+# OS — a Windows \r would change every recorded payload size.
+src/.gitignore text eol=lf
+src/command.sh text eol=lf
+src/data/model.bin text eol=lf
+src/train.py text eol=lf
+src2/command.sh text eol=lf
+src2/train.py text eol=lf
