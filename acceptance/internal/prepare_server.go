@@ -342,6 +342,11 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 	return result
 }
 
+// Multipart parts larger than this limit are summarized as a size placeholder
+// to keep recorded fixtures small. Reviewers care about *what* was uploaded
+// (path, format, overwrite flag), not the bytes themselves, for large blobs.
+const multipartContentLimit = 4096
+
 // normalizeMultipartBody returns a deterministic representation of a multipart
 // form body if the request's Content-Type is multipart/*. The second return
 // value is false if the body is not multipart or cannot be parsed.
@@ -385,11 +390,6 @@ func normalizeMultipartBody(req *testserver.Request) (any, bool) {
 	}
 	return map[string]any{"multipart_form": parts}, true
 }
-
-// Multipart parts larger than this limit are summarized as a size placeholder
-// to keep recorded fixtures small. Reviewers care about *what* was uploaded
-// (path, format, overwrite flag), not the bytes themselves, for large blobs.
-const multipartContentLimit = 4096
 
 func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 	headers := make(http.Header)

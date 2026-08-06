@@ -203,30 +203,15 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	}
 
 	// Post the multipart form of /api/2.0/workspace/import rather than its
-	// JSON-body variant (workspace.Import). The JSON variant sends content
-	// base64-encoded in a `content` field that is capped at 10 MB, returning
-	// MAX_NOTEBOOK_SIZE_EXCEEDED above it; the multipart form posts the bytes as
-	// a file part instead and is bounded only by the 500 MB workspace file size
-	// limit. See the `content` field description in .codegen/cli.json
-	// (workspace.Import) and https://docs.databricks.com/aws/en/files/workspace
-	// ("Workspace file size is limited to 500MB").
-	//
-	// Because format=AUTO lets the server classify each payload, the applicable
-	// limit depends on how the content is classified, not on our request:
-	//
-	//   - Regular file: 500 MB.
-	//   - Notebook in a source format, i.e. content whose extension and
-	//     "Databricks notebook source" header make AUTO import it as a
-	//     notebook: 10 MB.
-	//   - Notebook in IPYNB format: 100 MB.
-	//
-	// Notebook limits are documented at
+	// JSON-body variant (workspace.Import), whose base64 `content` field is
+	// capped at 10 MB; the multipart form is bounded only by the 500 MB
+	// workspace file size limit. Because format=AUTO lets the server classify
+	// each payload, the applicable limit follows the classification: 500 MB for
+	// a regular file, 100 MB for an IPYNB notebook, 10 MB for a source-format
+	// notebook. Those notebook limits applied equally to the import-file
+	// endpoint this replaced, so the migration does not lower any ceiling.
+	// See https://docs.databricks.com/aws/en/files/workspace and
 	// https://docs.databricks.com/aws/en/notebooks/notebook-limitations
-	// ("Import and export is supported for IPYNB notebooks up to 100 MB" and up
-	// to 10 MB for other formats). They are enforced by the workspace for both
-	// /workspace/import and the /workspace-files/import-file endpoint this
-	// replaced, so migrating between the two does not change the maximum
-	// uploadable notebook size.
 	//
 	// The body is built here rather than via the SDK's Workspace.Upload because
 	// that helper derives the routing header from cfg.WorkspaceID with a bare
@@ -271,17 +256,22 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// Path already taken. /workspace/import returns this in three shapes,
-	// verified against a real workspace:
+	// Path already taken. /workspace/import signals this with several
+	// status/error_code combinations, all verified against a real workspace, and
+	// each of the branches below handles one group of them:
 	//
 	//  - 400 RESOURCE_ALREADY_EXISTS — sequential conflict, no overwrite flag.
 	//    Example: "/Users/me/foo.txt already exists. Please pass overwrite=true
 	//    to overwrite it."
 	//
-	//  - 409 ALREADY_EXISTS — concurrent contention (observed in TestLock when
-	//    five lockers race to write deploy.lock).
-	//    Example: "Node with name /Users/me/.bundle/.../deploy.lock already
-	//    exists. Please pass overwrite=true to update it."
+	//  - 409, with ALREADY_EXISTS or with no error_code at all — concurrent
+	//    contention (observed in TestLock when five lockers race to write
+	//    deploy.lock). Example: "Node with name
+	//    /Users/me/.bundle/.../deploy.lock already exists. Please pass
+	//    overwrite=true to update it."
+	//
+	//  - 400 with no error_code — notebook conflict; detected by message marker
+	//    in the ErrBadRequest branch further below.
 	//
 	//  - 400 INVALID_PARAMETER_VALUE — overwrite=true on a path where the
 	//    existing object's node type differs from the upload. Two distinct
