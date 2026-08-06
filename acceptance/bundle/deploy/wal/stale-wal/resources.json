@@ -1,6 +1,6 @@
 {
   "state_version": 1,
-  "cli_version": "0.0.0-dev",
+  "cli_version": "0.0.0",
   "lineage": "stale-test-lineage",
   "serial": 2,
   "state": {

@@ -18,12 +18,14 @@ func TestIsNewerVersion(t *testing.T) {
 		{"state newer patch", "0.300.1", "0.300.0", true},
 		{"same version", "0.300.0", "0.300.0", false},
 		{"state older", "0.299.0", "0.300.0", false},
-		// A released CLI reading a state written by a dev build must not warn:
-		// 0.0.0-dev sorts below every release.
-		{"dev state, released current", "0.0.0-dev+abc123", "0.300.0", false},
-		// A dev build reading a state written by a real release does warn, since
-		// the release genuinely is newer.
-		{"released state, dev current", "0.300.0", "0.0.0-dev+abc123", true},
+		// A dev build is built from main, so its version is the next release with a
+		// -dev prerelease: newer than the last release, older than the release it
+		// will become. Deploying with a dev build after a state written by the last
+		// release is the normal case for a CLI developer and must not warn.
+		{"state from last release, dev current", "0.300.0", "0.301.0-dev+abc123", false},
+		// A released CLI reading a state written by a dev build of the same upcoming
+		// release does warn: that build may have written fields this CLI lacks.
+		{"dev state, released current", "0.301.0-dev+abc123", "0.300.0", true},
 		// A prerelease sorts below its own release per semver.
 		{"prerelease below release", "0.300.0-rc1", "0.300.0", false},
 		{"release above prerelease", "0.300.0", "0.300.0-rc1", true},
