@@ -19,12 +19,12 @@ const (
 	// operationQueueSize so a burst of operations is absorbed by the queue rather
 	// than by one request per resource.
 	//
-	// Capped at 2 because concurrent CreateOperation calls under the same version
-	// contend on shared state server-side and the transaction conflict surfaces as
-	// a 500, which fails the deploy. Measured against the service: 3 concurrent
-	// writes still succeeded, 4 did not. The real fix is a batch upload API that
-	// commits every operation in one transaction; until then, keep this at 2.
-	operationUploadWorkers = 2
+	// This was temporarily capped at 2 while concurrent CreateOperation calls under
+	// the same version contended on shared state server-side, surfacing the
+	// transaction conflict as a 500 that failed the deploy. The service now handles
+	// them: measured against it, 8 and 16 concurrent writes both succeed where 4
+	// used to fail.
+	operationUploadWorkers = 8
 )
 
 // operationQueue hands recorded operations to background workers, so an apply
