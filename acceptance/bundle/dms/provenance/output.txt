@@ -5,6 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-provenance/dev
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+Recorded deployment [NUMID] version 1 at /Workspace/Users/[USERNAME]/.bundle/dms-provenance/dev/state/resources.deployment.json
 
 >>> print_requests.py //versions --sort
 {

@@ -77,7 +77,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType, requestedEngine engine.EngineSetting) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType, requestedEngine engine.EngineSetting, recorder *dms.Recorder) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
@@ -120,6 +120,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
+		logDeploymentHistory(ctx, b, recorder)
 	}
 
 	// Once the deploy is complete, dry-run the migration to the direct engine
@@ -296,7 +297,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 				recorder.Version(),
 			)
 		}
-		deployCore(ctx, b, plan, stateEngine, requestedEngine)
+		deployCore(ctx, b, plan, stateEngine, requestedEngine, recorder)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 		return

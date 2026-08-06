@@ -2,11 +2,14 @@ package phases
 
 import (
 	"context"
+	"fmt"
+	"path"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
@@ -51,6 +54,24 @@ func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.Eng
 		VersionType:  versionType,
 		Provenance:   deploymentProvenance(b),
 	}), nil
+}
+
+// logDeploymentHistory reports the deployment this deploy was recorded under, so
+// the user can look its history up without hunting for the ID. A nil recorder means
+// recording is off, and a zero version means the version was never created.
+//
+// It prints the deployment's workspace path rather than a UI link: the deployment is
+// a BUNDLE_DEPLOYMENT tree node with no page of its own yet, so a URL would 404.
+func logDeploymentHistory(ctx context.Context, b *bundle.Bundle, recorder *dms.Recorder) {
+	if recorder == nil || recorder.Version() == 0 {
+		return
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Recorded deployment %s version %d at %s",
+		recorder.DeploymentID(),
+		recorder.Version(),
+		path.Join(b.Config.Workspace.StatePath, dms.DeploymentNodeName),
+	))
 }
 
 // deploymentProvenance describes the source this deploy came from and where it

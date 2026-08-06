@@ -4,6 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/files...
 Deploying resources...
 Deployment complete!
+Recorded deployment [NUMID] version 1 at /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/state/resources.deployment.json
 
 >>> print_requests.py //api/2.0/bundle --get
 {
@@ -50,6 +51,7 @@ Deployment complete!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/files...
 Deploying resources...
 Deployment complete!
+Recorded deployment [NUMID] version 2 at /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/state/resources.deployment.json
 
 >>> print_requests.py //api/2.0/bundle --get
 {

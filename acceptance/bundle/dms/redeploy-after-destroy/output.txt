@@ -5,6 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+Recorded deployment [NUMID] version 1 at /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state/resources.deployment.json
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -24,6 +25,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+Recorded deployment [NUMID] version 1 at /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state/resources.deployment.json
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state/resources.deployment.json
 {

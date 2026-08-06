@@ -58,6 +58,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+Recorded deployment [NUMID] version 1 at /Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default/state/resources.deployment.json
 
 >>> print_requests.py //api/2.0/bundle --oneline
 {"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default/state", "target_name": "default"}}
