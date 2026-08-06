@@ -61,6 +61,11 @@ func deployCommand() *cobra.Command {
 		}
 		ctx := cmd.Context()
 
+		// --quiet suppresses the per-resource lines, matching bundle deploy.
+		if b.Quiet {
+			return nil
+		}
+
 		bundle.ApplyContext(ctx, b, mutator.InitializeURLs())
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted

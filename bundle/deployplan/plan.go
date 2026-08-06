@@ -40,11 +40,12 @@ type ActionCounts struct {
 	Unchanged int
 }
 
-// CountActions tallies the plan's actions by category.
+// CountActions tallies the plan's actions by category. Order is irrelevant to a
+// tally, so it iterates the plan map directly rather than the sorted GetActions.
 func (p *Plan) CountActions() ActionCounts {
 	var c ActionCounts
-	for _, action := range p.GetActions() {
-		switch action.ActionType {
+	for _, entry := range p.Plan {
+		switch entry.Action {
 		case Create:
 			c.Create++
 		case Update, UpdateWithID, Resize:
