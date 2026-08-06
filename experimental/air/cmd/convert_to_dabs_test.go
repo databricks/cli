@@ -133,7 +133,7 @@ environment:
 	// emitted — deps ride on the environments[] spec asserted above.
 	assert.Contains(t, itemNames(artifacts), commandScriptName)
 	assert.Contains(t, itemNames(artifacts), trainingConfigName)
-	assert.NotContains(t, itemNames(artifacts), requirementsName)
+	assert.NotContains(t, itemNames(artifacts), "requirements.yaml")
 }
 
 // Optional fields are omitted rather than emitted empty: no code_source means no
@@ -341,20 +341,20 @@ func TestConvertToDabsFoldsRequirementsFileIntoEnvSpec(t *testing.T) {
 	assert.Equal(t, "pandas", deps[1].MustString())
 
 	// No requirements.yaml artifact: the mutator regenerates it from the spec.
-	assert.NotContains(t, itemNames(artifacts), requirementsName)
+	assert.NotContains(t, itemNames(artifacts), "requirements.yaml")
 }
 
 // usage_policy_id is a resolved budget policy id and maps to the job's
 // budget_policy_id (usage_policy_name, which needs resolution, is rejected).
 func TestConvertToDabsMapsUsagePolicyID(t *testing.T) {
-	cfg := minimalConfig + "usage_policy_id: budget-abc-123\n"
+	cfg := minimalConfig + "usage_policy_id: 12345678-90ab-cdef-1234-567890abcdef\n"
 	path := writeConfigFile(t, "run.yaml", cfg)
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
 	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.NoError(t, err)
-	assert.Equal(t, "budget-abc-123", get(t, root, "resources.jobs."+loaded.ExperimentName+".budget_policy_id").MustString())
+	assert.Equal(t, "12345678-90ab-cdef-1234-567890abcdef", get(t, root, "resources.jobs."+loaded.ExperimentName+".budget_policy_id").MustString())
 }
 
 func TestConvertToDabsMapsPermissions(t *testing.T) {

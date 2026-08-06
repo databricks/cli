@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -148,17 +147,15 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		return nil, nil, err
 	}
 
+	// buildArtifacts emits command.sh plus the training_config / hyperparameters /
+	// env / secret sidecars, all co-located so the Jobs run-output page can derive
+	// their paths from command_path. It no longer produces a requirements.yaml —
+	// file-form deps are folded into the environments[] spec — so there is nothing to
+	// filter out here.
 	artifacts, err := buildArtifacts(cfg, configPath)
 	if err != nil {
 		return nil, nil, err
 	}
-	// training_config.yaml is kept even though it duplicates the input YAML: the Jobs
-	// run-output page derives its path from command_path (same directory, fixed name),
-	// so dropping it breaks the "see what you ran" link. The input YAML can't serve
-	// instead — `air run -f` accepts any filename, so the UI has nothing to derive.
-	artifacts = slices.DeleteFunc(artifacts, func(it uploadItem) bool {
-		return it.name == requirementsName
-	})
 
 	root := buildBundleValue(ctx, cfg, configPath, codeSourcePath)
 	return root, artifacts, nil
