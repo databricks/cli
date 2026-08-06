@@ -1,7 +1,7 @@
 package aircmd
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"strconv"
 
@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
 
@@ -57,16 +58,7 @@ The workload is described by a YAML config file (see --file).`,
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		// These flags' pipelines are not ported yet; reject rather than silently
-		// ignore them.
-		if len(overrides) > 0 {
-			return errors.New("--override is not yet supported")
-		}
-		if watch {
-			return errors.New("--watch is not yet supported")
-		}
-
-		cfg, err := loadRunConfig(file)
+		cfg, err := loadRunConfigWithOverrides(ctx, file, overrides)
 		if err != nil {
 			return err
 		}
@@ -86,13 +78,63 @@ The workload is described by a YAML config file (see --file).`,
 		}
 
 		runIDStr := strconv.FormatInt(runID, 10)
-		if root.OutputType(cmd) == flags.OutputText {
+		jsonOut := root.OutputType(cmd) == flags.OutputJSON
+
+		if !watch {
+			if !jsonOut {
+				cmdio.LogString(ctx, "Submitted run "+runIDStr)
+				cmdio.LogString(ctx, "View at: "+dashboardURL)
+				cmdio.LogString(ctx, "\nTip: use --watch to stream logs until the run completes.")
+				return nil
+			}
+			return renderEnvelope(ctx, runResult{Status: "SUBMITTED", RunID: runIDStr, DashboardURL: dashboardURL})
+		}
+
+		// --watch: stream the submitted run's logs until it reaches a terminal
+		// state, then exit with the run's outcome. This is the same pipeline as
+		// `air logs <run>` (Bricklens with MLflow fallback).
+		req := logRequest{
+			runID:      runID,
+			attempt:    -1,
+			tailLines:  -1,
+			jsonOutput: jsonOut,
+		}
+
+		if !jsonOut {
 			cmdio.LogString(ctx, "Submitted run "+runIDStr)
 			cmdio.LogString(ctx, "View at: "+dashboardURL)
-			return nil
+			cmdio.LogString(ctx, "Monitoring run and streaming logs...")
+			return runLogs(ctx, cmd, req)
 		}
-		return renderEnvelope(ctx, runResult{Status: "SUBMITTED", RunID: runIDStr, DashboardURL: dashboardURL})
+
+		// --json: emit SUBMITTED first (so a consumer sees the run id immediately),
+		// STATUS events on each lifecycle transition, and a closing terminal-status
+		// envelope after streaming. Mirrors the Python CLI's --watch JSONL contract.
+		out := cmd.OutOrStdout()
+		printSubmittedEvent(out, runIDStr, dashboardURL)
+		req.onStatusChange = func(current, previous string) {
+			printStatusEvent(out, current, previous)
+		}
+		err = runLogs(ctx, cmd, req)
+
+		// Re-resolve the run for the closing envelope. STATUS events only fire on
+		// the Bricklens path, so the terminal status must come from the run's
+		// actual state — correct whether Bricklens or the MLflow fallback served
+		// the logs.
+		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, runID), dashboardURL)
+		return err
 	}
 
 	return cmd
+}
+
+// watchTerminalStatus resolves a watched run's final display state for the
+// closing --watch envelope. The run is terminal once streaming returns; if the
+// status can't be re-fetched, "UNKNOWN" is reported rather than guessing.
+func watchTerminalStatus(ctx context.Context, w *databricks.WorkspaceClient, runID int64) string {
+	status, err := resolveRunStatus(ctx, w, runID)
+	if err != nil {
+		return "UNKNOWN"
+	}
+	return status.displayState()
 }
