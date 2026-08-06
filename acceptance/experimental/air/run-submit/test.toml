@@ -1,13 +1,10 @@
 # A real (non-dry-run) submit that packages a git code_source, uploads the
-# tarball + provenance sidecars, and POSTs runs/submit. No bundle deploy, so no
-# engine matrix.
+# tarball + provenance sidecars, and POSTs runs/submit.
 RecordRequests = true
 
 # run.yaml is generated from run.yaml.tmpl at test time (commit SHA templated in);
 # it isn't a committed input to diff.
 Ignore = ["run.yaml"]
-
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # The SDK probes host reachability with a HEAD request; stub it for determinism.
 [[Server]]

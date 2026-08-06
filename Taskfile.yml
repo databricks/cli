@@ -298,7 +298,7 @@ tasks:
       # Validate placement first so a misplaced fragment fails loudly instead of
       # being silently skipped by the renderer (see validate_nextchanges.py).
       - task: check-changelog
-      - "uv run --locked internal/genkit/release_tagging.py --preview"
+      - "uv run --locked internal/genkit/tagging.py --preview"
 
   deadcode:
     desc: Check for dead code
@@ -920,17 +920,14 @@ tasks:
       - rm .github/workflows/next-changelog.yml
       - mv tagging.py internal/genkit/tagging.py
       - mv tagging.py.lock internal/genkit/tagging.py.lock
-      # The release runs internal/genkit/release_tagging.py, a repo-owned wrapper
-      # that renders CHANGELOG.md from .nextchanges/ around the synced tagging.py.
-      # Point the workflow at it (genkit emits a bare `tagging.py`) and give the
-      # wrapper a matching lock (it declares the same deps).
+      # The release workflow tagging.yml expects tagging.py in a different location
+      # so we rewrite via sed
       - |
         if [ "$(uname)" = "Darwin" ]; then
-          sed -i '' 's|tagging.py|internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
+          sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
         else
-          sed -i 's|tagging.py|internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
+          sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
         fi
-      - cp internal/genkit/tagging.py.lock internal/genkit/release_tagging.py.lock
       # In an environment configured with the internal PyPI proxy, uv bakes the
       # proxy URL into the resolved locks. Unlike pydabs (which blind-reverts its
       # locks because codegen never wants to change them), these locks legitimately

@@ -151,7 +151,7 @@ func TestRenderFields(t *testing.T) {
 		experiment:   "stream-latency-test",
 		mlflowLabel:  "stream-latency-test",
 		mlflowURL:    "https://h.test/ml/experiments/E1/runs/R1",
-		user:         "riddhi.bhagwat@databricks.com",
+		user:         "user@example.com",
 		accelerators: "1x A10",
 		environment:  "ml-runtime-gpu:1.0",
 	})

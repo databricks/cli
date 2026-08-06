@@ -6,3 +6,6 @@ trace $CLI experimental air --help
 
 title "list help"
 trace $CLI experimental air list --help
+
+title "logs help"
+trace $CLI experimental air logs --help

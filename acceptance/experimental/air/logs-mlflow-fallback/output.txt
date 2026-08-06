@@ -1,0 +1,8 @@
+
+=== logs falls back to mlflow (no logs)
+>>> [CLI] experimental air logs 123
+No logs available for run 123. Run terminated in state SUCCESS
+
+=== logs falls back to mlflow (json)
+>>> [CLI] experimental air logs 123 -o json
+{"type":"ERROR","ts":"[TIMESTAMP]","node":0,"line":"No logs available for run 123. Run terminated in state SUCCESS"}

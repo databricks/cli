@@ -87,6 +87,13 @@ const (
 	ErrPythonInstall      ErrorCode = "E_PYTHON_INSTALL"      // provision: uv python install failed
 	ErrProvision          ErrorCode = "E_PROVISION"           // provision: uv sync failed
 	ErrValidate           ErrorCode = "E_VALIDATE"            // validate: post-provision version mismatch
+
+	// ErrCanceled is not in the spec's error-code table: it reports a user/parent
+	// interrupt (SIGINT/SIGTERM cancels the context), not a failure of the phase
+	// it happened to be in. Without it an interrupt mid-`uv sync` surfaces as
+	// E_PROVISION with a "provision failed" message, implying something broke when
+	// the user simply pressed Ctrl-C. FailurePhase still records where it stopped.
+	ErrCanceled ErrorCode = "E_CANCELED" // any phase: interrupted by SIGINT/SIGTERM
 )
 
 // PipelineError is a failure carrying a stable code, the phase at which it
