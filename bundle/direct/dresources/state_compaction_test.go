@@ -13,8 +13,7 @@ import (
 
 const (
 	// largeDashboard is a serialized_dashboard whose JSON encoding exceeds
-	// stateHashPlaceholderLen, so it is actually compacted. Shared by the tests that assert
-	// hashing happens, since a shorter value is deliberately left raw.
+	// stateHashPlaceholderLen, so it is actually compacted.
 	largeDashboard = `{"pages":[{"name":"p1","displayName":"Page One","layout":[{"widget":{"name":"w1"}}]}]}`
 
 	// smallDashboard is a serialized_dashboard whose JSON encoding fits within

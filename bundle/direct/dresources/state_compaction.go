@@ -27,9 +27,7 @@ const stateHashPlaceholderLen = len(stateHashPrefix) + sha256.Size*2
 // serialized_dashboard) compactly in state instead of their full contents.
 //
 // It is idempotent and stable: nil, an empty string, a value that is already a
-// placeholder, and a value too small to be worth hashing are returned unchanged, so
-// re-compacting an already-compact state and comparing a fresh config against stored
-// state both behave predictably.
+// placeholder, and a value too small to be worth hashing are returned unchanged
 func hashStateValue(v any) (any, error) {
 	if s, ok := v.(string); ok {
 		if s == "" || strings.HasPrefix(s, stateHashPrefix) {
@@ -41,7 +39,7 @@ func hashStateValue(v any) (any, error) {
 		return v, nil
 	}
 
-	// json.Marshal sorts map keys, so the digest is stable across runs for equal values.
+	// json.Marshal sorts map keys
 	data, err := json.Marshal(v)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling value for hashing: %w", err)
