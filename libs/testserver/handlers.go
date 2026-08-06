@@ -197,9 +197,12 @@ func AddDefaultHandlers(server *Server) {
 				}
 			}
 
-			if format != "" && format != string(workspace.ImportFormatAuto) {
+			// Require format explicitly: the real endpoint defaults to SOURCE, which
+			// would import every upload as a notebook, so a caller that drops the
+			// field is a bug rather than a request for the fake's usual behavior.
+			if format != string(workspace.ImportFormatAuto) {
 				return Response{
-					Body:       "internal error: The test server only supports auto format.",
+					Body:       fmt.Sprintf("internal error: The test server only supports auto format, got %q.", format),
 					StatusCode: http.StatusInternalServerError,
 				}
 			}
