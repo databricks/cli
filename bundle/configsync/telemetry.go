@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/telemetry"
@@ -49,10 +50,51 @@ type Stats struct {
 	FilesChangedCount int64
 	FilesWrittenCount int64
 
+	// Changes that were detected and reported but not written back, because they
+	// could not be attributed to a single source location.
+	SkippedChangesCount int64
+
 	Restore RestoreStats
+
+	// Identity of the resource state the run actually read. Without these, a
+	// "no deployed <type> resource with id" failure cannot be told apart from
+	// reading a stale local cache, another target's state, or no state at all.
+	StateSerial  int64
+	StateLineage string
+	StateSource  string
+	// Pointer so the informative zero (no state file found at all) survives
+	// omitempty on serialization.
+	StatesAvailableCount *int64
+
+	// Resource ids present in the state that was read, and the ids the run was
+	// asked to sync. Comparing the two classifies a selector miss.
+	StateResourceIDs    *protos.BundleConfigRemoteSyncResourceIds
+	SelectedResourceIDs *protos.BundleConfigRemoteSyncResourceIds
 
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
+}
+
+// CollectStateStats records which resource state the run read. Only the
+// state's identity is recorded (serial, system-generated lineage UUID,
+// local/remote origin, candidate count) — never a path or a target name.
+//
+// None of these can contain PII: the lineage is an opaque random UUID minted by
+// the state layer, and the source is one of two fixed literals.
+func (s *Stats) CollectStateStats(desc *statemgmt.StateDesc) {
+	if desc == nil {
+		return
+	}
+	s.StateSerial = int64(desc.Serial)
+	s.StateLineage = desc.Lineage
+	s.StateSource = "remote"
+	if desc.IsLocal {
+		s.StateSource = "local"
+	}
+	// AllStates is only populated when at least one state was found; a
+	// synthesized empty state descriptor leaves it nil.
+	n := int64(len(desc.AllStates))
+	s.StatesAvailableCount = &n
 }
 
 // RestoreStats counts the variable-reference restorations that can leak a
@@ -154,6 +196,70 @@ func resourceTypeFromKey(resourceKey string) string {
 	return parts[1]
 }
 
+// resourceIDLimit caps how many ids of one type are reported. Mirrors
+// phases.ResourceIdLimit: the telemetry upload has a short timeout, so a bundle
+// with very many resources must not produce an unbounded payload.
+const resourceIDLimit = 1000
+
+// collectResourceIDs groups "<type>:<id>" pairs into the per-type id lists.
+// Returns nil when nothing was collected so the field is omitted entirely.
+func collectResourceIDs(typeAndIDs []string) *protos.BundleConfigRemoteSyncResourceIds {
+	out := &protos.BundleConfigRemoteSyncResourceIds{}
+	any := false
+	for _, typeAndID := range typeAndIDs {
+		resourceType, id, ok := strings.Cut(typeAndID, ":")
+		if !ok || id == "" {
+			continue
+		}
+		// Sub-resources (permissions/grants) are indexed under their parent's
+		// type with a path-shaped object id; those are not selectable and the
+		// path would be redacted, so skip them.
+		if strings.Contains(id, "/") {
+			continue
+		}
+		switch resourceType {
+		case "jobs":
+			if len(out.ResourceJobIDs) < resourceIDLimit {
+				out.ResourceJobIDs = append(out.ResourceJobIDs, id)
+				any = true
+			}
+		case "pipelines":
+			if len(out.ResourcePipelineIDs) < resourceIDLimit {
+				out.ResourcePipelineIDs = append(out.ResourcePipelineIDs, id)
+				any = true
+			}
+		case "clusters":
+			if len(out.ResourceClusterIDs) < resourceIDLimit {
+				out.ResourceClusterIDs = append(out.ResourceClusterIDs, id)
+				any = true
+			}
+		case "dashboards":
+			if len(out.ResourceDashboardIDs) < resourceIDLimit {
+				out.ResourceDashboardIDs = append(out.ResourceDashboardIDs, id)
+				any = true
+			}
+		}
+	}
+	if !any {
+		return nil
+	}
+	slices.Sort(out.ResourceJobIDs)
+	slices.Sort(out.ResourcePipelineIDs)
+	slices.Sort(out.ResourceClusterIDs)
+	slices.Sort(out.ResourceDashboardIDs)
+	return out
+}
+
+// CollectSelectedIDs records the ids the run was asked to sync.
+func (s *Stats) CollectSelectedIDs(selectors []string) {
+	s.SelectedResourceIDs = collectResourceIDs(selectors)
+}
+
+// CollectStateIDs records the ids present in the state that was read.
+func (s *Stats) CollectStateIDs(typeAndIDs []string) {
+	s.StateResourceIDs = collectResourceIDs(typeAndIDs)
+}
+
 // LogTelemetry emits the BundleConfigRemoteSyncEvent for this run.
 func (s *Stats) LogTelemetry(ctx context.Context) {
 	defer recoverTelemetry(ctx)
@@ -178,8 +284,15 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 			ResourceChanges:        resourceChanges,
 			FilesChangedCount:      s.FilesChangedCount,
 			FilesWrittenCount:      s.FilesWrittenCount,
+			SkippedChangesCount:    s.SkippedChangesCount,
 			RefsRetargeted:         s.Restore.Retargeted,
 			RefsFromSiblings:       s.Restore.FromSiblings,
+			StateSerial:            s.StateSerial,
+			StateLineage:           s.StateLineage,
+			StateSource:            s.StateSource,
+			StatesAvailableCount:   s.StatesAvailableCount,
+			StateResourceIDs:       s.StateResourceIDs,
+			SelectedResourceIDs:    s.SelectedResourceIDs,
 			ErrorMessage:           s.ErrorMessage,
 			ErrorCategory:          s.ErrorCategory,
 		},

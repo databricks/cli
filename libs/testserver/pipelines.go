@@ -129,6 +129,9 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 
 	item.Spec = &spec
 	item.Parameters = edit.Parameters
+	// The backend echoes the spec name on GetPipelineResponse.Name; mirror that so a
+	// rename is reflected on the next read.
+	item.Name = spec.Name
 	// run_as is on EditPipeline, not PipelineSpec; keep it in sync like Parameters so an edit
 	// that changes run_as is reflected on the next read (matches cloud top-level echo).
 	if edit.RunAs != nil {

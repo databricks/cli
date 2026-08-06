@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# A target name may contain a dot. The write path to an override block is
+# targets.<target>.<field>, which is parsed back into segments, so a dotted name has to
+# be quoted or "dev.eu" becomes two keys and addresses a node that does not exist.
+resources:
+  jobs:
+    dotted_job:
+      tasks:
+        - task_key: main
+          max_retries: 1
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev.eu:
+    mode: development
+    resources:
+      jobs:
+        dotted_job:
+          tasks:
+            - task_key: main
+              timeout_seconds: 45

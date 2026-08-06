@@ -5,11 +5,15 @@ workspace:
   artifact_path: /foo/bar/artifacts
 
 # The tarball is delivered as an artifact; don't also sync it as a bundle file.
+# The archive glob is natural here and must not be mistaken for an exclude of the
+# generated code-snapshot dir: this task's code_source_path is a local FILE, so no
+# snapshot is packaged and the snapshot-dir guards must stay silent.
 sync:
   exclude:
     - build/**
     - dist/**
     - code.tgz
+    - "**/*.tar.gz"
 
 # The AI Runtime task ships user code as a tarball built locally by an artifact.
 artifacts:
