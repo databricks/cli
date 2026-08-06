@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -141,12 +142,12 @@ func (q *operationQueue) record(ctx context.Context, resourceKey string, action 
 // Unlike record, this does not resurface an earlier upload error: the deploy is
 // already failing, and returning a different error here would replace the one the
 // user needs to see. A failure to upload this record is reported at close.
-func (q *operationQueue) recordFailure(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, cause error) {
+func (q *operationQueue) recordFailure(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, priorState json.RawMessage, cause error) {
 	if q == nil {
 		return
 	}
 
-	op, err := newFailedOperation(action, resourceID, cause)
+	op, err := newFailedOperation(action, resourceID, priorState, cause)
 	if err != nil {
 		log.Warnf(ctx, "Not recording failure for %s: %s", resourceKey, err)
 		return

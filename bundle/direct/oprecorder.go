@@ -81,10 +81,13 @@ func newRecordedOperation(action deployplan.ActionType, resourceID string, state
 // newFailedOperation records an operation that did not apply, so the deployment
 // history says why a resource failed rather than just omitting it.
 //
-// No state is recorded: the resource was not written, so there is nothing to
-// serve back as its state. CREATE and RECREATE may have no resourceID yet, which
-// the service allows for exactly those two actions.
-func newFailedOperation(action deployplan.ActionType, resourceID string, cause error) (recordedOperation, error) {
+// priorState is the resource's state from before the deploy, carried through
+// unchanged: an action other than a create acts on a resource that still exists, and
+// the service rejects such an operation without state because dropping it would
+// leave DMS unable to describe a resource it still owns. It is nil for a create,
+// where there is no prior state and no resource to describe - which is also why the
+// resourceID may be empty for CREATE and RECREATE.
+func newFailedOperation(action deployplan.ActionType, resourceID string, priorState json.RawMessage, cause error) (recordedOperation, error) {
 	actionType, err := deployActionToSDK(action)
 	if err != nil {
 		return recordedOperation{}, err
@@ -100,7 +103,25 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, cause e
 		resourceID:   resourceID,
 		status:       bundledeployments.OperationStatusOperationStatusFailed,
 		errorMessage: message,
+		state:        priorState,
 	}, nil
+}
+
+// priorState returns the resource's recorded state from before this deploy, in the
+// same envelope form the success path uploads, or nil when the resource has none
+// (a create). A failed operation reports this unchanged: the resource is whatever it
+// was before the attempt.
+func priorState(db *dstate.DeploymentState, resourceKey string) json.RawMessage {
+	entry, ok := db.GetResourceEntry(resourceKey)
+	if !ok || len(entry.State) == 0 {
+		return nil
+	}
+
+	raw, err := json.Marshal(dstate.RecordedState{State: entry.State, DependsOn: entry.DependsOn})
+	if err != nil {
+		return nil
+	}
+	return raw
 }
 
 // operationUploader records an applied resource operation with DMS. Uploads run

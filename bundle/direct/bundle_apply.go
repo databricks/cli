@@ -104,7 +104,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				err = d.Destroy(ctx, &b.StateDB)
 			}
 			if err != nil {
-				opQueue.recordFailure(ctx, resourceKey, action, deletedID, err)
+				opQueue.recordFailure(ctx, resourceKey, action, deletedID, priorState(&b.StateDB, resourceKey), err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -140,7 +140,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			if err != nil {
 				// GetResourceID is empty for a create that never got an ID, which is
 				// what the service expects for a failed create.
-				opQueue.recordFailure(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), err)
+				opQueue.recordFailure(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), priorState(&b.StateDB, resourceKey), err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}

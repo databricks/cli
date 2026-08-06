@@ -88,7 +88,7 @@ func TestNewRecordedOperationRejectsUnsupportedAction(t *testing.T) {
 }
 
 func TestNewFailedOperationRecordsError(t *testing.T) {
-	op, err := newFailedOperation(deployplan.Create, "", errors.New("cluster spec is invalid"))
+	op, err := newFailedOperation(deployplan.Create, "", nil, errors.New("cluster spec is invalid"))
 	require.NoError(t, err)
 
 	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, op.status)
@@ -100,7 +100,7 @@ func TestNewFailedOperationRecordsError(t *testing.T) {
 func TestNewFailedOperationTruncatesLongError(t *testing.T) {
 	// Truncated rather than rejected: a message over the limit would make recording
 	// fail and hide the error it is reporting.
-	op, err := newFailedOperation(deployplan.Update, "job-123", errors.New(strings.Repeat("x", maxOperationErrorMessageSize+100)))
+	op, err := newFailedOperation(deployplan.Update, "job-123", nil, errors.New(strings.Repeat("x", maxOperationErrorMessageSize+100)))
 	require.NoError(t, err)
 
 	assert.Len(t, op.errorMessage, maxOperationErrorMessageSize)
