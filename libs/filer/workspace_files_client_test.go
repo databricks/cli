@@ -2,23 +2,24 @@ package filer
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"io/fs"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -108,60 +109,130 @@ func TestWorkspaceFilesClientWorkspaceIDHeaders(t *testing.T) {
 	})
 }
 
-// Confirms Write uploads through Workspace.Upload with format=AUTO, and that
-// the overwrite flag is set only when OverwriteIfExists is passed. AUTO is what
-// lets the server decide between storing content as a file or a notebook, so
-// the format is asserted explicitly rather than left to the SDK default
-// (SOURCE), which would import every file as a notebook.
+// importFormFields parses the multipart body of a recorded /workspace/import
+// request into a field name -> value map.
+func importFormFields(t *testing.T, contentType string, body []byte) map[string]string {
+	t.Helper()
+
+	_, params, err := mime.ParseMediaType(contentType)
+	require.NoError(t, err)
+	mr := multipart.NewReader(bytes.NewReader(body), params["boundary"])
+
+	fields := map[string]string{}
+	for {
+		part, err := mr.NextPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		require.NoError(t, err)
+		data, err := io.ReadAll(part)
+		require.NoError(t, err)
+		fields[part.FormName()] = string(data)
+	}
+	return fields
+}
+
+// Confirms Write posts a multipart /workspace/import body with format=AUTO, and
+// that the overwrite field is present only when OverwriteIfExists is passed.
+// AUTO is what lets the server decide between storing content as a file or a
+// notebook, so the format is asserted explicitly rather than left to the
+// endpoint default (SOURCE), which would import every file as a notebook.
 func TestWorkspaceFilesClientWriteSuccess(t *testing.T) {
 	tests := []struct {
-		name           string
-		modes          []WriteMode
-		expectOverride bool
+		name          string
+		modes         []WriteMode
+		expectPresent bool
 	}{
 		{
-			name:           "no overwrite",
-			modes:          nil,
-			expectOverride: false,
+			name:          "no overwrite",
+			modes:         nil,
+			expectPresent: false,
 		},
 		{
-			name:           "overwrite",
-			modes:          []WriteMode{OverwriteIfExists},
-			expectOverride: true,
+			name:          "overwrite",
+			modes:         []WriteMode{OverwriteIfExists},
+			expectPresent: true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mw := mocks.NewMockWorkspaceClient(t)
-			workspaceApi := mw.GetMockWorkspaceAPI()
+			var gotForm map[string]string
+			server := testserver.New(t)
+			server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+				gotForm = importFormFields(t, req.Headers.Get("Content-Type"), req.Body)
+				return testserver.Response{StatusCode: http.StatusOK}
+			})
+			testserver.AddDefaultHandlers(server)
 
-			workspaceApi.EXPECT().Upload(
-				mock.Anything,
-				"/dir/file.txt",
-				mock.Anything,
-				mock.Anything,
-				mock.Anything,
-			).RunAndReturn(func(_ context.Context, _ string, r io.Reader, opts ...func(*workspace.Import)) error {
-				body, err := io.ReadAll(r)
-				require.NoError(t, err)
-				assert.Equal(t, "hello", string(body))
-
-				i := &workspace.Import{}
-				for _, opt := range opts {
-					opt(i)
-				}
-				assert.Equal(t, workspace.ImportFormatAuto, i.Format)
-				assert.Equal(t, tc.expectOverride, i.Overwrite)
-				return nil
-			}).Once()
-
-			c := WorkspaceFilesClient{
-				workspaceClient: mw.WorkspaceClient,
-				root:            NewWorkspaceRootPath("/dir"),
-			}
-			err := c.Write(t.Context(), "file.txt", strings.NewReader("hello"), tc.modes...)
+			client, err := databricks.NewWorkspaceClient(&databricks.Config{
+				Host:  server.URL,
+				Token: "testtoken",
+			})
 			require.NoError(t, err)
+
+			f, err := NewWorkspaceFilesClient(client, "/dir")
+			require.NoError(t, err)
+
+			require.NoError(t, f.Write(t.Context(), "file.txt", strings.NewReader("hello"), tc.modes...))
+
+			assert.Equal(t, "/dir/file.txt", gotForm["path"])
+			assert.Equal(t, "hello", gotForm["content"])
+			assert.Equal(t, string(workspace.ImportFormatAuto), gotForm["format"])
+			overwrite, present := gotForm["overwrite"]
+			assert.Equal(t, tc.expectPresent, present)
+			if present {
+				assert.Equal(t, "true", overwrite)
+			}
+		})
+	}
+}
+
+// Confirms the workspace routing header is sent when the config carries a real
+// workspace ID, and that the CLI-only "none" sentinel is never forwarded as a
+// literal routing identifier. The sentinel is written to .databrickscfg by
+// `auth login --skip-workspace`; the platform has no workspace named "none",
+// so sending it would misroute the upload.
+func TestWorkspaceFilesClientWriteWorkspaceIDHeader(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string
+		expect      string
+	}{
+		{
+			name:        "real workspace ID is forwarded",
+			workspaceID: "7474644166319138",
+			expect:      "7474644166319138",
+		},
+		{
+			name:        "none sentinel is not forwarded",
+			workspaceID: auth.WorkspaceIDNone,
+			expect:      "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotHeader string
+			server := testserver.New(t)
+			server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+				gotHeader = req.Headers.Get(auth.WorkspaceIDHeader)
+				return testserver.Response{StatusCode: http.StatusOK}
+			})
+			testserver.AddDefaultHandlers(server)
+
+			client, err := databricks.NewWorkspaceClient(&databricks.Config{
+				Host:        server.URL,
+				Token:       "testtoken",
+				WorkspaceID: tc.workspaceID,
+			})
+			require.NoError(t, err)
+
+			f, err := NewWorkspaceFilesClient(client, "/dir")
+			require.NoError(t, err)
+
+			require.NoError(t, f.Write(t.Context(), "file.txt", strings.NewReader("hello")))
+			assert.Equal(t, tc.expect, gotHeader)
 		})
 	}
 }
@@ -263,17 +334,28 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mw := mocks.NewMockWorkspaceClient(t)
-			workspaceApi := mw.GetMockWorkspaceAPI()
-			workspaceApi.EXPECT().Upload(
-				mock.Anything, "/dir/file.txt", mock.Anything, mock.Anything, mock.Anything,
-			).Return(tc.apiErr).Once()
+			server := testserver.New(t)
+			server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+				return testserver.Response{
+					StatusCode: tc.apiErr.StatusCode,
+					Body: map[string]string{
+						"error_code": tc.apiErr.ErrorCode,
+						"message":    tc.apiErr.Message,
+					},
+				}
+			})
+			testserver.AddDefaultHandlers(server)
 
-			c := WorkspaceFilesClient{
-				workspaceClient: mw.WorkspaceClient,
-				root:            NewWorkspaceRootPath("/dir"),
-			}
-			err := c.Write(t.Context(), "file.txt", bytes.NewReader([]byte("data")), tc.mode...)
+			client, err := databricks.NewWorkspaceClient(&databricks.Config{
+				Host:  server.URL,
+				Token: "testtoken",
+			})
+			require.NoError(t, err)
+
+			f, err := NewWorkspaceFilesClient(client, "/dir")
+			require.NoError(t, err)
+
+			err = f.Write(t.Context(), "file.txt", bytes.NewReader([]byte("data")), tc.mode...)
 			require.Error(t, err)
 			switch target := tc.expectErrTarget.(type) {
 			case noSuchDirectoryError:
@@ -367,26 +449,48 @@ func TestWorkspaceFilesClientWriteUnrelatedReasonPassesThrough(t *testing.T) {
 // the buffered body, so this also covers that the content survives the second
 // attempt.
 func TestWorkspaceFilesClientWriteCreatesParentDirectories(t *testing.T) {
-	mw := mocks.NewMockWorkspaceClient(t)
-	workspaceApi := mw.GetMockWorkspaceAPI()
+	var uploads int
+	var mkdirs []string
+	var lastContent string
 
-	// First Upload returns 404, second returns success after MkdirsByPath.
-	workspaceApi.EXPECT().Upload(
-		mock.Anything, "/dir/sub/file.txt", mock.Anything, mock.Anything, mock.Anything,
-	).Return(&apierr.APIError{StatusCode: http.StatusNotFound, Message: "not found"}).Once()
+	server := testserver.New(t)
+	server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+		uploads++
+		// The first attempt 404s as it would against a missing parent; the retry
+		// after mkdirs succeeds.
+		if uploads == 1 {
+			return testserver.Response{
+				StatusCode: http.StatusNotFound,
+				Body:       map[string]string{"message": "The parent folder (/dir/sub) does not exist."},
+			}
+		}
+		form := importFormFields(t, req.Headers.Get("Content-Type"), req.Body)
+		lastContent = form["content"]
+		return testserver.Response{StatusCode: http.StatusOK}
+	})
+	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req testserver.Request) any {
+		var request workspace.Mkdirs
+		require.NoError(t, json.Unmarshal(req.Body, &request))
+		mkdirs = append(mkdirs, request.Path)
+		return testserver.Response{StatusCode: http.StatusOK}
+	})
+	testserver.AddDefaultHandlers(server)
 
-	workspaceApi.EXPECT().MkdirsByPath(mock.Anything, "/dir/sub").Return(nil).Once()
-
-	workspaceApi.EXPECT().Upload(
-		mock.Anything, "/dir/sub/file.txt", mock.Anything, mock.Anything, mock.Anything,
-	).Return(nil).Once()
-
-	c := WorkspaceFilesClient{
-		workspaceClient: mw.WorkspaceClient,
-		root:            NewWorkspaceRootPath("/dir"),
-	}
-	err := c.Write(t.Context(), "sub/file.txt", strings.NewReader("data"), CreateParentDirectories)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
 	require.NoError(t, err)
+
+	f, err := NewWorkspaceFilesClient(client, "/dir")
+	require.NoError(t, err)
+
+	require.NoError(t, f.Write(t.Context(), "sub/file.txt", strings.NewReader("data"), CreateParentDirectories))
+
+	assert.Equal(t, 2, uploads)
+	assert.Equal(t, []string{"/dir/sub"}, mkdirs)
+	// The retry re-reads the buffered body, so the content must survive.
+	assert.Equal(t, "data", lastContent)
 }
 
 // Confirms a workspace get-status payload unmarshals into wsfsFileInfo and that
