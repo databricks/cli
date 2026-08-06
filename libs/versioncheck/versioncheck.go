@@ -112,9 +112,9 @@ func Check(ctx context.Context) *Result {
 
 // isDevelopmentBuild reports whether the binary was not built from a tagged
 // release. Snapshot builds (goreleaser --snapshot) and local `go build`
-// binaries (version 0.0.0-dev+<sha>) fall into this category.
+// binaries (version <next release>-dev+<sha>) fall into this category.
 func isDevelopmentBuild(info build.Info) bool {
-	return info.IsSnapshot || strings.HasPrefix(info.Version, "0.0.0")
+	return info.IsDevelopment()
 }
 
 // isNewer reports whether latest is a higher semver than current. Both are
