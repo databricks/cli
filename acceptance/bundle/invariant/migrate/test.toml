@@ -27,17 +27,6 @@ EnvMatrixExclude.no_cross_resource_ref = ["INPUT_CONFIG=job_cross_resource_ref.y
 # Grant cross-references require the EmbeddedSlice pattern not present in terraform mode.
 EnvMatrixExclude.no_grant_ref = ["INPUT_CONFIG=schema_grant_ref.yml.tmpl"]
 
-# An empty grants list plans a spurious create after migrate: Terraform records no
-# databricks_grants resource for grants: [], so migrate leaves no state entry for the
-# grants node, but the direct plan emits a "create" for it anyway. Found by fuzz testing.
-# The plan check fails with:
-#   Unexpected action='create' for resources.schemas.foo.grants
-#   ...
-#   "resources.schemas.foo.grants": { "action": "create", ... }
-#   Exit code: 10
-# Fixed by https://github.com/databricks/cli/pull/6039; re-enable once that lands.
-EnvMatrixExclude.no_empty_grants = ["INPUT_CONFIG=schema_empty_grants.yml.tmpl"]
-
 # SQL warehouses currently failing with migration with permanent drift. TODO: fix this.
 EnvMatrixExclude.no_sql_warehouse = ["INPUT_CONFIG=sql_warehouse.yml.tmpl"]
 

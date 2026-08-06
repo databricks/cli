@@ -57,7 +57,7 @@ func TestBuildArtifacts_CommandAndConfig(t *testing.T) {
 	assert.Equal(t, "python train.py", string(items[1].data))
 }
 
-func TestBuildArtifacts_InlineRequirementsAndParameters(t *testing.T) {
+func TestBuildArtifacts_ParametersButNoRequirements(t *testing.T) {
 	path := writeConfigFile(t, "run.yaml", "x: y\n")
 	cfg := &runConfig{
 		Command: new("echo hi"),
@@ -68,19 +68,10 @@ func TestBuildArtifacts_InlineRequirementsAndParameters(t *testing.T) {
 		Parameters: map[string]any{"lr": 0.1},
 	}
 
+	// Inline deps are not uploaded, so the artifacts are config, command, and params.
 	items, err := buildArtifacts(cfg, path)
 	require.NoError(t, err)
-	assert.Equal(t, []string{trainingConfigName, commandScriptName, requirementsName, hyperparametersName}, itemNames(items))
-
-	var reqIdx int
-	for i, it := range items {
-		if it.name == requirementsName {
-			reqIdx = i
-		}
-	}
-	req := string(items[reqIdx].data)
-	assert.Contains(t, req, "version: \"5\"")
-	assert.Contains(t, req, "- torch")
+	assert.Equal(t, []string{trainingConfigName, commandScriptName, hyperparametersName}, itemNames(items))
 }
 
 func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
@@ -103,7 +94,7 @@ func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
 	assert.JSONEq(t, `[{"name":"HF_TOKEN","secret_scope":"myscope","secret_key":"hf"}]`, string(byName[secretEnvVarsName]))
 }
 
-func TestBuildArtifacts_RequirementsFile(t *testing.T) {
+func TestBuildArtifacts_RequirementsFileNotUploaded(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "run.yaml"), []byte("x: y\n"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "reqs.yaml"), []byte("version: 4\n"), 0o600))
@@ -112,9 +103,10 @@ func TestBuildArtifacts_RequirementsFile(t *testing.T) {
 		Environment: &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "reqs.yaml"}},
 	}
 
+	// A declared requirements file is not uploaded; its deps travel on spec.dependencies.
 	items, err := buildArtifacts(cfg, filepath.Join(dir, "run.yaml"))
 	require.NoError(t, err)
-	assert.Contains(t, itemNames(items), requirementsName)
+	assert.Equal(t, []string{trainingConfigName, commandScriptName}, itemNames(items))
 }
 
 func TestBuildArtifacts_OversizeConfigRejected(t *testing.T) {
@@ -142,14 +134,4 @@ func (errWriter) Write(ctx context.Context, name string, reader io.Reader, mode 
 func TestUploadArtifacts_WriteError(t *testing.T) {
 	err := uploadArtifacts(t.Context(), errWriter{}, []uploadItem{{trainingConfigName, []byte("x")}})
 	require.ErrorContains(t, err, "failed to upload "+trainingConfigName)
-}
-
-func TestBuildArtifacts_MissingRequirementsFile(t *testing.T) {
-	cfgPath := writeConfigFile(t, "run.yaml", "x: y\n")
-	cfg := &runConfig{
-		Command:     new("echo hi"),
-		Environment: &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "nope.yaml"}},
-	}
-	_, err := buildArtifacts(cfg, cfgPath)
-	require.ErrorContains(t, err, "failed to read requirements file")
 }

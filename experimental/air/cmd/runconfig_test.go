@@ -243,7 +243,10 @@ func TestRunConfigValidate_FieldRules(t *testing.T) {
 			c.UsagePolicyID = str("id")
 		}, "mutually exclusive"},
 		{"empty usage_policy_id", func(c *runConfig) { c.UsagePolicyID = str("  ") }, "usage_policy_id must not be empty"},
-		{"usage_policy_id alone is ok", func(c *runConfig) { c.UsagePolicyID = str("policy-uuid") }, ""},
+		{"non-uuid usage_policy_id", func(c *runConfig) { c.UsagePolicyID = str("policy-uuid") }, "usage_policy_id must be a UUID"},
+		// A name pasted into the id field gets pointed at the right field.
+		{"policy name in usage_policy_id", func(c *runConfig) { c.UsagePolicyID = str("team-a") }, "use usage_policy_name"},
+		{"uuid usage_policy_id alone is ok", func(c *runConfig) { c.UsagePolicyID = str("12345678-90ab-cdef-1234-567890abcdef") }, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

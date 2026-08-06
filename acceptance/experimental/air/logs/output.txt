@@ -1,0 +1,66 @@
+
+=== logs (text, completed run)
+>>> [CLI] experimental air logs 123
+step 1
+step 2
+CUDA out of memory
+
+=== logs (json)
+>>> [CLI] experimental air logs 123 -o json
+{"type":"LOG","ts":"[TIMESTAMP]","node":0,"line":"step 1"}
+{"type":"LOG","ts":"[TIMESTAMP]","node":0,"line":"step 2"}
+{"type":"ALERT","ts":"[TIMESTAMP]","node":0,"line":"CUDA out of memory"}
+{"type":"LOG","ts":"[TIMESTAMP]","node":0,"line":"CUDA out of memory"}
+
+=== logs with --minutes
+>>> [CLI] experimental air logs 123 --minutes 30
+step 1
+step 2
+CUDA out of memory
+
+=== logs with --lines
+>>> [CLI] experimental air logs 123 --lines 1
+CUDA out of memory
+
+=== logs with --lines 0 prints nothing
+>>> [CLI] experimental air logs 123 --lines 0
+No logs available for run 123. Run terminated in state SUCCESS
+
+=== logs from a specific retry
+>>> [CLI] experimental air logs 123 --retry 0
+step 1
+step 2
+CUDA out of memory
+
+=== logs --lines and --minutes are mutually exclusive
+>>> [CLI] experimental air logs 123 --lines 100 --minutes 30
+Error: cannot combine --lines with --minutes: --lines tails by line count, --minutes by time window
+
+Exit code: 1
+
+=== logs --lines and --minutes are mutually exclusive (json)
+>>> [CLI] experimental air logs 123 --lines 100 --minutes 30 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "cannot combine --lines with --minutes: --lines tails by line count, --minutes by time window",
+    "retryable": false
+  }
+}
+
+Exit code: 1
+
+=== invalid run id
+>>> [CLI] experimental air logs notanumber
+Error: invalid JOB_RUN_ID "notanumber": must be a positive integer
+
+Exit code: 1
+
+=== negative node
+>>> [CLI] experimental air logs 123 --node -1
+Error: invalid --node -1: must not be negative
+
+Exit code: 1

@@ -11,6 +11,39 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCatalogsCreate_RejectsEmptyName(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	response := workspace.CatalogsCreate(Request{Body: []byte(`{"name": ""}`)})
+	assert.Equal(t, 400, response.StatusCode)
+
+	// A stored-but-unreadable catalog is the original bug. Asserted before the
+	// require below so it is still reported when the rejection is missing.
+	assert.Empty(t, workspace.Catalogs)
+
+	body, ok := response.Body.(map[string]string)
+	require.True(t, ok)
+	assert.Equal(t, "INVALID_PARAMETER_VALUE", body["error_code"])
+	assert.Contains(t, body["message"], "is not a valid name")
+}
+
+func TestCatalogsCreate_AllowsNonEmptyName(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	response := workspace.CatalogsCreate(Request{Body: []byte(`{"name": "my_catalog"}`)})
+	// StatusCode 0 gets converted to 200 by normalizeResponse in the server
+	require.Equal(t, 0, response.StatusCode)
+
+	// Read back through the same helper the GET route uses: a mis-keyed store must fail here.
+	getResponse := MapGet(workspace, workspace.Catalogs, "my_catalog")
+	require.Equal(t, 0, getResponse.StatusCode)
+
+	body, ok := getResponse.Body.(catalog.CatalogInfo)
+	require.True(t, ok)
+	assert.Equal(t, "my_catalog", body.Name)
+	assert.Equal(t, "my_catalog", body.FullName)
+}
+
 // createCatalogRequest sets every field CreateCatalog accepts. Tests below assert
 // the fake echoes all of them back and that the request stays exhaustive.
 const createCatalogRequest = `{

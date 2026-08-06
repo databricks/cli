@@ -77,6 +77,13 @@ func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
 	return state
 }
 
+// IsEmptyState reports an empty grants list as no resource at all: nothing to grant, and
+// Terraform records no databricks_grants resource for it either, so migrated bundles have
+// no state entry.
+func (*ResourceGrants) IsEmptyState(state *GrantsState) bool {
+	return len(state.EmbeddedSlice) == 0
+}
+
 func grantKey(x catalog.PrivilegeAssignment) (string, string) {
 	return "principal", x.Principal
 }

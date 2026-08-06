@@ -1001,6 +1001,18 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
+		// New nodes only: a node with state must stay in the plan, otherwise emptying it plans nothing.
+		// Apply drops the state entry once the node is empty, so it is skipped from then on.
+		if _, hasState := db.State[node]; !hasState {
+			empty, err := adapter.IsEmptyState(newStateConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", prefix, err)
+			}
+			if empty {
+				continue
+			}
+		}
+
 		// Note, we're extracting references in input config but resolving them in newState.Config which is PrepareState(inputConfig)
 		// This means input and state must be compatible: input can have more fields, but existing fields should not be moved
 		// This means one cannot refer to fields not present in state (e.g. ${resources.jobs.foo.permissions})
