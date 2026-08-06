@@ -45,6 +45,10 @@ type Agent struct {
 	// plugin-capability detection and as the program for the plugin probe.
 	// Empty for agents with no CLI binary (Antigravity is IDE-only).
 	Binary string
+	// DetectFile, when set, is a marker file under ConfigDir that must exist for the
+	// agent to count as installed, instead of the bare config directory (used when
+	// the config dir is shared with another product; see geminiDetectFile).
+	DetectFile string
 	// Plugin describes the databricks plugin for this agent, or nil when the
 	// agent has no plugin and skills files are its native delivery.
 	Plugin *PluginSpec
@@ -56,13 +60,18 @@ type Agent struct {
 	pluginVersion func(ctx context.Context, a *Agent) (string, bool)
 }
 
-// Detected returns true if the agent is installed on the system.
+// Detected reports whether the agent is installed: its config directory exists,
+// or its DetectFile marker exists when one is set.
 func (a *Agent) Detected(ctx context.Context) bool {
 	dir, err := a.ConfigDir(ctx)
 	if err != nil {
 		return false
 	}
-	_, err = os.Stat(dir)
+	target := dir
+	if a.DetectFile != "" {
+		target = filepath.Join(dir, a.DetectFile)
+	}
+	_, err = os.Stat(target)
 	return err == nil
 }
 
@@ -111,7 +120,14 @@ const (
 	NameCopilot     = "copilot"
 	NameAntigravity = "antigravity"
 	NamePi          = "pi"
+	NameGemini      = "gemini"
 )
+
+// geminiDetectFile is the project registry Gemini CLI writes at ~/.gemini/projects.json
+// on real use. Detection keys on it, not the bare ~/.gemini directory, because
+// Antigravity's ~/.gemini/antigravity subtree makes ~/.gemini exist without Gemini
+// CLI being installed. (installation_id is not reliably present.)
+const geminiDetectFile = "projects.json"
 
 // Databricks plugin identity, shared across the agents that ship a plugin.
 // The verified install commands are e.g.
@@ -216,6 +232,17 @@ var Registry = []*Agent{
 		// Pi reads agent skills (SKILL.md) but has no databricks plugin, so it is
 		// skills-only (Plugin nil).
 	},
+	{
+		Name:                 NameGemini,
+		DisplayName:          "Gemini CLI",
+		ConfigDir:            geminiConfigDir,
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".gemini",
+		Binary:               "gemini",
+		// Gemini CLI reads agent skills (SKILL.md) but has no databricks plugin, so
+		// it is skills-only (Plugin nil).
+		DetectFile: geminiDetectFile,
+	},
 }
 
 // piConfigDir returns Pi's agent config directory: PI_CODING_AGENT_DIR when set,
@@ -241,6 +268,22 @@ func piConfigDir(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return filepath.Join(home, ".pi", "agent"), nil
+}
+
+// geminiConfigDir returns Gemini CLI's config directory: <GEMINI_CLI_HOME>/.gemini
+// when set, else ~/.gemini. Honoring Gemini's own override keeps skills where it
+// reads them under a relocated home (e.g. ucode).
+// https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/configuration.md
+func geminiConfigDir(ctx context.Context) (string, error) {
+	root := env.Get(ctx, "GEMINI_CLI_HOME")
+	if root == "" {
+		home, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return "", err
+		}
+		root = home
+	}
+	return filepath.Join(root, ".gemini"), nil
 }
 
 // openCodeConfigDir returns OpenCode's config directory. OpenCode stores its

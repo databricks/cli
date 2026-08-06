@@ -56,6 +56,35 @@ func TestDetected(t *testing.T) {
 		a := &Agent{ConfigDir: configDir(t, false)}
 		assert.False(t, a.Detected(ctx))
 	})
+
+	t.Run("DetectFile requires the marker, not just the dir", func(t *testing.T) {
+		dir := t.TempDir()
+		a := &Agent{ConfigDir: func(context.Context) (string, error) { return dir, nil }, DetectFile: "marker"}
+		// Directory exists but the marker does not: not detected.
+		assert.False(t, a.Detected(ctx))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "marker"), []byte("x"), 0o644))
+		assert.True(t, a.Detected(ctx))
+	})
+
+	t.Run("Gemini is not detected merely because Antigravity exists", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("USERPROFILE", home)
+		// Antigravity creates ~/.gemini/antigravity, which also makes ~/.gemini exist.
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini", "antigravity"), 0o755))
+
+		gemini := ByName(NameGemini)
+		require.NotNil(t, gemini)
+		antigravity := ByName(NameAntigravity)
+		require.NotNil(t, antigravity)
+
+		assert.True(t, antigravity.Detected(ctx), "Antigravity should be detected from its own dir")
+		assert.False(t, gemini.Detected(ctx), "Gemini must not be detected from Antigravity's shared ~/.gemini")
+
+		// Once Gemini writes its own marker, it is detected.
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".gemini", geminiDetectFile), []byte("id"), 0o644))
+		assert.True(t, gemini.Detected(ctx))
+	})
 }
 
 func TestPiConfigDir(t *testing.T) {
@@ -108,6 +137,28 @@ func TestPiConfigDir(t *testing.T) {
 		dir, err := piConfigDir(ctx)
 		require.NoError(t, err)
 		assert.Equal(t, "~other/custom-agent", dir)
+	})
+}
+
+func TestGeminiConfigDir(t *testing.T) {
+	ctx := t.Context()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	t.Run("defaults to ~/.gemini", func(t *testing.T) {
+		t.Setenv("GEMINI_CLI_HOME", "")
+		dir, err := geminiConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, ".gemini"), dir)
+	})
+
+	t.Run("honors GEMINI_CLI_HOME override and appends .gemini", func(t *testing.T) {
+		root := t.TempDir()
+		t.Setenv("GEMINI_CLI_HOME", root)
+		dir, err := geminiConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(root, ".gemini"), dir)
 	})
 }
 
