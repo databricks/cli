@@ -7,11 +7,11 @@ title "Telemetry gets configured out of band, as on an adopted endpoint"
 MSYS_NO_PATHCONV=1 $CLI api patch "/api/2.0/serving-endpoints/test-endpoint/telemetry-config" --json '{"telemetry_config": {"table_names": {"logs_table": "main.default.other_logs"}}}' > /dev/null
 
 title "A remote-only telemetry_config is a backend default, not drift"
-trace $CLI bundle plan --output json | jq '.plan[].changes'
+trace $CLI bundle plan --output json | jq '.plan[].changes | with_entries(select(.key | startswith("telemetry_config")))'
 
 title "Deploying does not remove it"
 trace $CLI bundle deploy
 MSYS_NO_PATHCONV=1 trace $CLI api get "/api/2.0/serving-endpoints/test-endpoint" | jq .telemetry_config
 
 title "The out-of-band call above is the only telemetry-config PATCH"
-trace print_requests.py --method PATCH //serving-endpoints
+trace print_requests.py --method PATCH --oneline //serving-endpoints

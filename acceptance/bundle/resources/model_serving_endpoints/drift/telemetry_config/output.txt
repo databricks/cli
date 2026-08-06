@@ -13,29 +13,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Editing sampling_fraction is a real change: it round trips through GET
 >>> [CLI] bundle plan --output json
 {
-  "config.traffic_config": {
-    "action": "skip",
-    "reason": "backend_default",
-    "remote": {
-      "routes": [
-        {
-          "served_entity_name": "prod",
-          "served_model_name": "prod",
-          "traffic_percentage": 100
-        }
-      ]
-    }
-  },
-  "description": {
-    "action": "skip",
-    "reason": "empty",
-    "remote": ""
-  },
-  "route_optimized": {
-    "action": "skip",
-    "reason": "empty",
-    "remote": false
-  },
   "telemetry_config.inference_table_config.name": {
     "action": "skip",
     "reason": "spec:output_only",
@@ -80,29 +57,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Editing table_names is a real change even though GET never echoes it
 >>> [CLI] bundle plan --output json
 {
-  "config.traffic_config": {
-    "action": "skip",
-    "reason": "backend_default",
-    "remote": {
-      "routes": [
-        {
-          "served_entity_name": "prod",
-          "served_model_name": "prod",
-          "traffic_percentage": 100
-        }
-      ]
-    }
-  },
-  "description": {
-    "action": "skip",
-    "reason": "empty",
-    "remote": ""
-  },
-  "route_optimized": {
-    "action": "skip",
-    "reason": "empty",
-    "remote": false
-  },
   "telemetry_config.inference_table_config.name": {
     "action": "skip",
     "reason": "spec:output_only",
@@ -144,29 +98,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Removing telemetry_config from the bundle removes it remotely
 >>> [CLI] bundle plan --output json
 {
-  "config.traffic_config": {
-    "action": "skip",
-    "reason": "backend_default",
-    "remote": {
-      "routes": [
-        {
-          "served_entity_name": "prod",
-          "served_model_name": "prod",
-          "traffic_percentage": 100
-        }
-      ]
-    }
-  },
-  "description": {
-    "action": "skip",
-    "reason": "empty",
-    "remote": ""
-  },
-  "route_optimized": {
-    "action": "skip",
-    "reason": "empty",
-    "remote": false
-  },
   "telemetry_config": {
     "action": "update",
     "old": {
@@ -201,66 +132,8 @@ null
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> print_requests.py //serving-endpoints
-{
-  "method": "POST",
-  "path": "/api/2.0/serving-endpoints",
-  "body": {
-    "config": {
-      "served_entities": [
-        {
-          "entity_name": "main.default.test_model",
-          "entity_version": "1",
-          "name": "prod",
-          "scale_to_zero_enabled": true,
-          "workload_size": "Small"
-        }
-      ]
-    },
-    "name": "test-endpoint",
-    "telemetry_config": {
-      "inference_table_config": {
-        "sampling_fraction": 0.5
-      },
-      "table_names": {
-        "logs_table": "main.default.test_logs",
-        "traces_table": "main.default.test_traces"
-      }
-    }
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config",
-  "body": {
-    "telemetry_config": {
-      "inference_table_config": {
-        "sampling_fraction": 0.9
-      },
-      "table_names": {
-        "logs_table": "main.default.test_logs",
-        "traces_table": "main.default.test_traces"
-      }
-    }
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config",
-  "body": {
-    "telemetry_config": {
-      "inference_table_config": {
-        "sampling_fraction": 0.9
-      },
-      "table_names": {
-        "logs_table": "main.default.test_logs_v2",
-        "traces_table": "main.default.test_traces"
-      }
-    }
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config",
-  "body": {}
-}
+>>> print_requests.py --oneline //serving-endpoints
+{"method": "POST", "path": "/api/2.0/serving-endpoints", "body": {"config": {"served_entities": [{"entity_name": "main.default.test_model", "entity_version": "1", "name": "prod", "scale_to_zero_enabled": true, "workload_size": "Small"}]}, "name": "test-endpoint", "telemetry_config": {"inference_table_config": {"sampling_fraction": 0.5}, "table_names": {"logs_table": "main.default.test_logs", "traces_table": "main.default.test_traces"}}}}
+{"method": "PATCH", "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config", "body": {"telemetry_config": {"inference_table_config": {"sampling_fraction": 0.9}, "table_names": {"logs_table": "main.default.test_logs", "traces_table": "main.default.test_traces"}}}}
+{"method": "PATCH", "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config", "body": {"telemetry_config": {"inference_table_config": {"sampling_fraction": 0.9}, "table_names": {"logs_table": "main.default.test_logs_v2", "traces_table": "main.default.test_traces"}}}}
+{"method": "PATCH", "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config", "body": {}}

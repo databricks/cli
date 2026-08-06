@@ -31,87 +31,10 @@ Deployment complete!
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === The config update is followed by a poll for NOT_UPDATING, then the telemetry patch
->>> print_requests.py --get //serving-endpoints
-{
-  "method": "POST",
-  "path": "/api/2.0/serving-endpoints",
-  "body": {
-    "config": {
-      "served_entities": [
-        {
-          "entity_name": "main.default.test_model",
-          "entity_version": "1",
-          "name": "prod",
-          "scale_to_zero_enabled": true,
-          "workload_size": "Small"
-        }
-      ]
-    },
-    "name": "test-endpoint",
-    "telemetry_config": {
-      "inference_table_config": {
-        "sampling_fraction": 0.5
-      },
-      "table_names": {
-        "logs_table": "main.default.test_logs"
-      }
-    }
-  }
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/serving-endpoints/test-endpoint"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/serving-endpoints/test-endpoint"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/serving-endpoints/test-endpoint"
-}
-{
-  "method": "PUT",
-  "path": "/api/2.0/serving-endpoints/test-endpoint/config",
-  "body": {
-    "served_entities": [
-      {
-        "entity_name": "main.default.test_model",
-        "entity_version": "1",
-        "name": "prod",
-        "scale_to_zero_enabled": true,
-        "workload_size": "Medium"
-      }
-    ]
-  }
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/serving-endpoints/test-endpoint"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/serving-endpoints/test-endpoint"
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config",
-  "body": {
-    "telemetry_config": {
-      "inference_table_config": {
-        "sampling_fraction": 0.9
-      },
-      "table_names": {
-        "logs_table": "main.default.test_logs"
-      }
-    }
-  }
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/serving-endpoints/test-endpoint"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/serving-endpoints/test-endpoint"
-}
+>>> print_requests.py --get --oneline //serving-endpoints
+1 {"method": "POST", "path": "/api/2.0/serving-endpoints", "body": {"config": {"served_entities": [{"entity_name": "main.default.test_model", "entity_version": "1", "name": "prod", "scale_to_zero_enabled": true, "workload_size": "Small"}]}, "name": "test-endpoint", "telemetry_config": {"inference_table_config": {"sampling_fraction": 0.5}, "table_names": {"logs_table": "main.default.test_logs"}}}}
+3 {"method": "GET", "path": "/api/2.0/serving-endpoints/test-endpoint"}
+1 {"method": "PUT", "path": "/api/2.0/serving-endpoints/test-endpoint/config", "body": {"served_entities": [{"entity_name": "main.default.test_model", "entity_version": "1", "name": "prod", "scale_to_zero_enabled": true, "workload_size": "Medium"}]}}
+2 {"method": "GET", "path": "/api/2.0/serving-endpoints/test-endpoint"}
+1 {"method": "PATCH", "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config", "body": {"telemetry_config": {"inference_table_config": {"sampling_fraction": 0.9}, "table_names": {"logs_table": "main.default.test_logs"}}}}
+2 {"method": "GET", "path": "/api/2.0/serving-endpoints/test-endpoint"}

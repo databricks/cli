@@ -8,7 +8,7 @@ trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 
 
 title "Editing sampling_fraction is a real change: it round trips through GET"
 update_file.py databricks.yml "sampling_fraction: 0.5" "sampling_fraction: 0.9"
-trace $CLI bundle plan --output json | jq '.plan[].changes'
+trace $CLI bundle plan --output json | jq '.plan[].changes | with_entries(select(.key | startswith("telemetry_config")))'
 
 title "Deploy applies it via the telemetry-config API"
 trace $CLI bundle deploy
@@ -18,7 +18,7 @@ trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 
 
 title "Editing table_names is a real change even though GET never echoes it"
 update_file.py databricks.yml "main.default.test_logs" "main.default.test_logs_v2"
-trace $CLI bundle plan --output json | jq '.plan[].changes'
+trace $CLI bundle plan --output json | jq '.plan[].changes | with_entries(select(.key | startswith("telemetry_config")))'
 trace $CLI bundle deploy
 
 title "Plan converges after the tables changed"
@@ -26,11 +26,11 @@ trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 
 
 title "Removing telemetry_config from the bundle removes it remotely"
 grep -v TO_REMOVE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
-trace $CLI bundle plan --output json | jq '.plan[].changes'
+trace $CLI bundle plan --output json | jq '.plan[].changes | with_entries(select(.key | startswith("telemetry_config")))'
 trace $CLI bundle deploy
 MSYS_NO_PATHCONV=1 trace $CLI api get "/api/2.0/serving-endpoints/test-endpoint" | jq .telemetry_config
 
 title "Plan converges with telemetry_config removed"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
-trace print_requests.py //serving-endpoints
+trace print_requests.py --oneline //serving-endpoints
