@@ -90,7 +90,7 @@ SKIP_PROPERTY_NAMES = frozenset(
 )
 
 # Fields these resources need to deploy but that the schema's required[] omits (or can't express in
-# YAML). Values come from the *_BY_RESOURCE tables below.
+# YAML). Their values come from the pinned-name branches in gen_scalar.
 RESOURCE_REQUIRED_FIELDS = {
     "registered_models": frozenset({"catalog_name", "name", "schema_name"}),
     "dashboards": frozenset({"display_name", "file_path", "warehouse_id"}),
@@ -160,6 +160,13 @@ DANGEROUS_INTS = [
 # Inject a dangerous value only sometimes, so the config usually still deploys and exercises the
 # invariant, not just the reject path.
 DANGEROUS_PROB = 0.15
+
+
+def is_empty(value):
+    # Empty containers are not neutral: some fields reject one outright, and an empty list is the
+    # shape behind several already-fixed drift bugs (see gen_grants), so emitting one spends seeds
+    # re-finding them. Destructive mutation still injects them deliberately -- see mutate_once.
+    return value is None or value == {} or value == []
 
 
 class Generator:
@@ -267,9 +274,7 @@ class Generator:
             if not keep:
                 continue
             value = self.gen(prop_schema, depth + 1, prop_name)
-            # Drop an object whose every property was skipped: `{}` carries no information and some
-            # fields reject it outright.
-            if value is None or value == {}:
+            if is_empty(value):
                 continue
             result[prop_name] = value
 
@@ -277,15 +282,19 @@ class Generator:
         if self.is_map(schema):
             for _ in range(self.rng.randint(1, 2)):
                 key = self.token()
-                result[key] = self.gen(schema["additionalProperties"], depth + 1, key)
+                value = self.gen(schema["additionalProperties"], depth + 1, key)
+                if not is_empty(value):
+                    result[key] = value
 
         return result
 
     def gen_array(self, schema, depth, name):
         items = schema.get("items")
         if not items or depth >= MAX_DEPTH:
-            return []
-        return [self.gen(items, depth + 1, name) for _ in range(self.rng.randint(1, 3))]
+            return None
+        values = [self.gen(items, depth + 1, name) for _ in range(self.rng.randint(1, 3))]
+        values = [v for v in values if not is_empty(v)]
+        return values or None
 
     def gen_grants(self):
         # One known-good grant for the securable. No valid privilege means no grants node: UC

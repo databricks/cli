@@ -23,7 +23,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, Generator, resource_element, resource_types
+from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, Generator, is_empty, resource_element, resource_types
 
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
@@ -231,7 +231,7 @@ def add_field(gen, rng, config):
     # rtype drives grants/permissions/typed-string generation.
     gen.rtype = rtype
     value = gen.gen(prop_schema, 1, name)
-    if value is not None:
+    if not is_empty(value):
         node[name] = value
 
 

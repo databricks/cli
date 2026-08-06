@@ -28,8 +28,6 @@ invariant_render() {
 # ${FUZZ_CHECK_DRIFT:-1}.
 if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
     invariant_verify_no_drift() {
-        # Compare only when both plans succeed -- a plan that fails on an unmodeled read is a gap
-        # and can differ run to run.
         set +e
         $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err
         local plan1_rc=$?
@@ -38,9 +36,20 @@ if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
         set -e
         cat LOG.plan1.err | contains.py '!panic:' '!internal error' > /dev/null
         cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
-        if [ "$plan1_rc" -eq 0 ] && [ "$plan2_rc" -eq 0 ]; then
-            # diff exits non-zero on any difference; under set -e that fails the seed as a bug.
-            diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
+
+        if [ "$plan1_rc" -ne 0 ] || [ "$plan2_rc" -ne 0 ]; then
+            # An unmodeled route fails the plan, possibly on only one of the two runs, so there is
+            # nothing to compare; any other failure is a plan the deploy just broke. The stderr is
+            # copied in because the *.err ignore pattern keeps it out of the test log.
+            if ! grep -q TESTSERVER_GAP LOG.plan1.err LOG.plan2.err; then
+                echo "bundle plan exited $plan1_rc and $plan2_rc" > LOG.plan.failed
+                cat LOG.plan1.err LOG.plan2.err >> LOG.plan.failed
+                return 1
+            fi
+            return 0
         fi
+
+        # diff exits non-zero on any difference; under set -e that fails the seed as a bug.
+        diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
     }
 fi
