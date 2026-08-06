@@ -186,7 +186,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.ValidateDeploymentFields(),
 
 		// Validate that telemetry_config is in a form the serving endpoints API applies.
-		// It rejects or silently discards the rest, and only once the plan applies it.
+		// It rejects or silently discards anything else.
 		validate.ValidateServingTelemetryConfig(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)

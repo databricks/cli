@@ -1,6 +1,6 @@
 RecordRequests = true
 
 # Guards the backend_defaults rule at the telemetry_config parent path: without it the
-# remote-only config is planned as an update and DoUpdate PATCHes it away. Direct engine
-# only, since that is where the classification lives.
+# remote-only config is planned as an update and DoUpdate PATCHes it away.
+# Direct engine only, since that is where the classification lives.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
