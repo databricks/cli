@@ -27,6 +27,3 @@ errcode trace $CLI experimental air logs notanumber
 
 title "negative node"
 errcode trace $CLI experimental air logs 123 --node -1
-
-title "--download-to not implemented"
-errcode trace $CLI experimental air logs 123 --download-to /tmp/out
