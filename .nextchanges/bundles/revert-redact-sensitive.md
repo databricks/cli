@@ -1,1 +1,0 @@
-Revert usage of RedactiveSenstiveFields (added in [#5896](https://github.com/databricks/cli/pull/5896), released in 1.10.0) which lead to incorrect behaviour (permanent drift) for duration field in Postgres resources ([#6179](https://github.com/databricks/cli/pull/6179)).
