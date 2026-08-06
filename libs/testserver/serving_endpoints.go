@@ -304,8 +304,7 @@ func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 	}
 
 	if endpointUpdating(endpoint) {
-		// Settle the stored copy for the next read. The response keeps the in-progress
-		// State, since reassigning settled.State leaves endpoint.State pointing at it.
+		// Settle the stored copy for the next read; this response still reports IN_PROGRESS.
 		settled := endpoint
 		settled.State = &serving.EndpointState{
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,

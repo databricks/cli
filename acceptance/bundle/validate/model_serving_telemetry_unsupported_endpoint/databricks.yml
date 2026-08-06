@@ -7,8 +7,8 @@ resources:
     endpoint1:
       name: "test-endpoint-1"
       telemetry_config:
-        inference_table_config:
-          sampling_fraction: 0.5
+        table_names:
+          logs_table: main.default.test_logs
 
     # Typed EXTERNAL_MODELS by the API: it serves something, but not a custom model.
     endpoint2:
@@ -23,5 +23,5 @@ resources:
               openai_config:
                 openai_api_key_plaintext: sk-test-plaintext-key
       telemetry_config:
-        inference_table_config:
-          sampling_fraction: 0.5
+        table_names:
+          logs_table: main.default.test_logs

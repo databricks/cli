@@ -72,9 +72,8 @@ func identifiesTelemetryProfile(config *serving.TelemetryConfig) bool {
 	return t != nil && (t.LogsTable != "" || t.TracesTable != "" || t.MetricsTable != "" || t.AnnotationsTable != "")
 }
 
-// servesRegisteredModel reports whether the endpoint serves at least one registered model,
-// as opposed to nothing or only external models. A foundation model is named the same way
-// and is accepted here; create rejects it outright.
+// servesRegisteredModel reports whether the endpoint serves at least one registered model.
+// A foundation model is named the same way and is accepted here; create rejects it outright.
 //
 // ModelServingEndpointFixups has already folded served_models into served_entities.
 func servesRegisteredModel(config *serving.EndpointCoreConfigInput) bool {

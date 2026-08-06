@@ -31,7 +31,7 @@ Deployment complete!
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === The config update is followed by a poll for NOT_UPDATING, then the telemetry patch
->>> print_requests.py --get --unique //serving-endpoints
+>>> print_requests.py --get //serving-endpoints
 {
   "method": "POST",
   "path": "/api/2.0/serving-endpoints",
@@ -63,6 +63,14 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "path": "/api/2.0/serving-endpoints/test-endpoint"
 }
 {
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/test-endpoint"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/test-endpoint"
+}
+{
   "method": "PUT",
   "path": "/api/2.0/serving-endpoints/test-endpoint/config",
   "body": {
@@ -82,6 +90,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "path": "/api/2.0/serving-endpoints/test-endpoint"
 }
 {
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/test-endpoint"
+}
+{
   "method": "PATCH",
   "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config",
   "body": {
@@ -94,6 +106,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
       }
     }
   }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/test-endpoint"
 }
 {
   "method": "GET",

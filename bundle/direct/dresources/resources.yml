@@ -321,9 +321,9 @@ resources:
         reason: not_implemented
     backend_defaults:
       # The backend assigns telemetry_profile_id when it creates the profile from table_names.
-      # Declared on the subtree, not that field alone: with no local telemetry_config, structdiff
-      # reports the remote as one change on the parent path, which no child rule matches, and
-      # DoUpdate would PATCH it away. A genuine removal carries a non-nil old value and still applies.
+      # Declared on the subtree: structdiff reports an undeclared telemetry_config as one change
+      # on the parent path, which no child rule matches, so DoUpdate would PATCH it away.
+      # Removal still applies: it carries a non-nil old value, which this rule requires to be nil.
       - field: telemetry_config
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383

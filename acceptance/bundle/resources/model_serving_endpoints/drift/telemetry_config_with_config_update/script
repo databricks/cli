@@ -15,4 +15,4 @@ title "Plan converges"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 title "The config update is followed by a poll for NOT_UPDATING, then the telemetry patch"
-trace print_requests.py --get --unique //serving-endpoints
+trace print_requests.py --get //serving-endpoints

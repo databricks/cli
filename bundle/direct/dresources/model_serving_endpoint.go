@@ -325,7 +325,6 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 
 func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
 	var err error
-	updated := false
 
 	// Terraform makes these API calls sequentially. We do the same here.
 	// It's an unknown as of 1st Dec 2025 if these APIs are safe to make in parallel. (we did not check)
@@ -335,7 +334,6 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 		if err != nil {
 			return nil, err
 		}
-		updated = true
 	}
 
 	if entry.Changes.HasChange(pathAiGateway) {
@@ -343,7 +341,6 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 		if err != nil {
 			return nil, err
 		}
-		updated = true
 	}
 
 	if entry.Changes.HasChange(pathConfig) {
@@ -351,7 +348,6 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 		if err != nil {
 			return nil, err
 		}
-		updated = true
 	}
 
 	if entry.Changes.HasChange(pathEmailNotifications) {
@@ -359,17 +355,15 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 		if err != nil {
 			return nil, err
 		}
-		updated = true
 	}
 
 	if entry.Changes.HasChange(pathTelemetryConfig) {
-		// The telemetry API rejects an endpoint still applying an earlier update, and every
-		// call above starts one. WaitAfterUpdate only runs after DoUpdate returns.
-		if updated {
-			_, err = r.client.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, id, 35*time.Minute, nil)
-			if err != nil {
-				return nil, err
-			}
+		// The telemetry API rejects an endpoint that is still applying an update, which the
+		// calls above start and an interrupted deploy can leave behind. WaitAfterUpdate only
+		// runs after DoUpdate returns.
+		_, err = r.client.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, id, 35*time.Minute, nil)
+		if err != nil {
+			return nil, err
 		}
 
 		err = r.updateTelemetryConfig(ctx, id, config.TelemetryConfig)
