@@ -1,1 +1,0 @@
-Fixed `databricks repos get/update/delete` failing with `object at path "..." is not a repo` for Git-CLI-enabled folders (currently in preview), which the workspace API reports as directories rather than repos ([#6181](https://github.com/databricks/cli/pull/6181)).
