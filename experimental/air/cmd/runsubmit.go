@@ -80,6 +80,8 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 			},
 		}},
 		CodeSourcePath: snap.CodeSourcePath,
+		// Verified as registered by prepareDockerImage.
+		DockerImageUrl: cfg.dockerImageURL(),
 	}
 	if cfg.MLflowRunName != nil {
 		task.MlflowRun = *cfg.MLflowRunName
@@ -186,6 +188,15 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
+
+	// After the cheap workspace checks (a tag_policy=latest refresh can block for
+	// minutes) but before any upload, so a bad image wastes no artifact work.
+	if img := cfg.dockerImage(); img != nil {
+		if err := prepareDockerImage(ctx, w, img); err != nil {
+			return 0, "", err
+		}
+	}
+
 	runName := ""
 	if cfg.MLflowRunName != nil {
 		runName = *cfg.MLflowRunName
