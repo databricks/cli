@@ -34,6 +34,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.NoInterpolationInBundleName(),
 		validate.ValidateEngine(),
 		validate.Scripts(),
+		mutator.ValidateSecretValueIsVariable(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
