@@ -8,6 +8,9 @@ type Resources struct {
 	AccountNetworkPolicy                         map[string]any `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2               map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                             map[string]any `json:"databricks_account_setting_v2,omitempty"`
+	AiGatewayMcpService                          map[string]any `json:"databricks_ai_gateway_mcp_service,omitempty"`
+	AiGatewayModelProviderService                map[string]any `json:"databricks_ai_gateway_model_provider_service,omitempty"`
+	AiGatewayModelService                        map[string]any `json:"databricks_ai_gateway_model_service,omitempty"`
 	AiSearchEndpoint                             map[string]any `json:"databricks_ai_search_endpoint,omitempty"`
 	AiSearchIndex                                map[string]any `json:"databricks_ai_search_index,omitempty"`
 	AibiDashboardEmbeddingAccessPolicySetting    map[string]any `json:"databricks_aibi_dashboard_embedding_access_policy_setting,omitempty"`
@@ -173,6 +176,9 @@ func NewResources() *Resources {
 		AccountNetworkPolicy:                         make(map[string]any),
 		AccountSettingUserPreferenceV2:               make(map[string]any),
 		AccountSettingV2:                             make(map[string]any),
+		AiGatewayMcpService:                          make(map[string]any),
+		AiGatewayModelProviderService:                make(map[string]any),
+		AiGatewayModelService:                        make(map[string]any),
 		AiSearchEndpoint:                             make(map[string]any),
 		AiSearchIndex:                                make(map[string]any),
 		AibiDashboardEmbeddingAccessPolicySetting:    make(map[string]any),

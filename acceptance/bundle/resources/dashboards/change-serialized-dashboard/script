@@ -9,7 +9,8 @@ deploy_dashboard() {
     envsubst < databricks.yml.tmpl > databricks.yml
     envsubst < dashboard.tmpl > dash.lvdash.json
     trace $CLI bundle plan
-    trace $CLI bundle deploy
+    $CLI bundle plan -o json > tmp.plan.$PAGE_NAME.json
+    $CLI bundle deploy $(readplanarg tmp.plan.$PAGE_NAME.json)
     dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
 
     # Wait out eventual consistency: retry until the current page is visible (the read

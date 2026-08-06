@@ -43,7 +43,7 @@
       "old": {
         "autoscaling_limit_max_cu": 4,
         "autoscaling_limit_min_cu": 0.5,
-        "suspend_timeout_duration": "0s"
+        "suspend_timeout_duration": "300s"
       },
       "new": {
         "autoscaling_limit_max_cu": 4,
@@ -59,7 +59,7 @@
     "history_retention_duration": {
       "action": "skip",
       "reason": "empty",
-      "old": "0s",
+      "old": "604800s",
       "new": "604800s"
     },
     "pg_version": {

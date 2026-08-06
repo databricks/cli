@@ -34,13 +34,12 @@ README = "README.md"
 
 
 def load_sections(root):
-    codegen_path = root / CODEGEN_FILE
-    try:
-        codegen = json.loads(codegen_path.read_text(encoding="utf-8"))
-    except FileNotFoundError as err:
-        raise ValueError(f"{CODEGEN_FILE} is missing") from err
-    except json.JSONDecodeError as err:
-        raise ValueError(f"{CODEGEN_FILE} is not valid JSON: {err}") from err
+    """Return the section slugs from .codegen.json, in changelog order.
+
+    A missing or malformed .codegen.json raises: it is not something a PR author
+    can be at fault for, so it crashes with the original traceback rather than
+    being reported as a fragment problem."""
+    codegen = json.loads((root / CODEGEN_FILE).read_text(encoding="utf-8"))
 
     sections = codegen.get(NEXTCHANGES_SECTIONS_KEY)
     if not isinstance(sections, dict) or not sections:
@@ -100,11 +99,7 @@ def main(argv=None):
     if not changelog_dir.is_dir():
         return
 
-    try:
-        sections = load_sections(args.root)
-    except ValueError as err:
-        print(err, file=sys.stderr)
-        sys.exit(1)
+    sections = load_sections(args.root)
 
     problems = find_problems(changelog_dir, sections)
     if problems:
