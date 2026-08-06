@@ -13,7 +13,7 @@ MIGRATE_ARGS=""
 # (order-sensitive), terraform plan reports positional drift when the bundle config
 # specifies depends_on in a different order than the provider's sorted state.
 # This is a false positive -- the logical dependencies are identical.
-if [[ "${INPUT_CONFIG:-}" == "job_with_depends_on.yml.tmpl" ]]; then
+if [[ "$INPUT_CONFIG" == "job_with_depends_on.yml.tmpl" ]]; then
     MIGRATE_ARGS="--noplancheck"
 fi
 

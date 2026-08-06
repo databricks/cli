@@ -9,15 +9,16 @@ invariant_cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy
     cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
 
-    # INPUT_CONFIG is unset for a caller that generates its own config, and scripts run under set -u.
-    CLEANUP_SCRIPT="$INVARIANT_DIR/configs/${INPUT_CONFIG:-}-cleanup.sh"
-    if [ -f "$CLEANUP_SCRIPT" ]; then
-        source "$CLEANUP_SCRIPT" &> LOG.cleanup
+    # A caller that generates its own config sets INPUT_CONFIG empty and has no cleanup script. The
+    # default keeps an unbound variable from aborting the trap, which would skip the destroy above.
+    if [ -n "${INPUT_CONFIG:-}" ] && [ -f "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" ]; then
+        source "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" &> LOG.cleanup
     fi
 }
 
 # Separate from invariant_setup so a caller that generates its own config can override the
-# render alone, by redefining it after sourcing this file.
+# render alone, by redefining it after sourcing this file. Requires a curated INPUT_CONFIG, so a
+# generating caller must replace this function rather than rely on it degrading.
 invariant_render() {
     cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
 

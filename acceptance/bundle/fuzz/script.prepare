@@ -2,11 +2,16 @@
 # so the harness does not concatenate them; source them explicitly, before the overrides below.
 # The target scripts stay unaware of fuzzing.
 export INVARIANT_DIR="$TESTDIR/../invariant"
+
+# The targets select their config with INPUT_CONFIG, which this test's matrix does not set; scripts
+# run under set -u. Empty is the accurate value rather than a placeholder: the config is generated,
+# so it matches no curated name, which is what a target comparing against it should conclude.
+export INPUT_CONFIG=""
+
 source "$INVARIANT_DIR/script.prepare"
 
-# The config comes from the generator rather than configs/$INPUT_CONFIG, which the fuzzer leaves
-# unset. validate runs here as an isolated panic surface, and rejects an invalid config before the
-# target's deploy.
+# The config comes from the generator rather than configs/, so there is nothing to render. validate
+# runs here as an isolated panic surface, and rejects an invalid config before the target's deploy.
 invariant_render() {
     # Stage the fixtures the generator's file_path/source_code_path fields point at.
     cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
