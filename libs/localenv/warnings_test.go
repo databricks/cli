@@ -114,6 +114,62 @@ test = []
 	}, codes(detectMergeWarnings(user, c)))
 }
 
+func TestDetectMergeWarningsIncludeGroupIndirection(t *testing.T) {
+	// The user's pin is reachable only through an include-group, but MergeManaged
+	// writes the env's pin into dev anyway — so without following the indirection the
+	// merged file would carry two databricks-connect pins and no override warning.
+	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect==17.0.0"}
+
+	indirect := []byte(`[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = [{include-group = "spark"}]
+spark = ["databricks-connect==16.1.0"]
+`)
+	assert.Equal(t, []string{WarnDBConnectPinOverridden}, codes(detectMergeWarnings(indirect, c)))
+
+	// An include-group cycle must terminate rather than recurse forever, and the pin
+	// behind it is still found.
+	cyclic := []byte(`[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = [{include-group = "a"}]
+a = [{include-group = "dev"}, "databricks-connect==16.1.0"]
+`)
+	assert.Equal(t, []string{WarnDBConnectPinOverridden}, codes(detectMergeWarnings(cyclic, c)))
+
+	// PEP 735 normalizes group names the same way PEP 503 normalizes package names.
+	renamed := []byte(`[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = [{include-group = "My_Spark.Group"}]
+"my-spark-group" = ["databricks-connect==16.1.0"]
+`)
+	assert.Equal(t, []string{WarnDBConnectPinOverridden}, codes(detectMergeWarnings(renamed, c)))
+
+	// An included pin that already matches the env is not an override.
+	matching := []byte(`[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = [{include-group = "spark"}]
+spark = ["databricks-connect==17.0.0"]
+`)
+	assert.Empty(t, detectMergeWarnings(matching, c))
+
+	// A dangling reference is not an error; there is simply no pin to compare.
+	dangling := []byte(`[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = [{include-group = "absent"}]
+`)
+	assert.Empty(t, detectMergeWarnings(dangling, c))
+}
+
 func TestConstraintConflictsDuplicateEnvEntriesAreOrderIndependent(t *testing.T) {
 	// Constraint entries for one package compose as a conjunction. Joining them
 	// yields a multi-clause spec, which is an unknown range — so neither ordering
@@ -132,8 +188,11 @@ func TestSplitDepSpecExtrasAndMarkers(t *testing.T) {
 	assert.Equal(t, "==17.0.0", spec)
 
 	// A marker makes the requirement conditional on the resolving interpreter,
-	// which we do not evaluate — so it is skipped rather than compared.
+	// which we do not evaluate — so it is skipped rather than compared, with or
+	// without extras in front of it.
 	_, _, ok = splitDepSpec(`pyarrow==17.0.0; python_version < "3.12"`)
+	assert.False(t, ok)
+	_, _, ok = splitDepSpec(`pyarrow[compute]==17.0.0; python_version < "3.12"`)
 	assert.False(t, ok)
 
 	// PEP 503 normalization applies to the name on both sides of the lookup.

@@ -22,16 +22,11 @@ var depSpecRe = regexp.MustCompile(`^([A-Za-z0-9._-]+)\s*(.*)$`)
 var singleClauseRe = regexp.MustCompile(`^(>=|<=|==|~=|!=|<|>)?\s*([0-9]+(?:\.[0-9]+)*)`)
 
 // splitDepSpec returns the normalized package name and the version specifier
-// portion of a dependency string. ok is false when there is no recognizable name,
-// or when the requirement carries an environment marker: a marker makes the
-// dependency conditional on the resolving interpreter, which we do not evaluate,
-// so comparing its range could flag a pin that never applies.
+// portion of a dependency string, with any extras stripped. ok is false when there
+// is no recognizable name, or when what follows the name carries an environment
+// marker (see below).
 func splitDepSpec(dep string) (name, spec string, ok bool) {
-	dep = strings.TrimSpace(dep)
-	if strings.Contains(dep, ";") {
-		return "", "", false
-	}
-	m := depSpecRe.FindStringSubmatch(dep)
+	m := depSpecRe.FindStringSubmatch(strings.TrimSpace(dep))
 	if m == nil {
 		return "", "", false
 	}
@@ -42,6 +37,15 @@ func splitDepSpec(dep string) (name, spec string, ok bool) {
 		if i := strings.Index(spec, "]"); i >= 0 {
 			spec = strings.TrimSpace(spec[i+1:])
 		}
+	}
+	// A marker gates the whole requirement on the resolving interpreter, which we do
+	// not evaluate, so a pin that may not apply must not be compared. Checking the
+	// remainder rather than the raw string scopes this to where a marker can actually
+	// appear, leaving an extras list that happens to contain ";" alone. A ";" inside
+	// a url requirement still lands here, which costs nothing: a url has no
+	// comparable version range and would be undecidable regardless.
+	if strings.Contains(spec, ";") {
+		return "", "", false
 	}
 	return normalizePackageName(m[1]), spec, true
 }
@@ -60,20 +64,51 @@ type userPyprojectTOML struct {
 		RequiresPython string   `toml:"requires-python"`
 		Dependencies   []string `toml:"dependencies"`
 	} `toml:"project"`
-	DependencyGroups struct {
-		Dev []any `toml:"dev"`
-	} `toml:"dependency-groups"`
+	// Every group is decoded, not just dev, because a dev entry may pull in another
+	// group by reference — see groupRequirements.
+	DependencyGroups map[string][]any `toml:"dependency-groups"`
 }
 
-// devRequirements returns the requirement strings of a dependency group, skipping
-// PEP 735 table entries (include-group) that are not requirements themselves.
-func devRequirements(entries []any) []string {
-	out := make([]string, 0, len(entries))
-	for _, e := range entries {
-		if s, ok := e.(string); ok {
-			out = append(out, s)
+// devGroup is the dependency group whose databricks-connect pin the merge manages.
+const devGroup = "dev"
+
+// groupRequirements returns the requirement strings reachable from the named
+// dependency group, following PEP 735 {include-group = "..."} indirections.
+//
+// Resolving the indirection matters because MergeManaged writes the env's pin into
+// dev regardless of where the user's own pin lives: with dev = [{include-group =
+// "spark"}] and the pin inside the spark group, a non-recursive scan reports no
+// override while the merged file ends up carrying two pins for the same package.
+// Group names are compared under PEP 503 normalization, which PEP 735 also
+// specifies for group names. A group already visited is skipped, so an
+// include-group cycle terminates instead of recursing forever.
+func groupRequirements(groups map[string][]any, name string) []string {
+	byName := make(map[string][]any, len(groups))
+	for g, entries := range groups {
+		byName[normalizePackageName(g)] = entries
+	}
+
+	var out []string
+	visited := make(map[string]bool, len(groups))
+	var walk func(string)
+	walk = func(g string) {
+		g = normalizePackageName(g)
+		if visited[g] {
+			return
+		}
+		visited[g] = true
+		for _, e := range byName[g] {
+			switch v := e.(type) {
+			case string:
+				out = append(out, v)
+			case map[string]any:
+				if inc, ok := v["include-group"].(string); ok {
+					walk(inc)
+				}
+			}
 		}
 	}
+	walk(name)
 	return out
 }
 
@@ -114,7 +149,7 @@ func detectMergeWarnings(userPyproject []byte, c Constraints) []Warning {
 	// the merge replaces it. Only meaningful in default mode (c.DatabricksConnect
 	// is empty in constraints-only, where the dev group is left untouched).
 	if c.DatabricksConnect != "" {
-		for _, entry := range devRequirements(p.DependencyGroups.Dev) {
+		for _, entry := range groupRequirements(p.DependencyGroups, devGroup) {
 			if !isDatabricksConnectDep(entry) {
 				continue
 			}
