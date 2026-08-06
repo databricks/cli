@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -111,4 +112,30 @@ func TestMLflowFallbackNoLogsReflectsRunOutcome(t *testing.T) {
 		logRequest{runID: 5}, logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED"})
 	require.NoError(t, err)
 	assert.False(t, success)
+}
+
+func TestDownloadArtifactSendsUnbracketedPath(t *testing.T) {
+	var gotPath string
+	var base string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.0/mlflow/artifacts/credentials-for-read":
+			gotPath = r.URL.Query().Get("path")
+			_, _ = w.Write([]byte(`{"credential_infos": [{"signed_uri": "` + base + `/presigned"}]}`))
+		case "/presigned":
+			_, _ = w.Write([]byte("bytes\n"))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	base = srv.URL
+	t.Cleanup(srv.Close)
+
+	local, err := downloadArtifact(t.Context(), newTestWorkspaceClient(t, srv.URL), "run1", "logs/node_0/logs-0.chunk.txt")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.Remove(local) })
+
+	// The backend signs whatever path it is given and returns 200 even for a
+	// bracketed one, so only the download 404s. Assert on the path sent.
+	assert.Equal(t, "logs/node_0/logs-0.chunk.txt", gotPath)
 }

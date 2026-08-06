@@ -59,7 +59,7 @@ func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out i
 	}
 	if mlflowRunID == "" || logDir == "" {
 		emitNoLogs(out, req, status)
-		return status.succeeded(), nil
+		return status.downloadOutcome(), nil
 	}
 
 	chunks, err := listLogChunks(ctx, w, mlflowRunID, logDir)
@@ -73,7 +73,7 @@ func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out i
 
 	target := req.tailTarget()
 	if target <= 0 {
-		return status.succeeded(), nil
+		return status.downloadOutcome(), nil
 	}
 
 	lines, err := tailChunks(ctx, w, mlflowRunID, chunks, target)
@@ -82,7 +82,7 @@ func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out i
 	}
 	if len(lines) == 0 {
 		emitNoLogs(out, req, status)
-		return status.succeeded(), nil
+		return status.downloadOutcome(), nil
 	}
 
 	if len(lines) > target {
@@ -91,7 +91,7 @@ func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out i
 	for _, line := range lines {
 		emitLogLine(out, req, line)
 	}
-	return status.succeeded(), nil
+	return status.downloadOutcome(), nil
 }
 
 // resolveMLflowLogPath returns the run's MLflow run id and per-node log directory.
@@ -253,10 +253,12 @@ func downloadArtifact(ctx context.Context, w *databricks.WorkspaceClient, mlflow
 	}
 
 	var resp credentialsForReadResponse
+	// A map query is serialized per value with %v, so a []string becomes the
+	// literal "[path]". The backend signs that bogus path and still returns 200,
+	// surfacing only as a 404 on the download.
 	query := map[string]any{
 		"run_id": mlflowRunID,
-		// path is a repeated field, so pass a slice (serialized as path=...&path=...).
-		"path": []string{artifactPath},
+		"path":   artifactPath,
 	}
 	err = apiClient.Do(ctx, http.MethodGet, "/api/2.0/mlflow/artifacts/credentials-for-read", nil, nil, query, &resp)
 	if err != nil {

@@ -54,15 +54,17 @@ func newLogsCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		// --download-to and --review are not yet implemented; reject rather than
-		// silently ignore.
-		if downloadTo != "" {
-			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("--download-to is not implemented yet"))
-		}
+		// --review is not yet implemented; reject rather than silently ignore.
 		if review {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				errors.New("--review is not implemented yet"))
+		}
+
+		// A download always writes the full log, so a tail or time window would be
+		// silently dropped.
+		if downloadTo != "" && (cmd.Flags().Changed("lines") || minutes > 0) {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				errors.New("--download-to writes complete logs, so it cannot be combined with --lines or --minutes"))
 		}
 
 		// --lines (line tail) and --minutes (time window) answer the same question
@@ -100,9 +102,11 @@ func newLogsCommand() *cobra.Command {
 		return runLogs(ctx, cmd, logRequest{
 			runID:         runID,
 			node:          node,
+			nodeSet:       cmd.Flags().Changed("node"),
 			attempt:       retry,
 			windowMinutes: minutes,
 			tailLines:     tailLines,
+			downloadTo:    downloadTo,
 			jsonOutput:    root.OutputType(cmd) == flags.OutputJSON,
 		})
 	}
@@ -135,6 +139,22 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	if req.attempt >= 0 && req.attempt > status.latestAttempt {
 		return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 			fmt.Errorf("invalid retry %d: available retries are 0 to %d", req.attempt, status.latestAttempt))
+	}
+
+	// --download-to writes each node's logs to disk instead of streaming.
+	if req.downloadTo != "" {
+		success, err := downloadLogs(ctx, w, cmd.OutOrStdout(), req, status)
+		if errors.Is(err, errNodeOutOfRange) {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+		}
+		if err != nil {
+			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
+				fmt.Errorf("failed to download logs for run %d: %w", req.runID, err))
+		}
+		if !success {
+			return root.ErrAlreadyPrinted
+		}
+		return nil
 	}
 
 	// A past retry of an active run has immutable logs: render once, don't follow.
