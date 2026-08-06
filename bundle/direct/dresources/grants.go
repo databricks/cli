@@ -18,6 +18,7 @@ var grantResourceToSecurableType = map[string]string{
 	"external_locations":    "external_location",
 	"volumes":               "volume",
 	"registered_models":     "function",
+	"secrets":               "secret",
 	"vector_search_indexes": "table",
 }
 
@@ -74,6 +75,13 @@ func (*ResourceGrants) New(client *databricks.WorkspaceClient) *ResourceGrants {
 
 func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
 	return state
+}
+
+// IsEmptyState reports an empty grants list as no resource at all: nothing to grant, and
+// Terraform records no databricks_grants resource for it either, so migrated bundles have
+// no state entry.
+func (*ResourceGrants) IsEmptyState(state *GrantsState) bool {
+	return len(state.EmbeddedSlice) == 0
 }
 
 func grantKey(x catalog.PrivilegeAssignment) (string, string) {

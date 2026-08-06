@@ -87,6 +87,9 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		state statemgmt.ExportedResourcesMap
 		err   error
 	)
+	// ThisOrDefault: an unset setting still runs the default engine, and telemetry
+	// should report the engine that ran.
+	b.Metrics.StateEngine = stateEngine.ThisOrDefault()
 	if stateEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
@@ -154,7 +157,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	bundle.ApplySeqContext(
 		ctx, b,
 		scripts.Execute(config.ScriptPreDeploy),
-		lock.Acquire(),
+		lock.Acquire(lock.GoalDeploy),
 	)
 
 	if logdiag.HasError(ctx) {

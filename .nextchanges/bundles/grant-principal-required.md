@@ -1,1 +1,0 @@
-`bundle validate` and `bundle deploy` now reject a grant that is missing a `principal` with an error instead of a warning. Previously the deploy would start and, on the direct engine, create the securable before the grants PATCH failed (`400 INVALID_PARAMETER_VALUE`), leaving a partially-applied deployment.

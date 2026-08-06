@@ -13,7 +13,7 @@
 
 === Verify volume does not exist
 >>> musterr [CLI] volumes read main.myschema.myvolume
-Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+Error: Volume 'main.myschema.myvolume' does not exist.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -111,7 +111,7 @@ Destroy complete!
 }
 
 >>> musterr [CLI] volumes read main.myschema.myvolume
-Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+Error: Volume 'main.myschema.myvolume' does not exist.
 {
   "catalog_name": "main",
   "comment": "COMMENT2",

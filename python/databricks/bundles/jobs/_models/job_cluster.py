@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOr
+from databricks.bundles.core._variable import VariableOr, VariableOrOptional
 from databricks.bundles.jobs._models.cluster_spec import ClusterSpec, ClusterSpecParam
 
 if TYPE_CHECKING:
@@ -23,6 +23,15 @@ class JobCluster:
     new_cluster: VariableOr[ClusterSpec]
     """
     If new_cluster, a description of a cluster that is created for each task.
+    """
+
+    serverless_compute_id: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The ID of the serverless compute object to bind this cluster to. At most one
+    JobCluster per job may set this field; the rate limit defined on the referenced
+    serverless compute applies across all tasks bound to this cluster.
     """
 
     @classmethod
@@ -45,6 +54,15 @@ class JobClusterDict(TypedDict, total=False):
     new_cluster: VariableOr[ClusterSpecParam]
     """
     If new_cluster, a description of a cluster that is created for each task.
+    """
+
+    serverless_compute_id: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The ID of the serverless compute object to bind this cluster to. At most one
+    JobCluster per job may set this field; the rate limit defined on the referenced
+    serverless compute applies across all tasks bound to this cluster.
     """
 
 

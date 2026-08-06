@@ -99,6 +99,13 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		v.SchemaName = resolveSchema(b, v.CatalogName, v.SchemaName)
 		v.CatalogName = resolveCatalog(b, v.CatalogName)
 	}
+	for _, s := range b.Config.Resources.Secrets {
+		if s == nil {
+			continue
+		}
+		s.SchemaName = resolveSchema(b, s.CatalogName, s.SchemaName)
+		s.CatalogName = resolveCatalog(b, s.CatalogName)
+	}
 	for _, rm := range b.Config.Resources.RegisteredModels {
 		if rm == nil {
 			continue

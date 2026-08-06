@@ -36,6 +36,7 @@ var unsupportedResources = []string{
 	"vector_search_indexes",
 	"job_runs",
 	"internal_immutable_snapshots",
+	"secrets",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {
@@ -156,12 +157,12 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_USE", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.Permission{Level: "CAN_USE", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_USE", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.Permission{Level: "CAN_USE", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_USE", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.InstancePools["instance_pool_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.InstancePools["instance_pool_1"].Permissions, resources.InstancePoolPermission{Level: "CAN_MANAGE", UserName: "TestUser"})

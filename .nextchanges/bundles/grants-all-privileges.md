@@ -1,1 +1,0 @@
-Fixes [#6030](https://github.com/databricks/cli/issues/6030): spurious `update` on catalog/schema/volume grants (direct engine); a principal granted `ALL_PRIVILEGES` no longer drifts when the backend also reports the concrete privileges it implies ([#6064](https://github.com/databricks/cli/pull/6064)).

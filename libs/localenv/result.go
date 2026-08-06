@@ -87,6 +87,13 @@ const (
 	ErrPythonInstall      ErrorCode = "E_PYTHON_INSTALL"      // provision: uv python install failed
 	ErrProvision          ErrorCode = "E_PROVISION"           // provision: uv sync failed
 	ErrValidate           ErrorCode = "E_VALIDATE"            // validate: post-provision version mismatch
+
+	// ErrCanceled is not in the spec's error-code table: it reports a user/parent
+	// interrupt (SIGINT/SIGTERM cancels the context), not a failure of the phase
+	// it happened to be in. Without it an interrupt mid-`uv sync` surfaces as
+	// E_PROVISION with a "provision failed" message, implying something broke when
+	// the user simply pressed Ctrl-C. FailurePhase still records where it stopped.
+	ErrCanceled ErrorCode = "E_CANCELED" // any phase: interrupted by SIGINT/SIGTERM
 )
 
 // PipelineError is a failure carrying a stable code, the phase at which it
@@ -139,12 +146,13 @@ func NewError(code ErrorCode, err error, format string, args ...any) *PipelineEr
 	}
 }
 
-// TargetInfo is the resolved compute target (spec §6 "target"). Source records
-// which precedence source was used ("cluster", "serverless", "job", or
-// "bundle"). SparkVersion is the raw cluster runtime string the resolver read;
+// ComputeInfo is the resolved compute target, serialized as the result's
+// "compute" key (spec §6). Source records which precedence source was used
+// ("cluster", "serverless", "job", or "bundle"). SparkVersion is the raw cluster
+// runtime string the resolver read;
 // it is folded into EnvKey (dbr/<SparkVersion>) and is not part of the JSON
 // contract, kept only as intermediate resolver state.
-type TargetInfo struct {
+type ComputeInfo struct {
 	Source            string `json:"source"`
 	ClusterID         string `json:"clusterId,omitempty"`
 	ServerlessVersion string `json:"serverlessVersion,omitempty"`
@@ -200,7 +208,7 @@ type Result struct {
 	OK            bool           `json:"ok"`
 	Mode          string         `json:"mode"`
 	DryRun        bool           `json:"dryRun"`
-	Target        *TargetInfo    `json:"target,omitempty"`
+	Compute       *ComputeInfo   `json:"compute,omitempty"`
 	Resolved      *ResolvedInfo  `json:"resolved,omitempty"`
 	Greenfield    bool           `json:"greenfield"`
 	Plan          *Plan          `json:"plan,omitempty"`

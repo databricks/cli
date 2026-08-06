@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.7 // MIT
-	github.com/databricks/databricks-sdk-go v0.160.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.166.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
@@ -41,8 +41,17 @@ require (
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.22.0 // BSD-3-Clause
 	golang.org/x/sys v0.47.0 // BSD-3-Clause
+	golang.org/x/term v0.45.0 // BSD-3-Clause
 	golang.org/x/text v0.40.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
+)
+
+require github.com/databricks/sdk-go/core v0.0.1-dev // Apache-2.0
+
+require (
+	github.com/databricks/sdk-go/auth v0.0.0-dev // Apache-2.0
+	github.com/databricks/sdk-go/files v0.0.0-dev.1 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.0.0-dev // Apache-2.0
 )
 
 require (
@@ -102,8 +111,8 @@ require (
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.265.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
-	google.golang.org/grpc v1.79.3 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
+	google.golang.org/grpc v1.82.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

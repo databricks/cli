@@ -1,1 +1,0 @@
-`bundle validate` and `bundle deploy` now reject a grant with an empty `privileges` list with an error. Previously, on the direct engine, such a grant never converged: the backend drops principals with no privileges, so every subsequent `bundle plan` reported the grant as a perpetual update.

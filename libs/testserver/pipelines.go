@@ -69,6 +69,11 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.CreatorUserName = "tester@databricks.com"
 	r.LastModified = nowMilli()
 	r.Name = r.Spec.Name
+	// run_as is on CreatePipeline, not PipelineSpec, so the spec decode drops it. The backend
+	// echoes it top-level on GetPipelineResponse.RunAs; mirror that so a re-read is faithful.
+	if create.RunAs != nil {
+		r.RunAs = create.RunAs
+	}
 	r.RunAsUserName = "tester@databricks.com"
 	r.State = "IDLE"
 	r.EffectivePublishingMode = pipelines.PublishingModeDefaultPublishingMode
@@ -124,6 +129,14 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 
 	item.Spec = &spec
 	item.Parameters = edit.Parameters
+	// The backend echoes the spec name on GetPipelineResponse.Name; mirror that so a
+	// rename is reflected on the next read.
+	item.Name = spec.Name
+	// run_as is on EditPipeline, not PipelineSpec; keep it in sync like Parameters so an edit
+	// that changes run_as is reflected on the next read (matches cloud top-level echo).
+	if edit.RunAs != nil {
+		item.RunAs = edit.RunAs
+	}
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = item
 

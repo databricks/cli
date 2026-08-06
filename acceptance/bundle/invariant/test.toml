@@ -24,6 +24,7 @@ EnvMatrix.INPUT_CONFIG = [
     "alert.yml.tmpl",
     "app.yml.tmpl",
     "catalog.yml.tmpl",
+    "catalog_optional_fields.yml.tmpl",
     "cluster.yml.tmpl",
     "cluster_apply_policy_default_values.yml.tmpl",
     "dashboard.yml.tmpl",
@@ -49,6 +50,7 @@ EnvMatrix.INPUT_CONFIG = [
     "model_with_permissions.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",
     "pipeline.yml.tmpl",
+    "pipeline_allow_duplicate_names.yml.tmpl",
     "pipeline_apply_policy_default_values.yml.tmpl",
     "pipeline_config_dots.yml.tmpl",
     "postgres_branch.yml.tmpl",
@@ -97,6 +99,10 @@ no_postgres_database_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_dat
 no_database_instance_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=database_instance.yml.tmpl"]
 no_database_catalog_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=database_catalog.yml.tmpl"]
 no_synced_database_table_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=synced_database_table.yml.tmpl"]
+
+# managed_encryption_settings needs a CMK registered with the workspace, so this
+# config only runs against the mock server
+no_catalog_optional_fields_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=catalog_optional_fields.yml.tmpl"]
 
 # External locations require actual storage credentials with cloud IAM setup
 # which are environment-specific, so we only test locally with the mock server

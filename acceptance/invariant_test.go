@@ -24,6 +24,8 @@ const invariantConfigsDir = "bundle/invariant/configs"
 var LackingInvariantTest = map[string]bool{
 	"quality_monitors":             true,
 	"internal_immutable_snapshots": true,
+	"secrets":                      true,
+	"secrets.grants":               true,
 }
 
 // TestInvariantConfigsCoverage ensures that the invariant test configs in

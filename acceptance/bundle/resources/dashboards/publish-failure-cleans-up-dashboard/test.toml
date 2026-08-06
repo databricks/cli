@@ -2,6 +2,12 @@ Cloud = false
 Local = true
 RecordRequests = true
 
+Ignore = ["tmp.plan.json"]
+
+# Applying a saved plan must reach the same publish failure and the same cleanup
+# DELETE as an in-memory plan; both variants share out.dashboardrequests.txt.
+EnvMatrix.READPLAN = ["", "1"]
+
 [[Server]]
 Pattern = "POST /api/2.0/lakeview/dashboards/{dashboard_id}/published"
 Response.StatusCode = 400

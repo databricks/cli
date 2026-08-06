@@ -1,1 +1,0 @@
-Fixed `bundle deploy`/`bundle destroy` failing when an app enters the transient DELETING state between plan and apply (e.g. with a saved plan); the delete is now treated as complete instead of erroring (direct engine only).
