@@ -5,7 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-summary/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Recorded deployment [NUMID] version 1 at /Workspace/Users/[USERNAME]/.bundle/dms-summary/default/state/resources.deployment.json
+Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 
 >>> [CLI] bundle summary -o json
 {
@@ -19,7 +19,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-summary/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Recorded deployment [NUMID] version 2 at /Workspace/Users/[USERNAME]/.bundle/dms-summary/default/state/resources.deployment.json
+Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=2
 
 >>> [CLI] bundle summary -o json
 {

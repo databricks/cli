@@ -5,7 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record/default
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Recorded deployment [NUMID] version 1 at /Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json
+Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 
 >>> print_requests.py //api/2.0/bundle
 {
@@ -71,7 +71,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record/default
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Recorded deployment [NUMID] version 2 at /Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json
+Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=2
 
 >>> print_requests.py //api/2.0/bundle
 {

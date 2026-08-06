@@ -5,7 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-depends-on/def
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Recorded deployment [NUMID] version 1 at /Workspace/Users/[USERNAME]/.bundle/dms-depends-on/default/state/resources.deployment.json
+Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 
 >>> print_requests.py //versions/1/operations --sort
 {

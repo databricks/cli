@@ -3,7 +3,7 @@ package phases
 import (
 	"context"
 	"fmt"
-	"path"
+	"net/url"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -11,6 +11,8 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
@@ -56,22 +58,27 @@ func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.Eng
 	}), nil
 }
 
-// logDeploymentHistory reports the deployment this deploy was recorded under, so
-// the user can look its history up without hunting for the ID. A nil recorder means
+// logDeploymentHistory links to the deployment this deploy was recorded under, so
+// the user can open its history without hunting for the ID. A nil recorder means
 // recording is off, and a zero version means the version was never created.
 //
-// It prints the deployment's workspace path rather than a UI link: the deployment is
-// a BUNDLE_DEPLOYMENT tree node with no page of its own yet, so a URL would 404.
+// The workspace ID is left out of the URL: the page redirects correctly without it,
+// and omitting it keeps the line short enough to stay clickable in a terminal.
 func logDeploymentHistory(ctx context.Context, b *bundle.Bundle, recorder *dms.Recorder) {
 	if recorder == nil || recorder.Version() == 0 {
 		return
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Recorded deployment %s version %d at %s",
-		recorder.DeploymentID(),
-		recorder.Version(),
-		path.Join(b.Config.Workspace.StatePath, dms.DeploymentNodeName),
-	))
+	baseURL, err := url.Parse(b.WorkspaceClient(ctx).Config.CanonicalHostName())
+	if err != nil {
+		// Only the link is lost, so report the deployment without it rather than
+		// failing a deploy that already succeeded.
+		log.Debugf(ctx, "Not linking to the recorded deployment: %s", err)
+		cmdio.LogString(ctx, fmt.Sprintf("Recorded deployment %s version %d", recorder.DeploymentID(), recorder.Version()))
+		return
+	}
+
+	cmdio.LogString(ctx, "Deployment history: "+workspaceurls.DeploymentURL(*baseURL, recorder.DeploymentID(), recorder.Version()))
 }
 
 // deploymentProvenance describes the source this deploy came from and where it

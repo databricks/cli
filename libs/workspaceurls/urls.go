@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -66,6 +67,28 @@ func ResourceTypes() []string {
 	}
 	slices.Sort(names)
 	return names
+}
+
+// DeploymentURL returns the workspace URL for a bundle deployment recorded with
+// the deployment metadata service, of the form
+//
+//	<host>/deployments/<deploymentID>?version=<version>
+//
+// The version pins the page to the deploy that produced it. It is separate from
+// ResourceURL because a deployment is not a bundle resource type: it has no entry
+// in resourceURLPatterns and takes a query parameter none of those do.
+func DeploymentURL(baseURL url.URL, deploymentID string, version int64) string {
+	if deploymentID == "" {
+		return ""
+	}
+
+	baseURL.Path = "deployments/" + deploymentID
+	if version > 0 {
+		values := baseURL.Query()
+		values.Set("version", strconv.FormatInt(version, 10))
+		baseURL.RawQuery = values.Encode()
+	}
+	return baseURL.String()
 }
 
 // JobRunPath returns the modern workspace path for a job run, of the form
