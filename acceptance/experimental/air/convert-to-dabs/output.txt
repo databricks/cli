@@ -36,6 +36,7 @@ resources:
       tasks:
         - task_key: torchrun-a10-smoke-test
           environment_key: default
+          max_retries: 3
           ai_runtime_task:
             experiment: torchrun-a10-smoke-test
             deployments:

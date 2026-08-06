@@ -176,7 +176,9 @@ func TestConvertToDabsOmitsUnsetFields(t *testing.T) {
 
 	name := loaded.ExperimentName
 	task := "resources.jobs." + name + ".tasks[0]"
-	assert.False(t, has(root, task+".max_retries"))
+	// max_retries is always emitted: `air run` fills its own default when unset, so
+	// omitting it would silently give the bundle the Jobs default instead.
+	assert.Equal(t, int64(defaultMaxRetries), get(t, root, task+".max_retries").MustInt())
 	assert.False(t, has(root, task+".timeout_seconds"))
 	assert.False(t, has(root, task+".ai_runtime_task.code_source_path"))
 	assert.False(t, has(root, task+".ai_runtime_task.mlflow_run"))

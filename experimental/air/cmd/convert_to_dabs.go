@@ -69,7 +69,7 @@ upload step is required. This command performs a purely local translation and
 does not contact the workspace.`,
 	}
 
-	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the bundle into (default: a <experiment>-bundle folder next to the input YAML). Accepts an absolute or relative path.")
+	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the bundle into (default: the input YAML's directory). Must contain the code_source. Accepts an absolute or relative path.")
 	cmd.Flags().BoolVar(&force, "force", false, "Overwrite the generated bundle files if they already exist.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -255,10 +255,8 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 		"environment_key": nv(aiRuntimeEnvironmentKey, 2),
 	}
 	taskLine := 3
-	if cfg.MaxRetries != nil {
-		task["max_retries"] = nv(*cfg.MaxRetries, taskLine)
-		taskLine++
-	}
+	task["max_retries"] = nv(cfg.maxRetries(), taskLine)
+	taskLine++
 	if cfg.TimeoutMinutes != nil {
 		task["timeout_seconds"] = nv(cfg.timeoutSeconds(), taskLine)
 		taskLine++
