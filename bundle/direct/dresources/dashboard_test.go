@@ -28,11 +28,13 @@ func TestDashboardState_JSONSerialization_PublishedField(t *testing.T) {
 }
 
 func TestDashboardCompactState(t *testing.T) {
+	requireLargeEnoughToHash(t, largeDashboard)
+
 	state := &DashboardState{
 		DashboardConfig: resources.DashboardConfig{
 			DisplayName:         "test-dashboard",
 			Etag:                "etag-123",
-			SerializedDashboard: `{"pages":[{"name":"p1"}]}`,
+			SerializedDashboard: largeDashboard,
 		},
 	}
 
@@ -47,7 +49,7 @@ func TestDashboardCompactState(t *testing.T) {
 	assert.Equal(t, "etag-123", compacted.Etag)
 
 	// The original state is not mutated.
-	assert.Equal(t, `{"pages":[{"name":"p1"}]}`, state.SerializedDashboard)
+	assert.Equal(t, largeDashboard, state.SerializedDashboard)
 
 	// Compacting is idempotent.
 	out2, err := CompactState(GetResourceConfig("dashboards"), compacted)

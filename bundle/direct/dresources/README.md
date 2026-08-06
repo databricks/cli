@@ -57,7 +57,9 @@ on field behaviour might result in recreate. See dstate/migrate.go on how to han
 
 Declare a field under `hashed_in_state` in `resources.yml` when it holds large content that is only ever compared for equality and never read back from state. The engine then persists only a `sha256_hashed_in_state:<hex>` content hash for that field (via `CompactState`), and — crucially — hashes it on **every** value entering the diff: saved state, the local config, and the remapped remote. Once the saved value is a hash, all three sides must be hashes or the comparisons (`Old==New` for a local change, `Remote==New` for remote drift) would be hash-vs-content nonsense. The full contents stay only in the plan's `new_state` and are sent to the API on every deploy, so the deploy is unaffected.
 
-A field qualifies if it is large (a small field gains nothing — the hash placeholder is ~70 bytes) and is never read back from state by any code path (e.g. not consumed raw by `OverrideChangeDesc` or by state export).
+A field qualifies if it is large and is never read back from state by any code path (e.g. not consumed raw by `OverrideChangeDesc` or by state export).
+
+Hashing is skipped when it would not pay for itself: a value whose JSON encoding is no longer than the 87-byte placeholder is persisted as is. The verdict depends only on the value, so the state being saved and all three sides of the diff agree on it and stay comparable — including when the same field is small for one resource and large for another, or grows past the threshold between deploys.
 
 **`hashed_in_state` is orthogonal to `ignore_remote_changes`.** Because the remote side is hashed too, remote drift on a hashed field is detected as `hash != hash` — so a field can be `hashed_in_state` *without* being `ignore_remote_changes` (as long as the server echoes the value back unchanged). The two are declared independently.
 

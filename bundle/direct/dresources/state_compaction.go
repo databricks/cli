@@ -18,13 +18,18 @@ import (
 // backwards compatible.
 const stateHashPrefix = "sha256_hashed_in_state:"
 
+// stateHashPlaceholderLen is the exact size of a placeholder: the prefix followed by a
+// SHA-256 digest in hex (sha256.Size bytes, two characters each).
+const stateHashPlaceholderLen = len(stateHashPrefix) + sha256.Size*2
+
 // hashStateValue returns a content-hash placeholder ("sha256_hashed_in_state:<hex>") over the JSON
 // encoding of v. It is used to store large, equality-only fields (e.g. a dashboard's
 // serialized_dashboard) compactly in state instead of their full contents.
 //
-// It is idempotent and stable: nil, an empty string, and a value that is already a
-// placeholder are returned unchanged, so re-compacting an already-compact state and
-// comparing a fresh config against stored state both behave predictably.
+// It is idempotent and stable: nil, an empty string, a value that is already a
+// placeholder, and a value too small to be worth hashing are returned unchanged, so
+// re-compacting an already-compact state and comparing a fresh config against stored
+// state both behave predictably.
 func hashStateValue(v any) (any, error) {
 	if s, ok := v.(string); ok {
 		if s == "" || strings.HasPrefix(s, stateHashPrefix) {
@@ -41,6 +46,12 @@ func hashStateValue(v any) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("marshalling value for hashing: %w", err)
 	}
+
+	// Compare against the JSON encoding, since that is what the state file stores
+	if len(data) <= stateHashPlaceholderLen {
+		return v, nil
+	}
+
 	sum := sha256.Sum256(data)
 
 	return stateHashPrefix + hex.EncodeToString(sum[:]), nil
@@ -48,9 +59,11 @@ func hashStateValue(v any) (any, error) {
 
 // CompactState returns a copy of state with every field declared in cfg.HashedInState
 // replaced by a content hash, so the state persists only the hash and not the full
-// contents. It is applied both before persisting state and to every value entering the
-// state diff, so stored and compared values share one form. The caller's value is never
-// mutated (it is reused for the deploy API call, which needs the full contents).
+// contents. A field whose contents are already no larger than a placeholder is left as
+// is (see hashStateValue). It is applied both before persisting state and to every value
+// entering the state diff, so stored and compared values share one form. The caller's
+// value is never mutated (it is reused for the deploy API call, which needs the full
+// contents).
 //
 // Returns state unchanged when no fields are declared or state is not a non-nil pointer.
 func CompactState(cfg *ResourceLifecycleConfig, state any) (any, error) {

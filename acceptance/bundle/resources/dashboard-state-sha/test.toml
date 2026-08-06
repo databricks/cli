@@ -9,6 +9,9 @@ Local = true
 Cloud = false
 
 # dashboard.lvdash.json is rendered from dashboard.tmpl in the script (re-rendered for the edit).
+# dashboard.tmpl must stay large enough that hashing shrinks the state: content that encodes to
+# no more than a placeholder (87 bytes) is persisted raw, which would silently stop this test from
+# exercising hashing at all.
 Ignore = ["dashboard.lvdash.json"]
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
