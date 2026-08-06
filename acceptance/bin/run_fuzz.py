@@ -8,7 +8,8 @@ FUZZ_TARGET, and classifies each outcome:
   rejected - the CLI refused the config before deploying it; the common case, not a bug
   gap      - the config needs a route the testserver does not model
   hang     - the seed outlived FUZZ_SEED_TIMEOUT
-  bug      - a panic, an internal error, a generator failure, or a broken invariant
+  bug      - a panic, an internal error, a generator failure, or a config that deployed and then
+             failed the invariant
 
 Every seed adds a line to LOG.summary. A bug or a hang also writes a ready-to-run repro to
 LOG.repro and exits non-zero. Nothing is written to stdout: the committed run asserts empty output.
@@ -95,7 +96,7 @@ def run_seed(seed_dir, seed):
 
 def oracle_verdict(seed_dir):
     """The no-drift oracle's own verdict, if it reached one. Empty if it never ran or was happy."""
-    # Both oracles report a violation in a form only they produce, so a seed that broke the
+    # Each oracle reports a violation in a form only it produces, so a seed that broke the
     # invariant is still recognisable when it also touched a route the testserver lacks.
     if b"Unexpected action=" in read(seed_dir / "LOG.check"):
         # verify_no_drift.py, the exact check shared with the curated invariant targets.
@@ -103,6 +104,9 @@ def oracle_verdict(seed_dir):
     if read(seed_dir / "LOG.plan.determinism.diff").strip():
         # The plan-determinism diff script.prepare substitutes when FUZZ_CHECK_DRIFT is 0.
         return "planned differently on two consecutive runs"
+    if read(seed_dir / "LOG.plan.failed").strip():
+        # Same substitute, when the plan failed outright for a reason that is not a testserver gap.
+        return "could not be planned after deploy"
     return ""
 
 
@@ -126,16 +130,15 @@ def classify(seed_dir):
     if verdict:
         return "bug", verdict
 
-    # Marker body of the catch-all stubs in fuzz/test.toml: the route is one the testserver does
-    # not model. Checked before the marker below, else an unmodeled route reached during plan or
-    # destroy reads as a drift bug.
+    # Marker body of the catch-all stubs in fuzz/test.toml. A gap seed has usually deployed first,
+    # so this has to come before the INPUT_CONFIG_OK check below.
     if b"TESTSERVER_GAP" in logs:
         return "gap", ""
 
-    # Failing after INPUT_CONFIG_OK means the config deployed but drifted (or destroy failed);
-    # failing before it with no panic just means the config was rejected.
+    # The oracle above names a drift failure; anything else here is a command that failed on a
+    # config the CLI had accepted. Failing before the marker just means it was rejected.
     if b"INPUT_CONFIG_OK" in read(seed_dir / "LOG.check"):
-        return "bug", "broke the invariant"
+        return "bug", "failed after deploying; see the seed's LOG.* files"
 
     return "rejected", ""
 
