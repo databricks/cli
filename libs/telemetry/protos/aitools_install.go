@@ -14,6 +14,7 @@ const (
 	AitoolsAgentTypeCopilot     AitoolsAgentType = "COPILOT"
 	AitoolsAgentTypeAntigravity AitoolsAgentType = "ANTIGRAVITY"
 	AitoolsAgentTypePi          AitoolsAgentType = "PI"
+	AitoolsAgentTypeGoose       AitoolsAgentType = "GOOSE"
 )
 
 // AitoolsInstallScope mirrors AitoolsInstallScope.Type in the databricks_cli

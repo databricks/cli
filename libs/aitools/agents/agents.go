@@ -110,6 +110,7 @@ const (
 	NameCopilot     = "copilot"
 	NameAntigravity = "antigravity"
 	NamePi          = "pi"
+	NameGoose       = "goose"
 )
 
 // Databricks plugin identity, shared across the agents that ship a plugin.
@@ -215,6 +216,16 @@ var Registry = []*Agent{
 		// Pi reads agent skills (SKILL.md) but has no databricks plugin, so it is
 		// skills-only (Plugin nil).
 	},
+	{
+		Name:                 NameGoose,
+		DisplayName:          "Goose",
+		ConfigDir:            gooseConfigDir,
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".goose",
+		Binary:               "goose",
+		// Goose reads agent skills (SKILL.md) but has no databricks plugin, so it is
+		// skills-only (Plugin nil).
+	},
 }
 
 // piConfigDir returns Pi's agent config directory: PI_CODING_AGENT_DIR when set,
@@ -253,6 +264,30 @@ func openCodeConfigDir(ctx context.Context) (string, error) {
 		xdg = filepath.Join(home, ".config")
 	}
 	return filepath.Join(xdg, "opencode"), nil
+}
+
+// gooseConfigDir returns Goose's config directory, matching how Goose resolves it
+// so skills land where it reads them, including under a relocated root. The Windows
+// path keeps the legacy "Block" segment for backwards compatibility.
+// See crates/goose/src/config/paths.rs (etcetera crate). https://block.github.io/goose/
+func gooseConfigDir(ctx context.Context) (string, error) {
+	if root := env.Get(ctx, "GOOSE_PATH_ROOT"); filepath.IsAbs(root) {
+		return filepath.Join(root, "config"), nil
+	}
+	if runtime.GOOS == "windows" {
+		if appData := env.Get(ctx, "APPDATA"); appData != "" {
+			return filepath.Join(appData, "Block", "goose", "config"), nil
+		}
+	}
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	xdg := env.Get(ctx, "XDG_CONFIG_HOME")
+	if xdg == "" {
+		xdg = filepath.Join(home, ".config")
+	}
+	return filepath.Join(xdg, "goose"), nil
 }
 
 // ByName returns the registry agent with the given name, or nil if not found.

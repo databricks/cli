@@ -395,9 +395,9 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	projectRoot := t.TempDir()
 	t.Chdir(projectRoot)
-	// Pi reads project skills from .pi/skills; a home-based detection would miss
-	// this, so update must pick it up via DetectProjectInstalled.
-	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".pi", "skills", "databricks-core"), 0o755))
+	// Goose reads project skills from .goose/skills; a home-based detection would
+	// miss this, so update must pick it up via DetectProjectInstalled.
+	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".goose", "skills", "databricks-core"), 0o755))
 
 	ctx := cmdio.MockDiscard(t.Context())
 	dir, err := installer.ProjectSkillsDir(ctx)
@@ -428,5 +428,5 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--scope", "project"})
 	require.NoError(t, cmd.Execute())
-	assert.Contains(t, names, agents.NamePi)
+	assert.Contains(t, names, agents.NameGoose)
 }
