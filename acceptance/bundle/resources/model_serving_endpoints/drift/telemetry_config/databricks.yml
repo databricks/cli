@@ -12,11 +12,9 @@ resources:
             entity_version: "1"
             workload_size: Small
             scale_to_zero_enabled: true
-      telemetry_config:
-        table_names:
-          logs_table: main.default.test_logs
-          traces_table: main.default.test_traces
-          metrics_table: main.default.test_metrics
-          annotations_table: main.default.test_annotations
-        inference_table_config:
-          sampling_fraction: 0.5
+      telemetry_config: # TO_REMOVE
+        table_names: # TO_REMOVE
+          logs_table: main.default.test_logs # TO_REMOVE
+          traces_table: main.default.test_traces # TO_REMOVE
+        inference_table_config: # TO_REMOVE
+          sampling_fraction: 0.5 # TO_REMOVE

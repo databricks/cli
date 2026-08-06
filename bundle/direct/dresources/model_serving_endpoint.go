@@ -360,8 +360,8 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 	if entry.Changes.HasChange(pathTelemetryConfig) {
 		// The telemetry API rejects an endpoint that is still applying an update, which the
 		// calls above start and an interrupted deploy can leave behind. WaitAfterUpdate only
-		// runs after DoUpdate returns.
-		_, err = r.client.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, id, 35*time.Minute, nil)
+		// runs once DoUpdate has returned, so it cannot order these two calls.
+		_, err = r.waitForEndpointReady(ctx, id)
 		if err != nil {
 			return nil, err
 		}

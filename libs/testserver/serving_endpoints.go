@@ -35,9 +35,10 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 	return entities
 }
 
-// applyTelemetryConfig mirrors the backend: a config naming neither telemetry_profile_id
-// nor table_names returns 200 and applies nothing. What comes back is the profile ID plus
-// inference_table_config if the caller supplied one, never table_names.
+// applyTelemetryConfig mirrors the backend: table_names is consumed to create a profile and
+// never echoed back, so a GET returns the profile ID plus the inference_table_config the
+// caller supplied. A config naming neither table_names nor telemetry_profile_id identifies
+// no profile, and the backend reports success while applying nothing.
 func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.TelemetryConfig {
 	if config == nil {
 		return nil
@@ -53,8 +54,7 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 	}
 	if config.InferenceTableConfig != nil {
 		inferenceTable := *config.InferenceTableConfig
-		// Left empty when the patch reuses a profile by ID: it names no tables, and what
-		// the backend reports there was never observed.
+		// The backend names the payload table after the logs table it was given.
 		if config.TableNames != nil {
 			inferenceTable.Name = config.TableNames.LogsTable + "_payload"
 		}
@@ -62,20 +62,6 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 	}
 
 	return &applied
-}
-
-// telemetrySupported mirrors the backend, which supports telemetry only on custom served
-// models, and returns the endpoint type the backend names when it rejects one.
-func telemetrySupported(endpoint serving.ServingEndpointDetailed) (string, bool) {
-	if endpoint.Config == nil || len(endpoint.Config.ServedEntities) == 0 {
-		return "NO_CONFIG", false
-	}
-	for _, entity := range endpoint.Config.ServedEntities {
-		if entity.ExternalModel == nil && entity.EntityName != "" {
-			return "", true
-		}
-	}
-	return "EXTERNAL_MODELS", false
 }
 
 // clearExternalModelSecrets mirrors the backend, which persists the *_plaintext
@@ -278,11 +264,6 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		ForceSendFields: append(createReq.ForceSendFields, "PermissionLevel", "RouteOptimized", "Description"),
 	}
 
-	// Unlike the telemetry API, create drops telemetry it cannot apply instead of failing.
-	if _, ok := telemetrySupported(endpoint); !ok {
-		endpoint.TelemetryConfig = nil
-	}
-
 	s.ServingEndpoints[createReq.Name] = endpoint
 
 	return Response{
@@ -468,16 +449,6 @@ func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name st
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": fmt.Sprintf("Serving endpoint with name %s not found", name)},
-		}
-	}
-
-	if endpointType, ok := telemetrySupported(endpoint); !ok {
-		return Response{
-			StatusCode: 400,
-			Body: map[string]string{
-				"error_code": "INVALID_PARAMETER_VALUE",
-				"message":    fmt.Sprintf("Telemetry configuration is not supported for endpoint type '%s'. This API only supports endpoints with custom served models.", endpointType),
-			},
 		}
 	}
 

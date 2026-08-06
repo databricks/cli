@@ -51,15 +51,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "action": "skip",
     "reason": "input_only",
     "old": {
-      "annotations_table": "main.default.test_annotations",
       "logs_table": "main.default.test_logs",
-      "metrics_table": "main.default.test_metrics",
       "traces_table": "main.default.test_traces"
     },
     "new": {
-      "annotations_table": "main.default.test_annotations",
       "logs_table": "main.default.test_logs",
-      "metrics_table": "main.default.test_metrics",
       "traces_table": "main.default.test_traces"
     }
   },
@@ -115,15 +111,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "telemetry_config.table_names": {
     "action": "update",
     "old": {
-      "annotations_table": "main.default.test_annotations",
       "logs_table": "main.default.test_logs",
-      "metrics_table": "main.default.test_metrics",
       "traces_table": "main.default.test_traces"
     },
     "new": {
-      "annotations_table": "main.default.test_annotations",
       "logs_table": "main.default.test_logs_v2",
-      "metrics_table": "main.default.test_metrics",
       "traces_table": "main.default.test_traces"
     }
   },
@@ -182,9 +174,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
         "sampling_fraction": 0.9
       },
       "table_names": {
-        "annotations_table": "main.default.test_annotations",
         "logs_table": "main.default.test_logs_v2",
-        "metrics_table": "main.default.test_metrics",
         "traces_table": "main.default.test_traces"
       }
     },
@@ -233,9 +223,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
         "sampling_fraction": 0.5
       },
       "table_names": {
-        "annotations_table": "main.default.test_annotations",
         "logs_table": "main.default.test_logs",
-        "metrics_table": "main.default.test_metrics",
         "traces_table": "main.default.test_traces"
       }
     }
@@ -250,9 +238,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
         "sampling_fraction": 0.9
       },
       "table_names": {
-        "annotations_table": "main.default.test_annotations",
         "logs_table": "main.default.test_logs",
-        "metrics_table": "main.default.test_metrics",
         "traces_table": "main.default.test_traces"
       }
     }
@@ -267,9 +253,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
         "sampling_fraction": 0.9
       },
       "table_names": {
-        "annotations_table": "main.default.test_annotations",
         "logs_table": "main.default.test_logs_v2",
-        "metrics_table": "main.default.test_metrics",
         "traces_table": "main.default.test_traces"
       }
     }

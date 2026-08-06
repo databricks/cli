@@ -185,10 +185,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 
-		// Validate that telemetry_config is in a form the serving endpoints API applies.
-		// It rejects or silently discards anything else.
-		validate.ValidateServingTelemetryConfig(),
-
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
 		// points to a Terraform-only field with no DABs equivalent.

@@ -1,9 +1,5 @@
 RecordRequests = true
 
-# Terraform is excluded: the provider types sampling_fraction as an integer while the API
-# takes a fraction in [0.0, 1.0], so a terraform deploy truncates 0.5 to 0.
-#
-# Local only: telemetry needs a custom served model, which takes a registered UC model and
-# ~10 minutes to provision, and each PATCH locks the endpoint for another 2-3. The fake was
-# checked against a real workspace instead.
+# Direct engine only: the terraform provider types sampling_fraction as an integer while
+# the API takes a fraction in [0.0, 1.0], so a terraform deploy truncates 0.5 to 0.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
