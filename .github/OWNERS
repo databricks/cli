@@ -64,6 +64,10 @@
 # Integration tests
 /integration/               team:platform
 
+# Must stay below /integration/: rules are last-match-wins, so the broader
+# team:platform rule above would otherwise take precedence for these paths.
+/integration/cmd/environments/  @rugpanov @rclarey @anton-107 @misha-db
+
 # Internal
 /internal/                  team:platform
 
