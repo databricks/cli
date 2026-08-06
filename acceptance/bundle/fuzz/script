@@ -5,9 +5,8 @@
 # no_drift/script reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
 export READPLAN=""
 
-# The stubs are duplicated here because test.toml only merges along the directory chain. One added
-# to ../invariant and not here would be answered by the catch-alls, silently turning its seeds into
-# gaps rather than exercising the route.
+# The stubs are duplicated here because test.toml only merges along the directory chain: one added
+# to ../invariant and not here would be answered by the catch-alls and its seeds filed as gaps.
 grep '^Pattern = ' "$INVARIANT_DIR/test.toml" | while read -r stub; do
     grep -qxF -- "$stub" "$TESTDIR/test.toml" || echo "stub missing from fuzz/test.toml: $stub"
 done | contains.py '!stub missing' > /dev/null
@@ -20,9 +19,8 @@ cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
 # sources sees the invariant helpers that script.prepare defined.
 seed_body() {
     cd "$1"
-    # Seeds share one long-lived workspace, so scope the unique name to the seed; otherwise state
-    # a seed leaves behind reads back as drift in the next one. Scoped here rather than in the
-    # generator so targets that derive workspace paths from $UNIQUE_NAME see it too.
+    # Seeds share one long-lived workspace, so scope the name to the seed, or state one leaves
+    # behind reads back as drift in the next. Here, not in the generator, so targets see it too.
     export UNIQUE_NAME="$UNIQUE_NAME-$2"
     export FUZZ_SEED="$2"
     export FUZZ_SCHEMA="../schema.json"

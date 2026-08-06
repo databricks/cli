@@ -744,12 +744,10 @@ tasks:
     # No `sources:` fingerprint: the window depends on FUZZ_* env vars Task can't see.
     cmds:
       - |
-        # Wider window than the committed run, with drift on; a repro narrows it via
-        # FUZZ_SEED_START/COUNT.
+        # Wider window than the committed run, with drift on; a repro narrows it via FUZZ_SEED_*.
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-200}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
-        # -count=1: only the script reads FUZZ_*, so the test cache would serve another window's
-        # result as this one's.
+        # -count=1: only the script reads FUZZ_*, so the cache would serve another window's result.
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \

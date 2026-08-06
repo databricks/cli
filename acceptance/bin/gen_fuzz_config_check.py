@@ -29,8 +29,7 @@ from gen_fuzz_config import (
     to_yaml,
 )
 
-# Tricky shapes: strings with ':' and '"', nested maps, lists of dicts, lists in lists,
-# empty containers.
+# Tricky shapes: colons and quotes in strings, nesting, lists in lists, empty containers.
 CASES = [
     {"comment": "value: with a colon", "description": 'quote " and : colon'},
     {"resources": {"jobs": {"j": {"name": "n", "tags": {"team": "jobs"}}}}},
@@ -42,9 +41,8 @@ CASES = [
 HEADER = re.compile(r"[\w.\-]+:$")  # non-empty container: `key:`
 SCALAR = re.compile(r"[\w.\-]+: (.+)$")  # `key: <json>`
 
-# Resources without a permission enum of their own point at this union of every level of every
-# resource type, so it does not say which ones this resource accepts. Those entries in
-# PERMISSION_LEVEL are unverifiable here and are checked only for naming a real resource type.
+# The union of every level of every resource type, which resources without an enum of their own
+# point at. It says nothing about what one resource accepts, so those entries go unverified.
 GENERIC_LEVEL_REF = "iam.PermissionLevel"
 
 
@@ -120,8 +118,7 @@ def check_tables(schema):
         levels = nested_enum(gen, element, "permissions", "level")
         level = PERMISSION_LEVEL.get(rtype)
         if levels and level is None:
-            # gen_permissions emits nothing without an entry, so the resource silently loses its
-            # permissions coverage even though the schema says exactly what it accepts.
+            # gen_permissions emits nothing without an entry, so the resource loses its coverage.
             errors.append(f"{rtype}: schema names its levels ({', '.join(levels)}) but PERMISSION_LEVEL has none")
         elif levels and level not in levels:
             errors.append(f"{rtype}: PERMISSION_LEVEL {level!r} is not one of {levels}")

@@ -27,14 +27,12 @@ from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, Generator, is_emp
 
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
-# Chance a step injects a field rather than perturbing one. Biased high: injection is the path to
-# drift bugs, and destructive coverage is already dense.
+# Biased high: injection is the path to drift bugs, and destructive coverage is already dense.
 ADD_PROB = 0.6
 
 
 def tokenize(text):
-    # (indent, content) per non-blank, non-comment line. Only full-line comments are stripped; the
-    # curated bases have no trailing "#" in values.
+    # (indent, content) per line. Only full-line comments: no curated base has a trailing "#".
     out = []
     for raw in text.splitlines():
         stripped = raw.lstrip(" ")
@@ -52,10 +50,9 @@ def scalar(text):
         return []
     if text == "{}":
         return {}
-    # Populated flow style is the one shape this loader cannot represent: "[id]" would read back as
-    # the string "[id]", turning a list into a scalar, and load -> emit -> load stays a fixed point,
-    # so the round-trip check cannot see it either. Exit so a new MUTATE_BASES entry fails the
-    # selftest rather than silently costing coverage.
+    # The one shape this loader cannot represent: "[id]" reads back as the string "[id]", turning a
+    # list into a scalar, and load -> emit -> load stays a fixed point, so the round-trip check
+    # cannot see it either. Exit, so a new MUTATE_BASES entry fails the selftest instead.
     if text[0] in "[{":
         sys.exit(f"mutate_fuzz_config: flow-style value is not supported: {text!r}")
     if text == "true":
@@ -115,8 +112,7 @@ def parse_seq(tokens, i, indent):
     while i < len(tokens) and tokens[i][0] == indent and (tokens[i][1].startswith("- ") or tokens[i][1] == "-"):
         after = tokens[i][1][2:] if tokens[i][1].startswith("- ") else ""
         child_indent = indent + 2
-        # The item is its own block: the inline remainder (re-indented to child_indent) plus any
-        # deeper continuation lines that belong to it.
+        # The item is its own block: the inline remainder plus its deeper continuation lines.
         item = []
         if after:
             item.append((child_indent, after))
@@ -169,8 +165,8 @@ def mutate_once(rng, roots):
 
 
 def collect_insertions(gen, node, schema, rtype, out):
-    # Record every writable optional field absent from an object, walking node and schema together
-    # so nested objects are candidates too.
+    # Every writable optional field absent from the node, walking node and schema together so
+    # nested objects are candidates too.
     schema = gen.resolve(schema)
     if not isinstance(schema, dict):
         return
@@ -241,8 +237,8 @@ def mutate(config, seed, schema=None, unique="fuzz"):
     rng = random.Random(seed)
     gen = Generator(schema, rng, unique) if schema is not None else None
 
-    # Mutate only inside resource instances: keep the bundle/name and resources skeleton so there
-    # is always something to deploy, while every instance field is fair game.
+    # Only inside resource instances, so the bundle/resources skeleton survives and there is always
+    # something to deploy, while every instance field is fair game.
     roots = []
     for instances in config.get("resources", {}).values():
         if isinstance(instances, dict):

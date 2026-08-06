@@ -6,6 +6,8 @@ one random resource, seeded by the caller. Free-form scalars are sometimes repla
 values (DANGEROUS_STRINGS/INTS) to probe input handling. The harness drops configs the CLI
 rejects, so output may be structurally random but invalid.
 
+A seed is tied to schema iteration order, so adding a field moves every later draw.
+
 Used as a library by emit_fuzz_config.py and mutate_fuzz_config.py.
 """
 
@@ -18,9 +20,9 @@ import sys
 # Depth past which optional properties are no longer emitted, to keep configs from exploding.
 MAX_DEPTH = 6
 
-# Hard cap on the walk. MAX_DEPTH gates optional properties only; required ones and map values
-# recurse regardless, so a required-only cycle (task -> for_each_task -> task) would exhaust the
-# stack. Fail loudly: that is a schema or generator bug, not something to silently truncate.
+# Hard cap on object/array nesting, which MAX_DEPTH leaves unbounded for required fields: a
+# required-only cycle (task -> for_each_task -> task) would exhaust the stack. Branch descent and
+# $ref chains are not counted.
 MAX_RECURSION = 30
 
 # The ${...} interpolation branch the schema wraps every field in (see
@@ -30,14 +32,13 @@ INTERPOLATION_MARKER = "\\$\\{"
 # Keep in sync with libs/jsonschema.Type. gen_scalar exits on anything else.
 SCALAR_TYPES = {"boolean", "integer", "number", "string"}
 
-# Cross-resource refs must resolve on every workspace. "main"/"default" are the standard seeded
-# catalog/schema; a random name deploys on the fake server but real UC rejects it
-# (CATALOG_DOES_NOT_EXIST), dropping the config.
+# The standard seeded catalog/schema. A random name deploys on the fake server but real UC rejects
+# it (CATALOG_DOES_NOT_EXIST), dropping the config.
 DEFAULT_CATALOG = "main"
 DEFAULT_SCHEMA = "default"
 
-# "account users" exists on every workspace; each securable gets one privilege UC accepts. A random
-# principal or inapplicable privilege deploys on the fake server but fails on UC.
+# "account users" exists on every workspace. A random principal or a privilege that does not apply
+# to the securable deploys on the fake server but fails on UC.
 DEFAULT_PRINCIPAL = "account users"
 GRANT_PRIVILEGE = {
     "catalogs": "USE_CATALOG",
@@ -48,8 +49,7 @@ GRANT_PRIVILEGE = {
     "vector_search_indexes": "SELECT",
 }
 
-# Permissions can't be variable refs; each entry needs a concrete principal and a level valid for
-# the resource type.
+# Permissions take no variable refs: a concrete principal and a level valid for the resource type.
 DEFAULT_PERMISSION_GROUP = "users"
 PERMISSION_LEVEL = {
     "alerts": "CAN_MANAGE",
@@ -70,9 +70,9 @@ PERMISSION_LEVEL = {
     "vector_search_endpoints": "CAN_USE",
 }
 
-# Fields the backend computes; emitting them causes false drift after migrate. Mirrors
-# output_only/backend_defaults in dresources/resources.yml. Blocked by name everywhere, so writable
-# exceptions (an external volume's storage_location) need a curated config.
+# Backend-computed fields, mirroring output_only in dresources/resources.yml: emitting them causes
+# false drift after migrate. Blocked by name everywhere, so a writable exception (an external
+# volume's storage_location) needs a curated config.
 SKIP_PROPERTY_NAMES = frozenset(
     {
         "created_at",
@@ -89,8 +89,7 @@ SKIP_PROPERTY_NAMES = frozenset(
     }
 )
 
-# Fields these resources need to deploy but that the schema's required[] omits (or can't express in
-# YAML). Their values come from the pinned-name branches in gen_scalar.
+# Needed to deploy but absent from the schema's required[]. Values come from gen_scalar's pins.
 RESOURCE_REQUIRED_FIELDS = {
     "registered_models": frozenset({"catalog_name", "name", "schema_name"}),
     "dashboards": frozenset({"display_name", "file_path", "warehouse_id"}),
@@ -99,22 +98,21 @@ RESOURCE_REQUIRED_FIELDS = {
     "genie_spaces": frozenset({"serialized_space", "title", "warehouse_id"}),
 }
 
-# Fields that conflict with the set we emit. Dashboards/Genie spaces take their body from file_path
-# XOR an inline serialized_* field; emitting both is rejected.
+# Conflict with the fields we do emit: a dashboard or Genie space body comes from file_path XOR an
+# inline serialized_* field, and an app's source from source_code_path XOR git.
 RESOURCE_SKIP_FIELDS = {
     "dashboards": frozenset({"serialized_dashboard"}),
     "genie_spaces": frozenset({"file_path"}),
     "apps": frozenset({"git_repository", "git_source"}),
 }
 
-# Resources allowing only a fixed field set in YAML. Alerts read their spec from the
-# .dbalert.json at file_path; the CLI rejects other fields (load_dbalert_files.go).
+# Alerts read their spec from the .dbalert.json at file_path; the CLI rejects every other field
+# (load_dbalert_files.go).
 RESOURCE_FIELD_ALLOWLIST = {
     "alerts": frozenset({"display_name", "file_path", "lifecycle", "permissions", "warehouse_id"}),
 }
 
-# Serialized-body fixtures copied into each seed dir from invariant/data; the extension selects the
-# parser.
+# Body fixtures copied into each seed dir from invariant/data; the extension selects the parser.
 FILE_PATH_BY_RESOURCE = {
     "dashboards": "./dashboard.lvdash.json",
     "alerts": "./alert.dbalert.json",
@@ -123,20 +121,16 @@ FILE_PATH_BY_RESOURCE = {
 # A local directory holding app source, also copied in from data/.
 APP_SOURCE_CODE_PATH = "./app"
 
-# An absolute workspace path is treated as already-remote, skipping the local-notebook
-# existence/extension check a bare token would fail.
+# Absolute means already-remote, skipping the local-notebook check a bare token would fail.
 NOTEBOOK_PATH = "/Shared/notebook"
 
-# parent_path is a workspace folder; pin it to a valid one. The CLI re-adds the /Workspace prefix
-# on read, so a mismatched value plans a spurious recreate.
+# The CLI re-adds the /Workspace prefix on read, so a mismatched folder plans a spurious recreate.
 PARENT_PATH = "/Workspace/Shared"
 
-# String in the schema but parsed as protobuf.Duration at load (suspend_timeout_duration, ttl); a
-# bare token fails to parse.
+# String in the schema, parsed as protobuf.Duration at load; a bare token fails to parse.
 DURATION_VALUE = "3600s"
 
-# Dangerous/near-range-end probes for free-form scalars. The CLI must reject or round-trip these
-# without panicking; mutate_fuzz_config reuses them.
+# Probes for free-form scalars: the CLI must reject or round-trip these without panicking.
 DANGEROUS_STRINGS = [
     "",
     " ",
@@ -157,15 +151,13 @@ DANGEROUS_INTS = [
     -1,
 ]
 
-# Inject a dangerous value only sometimes, so the config usually still deploys and exercises the
-# invariant, not just the reject path.
+# Only sometimes, so the config usually still deploys and exercises the invariant, not rejection.
 DANGEROUS_PROB = 0.15
 
 
 def is_empty(value):
-    # Empty containers are not neutral: some fields reject one outright, and an empty list is the
-    # shape behind several already-fixed drift bugs (see gen_grants), so emitting one spends seeds
-    # re-finding them. Destructive mutation still injects them deliberately -- see mutate_once.
+    # Empty containers are not neutral: they are the shape behind several already-fixed drift bugs,
+    # so emitting one spends seeds re-finding them. mutate_once still injects them deliberately.
     return value is None or value == {} or value == []
 
 
@@ -174,8 +166,7 @@ class Generator:
         self.root = schema
         self.rng = rng
         self.unique = unique
-        # Top-level resource type, set before generating its element so grants/permissions can pick
-        # a value valid for that securable.
+        # Set before generating the element, so grants/permissions can pick a valid value for it.
         self.rtype = None
         # Distinguishes the pinned name/display_name values within one config; see gen_scalar.
         self.name_count = 0
@@ -207,23 +198,18 @@ class Generator:
         return behaviors
 
     def should_skip_property(self, prop_name, prop_schema):
-        if prop_name in SKIP_PROPERTY_NAMES:
+        # Skipped by name at any depth, unlike the resource-level tables gen_object applies.
+        if prop_name in SKIP_PROPERTY_NAMES or prop_name in RESOURCE_SKIP_FIELDS.get(self.rtype, ()):
             return True
-        if prop_name in RESOURCE_SKIP_FIELDS.get(self.rtype, ()):
-            return True
-        resolved = self.resolve(prop_schema)
         if "OUTPUT_ONLY" in self.field_behaviors(prop_schema):
             return True
-        if resolved.get("readOnly"):
-            return True
-        return False
+        return bool(self.resolve(prop_schema).get("readOnly"))
 
     def gen(self, schema, depth, name=""):
         if depth > MAX_RECURSION:
             sys.exit(f"gen_fuzz_config: schema walk exceeded {MAX_RECURSION} levels at {name!r}")
 
-        # A Genie space body is free-form but the backend rejects unknown keys, so emit the minimal
-        # accepted body instead of a random object.
+        # Free-form in the schema, but the backend rejects unknown keys, so emit the minimal body.
         if name == "serialized_space":
             return {"version": 1}
 
@@ -231,6 +217,7 @@ class Generator:
         if not isinstance(schema, dict) or not schema:
             return self.gen_scalar({"type": "string"}, name)
 
+        # By name at any depth, which is safe because only resource elements declare either.
         if name == "grants":
             return self.gen_grants()
         if name == "permissions":
@@ -259,27 +246,25 @@ class Generator:
         props = schema.get("properties", {})
         required = set(schema.get("required", []))
         allowlist = None
+        # Resource-level rules, hence depth 0 only; RESOURCE_SKIP_FIELDS applies at every depth.
         if depth == 0 and self.rtype:
             required |= RESOURCE_REQUIRED_FIELDS.get(self.rtype, set())
             allowlist = RESOURCE_FIELD_ALLOWLIST.get(self.rtype)
         result = {}
 
         for prop_name, prop_schema in props.items():
-            # A restricted resource (e.g. alerts) rejects any field outside its allow-list, even a
-            # schema-required one it reads from the file instead.
+            # Alerts reject even a schema-required field they read from the file instead.
             if allowlist is not None and prop_name not in allowlist:
                 continue
             if self.should_skip_property(prop_name, prop_schema):
                 continue
-            # Optional fields are sampled, and dropped entirely past MAX_DEPTH, so configs stay
-            # small enough to deploy in the time a seed gets.
+            # Sampled, and dropped past MAX_DEPTH, so configs stay deployable within a seed's time.
             keep = prop_name in required or (depth < MAX_DEPTH and self.rng.random() < 0.35)
             if not keep:
                 continue
             value = self.gen(prop_schema, depth + 1, prop_name)
-            # Applies to required properties too, and gen_array returns nothing past MAX_DEPTH
-            # regardless of requiredness, so a deep enough required field can go missing and the
-            # CLI rejects the config. That is a normal fuzz outcome, not a lost seed.
+            # Required properties included: a deep enough one can go missing here or in gen_array,
+            # and the CLI then rejects the config. A normal fuzz outcome, not a lost seed.
             if is_empty(value):
                 continue
             result[prop_name] = value
@@ -303,16 +288,15 @@ class Generator:
         return values or None
 
     def gen_grants(self):
-        # One known-good grant for the securable. No valid privilege means no grants node: UC
-        # rejects a wrong one, and an empty one only reproduces the known drift bugs.
+        # No valid privilege means no grants node: UC rejects a wrong one, and an empty one only
+        # reproduces the known drift bugs.
         privilege = GRANT_PRIVILEGE.get(self.rtype)
         if privilege is None:
             return None
         return [{"principal": DEFAULT_PRINCIPAL, "privileges": [privilege]}]
 
     def gen_permissions(self):
-        # As gen_grants: no valid level means no permissions node, rather than a random principal, a
-        # ${...} ref, or an empty list.
+        # As gen_grants: no valid level means no permissions node.
         level = PERMISSION_LEVEL.get(self.rtype)
         if level is None:
             return None
@@ -337,15 +321,13 @@ class Generator:
         # Fail loud on an unknown type; a missing type is "any" and falls through to string.
         if t is not None and t not in SCALAR_TYPES:
             sys.exit(f"gen_fuzz_config: unhandled schema type {t!r}")
-        # Pin cross-resource refs and typed-string fields to accepted values; a random token fails
-        # format/existence validation and drops the config.
+        # Pin typed-string fields: a random token fails format or existence validation.
         if name == "catalog_name":
             return DEFAULT_CATALOG
         if name == "schema_name":
             return DEFAULT_SCHEMA
         if name == "warehouse_id":
-            # Always set by the acceptance harness (see acceptance_test.go); an empty one here
-            # would silently reject every warehouse-backed seed instead of failing.
+            # Always set by the harness; a KeyError beats silently rejecting every seed that uses one.
             return os.environ["TEST_DEFAULT_WAREHOUSE_ID"]
         if name == "notebook_path":
             return NOTEBOOK_PATH
@@ -362,13 +344,11 @@ class Generator:
             table = re.sub(r"[^0-9a-zA-Z_]", "_", f"fuzz_index_{self.unique}")
             return f"{DEFAULT_CATALOG}.{DEFAULT_SCHEMA}.{table}"
         if name in ("name", "display_name"):
-            # Numbered, because this pins by leaf name at any depth: an array of named objects
-            # (job parameters, for one) would otherwise repeat one value across its elements and
-            # be rejected as a duplicate, costing every seed that generates one.
+            # Numbered: this pins by leaf name at any depth, and an array of named objects (job
+            # parameters) would otherwise repeat one value and be rejected as a duplicate.
             self.name_count += 1
             return f"fuzz-{name}-{self.unique}-{self.name_count}"
-        # Free-form string with no pinned meaning (description, comment, tag): safe to probe
-        # dangerous input here, unlike the pinned fields above.
+        # No pinned meaning (description, comment, tag), so safe to probe here.
         if self.rng.random() < DANGEROUS_PROB:
             return self.rng.choice(DANGEROUS_STRINGS)
         return self.token()
@@ -377,18 +357,23 @@ class Generator:
         return "fuzz_" + "".join(self.rng.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(8))
 
 
+def object_branch(schema, what):
+    for branch in schema["oneOf"]:
+        if branch.get("type") == "object":
+            return branch
+    sys.exit(f"gen_fuzz_config: no object branch in {what}")
+
+
 def resource_types(gen):
     # resources is oneOf[{ object with one property per resource type }].
     resources = gen.resolve(gen.root["properties"]["resources"])
-    obj = next(b for b in resources["oneOf"] if b.get("type") == "object")
-    return obj["properties"]
+    return object_branch(resources, "resources")["properties"]
 
 
 def resource_element(gen, type_schema):
     # Each type is a map; the element schema is the object branch's additionalProperties.
     map_schema = gen.resolve(type_schema)
-    obj = next(b for b in map_schema["oneOf"] if b.get("type") == "object")
-    return obj["additionalProperties"]
+    return object_branch(map_schema, "resource type map")["additionalProperties"]
 
 
 def gen_config(schema, seed, unique, allowed=frozenset()):
@@ -404,8 +389,7 @@ def gen_config(schema, seed, unique, allowed=frozenset()):
     instance = gen.gen(resource_element(gen, types[rtype]), 0)
 
     return {
-        # Same name shape as the curated configs, so targets that derive workspace paths from the
-        # bundle name work unchanged.
+        # Same shape as the curated configs, so targets deriving workspace paths from it still work.
         "bundle": {"name": f"test-bundle-{unique}"},
         "resources": {rtype: {f"fuzz_{rtype}_{seed}": instance}},
     }
@@ -444,7 +428,7 @@ def to_yaml(obj, indent=0, list_item=False):
 
 
 def dump_scalar(v):
-    # ensure_ascii=False keeps non-ASCII as literal UTF-8. The default escapes astral chars (e.g.
-    # the rocket probe) into surrogate pairs that YAML rejects, killing the config at parse time
-    # before it reaches bundle logic. Control chars stay escaped by json.dumps (YAML ok).
+    # ensure_ascii=False keeps non-ASCII literal: the default escapes astral chars into surrogate
+    # pairs that YAML rejects, killing the config before it reaches bundle logic. Control chars
+    # stay escaped by json.dumps, which YAML accepts.
     return json.dumps(v, ensure_ascii=False)

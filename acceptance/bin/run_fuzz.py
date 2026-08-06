@@ -32,9 +32,8 @@ from pathlib import Path
 # Per-seed cap: a seed past this budget is stuck, not slow. Set FUZZ_SEED_TIMEOUT=0 to disable.
 SEED_TIMEOUT = float(os.environ.get("FUZZ_SEED_TIMEOUT", "180"))
 
-# Overall budget (seconds): stop starting new seeds past it and exit cleanly, so a slow-but-
-# progressing variant isn't force-killed at the per-script Timeout and read as a failure. 900s
-# leaves margin under the 20m test.toml Timeout. Set FUZZ_TIME_BUDGET=0 to disable.
+# Overall budget (seconds): stop starting seeds past it, so a slow but progressing variant exits
+# cleanly instead of being force-killed at the 20m test.toml Timeout. 0 disables.
 BUDGET = float(os.environ.get("FUZZ_TIME_BUDGET", "900"))
 
 # Seconds between SIGQUIT and the SIGKILL backstop.
@@ -46,16 +45,14 @@ CLEANUP_LOG = "LOG.destroy"
 TARGET = os.environ["FUZZ_TARGET"]
 MODE = os.environ["FUZZ_MODE"]
 
-# Which no-drift oracle script.prepare installed. Part of the repro because the two disagree: the
-# committed run leaves this at 0 and gets the plan-determinism diff, while task test-fuzz defaults
-# it to 1 and gets the exact check.
+# Which no-drift oracle script.prepare installed, and part of the repro because the two disagree:
+# 0 is the plan-determinism diff, 1 the exact check that task test-fuzz defaults to.
 CHECK_DRIFT = os.environ.get("FUZZ_CHECK_DRIFT", "0")
 
 POSIX = os.name == "posix"
 
-# Resolved rather than passed as a bare name: on Windows, CreateProcess searches System32 first,
-# where "bash" is the WSL launcher stub, which exits non-zero with no distribution installed and
-# makes every seed read as rejected. shutil.which searches PATH, finding the bash we run under.
+# Resolved, not a bare name: on Windows CreateProcess finds the System32 WSL stub first, which
+# exits non-zero with no distribution installed and makes every seed read as rejected.
 BASH = shutil.which("bash")
 
 
@@ -108,8 +105,7 @@ def run_seed(seed_dir, seed):
 
 def oracle_verdict(seed_dir):
     """The no-drift oracle's own verdict, if it reached one. Empty if it never ran or was happy."""
-    # Each oracle reports a violation in a form only it produces, so a seed that broke the
-    # invariant is still recognisable when it also touched a route the testserver lacks.
+    # Each oracle reports in a form only it produces, so a drift verdict survives a testserver gap.
     if b"Unexpected action=" in read(seed_dir / "LOG.check"):
         # verify_no_drift.py, the exact check shared with the curated invariant targets.
         return "planned a change after deploy"
@@ -127,8 +123,7 @@ def classify(seed_dir):
     # The generator only writes to stderr when it fails: our bug, not a rejected config.
     gen_err = read(seed_dir / "LOG.gen.err").strip()
     if gen_err:
-        # Last line: sys.exit prints its message alone, while an unhandled exception prints a
-        # traceback whose first line is always "Traceback (most recent call last):".
+        # Last line: a traceback's first one is always "Traceback (most recent call last):".
         last_line = gen_err.splitlines()[-1].decode(errors="replace")
         return "bug", f"could not be generated: {last_line}"
 
@@ -137,20 +132,17 @@ def classify(seed_dir):
     if b"panic:" in logs or b"internal error" in logs:
         return "bug", "panicked or hit an internal error"
 
-    # Before the gap marker: a seed can both break the invariant and touch an unmodeled route, and
-    # the drift verdict is the more specific of the two.
+    # Before the gap marker: a seed can do both, and the drift verdict is the more specific.
     verdict = oracle_verdict(seed_dir)
     if verdict:
         return "bug", verdict
 
-    # Marker body of the catch-all stubs in fuzz/test.toml. A gap reached after the deploy is still
-    # a gap, so this precedes the INPUT_CONFIG_OK check -- but the cleanup destroy runs only once
-    # the seed has already failed, so counting it would file any post-deploy failure as a gap.
+    # Marker from the catch-all stubs in fuzz/test.toml. A gap after the deploy is still a gap, so
+    # this precedes INPUT_CONFIG_OK; the cleanup log is skipped, as it only runs after a failure.
     if b"TESTSERVER_GAP" in concat_logs(seed_dir, skip={CLEANUP_LOG}):
         return "gap", ""
 
-    # The oracle above names a drift failure; anything else here is a command that failed on a
-    # config the CLI had accepted. Failing before the marker just means it was rejected.
+    # Past the marker the CLI had accepted the config, so a failure here is not a rejection.
     if b"INPUT_CONFIG_OK" in read(seed_dir / "LOG.check"):
         return "bug", "failed after deploying; see the seed's LOG.* files"
 
@@ -171,10 +163,8 @@ def record(kind, seed, seed_dir):
 
 def fail(seed, seed_dir, kind, reason, prefix=""):
     record(kind, seed, seed_dir)
-    # The repro goes to a file because the harness rewrites env-var values in stdout. Target and
-    # mode go through ENVFILTER rather than plain env vars: they are EnvMatrix keys, which the
-    # harness sets per variant and would override, re-running all six instead of the one that
-    # failed.
+    # To a file, because the harness rewrites env-var values in stdout. Target and mode go through
+    # ENVFILTER: as EnvMatrix keys, plain env vars would be overridden and re-run every variant.
     Path("LOG.repro").write_text(
         f"fuzz: seed {seed} {reason}, reproduce with: {prefix}"
         f"ENVFILTER=FUZZ_TARGET={TARGET},FUZZ_MODE={MODE} FUZZ_SEED_START={seed} "
@@ -231,9 +221,8 @@ def main():
 
     kinds = totals()
 
-    # Nothing deploying is not a pass: it means the schema, generator or fixtures are broken, which
-    # otherwise looks just like the CLI correctly rejecting random input. A single-seed replay is
-    # exempt, where one rejected config is a normal outcome.
+    # Nothing deploying is not a pass: a broken schema, generator or fixture looks exactly like the
+    # CLI correctly rejecting random input. A single-seed replay is exempt.
     if count > 1 and not kinds["deployed"]:
         sys.exit("fuzz: no seed deployed; the schema, generator or fixtures are broken")
 

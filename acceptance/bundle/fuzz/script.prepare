@@ -3,9 +3,8 @@
 # The target scripts stay unaware of fuzzing.
 export INVARIANT_DIR="$TESTDIR/../invariant"
 
-# The targets select their config with INPUT_CONFIG, which this test's matrix does not set; scripts
-# run under set -u. Empty is the accurate value rather than a placeholder: the config is generated,
-# so it matches no curated name, which is what a target comparing against it should conclude.
+# The targets select their config with INPUT_CONFIG, which this test's matrix leaves unset, and
+# scripts run under set -u. Empty is accurate: a generated config matches no curated name.
 export INPUT_CONFIG=""
 
 source "$INVARIANT_DIR/script.prepare"
@@ -23,12 +22,12 @@ invariant_render() {
     cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
 }
 
-# A generated config can deploy and still legitimately differ from the fake server, which does not
-# round-trip every field, so the exact check false-positives. Substitute the one oracle that does
-# not depend on server fidelity: two consecutive plans of the same state must be byte-identical.
+# A generated config can deploy and still differ from the fake server, which does not round-trip
+# every field, so the exact check false-positives. Substitute the one oracle independent of server
+# fidelity: two consecutive plans of the same state must be byte-identical.
 #
-# Compared against 0 rather than tested for emptiness: `FUZZ_CHECK_DRIFT= task test-fuzz` would be
-# re-defaulted to 1 by the task's ${FUZZ_CHECK_DRIFT:-1}, so the repro passes an explicit 0.
+# Compared against 0 rather than emptiness: `FUZZ_CHECK_DRIFT= task test-fuzz` would be re-defaulted
+# to 1 by the task's ${FUZZ_CHECK_DRIFT:-1}, so the repro passes an explicit 0.
 if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
     invariant_verify_no_drift() {
         set +e
@@ -41,9 +40,9 @@ if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
         cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
 
         if [ "$plan1_rc" -ne 0 ] || [ "$plan2_rc" -ne 0 ]; then
-            # An unmodeled route fails the plan, possibly on only one of the two runs, so there is
-            # nothing to compare; any other failure is a plan the deploy just broke. The stderr is
-            # copied in because the *.err ignore pattern keeps it out of the test log.
+            # An unmodeled route can fail one plan and not the other, leaving nothing to compare;
+            # any other failure is a plan the deploy just broke. stderr is copied in because the
+            # *.err ignore pattern keeps it out of the test log.
             if ! grep -q TESTSERVER_GAP LOG.plan1.err LOG.plan2.err; then
                 echo "bundle plan exited $plan1_rc and $plan2_rc" > LOG.plan.failed
                 cat LOG.plan1.err LOG.plan2.err >> LOG.plan.failed
