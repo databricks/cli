@@ -5,6 +5,13 @@
 # no_drift/script reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
 export READPLAN=""
 
+# The stubs are duplicated here because test.toml only merges along the directory chain. One added
+# to ../invariant and not here would be answered by the catch-alls, silently turning its seeds into
+# gaps rather than exercising the route.
+grep '^Pattern = ' "$INVARIANT_DIR/test.toml" | while read -r stub; do
+    grep -qxF -- "$stub" "$TESTDIR/test.toml" || echo "stub missing from fuzz/test.toml: $stub"
+done | contains.py '!stub missing' > /dev/null
+
 # Emit the schema from the CLI under test so the generator always matches it.
 $CLI bundle schema > schema.json 2>LOG.schema.err
 cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null

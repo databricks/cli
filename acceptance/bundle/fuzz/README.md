@@ -23,7 +23,8 @@ handling.
 
 The invariant helpers come from ../invariant/script.prepare, which script.prepare sources directly
 because test.toml and script.prepare only merge along the directory chain. For the same reason the
-server stubs and ignore patterns this test needs are copied into test.toml.
+server stubs and ignore patterns this test needs are copied into test.toml; script asserts the two
+stub sets stay in sync.
 
 A generated config can reach an API route the testserver does not model, which is a coverage gap
 rather than a missing stub. test.toml answers those with a per-method catch-all stub returning a
@@ -33,8 +34,12 @@ log names the route the CLI could not reach.
 Since the schema comes from the CLI under test, an unrelated struct change can shift a
 seed onto a new config. A failure is a real CLI bug (panic, internal error, or drift),
 not flakiness; the failing seed's `LOG.repro` prints a ready-to-run repro, of the form
-`FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_TARGET=no_drift FUZZ_MODE=generate FUZZ_CHECK_DRIFT=0 task test-fuzz`.
+`ENVFILTER=FUZZ_TARGET=no_drift,FUZZ_MODE=generate FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT=0 task test-fuzz`.
+The target and mode go through `ENVFILTER` because they are matrix keys: set as plain env vars the
+harness overrides them and re-runs all six variants.
 
 `FUZZ_CHECK_DRIFT` is part of the repro because it selects the oracle: at `0` (the committed run)
 `invariant_verify_no_drift` is replaced with a plan-determinism diff, and at `1` (`task test-fuzz`
-and the nightly) the exact check from ../invariant runs unchanged.
+and the nightly) the exact check from ../invariant runs unchanged. Only the committed run is
+expected to be green: the wide drift-on window stops at the first open finding, so a red scheduled
+run is a bug to triage rather than a regression in the change that happened to trigger it.
