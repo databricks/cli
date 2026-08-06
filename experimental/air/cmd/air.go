@@ -1,8 +1,6 @@
 package aircmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -25,9 +23,4 @@ experimental and may change in future versions.`,
 	cmd.AddCommand(newRegisterImageCommand())
 
 	return cmd
-}
-
-// notImplemented returns the placeholder error used by milestone-0 stubs.
-func notImplemented(name string) error {
-	return fmt.Errorf("`air %s` is not implemented yet", name)
 }

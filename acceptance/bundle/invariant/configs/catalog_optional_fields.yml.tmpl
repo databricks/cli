@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  catalogs:
+    foo:
+      name: test-catalog-$UNIQUE_NAME
+      comment: This is a test catalog
+      custom_max_retention_hours: 48
+      managed_encryption_settings:
+        customer_managed_key_id: 00000000-0000-0000-0000-000000000000

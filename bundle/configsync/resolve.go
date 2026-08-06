@@ -192,8 +192,14 @@ func adjustArrayIndex(path *structpath.PatternNode, scope string, operations map
 }
 
 // ResolveChanges resolves selectors and computes field path candidates for each change.
-func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, error) {
+//
+// A change that cannot be attributed to a single source location is left unapplied
+// rather than written to a guessed one. The count of those is returned so the caller can
+// record it: the command runs unattended, so a change that silently disappears looks
+// identical to one that was written.
+func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, int, error) {
 	var result []FieldChange
+	skipped := 0
 	targetName := b.Config.Bundle.Target
 	blocks := newBlockResolver(ctx, b)
 
@@ -250,13 +256,14 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			}
 			if reason, ok := renames.unpairedPaths[fieldPath]; ok {
 				log.Debugf(ctx, "config-remote-sync: skipping %s: %s", fullPath, reason)
+				skipped++
 				continue
 			}
 			rename, isRename := renames.byRemovePath[fieldPath]
 
 			resolved, err := resolveSelectors(fullPath, b, configChange.Operation)
 			if err != nil {
-				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
+				return nil, 0, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
 			}
 			resolvedPath := resolved.path
 
@@ -266,14 +273,19 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			destinations, err := routeChange(blocks, resolved, isRename)
 			if err != nil {
 				if !errors.Is(err, errAmbiguousBlock) {
-					return nil, err
+					return nil, 0, err
 				}
 				// Applying this change would mean guessing a location. Leave it
 				// unapplied; a later run can pick it up.
 				log.Debugf(ctx, "config-remote-sync: skipping %s: %v", fullPath, err)
+				skipped++
 				continue
 			}
 			if len(destinations) == 0 {
+				// A rename whose element could not be attributed to a block: the whole
+				// pair is left for a later run rather than half-applied.
+				log.Debugf(ctx, "config-remote-sync: skipping %s: the renamed element has no source location", fullPath)
+				skipped++
 				continue
 			}
 
@@ -337,7 +349,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 						filePath = resourceLocation.File
 					}
 					if filePath == "" {
-						return nil, fmt.Errorf("failed to find location for resource %s for a field %s", resourceKey, fieldPath)
+						return nil, 0, fmt.Errorf("failed to find location for resource %s for a field %s", resourceKey, fieldPath)
 					}
 
 					log.Debugf(ctx, "Field %s has no location, using %s", fullPath, filePath)
@@ -361,7 +373,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 		}
 	}
 
-	return result, nil
+	return result, skipped, nil
 }
 
 // translateWorkspacePaths recursively converts absolute workspace paths to relative

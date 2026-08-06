@@ -82,6 +82,38 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	p.res.Phases = initialPhases()
 
 	if err := p.run(ctx); err != nil {
+		// A cancelled context means the user or parent interrupted us (SIGINT/
+		// SIGTERM). The phase that was running reports its own failure (e.g. uv
+		// sync exiting on the signal surfaces as E_PROVISION with "signal:
+		// terminated"), which misleads a --json consumer into thinking something
+		// broke. Reclassify to E_CANCELED here — the single funnel where ctx is in
+		// scope — keeping the recorded FailurePhase and diskMutated so the consumer
+		// still knows where we stopped and whether disk was touched.
+		//
+		// The phase's own error is kept as the wrapped cause rather than replaced:
+		// a real failure can race with the signal (uv sync failing on a dependency
+		// conflict while the user gives up and hits Ctrl-C), and that cause is the
+		// only diagnostic there is.
+		if ctx.Err() != nil && p.res.Error != nil {
+			// Snapshot the phase's error *before* overwriting Code/Msg below. uvFailure
+			// folds uv's stderr — the actual diagnostic (e.g. a dependency-conflict
+			// "no solution found") — into Msg, so wrapping only the inner .Err would
+			// drop it, leaving less than main in exactly the racing-failure case this
+			// is meant to preserve. Wrapping the whole original PipelineError keeps
+			// Msg (stderr and all) in the chain.
+			orig := &PipelineError{Code: p.res.Error.Code, Msg: p.res.Error.Msg, Err: p.res.Error.Err}
+			p.res.Error.Code = ErrCanceled
+			p.res.Error.Msg = "interrupted"
+			// Two %w verbs keep both the context error and the phase's original error
+			// matchable by errors.Is, on one line — errors.Join would embed a newline
+			// and break the single-line phase row text mode prints.
+			p.res.Error.Err = fmt.Errorf("%w; %w", ctx.Err(), orig)
+			// fail() already snapshotted the pre-reclassification text into the
+			// errored phase's Detail, which is what text mode prints. Re-sync it so
+			// text and --json agree on cancellation (see PipelineError.MarshalJSON).
+			p.syncFailureDetail()
+			return p.res, p.res.Error
+		}
 		return p.res, err
 	}
 	p.res.OK = true
@@ -472,6 +504,22 @@ func (p *Pipeline) fail(phase PhaseName, diskMutated bool, pe *PipelineError) er
 	}
 	p.res.Error = pe
 	return pe
+}
+
+// syncFailureDetail re-copies the recorded error's text into its phase's Detail.
+// fail() sets Detail when the failure happens; a caller that rewrites the error
+// afterwards (Run's E_CANCELED reclassification) must call this so text output —
+// which prints Detail — keeps agreeing with the --json error object.
+func (p *Pipeline) syncFailureDetail() {
+	if p.res.Error == nil {
+		return
+	}
+	for i := range p.res.Phases {
+		if p.res.Phases[i].Phase == p.res.Error.FailurePhase {
+			p.res.Phases[i].Detail = p.res.Error.Error()
+			return
+		}
+	}
 }
 
 // asPipelineError returns err as a *PipelineError if it already is one, otherwise
