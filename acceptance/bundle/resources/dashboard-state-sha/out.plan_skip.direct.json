@@ -16,7 +16,7 @@
         "parent_path": "/Workspace/Users/[USERNAME]",
         "path": "/Users/[USERNAME]/dashboard-state-sha [UUID].lvdash.json",
         "published": true,
-        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Sales Overview\",\"name\":\"main\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
+        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Sales Overview\",\"layout\":[{\"widget\":{\"name\":\"counter1\"}}],\"name\":\"main\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
         "update_time": "[TIMESTAMP]",
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },

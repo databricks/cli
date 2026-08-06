@@ -10,7 +10,7 @@
           "embed_credentials": true,
           "parent_path": "/Workspace/Users/[USERNAME]",
           "published": true,
-          "serialized_dashboard": "{\"pages\":[{\"name\":\"main\",\"displayName\":\"Sales Overview\"}]}\n",
+          "serialized_dashboard": "{\"pages\":[{\"name\":\"main\",\"displayName\":\"Sales Overview\",\"layout\":[{\"widget\":{\"name\":\"counter1\"}}]}]}\n",
           "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }
       }

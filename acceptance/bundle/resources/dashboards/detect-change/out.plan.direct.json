@@ -67,7 +67,7 @@
           "reason": "etag_based",
           "old": "sha256_hashed_in_state:[HASH][0]",
           "new": "sha256_hashed_in_state:[HASH][0]",
-          "remote": "sha256_hashed_in_state:[HASH][1]"
+          "remote": "{}\n"
         },
         "update_time": {
           "action": "skip",
