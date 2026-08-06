@@ -304,13 +304,17 @@ func TestRangesDisjoint(t *testing.T) {
 		{"<19", "<3", false, "same direction always shares the low end"},
 		{">=20", ">=3", false, "same direction always shares the high end"},
 
-		// ~= against a bound or another ~=.
-		{"~=17.0", "~=21.0", true, "compatible ranges on different majors"},
-		{"~=21.0", "~=21.1", true, "~=21.0 stops at 21.1, which ~=21.1 starts at"},
+		// ~= against a bound or another ~=. The ceiling depends on how many segments
+		// the base has: ~=21.0 expands to ">=21.0, ==21.*" -> [21.0, 22.0), whereas
+		// ~=21.0.0 expands to ">=21.0.0, ==21.0.*" -> [21.0.0, 21.1.0).
+		{"~=17.0", "~=21.0", true, "[17.0, 18.0) is entirely below [21.0, 22.0)"},
+		{"~=21.0", "~=21.1", false, "[21.1, 22.0) is a subset of [21.0, 22.0)"},
+		{"~=21.0.0", "~=21.1.0", true, "[21.0.0, 21.1.0) ends where [21.1.0, 21.2.0) begins"},
 		{"~=21.0", "~=21.0", false, "identical compatible ranges"},
-		{"~=17.0", "<19", false, "~=17.0 admits [17.0, 18.0), all below 19"},
-		{"~=21.0", "<19", true, "~=21.0 floor is above the ceiling"},
-		{"~=21.0", ">=22", true, "~=21.0 ceiling is at or below the floor"},
+		{"~=17.0", "<19", false, "[17.0, 18.0) lies below the ceiling 19"},
+		{"~=21.0", "<19", true, "floor 21.0 is above the ceiling 19"},
+		{"~=21.0", ">=22", true, "ceiling 22.0 is exclusive, so it meets the floor 22"},
+		{"~=21.0", ">=21.5", false, "21.5 is inside [21.0, 22.0)"},
 		// PEP 440 requires two release segments after "~=", so a single-segment base
 		// has no defined range. It must stay undecidable rather than being read as a
 		// proof of disjointness: 2.0 and 2.31.0 both plainly satisfy any reading of ~=2.
