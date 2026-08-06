@@ -125,10 +125,12 @@ def oracle_verdict(seed_dir):
 def classify(seed_dir):
     """Classify a seed that exited non-zero. Returns its kind and, for a failure, the reason."""
     # The generator only writes to stderr when it fails: our bug, not a rejected config.
-    gen_err = read(seed_dir / "LOG.gen.err")
+    gen_err = read(seed_dir / "LOG.gen.err").strip()
     if gen_err:
-        first_line = gen_err.splitlines()[0].decode(errors="replace")
-        return "bug", f"could not be generated: {first_line}"
+        # Last line: sys.exit prints its message alone, while an unhandled exception prints a
+        # traceback whose first line is always "Traceback (most recent call last):".
+        last_line = gen_err.splitlines()[-1].decode(errors="replace")
+        return "bug", f"could not be generated: {last_line}"
 
     # A panic or internal error anywhere is a bug even if the CLI then rejects the config.
     logs = concat_logs(seed_dir)
