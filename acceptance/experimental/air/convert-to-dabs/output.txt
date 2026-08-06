@@ -3,6 +3,7 @@
 >>> [CLI] experimental air convert-to-dabs train.yaml
 Wrote a Databricks Asset Bundle to .:
   databricks.yml
+  generated_artifacts/training_config.yaml
   generated_artifacts/command.sh
 
 To deploy and run this workload as a bundle:
@@ -75,6 +76,7 @@ Exit code: 1
 >>> [CLI] experimental air convert-to-dabs train.yaml --force
 Wrote a Databricks Asset Bundle to .:
   databricks.yml
+  generated_artifacts/training_config.yaml
   generated_artifacts/command.sh
 
 To deploy and run this workload as a bundle:

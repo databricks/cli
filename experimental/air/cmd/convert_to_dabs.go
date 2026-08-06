@@ -152,8 +152,12 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 	if err != nil {
 		return nil, nil, err
 	}
+	// training_config.yaml is kept even though it duplicates the input YAML: the Jobs
+	// run-output page derives its path from command_path (same directory, fixed name),
+	// so dropping it breaks the "see what you ran" link. The input YAML can't serve
+	// instead — `air run -f` accepts any filename, so the UI has nothing to derive.
 	artifacts = slices.DeleteFunc(artifacts, func(it uploadItem) bool {
-		return it.name == requirementsName || it.name == trainingConfigName
+		return it.name == requirementsName
 	})
 
 	root := buildBundleValue(ctx, cfg, configPath, codeSourcePath)
