@@ -1,1 +1,0 @@
-Added JSON output to `bundle init`. Running `databricks bundle init <template> -o json` now reports the files the template wrote, relative to the output directory. This lets callers that pass `--output-dir` learn where the template materialized instead of assuming the output is a single directory named after the project. The default text output is unchanged.

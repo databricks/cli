@@ -210,6 +210,7 @@ type FakeWorkspace struct {
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
 	Acls         map[string][]workspace.AclItem
+	UCSecrets    map[string]catalog.Secret // full_name -> secret (Unity Catalog secrets)
 
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
@@ -450,7 +451,14 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 	} else if entry, ok := s.files[cleaned]; ok {
 		info = entry.Info
 	} else if repoId, ok := s.repoIdByPath[cleaned]; ok {
-		info = workspace.ObjectInfo{ObjectType: "REPO", Path: cleaned, ObjectId: repoId}
+		// Control-plane repos (under /Repos) report the REPO object type, while
+		// Git-CLI-enabled folders elsewhere are materialized as plain DIRECTORY
+		// nodes. Both resolve to a valid repo ID via the repos API.
+		objectType := workspace.ObjectTypeRepo
+		if !strings.HasPrefix(cleaned, "/Repos/") {
+			objectType = workspace.ObjectTypeDirectory
+		}
+		info = workspace.ObjectInfo{ObjectType: objectType, Path: cleaned, ObjectId: repoId}
 	} else {
 		// Match the real Workspace API wording, which echoes the requested path.
 		return Response{

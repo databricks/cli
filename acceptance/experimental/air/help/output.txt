@@ -48,3 +48,24 @@ Global Flags:
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
+
+=== logs help
+>>> [CLI] experimental air logs --help
+Stream logs from an active run, or fetch logs from a completed run.
+
+Usage:
+  databricks experimental air logs JOB_RUN_ID [flags]
+
+Flags:
+      --download-to string   Download all logs to this directory instead of printing
+  -h, --help                 help for logs
+      --lines int            For completed runs, print the last N lines (default 10000)
+      --minutes int          Fetch only logs from the last N minutes
+      --node int             Fetch logs from this node
+      --retry int            View logs from a specific retry attempt; -1 means latest (default -1)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

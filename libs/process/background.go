@@ -47,7 +47,11 @@ func Background(ctx context.Context, args []string, opts ...execOption) (string,
 			return "", err
 		}
 	}
-	if err := runCmd(ctx, cmd); err != nil {
+	err := runCmd(ctx, cmd)
+	// Sweep the process group (WithProcessGroup + cancelled context only) so a
+	// grandchild that outlived a SIGKILLed leader is not re-orphaned.
+	reapProcessGroup(ctx, cmd)
+	if err != nil {
 		return stdout.String(), &ProcessError{
 			Err:     err,
 			Command: commandStr,

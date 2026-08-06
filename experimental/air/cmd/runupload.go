@@ -8,7 +8,6 @@ import (
 	"io"
 	"maps"
 	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -22,7 +21,6 @@ import (
 const (
 	trainingConfigName  = "training_config.yaml"
 	commandScriptName   = "command.sh"
-	requirementsName    = "requirements.yaml"
 	hyperparametersName = "hyperparameters.yaml"
 	envVarsName         = "env_vars.json"
 	secretEnvVarsName   = "secret_env_vars.json"
@@ -45,16 +43,40 @@ type fileWriter interface {
 	Write(ctx context.Context, name string, reader io.Reader, mode ...filer.WriteMode) error
 }
 
-// requirementsDoc mirrors the on-disk requirements.yaml format so the worker
-// parses synthesized inline dependencies identically to a user-provided file.
+// requirementsDoc mirrors the on-disk requirements.yaml format, used to read a
+// user-provided requirements file's dependencies for the inline spec.dependencies.
 type requirementsDoc struct {
 	Version      string   `yaml:"version,omitempty"`
 	Dependencies []string `yaml:"dependencies"`
 }
 
+// readRequirementsDependencies reads the dependencies and version out of a
+// requirements.yaml file so file-form deps can be carried on the serverless
+// environment's inline spec.dependencies and its version can select the runtime
+// image. Returns an empty list when the file declares no dependencies.
+func readRequirementsDependencies(reqPath string) ([]string, string, error) {
+	data, err := os.ReadFile(reqPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read requirements file %s: %w", reqPath, err)
+	}
+	var doc requirementsDoc
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, "", fmt.Errorf("failed to parse requirements file %s: %w", reqPath, err)
+	}
+	for _, dep := range doc.Dependencies {
+		if fields := strings.Fields(dep); len(fields) > 0 && (fields[0] == "-r" || fields[0] == "--requirement") {
+			return nil, "", fmt.Errorf("requirements file dependency %q uses a requirements-file include (-r/--requirement), which is not supported; list the dependencies directly instead", dep)
+		}
+	}
+	return doc.Dependencies, doc.Version, nil
+}
+
 // buildArtifacts assembles the files to upload for a run: the merged config, the
-// inline command as a script, requirements (from a file or synthesized from
-// inline dependencies), and hyperparameters. configPath is the local YAML path.
+// inline command as a script, and hyperparameters. configPath is the local YAML
+// path.
+//
+// Dependencies are not uploaded here; they ride inline on the serverless
+// environment's spec.dependencies (see buildSubmitPayload).
 func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 	// TODO(DABs): with no _bases_/overrides ported yet, the merged config is the
 	// file as-is; once those land, upload the re-serialized merged YAML instead.
@@ -70,28 +92,6 @@ func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 	items := []uploadItem{
 		{trainingConfigName, configData},
 		{commandScriptName, []byte(*cfg.Command)},
-	}
-
-	switch reqPath, ok := cfg.requirementsFile(); {
-	case ok:
-		// Resolve a relative requirements path against the config's directory.
-		if !filepath.IsAbs(reqPath) {
-			reqPath = filepath.Join(filepath.Dir(configPath), reqPath)
-		}
-		data, err := os.ReadFile(reqPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read requirements file %s: %w", reqPath, err)
-		}
-		items = append(items, uploadItem{requirementsName, data})
-	default:
-		if deps, ok := cfg.inlineDependencies(); ok {
-			version, _ := cfg.runtimeVersion()
-			data, err := yaml.Marshal(requirementsDoc{Version: version, Dependencies: deps})
-			if err != nil {
-				return nil, fmt.Errorf("failed to synthesize requirements.yaml: %w", err)
-			}
-			items = append(items, uploadItem{requirementsName, data})
-		}
 	}
 
 	if len(cfg.Parameters) > 0 {

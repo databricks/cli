@@ -122,18 +122,43 @@ func TestApplyDeployFlags(t *testing.T) {
 	noopWrapper := func(cmd *cobra.Command, appName string, err error) error { return err }
 
 	tests := []struct {
-		name      string
-		args      []string
-		opts      bundleDeployOptions
+		name string
+		args []string
+		opts bundleDeployOptions
+		// configure seeds the bundle config as if it had been loaded from
+		// databricks.yml, so a test can assert a flag does not clobber it.
+		configure func(*bundle.Bundle)
 		assertion func(*testing.T, *bundle.Bundle)
 	}{
 		{
-			name: "force, forceLock, autoApprove always apply",
-			opts: bundleDeployOptions{force: true, forceLock: true, autoApprove: true},
+			name: "force and autoApprove always apply",
+			opts: bundleDeployOptions{force: true, autoApprove: true},
 			assertion: func(t *testing.T, b *bundle.Bundle) {
 				assert.True(t, b.Config.Bundle.Force)
-				assert.True(t, b.Config.Bundle.Deployment.Lock.Force)
 				assert.True(t, b.AutoApprove)
+			},
+		},
+		{
+			name: "forceLock ignored when force-lock flag unchanged",
+			opts: bundleDeployOptions{forceLock: true},
+			assertion: func(t *testing.T, b *bundle.Bundle) {
+				assert.False(t, b.Config.Bundle.Deployment.Lock.Force)
+			},
+		},
+		{
+			name:      "lock.force from databricks.yml survives an unset force-lock flag",
+			opts:      bundleDeployOptions{},
+			configure: func(b *bundle.Bundle) { b.Config.Bundle.Deployment.Lock.Force = true },
+			assertion: func(t *testing.T, b *bundle.Bundle) {
+				assert.True(t, b.Config.Bundle.Deployment.Lock.Force)
+			},
+		},
+		{
+			name: "forceLock applies when --force-lock is set",
+			args: []string{"--force-lock"},
+			opts: bundleDeployOptions{forceLock: true},
+			assertion: func(t *testing.T, b *bundle.Bundle) {
+				assert.True(t, b.Config.Bundle.Deployment.Lock.Force)
 			},
 		},
 		{
@@ -181,6 +206,9 @@ func TestApplyDeployFlags(t *testing.T) {
 			require.NoError(t, cmd.ParseFlags(tc.args))
 
 			b := &bundle.Bundle{}
+			if tc.configure != nil {
+				tc.configure(b)
+			}
 			applyDeployFlags(cmd, b, tc.opts)
 
 			tc.assertion(t, b)
