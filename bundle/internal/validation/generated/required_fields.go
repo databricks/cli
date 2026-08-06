@@ -267,6 +267,8 @@ var RequiredFields = map[string][]string{
 	"resources.secret_scopes.*.keyvault_metadata": {"dns_name", "resource_id"},
 	"resources.secret_scopes.*.permissions[*]":    {"level"},
 
+	"resources.secrets.*": {"catalog_name", "name", "schema_name", "value"},
+
 	"resources.sql_warehouses.*.permissions[*]": {"level"},
 
 	"resources.synced_database_tables.*":                        {"name"},

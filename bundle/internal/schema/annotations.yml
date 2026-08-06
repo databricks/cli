@@ -1746,6 +1746,36 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level. This field translates to a `principal` field in secret scope ACL.
+    "secrets":
+      "description": |-
+        The Unity Catalog secret definitions for the bundle, where each key is the name of the secret.
+      "markdown_description": |-
+        The Unity Catalog secret definitions for the bundle, where each key is the name of the secret. See [\_](/dev-tools/bundles/resources.md#secrets).
+      "$fields":
+        "catalog_name":
+          "description": |-
+            The name of the catalog where the schema and the secret reside.
+        "comment":
+          "description": |-
+            User-provided free-form text description of the secret.
+        "expire_time":
+          "description": |-
+            User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.
+        "grants":
+          "description": |-
+            The grants to apply on this secret.
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "name":
+          "description": |-
+            The name of the secret, relative to its parent schema.
+        "schema_name":
+          "description": |-
+            The name of the schema where the secret resides.
+        "value":
+          "description": |-
+            The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.
     "sql_warehouses":
       "description": |-
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
