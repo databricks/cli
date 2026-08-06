@@ -840,8 +840,11 @@ func (s *FakeWorkspace) hasChildren(dirPath string) bool {
 // a file whose extension is .py / .sql / .scala / .r and whose content starts
 // with the language-appropriate "Databricks notebook source" line-comment is
 // stored as a NOTEBOOK with the corresponding language; otherwise it's a FILE.
+//
+// The extension is lowercased because the real endpoint matches it
+// case-insensitively, and ".R" is the conventional spelling for R sources.
 func detectNotebookLanguage(extension string, body []byte) (workspace.Language, bool) {
-	switch extension {
+	switch strings.ToLower(extension) {
 	case ".py":
 		if bytes.HasPrefix(body, []byte("# Databricks notebook source")) {
 			return workspace.LanguagePython, true
