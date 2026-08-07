@@ -105,6 +105,13 @@ func TestRecorderFirstDeployCreatesDeploymentWithServerAssignedID(t *testing.T) 
 	assert.Equal(t, "server-generated-id", f.versions[0].deploymentID)
 	assert.Equal(t, int64(1), r.Version())
 
+	// The service copies display_name onto the deployment's workspace node, which is
+	// where GetDeployment reads it from; a version that omits it leaves the deployment
+	// unnamed in the UI.
+	assert.Equal(t, testDisplayName, f.versions[0].body.DisplayName)
+	// A first version supersedes nothing, so previous_version_id is unset.
+	assert.Empty(t, f.versions[0].body.PreviousVersionId)
+
 	require.NoError(t, r.CompleteVersion(t.Context(), true))
 	require.Len(t, f.completed, 1)
 	assert.Equal(t, bundledeployments.VersionCompleteVersionCompleteSuccess, f.completed[0].CompletionReason)
@@ -130,21 +137,6 @@ func TestRecorderSubsequentDeployReusesDeploymentAndIncrementsVersion(t *testing
 	// The version it supersedes is the concurrency check; without it the service
 	// rejects every deploy after the first.
 	assert.Equal(t, "4", f.versions[0].body.PreviousVersionId)
-}
-
-func TestRecorderSendsDisplayNameAndNoPreviousVersionOnFirstDeploy(t *testing.T) {
-	f := &fakeDMS{assignedID: "server-generated-id"}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
-
-	require.NoError(t, r.CreateVersion(t.Context()))
-
-	require.Len(t, f.versions, 1)
-	// The service copies display_name onto the deployment's workspace node, which
-	// is where GetDeployment reads it from; a version that omits it leaves the
-	// deployment unnamed in the UI.
-	assert.Equal(t, testDisplayName, f.versions[0].body.DisplayName)
-	// A first version supersedes nothing, so previous_version_id is unset.
-	assert.Empty(t, f.versions[0].body.PreviousVersionId)
 }
 
 func TestRecorderGetDeploymentErrorFailsDeploy(t *testing.T) {
