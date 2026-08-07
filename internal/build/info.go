@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	nextchanges "github.com/databricks/cli/.nextchanges"
 	"golang.org/x/mod/semver"
 )
 
@@ -42,7 +43,30 @@ func (i Info) GetSanitizedVersion() string {
 	return version
 }
 
-const DefaultSemver = "0.0.0-dev"
+// devPrerelease marks a build that was not produced from a release tag.
+const devPrerelease = "-dev"
+
+// DefaultSemver is the version reported when buildVersion was not injected,
+// i.e. a plain "go build" rather than a goreleaser build. It is the next release
+// version with a -dev prerelease, so it sorts above the latest release and below
+// the release it will become:
+//
+//	Compare(v1.11.0, v1.12.0-dev+sha) = -1
+//	Compare(v1.12.0, v1.12.0-dev+sha) = +1
+//
+// A bare "0.0.0-dev" would instead sort below every published release, even
+// though a local build is built from main and is therefore newer than the
+// latest release. This matches what goreleaser produces for snapshot builds
+// (see snapshot.version_template in .goreleaser.yaml).
+var DefaultSemver = strings.TrimSpace(nextchanges.Version) + devPrerelease
+
+// IsDevelopment reports whether this binary was built from a development or
+// snapshot build rather than a release tag. It keys off the -dev prerelease
+// rather than a specific version number, so it keeps working as the next
+// release version changes.
+func (i Info) IsDevelopment() bool {
+	return i.IsSnapshot || semver.Prerelease("v"+i.Version) == devPrerelease
+}
 
 // getDefaultBuildVersion uses build information stored by Go itself
 // to synthesize a build version if one wasn't set.
