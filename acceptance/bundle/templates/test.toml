@@ -1,5 +1,11 @@
 # Local-only: At the moment, there are many differences across different envs w.r.t to catalog use, node type and so on.
 
+# A template test materializes a whole project and deploys it, taking tens of seconds each,
+# and some diff against a sibling test's output directory. Running all of that a second time
+# for deployment history recording costs minutes and adds no coverage the rest of the suite
+# does not already give, so these opt out.
+EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
+
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''

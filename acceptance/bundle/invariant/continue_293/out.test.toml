@@ -1,7 +1,7 @@
 Local = true
 Cloud = true
 RequiresUnityCatalog = true
-EnvMatrix.DATABRICKS_BUNDLE_DMS = ["", "true"]
+EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.INPUT_CONFIG = [
   "alert.yml.tmpl",
