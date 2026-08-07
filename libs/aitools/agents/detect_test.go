@@ -66,6 +66,19 @@ func TestDetected(t *testing.T) {
 		assert.True(t, a.Detected(ctx))
 	})
 
+	t.Run("Gemini remains detected after skills install before first run", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("USERPROFILE", home)
+		t.Setenv("GEMINI_CLI_HOME", "")
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini", "skills", "databricks-core"), 0o755))
+
+		gemini := ByName(NameGemini)
+		require.NotNil(t, gemini)
+		assert.NoFileExists(t, filepath.Join(home, ".gemini", geminiDetectFile))
+		assert.True(t, gemini.Detected(ctx))
+	})
+
 	t.Run("Gemini is not detected merely because Antigravity exists", func(t *testing.T) {
 		home := t.TempDir()
 		t.Setenv("HOME", home)

@@ -61,7 +61,7 @@ type Agent struct {
 }
 
 // Detected reports whether the agent is installed: its config directory exists,
-// or its DetectFile marker exists when one is set.
+// or its DetectFile marker or installed Databricks skills exist when one is set.
 func (a *Agent) Detected(ctx context.Context) bool {
 	dir, err := a.ConfigDir(ctx)
 	if err != nil {
@@ -71,8 +71,14 @@ func (a *Agent) Detected(ctx context.Context) bool {
 	if a.DetectFile != "" {
 		target = filepath.Join(dir, a.DetectFile)
 	}
-	_, err = os.Stat(target)
-	return err == nil
+	if _, err = os.Stat(target); err == nil {
+		return true
+	}
+	if a.DetectFile == "" {
+		return false
+	}
+	skillsDir, err := a.SkillsDir(ctx)
+	return err == nil && HasDatabricksSkillsIn(skillsDir)
 }
 
 // SkillsDir returns the full path to the agent's skills directory.
