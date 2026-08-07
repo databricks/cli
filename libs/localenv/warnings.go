@@ -2,6 +2,7 @@ package localenv
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strconv"
@@ -55,81 +56,94 @@ func splitDepSpec(dep string) (name, spec string, ok bool) {
 //
 // It deliberately does not reuse pyprojectTOML: that struct decodes the
 // Databricks-owned constraint artifact, whose shape we control, whereas a user's
-// dependency group may legitimately hold PEP 735 table entries such as
-// {include-group = "test"} alongside requirement strings. Decoding dev as []any
-// (and declaring only the fields actually read) keeps one unrelated entry from
-// failing the whole document and silently dropping every warning.
+// file may legitimately carry shapes a stricter struct rejects — a PEP 735 table
+// entry such as {include-group = "test"} beside requirement strings, a PEP 621
+// dependency table, or a group declared as a sub-table ([dependency-groups.docs],
+// the PDM/mkdocs style). BurntSushi reports a type mismatch on any single key as a
+// whole-document error, so one such shape anywhere would drop every warning,
+// including the ones that do not read the offending key. The container fields are
+// therefore typed as []any / map[string]any and narrowed at the point of use.
+// requires-python stays a string because PEP 621 specifies it as one; a non-string
+// there is malformed and uv rejects the file outright.
 type userPyprojectTOML struct {
 	Project struct {
-		RequiresPython string   `toml:"requires-python"`
-		Dependencies   []string `toml:"dependencies"`
+		RequiresPython string `toml:"requires-python"`
+		Dependencies   []any  `toml:"dependencies"`
+		// uv resolves extras alongside the base dependencies, so a pin here is
+		// subject to constraint-dependencies exactly like a [project] one.
+		OptionalDependencies map[string]any `toml:"optional-dependencies"`
 	} `toml:"project"`
-	// Every group is decoded, not just dev, because a dev entry may pull in another
-	// group by reference — see groupRequirements.
-	DependencyGroups map[string][]any `toml:"dependency-groups"`
+	// Every group is decoded, not just dev: uv locks all declared groups, so a pin in
+	// any of them is subject to constraint-dependencies (see resolutionRequirements).
+	DependencyGroups map[string]any `toml:"dependency-groups"`
 }
 
 // devGroup is the dependency group whose databricks-connect pin the merge manages.
 const devGroup = "dev"
 
-// directRequirements returns only the requirement strings written in the named
-// group's own array, without following include-group references. This is the set
-// MergeManaged rewrites in place, so it is what distinguishes a pin the merge
-// replaces from one it leaves alone (see dbconnectWarning).
-func directRequirements(groups map[string][]any, name string) []string {
+// stringEntries returns the requirement strings in a decoded dependency array,
+// skipping entries of any other shape (a PEP 735 include-group table, a PEP 621
+// dependency table). A value that is not an array at all yields nothing.
+func stringEntries(v any) []string {
+	entries, ok := v.([]any)
+	if !ok {
+		return nil
+	}
 	var out []string
-	for g, entries := range groups {
-		// PEP 735 normalizes group names the same way PEP 503 normalizes package
-		// names, so "Dev" and "dev" are the same group.
-		if normalizePackageName(g) != normalizePackageName(name) {
-			continue
-		}
-		for _, e := range entries {
-			if s, ok := e.(string); ok {
-				out = append(out, s)
-			}
+	for _, e := range entries {
+		if s, ok := e.(string); ok {
+			out = append(out, s)
 		}
 	}
 	return out
 }
 
-// groupRequirements returns the requirement strings reachable from the named
-// dependency group, following PEP 735 {include-group = "..."} indirections.
+// retainedRequirements returns every requirement uv resolves that the merge leaves
+// in place: all of resolutionRequirements minus the single entry the merge rewrites,
+// identified by replacedPin.
 //
-// Resolving the indirection matters because MergeManaged writes the env's pin into
-// dev regardless of where the user's own pin lives: with dev = [{include-group =
-// "spark"}] and the pin inside the spark group, a non-recursive scan reports no
-// override while the merged file ends up carrying two pins for the same package.
-// Group names are compared under PEP 503 normalization, which PEP 735 also
-// specifies for group names. A group already visited is skipped, so an
-// include-group cycle terminates instead of recursing forever.
-func groupRequirements(groups map[string][]any, name string) []string {
-	byName := make(map[string][]any, len(groups))
-	for g, entries := range groups {
-		byName[normalizePackageName(g)] = entries
+// Deriving it by subtraction rather than by re-deciding which groups and spellings
+// the merge edits keeps the two from disagreeing: whatever the merge does not report
+// as replaced is, by definition, still in the file next to the managed pin. Only the
+// first occurrence is dropped, because the merge rewrites only the first element —
+// a second identical pin genuinely survives.
+func retainedRequirements(p userPyprojectTOML, replacedPin string) []string {
+	all := resolutionRequirements(p)
+	if replacedPin == "" {
+		return all
 	}
+	out := make([]string, 0, len(all))
+	dropped := false
+	for _, r := range all {
+		if !dropped && strings.TrimSpace(r) == strings.TrimSpace(replacedPin) {
+			dropped = true
+			continue
+		}
+		out = append(out, r)
+	}
+	return out
+}
 
-	var out []string
-	visited := make(map[string]bool, len(groups))
-	var walk func(string)
-	walk = func(g string) {
-		g = normalizePackageName(g)
-		if visited[g] {
-			return
-		}
-		visited[g] = true
-		for _, e := range byName[g] {
-			switch v := e.(type) {
-			case string:
-				out = append(out, v)
-			case map[string]any:
-				if inc, ok := v["include-group"].(string); ok {
-					walk(inc)
-				}
-			}
-		}
+// resolutionRequirements returns every requirement string uv considers when it locks
+// the project, in a deterministic order: [project].dependencies, then each extra in
+// [project.optional-dependencies], then each dependency group — all of them, not
+// just dev.
+//
+// Scanning every group is what makes the conflict warning match uv's behaviour:
+// constraint-dependencies applies to the whole resolution, so a pin in any declared
+// group fails `uv sync` with "requirements are unsatisfiable" just as a [project]
+// one does. Restricting the scan to dev would stay silent on exactly that failure.
+// Every group is visited on its own, so a PEP 735 {include-group = "..."} reference
+// needs no traversal: the group it names is enumerated here regardless, and an
+// include-group cycle cannot cause recursion.
+func resolutionRequirements(p userPyprojectTOML) []string {
+	out := stringEntries(p.Project.Dependencies)
+	for _, extra := range slices.Sorted(maps.Keys(p.Project.OptionalDependencies)) {
+		out = append(out, stringEntries(p.Project.OptionalDependencies[extra])...)
 	}
-	walk(name)
+	for _, g := range slices.Sorted(maps.Keys(p.DependencyGroups)) {
+		out = append(out, stringEntries(p.DependencyGroups[g])...)
+	}
 	return out
 }
 
@@ -141,15 +155,18 @@ func groupRequirements(groups map[string][]any, name string) []string {
 // It is best-effort: unparseable input yields no warnings rather than an error,
 // because a warning is advisory and must never fail the run. The user's file is
 // decoded through userPyprojectTOML rather than the artifact's stricter
-// pyprojectTOML, so a legitimate PEP 735 table entry cannot suppress the checks
-// that do not depend on it. Greenfield projects (no pre-existing content) produce
-// nothing — there is nothing of the user's to override. Warnings are deterministic
-// and ordered (requires-python, then databricks-connect, then constraint conflicts
-// sorted by package) so goldens are stable.
-func detectMergeWarnings(userPyproject []byte, c Constraints) []Warning {
+// pyprojectTOML, so no shape a real pyproject.toml may legitimately carry can
+// suppress the checks that do not depend on it. Greenfield projects (no pre-existing
+// content) produce nothing — there is nothing of the user's to override. Warnings are
+// deterministic and ordered (requires-python, then databricks-connect, then
+// constraint conflicts in the order uv would encounter them) so goldens are stable.
+func detectMergeWarnings(userPyproject []byte, c Constraints, replacedPin string) []Warning {
 	if len(userPyproject) == 0 {
 		return nil
 	}
+	// A decode error is not fatal: userPyprojectTOML types its containers loosely so
+	// the shapes a user's file legitimately carries all decode, leaving genuine syntax
+	// errors as the only failure — and those yield no fields to compare anyway.
 	var p userPyprojectTOML
 	if err := toml.Unmarshal(userPyproject, &p); err != nil {
 		return nil
@@ -162,7 +179,7 @@ func detectMergeWarnings(userPyproject []byte, c Constraints) []Warning {
 	if up := strings.TrimSpace(p.Project.RequiresPython); up != "" && c.RequiresPython != "" && up != strings.TrimSpace(c.RequiresPython) {
 		warnings = append(warnings, Warning{
 			Code:    WarnRequiresPythonOverridden,
-			Message: fmt.Sprintf("requires-python %q was replaced by the environment's %q", up, c.RequiresPython),
+			Message: fmt.Sprintf("requires-python %q is replaced by the environment's %q", up, c.RequiresPython),
 		})
 	}
 
@@ -170,76 +187,96 @@ func detectMergeWarnings(userPyproject []byte, c Constraints) []Warning {
 	// default mode (c.DatabricksConnect is empty in constraints-only, where the dev
 	// group is left untouched).
 	if c.DatabricksConnect != "" {
-		warnings = append(warnings, dbconnectWarning(p.DependencyGroups, c.DatabricksConnect)...)
+		warnings = append(warnings, dbconnectWarnings(p, replacedPin, c.DatabricksConnect)...)
 	}
 
-	// Conflicts are scanned in [project].dependencies *and* the dev group: uv applies
-	// constraint-dependencies to the whole resolution, so a group pin outside the
-	// env's constraint breaks `uv sync` exactly like a [project] one. The dev group is
-	// where this command's audience keeps its pins, so skipping it would miss the
-	// likeliest case.
-	userDeps := slices.Concat(p.Project.Dependencies, groupRequirements(p.DependencyGroups, devGroup))
-	warnings = append(warnings, constraintConflicts(userDeps, c.ConstraintDeps)...)
+	// The pin the merge replaces is excluded from the conflict scan: a conflict against
+	// an entry that is about to be discarded describes a state that does not survive
+	// the merge, and its own warning already covers it. Retained databricks-connect
+	// pins stay in scope — they are still part of the resolution.
+	warnings = append(warnings, constraintConflicts(retainedRequirements(p, replacedPin), c.ConstraintDeps)...)
 	return warnings
 }
 
-// dbconnectWarning reports how the merge will treat the user's databricks-connect
-// pin, distinguishing two outcomes that need different user actions.
+// dbconnectWarnings reports how the merge treats the user's databricks-connect
+// pins, distinguishing two outcomes that need different user actions.
 //
-// MergeManaged rewrites the pin only when it sits directly in the dev group's own
-// array; a pin reached through a PEP 735 include-group is left untouched and the
-// env's pin is *inserted alongside it*. That leaves two pins for one package, which
-// uv cannot resolve — a strictly worse outcome than an override, and one the user
-// has to fix by hand. Reporting both as "was replaced" would state something
-// factually untrue and hide the resolution failure behind a reassuring advisory.
-func dbconnectWarning(groups map[string][]any, envPin string) []Warning {
-	// A pin in dev's own array is what the merge rewrites in place.
-	for _, entry := range directRequirements(groups, devGroup) {
-		if !isDatabricksConnectDep(entry) {
-			continue
-		}
-		if strings.TrimSpace(entry) == strings.TrimSpace(envPin) {
-			return nil
-		}
-		return []Warning{{
+// Which pin the merge rewrites is not re-derived here — replacedPin comes from the
+// merge itself (see replacedDBConnectPin). Every other databricks-connect
+// requirement uv would resolve is left in place beside the managed pin: a pin in a
+// group the merge does not edit, one reached through a PEP 735 include-group, or a
+// second element in dev's own array. That leaves two pins for one package, and where
+// their ranges do not intersect uv cannot resolve at all — a strictly worse outcome
+// than an override, and one the user has to fix by hand. Reporting it as "is
+// replaced" would state something factually untrue and hide the resolution failure
+// behind a reassuring advisory.
+//
+// The two conditions are reported independently rather than as a first-match choice,
+// because they can coexist and the duplicate outlives the override: once the env's
+// pin is in dev, a re-run finds a matching direct pin, and stopping there would go
+// silent on a retained pin that still makes the project unresolvable.
+func dbconnectWarnings(p userPyprojectTOML, replacedPin, envPin string) []Warning {
+	var warnings []Warning
+
+	envPin = strings.TrimSpace(envPin)
+	if replacedPin != "" && strings.TrimSpace(replacedPin) != envPin {
+		warnings = append(warnings, Warning{
 			Code:    WarnDBConnectPinOverridden,
-			Message: fmt.Sprintf("databricks-connect %q was replaced by the environment's %q", strings.TrimSpace(entry), envPin),
-		}}
+			Message: fmt.Sprintf("databricks-connect %q is replaced by the environment's %q", strings.TrimSpace(replacedPin), envPin),
+		})
 	}
 
-	// Nothing in dev itself: an included group may still hold a pin the merge will
-	// not touch, so the merged file would carry both.
-	for _, entry := range groupRequirements(groups, devGroup) {
-		if !isDatabricksConnectDep(entry) {
+	_, envSpec, envOK := splitDepSpec(envPin)
+	for _, pin := range dbconnectPins(retainedRequirements(p, replacedPin)) {
+		if pin == envPin {
+			// An identical pin needs no reconciliation: uv sees one requirement twice.
 			continue
 		}
-		if strings.TrimSpace(entry) == strings.TrimSpace(envPin) {
-			return nil
+		// Two pins are only a problem when nothing satisfies both. ">=16" beside
+		// "~=17.2.0" resolves at 17.2.x, so there is nothing for the user to do, and
+		// claiming otherwise would send them after a non-existent conflict.
+		_, pinSpec, pinOK := splitDepSpec(pin)
+		if !envOK || !pinOK || !rangesDisjoint(pinSpec, envSpec) {
+			continue
 		}
-		return []Warning{{
+		warnings = append(warnings, Warning{
 			Code: WarnDBConnectPinDuplicated,
-			Message: fmt.Sprintf("databricks-connect %q comes from an included dependency group; the environment's %q was added to %q alongside it, leaving two pins to reconcile",
-				strings.TrimSpace(entry), envPin, devGroup),
-		}}
+			Message: fmt.Sprintf("databricks-connect %q is not rewritten by the merge; the environment's %q sits in %q alongside it, and no version satisfies both",
+				pin, envPin, devGroup),
+		})
 	}
-	return nil
+	return warnings
+}
+
+// dbconnectPins returns the trimmed databricks-connect requirements among entries,
+// in order.
+func dbconnectPins(entries []string) []string {
+	var out []string
+	for _, e := range entries {
+		if isDatabricksConnectDep(e) {
+			out = append(out, strings.TrimSpace(e))
+		}
+	}
+	return out
 }
 
 // constraintConflicts flags each user dependency pin that the env's
 // constraint-dependencies also constrains to a provably non-overlapping version.
 // It is deliberately conservative — it only fires when the two ranges are provably
 // disjoint (see rangesDisjoint); an ambiguous pair yields nothing, so a false
-// "conflict" is never reported. Warnings come out in userDeps order, which is the
-// user's own declaration order.
+// "conflict" is never reported. Warnings come out in userDeps order, and one
+// requirement reported once however many places declare it: the same pin listed in
+// [project].dependencies and in a group is a single conflict to fix, and repeating it
+// would inflate the code histogram consumers build from warnings[].
 func constraintConflicts(userDeps, envConstraints []string) []Warning {
 	if len(userDeps) == 0 || len(envConstraints) == 0 {
 		return nil
 	}
 	// Index the env constraints by normalized package name. Multiple entries for one
 	// package compose as a conjunction, so they are joined with "," rather than
-	// letting the last one win: parseClause treats a multi-clause spec as an unknown
-	// range, which keeps the outcome independent of artifact ordering instead of
-	// deciding against an arbitrary subset of the clauses.
+	// letting the last one win, which would decide against an arbitrary subset of the
+	// clauses depending on artifact ordering. specInterval intersects the clauses, so
+	// the joined form is evaluated as the conjunction it is.
 	envByName := make(map[string]string, len(envConstraints))
 	for _, ec := range envConstraints {
 		name, spec, ok := splitDepSpec(ec)
@@ -256,6 +293,7 @@ func constraintConflicts(userDeps, envConstraints []string) []Warning {
 	}
 
 	var warnings []Warning
+	reported := make(map[string]bool)
 	for _, ud := range userDeps {
 		name, userSpec, ok := splitDepSpec(ud)
 		if !ok || userSpec == "" {
@@ -265,12 +303,21 @@ func constraintConflicts(userDeps, envConstraints []string) []Warning {
 		if !ok {
 			continue
 		}
-		if rangesDisjoint(userSpec, envSpec) {
-			warnings = append(warnings, Warning{
-				Code:    WarnUserConstraintConflict,
-				Message: fmt.Sprintf("dependency %q conflicts with the environment constraint %q", strings.TrimSpace(ud), name+envSpec),
-			})
+		if !rangesDisjoint(userSpec, envSpec) {
+			continue
 		}
+		// Keyed on the normalized name and the spec, so two spellings of one pin
+		// ("pyarrow==21" and "PyArrow ==21") collapse, while genuinely different
+		// conflicting pins for one package are each reported.
+		key := name + userSpec
+		if reported[key] {
+			continue
+		}
+		reported[key] = true
+		warnings = append(warnings, Warning{
+			Code:    WarnUserConstraintConflict,
+			Message: fmt.Sprintf("dependency %q conflicts with the environment constraint %q", strings.TrimSpace(ud), name+envSpec),
+		})
 	}
 	return warnings
 }
@@ -281,12 +328,11 @@ type clause struct {
 	rel []int
 }
 
-// parseClause parses the first "<op><release>" out of a specifier. ok is false
-// when the specifier has multiple comma clauses or cannot be parsed simply — both
-// are treated as "unknown range", which never produces a conflict.
+// parseClause parses one "<op><release>" clause. ok is false when the clause cannot
+// be parsed simply, which is treated as "unknown range" and never yields a conflict.
 func parseClause(spec string) (clause, bool) {
 	spec = strings.TrimSpace(spec)
-	if spec == "" || strings.Contains(spec, ",") {
+	if spec == "" {
 		return clause{}, false
 	}
 	m := singleClauseRe.FindStringSubmatch(spec)
@@ -323,21 +369,44 @@ func parseClause(spec string) (clause, bool) {
 
 // rangesDisjoint reports whether two version specifiers provably share no
 // satisfying version. It is intentionally partial: any pair it cannot decide — a
-// "!=", a multi-clause range, an unparseable release — returns false, so an
-// uncertain case is never reported as a conflict. uv remains the real resolver;
-// this only surfaces the provable clashes as an advisory.
+// "!=", an unparseable release — returns false, so an uncertain case is never
+// reported as a conflict. uv remains the real resolver; this only surfaces the
+// provable clashes as an advisory.
 func rangesDisjoint(userSpec, envSpec string) bool {
-	a, aok := parseClause(userSpec)
-	b, bok := parseClause(envSpec)
+	a, aok := specInterval(userSpec)
+	b, bok := specInterval(envSpec)
 	if !aok || !bok {
 		return false
 	}
-	ai, aok := a.interval()
-	bi, bok := b.interval()
-	if !aok || !bok {
-		return false
+	return !a.overlaps(b)
+}
+
+// specInterval reduces a whole PEP 440 specifier to the single release range it
+// admits. A comma-separated specifier is a conjunction, so the clauses are
+// intersected: ">=21,<22" is [21, 22). Compound ranges are the ordinary way to pin a
+// dependency, and treating the comma as undecidable would miss the conflicts they
+// cause — including the ones this detector creates for itself when it conjoins
+// duplicate constraint entries for one package.
+//
+// ok is false when any clause is undecidable, which keeps the whole specifier
+// undecidable rather than letting a partial reading of it decide a conflict.
+func specInterval(spec string) (interval, bool) {
+	if strings.TrimSpace(spec) == "" {
+		return interval{}, false
 	}
-	return !ai.overlaps(bi)
+	out := interval{}
+	for clauseSpec := range strings.SplitSeq(spec, ",") {
+		c, ok := parseClause(clauseSpec)
+		if !ok {
+			return interval{}, false
+		}
+		i, ok := c.interval()
+		if !ok {
+			return interval{}, false
+		}
+		out = out.intersect(i)
+	}
+	return out, true
 }
 
 // interval is the contiguous release range a clause admits, with each endpoint
@@ -395,6 +464,32 @@ func (c clause) interval() (interval, bool) {
 func (a interval) overlaps(b interval) bool {
 	return startsBeforeEnd(a.lo, a.loIncl, b.hi, b.hiIncl) &&
 		startsBeforeEnd(b.lo, b.loIncl, a.hi, a.hiIncl)
+}
+
+// intersect returns the range satisfying both a and b: the higher floor and the
+// lower ceiling, keeping an endpoint inclusive only where both sides do. The zero
+// interval is unbounded in both directions and so acts as the identity, which lets a
+// conjunction be folded over its clauses.
+//
+// An empty result (a floor above the ceiling) is not normalized to any canonical
+// form: overlaps compares endpoints, so an empty interval is already disjoint from
+// every interval including itself, which is the correct reading of a specifier no
+// version satisfies (">=22,<21").
+func (a interval) intersect(b interval) interval {
+	out := a
+	if a.lo == nil || (b.lo != nil && !startsBeforeEnd(b.lo, true, a.lo, true)) {
+		// b's floor is strictly higher, so it wins outright.
+		out.lo, out.loIncl = b.lo, b.loIncl
+	} else if b.lo != nil && compareRelease(a.lo, b.lo) == 0 {
+		// Equal floors: the stricter exclusivity applies.
+		out.loIncl = a.loIncl && b.loIncl
+	}
+	if a.hi == nil || (b.hi != nil && !startsBeforeEnd(a.hi, true, b.hi, true)) {
+		out.hi, out.hiIncl = b.hi, b.hiIncl
+	} else if b.hi != nil && compareRelease(a.hi, b.hi) == 0 {
+		out.hiIncl = a.hiIncl && b.hiIncl
+	}
+	return out
 }
 
 // startsBeforeEnd reports whether a range starting at lo does not begin after a

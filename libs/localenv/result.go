@@ -201,24 +201,31 @@ type Warning struct {
 // They let a consumer report a count and a code histogram (merge quality) without
 // parsing free-form text. All are emitted from the merge phase, where the fetched
 // env-owned pins can conflict with what the user already had.
+//
+// The messages are phrased in the present tense because the same detection runs
+// under --dry-run, where nothing has been written yet.
 const (
-	// WarnRequiresPythonOverridden: the user's [project].requires-python differed
-	// from the env's pin and was replaced by the managed value.
+	// WarnRequiresPythonOverridden: the user's [project].requires-python differs
+	// from the env's pin and is replaced by the managed value.
 	WarnRequiresPythonOverridden = "W_REQUIRES_PYTHON_OVERRIDDEN"
-	// WarnDBConnectPinOverridden: the user's databricks-connect pin sat directly in
-	// the dev group and was replaced by the managed value.
+	// WarnDBConnectPinOverridden: the user's databricks-connect pin sits directly in
+	// the dev group and is replaced by the managed value.
 	WarnDBConnectPinOverridden = "W_DBCONNECT_PIN_OVERRIDDEN"
-	// WarnDBConnectPinDuplicated: the user's databricks-connect pin is reachable
-	// only through a PEP 735 include-group, which the merge does not rewrite, so the
-	// managed pin was added to the dev group alongside it. Unlike an override this
-	// leaves two pins for one package and uv cannot resolve it — a distinct, worse
-	// outcome that needs a manual fix, so it carries its own code.
+	// WarnDBConnectPinDuplicated: a databricks-connect pin of the user's is one the
+	// merge does not rewrite — reached through a PEP 735 include-group, a second pin
+	// in the dev array, or a group key that normalizes to "dev" without matching the
+	// literal key the merge edits — so the managed pin lands in the dev group
+	// alongside it. Unlike an override this leaves two pins for one package and uv
+	// cannot resolve it, a distinct and worse outcome that needs a manual fix, so it
+	// carries its own code. It can accompany an override and persists across re-runs
+	// for as long as the retained pin does.
 	WarnDBConnectPinDuplicated = "W_DBCONNECT_PIN_DUPLICATED"
-	// WarnUserConstraintConflict: a user dependency (in [project].dependencies or the
-	// dev group) pins a package that the env's constraint-dependencies also
-	// constrains, to a provably non-overlapping version range (uv will fail to
-	// resolve). Emitted only when the ranges are provably disjoint; ambiguous cases
-	// are not flagged.
+	// WarnUserConstraintConflict: a user dependency pins a package that the env's
+	// constraint-dependencies also constrains, to a provably non-overlapping version
+	// range (uv will fail to resolve). Every requirement uv locks is scanned —
+	// [project].dependencies, the optional-dependency extras, and all dependency
+	// groups — since constraint-dependencies applies to the whole resolution. Emitted
+	// only when the ranges are provably disjoint; ambiguous cases are not flagged.
 	WarnUserConstraintConflict = "W_USER_CONSTRAINT_CONFLICT"
 )
 
