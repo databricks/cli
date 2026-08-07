@@ -25,3 +25,16 @@ New = '''
 [[Repls]]
 Old = '(?m)^ *"changes": \{\n *"deployment\.(deployment_id|version_id)": \{\n(?: *"[a-z_]+": .*\n)+ *\}\n *\},?\n'
 New = ''
+
+# The stamp inside a serialized deployment block, as printed by `jobs get` / `pipelines
+# get` and in state dumps. Both keys always sit alongside "kind" and
+# "metadata_file_path", so each pattern anchors on one of those - that keeps it from
+# matching an unrelated field named deployment_id elsewhere in the output.
+[[Repls]]
+Old = '(?m)^ *"deployment_id": "\[NUMID\]",\n(?= *"kind": )'
+New = ''
+
+[[Repls]]
+Old = '(?m)(^ *"metadata_file_path": [^\n]*),\n *"version_id": "\d+"\n'
+New = '''$1
+'''
