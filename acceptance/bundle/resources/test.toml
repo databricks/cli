@@ -30,11 +30,22 @@ New = ''
 # get` and in state dumps. Both keys always sit alongside "kind" and
 # "metadata_file_path", so each pattern anchors on one of those - that keeps it from
 # matching an unrelated field named deployment_id elsewhere in the output.
+#
+# Order puts these after the root's numeric rules (Order = 10), which have by then turned
+# the id into [NUMID].
 [[Repls]]
-Old = '(?m)^ *"deployment_id": "\[NUMID\]",\n(?= *"kind": )'
-New = ''
+Old = '(?m)^ *"deployment_id": "\[NUMID\]",\n( *"kind": "BUNDLE")'
+New = '${1}'
+Order = 20
 
 [[Repls]]
-Old = '(?m)(^ *"metadata_file_path": [^\n]*),\n *"version_id": "\d+"\n'
+Old = '(?m)(^ *"metadata_file_path": [^\n]*),\n *"version_id": "[^\n]*"\n'
 New = '''$1
 '''
+Order = 20
+
+# Same two keys in gron.py's flattened form, where each is its own line.
+[[Repls]]
+Old = '(?m)^json.*\.deployment\.(deployment_id|version_id) = [^\n]*\n'
+New = ''
+Order = 20

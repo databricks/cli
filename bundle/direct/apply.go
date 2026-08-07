@@ -162,7 +162,11 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		// The update emptied the resource out (e.g. all grants revoked). Keeping an entry
 		// would report the node as tracked-and-unchanged forever, while a fresh deploy of
 		// the same config plans no node at all; drop it so the two agree.
-		err = db.DeleteState(ctx, d.ResourceKey, deployplan.Update)
+		//
+		// Recorded as a delete, not the update that caused it: the resource is no longer
+		// tracked, and DMS drops it from the deployment only for a delete. Recording an
+		// update would leave it listed with no state, which the next plan cannot read.
+		err = db.DeleteState(ctx, d.ResourceKey, deployplan.Delete)
 		if err != nil {
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
