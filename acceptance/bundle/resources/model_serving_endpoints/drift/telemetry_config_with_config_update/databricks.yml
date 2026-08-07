@@ -12,8 +12,8 @@ resources:
             entity_version: "1"
             workload_size: Small
             scale_to_zero_enabled: true
-      telemetry_config:
-        table_names:
-          logs_table: main.default.test_logs
-        inference_table_config:
-          sampling_fraction: 0.5
+      telemetry_config: # TELEMETRY
+        table_names: # TELEMETRY
+          logs_table: main.default.test_logs # TELEMETRY
+        inference_table_config: # TELEMETRY
+          sampling_fraction: 0.5 # TELEMETRY

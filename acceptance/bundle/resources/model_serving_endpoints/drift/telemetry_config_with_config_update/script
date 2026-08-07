@@ -3,7 +3,7 @@ echo "*" > .gitignore
 title "Initial deployment"
 trace $CLI bundle deploy
 
-title "Deploy changing config and telemetry_config waits before the telemetry patch"
+title "Update config and telemetry_config"
 update_file.py databricks.yml "workload_size: Small" "workload_size: Medium"
 update_file.py databricks.yml "sampling_fraction: 0.5" "sampling_fraction: 0.9"
 trace $CLI bundle deploy
@@ -13,3 +13,14 @@ trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 
 
 title "Request order: config PUT, poll, telemetry PATCH"
 trace print_requests.py --get --oneline //serving-endpoints | uniq -c | sed 's/^ *//'
+
+title "Remove telemetry_config"
+grep -v TELEMETRY databricks.yml > updated.yml && mv updated.yml databricks.yml
+trace $CLI bundle deploy
+MSYS_NO_PATHCONV=1 trace $CLI api get "/api/2.0/serving-endpoints/test-endpoint" | jq .telemetry_config
+
+title "Plan converges after removal"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+
+title "Removal sends an empty telemetry PATCH"
+trace print_requests.py --method PATCH --oneline //serving-endpoints

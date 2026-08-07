@@ -6,7 +6,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Deploy changing config and telemetry_config waits before the telemetry patch
+=== Update config and telemetry_config
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -25,3 +25,21 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 2 {"method": "GET", "path": "/api/2.0/serving-endpoints/test-endpoint"}
 1 {"method": "PATCH", "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config", "body": {"telemetry_config": {"inference_table_config": {"sampling_fraction": 0.9}, "table_names": {"logs_table": "main.default.test_logs"}}}}
 2 {"method": "GET", "path": "/api/2.0/serving-endpoints/test-endpoint"}
+
+=== Remove telemetry_config
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] api get /api/2.0/serving-endpoints/test-endpoint
+null
+
+=== Plan converges after removal
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Removal sends an empty telemetry PATCH
+>>> print_requests.py --method PATCH --oneline //serving-endpoints
+{"method": "PATCH", "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config", "body": {}}
