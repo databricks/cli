@@ -1,0 +1,12 @@
+# list-deployments returns every deployment in the workspace, so assert on its
+# shape rather than its contents: the set grows as other tests and engineers
+# deploy, and the ids are server-assigned.
+trace $CLI bundle-deployments list-deployments | jq 'if type == "array" then "array" else . end'
+
+# A deployment id that cannot exist. DMS resolves the workspace and runs the
+# permission check before it looks for the row, so a clean NotFound proves the
+# whole read path is reachable, not just the front door.
+trace errcode $CLI bundle-deployments get-deployment deployments/1
+trace errcode $CLI bundle-deployments list-versions deployments/1
+trace errcode $CLI bundle-deployments list-resources deployments/1
+trace errcode $CLI bundle-deployments list-operations deployments/1/versions/1

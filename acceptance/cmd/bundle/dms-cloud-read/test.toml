@@ -1,0 +1,24 @@
+# Cloud read-path test for the `databricks bundle-deployments` (DMS) commands.
+#
+# DMS is placed on DEV and STAGING shards only, so this test is enabled solely
+# for the staging cloud env. On a prod control plane the routes do not exist and
+# every request 404s at the API proxy, which is why the CLI's usual
+# aws-prod-ucws env cannot cover this service.
+Cloud = true
+Local = false
+CloudEnvs = {aws = true, azure = false, gcp = false}
+
+# bundle-deployments is a workspace-service command, independent of the bundle
+# deploy engine. Pin to one engine so the suite runs the case once rather than
+# twice; an empty list would instead run it on both CI runners.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Deployment ids are server-assigned and workspace-scoped, so both the ids and
+# the enclosing workspace id vary per run.
+[[Repls]]
+Old = 'deployments/[0-9]+'
+New = 'deployments/[NUMID]'
+
+[[Repls]]
+Old = 'in workspace [0-9]+'
+New = 'in workspace [NUMID]'
