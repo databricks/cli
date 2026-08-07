@@ -75,7 +75,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
+	err = d.compactAndSaveState(db, newID, newState)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -163,7 +163,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
+		err = d.compactAndSaveState(db, id, newState)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -208,7 +208,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
+	err = d.compactAndSaveState(db, newID, newState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -291,12 +291,23 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
+	err = d.compactAndSaveState(db, id, newState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
 	return nil
+}
+
+// compactAndSaveState compacts the state (replacing fields declared in hashed_in_state
+// with content hashes, see dresources.CompactState) before persisting it. Fields already
+// smaller than a hash placeholder are persisted as is.
+func (d *DeploymentUnit) compactAndSaveState(db *dstate.DeploymentState, id string, newState any) error {
+	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), newState)
+	if err != nil {
+		return fmt.Errorf("compacting state: %w", err)
+	}
+	return db.SaveState(d.ResourceKey, id, compacted, d.DependsOn)
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {

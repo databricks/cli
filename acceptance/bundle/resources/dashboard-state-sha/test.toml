@@ -1,0 +1,27 @@
+# Direct-engine hashed-state behaviour for dashboards. Kept outside dashboards/ so it can run
+# direct-only: terraform does not hash state, and the saved-plan path (deploy --plan, i.e.
+# READPLAN=1) is direct-only. RecordRequests is inherited from resources/test.toml.
+# Local-only: this exercises direct-engine state format (serialized_dashboard stored as a
+# content hash), which the in-memory testserver covers fully and deterministically. On real
+# cloud the read-after-deploy plan/state reads hit dashboard eventual consistency, and unlike
+# the tests under dashboards/ this dir doesn't inherit their retry/INJECT_STALE machinery.
+Local = true
+Cloud = false
+
+# dashboard.lvdash.json is rendered from dashboard.tmpl in the script (re-rendered for the edit).
+# dashboard.tmpl must stay large enough that hashing shrinks the state: content that encodes to
+# no more than a placeholder (87 bytes) is persisted raw, which would silently stop this test from
+# exercising hashing at all.
+Ignore = ["dashboard.lvdash.json"]
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
+
+# Etag can be both negative and positive.
+[[Repls]]
+Old = "\"[-0-9]{8,}\""
+New = "[ETAG]"
+
+[[Repls]]
+Old = "\"[0-9]{8,}\""
+New = "[ETAG]"
