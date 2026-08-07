@@ -1,4 +1,3 @@
-Local = true
 # Local-only: asserts on the recorded create-request payloads, which only the
 # local testserver captures (RecordRequests).
 Cloud = false

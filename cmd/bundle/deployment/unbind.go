@@ -54,7 +54,7 @@ To re-bind the resource later, use:
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b, stateDesc, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
-				b.Config.Bundle.Deployment.Lock.Force = forceLock
+				utils.SetForceLock(cmd, b, forceLock)
 			},
 			AlwaysPull: true,
 		})
