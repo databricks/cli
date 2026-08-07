@@ -113,6 +113,7 @@ type TestConfig struct {
 	// For example:
 	//   EnvMatrixExclude.noplantf = ["READPLAN=1", "DATABRICKS_BUNDLE_ENGINE=terraform"]
 	// Special pseudo-var CONFIG_Cloud=true is available for excluding combinations on cloud runs.
+	// Special pseudo-var CONFIG_CloudName=<aws|azure|gcp> is available for excluding combinations on a specific cloud.
 	EnvMatrixExclude map[string][]string
 
 	// List of keys for which to do string replacement value -> [KEY]. If not set, defaults to true.

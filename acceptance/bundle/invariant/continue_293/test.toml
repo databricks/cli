@@ -29,3 +29,10 @@ EnvMatrixExclude.no_volume_path_job_ref = ["INPUT_CONFIG=volume_path_job_ref.yml
 # The 1000-task scale case is covered by no_drift. Running it here adds ~1.5 min
 # per variant (two full deploys at 1000 tasks) without incremental coverage.
 EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]
+
+# replace_existing is not supported on v0.293.0: the seed deploy drops the unknown
+# field and then fails trying to create the implicitly-provisioned production branch
+# / primary endpoint. Covered by no_drift and migrate on current CLI.
+EnvMatrixExclude.no_postgres_branch = ["INPUT_CONFIG=postgres_branch.yml.tmpl"]
+EnvMatrixExclude.no_postgres_endpoint = ["INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
+EnvMatrixExclude.no_postgres_synced_table = ["INPUT_CONFIG=postgres_synced_table.yml.tmpl"]

@@ -2,15 +2,42 @@ bundle:
   name: test-bundle-$UNIQUE_NAME
 
 resources:
+  # Storage for the synced table's backing pipeline.
+  schemas:
+    pipeline_storage:
+      name: pipeline_storage_$UNIQUE_NAME
+      catalog_name: main
+
+  postgres_projects:
+    project:
+      project_id: test-pg-project-$UNIQUE_NAME
+      display_name: Test Postgres Project
+
+  # Take over the branch implicitly provisioned with the project rather than
+  # creating a new one.
+  postgres_branches:
+    branch:
+      parent: ${resources.postgres_projects.project.name}
+      branch_id: production
+      replace_existing: true
+      no_expiry: true
+
+  postgres_catalogs:
+    catalog:
+      catalog_id: test_pg_catalog_$UNIQUE_NAME
+      branch: ${resources.postgres_branches.branch.name}
+      postgres_database: appdb
+      create_database_if_missing: true
+
   postgres_synced_tables:
     foo:
-      synced_table_id: lakebase_$UNIQUE_NAME.public.trips_synced
-      source_table_full_name: main.raw.trips
-      primary_key_columns: [id]
+      synced_table_id: ${resources.postgres_catalogs.catalog.catalog_id}.public.trips_synced
+      source_table_full_name: main.test_synced_$UNIQUE_NAME.trips_source
+      primary_key_columns: [tpep_pickup_datetime]
       scheduling_policy: SNAPSHOT
       postgres_database: appdb
-      branch: projects/test-pg-project-$UNIQUE_NAME/branches/production
+      branch: ${resources.postgres_branches.branch.name}
       create_database_objects_if_missing: true
       new_pipeline_spec:
-        storage_catalog: main
-        storage_schema: pipelines
+        storage_catalog: ${resources.schemas.pipeline_storage.catalog_name}
+        storage_schema: ${resources.schemas.pipeline_storage.name}

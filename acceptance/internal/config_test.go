@@ -193,6 +193,33 @@ func TestExpandEnvMatrix(t *testing.T) {
 				{"KEY=B"},
 			},
 		},
+		{
+			name: "CONFIG_CloudName excludes variant on matching cloud",
+			matrix: map[string][]string{
+				"INPUT_CONFIG": {"database_instance.yml.tmpl", "job.yml.tmpl"},
+			},
+			exclude: map[string][]string{
+				"no_database_instance_on_gcp": {"CONFIG_CloudName=gcp", "INPUT_CONFIG=database_instance.yml.tmpl"},
+			},
+			extraVars: []string{"CONFIG_Cloud=true", "CONFIG_CloudName=gcp"},
+			expected: [][]string{
+				{"INPUT_CONFIG=job.yml.tmpl"},
+			},
+		},
+		{
+			name: "CONFIG_CloudName keeps variant on non-matching cloud",
+			matrix: map[string][]string{
+				"INPUT_CONFIG": {"database_instance.yml.tmpl", "job.yml.tmpl"},
+			},
+			exclude: map[string][]string{
+				"no_database_instance_on_gcp": {"CONFIG_CloudName=gcp", "INPUT_CONFIG=database_instance.yml.tmpl"},
+			},
+			extraVars: []string{"CONFIG_Cloud=true", "CONFIG_CloudName=aws"},
+			expected: [][]string{
+				{"INPUT_CONFIG=database_instance.yml.tmpl"},
+				{"INPUT_CONFIG=job.yml.tmpl"},
+			},
+		},
 	}
 
 	for _, tt := range tests {

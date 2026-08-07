@@ -84,20 +84,21 @@ no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
 # so this config is local-only (the mock server stores it verbatim).
 no_run_job_ref_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=job_run_job_ref.yml.tmpl"]
 
-# Postgres resources only work on AWS
-no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_project.yml.tmpl"]
-no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
-no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
-no_postgres_catalog_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_catalog.yml.tmpl"]
-no_postgres_synced_table_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_synced_table.yml.tmpl"]
-no_postgres_role_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_role.yml.tmpl"]
-no_postgres_database_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_database.yml.tmpl"]
+# Lakebase v2 (postgres_* resources) is not available on GCP, but works on AWS and Azure,
+# so exclude these on GCP only.
+no_postgres_project_on_gcp = ["CONFIG_CloudName=gcp", "INPUT_CONFIG=postgres_project.yml.tmpl"]
+no_postgres_branch_on_gcp = ["CONFIG_CloudName=gcp", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
+no_postgres_endpoint_on_gcp = ["CONFIG_CloudName=gcp", "INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
+no_postgres_catalog_on_gcp = ["CONFIG_CloudName=gcp", "INPUT_CONFIG=postgres_catalog.yml.tmpl"]
+no_postgres_synced_table_on_gcp = ["CONFIG_CloudName=gcp", "INPUT_CONFIG=postgres_synced_table.yml.tmpl"]
+no_postgres_role_on_gcp = ["CONFIG_CloudName=gcp", "INPUT_CONFIG=postgres_role.yml.tmpl"]
+no_postgres_database_on_gcp = ["CONFIG_CloudName=gcp", "INPUT_CONFIG=postgres_database.yml.tmpl"]
 
-# Lakebase v1 (database instances/catalogs/synced tables) is not available on GCP,
-# so exclude these from all cloud runs (same as the postgres resources above).
-no_database_instance_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=database_instance.yml.tmpl"]
-no_database_catalog_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=database_catalog.yml.tmpl"]
-no_synced_database_table_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=synced_database_table.yml.tmpl"]
+# Lakebase v1 (database instances/catalogs/synced tables) is not available on GCP, but works on
+# AWS and Azure, so exclude these on GCP only.
+no_database_instance_on_gcp = ["CONFIG_CloudName=gcp", "INPUT_CONFIG=database_instance.yml.tmpl"]
+no_database_catalog_on_gcp = ["CONFIG_CloudName=gcp", "INPUT_CONFIG=database_catalog.yml.tmpl"]
+no_synced_database_table_on_gcp = ["CONFIG_CloudName=gcp", "INPUT_CONFIG=synced_database_table.yml.tmpl"]
 
 # managed_encryption_settings needs a CMK registered with the workspace, so this
 # config only runs against the mock server
