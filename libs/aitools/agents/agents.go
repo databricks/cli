@@ -278,13 +278,18 @@ func gooseConfigDir(ctx context.Context) (string, error) {
 		if appData := env.Get(ctx, "APPDATA"); appData != "" {
 			return filepath.Join(appData, "Block", "goose", "config"), nil
 		}
+		home, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(home, "AppData", "Roaming", "Block", "goose", "config"), nil
 	}
 	home, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return "", err
 	}
 	xdg := env.Get(ctx, "XDG_CONFIG_HOME")
-	if xdg == "" {
+	if !filepath.IsAbs(xdg) {
 		xdg = filepath.Join(home, ".config")
 	}
 	return filepath.Join(xdg, "goose"), nil
