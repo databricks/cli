@@ -2,6 +2,7 @@
 # equivalent, so restrict the matrix to direct.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-# Local only: the interruption is staged by injecting a fault into the testserver.
+# The interruption is staged by injecting a fault into the testserver, so this
+# stays off cloud.
 RecordRequests = true
 Ignore = ["tmp.plan.json"]
