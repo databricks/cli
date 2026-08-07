@@ -738,7 +738,7 @@ tasks:
     # No `sources:` fingerprint: the window depends on FUZZ_* env vars Task can't see.
     cmds:
       - |
-        # Same ceiling as the nightly job: FUZZ_TIME_BUDGET (900s) is the real stop. Drift on;
+        # FUZZ_TIME_BUDGET (900s) stops the run; seed count is a ceiling. Drift on by default;
         # a repro narrows via FUZZ_SEED_*.
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-10000}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"

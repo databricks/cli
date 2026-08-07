@@ -1,16 +1,14 @@
-# Fuzz overrides of the shared invariant helpers. This test lives outside the invariant subtree,
-# so the harness does not concatenate them; source them explicitly, before the overrides below.
-# The target scripts stay unaware of fuzzing.
+# Fuzz overrides of the shared invariant helpers. Source them explicitly: this test lives outside
+# the invariant subtree (test.toml / script.prepare only merge along the directory chain).
 export INVARIANT_DIR="$TESTDIR/../invariant"
 
-# The targets select their config with INPUT_CONFIG, which this test's matrix leaves unset, and
-# scripts run under set -u. Empty is accurate: a mutated config matches no curated name.
+# Empty: a mutated config matches no curated name, and scripts run under set -u.
 export INPUT_CONFIG=""
 
 source "$INVARIANT_DIR/script.prepare"
 
-# The mutator writes the config; there is nothing to render from configs/. validate runs here as
-# an isolated panic surface, and rejects an invalid config before the target's deploy.
+# The mutator writes the config. validate runs here as an isolated panic surface and rejects an
+# invalid config before the target's deploy.
 invariant_render() {
     # Stage the fixtures the mutator's file_path/source_code_path fields point at.
     cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
@@ -22,18 +20,15 @@ invariant_render() {
     trace $CLI bundle validate &> LOG.validate
     cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
 
-    # A destructive mutation can delete a field the schema marks required. validate only warns, so
-    # such a config still deploys under terraform while the direct engine refuses it -- a difference
-    # in strictness on input the CLI already called incomplete. Reject the seed here so it counts
-    # as rejected.
+    # validate only warns on a missing required field, so reject the seed here while it still
+    # counts as rejected (terraform may still deploy such a config; direct refuses it).
     if grep -q 'required field .* is not set' LOG.validate; then
         return 1
     fi
 }
 
-# A mutated config can deploy and still differ from the fake server, which does not round-trip
-# every field, so the exact check false-positives. Substitute the one oracle independent of server
-# fidelity: two consecutive plans of the same state must be byte-identical.
+# Exact no-drift false-positives when the fake server drops fields on round-trip. Substitute a
+# plan-determinism check: two consecutive plans of the same state must be byte-identical.
 #
 # Compared against 0: `FUZZ_CHECK_DRIFT= task test-fuzz` would be re-defaulted to 1 by the
 # task's ${FUZZ_CHECK_DRIFT:-1}, so the repro passes an explicit 0.
@@ -49,11 +44,8 @@ if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
         cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
 
         if [ "$plan1_rc" -ne 0 ] || [ "$plan2_rc" -ne 0 ]; then
-            # There is no plan to compare, so the seed cannot pass: fail it either way and let
-            # run_fuzz.py file it as a gap when an unmodeled route is what broke the plan, and as
-            # a bug otherwise. Succeeding here would instead record the seed as deployed and hide
-            # that the invariant never ran. stderr is copied in because the *.err ignore pattern
-            # keeps it out of the test log.
+            # Fail either way so run_fuzz.py can classify (gap vs bug). Copy stderr in because the
+            # *.err ignore pattern keeps it out of the test log.
             if ! grep -q TESTSERVER_GAP LOG.plan1.err LOG.plan2.err; then
                 echo "bundle plan exited $plan1_rc and $plan2_rc" > LOG.plan.failed
                 cat LOG.plan1.err LOG.plan2.err >> LOG.plan.failed

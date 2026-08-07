@@ -48,7 +48,7 @@ def nested_enum(gen, element, field, item_field):
                 for branch in branches(gen, inner):
                     if branch.get("enum"):
                         return branch["enum"]
-                    # grants[].privileges holds a list of enum values rather than one.
+                    # grants[].privileges holds a list of enum values.
                     if branch.get("type") == "array":
                         for value in branches(gen, branch["items"]):
                             if value.get("enum"):

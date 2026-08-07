@@ -3,8 +3,7 @@
 Contract check for mutate_fuzz_config (the harness diffs stdout; a non-zero exit marks a
 violation on stderr):
 
-- The loader round-trips every curated base: load -> dump -> load is a fixed point, so a base
-  the loader can't represent is caught here, not as a confusing fuzz failure.
+- The loader round-trips every curated base: load -> dump -> load is a fixed point.
 - Mutation is deterministic for a fixed seed (reproducible repros).
 
 It also prints a few mutated configs so an algorithm change shows up as an output diff.
@@ -66,8 +65,8 @@ def main():
         sys.stdout.write(f"=== volume seed={seed} ===\n")
         sys.stdout.write(dump_yaml(mutate(load("volume"), seed)))
 
-    # Assert-only (no stdout) so this doesn't churn as the schema grows. The registered_model
-    # base sets no optional fields, so any added field must have been injected.
+    # Assert-only (no stdout) so printed output stays stable as the schema grows. The
+    # registered_model base sets no optional fields, so any added field must have been injected.
     with open(SCHEMA) as f:
         schema = json.load(f)
 

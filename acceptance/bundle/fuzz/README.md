@@ -1,15 +1,7 @@
 This is a harness over the invariant tests in ../invariant: it runs mutated configs through a
 real invariant target script. script only sets up the per-seed environment;
 acceptance/bin/run_fuzz.py drives the seed loop and classifies each outcome as
-deployed / rejected / gap / hang / bug. The target is matrixed in test.toml:
-
-`FUZZ_TARGET` picks the invariant, and each one is also a curated invariant test that runs over the
-`INPUT_CONFIG` matrix:
-
-- `no_drift` -- deploy, then no drift
-- `migrate` -- Terraform deploy, migrate to direct, then no drift
-- `delete_idempotent` -- deploy, delete by emptying the config, then re-run the delete on restored state
-- `destroy_idempotent` -- deploy, destroy, then destroy again on restored state
+deployed / rejected / gap / hang / bug. `FUZZ_TARGET` in test.toml picks which target to run.
 
 Each seed perturbs one of the curated configs in MUTATE_BASES (see mutate_fuzz_config.py): delete or
 replace existing fields, and (via the live `databricks bundle schema`) inject valid optional fields

@@ -8,14 +8,14 @@ invariant_cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy
     cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
 
-    # A generating caller sets INPUT_CONFIG empty: no curated config, so no cleanup script either.
+    # A generating caller sets INPUT_CONFIG empty, so there is no cleanup script.
     if [ -n "$INPUT_CONFIG" ] && [ -f "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" ]; then
         source "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" &> LOG.cleanup
     fi
 }
 
 # Separate from invariant_setup so a generating caller can redefine the render alone after sourcing
-# this file. It needs a curated INPUT_CONFIG, so that caller must replace it, not adjust it.
+# this file (it needs a curated INPUT_CONFIG, so that caller replaces the whole function).
 invariant_render() {
     cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
 
@@ -29,8 +29,8 @@ invariant_render() {
     cp databricks.yml LOG.config
 }
 
-# Call from the target, not at prepare time: prepare runs outside the subshell wrapping the
-# script, so the trap would belong to the outer shell.
+# Call from the target: prepare runs outside the subshell wrapping the script, so a trap
+# installed here would belong to the outer shell.
 invariant_setup() {
     invariant_render
 

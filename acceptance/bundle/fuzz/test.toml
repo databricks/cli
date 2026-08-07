@@ -1,5 +1,5 @@
 # Local only: against a real workspace each seed's deploy/migrate/plan/destroy takes minutes and
-# trips SEED_TIMEOUT, and with FUZZ_CHECK_DRIFT unset it only re-asserts no-panic anyway.
+# trips SEED_TIMEOUT.
 Cloud = false
 
 # Room for the nightly FUZZ_TIME_BUDGET (run_fuzz.py) plus the last seed's tail.
@@ -23,11 +23,6 @@ Ignore = [
     ".databricks.backup",
 ]
 
-# The idempotency targets assert a delete or destroy re-run succeeds, which holds however faithfully
-# the fake server round-trips fields, so they keep their real oracle under fuzzing.
-#
-# continue_293 is left out: it deploys with the pinned v0.293.0 binary, which does not know many
-# current fields and types, so it would reject most seeds and measure that version's schema.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "delete_idempotent", "destroy_idempotent"]
 
 # Fake SQL endpoint for local tests
@@ -39,12 +34,10 @@ Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"col
 Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
 Response.Body = '{"status": "OK"}'
 
-# Catch-alls, one per method. An unmodeled route is a coverage gap for a config nobody wrote by
-# hand; these answer with a marker run_fuzz.py files as a gap.
-#
-# They shadow nothing: wildcards go to ServeMux, which matches most-specific-first, and exact paths
-# are looked up before it (see the Router type doc). No HEAD entry: ServeMux matches a GET pattern
-# for HEAD too, so "HEAD /{path...}" would conflict with every GET wildcard and panic at startup.
+# Catch-alls, one per method. An unmodeled route is a coverage gap; these answer with a marker
+# run_fuzz.py files as a gap. Wildcards go to ServeMux (most-specific-first); exact paths are
+# looked up before it (see the Router type doc). No HEAD: ServeMux matches a GET pattern for HEAD
+# too, so "HEAD /{path...}" would conflict with every GET wildcard and panic at startup.
 [[Server]]
 Pattern = "GET /{path...}"
 Response.StatusCode = 501
