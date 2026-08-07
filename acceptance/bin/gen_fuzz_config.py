@@ -1,18 +1,15 @@
 """
-Schema-driven helpers for the invariant fuzzer: walk `databricks bundle schema` (resolving $ref,
-picking concrete oneOf/anyOf branches) and emit random field values. Free-form scalars are
-sometimes replaced with dangerous values (DANGEROUS_STRINGS/INTS) to probe input handling.
+Schema-driven value generation for the invariant fuzzer.
 
-mutate_fuzz_config.py uses Generator to value optional fields it injects into curated configs.
-gen_config builds a whole resource from the schema and is exercised by the selftest.
+mutate_fuzz_config.py injects optional fields into curated configs and asks Generator for each
+field's value. Free-form scalars are sometimes replaced with dangerous values
+(DANGEROUS_STRINGS/INTS) to probe input handling.
 
 A seed is tied to schema iteration order, so adding a field moves every later draw.
 """
 
 import json
 import os
-import random
-import re
 import sys
 
 # Depth past which optional properties are no longer emitted, to keep configs from exploding.
@@ -35,34 +32,25 @@ DEFAULT_SCHEMA = "default"
 # "account users" exists on every workspace. A random principal or a privilege that does not apply
 # to the securable deploys on the fake server but fails on UC.
 DEFAULT_PRINCIPAL = "account users"
+# Only types in emit_fuzz_config.MUTATE_BASES that declare grants.
 GRANT_PRIVILEGE = {
     "catalogs": "USE_CATALOG",
     "schemas": "USE_SCHEMA",
     "volumes": "READ_VOLUME",
     "registered_models": "EXECUTE",
     "external_locations": "READ_FILES",
-    "vector_search_indexes": "SELECT",
 }
 
 # Permissions take no variable refs: a concrete principal and a level valid for the resource type.
 DEFAULT_PERMISSION_GROUP = "users"
+# Only types in emit_fuzz_config.MUTATE_BASES that declare permissions.
 PERMISSION_LEVEL = {
-    "alerts": "CAN_MANAGE",
-    "apps": "CAN_USE",
-    "clusters": "CAN_ATTACH_TO",
-    "dashboards": "CAN_READ",
-    "database_instances": "CAN_USE",
-    "experiments": "CAN_READ",
-    "genie_spaces": "CAN_READ",
-    "instance_pools": "CAN_ATTACH_TO",
     "jobs": "CAN_VIEW",
     "model_serving_endpoints": "CAN_VIEW",
     "models": "CAN_READ",
     "pipelines": "CAN_VIEW",
-    "postgres_projects": "CAN_USE",
     "secret_scopes": "READ",
     "sql_warehouses": "CAN_VIEW",
-    "vector_search_endpoints": "CAN_USE",
 }
 
 # Backend-computed fields, mirroring output_only in dresources/resources.yml: emitting them causes
@@ -84,38 +72,6 @@ SKIP_PROPERTY_NAMES = frozenset(
         "updated_by",
     }
 )
-
-# Needed to deploy but absent from the schema's required[]. Values come from gen_scalar's pins.
-RESOURCE_REQUIRED_FIELDS = {
-    "registered_models": frozenset({"catalog_name", "name", "schema_name"}),
-    "dashboards": frozenset({"display_name", "file_path", "warehouse_id"}),
-    "alerts": frozenset({"file_path"}),
-    "apps": frozenset({"source_code_path"}),
-    "genie_spaces": frozenset({"serialized_space", "title", "warehouse_id"}),
-}
-
-# Conflict with the fields we do emit: a dashboard or Genie space body comes from file_path XOR an
-# inline serialized_* field, and an app's source from source_code_path XOR git.
-RESOURCE_SKIP_FIELDS = {
-    "dashboards": frozenset({"serialized_dashboard"}),
-    "genie_spaces": frozenset({"file_path"}),
-    "apps": frozenset({"git_repository", "git_source"}),
-}
-
-# Alerts read their spec from the .dbalert.json at file_path; the CLI rejects every other field
-# (load_dbalert_files.go).
-RESOURCE_FIELD_ALLOWLIST = {
-    "alerts": frozenset({"display_name", "file_path", "lifecycle", "permissions", "warehouse_id"}),
-}
-
-# Body fixtures copied into each seed dir from invariant/data; the extension selects the parser.
-FILE_PATH_BY_RESOURCE = {
-    "dashboards": "./dashboard.lvdash.json",
-    "alerts": "./alert.dbalert.json",
-}
-
-# A local directory holding app source, also copied in from data/.
-APP_SOURCE_CODE_PATH = "./app"
 
 # Absolute means already-remote, skipping the local-notebook check a bare token would fail.
 NOTEBOOK_PATH = "/Shared/notebook"
@@ -166,9 +122,9 @@ class Generator:
         self.root = schema
         self.rng = rng
         self.unique = unique
-        # Set before generating the element, so grants/permissions can pick a valid value for it.
+        # Set before generating a value, so grants/permissions can pick a valid value for the type.
         self.rtype = None
-        # Distinguishes the pinned name/display_name values within one config; see gen_scalar.
+        # Distinguishes the pinned name/display_name values within one value; see gen_scalar.
         self.name_count = 0
 
     def resolve(self, schema):
@@ -189,16 +145,11 @@ class Generator:
         return self.rng.choice(concrete or branches)
 
     def should_skip_property(self, prop_name):
-        # Skipped by name at any depth, unlike the resource-level tables gen_object applies.
-        return prop_name in SKIP_PROPERTY_NAMES or prop_name in RESOURCE_SKIP_FIELDS.get(self.rtype, ())
+        return prop_name in SKIP_PROPERTY_NAMES
 
     def gen(self, schema, depth, name=""):
         if depth > MAX_RECURSION:
             sys.exit(f"gen_fuzz_config: schema walk exceeded {MAX_RECURSION} levels at {name!r}")
-
-        # Free-form in the schema, but the backend rejects unknown keys, so emit the minimal body.
-        if name == "serialized_space":
-            return {"version": 1}
 
         schema = self.resolve(schema)
         if not isinstance(schema, dict) or not schema:
@@ -230,17 +181,9 @@ class Generator:
     def gen_object(self, schema, depth):
         props = schema.get("properties", {})
         required = set(schema.get("required", []))
-        allowlist = None
-        # Resource-level rules, hence depth 0 only; RESOURCE_SKIP_FIELDS applies at every depth.
-        if depth == 0 and self.rtype:
-            required |= RESOURCE_REQUIRED_FIELDS.get(self.rtype, set())
-            allowlist = RESOURCE_FIELD_ALLOWLIST.get(self.rtype)
         result = {}
 
         for prop_name, prop_schema in props.items():
-            # Alerts reject even a schema-required field they read from the file instead.
-            if allowlist is not None and prop_name not in allowlist:
-                continue
             if self.should_skip_property(prop_name):
                 continue
             # Sampled, and dropped past MAX_DEPTH, so configs stay deployable within a seed's time.
@@ -254,7 +197,7 @@ class Generator:
                 continue
             result[prop_name] = value
 
-        # Map type: synthesize a few random keys, e.g. resources.<type> or string maps like tags.
+        # Map type: synthesize a few random keys, e.g. string maps like tags.
         if self.is_map(schema):
             for _ in range(self.rng.randint(1, 2)):
                 key = token(self.rng)
@@ -314,18 +257,10 @@ class Generator:
             return os.environ["TEST_DEFAULT_WAREHOUSE_ID"]
         if name == "notebook_path":
             return NOTEBOOK_PATH
-        if name == "source_code_path":
-            return APP_SOURCE_CODE_PATH
         if name == "parent_path":
             return PARENT_PATH
-        if name == "file_path":
-            return FILE_PATH_BY_RESOURCE.get(self.rtype, token(self.rng))
         if name.endswith("_duration") or name == "ttl":
             return DURATION_VALUE
-        if name == "name" and self.rtype == "vector_search_indexes":
-            # UC requires the full catalog.schema.table name; each part is alphanumeric+_.
-            table = re.sub(r"[^0-9a-zA-Z_]", "_", f"fuzz_index_{self.unique}")
-            return f"{DEFAULT_CATALOG}.{DEFAULT_SCHEMA}.{table}"
         if name in ("name", "display_name"):
             # Numbered: this pins by leaf name at any depth, and an array of named objects (job
             # parameters) would otherwise repeat one value and be rejected as a duplicate.
@@ -354,25 +289,6 @@ def resource_element(gen, type_schema):
     # Each type is a map; the element schema is the object branch's additionalProperties.
     map_schema = gen.resolve(type_schema)
     return object_branch(map_schema, "resource type map")["additionalProperties"]
-
-
-def gen_config(schema, seed, unique, allowed=frozenset()):
-    gen = Generator(schema, random.Random(seed), unique)
-
-    types = resource_types(gen)
-    candidates = [t for t in types if not allowed or t in allowed]
-    if not candidates:
-        sys.exit(f"no resource types to generate from (allowed={sorted(allowed)})")
-
-    rtype = gen.rng.choice(sorted(candidates))
-    gen.rtype = rtype
-    instance = gen.gen(resource_element(gen, types[rtype]), 0)
-
-    return {
-        # Same shape as the curated configs, so targets deriving workspace paths from it still work.
-        "bundle": {"name": f"test-bundle-{unique}"},
-        "resources": {rtype: {f"fuzz_{rtype}_{seed}": instance}},
-    }
 
 
 def to_yaml(obj, indent=0, list_item=False):
