@@ -9,8 +9,8 @@ export INPUT_CONFIG=""
 
 source "$INVARIANT_DIR/script.prepare"
 
-# The config comes from the mutator rather than configs/, so there is nothing to render. validate
-# runs here as an isolated panic surface, and rejects an invalid config before the target's deploy.
+# The mutator writes the config; there is nothing to render from configs/. validate runs here as
+# an isolated panic surface, and rejects an invalid config before the target's deploy.
 invariant_render() {
     # Stage the fixtures the mutator's file_path/source_code_path fields point at.
     cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
@@ -24,8 +24,8 @@ invariant_render() {
 
     # A destructive mutation can delete a field the schema marks required. validate only warns, so
     # such a config still deploys under terraform while the direct engine refuses it -- a difference
-    # in strictness on input the CLI already called incomplete, not a bug. Reject the seed here,
-    # while it still counts as rejected, rather than let the target deploy it and mark it accepted.
+    # in strictness on input the CLI already called incomplete. Reject the seed here so it counts
+    # as rejected.
     if grep -q 'required field .* is not set' LOG.validate; then
         return 1
     fi
@@ -35,8 +35,8 @@ invariant_render() {
 # every field, so the exact check false-positives. Substitute the one oracle independent of server
 # fidelity: two consecutive plans of the same state must be byte-identical.
 #
-# Compared against 0 rather than emptiness: `FUZZ_CHECK_DRIFT= task test-fuzz` would be re-defaulted
-# to 1 by the task's ${FUZZ_CHECK_DRIFT:-1}, so the repro passes an explicit 0.
+# Compared against 0: `FUZZ_CHECK_DRIFT= task test-fuzz` would be re-defaulted to 1 by the
+# task's ${FUZZ_CHECK_DRIFT:-1}, so the repro passes an explicit 0.
 if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
     invariant_verify_no_drift() {
         set +e
