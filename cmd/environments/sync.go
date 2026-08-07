@@ -10,6 +10,8 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	libslocalenv "github.com/databricks/cli/libs/localenv"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +34,15 @@ env-owned sections are refreshed, user-owned content is preserved).`,
 	// The target is selected via flags; reject stray positional args rather than
 	// silently ignoring them.
 	cmd.Args = cobra.NoArgs
-	cmd.PreRunE = root.MustWorkspaceClient
+	// This command resolves its own compute target and only consults the bundle as
+	// an optional source of bundle.cluster_id (see bundleTarget). Skip bundle-based
+	// auth configuration in the shared PreRunE so a malformed databricks.yml (e.g.
+	// two targets marked default) can't fail the command before it runs; the fallback
+	// bundle read in bundleTarget swallows such errors and falls through to E_NO_TARGET.
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+		return root.MustWorkspaceClient(cmd, args)
+	}
 	addComputeFlags(cmd)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		return runPipeline(cmd)
@@ -175,7 +185,24 @@ func runPipeline(cmd *cobra.Command) error {
 //
 // TODO: extend once bundle config exposes a serverless field at the bundle level.
 func bundleTarget(cmd *cobra.Command) libslocalenv.BundleTarget {
+	// Load the bundle in an isolated diagnostics context: the bundle is only an
+	// optional source of cluster_id here, so a malformed databricks.yml must not
+	// surface as a fatal command error. Any load error is logged for debugging and
+	// treated as "no bundle target", so the pipeline falls through to E_NO_TARGET
+	// (which tells the user to pass an explicit --cluster-id/--serverless-version/etc).
+	orig := cmd.Context()
+	ctx := logdiag.IsolatedContext(orig)
+	// Collect (buffer) diagnostics instead of rendering them: an isolated context
+	// still prints each diagnostic to stderr unless collection is on, and we want a
+	// bundle load error to be silent (debug-logged) on this optional fallback path.
+	logdiag.SetCollect(ctx, true)
+	cmd.SetContext(ctx)
+	defer cmd.SetContext(orig)
 	b := root.TryConfigureBundle(cmd)
+	if logdiag.HasError(ctx) {
+		log.Debugf(ctx, "ignoring bundle for cluster_id fallback: %s", logdiag.GetFirstErrorSummary(ctx))
+		return libslocalenv.BundleTarget{Selected: false}
+	}
 	if b == nil {
 		return libslocalenv.BundleTarget{Selected: false}
 	}
