@@ -75,8 +75,29 @@ func getDependsOnTaskKey(x jobs.TaskDependency) (string, string) {
 	return "task_key", x.TaskKey
 }
 
+func getWebhookKey(x jobs.Webhook) (string, string) {
+	return "id", x.Id
+}
+
+// The Jobs API returns webhook_notifications.on_* in an arbitrary order, so
+// diff them by id to avoid a phantom diff that never converges.
+var webhookNotificationEvents = []string{
+	"on_start",
+	"on_success",
+	"on_failure",
+	"on_duration_warning_threshold_exceeded",
+	"on_streaming_backlog_exceeded",
+}
+
+// webhook_notifications appears at the job, task, and for_each task levels.
+var webhookNotificationParents = []string{
+	"webhook_notifications",
+	"tasks[*].webhook_notifications",
+	"tasks[*].for_each_task.task.webhook_notifications",
+}
+
 func (*ResourceJob) KeyedSlices() map[string]any {
-	return map[string]any{
+	result := map[string]any{
 		"tasks":                                  getTaskKey,
 		"parameters":                             getParameterName,
 		"job_clusters":                           getJobClusterKey,
@@ -84,6 +105,12 @@ func (*ResourceJob) KeyedSlices() map[string]any {
 		"tasks[*].depends_on":                    getDependsOnTaskKey,
 		"tasks[*].for_each_task.task.depends_on": getDependsOnTaskKey,
 	}
+	for _, parent := range webhookNotificationParents {
+		for _, event := range webhookNotificationEvents {
+			result[parent+"."+event] = getWebhookKey
+		}
+	}
+	return result
 }
 
 func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error) {

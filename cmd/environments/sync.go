@@ -3,20 +3,15 @@ package environments
 import (
 	"context"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/env"
 	libslocalenv "github.com/databricks/cli/libs/localenv"
 	"github.com/spf13/cobra"
 )
-
-// envConstraintSource is the environment variable that overrides the constraint
-// source with a full base URL (used e.g. by tests pointing at a local server).
-// When unset, the base URL is derived from the hosting repo via
-// libslocalenv.RepoConstraintBaseURL (which reads its own repo env var).
-const envConstraintSource = "DATABRICKS_LOCALENV_CONSTRAINT_SOURCE"
 
 func newSetupLocalCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -38,47 +33,89 @@ env-owned sections are refreshed, user-owned content is preserved).`,
 	// silently ignoring them.
 	cmd.Args = cobra.NoArgs
 	cmd.PreRunE = root.MustWorkspaceClient
-	addTargetFlags(cmd)
+	addComputeFlags(cmd)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		return runPipeline(cmd)
 	}
 	return cmd
 }
 
-// addTargetFlags adds the shared target and mode flags to a command.
-func addTargetFlags(cmd *cobra.Command) {
+// addComputeFlags adds the shared compute and mode flags to a command.
+func addComputeFlags(cmd *cobra.Command) {
 	cmd.Flags().String("cluster-id", "", "cluster ID to use as the compute target")
 	cmd.Flags().String("cluster-name", "", "cluster name to use as the compute target (resolved to an ID via the Clusters API)")
 	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. 5)")
-	cmd.Flags().String("job-id", "", "job ID to use as the compute target")
+	cmd.Flags().String("job-task", "", "job task to use as the compute target, as <job-id>.<task-key> (the task key is required)")
 	cmd.Flags().Bool("constraints-only", false, "apply the Python version and constraints without adding the databricks-connect dependency")
 	cmd.Flags().Bool("dry-run", false, "compute the plan without writing files or provisioning")
-	cmd.Flags().String("constraint-source-url", "", "URL for the constraint source (overrides "+envConstraintSource+")")
-	// Hide constraint-source-url from casual --help output; it is a power-user escape hatch.
-	_ = cmd.Flags().MarkHidden("constraint-source-url")
 	// The mutual exclusivity of the target flags is enforced in the pipeline's
 	// preflight (as E_USAGE) rather than via cmd.MarkFlagsMutuallyExclusive, so
 	// the conflict is reported through the phase/JSON contract the --output json
 	// consumer relies on, instead of a bare pre-RunE Cobra error.
 }
 
+// watchInterruptSignals cancels ctx on the first SIGINT (Ctrl-C) or SIGTERM (how
+// a supervisor, CI timeout, or VS Code stops the child), which propagates to the
+// uv subprocesses the pipeline spawns so they are reaped instead of orphaned
+// mid-provision. The CLI root installs no signal handler of its own.
+//
+// The returned stop function uninstalls the handler and joins the goroutine; the
+// caller must defer it.
+//
+// The handler must give the *second* signal back to the OS. signal.Notify (like
+// signal.NotifyContext, which wraps it) disables the default disposition for
+// SIGINT/SIGTERM for as long as the channel stays registered, so without the
+// signal.Stop below a second Ctrl-C is merely buffered and dropped: the user
+// would have no way to abort during the process group's SIGKILL grace window.
+// Stopping the relay as soon as the first signal lands restores SIG_DFL, so a
+// second signal terminates the CLI immediately. That matters more here than in
+// most commands because WithProcessGroup moves uv out of the foreground process
+// group, so the tty no longer delivers Ctrl-C to it directly — this handler is
+// the only delivery path.
+func watchInterruptSignals(ctx context.Context, cancel context.CancelFunc) func() {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		// Selecting on ctx.Done() too lets the goroutine exit on the normal (no
+		// signal) path rather than blocking on sigCh for the rest of the process:
+		// signal.Stop unregisters the channel but never closes it.
+		select {
+		case <-sigCh:
+			signal.Stop(sigCh)
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	return func() {
+		signal.Stop(sigCh)
+		// Wake the goroutine in case neither sigCh nor ctx.Done has fired.
+		cancel()
+		<-done
+	}
+}
+
 // runPipeline builds and runs the setup-local Pipeline.
 func runPipeline(cmd *cobra.Command) error {
-	ctx := cmd.Context()
+	ctx, cancel := context.WithCancel(cmd.Context())
+	defer cancel()
+	defer watchInterruptSignals(ctx, cancel)()
 
 	cluster, _ := cmd.Flags().GetString("cluster-id")
 	clusterName, _ := cmd.Flags().GetString("cluster-name")
 	serverless, _ := cmd.Flags().GetString("serverless-version")
-	job, _ := cmd.Flags().GetString("job-id")
+	jobTask, _ := cmd.Flags().GetString("job-task")
 	constraintsOnly, _ := cmd.Flags().GetBool("constraints-only")
 	check, _ := cmd.Flags().GetBool("dry-run")
-	constraintSource, _ := cmd.Flags().GetString("constraint-source-url")
 
-	targetFlags := libslocalenv.TargetFlags{
+	computeFlags := libslocalenv.ComputeFlags{
 		Cluster:     cluster,
 		ClusterName: clusterName,
 		Serverless:  serverless,
-		Job:         job,
+		JobTask:     jobTask,
 	}
 	// Flag validation (including mutual exclusivity) happens in the pipeline's
 	// preflight, so a conflict is reported as E_USAGE through the phase/JSON
@@ -89,7 +126,7 @@ func runPipeline(cmd *cobra.Command) error {
 		mode = libslocalenv.ModeConstraintsOnly
 	}
 
-	constraintBaseURL := resolveConstraintBaseURL(ctx, constraintSource)
+	constraintBaseURL := libslocalenv.ConstraintBaseURL(ctx)
 
 	projectDir, err := os.Getwd()
 	if err != nil {
@@ -102,12 +139,12 @@ func runPipeline(cmd *cobra.Command) error {
 	}
 	cacheDir = filepath.Join(cacheDir, "databricks", "localenv")
 
-	// The bundle is only a fallback: ResolveTarget consults it solely when no
-	// explicit --cluster-id/--cluster-name/--serverless-version/--job-id flag is set. Skip the bundle load
+	// The bundle is only a fallback: ResolveCompute consults it solely when no
+	// explicit --cluster-id/--cluster-name/--serverless-version/--job-task flag is set. Skip the bundle load
 	// entirely when a flag is present — it would otherwise re-run TryConfigureBundle
 	// (a second full load) and re-print any bundle load-time diagnostics for nothing.
 	var bt libslocalenv.BundleTarget
-	if cluster == "" && clusterName == "" && serverless == "" && job == "" {
+	if cluster == "" && clusterName == "" && serverless == "" && jobTask == "" {
 		bt = bundleTarget(cmd)
 	}
 
@@ -118,7 +155,7 @@ func runPipeline(cmd *cobra.Command) error {
 		ProjectDir:        projectDir,
 		ConstraintBaseURL: constraintBaseURL,
 		CacheDir:          cacheDir,
-		Flags:             targetFlags,
+		Flags:             computeFlags,
 		Compute:           sdkCompute{w: w},
 		Bundle:            bt,
 		PM:                libslocalenv.NewUvManager(),
@@ -126,21 +163,6 @@ func runPipeline(cmd *cobra.Command) error {
 
 	res, pipelineErr := p.Run(ctx)
 	return renderResult(ctx, cmd, res, pipelineErr)
-}
-
-// resolveConstraintBaseURL returns the constraint base URL using ordered precedence:
-// an explicit --constraint-source-url flag, then a full-URL override from
-// DATABRICKS_LOCALENV_CONSTRAINT_SOURCE, then the URL derived from the hosting repo
-// (libslocalenv.RepoConstraintBaseURL). All three may be unset, in which case it
-// returns "" and the pipeline reports the missing source at the fetch phase.
-func resolveConstraintBaseURL(ctx context.Context, flagValue string) string {
-	if flagValue != "" {
-		return flagValue
-	}
-	if v, ok := env.Lookup(ctx, envConstraintSource); ok && v != "" {
-		return v
-	}
-	return libslocalenv.RepoConstraintBaseURL(ctx)
 }
 
 // bundleTarget reads the active bundle (if any) and maps its compute configuration

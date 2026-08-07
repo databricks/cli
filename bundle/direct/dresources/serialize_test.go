@@ -67,6 +67,10 @@ func TestRoundtripFixtureStateType(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
 	for resourceType, resource := range SupportedResources {
+		// secrets are dropping value from state, so we skip it
+		if resourceType == "secrets" {
+			continue
+		}
 		adapter, err := NewAdapter(resource, resourceType, client)
 		require.NoError(t, err)
 

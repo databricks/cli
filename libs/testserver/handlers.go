@@ -209,6 +209,10 @@ func AddDefaultHandlers(server *Server) {
 		return Response{StatusCode: 404}
 	})
 
+	server.Handle("GET", "/api/2.0/fs/directories/{path...}", func(req Request) any {
+		return req.Workspace.FsListDirectory(req.Vars["path"])
+	})
+
 	server.Handle("HEAD", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		if req.Workspace.FileExists(path) {
@@ -224,6 +228,15 @@ func AddDefaultHandlers(server *Server) {
 		}
 
 		defer req.Workspace.LockUnlock()()
+
+		// The API rejects creating a directory where a file already exists; it is
+		// idempotent only over directories. Mirror that so callers observe the 409.
+		if _, isFile := req.Workspace.files[dirPath]; isFile {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": "The given path points to an existing file. This API does not support operations on files."},
+			}
+		}
 
 		// Create directory and all parent directories.
 		for dir := dirPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
@@ -242,6 +255,10 @@ func AddDefaultHandlers(server *Server) {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
 		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
+	})
+
+	server.Handle("DELETE", "/api/2.0/fs/files/{path...}", func(req Request) any {
+		return req.Workspace.FsDeleteFile(req.Vars["path"])
 	})
 
 	server.Handle("GET", "/api/2.0/fs/files/{path...}", func(req Request) any {
@@ -514,7 +531,7 @@ func AddDefaultHandlers(server *Server) {
 	// Schemas:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
+		return MapGetUC(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"], "Schema")
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/schemas", func(req Request) any {
@@ -596,7 +613,7 @@ func AddDefaultHandlers(server *Server) {
 	// Volumes:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+		return MapGetUC(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"], "Volume")
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req Request) any {
@@ -805,6 +822,30 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SecretsAclsDelete(req)
 	})
 
+	// Unity Catalog base endpoint (used for UC availability check):
+	server.Handle("GET", "/api/2.1/unity-catalog", func(req Request) any {
+		return map[string]any{
+			"metastore_id": "test-metastore-id",
+		}
+	})
+
+	// Unity Catalog Secrets:
+	server.Handle("POST", "/api/2.1/unity-catalog/secrets", func(req Request) any {
+		return req.Workspace.SecretsUcCreateSecret(req)
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcGetSecret(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcUpdateSecret(req)
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcDeleteSecret(req)
+	})
+
 	// Groups:
 	server.Handle("POST", "/api/2.0/preview/scim/v2/Groups", func(req Request) any {
 		return req.Workspace.GroupsCreate(req)
@@ -1010,7 +1051,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
+		return req.Workspace.VectorSearchIndexDelete(req.Vars["index_name"])
 	})
 
 	// Generic permissions endpoints

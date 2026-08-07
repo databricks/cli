@@ -6,7 +6,7 @@
   "ok": true,
   "mode": "constraints-only",
   "dryRun": true,
-  "target": {
+  "compute": {
     "source": "serverless",
     "serverlessVersion": "v4",
     "envKey": "serverless/serverless-v4"

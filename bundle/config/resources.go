@@ -44,6 +44,7 @@ type Resources struct {
 	VectorSearchEndpoints map[string]*resources.VectorSearchEndpoint `json:"vector_search_endpoints,omitempty"`
 	VectorSearchIndexes   map[string]*resources.VectorSearchIndex    `json:"vector_search_indexes,omitempty"`
 	InstancePools         map[string]*resources.InstancePool         `json:"instance_pools,omitempty"`
+	Secrets               map[string]*resources.Secret               `json:"secrets,omitempty"`
 }
 
 type ConfigResource interface {
@@ -129,6 +130,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
 		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
 		collectResourceMap(descriptions["instance_pools"], r.InstancePools),
+		collectResourceMap(descriptions["secrets"], r.Secrets),
 	}
 }
 
@@ -192,5 +194,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"postgres_synced_tables":  (&resources.PostgresSyncedTable{}).ResourceDescription(),
 		"vector_search_endpoints": (&resources.VectorSearchEndpoint{}).ResourceDescription(),
 		"vector_search_indexes":   (&resources.VectorSearchIndex{}).ResourceDescription(),
+		"secrets":                 (&resources.Secret{}).ResourceDescription(),
 	}
 }

@@ -38,10 +38,19 @@ type SshTunnelEvent struct {
 	// Whether the cluster was auto-started by the CLI.
 	AutoStartCluster bool `json:"auto_start_cluster,omitempty"`
 
+	// Whether a custom base environment was set via --base-environment.
+	// Only the presence is recorded: the flag value can be an env.yaml path
+	// or display name carrying PII, so the value itself is not logged.
+	HasBaseEnvironment bool `json:"has_base_environment,omitempty"`
+
 	// Time in milliseconds spent starting the SSH server.
 	// Zero if server was already running.
 	ServerStartTimeMs int64 `json:"server_start_time_ms"`
 
 	// Whether the connection was successful.
 	IsSuccess bool `json:"is_success,omitempty"`
+
+	// Whether a serverless usage policy was set via --usage-policy-id.
+	// Only the presence is recorded, not the policy ID itself.
+	HasUsagePolicy bool `json:"has_usage_policy,omitempty"`
 }

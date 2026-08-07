@@ -56,6 +56,12 @@ type IResource interface {
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
+	// [Optional] IsEmptyState reports that newState describes no resource at all: the planner
+	// omits the node instead of planning a create, and apply drops the state entry instead of
+	// persisting one, so both engines converge on "this node does not exist".
+	// Example: func (*ResourceGrants) IsEmptyState(state *GrantsState) bool
+	IsEmptyState(newState any) bool
+
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
 	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
@@ -83,6 +89,13 @@ type IResource interface {
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
 	KeyedSlices() map[string]any
+
+	// [Optional] IsGone reports whether a remote resource should be treated as
+	// already-deleted when planning a delete. Use for backends whose DELETE is
+	// asynchronous and leaves the resource in a transient terminal-teardown state
+	// (returned by GET, not 404) that rejects a second DELETE.
+	// Example: func (*ResourceApp) IsGone(remote *AppRemote) bool
+	IsGone(remoteState any) bool
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -96,6 +109,7 @@ type Adapter struct {
 	doCreate     *calladapt.BoundCaller
 
 	// Optional:
+	isEmptyState       *calladapt.BoundCaller
 	doUpdate           *calladapt.BoundCaller
 	doUpdateWithID     *calladapt.BoundCaller
 	waitAfterCreate    *calladapt.BoundCaller
@@ -103,6 +117,7 @@ type Adapter struct {
 	waitAfterDelete    *calladapt.BoundCaller
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
+	isGone             *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
@@ -128,6 +143,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		doRefresh:               nil,
 		doDelete:                nil,
 		doCreate:                nil,
+		isEmptyState:            nil,
 		doUpdate:                nil,
 		doUpdateWithID:          nil,
 		doResize:                nil,
@@ -135,6 +151,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		waitAfterUpdate:         nil,
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
+		isGone:                  nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -196,6 +213,11 @@ func (a *Adapter) initMethods(resource any) error {
 
 	// Optional methods with varying signatures:
 
+	a.isEmptyState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IsEmptyState")
+	if err != nil {
+		return err
+	}
+
 	a.doUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoUpdate")
 	if err != nil {
 		return err
@@ -227,6 +249,11 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	a.doResize, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoResize")
+	if err != nil {
+		return err
+	}
+
+	a.isGone, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IsGone")
 	if err != nil {
 		return err
 	}
@@ -299,6 +326,10 @@ func (a *Adapter) validate() error {
 	}
 	validations = append(validations, "DoCreate remoteState return", a.doCreate.OutTypes[1], remoteType)
 
+	if a.isEmptyState != nil {
+		validations = append(validations, "IsEmptyState newState", a.isEmptyState.InTypes[0], stateType)
+	}
+
 	// Validate DoUpdate: must return (remoteType, error) if implemented
 	if a.doUpdate != nil {
 		validations = append(validations, "DoUpdate newState", a.doUpdate.InTypes[2], stateType)
@@ -310,6 +341,10 @@ func (a *Adapter) validate() error {
 
 	if a.doResize != nil {
 		validations = append(validations, "DoResize newState", a.doResize.InTypes[2], stateType)
+	}
+
+	if a.isGone != nil {
+		validations = append(validations, "IsGone remoteState", a.isGone.InTypes[0], remoteType)
 	}
 
 	if a.doUpdateWithID != nil {
@@ -452,6 +487,19 @@ func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, erro
 	return id, remoteState, nil
 }
 
+// IsEmptyState reports whether newState describes no resource; false if not implemented.
+func (a *Adapter) IsEmptyState(newState any) (bool, error) {
+	if a.isEmptyState == nil {
+		return false, nil
+	}
+
+	outs, err := a.isEmptyState.Call(newState)
+	if err != nil {
+		return false, err
+	}
+	return outs[0].(bool), nil
+}
+
 // HasDoUpdate returns true if the resource implements DoUpdate method.
 func (a *Adapter) HasDoUpdate() bool {
 	return a.doUpdate != nil
@@ -562,6 +610,19 @@ func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathN
 // If the resource doesn't implement KeyedSlices, returns nil.
 func (a *Adapter) KeyedSlices() map[string]any {
 	return a.keyedSlices
+}
+
+// IsGone reports whether the remote state represents an already-deleted resource
+// for planning purposes. Resources that don't implement IsGone are never gone.
+func (a *Adapter) IsGone(remoteState any) bool {
+	if a.isGone == nil {
+		return false
+	}
+	outs, err := a.isGone.Call(remoteState)
+	if err != nil {
+		return false
+	}
+	return outs[0].(bool)
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

@@ -164,8 +164,8 @@ var UpdateMaskFields = []string{
 	"resources",
 	"user_api_scopes",
 	"compute_size",
-	// "compute_min_instances", // TODO: add back when update APIs correctly support it
-	// "compute_max_instances", // TODO: add back when update APIs correctly support it
+	"compute_min_instances",
+	"compute_max_instances",
 	"git_repository",
 	"telemetry_export_destinations",
 }
@@ -306,6 +306,21 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
 	return err
+}
+
+// IsGone treats a DELETING app as already-deleted. The Apps DELETE is
+// fire-and-forget: it returns success while the app sits in
+// ComputeState=DELETING for up to ~20 minutes, and a GET during that window
+// returns the app (not 404), so callers cannot rely on IsMissing. A second
+// DELETE while DELETING is rejected with 400, so without this the delete/destroy
+// path is not idempotent (acceptance/bundle/invariant/{delete,destroy}_idempotent).
+// Consulted both at plan time (bundle_plan.go) and after a failed apply-time
+// delete (apply.go deleteConfirmedGone), which covers saved-plan deploys where
+// the app enters DELETING only after the plan was computed.
+// Still uncovered: a DELETING app hit during a normal deploy/update (not a
+// delete) produces a spurious update/skip because plan/apply do not special-case it there.
+func (*ResourceApp) IsGone(remote *AppRemote) bool {
+	return remote.ComputeStatus != nil && remote.ComputeStatus.State == apps.ComputeStateDeleting
 }
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {

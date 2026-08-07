@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -163,6 +164,102 @@ func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
 				assert.Equal(t, deployplan.ReasonBackendDefault, reason)
 			} else {
 				assert.Empty(t, reason)
+			}
+		})
+	}
+}
+
+// A field present in StateType but absent from RemoteType (input-only, e.g. external
+// locations' skip_validation) reads back nil, so a coincidental new == remote must NOT
+// trip RemoteAlreadySet — that would skip a real local change. A field present in RemoteType
+// (jobs' max_concurrent_runs) is not affected.
+func TestIsFieldMissingInRemote(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	tests := []struct {
+		resource string
+		path     string
+		expected bool
+	}{
+		{"external_locations", "skip_validation", true},
+		{"jobs", "max_concurrent_runs", false},
+		{"jobs", "name", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.resource+"."+tt.path, func(t *testing.T) {
+			adapter, ok := adapters[tt.resource]
+			require.True(t, ok)
+			path, err := structpath.ParsePath(tt.path)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, isFieldMissingInRemote(adapter, path))
+		})
+	}
+}
+
+// TestRemoteAlreadySetGuards drives addPerFieldActions directly to pin the two guards that
+// keep the RemoteAlreadySet shortcut from swallowing a real local change when the remote
+// value is fabricated (read back as a fixed nil/zero rather than the true remote value):
+//   - a field declared ignore_remote_changes (present in RemoteType, e.g. pipelines' run_as)
+//   - a field absent from RemoteType (missing_in_remote, e.g. external_locations' skip_validation)
+//
+// In both cases a genuine local change (old != new) that coincidentally makes new == remote
+// must still classify as Update, not Skip/remote_already_set.
+func TestRemoteAlreadySetGuards(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	runAs := &pipelines.RunAs{UserName: "someone@example.test"}
+
+	tests := []struct {
+		name           string
+		resource       string
+		field          string
+		ch             *deployplan.ChangeDesc
+		expectedAction deployplan.ActionType
+		expectedReason string
+	}{
+		{
+			// ignore_remote_changes guard: run_as read back nil, config changed A -> B.
+			name:           "ignore_remote_changes real local change",
+			resource:       "pipelines",
+			field:          "run_as",
+			ch:             &deployplan.ChangeDesc{Old: runAs, New: nil, Remote: nil},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// missing_in_remote guard: skip_validation absent from RemoteType (remote nil),
+			// config unset the field it previously had.
+			name:           "missing_in_remote real local change",
+			resource:       "external_locations",
+			field:          "skip_validation",
+			ch:             &deployplan.ChangeDesc{Old: true, New: nil, Remote: nil},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// Control: a real remote value that matches config is correctly skipped.
+			name:           "genuine remote_already_set is skipped",
+			resource:       "jobs",
+			field:          "max_concurrent_runs",
+			ch:             &deployplan.ChangeDesc{Old: 1, New: 2, Remote: 2},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonRemoteAlreadySet,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapter, ok := adapters[tt.resource]
+			require.True(t, ok)
+			changes := deployplan.Changes{tt.field: tt.ch}
+			err := addPerFieldActions(t.Context(), adapter, changes, nil)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedAction, tt.ch.Action)
+			if tt.expectedReason != "" {
+				assert.Equal(t, tt.expectedReason, tt.ch.Reason)
+			} else {
+				assert.NotEqual(t, deployplan.ReasonRemoteAlreadySet, tt.ch.Reason, "a real local change must not be skipped as remote_already_set")
 			}
 		})
 	}

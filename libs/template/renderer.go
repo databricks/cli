@@ -60,6 +60,11 @@ type renderer struct {
 	// an explicit {{skip}} directive for that directory in the template.
 	visitedDirs []string
 
+	// Slash-separated paths of the files persisted by persistToDisk, relative to
+	// the output directory. Only files that survived the skip patterns are
+	// recorded, so a file removed by a {{skip}} directive is not listed here.
+	persistedPaths []string
+
 	// [fs.FS] that holds the template's file tree.
 	srcFS fs.FS
 }
@@ -353,6 +358,7 @@ func (r *renderer) persistToDisk(ctx context.Context, out filer.Filer) error {
 		if err != nil {
 			return err
 		}
+		r.persistedPaths = append(r.persistedPaths, file.RelPath())
 	}
 
 	// Ensure all visited directories exist, preserving the template's directory structure.

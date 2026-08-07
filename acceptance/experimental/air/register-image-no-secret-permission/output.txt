@@ -1,0 +1,29 @@
+
+=== private image, but the user cannot create a secret scope to store credentials
+>>> [CLI] experimental air register-image nvcr.io/org/img:1.0
+Error: image "nvcr.io/org/img:1.0" requires credentials, and the credentials found in your local Docker config could not be stored: creating secret scope "docker-credentials-[USERNAME]" was denied (user does not have permission to create secret scopes). Ask a workspace admin for permission to create secret scopes
+
+Host:      [DATABRICKS_URL]
+Auth type: Personal Access Token (pat)
+
+Next steps:
+  - Verify you have the required permissions for this operation
+  - Check your identity: databricks auth describe
+  - Consider setting up a profile: databricks auth login --profile <name>
+
+Exit code: 1
+
+=== same failure as a JSON envelope
+>>> [CLI] experimental air register-image nvcr.io/org/img:1.0 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "REGISTRATION_FAILED",
+    "kind": "PERMANENT",
+    "message": "image \"nvcr.io/org/img:1.0\" requires credentials, and the credentials found in your local Docker config could not be stored: creating secret scope \"docker-credentials-[USERNAME]\" was denied (user does not have permission to create secret scopes). Ask a workspace admin for permission to create secret scopes",
+    "retryable": false
+  }
+}
+
+Exit code: 1

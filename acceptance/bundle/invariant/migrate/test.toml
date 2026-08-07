@@ -8,6 +8,7 @@ EnvMatrixExclude.no_job_run = ["INPUT_CONFIG=job_run.yml.tmpl"]
 
 # Error: Catalog resources are only supported with direct deployment mode
 EnvMatrixExclude.no_catalog = ["INPUT_CONFIG=catalog.yml.tmpl"]
+EnvMatrixExclude.no_catalog_optional_fields = ["INPUT_CONFIG=catalog_optional_fields.yml.tmpl"]
 EnvMatrixExclude.no_external_location = ["INPUT_CONFIG=external_location.yml.tmpl"]
 # Genie spaces are direct-only too; the terraform deploy that seeds the migration fails for them.
 EnvMatrixExclude.no_genie_space = ["INPUT_CONFIG=genie_space.yml.tmpl"]

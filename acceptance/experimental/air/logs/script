@@ -1,0 +1,29 @@
+title "logs (text, completed run)"
+trace $CLI experimental air logs 123
+
+title "logs (json)"
+trace $CLI experimental air logs 123 -o json
+
+title "logs with --minutes"
+trace $CLI experimental air logs 123 --minutes 30
+
+title "logs with --lines"
+trace $CLI experimental air logs 123 --lines 1
+
+title "logs with --lines 0 prints nothing"
+trace $CLI experimental air logs 123 --lines 0
+
+title "logs from a specific retry"
+trace $CLI experimental air logs 123 --retry 0
+
+title "logs --lines and --minutes are mutually exclusive"
+errcode trace $CLI experimental air logs 123 --lines 100 --minutes 30
+
+title "logs --lines and --minutes are mutually exclusive (json)"
+errcode trace $CLI experimental air logs 123 --lines 100 --minutes 30 -o json
+
+title "invalid run id"
+errcode trace $CLI experimental air logs notanumber
+
+title "negative node"
+errcode trace $CLI experimental air logs 123 --node -1

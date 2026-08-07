@@ -1,6 +1,3 @@
-# This command does not deploy a bundle, so no engine matrix is needed.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
 # On Windows, Git Bash rewrites the leading-/ workspace paths passed to
 # `workspace mkdirs`/`import` into C:/... paths; disable that conversion.
 [Env]

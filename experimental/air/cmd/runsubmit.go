@@ -2,9 +2,9 @@ package aircmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -38,8 +38,30 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 	return strings.TrimPrefix(img, "CLIENT-GPU-")
 }
 
+// environmentDependencies resolves the user's declared dependencies as a flat
+// list to carry inline on the serverless environment's spec.dependencies: the
+// inline list directly, or the dependencies read from a requirements file
+// (resolved against the config's directory). For file-form deps it also returns
+// the version declared inside that file, which selects the runtime image since
+// top-level environment.version is not allowed there. Returns nil when none are
+// declared.
+func environmentDependencies(cfg *runConfig, configPath string) (deps []string, fileVersion string, err error) {
+	if deps, ok := cfg.inlineDependencies(); ok {
+		return deps, "", nil
+	}
+	if reqPath, ok := cfg.requirementsFile(); ok {
+		if !filepath.IsAbs(reqPath) {
+			reqPath = filepath.Join(filepath.Dir(configPath), reqPath)
+		}
+		return readRequirementsDependencies(reqPath)
+	}
+	return nil, "", nil
+}
+
 // buildSubmitPayload assembles the runs/submit payload. commandPath is the
-// workspace path of the uploaded command.sh; dlImage is the runtime channel.
+// workspace path of the uploaded command.sh; dlImage is the runtime channel;
+// usagePolicyID is the already-resolved policy id ("" when the run has none);
+// deps is the user's declared dependencies (nil when none are declared).
 //
 // max_retries is always sent (including 0) so the user's YAML value is honored:
 // setting it to 0 explicitly disables retries rather than falling back to the
@@ -47,7 +69,7 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 // omitempty so the wire form matches the Python CLI (which never emits a bare
 // "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
 // workload.
-func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapshotResult) jobs.SubmitRun {
+func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID string, snap snapshotResult, deps []string) jobs.SubmitRun {
 	task := jobs.AiRuntimeTask{
 		Experiment: cfg.ExperimentName,
 		Deployments: []jobs.DeploymentSpec{{
@@ -57,20 +79,7 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapsh
 				AcceleratorCount: cfg.Compute.NumAccelerators,
 			},
 		}},
-		// TEMP: CodeSourcePath was removed from jobs.AiRuntimeTask in SDK v0.160.0 and
-		// is expected to return in a later SDK bump. Until then the snapshot path
-		// (snap.CodeSourcePath) cannot be carried on the typed task. Re-wire it here
-		// once the field is regenerated.
-		// CodeSourcePath: snap.CodeSourcePath,
-		// TEMP: git_state_path / git_diff_path are intentionally NOT sent. The typed
-		// jobs.AiRuntimeTask (and its source proto, ai_runtime_task.proto) has no such
-		// fields, so the typed SDK path cannot carry them. This is safe today because
-		// nothing in the backend consumes those fields — the AI Runtime task proto
-		// never declared them, so even the Python CLI's raw-JSON values were dropped
-		// on deserialization. The git_state.json / git_diff.patch sidecars are still
-		// uploaded next to the tarball (see snapshot.go) for human inspection.
-		// If the backend later adds these fields to the proto, regenerate the SDK and
-		// wire snap.GitStatePath / snap.GitDiffPath back in here.
+		CodeSourcePath: snap.CodeSourcePath,
 	}
 	if cfg.MLflowRunName != nil {
 		task.MlflowRun = *cfg.MLflowRunName
@@ -93,13 +102,24 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage string, snap snapsh
 		ForceSendFields: []string{"MaxRetries"},
 	}
 
+	// Carry the user's declared deps inline on spec.dependencies; the AI Runtime
+	// backend installs them via --deps-config. The SDK marshaler drops nil and empty
+	// slices, so a no-deps run omits the key.
+	envSpec := &compute.Environment{EnvironmentVersion: dlImage}
+	if len(deps) > 0 {
+		envSpec.Dependencies = deps
+	}
+
 	return jobs.SubmitRun{
-		RunName:        cfg.ExperimentName,
+		RunName: cfg.ExperimentName,
+		// budget_policy_id matches what the Python CLI and `ssh connect` send;
+		// usage_policy_id is the newer alias for the same thing on SubmitRun.
+		BudgetPolicyId: usagePolicyID,
 		TimeoutSeconds: cfg.timeoutSeconds(),
 		Tasks:          []jobs.SubmitTask{st},
 		Environments: []jobs.JobEnvironment{{
 			EnvironmentKey: aiRuntimeEnvironmentKey,
-			Spec:           &compute.Environment{EnvironmentVersion: dlImage},
+			Spec:           envSpec,
 		}},
 	}
 }
@@ -125,14 +145,31 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
 // returns the new run_id and its dashboard URL.
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string) (int64, string, error) {
-	// Resolving usage_policy_name to a budget policy id is not ported yet; reject
-	// rather than silently drop.
-	if cfg.UsagePolicyName != nil {
-		return 0, "", errors.New("usage_policy_name is not yet supported")
+	// Resolve the idempotency token first so a bad key fails before any upload,
+	// and before the policy lookup below spends a round trip on it.
+	token, err := submitToken(idempotencyKey, cfg)
+	if err != nil {
+		return 0, "", err
 	}
 
-	// Resolve the idempotency token first so a bad key fails before any upload.
-	token, err := submitToken(idempotencyKey, cfg)
+	// Resolve the usage policy to its id next, so a bad name fails fast with a
+	// clear (caller-fixable) message before we upload any artifacts. Validation
+	// guarantees name and id are mutually exclusive: a literal id is used as-is, a
+	// name is resolved against the workspace.
+	usagePolicyID := ""
+	if cfg.UsagePolicyID != nil {
+		usagePolicyID = strings.TrimSpace(*cfg.UsagePolicyID)
+	}
+	if cfg.UsagePolicyName != nil {
+		usagePolicyID, err = resolveUsagePolicyIDByName(ctx, w, *cfg.UsagePolicyName)
+		if err != nil {
+			return 0, "", err
+		}
+	}
+
+	// Resolve dependencies before any upload too, so a bad requirements file fails
+	// fast without leaving orphaned artifacts in the workspace.
+	deps, fileVersion, err := environmentDependencies(cfg, configPath)
 	if err != nil {
 		return 0, "", err
 	}
@@ -167,20 +204,25 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
-	// Package and upload the code snapshot, if any. The resulting paths ride on the
-	// ai_runtime_task; a run with no code_source leaves them empty. Snapshot is the
-	// only code_source type; guard against a nil block so snapshotCodeSource never
-	// dereferences a missing snapshot.
+	// Package and upload the code snapshot, if any, via DABs' artifact-upload
+	// plumbing; the remote code_source_path rides the ai_runtime_task. A run with no
+	// code_source leaves it empty. Snapshot is the only code_source type.
 	var snap snapshotResult
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
-		snap, err = snapshotCodeSource(ctx, w, cfg.CodeSource.Snapshot, configPath, base, funcDir)
+		// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
+		snap, err = snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, fc, funcDir)
 		if err != nil {
 			return 0, "", err
 		}
 	}
 
-	runtimeVersion, _ := cfg.runtimeVersion()
-	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), snap)
+	// Top-level environment.version wins; for file-form deps it is disallowed, so
+	// fall back to the version declared inside the requirements file.
+	runtimeVersion, ok := cfg.runtimeVersion()
+	if !ok {
+		runtimeVersion = fileVersion
+	}
+	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
 
 	// Submit returns as soon as the run is created; we don't wait for it to finish.

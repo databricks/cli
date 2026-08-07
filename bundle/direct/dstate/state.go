@@ -16,9 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/google/uuid"
 )
@@ -130,10 +128,7 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
-	// Redact sensitive fields before persisting: secrets must not appear on disk
-	// in plaintext. The original struct is not modified; the plan uses the
-	// unredacted in-memory value for API calls.
-	jsonMessage, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
+	jsonMessage, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
+	localenv "github.com/databricks/cli/libs/localenv"
 	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -70,18 +72,21 @@ func (c sdkCompute) GetClusterByName(ctx context.Context, name string) (string, 
 	}
 }
 
-// GetJobSparkVersion inspects the job's configuration to determine compute type.
+// JobTaskEnvironment resolves a single job task's compute to an environment.
 //
-// A job is considered serverless when it has non-empty Environments (JobEnvironment
-// entries), which signals the Databricks serverless runtime. A job with classic compute
-// uses JobClusters; we read SparkVersion from the first job cluster's NewCluster spec.
+// A job can bind multiple tasks to different serverless environment versions, so
+// the target is a specific task, not the whole job. taskKey selects it:
+//   - an empty taskKey is an enumerate request — it returns *localenv.ErrTaskKeyRequired
+//     carrying the job's task keys, so the caller emits an actionable E_USAGE;
+//   - an unknown taskKey returns an error listing the available keys.
 //
-// Task-level compute (tasks[].new_cluster / tasks[].existing_cluster_id with no
-// job-level job_clusters) is not resolved here: it may vary per task and an
-// existing_cluster_id would need a second lookup, which is out of scope for the
-// initial job support. Such a job returns an actionable error rather than a wrong
-// guess; use --cluster-id or --serverless-version explicitly instead.
-func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (sparkVersion string, isServerless bool, version string, err error) {
+// A serverless task binds an environment_key to one of the job's environments;
+// its version is read directly from that environment's spec (no fallback). A
+// classic task resolves from its new_cluster, its job_cluster_key (a shared
+// job_clusters entry), or its existing_cluster_id (via the Clusters API). A
+// for_each_task is unwrapped to its nested task, whose compute is resolved the
+// same way.
+func (c sdkCompute) JobTaskEnvironment(ctx context.Context, jobID, taskKey string) (sparkVersion string, isServerless bool, version string, err error) {
 	id, err := strconv.ParseInt(jobID, 10, 64)
 	if err != nil {
 		return "", false, "", fmt.Errorf("invalid job ID %q: must be an integer: %w", jobID, err)
@@ -91,54 +96,91 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 	if err != nil {
 		return "", false, "", fmt.Errorf("get job %d: %w", id, err)
 	}
-
 	if job.Settings == nil {
 		return "", false, "", fmt.Errorf("job %d has no settings", id)
 	}
 
-	// A job that declares both serverless environments and classic job clusters is
-	// ambiguous: its tasks can run on different compute, so there is no single
-	// correct local environment to provision. Refuse rather than guess serverless.
-	if len(job.Settings.Environments) > 0 && len(job.Settings.JobClusters) > 0 {
-		return "", false, "", fmt.Errorf("job %d has both serverless environments and job clusters; pass --cluster-id or --serverless-version explicitly to disambiguate", id)
+	taskKeys := make([]string, 0, len(job.Settings.Tasks))
+	for _, t := range job.Settings.Tasks {
+		taskKeys = append(taskKeys, t.TaskKey)
 	}
 
-	// Serverless jobs have Environments populated; classic compute uses JobClusters.
-	if len(job.Settings.Environments) > 0 {
-		// The serverless environment version (e.g. "4") is recorded on the job's
-		// environment spec, unlike the bundle path where it is unavailable. Return
-		// it so ResolveTarget pins the matching serverless-vN instead of defaulting
-		// to v5. An empty version (older jobs) falls back to v5 in ResolveTarget.
-		version := environmentVersion(job.Settings.Environments[0])
-		// Tasks can reference any environment_key, so if the job's environments do
-		// not all share one version there is no single correct local environment
-		// (mirrors the job-cluster check below). Refuse rather than guess from the
-		// first. A pinned-vs-unpinned mix is also ambiguous, so compare raw values.
-		for _, e := range job.Settings.Environments[1:] {
-			if environmentVersion(e) != version {
-				return "", false, "", fmt.Errorf("job %d has serverless environments with differing versions; pass --serverless-version explicitly to disambiguate", id)
-			}
-		}
-		return "", true, version, nil
+	// No task key given: ask the caller to pick one, listing what is available.
+	// This is a usage error, not a resolve failure — see ResolveCompute.
+	if taskKey == "" {
+		return "", false, "", &localenv.ErrTaskKeyRequired{JobID: jobID, TaskKeys: taskKeys}
 	}
 
-	if len(job.Settings.JobClusters) > 0 {
-		sv := job.Settings.JobClusters[0].NewCluster.SparkVersion
-		if sv == "" {
-			return "", false, "", fmt.Errorf("could not determine compute for job %d: first job cluster has no spark_version", id)
+	var task *jobs.Task
+	for i := range job.Settings.Tasks {
+		if job.Settings.Tasks[i].TaskKey == taskKey {
+			task = &job.Settings.Tasks[i]
+			break
 		}
-		// Tasks can reference any job_cluster_key, so if the job's clusters do not
-		// all share one Spark version there is no single correct local environment.
-		// Refuse rather than silently provisioning for the first cluster.
-		for _, jc := range job.Settings.JobClusters[1:] {
-			if jc.NewCluster.SparkVersion != sv {
-				return "", false, "", fmt.Errorf("job %d has job clusters with differing spark_version; pass --cluster-id or --serverless-version explicitly to disambiguate", id)
+	}
+	if task == nil {
+		return "", false, "", fmt.Errorf("job %s has no task %q (available: %s)", jobID, taskKey, strings.Join(taskKeys, ", "))
+	}
+
+	// A for_each_task wraps the real per-iteration task: its compute
+	// (environment_key / new_cluster / existing_cluster_id / job_cluster_key)
+	// lives on the nested task, not the outer one. Resolve against that.
+	if task.ForEachTask != nil {
+		task = &task.ForEachTask.Task
+	}
+
+	return c.resolveTaskCompute(ctx, job.Settings, task, jobID, taskKey)
+}
+
+// resolveTaskCompute resolves one task's compute to an environment. It reads the
+// serverless environment version directly (no fallback) or the classic cluster's
+// Spark version, consulting the job-level environments and job_clusters the task
+// references by key.
+func (c sdkCompute) resolveTaskCompute(ctx context.Context, settings *jobs.JobSettings, task *jobs.Task, jobID, taskKey string) (sparkVersion string, isServerless bool, version string, err error) {
+	// Serverless task: it references one of the job's environments by key; the
+	// version lives on that environment's spec and is used directly.
+	if task.EnvironmentKey != "" {
+		for _, e := range settings.Environments {
+			if e.EnvironmentKey == task.EnvironmentKey {
+				v := environmentVersion(e)
+				if v == "" {
+					return "", false, "", fmt.Errorf("task %q of job %s binds environment %q, which records no environment version", taskKey, jobID, task.EnvironmentKey)
+				}
+				return "", true, v, nil
 			}
+		}
+		return "", false, "", fmt.Errorf("task %q of job %s references environment %q, which the job does not define", taskKey, jobID, task.EnvironmentKey)
+	}
+
+	// Classic task with an inline cluster spec.
+	if task.NewCluster != nil && task.NewCluster.SparkVersion != "" {
+		return task.NewCluster.SparkVersion, false, task.NewCluster.SparkVersion, nil
+	}
+
+	// Classic task referencing a shared job cluster by key: read that cluster's
+	// Spark version from the job's job_clusters (the common classic-task shape).
+	if task.JobClusterKey != "" {
+		for _, jc := range settings.JobClusters {
+			if jc.JobClusterKey == task.JobClusterKey {
+				if jc.NewCluster.SparkVersion == "" {
+					return "", false, "", fmt.Errorf("task %q of job %s uses job cluster %q, which has no spark_version", taskKey, jobID, task.JobClusterKey)
+				}
+				return jc.NewCluster.SparkVersion, false, jc.NewCluster.SparkVersion, nil
+			}
+		}
+		return "", false, "", fmt.Errorf("task %q of job %s references job cluster %q, which the job does not define", taskKey, jobID, task.JobClusterKey)
+	}
+
+	// Classic task pinned to an existing cluster: resolve its Spark version.
+	if task.ExistingClusterId != "" {
+		sv, cerr := c.GetClusterSparkVersion(ctx, task.ExistingClusterId)
+		if cerr != nil {
+			return "", false, "", fmt.Errorf("resolving existing cluster %s for task %q of job %s: %w", task.ExistingClusterId, taskKey, jobID, cerr)
 		}
 		return sv, false, sv, nil
 	}
 
-	return "", false, "", fmt.Errorf("could not determine compute for job %d from its environments or job clusters (task-level compute is not supported); pass --cluster-id or --serverless-version explicitly", id)
+	return "", false, "", fmt.Errorf("task %q of job %s has no serverless environment or resolvable cluster; pass --cluster-id or --serverless-version explicitly", taskKey, jobID)
 }
 
 // environmentVersion returns the serverless environment version recorded on a
@@ -146,10 +188,9 @@ func (c sdkCompute) GetJobSparkVersion(ctx context.Context, jobID string) (spark
 //
 // The version can arrive in either of two fields. environment_version is the
 // current one; client is its deprecated predecessor ("Use environment_version
-// instead") and is still what some jobs pin. Reading both means the v5 fallback
-// and the divergence guard observe whichever field actually carries the pin,
-// rather than treating a client-pinned job as unversioned. base_environment is
-// deliberately ignored: it is a path/ID, not a version.
+// instead") and is still what some jobs pin. Reading both means a client-pinned
+// task is not treated as unversioned. base_environment is deliberately ignored:
+// it is a path/ID, not a version.
 func environmentVersion(e jobs.JobEnvironment) string {
 	if e.Spec == nil {
 		return ""

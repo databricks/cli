@@ -3,20 +3,3 @@ EnvMatrix.READPLAN = ["", "1"]
 # Snapshot of pre-delete state used to re-run the delete on state that still
 # references the (now-gone) resources; may linger if the test fails mid-run.
 Ignore = [".databricks.backup"]
-
-# Badness: apps DoDelete is fire-and-forget (bundle/direct/dresources/app.go): after the
-# first DELETE the app sits in ComputeState=DELETING for up to ~20 minutes, and
-# a second DELETE against it returns 400 rather than 404. The CLI's plan/apply
-# does not special-case this transient state -- DoRead sees DELETING (not 404),
-# entry.Gone stays false, apply calls DoDelete, and the deploy errors out with:
-#
-#   Error: cannot delete resources.apps.foo: deleting id=app-<uuid>: Cannot
-#   delete app app-<uuid> as it is not terminal with state DELETING, and was
-#   updated less than 20 minutes ago. Please wait before trying again.
-#   (400 BAD_REQUEST)
-#
-# Reproduces 100% on aws-prod-ucws / azure-prod-ucws / gcp-prod-ucws and
-# locally with the DELETING transition modeled in libs/testserver/apps.go.
-# Re-enable once app delete becomes idempotent (either WaitAfterDelete polls to
-# terminal, or the plan/apply layer treats DELETING as effectively-Gone).
-EnvMatrixExclude.no_app = ["INPUT_CONFIG=app.yml.tmpl"]

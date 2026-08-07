@@ -48,7 +48,7 @@ type Pipeline struct {
 	ProjectDir        string
 	ConstraintBaseURL string
 	CacheDir          string
-	Flags             TargetFlags
+	Flags             ComputeFlags
 	Bundle            BundleTarget
 	Compute           ComputeClient
 	PM                PackageManager
@@ -82,6 +82,38 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	p.res.Phases = initialPhases()
 
 	if err := p.run(ctx); err != nil {
+		// A cancelled context means the user or parent interrupted us (SIGINT/
+		// SIGTERM). The phase that was running reports its own failure (e.g. uv
+		// sync exiting on the signal surfaces as E_PROVISION with "signal:
+		// terminated"), which misleads a --json consumer into thinking something
+		// broke. Reclassify to E_CANCELED here — the single funnel where ctx is in
+		// scope — keeping the recorded FailurePhase and diskMutated so the consumer
+		// still knows where we stopped and whether disk was touched.
+		//
+		// The phase's own error is kept as the wrapped cause rather than replaced:
+		// a real failure can race with the signal (uv sync failing on a dependency
+		// conflict while the user gives up and hits Ctrl-C), and that cause is the
+		// only diagnostic there is.
+		if ctx.Err() != nil && p.res.Error != nil {
+			// Snapshot the phase's error *before* overwriting Code/Msg below. uvFailure
+			// folds uv's stderr — the actual diagnostic (e.g. a dependency-conflict
+			// "no solution found") — into Msg, so wrapping only the inner .Err would
+			// drop it, leaving less than main in exactly the racing-failure case this
+			// is meant to preserve. Wrapping the whole original PipelineError keeps
+			// Msg (stderr and all) in the chain.
+			orig := &PipelineError{Code: p.res.Error.Code, Msg: p.res.Error.Msg, Err: p.res.Error.Err}
+			p.res.Error.Code = ErrCanceled
+			p.res.Error.Msg = "interrupted"
+			// Two %w verbs keep both the context error and the phase's original error
+			// matchable by errors.Is, on one line — errors.Join would embed a newline
+			// and break the single-line phase row text mode prints.
+			p.res.Error.Err = fmt.Errorf("%w; %w", ctx.Err(), orig)
+			// fail() already snapshotted the pre-reclassification text into the
+			// errored phase's Detail, which is what text mode prints. Re-sync it so
+			// text and --json agree on cancellation (see PipelineError.MarshalJSON).
+			p.syncFailureDetail()
+			return p.res, p.res.Error
+		}
 		return p.res, err
 	}
 	p.res.OK = true
@@ -98,7 +130,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// before any other work so the failure flows through the phase/JSON reporting
 	// (a plain Cobra mutual-exclusion error would print no command JSON object,
 	// which the --output json consumer needs).
-	if err := ValidateTargetFlags(p.Flags); err != nil {
+	if err := ValidateComputeFlags(p.Flags); err != nil {
 		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
 	}
 	// P0 supports only uv; any other detected manager is a clean, non-blaming exit.
@@ -126,13 +158,13 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: resolve — compute target → environment key.
-	target, err := p.resolve(ctx)
+	compute, err := p.resolve(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Phase: fetch — constraint artifact for the resolved env key.
-	c, err := p.fetch(ctx, target)
+	c, err := p.fetch(ctx, compute)
 	if err != nil {
 		return err
 	}
@@ -189,22 +221,22 @@ func (p *Pipeline) run(ctx context.Context) error {
 	return p.validate(ctx, pyMinor, dbcPin)
 }
 
-// resolve runs ResolveTarget and records the resolve phase.
-func (p *Pipeline) resolve(ctx context.Context) (*TargetInfo, error) {
-	target, err := ResolveTarget(ctx, p.Flags, p.Compute, p.Bundle)
+// resolve runs ResolveCompute and records the resolve phase.
+func (p *Pipeline) resolve(ctx context.Context) (*ComputeInfo, error) {
+	compute, err := ResolveCompute(ctx, p.Flags, p.Compute, p.Bundle)
 	if err != nil {
-		return nil, p.fail(PhaseResolve, false, asPipelineError(err, ErrResolve, "target resolution failed"))
+		return nil, p.fail(PhaseResolve, false, asPipelineError(err, ErrResolve, "compute resolution failed"))
 	}
-	p.res.Target = target
-	p.markOK(PhaseResolve, fmt.Sprintf("source=%s envKey=%s", target.Source, target.EnvKey))
-	return target, nil
+	p.res.Compute = compute
+	p.markOK(PhaseResolve, fmt.Sprintf("source=%s envKey=%s", compute.Source, compute.EnvKey))
+	return compute, nil
 }
 
 // fetch fetches constraints for the resolved target and records the fetch phase.
 // Under --dry-run the cache is not populated, so a dry run performs no disk writes
 // (an existing cache is still read for offline fallback).
-func (p *Pipeline) fetch(ctx context.Context, target *TargetInfo) (*Constraints, error) {
-	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, target.EnvKey, p.CacheDir, !p.Check)
+func (p *Pipeline) fetch(ctx context.Context, compute *ComputeInfo) (*Constraints, error) {
+	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, compute.EnvKey, p.CacheDir, !p.Check)
 	if err != nil {
 		// FetchConstraints classifies the cause: E_ENV_UNSUPPORTED for a missing
 		// key (404) versus E_FETCH for transport failure with no cache. Both are
@@ -472,6 +504,22 @@ func (p *Pipeline) fail(phase PhaseName, diskMutated bool, pe *PipelineError) er
 	}
 	p.res.Error = pe
 	return pe
+}
+
+// syncFailureDetail re-copies the recorded error's text into its phase's Detail.
+// fail() sets Detail when the failure happens; a caller that rewrites the error
+// afterwards (Run's E_CANCELED reclassification) must call this so text output —
+// which prints Detail — keeps agreeing with the --json error object.
+func (p *Pipeline) syncFailureDetail() {
+	if p.res.Error == nil {
+		return
+	}
+	for i := range p.res.Phases {
+		if p.res.Phases[i].Phase == p.res.Error.FailurePhase {
+			p.res.Phases[i].Detail = p.res.Error.Error()
+			return
+		}
+	}
 }
 
 // asPipelineError returns err as a *PipelineError if it already is one, otherwise

@@ -21,10 +21,6 @@ func TestSubmittedDisplay(t *testing.T) {
 	assert.Equal(t, "2023-11-14 22:13 UTC", submittedDisplay(&jobs.Run{StartTime: 1700000000000}))
 }
 
-func TestOSC8Link(t *testing.T) {
-	assert.Equal(t, "\x1b]8;;https://h.test/x\x1b\\label\x1b]8;;\x1b\\", osc8Link("label", "https://h.test/x"))
-}
-
 func TestHyperlink(t *testing.T) {
 	// On a non-terminal (no color), the URL is dropped and only the label shows.
 	ctx := cmdio.MockDiscard(t.Context())

@@ -144,10 +144,12 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	return diags
 }
 
-// warnForMissingGrantPrincipals warns for any grant that is missing a principal.
-// grants[*].principal is optional in the SDK (json:"principal,omitempty") but the
-// backend requires it. Grants exist on every securable, so match any resource type.
-func warnForMissingGrantPrincipals(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+// errorForInvalidGrants errors for grants the backend rejects or that never converge:
+// a missing principal is rejected, and an empty privileges list re-plans forever because
+// the backend drops principals with no privileges. Erroring here (rather than warning)
+// avoids a partial deploy where the securable is created before the grants call fails.
+// Grants exist on every securable, so match any resource type.
+func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	_, err := dyn.MapByPattern(
@@ -156,8 +158,16 @@ func warnForMissingGrantPrincipals(ctx context.Context, b *bundle.Bundle) diag.D
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			if isMissingOrEmptyString(v.Get("principal")) {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Warning,
+					Severity:  diag.Error,
 					Summary:   "grant principal is required",
+					Locations: v.Locations(),
+					Paths:     []dyn.Path{slices.Clone(p)},
+				})
+			}
+			if isMissingOrEmptySequence(v.Get("privileges")) {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "grant privileges is required",
 					Locations: v.Locations(),
 					Paths:     []dyn.Path{slices.Clone(p)},
 				})
@@ -186,12 +196,24 @@ func isMissingOrEmptyString(v dyn.Value) bool {
 	}
 }
 
+// isMissingOrEmptySequence reports whether v is unset, null, or an empty sequence.
+func isMissingOrEmptySequence(v dyn.Value) bool {
+	switch v.Kind() {
+	case dyn.KindInvalid, dyn.KindNil:
+		return true
+	case dyn.KindSequence:
+		return len(v.MustSequence()) == 0
+	default:
+		return false
+	}
+}
+
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := errorForMissingFields(ctx, b)
+	diags = diags.Extend(errorForInvalidGrants(ctx, b))
 	if diags.HasError() {
 		return diags
 	}
 	diags = diags.Extend(warnForMissingFields(ctx, b))
-	diags = diags.Extend(warnForMissingGrantPrincipals(ctx, b))
 	return diags
 }

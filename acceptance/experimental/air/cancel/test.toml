@@ -1,6 +1,3 @@
-# This command does not deploy a bundle, so no engine matrix is needed.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
 # The SDK occasionally probes host reachability with a HEAD request; stub it so
 # the test is deterministic.
 [[Server]]

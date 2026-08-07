@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+variables:
+  policy:
+    default: ""
+
+resources:
+  clusters:
+    my_cluster:
+      num_workers: 1
+      spark_version: 13.3.x-scala2.12
+      # The original bug: a variable resolves to "" and policy_id (omitempty) was
+      # force-sent, so the backend rejected it with "'' is not a valid cluster
+      # policy ID". It must now be dropped from the resolved config.
+      policy_id: ${var.policy}

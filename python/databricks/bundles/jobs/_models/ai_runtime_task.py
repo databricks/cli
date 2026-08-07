@@ -20,8 +20,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class AiRuntimeTask:
     """
-    :meta private: [EXPERIMENTAL]
-
     AiRuntimeTask: multi-node GPU compute task definition for Databricks AI
     Runtime workloads.
 
@@ -34,20 +32,25 @@ class AiRuntimeTask:
 
     experiment: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] MLflow experiment name for this run. If an experiment with this name
+    [Public Preview] MLflow experiment name for this run. If an experiment with this name
     already exists under the calling user, the run is appended to it;
     otherwise a new experiment is created. To target a specific MLflow
     storage location (for example, when running as a service principal), set
     `mlflow_experiment_directory`.
     """
 
-    deployments: VariableOrList[DeploymentSpec] = field(default_factory=list)
+    code_source_path: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Deployment specs for this task. Exactly one deployment is currently
+    [Private Preview] Workspace or UC volume path of the code-source archive, unpacked on
+    each node and exposed through `$CODE_SOURCE`. Set by first-party
+    tooling; not for direct callers.
+    """
+
+    deployments: VariableOrList[DeploymentSpec] = field(default_factory=list)
+    """
+    [Public Preview] Deployment specs for this task. Exactly one deployment is currently
     supported (a single entry where every node runs the same command); this
     is a current-Preview constraint. Role-split workloads (driver + worker,
     parameter server, separate eval node, etc.) with multiple entries are the
@@ -56,9 +59,7 @@ class AiRuntimeTask:
 
     mlflow_experiment_directory: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Optional workspace directory under which the MLflow experiment named in
+    [Public Preview] Optional workspace directory under which the MLflow experiment named in
     `experiment` is created. Must start with `/Workspace`. Set this when
     running as a service principal that has no default user directory; for
     regular users the experiment defaults to the user's home directory.
@@ -66,9 +67,7 @@ class AiRuntimeTask:
 
     mlflow_run: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Optional display name for the MLflow run created under `experiment`. If
+    [Public Preview] Optional display name for the MLflow run created under `experiment`. If
     omitted, MLflow generates a default name.
     """
 
@@ -85,20 +84,25 @@ class AiRuntimeTaskDict(TypedDict, total=False):
 
     experiment: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] MLflow experiment name for this run. If an experiment with this name
+    [Public Preview] MLflow experiment name for this run. If an experiment with this name
     already exists under the calling user, the run is appended to it;
     otherwise a new experiment is created. To target a specific MLflow
     storage location (for example, when running as a service principal), set
     `mlflow_experiment_directory`.
     """
 
-    deployments: VariableOrList[DeploymentSpecParam]
+    code_source_path: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Deployment specs for this task. Exactly one deployment is currently
+    [Private Preview] Workspace or UC volume path of the code-source archive, unpacked on
+    each node and exposed through `$CODE_SOURCE`. Set by first-party
+    tooling; not for direct callers.
+    """
+
+    deployments: VariableOrList[DeploymentSpecParam]
+    """
+    [Public Preview] Deployment specs for this task. Exactly one deployment is currently
     supported (a single entry where every node runs the same command); this
     is a current-Preview constraint. Role-split workloads (driver + worker,
     parameter server, separate eval node, etc.) with multiple entries are the
@@ -107,9 +111,7 @@ class AiRuntimeTaskDict(TypedDict, total=False):
 
     mlflow_experiment_directory: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Optional workspace directory under which the MLflow experiment named in
+    [Public Preview] Optional workspace directory under which the MLflow experiment named in
     `experiment` is created. Must start with `/Workspace`. Set this when
     running as a service principal that has no default user directory; for
     regular users the experiment defaults to the user's home directory.
@@ -117,9 +119,7 @@ class AiRuntimeTaskDict(TypedDict, total=False):
 
     mlflow_run: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Optional display name for the MLflow run created under `experiment`. If
+    [Public Preview] Optional display name for the MLflow run created under `experiment`. If
     omitted, MLflow generates a default name.
     """
 

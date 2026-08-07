@@ -1,0 +1,135 @@
+{
+  "apps": {
+    "my_app": {
+      "description": "",
+      "name": "test-app-direct",
+      "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files/app"
+    }
+  },
+  "clusters": {
+    "my_cluster": {
+      "autotermination_minutes": 60,
+      "aws_attributes": {
+        "availability": "SPOT"
+      },
+      "cluster_log_conf": {
+        "s3": {
+          "destination": "s3://test-bucket/logs"
+        }
+      },
+      "num_workers": 1,
+      "spark_version": "13.3.x-scala2.12"
+    }
+  },
+  "database_instances": {
+    "my_db_instance": {
+      "capacity": "CU_1",
+      "name": "test-db-instance"
+    }
+  },
+  "experiments": {
+    "my_experiment": {
+      "name": "/Users/[USERNAME]/test-experiment"
+    }
+  },
+  "jobs": {
+    "my_job": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "git_source": {
+        "git_branch": "main",
+        "git_provider": "gitHub",
+        "git_url": "https://example.com/repo"
+      },
+      "job_clusters": [
+        {
+          "job_cluster_key": "main",
+          "new_cluster": {
+            "aws_attributes": {
+              "availability": "SPOT"
+            },
+            "cluster_log_conf": {
+              "s3": {
+                "destination": "s3://test-bucket/logs"
+              }
+            },
+            "num_workers": 1,
+            "spark_version": "13.3.x-scala2.12"
+          }
+        }
+      ],
+      "max_concurrent_runs": 1,
+      "queue": {
+        "enabled": true
+      }
+    }
+  },
+  "models": {
+    "my_model": {
+      "name": "test-model"
+    }
+  },
+  "pipelines": {
+    "my_pipeline": {
+      "channel": "CURRENT",
+      "clusters": [
+        {
+          "aws_attributes": {
+            "availability": "SPOT"
+          },
+          "label": "default"
+        }
+      ],
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "libraries": [
+        {
+          "file": {
+            "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files/pipeline.py"
+          }
+        }
+      ],
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files"
+    }
+  },
+  "registered_models": {
+    "my_registered_model": {
+      "catalog_name": "main",
+      "name": "test-registered-model",
+      "schema_name": "default"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "main",
+      "name": "test-schema"
+    }
+  },
+  "sql_warehouses": {
+    "my_warehouse": {
+      "auto_stop_mins": 10,
+      "cluster_size": "2X-Small",
+      "enable_photon": true,
+      "max_num_clusters": 1,
+      "min_num_clusters": 1,
+      "name": "test-warehouse",
+      "spot_instance_policy": "COST_OPTIMIZED"
+    }
+  },
+  "volumes": {
+    "my_volume": {
+      "catalog_name": "main",
+      "name": "test-volume",
+      "schema_name": "default",
+      "volume_path": "/Volumes/main/default/test-volume",
+      "volume_type": "MANAGED"
+    }
+  }
+}

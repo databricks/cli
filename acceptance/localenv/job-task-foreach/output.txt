@@ -1,0 +1,13 @@
+
+>>> [CLI] environments setup-local --job-task 12345.fanout --dry-run
+preflight  ok  check
+resolve    ok  source=job envKey=serverless/serverless-v3
+fetch      ok  source=[DATABRICKS_URL]/serverless/serverless-v3/pyproject.toml fromCache=false
+merge      ok
+provision  ok
+validate   ok
+Plan: [TEST_TMP_DIR]/pyproject.toml
+  changed region: requires-python
+  changed region: tool.uv.constraint-dependencies
+  changed region: databricks-connect
+Check complete. No files were modified.

@@ -17,7 +17,9 @@ import (
 
 func TestBuildRequest_WireFormat(t *testing.T) {
 	// The backend expects camelCase warehouseId; this pins the wire format,
-	// not just the Go field values.
+	// not just the Go field values. source and enable_viz are always sent:
+	// the CLI tags its traffic (databricks_cli) and disables viz because a
+	// terminal cannot render charts.
 	b, err := json.Marshal(BuildRequest("What tables exist?", "abc123", ""))
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
@@ -26,8 +28,20 @@ func TestBuildRequest_WireFormat(t *testing.T) {
 			"role": "user",
 			"content": [{"type": "input_text", "text": "What tables exist?"}]
 		}],
-		"warehouseId": "abc123"
+		"warehouseId": "abc123",
+		"source": "databricks_cli",
+		"enable_viz": false
 	}`, string(b))
+}
+
+func TestBuildRequest_TagsSourceAndDisablesViz(t *testing.T) {
+	// enable_viz:false must always be on the wire (a plain false would be
+	// dropped by omitempty, letting the backend default viz on), and source
+	// tags CLI traffic for backend attribution.
+	b, err := json.Marshal(BuildRequest("q", "", ""))
+	require.NoError(t, err)
+	assert.Contains(t, string(b), `"source":"databricks_cli"`)
+	assert.Contains(t, string(b), `"enable_viz":false`)
 }
 
 func TestBuildRequest_OmitsEmptyWarehouse(t *testing.T) {

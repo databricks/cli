@@ -1,0 +1,12 @@
+Local = true
+Cloud = false
+RecordRequests = true
+
+# This test drives both engines itself (one bundle per engine via a per-deploy
+# DATABRICKS_BUNDLE_ENGINE), so pin the matrix to a single value to run once.
+# The value only selects the CI runner; the script sets the engine explicitly.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    ".databricks",
+]

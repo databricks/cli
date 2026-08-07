@@ -1,3 +1,7 @@
 Cloud = true
-Local = false
+Local = true
 RecordRequests = true
+
+# Local runs go through the proxy too, so one set of goldens covers it against both
+# a real workspace and the fake.
+Proxy = true
