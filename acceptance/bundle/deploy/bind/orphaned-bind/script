@@ -1,0 +1,2 @@
+# Import block references jobs.bar but only jobs.foo exists in resources
+trace musterr $CLI bundle plan

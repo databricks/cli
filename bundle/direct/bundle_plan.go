@@ -116,7 +116,11 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+//
+// bindConfig carries the target's declarative bind blocks; resources listed there
+// that are not yet in state are planned as Bind / BindAndUpdate instead of Create.
+// Pass an empty Bind when there is nothing to bind (e.g. destroy).
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, bindConfig config.Bind) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
 
 	err := b.init(client)
@@ -130,6 +134,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	}
 
 	b.Plan = plan
+
+	// Validate bind blocks against the full plan and state before walking the graph,
+	// then index them by resource key so the per-resource planning below can select
+	// Bind / BindAndUpdate for resources that are being bound for the first time.
+	bindIDByKey := map[string]string{}
+	if !bindConfig.IsEmpty() {
+		if !b.validateBindConfig(ctx, configRoot, bindConfig) {
+			return nil, errors.New("bind validation failed")
+		}
+		bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+			bindIDByKey["resources."+resourceType+"."+resourceName] = bindID
+		})
+	}
 
 	g, err := makeGraph(plan)
 	if err != nil {
@@ -215,6 +232,14 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// state files may still carry a malformed entry). Treat as missing
 		// and let the resource be re-created on this plan.
 		if !hasEntry || dbentry.ID == "" {
+			// A resource that is not in state but carries a bind block is imported
+			// rather than created: read the remote resource under the bound ID and
+			// plan a Bind / BindAndUpdate instead of a Create.
+			if bindID, ok := bindIDByKey[resourceKey]; ok {
+				entry.BindID = bindID
+				b.handleBindPlan(ctx, resourceKey, entry, adapter)
+				return !logdiag.HasError(ctx)
+			}
 			entry.Action = deployplan.Create
 			return true
 		}

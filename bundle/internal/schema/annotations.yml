@@ -1990,6 +1990,13 @@ targets:
     "artifacts":
       "description": |-
         The artifacts to include in the target deployment.
+    "bind":
+      "description": |-
+        The existing workspace resources to bind into bundle management for this target.
+      "$fields":
+        "id":
+          "description": |-
+            The ID of the existing workspace resource to bind.
     "bundle":
       "description": |-
         The bundle attributes when deploying to this target.

@@ -1,0 +1,13 @@
+
+>>> musterr [CLI] bundle validate
+Error: binding "jobs.permissions" is not supported
+
+"jobs.permissions" is not a supported resource type; bind is only supported for resources that can be defined under the resources block.
+
+Name: test-bind-permissions
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bind-permissions/default
+
+Found 1 error

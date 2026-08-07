@@ -1,0 +1,1 @@
+Ignore = [".databricks", "databricks.yml.bak", "databricks_conflict.yml"]

@@ -50,6 +50,32 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 }
 
+// Bind brings an existing workspace resource under bundle management by persisting
+// its ID to state, without modifying the remote resource.
+func (d *DeploymentUnit) Bind(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
+	err := db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", id, err)
+	}
+
+	log.Infof(ctx, "Bound %s id=%s", d.ResourceKey, id)
+	return nil
+}
+
+// BindAndUpdate binds an existing workspace resource and applies the configured
+// field changes to it. It defers to Update so the update goes through the same
+// DoUpdate retry and WaitAfterUpdate path as a normal update (async resources rely
+// on that hook).
+func (d *DeploymentUnit) BindAndUpdate(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
+	err := d.Update(ctx, db, id, newState, planEntry)
+	if err != nil {
+		return err
+	}
+
+	log.Infof(ctx, "Bound and updated %s id=%s", d.ResourceKey, id)
+	return nil
+}
+
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
 	var newID string
 	var remoteState any
