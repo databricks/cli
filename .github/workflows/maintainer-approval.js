@@ -430,6 +430,57 @@ async function upsertComment(github, owner, repo, prNumber, newBody) {
   });
 }
 
+// --- Approval check ---
+
+const CHECK_VERIFY_ATTEMPTS = 3;
+
+/**
+ * Create the maintainer-approval success check and confirm it took effect.
+ *
+ * checks.create can return 2xx yet leave the required "maintainer-approval"
+ * status stuck as "Expected" (yellow dot): the write is lost to GitHub
+ * eventual consistency while the workflow run itself still goes green. Because
+ * the pending path deliberately posts no check at all, nothing re-establishes
+ * it until an unrelated event happens to re-run this workflow, so the merge
+ * queue is silently blocked even though a maintainer approved (see PR #5868).
+ * Re-read the check from the head SHA after each create and retry until it is
+ * visible; fail the run if it never lands so the breakage surfaces loudly
+ * instead of blocking the merge with a green run.
+ */
+async function createApprovalCheck(github, checkParams, summary, core) {
+  const { owner, repo, head_sha: headSha, name } = checkParams;
+  const delayMs = Number(process.env.MAINTAINER_APPROVAL_VERIFY_DELAY_MS ?? 2000);
+
+  for (let attempt = 1; attempt <= CHECK_VERIFY_ATTEMPTS; attempt++) {
+    await github.rest.checks.create({
+      ...checkParams,
+      status: "completed",
+      conclusion: "success",
+      output: { title: name, summary },
+    });
+
+    const { data } = await github.rest.checks.listForRef({
+      owner, repo, ref: headSha, check_name: name,
+    });
+    if (data.check_runs.some(r => r.conclusion === "success")) {
+      return;
+    }
+
+    core.warning(
+      `${name} not visible on ${headSha} after create ` +
+      `(attempt ${attempt}/${CHECK_VERIFY_ATTEMPTS})`
+    );
+    if (attempt < CHECK_VERIFY_ATTEMPTS) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+
+  core.setFailed(
+    `${name} could not be set on ${headSha} after ${CHECK_VERIFY_ATTEMPTS} ` +
+    `attempts; re-run this workflow to unblock the merge`
+  );
+}
+
 // --- Main ---
 
 module.exports = async ({ github, context, core }) => {
@@ -475,12 +526,7 @@ module.exports = async ({ github, context, core }) => {
   if (maintainerApproval) {
     const approver = maintainerApproval.user.login;
     core.info(`Maintainer approval from @${approver}`);
-    await github.rest.checks.create({
-      ...checkParams,
-      status: "completed",
-      conclusion: "success",
-      output: { title: STATUS_CONTEXT, summary: `Approved by @${approver}` },
-    });
+    await createApprovalCheck(github, checkParams, `Approved by @${approver}`, core);
     await deleteMarkerComments(github, owner, repo, prNumber);
     return;
   }
@@ -493,12 +539,7 @@ module.exports = async ({ github, context, core }) => {
     );
     if (hasAnyApproval) {
       core.info(`Maintainer-authored PR approved by a reviewer.`);
-      await github.rest.checks.create({
-        ...checkParams,
-        status: "completed",
-        conclusion: "success",
-        output: { title: STATUS_CONTEXT, summary: "Approved (maintainer-authored PR)" },
-      });
+      await createApprovalCheck(github, checkParams, "Approved (maintainer-authored PR)", core);
       await deleteMarkerComments(github, owner, repo, prNumber);
       return;
     }
@@ -533,12 +574,7 @@ module.exports = async ({ github, context, core }) => {
   // the GitHub UI, which blocks the merge until approval is granted.
   if (result.allCovered && approverLogins.length > 0) {
     core.info("All ownership groups have per-path approval.");
-    await github.rest.checks.create({
-      ...checkParams,
-      status: "completed",
-      conclusion: "success",
-      output: { title: STATUS_CONTEXT, summary: "All ownership groups approved" },
-    });
+    await createApprovalCheck(github, checkParams, "All ownership groups approved", core);
     await deleteMarkerComments(github, owner, repo, prNumber);
     return;
   }
