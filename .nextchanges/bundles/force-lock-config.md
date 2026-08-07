@@ -1,0 +1,1 @@
+Fix `bundle.deployment.lock.force` being ignored. The `--force-lock` flag's default value overwrote the value configured in `databricks.yml`, so setting the field had no effect and a stale deployment lock could only be overridden with the flag. ([#6188](https://github.com/databricks/cli/pull/6188))

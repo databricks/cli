@@ -1,1 +1,0 @@
-Fixed `bundle generate` downloading notebooks found inside a folder without their file extension. They are now exported like top-level notebooks, so a Python notebook lands as `notebook.py` instead of an extensionless file ([#6144](https://github.com/databricks/cli/pull/6144)).
