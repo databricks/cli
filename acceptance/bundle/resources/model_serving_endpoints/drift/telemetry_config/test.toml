@@ -1,5 +1,0 @@
-RecordRequests = true
-
-# Direct engine only: the terraform provider types sampling_fraction as an integer while
-# the API takes a fraction in [0.0, 1.0], so a terraform deploy truncates 0.5 to 0.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

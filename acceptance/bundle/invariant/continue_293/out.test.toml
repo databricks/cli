@@ -23,6 +23,7 @@ EnvMatrix.INPUT_CONFIG = [
   "job_with_task.yml.tmpl",
   "model.yml.tmpl",
   "model_serving_endpoint.yml.tmpl",
+  "model_serving_endpoint_telemetry.yml.tmpl",
   "pipeline.yml.tmpl",
   "pipeline_allow_duplicate_names.yml.tmpl",
   "pipeline_apply_policy_default_values.yml.tmpl",
