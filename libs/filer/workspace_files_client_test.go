@@ -365,10 +365,12 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 			case permissionError:
 				assert.ErrorAs(t, err, &target)
 			case nil:
-				// passthrough — same APIError pointer
+				// passthrough — the underlying APIError stays inspectable,
+				// and the message names the file that failed to upload.
 				var aerr *apierr.APIError
 				require.ErrorAs(t, err, &aerr)
 				assert.Equal(t, tc.apiErr.StatusCode, aerr.StatusCode)
+				assert.Contains(t, err.Error(), "/dir/file.txt")
 			}
 		})
 	}

@@ -355,7 +355,10 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return permissionError{absPath, err}
 	}
 
-	return err
+	// Any other failure (e.g. a server-side error with an empty message) is
+	// surfaced with the target path so the user can tell which upload failed;
+	// %w keeps the original error inspectable by callers.
+	return fmt.Errorf("failed to upload %s: %w", absPath, err)
 }
 
 func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
