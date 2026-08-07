@@ -120,6 +120,37 @@ func TestPiConfigDir(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, override, dir)
 	})
+
+	t.Run("expands home in PI_CODING_AGENT_DIR override", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~/custom-agent")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "custom-agent"), dir)
+	})
+
+	t.Run("expands bare home in PI_CODING_AGENT_DIR override", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, home, dir)
+	})
+
+	t.Run("expands Windows home separator", func(t *testing.T) {
+		if runtime.GOOS != "windows" {
+			t.Skip("Windows-only path form")
+		}
+		t.Setenv("PI_CODING_AGENT_DIR", `~\custom-agent`)
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "custom-agent"), dir)
+	})
+
+	t.Run("preserves other tilde prefixes", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~other/custom-agent")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, "~other/custom-agent", dir)
+	})
 }
 
 func TestGooseConfigDir(t *testing.T) {
@@ -142,7 +173,9 @@ func TestGooseConfigDir(t *testing.T) {
 		t.Setenv("XDG_CONFIG_HOME", "")
 		dir, err := gooseConfigDir(ctx)
 		require.NoError(t, err)
-		if runtime.GOOS != "windows" {
+		if runtime.GOOS == "windows" {
+			assert.Equal(t, filepath.Join(home, "AppData", "Roaming", "Block", "goose", "config"), dir)
+		} else {
 			assert.Equal(t, filepath.Join(home, ".config", "goose"), dir)
 		}
 	})
@@ -150,11 +183,20 @@ func TestGooseConfigDir(t *testing.T) {
 	t.Setenv("GOOSE_PATH_ROOT", "")
 
 	if runtime.GOOS == "windows" {
-		appData := t.TempDir()
-		t.Setenv("APPDATA", appData)
-		dir, err := gooseConfigDir(ctx)
-		require.NoError(t, err)
-		assert.Equal(t, filepath.Join(appData, "Block", "goose", "config"), dir)
+		t.Run("honors APPDATA", func(t *testing.T) {
+			appData := t.TempDir()
+			t.Setenv("APPDATA", appData)
+			dir, err := gooseConfigDir(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, filepath.Join(appData, "Block", "goose", "config"), dir)
+		})
+
+		t.Run("defaults to USERPROFILE when APPDATA is unset", func(t *testing.T) {
+			t.Setenv("APPDATA", "")
+			dir, err := gooseConfigDir(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, filepath.Join(home, "AppData", "Roaming", "Block", "goose", "config"), dir)
+		})
 		return
 	}
 
@@ -164,6 +206,13 @@ func TestGooseConfigDir(t *testing.T) {
 		dir, err := gooseConfigDir(ctx)
 		require.NoError(t, err)
 		assert.Equal(t, filepath.Join(xdg, "goose"), dir)
+	})
+
+	t.Run("ignores relative XDG_CONFIG_HOME", func(t *testing.T) {
+		t.Setenv("XDG_CONFIG_HOME", "relative/config")
+		dir, err := gooseConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, ".config", "goose"), dir)
 	})
 
 	t.Run("defaults to ~/.config when XDG is unset", func(t *testing.T) {
