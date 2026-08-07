@@ -11,12 +11,12 @@ A seed is tied to schema iteration order, so adding a field moves every later dr
 import os
 import sys
 
-# Depth past which optional properties are no longer emitted, to keep configs from exploding.
+# Depth past which optional properties are dropped, to keep configs from exploding.
 MAX_DEPTH = 6
 
-# Hard cap on object/array nesting, which MAX_DEPTH leaves unbounded for required fields: a
-# required-only cycle (task -> for_each_task -> task) would exhaust the stack. Branch descent and
-# $ref chains are not counted.
+# Hard cap on object/array nesting (MAX_DEPTH leaves required fields unbounded): a required-only
+# cycle (task -> for_each_task -> task) would exhaust the stack. Branch descent and $ref chains
+# are not counted.
 MAX_RECURSION = 30
 
 # The ${...} interpolation branch the schema wraps every field in (see
@@ -102,7 +102,7 @@ DANGEROUS_INTS = [
     -1,
 ]
 
-# Only sometimes, so the config usually still deploys and exercises the invariant, not rejection.
+# Only sometimes, so the config usually still deploys and exercises the invariant.
 DANGEROUS_PROB = 0.15
 
 
@@ -111,8 +111,8 @@ def token(rng):
 
 
 def is_empty(value):
-    # Empty containers are not neutral: they are the shape behind several already-fixed drift bugs,
-    # so emitting one spends seeds re-finding them. mutate_once still injects them deliberately.
+    # Empty containers are the shape behind several already-fixed drift bugs; mutate_once still
+    # injects them deliberately.
     return value is None or value == {} or value == []
 
 
@@ -191,7 +191,7 @@ class Generator:
                 continue
             value = self.gen(prop_schema, depth + 1, prop_name)
             # Required properties included: a deep enough one can go missing here or in gen_array,
-            # and the CLI then rejects the config. A normal fuzz outcome, not a lost seed.
+            # and the CLI then rejects the config.
             if is_empty(value):
                 continue
             result[prop_name] = value
@@ -215,15 +215,15 @@ class Generator:
         return values or None
 
     def gen_grants(self):
-        # No valid privilege means no grants node: UC rejects a wrong one, and an empty one only
-        # reproduces the known drift bugs.
+        # No valid privilege means no grants node: UC rejects a wrong one; an empty one only
+        # reproduces known drift bugs.
         privilege = GRANT_PRIVILEGE.get(self.rtype)
         if privilege is None:
             return None
         return [{"principal": DEFAULT_PRINCIPAL, "privileges": [privilege]}]
 
     def gen_permissions(self):
-        # As gen_grants: no valid level means no permissions node.
+        # Same as gen_grants for levels.
         level = PERMISSION_LEVEL.get(self.rtype)
         if level is None:
             return None

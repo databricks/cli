@@ -2,15 +2,14 @@
 """
 Mutate a known-good bundle config by deleting, perturbing, and adding random fields.
 
-Perturbs a curated invariant config that already deploys, so it reaches a much higher deploy rate
-than building from the schema alone.
+Perturbs a curated invariant config that already deploys.
 
 Two mutation kinds, chosen per step:
 
 - destructive (always): delete a field or replace it with a token, a dangerous value, or an empty
-  container. Stays within the base's fields, so it finds only reject/panic bugs.
+  container.
 - additive (with a schema): inject a valid optional field the base omits, valued by the schema
-  generator in gen_fuzz_config.py. This is what reaches reconcile/drift bugs.
+  generator in gen_fuzz_config.py.
 
 As a script, emits one mutated databricks.yml on stdout for the current seed (see main).
 
@@ -38,7 +37,7 @@ from gen_fuzz_config import (
 
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
-# Biased high: injection is the path to drift bugs, and destructive coverage is already dense.
+# Biased high: injection is the path to drift bugs.
 ADD_PROB = 0.6
 
 # Curated single-resource configs that deploy standalone (only $UNIQUE_NAME, no init script). All
@@ -117,8 +116,8 @@ def scalar(text):
     if text == "{}":
         return {}
     # The one shape this loader cannot represent: "[id]" reads back as the string "[id]", turning a
-    # list into a scalar, and load -> dump -> load stays a fixed point, so the round-trip check
-    # cannot see it either. Exit, so a new MUTATE_BASES entry fails the selftest instead.
+    # list into a scalar, and load -> dump -> load stays a fixed point. Exit so a new MUTATE_BASES
+    # entry fails the selftest.
     if text[0] in "[{":
         sys.exit(f"mutate_fuzz_config: flow-style value is not supported: {text!r}")
     if text == "true":
@@ -234,7 +233,7 @@ def collect_insertions(gen, node, schema, out):
 
     branches = schema.get("oneOf") or schema.get("anyOf")
     if branches:
-        # Pick the branch matching the node we have, not a random one.
+        # Pick the branch matching the node we have.
         picked = None
         for branch in branches:
             resolved = gen.resolve(branch)
@@ -293,13 +292,12 @@ def add_field(gen, rng, config):
 
 
 def mutate(config, seed, schema=None, unique="fuzz"):
-    # Without a schema only the destructive mutations run; the selftest uses that path to print
-    # configs that don't churn as the schema grows.
+    # Without a schema only the destructive mutations run; the selftest uses that path for
+    # configs that stay stable as the schema grows.
     rng = random.Random(seed)
     gen = Generator(schema, rng, unique) if schema is not None else None
 
-    # Only inside resource instances, so the bundle/resources skeleton survives and there is always
-    # something to deploy, while every instance field is fair game.
+    # Only inside resource instances, so the bundle/resources skeleton survives.
     roots = []
     for instances in config.get("resources", {}).values():
         if isinstance(instances, dict):

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Seed loop for the invariant fuzzer. Runs one seed per iteration by calling the seed_body bash
-function that acceptance/bundle/fuzz/script exports, which sources the invariant target picked by
-FUZZ_TARGET, and classifies each outcome:
+Seed loop for the invariant fuzzer. Calls the seed_body bash function that
+acceptance/bundle/fuzz/script exports (which sources the FUZZ_TARGET invariant), and
+classifies each outcome:
 
   deployed - the config deployed and the invariant held
   rejected - the CLI refused the config before deploying it
@@ -12,7 +12,7 @@ FUZZ_TARGET, and classifies each outcome:
              broke the invariant or failed a later command
 
 Every seed adds a line to LOG.summary. A bug or a hang also writes a ready-to-run repro to
-LOG.repro and exits non-zero. Nothing is written to stdout: the committed run asserts empty output.
+LOG.repro and exits non-zero. Stdout stays empty: the committed run asserts empty output.
 
 FUZZ_TARGET comes from the test.toml matrix; FUZZ_SEED_START, FUZZ_SEED_COUNT,
 FUZZ_SEED_TIMEOUT and FUZZ_TIME_BUDGET are optional knobs the caller sets (see task test-fuzz).
@@ -29,12 +29,12 @@ import time
 from collections import Counter
 from pathlib import Path
 
-# Per-seed cap: a seed past this budget is stuck, not slow. Set FUZZ_SEED_TIMEOUT=0 to disable.
+# Per-seed cap: a seed past this budget is stuck. Set FUZZ_SEED_TIMEOUT=0 to disable.
 SEED_TIMEOUT = float(os.environ.get("FUZZ_SEED_TIMEOUT", "180"))
 
 # Overall budget (seconds): the real stop for nightly / task test-fuzz (seed count is only a
-# ceiling). Stop starting seeds past it so a slow but progressing variant exits cleanly instead
-# of being force-killed at the 20m test.toml Timeout. 0 disables.
+# ceiling). Stop starting seeds past it so a slow but progressing variant exits cleanly under the
+# 20m test.toml Timeout. 0 disables.
 BUDGET = float(os.environ.get("FUZZ_TIME_BUDGET", "900"))
 
 # Seconds between SIGQUIT and the SIGKILL backstop.
@@ -51,8 +51,8 @@ CHECK_DRIFT = os.environ.get("FUZZ_CHECK_DRIFT", "0")
 
 POSIX = os.name == "posix"
 
-# Resolved, not a bare name: on Windows CreateProcess finds the System32 WSL stub first, which
-# exits non-zero with no distribution installed and makes every seed read as rejected.
+# Resolve against PATH: on Windows CreateProcess finds the System32 WSL stub first, which exits
+# non-zero with no distribution installed and makes every seed read as rejected.
 BASH = shutil.which("bash")
 
 
@@ -75,7 +75,7 @@ def killpg(proc, sig):
 
 def kill_seed(proc):
     if not POSIX:
-        # Windows has neither SIGQUIT nor the process group below, so this is all it can do.
+        # Windows has neither SIGQUIT nor process groups.
         proc.kill()
         return
     # SIGQUIT first for Go's goroutine dump, then SIGKILL as a backstop.
@@ -113,7 +113,7 @@ def oracle_verdict(seed_dir):
         # The plan-determinism diff script.prepare substitutes when FUZZ_CHECK_DRIFT is 0.
         return "planned differently on two consecutive runs"
     if read(seed_dir / "LOG.plan.failed").strip():
-        # Same substitute, when the plan failed outright (and LOG.plan.failed was written).
+        # Plan failed outright (LOG.plan.failed was written).
         return "could not be planned after deploy"
     return ""
 
@@ -127,18 +127,17 @@ def classify(seed_dir):
         last_line = gen_err.splitlines()[-1].decode(errors="replace")
         return "bug", f"could not be mutated: {last_line}"
 
-    # A panic or internal error anywhere is a bug even if the CLI then rejects the config.
     logs = concat_logs(seed_dir)
     if b"panic:" in logs or b"internal error" in logs:
         return "bug", "panicked or hit an internal error"
 
-    # Before the gap marker: a seed can do both, and the drift verdict is the more specific.
+    # Drift before gap: a seed can carry both, and the drift verdict is the more specific.
     verdict = oracle_verdict(seed_dir)
     if verdict:
         return "bug", verdict
 
-    # Marker from the catch-all stubs in fuzz/test.toml. A gap after the deploy is still a gap, so
-    # this precedes INPUT_CONFIG_OK; the cleanup log is skipped, as it only runs after a failure.
+    # Marker from the catch-all stubs in fuzz/test.toml. Precedes INPUT_CONFIG_OK so a post-deploy
+    # gap still files as a gap. Skip the cleanup log: it only runs after a failure.
     if b"TESTSERVER_GAP" in concat_logs(seed_dir, skip={CLEANUP_LOG}):
         return "gap", ""
 
@@ -156,7 +155,7 @@ def resource_type(seed_dir):
 
 
 def record(kind, seed, seed_dir):
-    """One machine-readable line per seed. To a file, not stdout, so empty output still holds."""
+    """One machine-readable line per seed. Written to a file so empty stdout still holds."""
     with open("LOG.summary", "a") as f:
         f.write(f"{kind} seed={seed} target={TARGET} type={resource_type(seed_dir)}\n")
 
@@ -196,7 +195,7 @@ def main():
     count = int(os.environ.get("FUZZ_SEED_COUNT", "25"))
 
     for offset in range(count):
-        # A clean stop, not a failure, so log to a file.
+        # Budget stop: log and exit cleanly.
         if BUDGET and time.monotonic() - start >= BUDGET:
             Path("LOG.budget").write_text(
                 f"fuzz: stopping after {offset}/{count} seeds; hit FUZZ_TIME_BUDGET={BUDGET:g}s\n"
@@ -212,7 +211,6 @@ def main():
             record("deployed", seed, seed_dir)
             continue
 
-        # A seed that had to be killed hung, which is distinct from a drift bug.
         if killed:
             fail(seed, seed_dir, "hang", f"hung (>{SEED_TIMEOUT:g}s)", "FUZZ_SEED_TIMEOUT=0 ")
 
