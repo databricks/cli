@@ -659,14 +659,10 @@ func validateTestPhase(phase int) error {
 func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode string, changedTests map[string][]string) string {
 	switch skipLocalMode {
 	case SkipLocalAll:
-		if isTruePtr(config.Local) {
-			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalAll + " in " + configPath
-		}
+		return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalAll + " in " + configPath
 	case SkipLocalWithChanged:
-		if isTruePtr(config.Local) {
-			if _, ok := changedTests[dir]; !ok {
-				return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
-			}
+		if _, ok := changedTests[dir]; !ok {
+			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
 		}
 	}
 
@@ -721,11 +717,6 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID is empty)", configPath)
 		}
 
-	} else {
-		// Local run
-		if !isTruePtr(config.Local) {
-			return fmt.Sprintf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-		}
 	}
 
 	return ""

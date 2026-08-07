@@ -1,0 +1,99 @@
+
+=== convert an AIR run YAML into a DABs bundle (in place, next to the source)
+>>> [CLI] experimental air convert-to-dabs train.yaml
+Wrote a Databricks Asset Bundle to .:
+  databricks.yml
+  generated_artifacts/training_config.yaml
+  generated_artifacts/command.sh
+
+To deploy and run this workload as a bundle:
+  1. [CLI] bundle validate
+  2. [CLI] bundle deploy
+  3. [CLI] bundle run torchrun-a10-smoke-test
+
+bundle deploy uploads the code source and launch scripts automatically.
+To see what it deployed and where: [CLI] bundle summary
+
+Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
+persistent job that is not garbage-collected. When you are done, remove the
+job and its uploaded files with:
+  [CLI] bundle destroy
+
+=== emitted databricks.yml (code_source_path points at ./src; no code is copied)
+>>> cat databricks.yml
+bundle:
+  name: torchrun-a10-smoke-test
+sync:
+  paths:
+    - generated_artifacts
+targets:
+  dev:
+    mode: development
+    default: true
+resources:
+  jobs:
+    torchrun-a10-smoke-test:
+      name: torchrun-a10-smoke-test
+      tasks:
+        - task_key: torchrun-a10-smoke-test
+          environment_key: default
+          max_retries: 3
+          ai_runtime_task:
+            experiment: torchrun-a10-smoke-test
+            deployments:
+              - command_path: ./generated_artifacts/command.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1
+            code_source_path: ./src
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - numpy
+
+=== the generated command.sh carries the run command
+>>> cat generated_artifacts/command.sh
+torchrun --nproc_per_node=1 train.py
+=== the emitted bundle validates
+>>> [CLI] bundle validate
+Name: torchrun-a10-smoke-test
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/torchrun-a10-smoke-test/dev
+
+Validation OK!
+
+=== re-converting refuses to clobber the generated bundle
+>>> [CLI] experimental air convert-to-dabs train.yaml
+Error: databricks.yml already exists in .; pass --force to overwrite or remove it
+
+Exit code: 1
+
+=== --force overwrites it
+>>> [CLI] experimental air convert-to-dabs train.yaml --force
+Wrote a Databricks Asset Bundle to .:
+  databricks.yml
+  generated_artifacts/training_config.yaml
+  generated_artifacts/command.sh
+
+To deploy and run this workload as a bundle:
+  1. [CLI] bundle validate
+  2. [CLI] bundle deploy
+  3. [CLI] bundle run torchrun-a10-smoke-test
+
+bundle deploy uploads the code source and launch scripts automatically.
+To see what it deployed and where: [CLI] bundle summary
+
+Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
+persistent job that is not garbage-collected. When you are done, remove the
+job and its uploaded files with:
+  [CLI] bundle destroy
+
+=== docker_image is not supported yet
+>>> [CLI] experimental air convert-to-dabs docker.yaml --output-dir generated-docker
+Error: environment.docker_image is not yet supported by convert-to-dabs
+
+Exit code: 1

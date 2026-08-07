@@ -1,4 +1,3 @@
-Local = true
 Cloud = true
 RequiresUnityCatalog = true
 Timeout = '10m'
