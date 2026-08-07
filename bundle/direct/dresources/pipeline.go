@@ -229,9 +229,8 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, state *Pipel
 // OverrideChangeDesc forces a state-only Update when cascade_on_destroy changes locally.
 // The field is absent from PipelineRemote, so unsetting puts us in the scenario where
 // old=false, new=nil, remote=nil.
-// There currently is a bug in the classifier that causes it to skip the change if both remote
-// and new are equal even if the field is not present in the remote. Hence, we set this override
-// as a workaround to force the state-only update.
+// The problem is that classifier skips the change if remote and new are "empty". There is a bug
+// where "false" value for a boolean field is treated as empty. Hence, we set this override.
 func (*ResourcePipeline) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *PipelineRemote) error {
 	if path.String() == "cascade_on_destroy" && !structdiff.IsEqual(change.Old, change.New) {
 		change.Action = deployplan.Update
