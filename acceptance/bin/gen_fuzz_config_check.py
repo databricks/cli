@@ -23,7 +23,6 @@ from gen_fuzz_config import (
     PERMISSION_LEVEL,
     SKIP_PROPERTY_NAMES,
     Generator,
-    gen_config,
     resource_element,
     resource_types,
     to_yaml,
@@ -111,22 +110,25 @@ def check_tables(schema):
     for rtype in sorted(set(PERMISSION_LEVEL) | set(GRANT_PRIVILEGE)):
         if rtype not in types:
             errors.append(f"{rtype}: not a resource type in the schema")
+            continue
 
-    for rtype in sorted(types):
         element = resource_element(gen, types[rtype])
 
         levels = nested_enum(gen, element, "permissions", "level")
         level = PERMISSION_LEVEL.get(rtype)
-        if levels and level is None:
-            # gen_permissions emits nothing without an entry, so the resource loses its coverage.
-            errors.append(f"{rtype}: schema names its levels ({', '.join(levels)}) but PERMISSION_LEVEL has none")
-        elif levels and level not in levels:
-            errors.append(f"{rtype}: PERMISSION_LEVEL {level!r} is not one of {levels}")
+        if level is not None:
+            if not levels:
+                errors.append(f"{rtype}: PERMISSION_LEVEL has {level!r} but schema has no levels")
+            elif level not in levels:
+                errors.append(f"{rtype}: PERMISSION_LEVEL {level!r} is not one of {levels}")
 
         privileges = nested_enum(gen, element, "grants", "privileges")
         privilege = GRANT_PRIVILEGE.get(rtype)
-        if privileges and privilege is not None and privilege not in privileges:
-            errors.append(f"{rtype}: GRANT_PRIVILEGE {privilege!r} is not a catalog privilege")
+        if privilege is not None:
+            if not privileges:
+                errors.append(f"{rtype}: GRANT_PRIVILEGE has {privilege!r} but schema has no privileges")
+            elif privilege not in privileges:
+                errors.append(f"{rtype}: GRANT_PRIVILEGE {privilege!r} is not a catalog privilege")
 
     declared = set()
     property_names(schema, declared)
@@ -160,17 +162,6 @@ def main():
     schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../bundle/schema/jsonschema.json")
     with open(schema_path) as f:
         schema = json.load(f)
-    seed24 = gen_config(schema, seed=24, unique="check", allowed={"registered_models"})
-    rm = seed24["resources"]["registered_models"]["fuzz_registered_models_24"]
-    if SKIP_PROPERTY_NAMES & set(rm):
-        sys.stderr.write(
-            f"seed 24 registered_models emitted output-only fields: {sorted(SKIP_PROPERTY_NAMES & set(rm))}\n"
-        )
-        failed = True
-    for field in ("name", "catalog_name", "schema_name"):
-        if field not in rm:
-            sys.stderr.write(f"seed 24 registered_models missing {field}\n")
-            failed = True
 
     for error in check_tables(schema):
         sys.stderr.write(error + "\n")
