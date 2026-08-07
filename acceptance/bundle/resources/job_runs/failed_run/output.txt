@@ -41,6 +41,7 @@ Updating deployment state...
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
+    "idempotency_token": "[UUID]",
     "job_id": [MY_JOB_ID]
   }
 }
@@ -48,6 +49,7 @@ Updating deployment state...
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
+    "idempotency_token": "[UUID]",
     "job_id": [MY_JOB_ID]
   }
 }

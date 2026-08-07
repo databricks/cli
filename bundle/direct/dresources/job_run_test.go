@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"slices"
 	"strings"
@@ -406,6 +407,35 @@ func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	require.NotNil(t, remote.State)
 	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
 	assert.Equal(t, int32(3), gets.Load(), "expected the wait to poll past both RUNNING reads")
+}
+
+// The SDK resends a run-now whose response was lost, so the request carries a
+// token the backend dedupes the resend onto. Each create mints its own: a token
+// reused after the run it triggered was deleted, which recreate and destroy both
+// do, is one the Jobs API rejects.
+func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
+	var tokens []string
+	server := testserver.New(t)
+	server.Handle("POST", "/api/2.2/jobs/run-now", func(req testserver.Request) any {
+		var body jobs.RunNow
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		tokens = append(tokens, body.IdempotencyToken)
+		return jobs.RunNowResponse{RunId: int64(123 + len(tokens))}
+	})
+	r := (&ResourceJobRun{}).New(jobRunClientFor(t, server))
+	config := &JobRunState{RunNow: jobs.RunNow{JobId: 456}}
+
+	for range 2 {
+		_, _, err := r.DoCreate(t.Context(), config)
+		require.NoError(t, err)
+	}
+
+	require.Len(t, tokens, 2)
+	assert.NotEmpty(t, tokens[0])
+	assert.NotEqual(t, tokens[0], tokens[1], "expected each create to mint its own token")
+	// The token is set on a copy: persisted in state, it would differ from the
+	// empty one in config and make the next plan recreate the run.
+	assert.Empty(t, config.IdempotencyToken)
 }
 
 // jobRunDeletion records what the fake workspace saw while a run was deleted.
