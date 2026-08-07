@@ -6,17 +6,24 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -883,6 +890,255 @@ func (e errProfiler) LoadProfiles(context.Context, profile.ProfileMatchFunction)
 
 func (e errProfiler) GetPath(context.Context) (string, error) {
 	return "<error>", nil
+}
+
+func TestTokenDockerFormatEmitsGetResponse(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	require.NoError(t, databrickscfg.SaveToProfile(ctx, &config.Config{
+		ConfigFile:  configFile,
+		Profile:     "workspace",
+		Host:        "https://workspace.cloud.databricks.test",
+		WorkspaceID: "123456789",
+		AuthType:    authTypeDatabricksCLI,
+	}))
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv(storage.EnvVar, string(storage.StorageModePlaintext))
+	t.Setenv("HOME", dir)
+
+	var gotProfile string
+	loadToken := func(_ context.Context, args loadTokenArgs) (*oauth2.Token, error) {
+		gotProfile = args.profileName
+		return &oauth2.Token{AccessToken: "access-token"}, nil
+	}
+
+	var stdout bytes.Buffer
+	cmd := newTokenCommandWithLoader(&auth.AuthArguments{}, loadToken)
+	cmd.Flags().StringP("profile", "p", "", "~/.databrickscfg profile")
+	cmd.SetContext(ctx)
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetOut(&stdout)
+	cmd.SetArgs([]string{"--format=docker"})
+
+	require.NoError(t, cmd.Execute())
+	require.Equal(t, "workspace", gotProfile)
+
+	var got map[string]string
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
+	require.Equal(t, map[string]string{
+		"Username": "oauthtoken",
+		"Secret":   "access-token",
+	}, got)
+}
+
+func TestWriteDockerTokenOutputUsesConfiguredProfiler(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{
+				Name:        "workspace",
+				Host:        "https://workspace.cloud.databricks.test",
+				WorkspaceID: "123456789",
+				AuthType:    authTypeDatabricksCLI,
+			},
+		},
+	}
+
+	var gotProfile string
+	loadToken := func(_ context.Context, args loadTokenArgs) (*oauth2.Token, error) {
+		gotProfile = args.profileName
+		return &oauth2.Token{AccessToken: "access-token"}, nil
+	}
+
+	cmd := &cobra.Command{Use: "token"}
+	var stdout bytes.Buffer
+	cmd.SetContext(ctx)
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetOut(&stdout)
+
+	err := writeDockerTokenOutput(ctx, cmd, loadTokenArgs{
+		authArguments: &auth.AuthArguments{},
+		profiler:      profiler,
+	}, loadToken)
+	require.NoError(t, err)
+	require.Equal(t, "workspace", gotProfile)
+
+	var got dockerGetResponse
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
+}
+
+func TestTokenDockerFormatRejectsPositionalArgs(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	t.Setenv(storage.EnvVar, string(storage.StorageModePlaintext))
+	t.Setenv("HOME", t.TempDir())
+
+	cmd := newTokenCommandWithLoader(&auth.AuthArguments{}, func(context.Context, loadTokenArgs) (*oauth2.Token, error) {
+		t.Fatal("loadToken should not be called")
+		return nil, nil
+	})
+	cmd.Flags().StringP("profile", "p", "", "~/.databrickscfg profile")
+	cmd.SetContext(ctx)
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetArgs([]string{"--format=docker", "DEFAULT"})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "--format=docker does not accept positional arguments")
+}
+
+func TestTokenDockerFormatRejectsAuthSelectionFlags(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	t.Setenv(storage.EnvVar, string(storage.StorageModePlaintext))
+	t.Setenv("HOME", t.TempDir())
+
+	cases := [][]string{
+		{"--format=docker", "--profile", "DEFAULT"},
+		{"--format=docker", "--host", "https://workspace.cloud.databricks.test"},
+		{"--format=docker", "--account-id", "abc"},
+		{"--format=docker", "--workspace-id", "123456789"},
+	}
+
+	for _, args := range cases {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			var authArgs auth.AuthArguments
+			cmd := &cobra.Command{Use: "auth"}
+			cmd.PersistentFlags().StringVar(&authArgs.Host, "host", "", "Databricks Host")
+			cmd.PersistentFlags().StringVar(&authArgs.AccountID, "account-id", "", "Databricks Account ID")
+			cmd.PersistentFlags().StringVar(&authArgs.WorkspaceID, "workspace-id", "", "Databricks Workspace ID")
+			cmd.AddCommand(newTokenCommandWithLoader(&authArgs, func(context.Context, loadTokenArgs) (*oauth2.Token, error) {
+				t.Fatal("loadToken should not be called")
+				return nil, nil
+			}))
+			cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
+			cmd.SetContext(ctx)
+			cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+			cmd.SetArgs(append([]string{"token"}, args...))
+
+			err := cmd.Execute()
+			require.ErrorContains(t, err, "--format=docker does not support")
+		})
+	}
+}
+
+func TestTokenDockerFormatRejectsNonDARHost(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	t.Setenv(storage.EnvVar, string(storage.StorageModePlaintext))
+	t.Setenv("HOME", t.TempDir())
+
+	cmd := newTokenCommandWithLoader(&auth.AuthArguments{}, func(context.Context, loadTokenArgs) (*oauth2.Token, error) {
+		t.Fatal("loadToken should not be called")
+		return nil, nil
+	})
+	cmd.Flags().StringP("profile", "p", "", "~/.databrickscfg profile")
+	cmd.SetContext(ctx)
+	cmd.SetIn(strings.NewReader("registry.example.com\n"))
+	cmd.SetArgs([]string{"--format=docker"})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "is not a Databricks Artifact Registry host")
+}
+
+func TestTokenDockerFormatErrorsWithoutMatchingProfile(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configFile, []byte(""), 0o600))
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv(storage.EnvVar, string(storage.StorageModePlaintext))
+	t.Setenv("HOME", dir)
+
+	cmd := newTokenCommandWithLoader(&auth.AuthArguments{}, func(context.Context, loadTokenArgs) (*oauth2.Token, error) {
+		t.Fatal("loadToken should not be called")
+		return nil, nil
+	})
+	cmd.Flags().StringP("profile", "p", "", "~/.databrickscfg profile")
+	cmd.SetContext(ctx)
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetArgs([]string{"--format=docker"})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "no Databricks profile found for workspace ID 123456789")
+	require.ErrorContains(t, err, "databricks auth configure-docker")
+}
+
+func TestTokenDockerFormatErrorsWithMultipleMatchingProfiles(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	for _, name := range []string{"one", "two"} {
+		require.NoError(t, databrickscfg.SaveToProfile(ctx, &config.Config{
+			ConfigFile:  configFile,
+			Profile:     name,
+			Host:        "https://" + name + ".cloud.databricks.test",
+			WorkspaceID: "123456789",
+			AuthType:    authTypeDatabricksCLI,
+		}))
+	}
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv(storage.EnvVar, string(storage.StorageModePlaintext))
+	t.Setenv("HOME", dir)
+
+	cmd := newTokenCommandWithLoader(&auth.AuthArguments{}, func(context.Context, loadTokenArgs) (*oauth2.Token, error) {
+		t.Fatal("loadToken should not be called")
+		return nil, nil
+	})
+	cmd.Flags().StringP("profile", "p", "", "~/.databrickscfg profile")
+	cmd.SetContext(ctx)
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetArgs([]string{"--format=docker"})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "multiple Databricks profiles match workspace ID 123456789")
+	require.ErrorContains(t, err, "one and two")
+}
+
+func TestTokenDockerFormatRejectsUnsupportedProfile(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{
+				Name:        "pat",
+				Host:        "https://workspace.cloud.databricks.test",
+				WorkspaceID: "123456789",
+				AuthType:    "pat",
+			},
+			{
+				Name:                 "m2m",
+				Host:                 "https://m2m.cloud.databricks.test",
+				WorkspaceID:          "987654321",
+				HasClientCredentials: true,
+			},
+			{
+				Name:        "blank-auth",
+				Host:        "https://blank-auth.cloud.databricks.test",
+				WorkspaceID: "111222333",
+			},
+		},
+	}
+
+	for _, registryHost := range []string{
+		"123456789.container.us-west-2.cloud.databricks.com",
+		"987654321.container.us-west-2.cloud.databricks.com",
+		"111222333.container.us-west-2.cloud.databricks.com",
+	} {
+		t.Run(registryHost, func(t *testing.T) {
+			cmd := &cobra.Command{Use: "token"}
+			cmd.SetContext(ctx)
+			cmd.SetIn(strings.NewReader(registryHost + "\n"))
+
+			err := writeDockerTokenOutput(ctx, cmd, loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profiler:      profiler,
+			}, func(context.Context, loadTokenArgs) (*oauth2.Token, error) {
+				t.Fatal("loadToken should not be called")
+				return nil, nil
+			})
+			require.ErrorContains(t, err, "requires a profile created by databricks auth login")
+		})
+	}
 }
 
 func TestWriteTokenOutput(t *testing.T) {
