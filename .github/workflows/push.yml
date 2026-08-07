@@ -408,6 +408,43 @@ jobs:
         run: |
           go tool -modfile=tools/task/go.mod task test-sandbox
 
+  test-fuzz:
+    needs:
+      - cleanups
+
+    # Nightly: fill FUZZ_TIME_BUDGET with drift on. The committed acceptance test covers PRs.
+    if: ${{ github.event_name == 'schedule' }}
+    name: "task test-fuzz"
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-fuzz
+
+      - name: Run tests
+        env:
+          # Ceiling only: run_fuzz.py stops at FUZZ_TIME_BUDGET (900s). Stride = COUNT so
+          # consecutive nights cover disjoint windows.
+          FUZZ_SEED_COUNT: "10000"
+        run: |
+          export FUZZ_SEED_START=$(( GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT ))
+          go tool -modfile=tools/task/go.mod task test-fuzz
+
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
   #

@@ -1,0 +1,59 @@
+# Fuzz overrides of the shared invariant helpers. Source them explicitly: this test lives outside
+# the invariant subtree (test.toml / script.prepare only merge along the directory chain).
+export INVARIANT_DIR="$TESTDIR/../invariant"
+
+# Empty: a mutated config matches no curated name, and scripts run under set -u.
+export INPUT_CONFIG=""
+
+source "$INVARIANT_DIR/script.prepare"
+
+# The mutator writes the config. validate runs here as an isolated panic surface and rejects an
+# invalid config before the target's deploy.
+invariant_render() {
+    # Stage the fixtures the mutator's file_path/source_code_path fields point at.
+    cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
+
+    mutate_fuzz_config.py > databricks.yml 2>LOG.gen.err
+
+    cp databricks.yml LOG.config
+
+    trace $CLI bundle validate &> LOG.validate
+    cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
+
+    # validate only warns on a missing required field, so reject the seed here while it still
+    # counts as rejected (terraform may still deploy such a config; direct refuses it).
+    if grep -q 'required field .* is not set' LOG.validate; then
+        return 1
+    fi
+}
+
+# Exact no-drift false-positives when the fake server drops fields on round-trip. Substitute a
+# plan-determinism check: two consecutive plans of the same state must be byte-identical.
+#
+# Compared against 0: `FUZZ_CHECK_DRIFT= task test-fuzz` would be re-defaulted to 1 by the
+# task's ${FUZZ_CHECK_DRIFT:-1}, so the repro passes an explicit 0.
+if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
+    invariant_verify_no_drift() {
+        set +e
+        $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err
+        local plan1_rc=$?
+        $CLI bundle plan -o json > LOG.plan2.json 2>LOG.plan2.err
+        local plan2_rc=$?
+        set -e
+        cat LOG.plan1.err | contains.py '!panic:' '!internal error' > /dev/null
+        cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
+
+        if [ "$plan1_rc" -ne 0 ] || [ "$plan2_rc" -ne 0 ]; then
+            # Fail either way so run_fuzz.py can classify (gap vs bug). Copy stderr in because the
+            # *.err ignore pattern keeps it out of the test log.
+            if ! grep -q TESTSERVER_GAP LOG.plan1.err LOG.plan2.err; then
+                echo "bundle plan exited $plan1_rc and $plan2_rc" > LOG.plan.failed
+                cat LOG.plan1.err LOG.plan2.err >> LOG.plan.failed
+            fi
+            return 1
+        fi
+
+        # diff exits non-zero on any difference; under set -e that fails the seed as a bug.
+        diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
+    }
+fi
