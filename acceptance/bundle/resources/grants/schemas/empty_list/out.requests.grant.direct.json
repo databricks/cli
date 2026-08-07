@@ -1,0 +1,17 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_empty_list_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "CREATE_TABLE"
+        ],
+        "principal": "[USERNAME]",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}

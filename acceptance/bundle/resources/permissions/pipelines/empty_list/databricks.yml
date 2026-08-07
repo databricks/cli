@@ -5,5 +5,5 @@ resources:
   pipelines:
     foo:
       name: foo
-      # this is interpreted the same as nil, but it's IMO a bug; it should do default IS_OWNER setting
+      # An explicit empty list is managed: FixPermissions adds the default IS_OWNER for the current user.
       permissions: []
