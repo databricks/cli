@@ -1,0 +1,92 @@
+
+=== the deploy stops waiting before the run finishes
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default/files...
+Deploying resources...
+Error: cannot create resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID]: Fault injected by test. (403 INJECTED)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/runs/get?run_id=[MY_RUN_ID]
+HTTP Status: 403 Forbidden
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Updating deployment state...
+
+Exit code: 1
+
+=== the abandoned run is still tracked
+>>> read_id.py my_job
+[MY_JOB_ID]
+
+>>> read_id.py my_run
+[MY_RUN_ID]
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+=== a run that is still going is an update
+>>> jq .plan["resources.job_runs.my_run"] tmp.plan.json
+{
+  "depends_on": [
+    {
+      "node": "resources.jobs.my_job",
+      "label": "${resources.jobs.my_job.id}"
+    }
+  ],
+  "action": "update",
+  "new_state": {
+    "value": {
+      "job_id": [MY_JOB_ID],
+      "result_state": "SUCCESS"
+    }
+  },
+  "remote_state": {
+    "job_id": [MY_JOB_ID],
+    "run_id": [MY_RUN_ID],
+    "run_name": "my-job",
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
+    "run_type": "JOB_RUN",
+    "state": {
+      "life_cycle_state": "RUNNING"
+    }
+  },
+  "changes": {
+    "result_state": {
+      "action": "update",
+      "reason": "run in progress",
+      "old": "SUCCESS",
+      "new": "SUCCESS"
+    }
+  }
+}
+
+=== the deploy adopts that run and waits for it to finish
+>>> [CLI] bundle deploy --plan tmp.plan.json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default/files...
+Deploying resources...
+job run [MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+job run [MY_RUN_ID]: SUCCESS
+Updating deployment state...
+Deployment complete!
+
+=== the same run finished, and nothing was cancelled, deleted or triggered
+>>> read_state.py job_runs my_run id
+job_runs my_run id='[MY_RUN_ID]'
+
+>>> print_requests.py //jobs
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default
+
+Deleting files...
+Destroy complete!

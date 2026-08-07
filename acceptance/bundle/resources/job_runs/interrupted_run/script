@@ -1,0 +1,31 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# The fault hits the poll, not the run: it ends the deploy's wait while leaving the
+# run going, which is what an interrupted deploy leaves behind: the run id is
+# recorded in the state, but no outcome was ever observed.
+fault.py "GET /api/2.2/jobs/runs/get" 403 0 1
+
+title "the deploy stops waiting before the run finishes"
+trace errcode $CLI bundle deploy
+
+title "the abandoned run is still tracked"
+trace read_id.py my_job
+trace read_id.py my_run
+trace print_requests.py //jobs/run-now
+
+title "a run that is still going is an update"
+$CLI bundle plan -o json > tmp.plan.json
+trace jq '.plan["resources.job_runs.my_run"]' tmp.plan.json
+
+# The testserver settles a run on its first poll, so the plan above is replayed
+# here: the second read of the run reports it finished.
+title "the deploy adopts that run and waits for it to finish"
+trace $CLI bundle deploy --plan tmp.plan.json
+
+title "the same run finished, and nothing was cancelled, deleted or triggered"
+trace read_state.py job_runs my_run id
+trace print_requests.py //jobs

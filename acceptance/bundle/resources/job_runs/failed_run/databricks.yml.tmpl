@@ -1,0 +1,40 @@
+bundle:
+  name: job-runs-failed-run
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  jobs:
+    my_job:
+      name: test-job-$UNIQUE_NAME
+      tasks:
+        # Serverless keeps the run to a few minutes: the Jobs API retries the
+        # failed task once before giving up on it.
+        - task_key: main
+          spark_python_task:
+            python_file: ./fail.py
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"
+
+    # Reads the run's outcome, so the failing run aborts the deploy before this
+    # job is created. Separate from my_job, which my_run already depends on, to
+    # avoid a cycle.
+    downstream_job:
+      name: test-downstream-job-$UNIQUE_NAME
+      tags:
+        run_result: ${resources.job_runs.my_run.state.result_state}
+      tasks:
+        - task_key: main
+          condition_task:
+            op: EQUAL_TO
+            left: "1"
+            right: "1"
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}

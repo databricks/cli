@@ -1,0 +1,32 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# The error names the failed task and the message the workspace reported for it,
+# and downstream_job is reported as a failed dependency because it reads the
+# run's result_state.
+title "a run that finishes FAILED fails the deploy"
+musterr trace $CLI bundle deploy
+
+# The framework saves the run id before calling WaitAfterCreate, so the failed run
+# stays recorded, and FAILED against the required SUCCESS is drift.
+title "the failed run is recorded, and not having succeeded is drift"
+trace read_id.py my_run
+trace $CLI bundle plan
+
+# Name the job too, so the run-now bodies below say which number it is.
+read_id.py my_job > /dev/null
+
+title "so a redeploy runs the job again, and fails again"
+musterr trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+
+# The delete names [MY_RUN_ID], the run that failed first, not the [MY_RUN_ID_2]
+# that replaced it: the recreate discards the run it replaces.
+title "run-now was issued once per deploy, and the recreate deleted the failed run"
+trace print_requests.py --keep //jobs/run-now
+trace print_requests.py //jobs/runs/delete
