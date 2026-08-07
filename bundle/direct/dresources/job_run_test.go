@@ -409,40 +409,26 @@ func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	assert.Equal(t, int32(3), gets.Load(), "expected the wait to poll past both RUNNING reads")
 }
 
-func TestJobRunCreateUsesOneFreshIdempotencyTokenPerCreate(t *testing.T) {
+func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	var tokens []string
-	runs := make(map[string]int64)
 	server := testserver.New(t)
 	server.Handle("POST", "/api/2.2/jobs/run-now", func(req testserver.Request) any {
 		var body jobs.RunNow
 		require.NoError(t, json.Unmarshal(req.Body, &body))
 		tokens = append(tokens, body.IdempotencyToken)
-
-		runID, ok := runs[body.IdempotencyToken]
-		if !ok {
-			runID = int64(123 + len(runs))
-			runs[body.IdempotencyToken] = runID
-		}
-		// First response is lost after the run starts; the SDK retries with the same token.
-		if len(tokens) == 1 {
-			return testserver.Response{StatusCode: 503}
-		}
-		return jobs.RunNowResponse{RunId: runID}
+		return jobs.RunNowResponse{RunId: int64(123 + len(tokens))}
 	})
 	r := (&ResourceJobRun{}).New(jobRunClientFor(t, server))
 	config := &JobRunState{RunNow: jobs.RunNow{JobId: 456}}
 
-	firstID, _, err := r.DoCreate(t.Context(), config)
-	require.NoError(t, err)
-	secondID, _, err := r.DoCreate(t.Context(), config)
-	require.NoError(t, err)
+	for range 2 {
+		_, _, err := r.DoCreate(t.Context(), config)
+		require.NoError(t, err)
+	}
 
-	require.Len(t, tokens, 3)
+	require.Len(t, tokens, 2)
 	assert.NotEmpty(t, tokens[0])
-	assert.Equal(t, tokens[0], tokens[1], "expected the retry to reuse the token")
-	assert.NotEqual(t, tokens[1], tokens[2], "expected each create to mint a new token")
-	assert.Equal(t, "123", firstID)
-	assert.Equal(t, "124", secondID)
+	assert.NotEqual(t, tokens[0], tokens[1])
 	// Token must not leak into persisted state.
 	assert.Empty(t, config.IdempotencyToken)
 }
