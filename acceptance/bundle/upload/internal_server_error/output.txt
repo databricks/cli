@@ -1,5 +1,5 @@
-Error: Failed to acquire deployment lock: Internal Server Error
-Error: Internal Server Error (500)
+Error: Failed to acquire deployment lock: failed to upload /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock: Internal Server Error
+Error: failed to upload /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock: Internal Server Error (500)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace/import
 HTTP Status: 500 Internal Server Error
