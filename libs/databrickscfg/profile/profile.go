@@ -18,6 +18,7 @@ type Profile struct {
 	ServerlessComputeID  string
 	HasClientCredentials bool
 	Scopes               string
+	AssumeGroupID        string
 	AuthType             string
 }
 
