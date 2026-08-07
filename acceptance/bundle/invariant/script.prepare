@@ -8,9 +8,8 @@ invariant_cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy
     cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
 
-    # A generating caller sets INPUT_CONFIG empty and has no cleanup script. The default keeps an
-    # unbound variable from aborting the trap, which would skip the destroy above.
-    if [ -n "${INPUT_CONFIG:-}" ] && [ -f "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" ]; then
+    # A generating caller sets INPUT_CONFIG empty: no curated config, so no cleanup script either.
+    if [ -n "$INPUT_CONFIG" ] && [ -f "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" ]; then
         source "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" &> LOG.cleanup
     fi
 }

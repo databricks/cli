@@ -29,9 +29,6 @@ MAX_RECURSION = 30
 # bundle/internal/schema/main.go addInterpolationPatterns); we emit concrete values.
 INTERPOLATION_MARKER = "\\$\\{"
 
-# Keep in sync with libs/jsonschema.Type. gen_scalar exits on anything else.
-SCALAR_TYPES = {"boolean", "integer", "number", "string"}
-
 # The standard seeded catalog/schema. A random name deploys on the fake server but real UC rejects
 # it (CATALOG_DOES_NOT_EXIST), dropping the config.
 DEFAULT_CATALOG = "main"
@@ -71,8 +68,9 @@ PERMISSION_LEVEL = {
 }
 
 # Backend-computed fields, mirroring output_only in dresources/resources.yml: emitting them causes
-# false drift after migrate. Blocked by name everywhere, so a writable exception (an external
-# volume's storage_location) needs a curated config.
+# false drift after migrate. Only what the schema's own annotations miss, since it already drops
+# bundle:"readonly" and OUTPUT_ONLY fields. Blocked by name everywhere, so a writable exception
+# (an external volume's storage_location) needs a curated config.
 SKIP_PROPERTY_NAMES = frozenset(
     {
         "created_at",
@@ -93,8 +91,8 @@ SKIP_PROPERTY_NAMES = frozenset(
 RESOURCE_REQUIRED_FIELDS = {
     "registered_models": frozenset({"catalog_name", "name", "schema_name"}),
     "dashboards": frozenset({"display_name", "file_path", "warehouse_id"}),
-    "alerts": frozenset({"display_name", "file_path", "warehouse_id"}),
-    "apps": frozenset({"name", "source_code_path"}),
+    "alerts": frozenset({"file_path"}),
+    "apps": frozenset({"source_code_path"}),
     "genie_spaces": frozenset({"serialized_space", "title", "warehouse_id"}),
 }
 
@@ -155,6 +153,10 @@ DANGEROUS_INTS = [
 DANGEROUS_PROB = 0.15
 
 
+def token(rng):
+    return "fuzz_" + "".join(rng.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(8))
+
+
 def is_empty(value):
     # Empty containers are not neutral: they are the shape behind several already-fixed drift bugs,
     # so emitting one spends seeds re-finding them. mutate_once still injects them deliberately.
@@ -188,22 +190,9 @@ class Generator:
         concrete = [b for b in branches if not self.is_interpolation(b)]
         return self.rng.choice(concrete or branches)
 
-    def field_behaviors(self, schema):
-        if not isinstance(schema, dict):
-            return []
-        resolved = self.resolve(schema)
-        behaviors = list(schema.get("x-databricks-field-behaviors", []))
-        if resolved is not schema:
-            behaviors.extend(resolved.get("x-databricks-field-behaviors", []))
-        return behaviors
-
-    def should_skip_property(self, prop_name, prop_schema):
+    def should_skip_property(self, prop_name):
         # Skipped by name at any depth, unlike the resource-level tables gen_object applies.
-        if prop_name in SKIP_PROPERTY_NAMES or prop_name in RESOURCE_SKIP_FIELDS.get(self.rtype, ()):
-            return True
-        if "OUTPUT_ONLY" in self.field_behaviors(prop_schema):
-            return True
-        return bool(self.resolve(prop_schema).get("readOnly"))
+        return prop_name in SKIP_PROPERTY_NAMES or prop_name in RESOURCE_SKIP_FIELDS.get(self.rtype, ())
 
     def gen(self, schema, depth, name=""):
         if depth > MAX_RECURSION:
@@ -223,8 +212,6 @@ class Generator:
         if name == "permissions":
             return self.gen_permissions()
 
-        if "const" in schema:
-            return schema["const"]
         if schema.get("enum"):
             return self.rng.choice(schema["enum"])
 
@@ -256,7 +243,7 @@ class Generator:
             # Alerts reject even a schema-required field they read from the file instead.
             if allowlist is not None and prop_name not in allowlist:
                 continue
-            if self.should_skip_property(prop_name, prop_schema):
+            if self.should_skip_property(prop_name):
                 continue
             # Sampled, and dropped past MAX_DEPTH, so configs stay deployable within a seed's time.
             keep = prop_name in required or (depth < MAX_DEPTH and self.rng.random() < 0.35)
@@ -272,7 +259,7 @@ class Generator:
         # Map type: synthesize a few random keys, e.g. resources.<type> or string maps like tags.
         if self.is_map(schema):
             for _ in range(self.rng.randint(1, 2)):
-                key = self.token()
+                key = token(self.rng)
                 value = self.gen(schema["additionalProperties"], depth + 1, key)
                 if not is_empty(value):
                     result[key] = value
@@ -318,10 +305,8 @@ class Generator:
             return self.rng.choice([0, 1, self.rng.randint(2, 1000)])
         if t == "number":
             return round(self.rng.uniform(0, 1000), 2)
-        # Fail loud on an unknown type; a missing type is "any" and falls through to string.
-        if t is not None and t not in SCALAR_TYPES:
-            sys.exit(f"gen_fuzz_config: unhandled schema type {t!r}")
-        # Pin typed-string fields: a random token fails format or existence validation.
+        # A string, or no type at all ("any"). Pin the typed-string fields: a random token fails
+        # format or existence validation.
         if name == "catalog_name":
             return DEFAULT_CATALOG
         if name == "schema_name":
@@ -336,7 +321,7 @@ class Generator:
         if name == "parent_path":
             return PARENT_PATH
         if name == "file_path":
-            return FILE_PATH_BY_RESOURCE.get(self.rtype, self.token())
+            return FILE_PATH_BY_RESOURCE.get(self.rtype, token(self.rng))
         if name.endswith("_duration") or name == "ttl":
             return DURATION_VALUE
         if name == "name" and self.rtype == "vector_search_indexes":
@@ -351,10 +336,7 @@ class Generator:
         # No pinned meaning (description, comment, tag), so safe to probe here.
         if self.rng.random() < DANGEROUS_PROB:
             return self.rng.choice(DANGEROUS_STRINGS)
-        return self.token()
-
-    def token(self):
-        return "fuzz_" + "".join(self.rng.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(8))
+        return token(self.rng)
 
 
 def object_branch(schema, what):
