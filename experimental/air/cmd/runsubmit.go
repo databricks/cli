@@ -160,6 +160,12 @@ func withSpinner(ctx context.Context, show bool, msg string, fn func() error) er
 // returns the new run_id and its dashboard URL. showProgress enables the
 // stderr upload/packaging spinners (text mode only).
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (int64, string, error) {
+	// Pre-flight the config server-side before touching the workspace, so a bad
+	// config fails with the backend's field-level errors and no orphaned uploads.
+	if err := preflightValidate(ctx, w, cfg); err != nil {
+		return 0, "", err
+	}
+
 	// Resolve the idempotency token first so a bad key fails before any upload,
 	// and before the policy lookup below spends a round trip on it.
 	token, err := submitToken(idempotencyKey, cfg)
