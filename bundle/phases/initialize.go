@@ -36,6 +36,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.Scripts(),
 		mutator.ValidateSecretValueIsVariable(),
 
+		// Updates (typed): b.Config.Experimental.RecordDeploymentHistory
+		// Enables the experimental record_deployment_history setting from the
+		// DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY environment variable.
+		mutator.ApplyRecordDeploymentHistoryEnv(),
+
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
 		mutator.RewriteSyncPaths(),
