@@ -1,4 +1,4 @@
 RecordRequests = true
 
-# Direct engine only, where the DoUpdate wait lives.
+# Telemetry updates are direct-engine-specific.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

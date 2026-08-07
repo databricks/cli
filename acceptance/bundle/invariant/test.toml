@@ -117,8 +117,7 @@ no_external_volume_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=volume_externa
 # it here to keep the cloud invariant runs from timing out. Still exercised locally.
 no_vector_search_index_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=vector_search_index.yml.tmpl"]
 
-# Unlike model_serving_endpoint.yml.tmpl, this config serves a real model, which
-# telemetry_config requires and the cloud test environment does not provision.
+# Telemetry requires a real model, which cloud invariant tests do not provision.
 no_model_serving_endpoint_telemetry_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=model_serving_endpoint_telemetry.yml.tmpl"]
 
 # Fake SQL endpoint for local tests

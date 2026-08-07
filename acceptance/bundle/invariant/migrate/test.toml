@@ -38,6 +38,5 @@ EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml
 # volume schema_name ("inconsistent final plan"). Covered by no_drift on direct.
 EnvMatrixExclude.no_volume_uppercase = ["INPUT_CONFIG=volume_uppercase_name.yml.tmpl"]
 
-# The TF provider types sampling_fraction as an integer, so the terraform seed
-# deploy truncates 0.5 to 0 and the plan never converges. Covered by no_drift.
+# Terraform types sampling_fraction as an integer and truncates 0.5; covered by no_drift.
 EnvMatrixExclude.no_model_serving_endpoint_telemetry = ["INPUT_CONFIG=model_serving_endpoint_telemetry.yml.tmpl"]

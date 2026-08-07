@@ -247,7 +247,7 @@ func (r *ResourceModelServingEndpoint) updateNotifications(ctx context.Context, 
 	return nil
 }
 
-// updateTelemetryConfig applies telemetry_config; a nil config removes it.
+// updateTelemetryConfig removes telemetry when telemetryConfig is nil.
 func (r *ResourceModelServingEndpoint) updateTelemetryConfig(ctx context.Context, id string, telemetryConfig *serving.TelemetryConfig) error {
 	req := serving.PatchTelemetryConfigRequest{
 		Name:            id,
@@ -358,8 +358,7 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 	}
 
 	if entry.Changes.HasChange(pathTelemetryConfig) {
-		// The telemetry API rejects an endpoint still applying an update, and
-		// WaitAfterUpdate runs too late to order the earlier calls with this patch.
+		// The telemetry API rejects endpoints with an update in progress.
 		_, err = r.waitForEndpointReady(ctx, id)
 		if err != nil {
 			return nil, err

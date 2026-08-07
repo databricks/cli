@@ -35,8 +35,7 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 	return entities
 }
 
-// applyTelemetryConfig mirrors the backend: table_names is consumed and not echoed;
-// naming neither table_names nor telemetry_profile_id discards the config.
+// applyTelemetryConfig consumes table_names and discards configs that identify no profile.
 func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.TelemetryConfig {
 	if config == nil {
 		return nil
@@ -62,8 +61,7 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 	return &applied
 }
 
-// telemetrySupported is true only for custom served models; otherwise it returns the
-// endpoint type the backend names when rejecting (NO_CONFIG / EXTERNAL_MODELS).
+// telemetrySupported returns the unsupported endpoint type when telemetry cannot be applied.
 func telemetrySupported(endpoint serving.ServingEndpointDetailed) (string, bool) {
 	if endpoint.Config == nil || len(endpoint.Config.ServedEntities) == 0 {
 		return "NO_CONFIG", false
@@ -276,7 +274,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		ForceSendFields: append(createReq.ForceSendFields, "PermissionLevel", "RouteOptimized", "Description"),
 	}
 
-	// Unlike the telemetry API, create drops telemetry it cannot apply instead of failing.
+	// Create drops unsupported telemetry, while the telemetry API rejects it.
 	if _, ok := telemetrySupported(endpoint); !ok {
 		endpoint.TelemetryConfig = nil
 	}
@@ -288,7 +286,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	}
 }
 
-// ServingEndpointGet reports an in-progress update once, then settles so a poller converges.
+// ServingEndpointGet reports an in-progress update once before settling it.
 func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 	defer s.LockUnlock()()
 
@@ -313,6 +311,7 @@ func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 	return Response{Body: endpoint}
 }
 
+// endpointUpdating reports whether a config update is in progress.
 func endpointUpdating(endpoint serving.ServingEndpointDetailed) bool {
 	return endpoint.State != nil && endpoint.State.ConfigUpdate == serving.EndpointStateConfigUpdateInProgress
 }
@@ -364,7 +363,7 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 
 	endpoint.Config = config
 	endpoint.LastUpdatedTimestamp = nowMilli()
-	// Leave IN_PROGRESS until the next GET settles it; a same-pass telemetry PATCH must see that.
+	// Keep the update in progress until GET observes it.
 	endpoint.State = &serving.EndpointState{
 		ConfigUpdate: serving.EndpointStateConfigUpdateInProgress,
 		Ready:        serving.EndpointStateReadyNotReady,
@@ -446,6 +445,7 @@ func (s *FakeWorkspace) ServingEndpointUpdateNotifications(req Request, name str
 	}
 }
 
+// ServingEndpointPatchTelemetryConfig applies telemetry after validating endpoint state.
 func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name string) Response {
 	defer s.LockUnlock()()
 
@@ -476,7 +476,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name st
 		}
 	}
 
-	// The telemetry API refuses to run while an earlier update is still applying.
+	// The telemetry API returns 409 while another update is in progress.
 	if endpointUpdating(endpoint) {
 		return Response{
 			StatusCode: 409,
