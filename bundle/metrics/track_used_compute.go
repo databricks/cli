@@ -50,6 +50,9 @@ func (c *trackUsedCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	b.Metrics.AddBoolValue("has_serverless_compute", hasServerlessCompute)
 	b.Metrics.AddBoolValue("has_classic_job_compute", hasClassicJobCompute)
 	b.Metrics.AddBoolValue("has_classic_interactive_compute", hasClassicInteractiveCompute)
+	b.Telemetry.SetPaired(&b.Telemetry.HasServerlessComputeTrue, &b.Telemetry.HasServerlessComputeFalse, hasServerlessCompute)
+	b.Telemetry.SetPaired(&b.Telemetry.HasClassicJobComputeTrue, &b.Telemetry.HasClassicJobComputeFalse, hasClassicJobCompute)
+	b.Telemetry.SetPaired(&b.Telemetry.HasClassicInteractiveComputeTrue, &b.Telemetry.HasClassicInteractiveComputeFalse, hasClassicInteractiveCompute)
 
 	return nil
 }

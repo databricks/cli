@@ -31,6 +31,7 @@ func (m *resolveSelect) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 	}
 
 	b.Metrics.SetBoolValue(metrics.SelectUsed, true)
+	b.Telemetry.SelectUsed = true
 
 	// Build reverse index: unqualified name → []"type.name" matches.
 	byName := map[string][]string{}

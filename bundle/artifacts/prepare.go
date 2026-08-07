@@ -35,6 +35,10 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.FromErr(err)
 	}
 
+	// For the bitmap, OR the per-artifact flags across all artifacts into a
+	// single measured value each (set once after the loop).
+	var anyArtifact, anyBuildCommand, anyFiles bool
+
 	for _, artifactName := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
 		artifact := b.Config.Artifacts[artifactName]
 		if artifact == nil {
@@ -49,6 +53,9 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		}
 		b.Metrics.AddBoolValue(metrics.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
 		b.Metrics.AddBoolValue(metrics.ArtifactFilesIsSet, len(artifact.Files) != 0)
+		anyArtifact = true
+		anyBuildCommand = anyBuildCommand || artifact.BuildCommand != ""
+		anyFiles = anyFiles || len(artifact.Files) != 0
 
 		l := b.Config.GetLocation("artifacts." + artifactName)
 		dirPath := filepath.Dir(l.File)
@@ -95,6 +102,11 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		if logdiag.HasError(ctx) {
 			break
 		}
+	}
+
+	if anyArtifact {
+		b.Telemetry.SetPaired(&b.Telemetry.ArtifactBuildCommandIsSetTrue, &b.Telemetry.ArtifactBuildCommandIsSetFalse, anyBuildCommand)
+		b.Telemetry.SetPaired(&b.Telemetry.ArtifactFilesIsSetTrue, &b.Telemetry.ArtifactFilesIsSetFalse, anyFiles)
 	}
 
 	return nil

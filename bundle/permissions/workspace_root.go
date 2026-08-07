@@ -165,6 +165,8 @@ func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPe
 
 	b.Metrics.SetBoolValue(metrics.StatePathIsShared, isShared)
 	b.Metrics.SetBoolValue(metrics.PermissionsSectionSet, len(b.Config.Permissions) > 0)
+	b.Telemetry.StatePathIsShared = isShared
+	b.Telemetry.SetPaired(&b.Telemetry.PermissionsSectionSetTrue, &b.Telemetry.PermissionsSectionSetFalse, len(b.Config.Permissions) > 0)
 
 	// userHomeOwner yields a non-empty owner whenever underUserHome is true, so the two
 	// home flags are exact complements: an unresolved deployer ("") never equals the
@@ -173,6 +175,9 @@ func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPe
 	b.Metrics.SetBoolValue(metrics.StatePathInDeployerHome, underUserHome && owner == deployer)
 	b.Metrics.SetBoolValue(metrics.StatePathInOtherUserHome, underUserHome && owner != deployer)
 	b.Metrics.SetBoolValue(metrics.StatePathOther, !isShared && !underUserHome)
+	b.Telemetry.StatePathInDeployerHome = underUserHome && owner == deployer
+	b.Telemetry.StatePathInOtherUserHome = underUserHome && owner != deployer
+	b.Telemetry.StatePathOther = !isShared && !underUserHome
 
 	// stateFolderPerms is nil when no permissions are declared, in which case there are
 	// no undeclared writers (the migration mirrors the folder's ACLs).
@@ -185,9 +190,22 @@ func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPe
 	b.Metrics.SetBoolValue(metrics.DMSUndeclaredOtherUser, otherUser)
 	b.Metrics.SetBoolValue(metrics.DMSUndeclaredServicePrincipal, servicePrincipal)
 	b.Metrics.SetBoolValue(metrics.DMSUndeclaredGroup, group)
+	b.Telemetry.DMSUndeclaredDeployingUser = self
+	b.Telemetry.DMSUndeclaredOtherUser = otherUser
+	b.Telemetry.DMSUndeclaredServicePrincipal = servicePrincipal
+	b.Telemetry.DMSUndeclaredGroup = group
 
 	// Emit exactly one of the auto-migration verdict keys.
-	b.Metrics.SetBoolValue(autoMigrationVerdict(b, stateFolderPerms, undeclared), true)
+	verdict := autoMigrationVerdict(b, stateFolderPerms, undeclared)
+	b.Metrics.SetBoolValue(verdict, true)
+	switch verdict {
+	case metrics.DMSCompatAuto:
+		b.Telemetry.DMSCompatAuto = true
+	case metrics.DMSCompatOnlySelfUndeclared:
+		b.Telemetry.DMSCompatOnlySelfUndeclared = true
+	case metrics.DMSCompatNot:
+		b.Telemetry.DMSCompatNot = true
+	}
 }
 
 // autoMigrationVerdict returns the metric key describing whether this deploy is

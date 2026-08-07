@@ -195,6 +195,11 @@ type Bundle struct {
 	Cache *cache.Cache
 
 	Metrics Metrics
+
+	// Telemetry mirrors the boolean telemetry flags into a typed struct for the
+	// bundle bitmap. It is additive: the Metrics mechanism above still feeds the
+	// telemetry wire unchanged.
+	Telemetry Telemetry
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {

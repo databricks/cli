@@ -78,6 +78,7 @@ func TransformWheelTask() bundle.Mutator {
 func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	isEnabled := b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
 	b.Metrics.AddBoolValue(metrics.ExperimentalPythonWheelWrapperIsSet, isEnabled)
+	b.Telemetry.SetPaired(&b.Telemetry.PythonWheelWrapperIsSetTrue, &b.Telemetry.PythonWheelWrapperIsSetFalse, isEnabled)
 	if !isEnabled {
 		return nil
 	}

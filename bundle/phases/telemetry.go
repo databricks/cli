@@ -184,6 +184,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	for _, app := range b.Config.Resources.Apps {
 		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
 			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
+			b.Telemetry.SetPaired(&b.Telemetry.AppLifecycleStartedTrue, &b.Telemetry.AppLifecycleStartedFalse, *app.Lifecycle.Started)
 			break
 		}
 	}
@@ -191,6 +192,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	for _, cluster := range b.Config.Resources.Clusters {
 		if cluster != nil && cluster.Lifecycle != nil && cluster.Lifecycle.Started != nil {
 			b.Metrics.SetBoolValue(metrics.ClusterLifecycleStarted, *cluster.Lifecycle.Started)
+			b.Telemetry.SetPaired(&b.Telemetry.ClusterLifecycleStartedTrue, &b.Telemetry.ClusterLifecycleStartedFalse, *cluster.Lifecycle.Started)
 			break
 		}
 	}
@@ -198,6 +200,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	for _, warehouse := range b.Config.Resources.SqlWarehouses {
 		if warehouse != nil && warehouse.Lifecycle != nil && warehouse.Lifecycle.Started != nil {
 			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
+			b.Telemetry.SetPaired(&b.Telemetry.SqlWarehouseLifecycleStartedTrue, &b.Telemetry.SqlWarehouseLifecycleStartedFalse, *warehouse.Lifecycle.Started)
 			break
 		}
 	}
@@ -209,9 +212,11 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	// "not terraform" here cannot mask a real terraform opt-in.
 	if b.Config.Bundle.Engine == engine.EngineTerraform {
 		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
+		b.Telemetry.EngineTerraformConfig = true
 	}
 	if envEngine, _ := engine.FromEnv(ctx); envEngine == engine.EngineTerraform {
 		b.Metrics.SetBoolValue(metrics.EngineTerraformEnv, true)
+		b.Telemetry.EngineTerraformEnv = true
 	}
 
 	// If the bundle UUID is not set, we use a default 0 value.
