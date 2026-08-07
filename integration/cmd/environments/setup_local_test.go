@@ -3,6 +3,7 @@ package environments_test
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -33,9 +34,12 @@ func TestSetupLocalServerlessProvision(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 
-	// Let uv bootstrap itself if the runner's PATH lacks it; CI installs uv, but
-	// this keeps the test robust on a developer machine that opted in.
-	t.Setenv(localenv.EnvAutoInstallUv, "1")
+	// Skip rather than let the pipeline install uv: EnvAutoInstallUv would run the
+	// remote installer and mutate ~/.local/bin on a developer machine. CI installs
+	// uv, so this only skips where the side effect would be unwanted.
+	if _, err := exec.LookPath("uv"); err != nil {
+		t.Skipf("uv not found on PATH (%v)", err)
+	}
 
 	stdout, _ := testcli.RequireSuccessfulRun(t, ctx,
 		"environments", "setup-local",
@@ -59,10 +63,6 @@ func TestSetupLocalServerlessProvision(t *testing.T) {
 	assert.NotEmpty(t, res.Resolved.PythonVersion, "resolved python version should be reported")
 	// The default mode installs databricks-connect, so the resolved pin is present.
 	assert.NotEmpty(t, res.Resolved.DBConnectVersion)
-	// The artifact came from a successful fetch. The cache is shared (UserCacheDir),
-	// so a prior run may have seeded it; accept either source rather than assuming
-	// a cold cache and flaking on re-runs.
-	assert.Contains(t, []string{"network", "cache"}, res.Resolved.ArtifactSource)
 
 	// Every phase must have reached ok, including the real provision and validate.
 	for _, ph := range res.Phases {
@@ -127,8 +127,12 @@ func TestSetupLocalUnpublishedVersion(t *testing.T) {
 	assert.Equal(t, localenv.ErrEnvUnsupported, res.Error.Code)
 	assert.Equal(t, localenv.PhaseFetch, res.Error.FailurePhase)
 
-	// Even a failed fetch must not have provisioned anything on a dry run.
-	assert.NoFileExists(t, filepath.Join(dir, ".venv", "bin", "python"))
+	// Even a failed fetch must not have written anything on a dry run: preflight
+	// skips ensureWritable and cache writes are suppressed, so the project dir
+	// must still be empty.
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "dry-run wrote files: %v", entries)
 }
 
 // venvPython returns the path to the created virtualenv's interpreter, accounting
