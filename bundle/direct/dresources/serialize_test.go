@@ -49,11 +49,17 @@ func assertJSONRoundTrip(t *testing.T, v any, label string) {
 
 	// Diff the Go values rather than the JSON: a wrapper that drops fields keeps
 	// them populated in v but loses them in back, so structdiff flags it even
-	// though both marshal to the same (already-truncated) JSON. structdiff skips
-	// ForceSendFields and json:"-" fields, which are intentionally not serialized.
+	// though both marshal to the same (already-truncated) JSON.
+	// Compare against a second unmarshal of the same JSON (not the original v) so
+	// that json:"-" fields (intentionally not serialized, including bundle:"sensitive"
+	// ones) start at their zero value on both sides and never appear as differences.
 	// Free-form any fields must be populated with []any/map[string]any (as JSON
 	// decoding yields) so they round-trip to the same concrete type.
-	changes, err := structdiff.GetStructDiff(v, back, nil)
+	baseline := reflect.New(reflect.TypeOf(v)).Interface()
+	err = json.Unmarshal(data, baseline)
+	require.NoError(t, err, "%s: second Unmarshal failed", label)
+
+	changes, err := structdiff.GetStructDiff(reflect.ValueOf(baseline).Elem().Interface(), back, nil)
 	require.NoError(t, err)
 	require.Empty(t, changes, "%s lost %d field(s) in JSON round-trip:%s", label, len(changes), formatChanges(changes))
 }

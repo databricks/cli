@@ -209,9 +209,10 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 		bundleTag := structtag.BundleTag(sf.Tag.Get("bundle"))
 
-		// Resolve field name from JSON tag or fall back to Go field name
+		// Resolve field name from JSON tag or fall back to Go field name.
 		// Sensitive fields are marked as "json:-" so they are not accidentally stored in the state file.
-		// But we still want to diff them to detect changes based on in-memory values (comes from config and remote)
+		// But we still want to diff them to detect changes based on in-memory values (comes from config and remote).
+		// Use the Go field name as the path key for sensitive fields so that structaccess.Get can resolve them.
 		fieldName := jsonTag.Name()
 		if fieldName == "-" && !bundleTag.Sensitive() {
 			continue
@@ -219,7 +220,7 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 
 		isEmbed := sf.Name == structaccess.EmbeddedSliceFieldName
 
-		if fieldName == "" || isEmbed {
+		if fieldName == "" || fieldName == "-" || isEmbed {
 			fieldName = sf.Name
 		}
 

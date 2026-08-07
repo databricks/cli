@@ -20,6 +20,18 @@ type ResourceSecret struct {
 	client *databricks.WorkspaceClient
 }
 
+// SecretRemote is the remote read type for a UC secret. It embeds the SDK Secret
+// struct and adds SecretValue, populated from EffectiveValue by DoRead, so that
+// drift detection can compare the live secret value against the desired config value.
+type SecretRemote struct {
+	catalog.Secret
+
+	// SecretValue mirrors EffectiveValue and is populated by DoRead when include_value=true.
+	// It uses the same field name as SecretState.SecretValue so RemapState can copy it directly.
+	// bundle:"sensitive" makes GetStructDiff include it despite json:"-", enabling drift detection.
+	SecretValue string `json:"-" bundle:"sensitive"`
+}
+
 // SecretState is the persisted state type for a UC secret. It extends the SDK
 // Secret struct with a Fingerprint field so that value changes can be detected
 // across deploys without storing the plaintext value on disk. The Value field
@@ -62,7 +74,7 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *SecretState {
 	}
 }
 
-func (*ResourceSecret) RemapState(remote *catalog.Secret) *SecretState {
+func (*ResourceSecret) RemapState(remote *SecretRemote) *SecretState {
 	return &SecretState{
 		Secret: catalog.Secret{
 			CatalogName:     remote.CatalogName,
@@ -82,12 +94,12 @@ func (*ResourceSecret) RemapState(remote *catalog.Secret) *SecretState {
 			UpdatedBy:       "",
 			ForceSendFields: utils.FilterFields[catalog.Secret](remote.ForceSendFields),
 		},
-		SecretValue: remote.EffectiveValue,
+		SecretValue: remote.SecretValue,
 	}
 }
 
 // DoRead fetches the secret by full name.
-func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret, error) {
+func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*SecretRemote, error) {
 	apiClient, err := client.New(r.client.Config)
 	if err != nil {
 		return nil, err
@@ -101,26 +113,30 @@ func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret
 	if err != nil {
 		return nil, err
 	}
-	return &secret, nil
+	// Populate SecretValue from EffectiveValue so drift detection can compare
+	// the live secret value against the desired config value via RemapState.
+	return &SecretRemote{
+		Secret:      secret,
+		SecretValue: secret.EffectiveValue,
+	}, nil
 }
 
 // DoCreate creates a new UC secret.
-func (r *ResourceSecret) DoCreate(ctx context.Context, state *SecretState) (string, *catalog.Secret, error) {
+func (r *ResourceSecret) DoCreate(ctx context.Context, state *SecretState) (string, *SecretRemote, error) {
 	state.Value = state.SecretValue
 	response, err := r.client.SecretsUc.CreateSecret(ctx, catalog.CreateSecretRequest{
 		Secret: state.Secret,
 	})
 	// Clear the plaintext so it is not written to the state file.
-	// Fingerprint already captures whether the value changed.
 	state.Value = ""
 	if err != nil || response == nil {
 		return "", nil, err
 	}
-	return response.FullName, response, nil
+	return response.FullName, &SecretRemote{Secret: *response, SecretValue: state.SecretValue}, nil
 }
 
 // DoUpdate updates the secret in place and returns remote state.
-func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *SecretState, _ *PlanEntry) (*catalog.Secret, error) {
+func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *SecretState, _ *PlanEntry) (*SecretRemote, error) {
 	state.Value = state.SecretValue
 	response, err := r.client.SecretsUc.UpdateSecret(ctx, catalog.UpdateSecretRequest{
 		FullName: id,
@@ -134,7 +150,7 @@ func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *SecretS
 	if err != nil {
 		return nil, err
 	}
-	return response, nil
+	return &SecretRemote{Secret: *response, SecretValue: state.SecretValue}, nil
 }
 
 // DoDelete deletes the secret.
@@ -144,15 +160,28 @@ func (r *ResourceSecret) DoDelete(ctx context.Context, id string, _ *SecretState
 	})
 }
 
+// MarshalJSON serializes SecretRemote as a merged JSON object: the fields from
+// catalog.Secret (via its own MarshalJSON) plus any SecretRemote-specific fields.
+// Without this, the embedded catalog.Secret.MarshalJSON takes over and drops them.
+func (s SecretRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
+// UnmarshalJSON deserializes SecretRemote, restoring both the embedded
+// catalog.Secret fields and any SecretRemote-specific fields.
+func (s *SecretRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
 // MarshalJSON serializes SecretState as a merged JSON object: the fields from
-// catalog.Secret (via its own MarshalJSON) plus "fingerprint". Without this,
-// the embedded catalog.Secret.MarshalJSON takes over and drops Fingerprint.
+// catalog.Secret (via its own MarshalJSON) plus SecretState-specific fields.
+// Without this, the embedded catalog.Secret.MarshalJSON takes over and drops them.
 func (s SecretState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
 // UnmarshalJSON deserializes SecretState, restoring both the embedded
-// catalog.Secret fields and Fingerprint.
+// catalog.Secret fields and SecretState-specific fields.
 func (s *SecretState) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
 }
