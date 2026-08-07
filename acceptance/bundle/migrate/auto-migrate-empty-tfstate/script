@@ -19,7 +19,10 @@ title "Sweep is recorded in telemetry as via-config\n"
 trace print_migration_telemetry
 
 title "Sweep also affected the workspace: .backup uploaded, terraform.tfstate deleted\n"
-trace print_requests.py //workspace/import //workspace/delete --sort | jq '.method + " " + (.body.multipart_form.path // .path)' | contains.py 'terraform.tfstate.backup' 'workspace/delete'
+# Sort on the displayed method+path rather than with print_requests.py --sort,
+# which orders by the whole request including the multipart body — nondeterministic
+# for the uploaded out.requests.txt whose body content varies between runs.
+trace print_requests.py //workspace/import //workspace/delete | jq '.method + " " + (.body.multipart_form.path // .path)' | sort | contains.py 'terraform.tfstate.backup' 'workspace/delete'
 
 title "debug states confirms no terraform.tfstate anywhere; only .backup remains\n"
 trace $CLI bundle debug states --force-pull
