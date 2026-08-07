@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
@@ -23,16 +24,16 @@ import (
 // nil when DMS recording does not apply. A nil recorder is a no-op, so callers
 // do not need to branch on it.
 //
-// Recording is enabled only when experimental.record_deployment_history is set
-// AND the engine is direct: DMS resource state is tracked per direct-engine
-// deployment. Returning nil for terraform leaves those deployments untouched.
+// Recording is enabled only when the bundle asks for it (see
+// recordsDeploymentHistory) AND the engine is direct: DMS resource state is tracked
+// per direct-engine deployment. Returning nil for terraform leaves those untouched.
 //
 // The deployment ID is resolved from the workspace, not local state (see
 // dms.ResolveDeploymentID). The lookup happens here, after the deployment lock is
 // held, so it sees any deployment a concurrent deploy created. It is empty on the
 // first recorded deploy, where the recorder creates the deployment instead.
 func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, versionType dms.VersionType) (*dms.Recorder, error) {
-	if b.Config.Experimental == nil || !b.Config.Experimental.RecordDeploymentHistory {
+	if !recordsDeploymentHistory(ctx, b) {
 		return nil, nil
 	}
 	if !eng.IsDirect() {
@@ -56,6 +57,13 @@ func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.Eng
 		VersionType:  versionType,
 		Metadata:     deploymentMetadata(b),
 	}), nil
+}
+
+// recordsDeploymentHistory reports whether this bundle records deployment history,
+// from experimental.record_deployment_history or DATABRICKS_BUNDLE_DMS.
+func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
+	configured := b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory
+	return env.RecordsDeploymentHistory(ctx, configured)
 }
 
 // setOperationRecorder points the deployment at the version the recorder claimed, so

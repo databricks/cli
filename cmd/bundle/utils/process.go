@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
@@ -225,7 +226,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			// comes from the file. Reads open the state write-disabled, so no lineage
 			// is minted here.
 			var dmsSource *dstate.DMSSource
-			if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
+			if env.RecordsDeploymentHistory(ctx, b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory) {
 				w := b.WorkspaceClient(ctx)
 				deploymentID, err := dms.ResolveDeploymentID(ctx, w, b.Config.Workspace.StatePath)
 				if err != nil {
