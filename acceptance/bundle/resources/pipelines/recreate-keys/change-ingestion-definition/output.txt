@@ -25,34 +25,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "body": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "ingestion_definition": {
-      "connection_name": "my_connection",
-      "objects": [
-        {}
-      ]
-    },
-    "libraries": [
-      {
-        "file": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
-        }
-      }
-    ],
-    "name": "test-pipeline-[UNIQUE_NAME]"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
-}
-
 >>> update_file.py databricks.yml my_connection my_new_connection
 
 >>> [CLI] bundle plan
@@ -72,74 +44,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "method": "DELETE",
-  "path": "/api/2.0/pipelines/[MY_ID]"
-}
-{
-  "body": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "ingestion_definition": {
-      "connection_name": "my_new_connection",
-      "objects": [
-        {}
-      ]
-    },
-    "libraries": [
-      {
-        "file": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
-        }
-      }
-    ],
-    "name": "test-pipeline-[UNIQUE_NAME]"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
-}
-
 === Fetch pipeline ID and verify remote state
->>> [CLI] pipelines get [MY_ID_2]
-{
-  "creator_user_name": "[USERNAME]",
-  "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-  "last_modified": [UNIX_TIME_MILLIS],
-  "name": "test-pipeline-[UNIQUE_NAME]",
-  "pipeline_id": "[MY_ID_2]",
-  "run_as_user_name": "[USERNAME]",
-  "spec": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "id": "[MY_ID_2]",
-    "ingestion_definition": {
-      "connection_name": "my_new_connection",
-      "objects": [
-        {}
-      ]
-    },
-    "libraries": [
-      {
-        "file": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
-        }
-      }
-    ],
-    "name": "test-pipeline-[UNIQUE_NAME]",
-    "storage": "dbfs:/pipelines/[MY_ID_2]"
-  },
-  "state": "IDLE"
-}
-
 === Verify that original pipeline is gone
 >>> musterr [CLI] pipelines get [MY_ID]
 Error: The specified pipeline [MY_ID] was not found.
@@ -157,12 +62,6 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
->>> print_requests
-{
-  "method": "DELETE",
-  "path": "/api/2.0/pipelines/[MY_ID_2]"
-}
 
 >>> musterr [CLI] pipelines get [MY_ID_2]
 Error: The specified pipeline [MY_ID_2] was not found.

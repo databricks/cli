@@ -6,12 +6,10 @@
       "action": "create",
       "new_state": {
         "value": {
-          "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
           },
-          "edition": "ADVANCED",
           "ingestion_definition": {
             "connection_name": "my_connection",
             "objects": [
