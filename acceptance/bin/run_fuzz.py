@@ -5,7 +5,7 @@ function that acceptance/bundle/fuzz/script exports, which sources the invariant
 FUZZ_TARGET, and classifies each outcome:
 
   deployed - the config deployed and the invariant held
-  rejected - the CLI refused the config before deploying it; the common case, not a bug
+  rejected - the CLI refused the config before deploying it
   gap      - the config needs a route the testserver does not model
   hang     - the seed outlived FUZZ_SEED_TIMEOUT
   bug      - a panic, an internal error, a mutator failure, or a config that deployed and then
@@ -113,14 +113,14 @@ def oracle_verdict(seed_dir):
         # The plan-determinism diff script.prepare substitutes when FUZZ_CHECK_DRIFT is 0.
         return "planned differently on two consecutive runs"
     if read(seed_dir / "LOG.plan.failed").strip():
-        # Same substitute, when the plan failed outright for a reason that is not a testserver gap.
+        # Same substitute, when the plan failed outright (and LOG.plan.failed was written).
         return "could not be planned after deploy"
     return ""
 
 
 def classify(seed_dir):
     """Classify a seed that exited non-zero. Returns its kind and, for a failure, the reason."""
-    # mutate_fuzz_config only writes to stderr when it fails: our bug, not a rejected config.
+    # mutate_fuzz_config only writes to stderr when it fails.
     gen_err = read(seed_dir / "LOG.gen.err").strip()
     if gen_err:
         # Last line: a traceback's first one is always "Traceback (most recent call last):".
@@ -142,7 +142,7 @@ def classify(seed_dir):
     if b"TESTSERVER_GAP" in concat_logs(seed_dir, skip={CLEANUP_LOG}):
         return "gap", ""
 
-    # Past the marker the CLI had accepted the config, so a failure here is not a rejection.
+    # Past the marker the CLI had accepted the config.
     if b"INPUT_CONFIG_OK" in read(seed_dir / "LOG.check"):
         return "bug", "failed after deploying; see the seed's LOG.* files"
 
@@ -223,8 +223,8 @@ def main():
 
     kinds = totals()
 
-    # Nothing deploying is not a pass: a broken schema, mutator or fixture looks exactly like the
-    # CLI correctly rejecting random input. A single-seed replay is exempt.
+    # Require at least one deploy: a broken schema, mutator or fixture looks like every seed
+    # being rejected. A single-seed replay is exempt.
     if count > 1 and not kinds["deployed"]:
         sys.exit("fuzz: no seed deployed; the schema, mutator or fixtures are broken")
 

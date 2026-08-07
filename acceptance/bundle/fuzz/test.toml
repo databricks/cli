@@ -40,8 +40,7 @@ Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
 Response.Body = '{"status": "OK"}'
 
 # Catch-alls, one per method. An unmodeled route is a coverage gap for a config nobody wrote by
-# hand, not a missing stub, so these answer with a marker run_fuzz.py files as a gap instead of
-# failing the whole run on the unhandled-request check.
+# hand; these answer with a marker run_fuzz.py files as a gap.
 #
 # They shadow nothing: wildcards go to ServeMux, which matches most-specific-first, and exact paths
 # are looked up before it (see the Router type doc). No HEAD entry: ServeMux matches a GET pattern
