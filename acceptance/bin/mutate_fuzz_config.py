@@ -23,7 +23,15 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gen_fuzz_config import DANGEROUS_INTS, DANGEROUS_STRINGS, Generator, is_empty, resource_element, resource_types
+from gen_fuzz_config import (
+    DANGEROUS_INTS,
+    DANGEROUS_STRINGS,
+    Generator,
+    is_empty,
+    resource_element,
+    resource_types,
+    token,
+)
 
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
@@ -142,10 +150,6 @@ def collect(node, out):
             collect(v, out)
 
 
-def token(rng):
-    return "fuzz_" + "".join(rng.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(8))
-
-
 def mutate_once(rng, roots):
     refs = []
     for root in roots:
@@ -164,9 +168,10 @@ def mutate_once(rng, roots):
         container[key] = rng.choice([{}, [], None])
 
 
-def collect_insertions(gen, node, schema, rtype, out):
+def collect_insertions(gen, node, schema, out):
     # Every writable optional field absent from the node, walking node and schema together so
-    # nested objects are candidates too.
+    # nested objects are candidates too. Each point carries gen.rtype, which add_field restores
+    # before generating a value for the one it picks.
     schema = gen.resolve(schema)
     if not isinstance(schema, dict):
         return
@@ -192,21 +197,21 @@ def collect_insertions(gen, node, schema, rtype, out):
     if isinstance(node, dict):
         props = schema.get("properties", {})
         for name, prop_schema in props.items():
-            if name not in node and not gen.should_skip_property(name, prop_schema):
-                out.append((node, name, prop_schema, rtype))
+            if name not in node and not gen.should_skip_property(name):
+                out.append((node, name, prop_schema, gen.rtype))
         for key, value in node.items():
             if key in props and isinstance(value, (dict, list)):
-                collect_insertions(gen, value, props[key], rtype, out)
+                collect_insertions(gen, value, props[key], out)
         if gen.is_map(schema):
             for value in node.values():
                 if isinstance(value, (dict, list)):
-                    collect_insertions(gen, value, schema["additionalProperties"], rtype, out)
+                    collect_insertions(gen, value, schema["additionalProperties"], out)
     elif isinstance(node, list):
         items = schema.get("items")
         if items:
             for value in node:
                 if isinstance(value, (dict, list)):
-                    collect_insertions(gen, value, items, rtype, out)
+                    collect_insertions(gen, value, items, out)
 
 
 def add_field(gen, rng, config):
@@ -217,10 +222,10 @@ def add_field(gen, rng, config):
         if rtype not in types or not isinstance(instances, dict):
             continue
         element = resource_element(gen, types[rtype])
+        gen.rtype = rtype
         for instance in instances.values():
             if isinstance(instance, dict):
-                gen.rtype = rtype
-                collect_insertions(gen, instance, element, rtype, points)
+                collect_insertions(gen, instance, element, points)
     if not points:
         return
     node, name, prop_schema, rtype = rng.choice(points)
