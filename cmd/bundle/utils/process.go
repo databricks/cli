@@ -58,9 +58,8 @@ type ProcessOptions struct {
 	InitIDs bool
 
 	// If true, calls InitializeDeploymentHistory() to look up the bundle's recorded
-	// deployment. Separate from InitIDs because it costs its own API calls and only
-	// 'bundle summary' reports the result.
-	// Implies InitIDs
+	// deployment. Independent of InitIDs, and costs its own API calls.
+	// Implies ReadState
 	InitDeploymentHistory bool
 
 	// if true, pass ErrorOnEmptyState to statemgmt.Load
@@ -96,11 +95,6 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 
 func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, retErr error) {
 	var err error
-	// The deployment history is looked up alongside the resource IDs, so asking for
-	// it implies them. Normalized here so the options below only test InitIDs.
-	if opts.InitDeploymentHistory {
-		opts.InitIDs = true
-	}
 	ctx := cmd.Context()
 	if opts.SkipInitContext {
 		if !logdiag.IsSetup(ctx) {
@@ -192,7 +186,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		return b, nil, err
 	}
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.InitDeploymentHistory || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
@@ -282,11 +276,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if opts.InitIDs {
 				mutators = append(mutators, mutator.InitializeURLs())
 			}
-			// Same for InitializeDeploymentHistory, which only 'bundle summary' reports.
-			if opts.InitDeploymentHistory {
-				mutators = append(mutators, mutator.InitializeDeploymentHistory())
-			}
 			bundle.ApplySeqContext(ctx, b, mutators...)
+			if logdiag.HasError(ctx) {
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+		}
+
+		// Independent of the resource IDs above: this reads the deployment record, not
+		// the state. It makes its own API calls, so only 'bundle summary' asks for it.
+		if opts.InitDeploymentHistory {
+			bundle.ApplyContext(ctx, b, mutator.InitializeDeploymentHistory())
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
