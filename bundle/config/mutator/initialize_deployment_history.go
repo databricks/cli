@@ -1,0 +1,63 @@
+package mutator
+
+import (
+	"context"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+)
+
+type initializeDeploymentHistory struct{}
+
+// InitializeDeploymentHistory populates bundle.deployment.history with the
+// deployment recorded by the deployment metadata service, for the output of the
+// 'bundle summary' command.
+//
+// NOTE: this makes extra API calls, so like InitializeURLs it should only be used
+// when the fields are needed. It is a no-op unless the bundle records deployment
+// history.
+func InitializeDeploymentHistory() bundle.Mutator {
+	return &initializeDeploymentHistory{}
+}
+
+func (m *initializeDeploymentHistory) Name() string {
+	return "InitializeDeploymentHistory"
+}
+
+func (m *initializeDeploymentHistory) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	configured := b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory
+	if !env.RecordsDeploymentHistory(ctx, configured) {
+		return nil
+	}
+
+	w := b.WorkspaceClient(ctx)
+	deploymentID, err := dms.ResolveDeploymentID(ctx, w, b.Config.Workspace.StatePath)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if deploymentID == "" {
+		// Nothing recorded yet: the bundle has not been deployed, or its deployment
+		// was destroyed.
+		return nil
+	}
+
+	// The ID came from a BUNDLE_DEPLOYMENT node that get-status returned, and by
+	// design the service has a deployment for every such node, so this get does not
+	// have a not-found case. last_version_id is empty until the first version.
+	dep, err := w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+		Name: "deployments/" + deploymentID,
+	})
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	b.Config.Bundle.Deployment.History = &config.DeploymentHistory{
+		DeploymentID:    deploymentID,
+		LatestVersionID: dep.LastVersionId,
+	}
+	return nil
+}

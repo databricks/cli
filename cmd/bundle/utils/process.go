@@ -11,15 +11,18 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -54,6 +57,11 @@ type ProcessOptions struct {
 	// If true, calls statemgmt.Load() to read the state and update resources with IDs; also calls InitializeURLs()
 	// Implies ReadState
 	InitIDs bool
+
+	// If true, calls InitializeDeploymentHistory() to look up the bundle's recorded
+	// deployment. Independent of InitIDs, and costs its own API calls.
+	// Implies ReadState
+	InitDeploymentHistory bool
 
 	// if true, pass ErrorOnEmptyState to statemgmt.Load
 	// Implies ReadState
@@ -179,7 +187,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		return b, nil, err
 	}
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.InitDeploymentHistory || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
@@ -211,7 +219,36 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+
+			// When the bundle records deployment history, the deployment metadata
+			// service owns resource state, so hand Open a DMS source to read it from
+			// there instead of the file. The local identity (lineage/serial) still
+			// comes from the file. Reads open the state write-disabled, so no lineage
+			// is minted here.
+			var dmsSource *dstate.DMSSource
+			if env.RecordsDeploymentHistory(ctx, b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory) {
+				w := b.WorkspaceClient(ctx)
+				deploymentID, err := dms.ResolveDeploymentID(ctx, w, b.Config.Workspace.StatePath)
+				if err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+				dmsSource = &dstate.DMSSource{
+					Client:                 w.BundleDeployments,
+					DeploymentID:           deploymentID,
+					AllowExistingResources: env.DMSAllowExistingResources(ctx),
+				}
+
+				// Stamp the deployment onto the resources before anything diffs them.
+				// The workspace has it, so a plan that left it unset would report drift
+				// on a resource nobody touched. The version is stamped by the deploy
+				// phase instead, once it claims one.
+				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(deploymentID))
+				if logdiag.HasError(ctx) {
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+			}
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsSource); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -242,6 +279,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				mutators = append(mutators, mutator.InitializeURLs())
 			}
 			bundle.ApplySeqContext(ctx, b, mutators...)
+			if logdiag.HasError(ctx) {
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+		}
+
+		// Independent of the resource IDs above: this reads the deployment record, not
+		// the state. It makes its own API calls, so only 'bundle summary' asks for it.
+		if opts.InitDeploymentHistory {
+			bundle.ApplyContext(ctx, b, mutator.InitializeDeploymentHistory())
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}

@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
@@ -75,7 +76,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType, requestedEngine engine.EngineSetting) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType, requestedEngine engine.EngineSetting, recorder *dms.Recorder) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
@@ -121,6 +122,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
+		logDeploymentHistory(ctx, b, recorder)
 	}
 
 	// Once the deploy is complete, dry-run the migration to the direct engine
@@ -164,7 +166,21 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	// lock is acquired here
+	//
+	// Set up DMS recording of this deployment as a version. The version is not
+	// created until the plan is approved (below), so a cancelled deploy records
+	// nothing; the deferred CompleteVersion is a no-op until CreateVersion runs.
+	// CompleteVersion is deferred before lock.Release so it runs while the lock
+	// is still held (defers run last-in-first-out).
+	recorder, err := newDeploymentRecorder(ctx, b, stateEngine, dms.VersionTypeDeploy)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	defer func() {
+		if err := recorder.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
@@ -215,6 +231,26 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	// Create the version before planning: the plan snapshots the resource config, so
+	// the version has to be stamped on before it is computed or the applied resources
+	// would not carry it. A cancelled deploy therefore leaves a version behind,
+	// completed as a failure by the deferred CompleteVersion.
+	if err := recorder.CreateVersion(ctx); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if recorder != nil {
+		// The deployment ID is stamped earlier, when the state is opened; only the
+		// version is new here. A first deploy has no ID until now, so stamp both.
+		bundle.ApplySeqContext(ctx, b,
+			metadata.AnnotateDeployment(recorder.DeploymentID()),
+			metadata.AnnotateDeploymentVersion(recorder.Version()),
+		)
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	planFromFile := plan != nil
 	if plan == nil {
 		// State is already open for read by process.go (for direct engine)
@@ -258,7 +294,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 	if haveApproval {
-		deployCore(ctx, b, plan, stateEngine, requestedEngine)
+		// Record operations under the version created before planning, so DMS holds
+		// the deployed resource state.
+		setOperationRecorder(ctx, b, recorder)
+		deployCore(ctx, b, plan, stateEngine, requestedEngine, recorder)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 		return

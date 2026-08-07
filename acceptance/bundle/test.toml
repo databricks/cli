@@ -1,10 +1,44 @@
 # This allows recording per-deployment output files, e.g. $CLI bundle deploy > out.$DATABRICKS_BUNDLE_ENGINE.txt
 EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
 
+# Runs the whole bundle suite a second time with deployment history recording on, so the
+# deployment metadata service (DMS) is exercised by every test rather than only the
+# handful under bundle/dms. Empty is the default pair of engine runs.
+EnvMatrix.DATABRICKS_BUNDLE_DMS = ["", "true"]
+
+# DMS is only supported by the direct engine, and only against the local testserver:
+# the service runs in dev and staging, so a cloud run has nothing to record to.
+EnvMatrixExclude.dms_needs_direct = ["DATABRICKS_BUNDLE_DMS=true", "DATABRICKS_BUNDLE_ENGINE=terraform"]
+EnvMatrixExclude.dms_local_only = ["DATABRICKS_BUNDLE_DMS=true", "CONFIG_Cloud=true"]
+
+# A saved plan does not carry the deployment stamp. On a first deploy there is no
+# deployment to resolve when `bundle plan` runs, so the plan it writes leaves the field
+# unset; `deploy --plan` then creates the resources without it and the next plan reports
+# drift. Stamping at plan time would mean `bundle plan` creating the deployment record,
+# which is a design decision, so the saved-plan path is left out of the DMS run for now.
+EnvMatrixExclude.dms_no_readplan = ["DATABRICKS_BUNDLE_DMS=true", "READPLAN=1"]
+
+# Recording is gated off for users (see validate.ValidateRecordDeploymentHistory) and
+# refuses a bundle whose state already tracks resources - which most tests here seed.
+# Both are forced on: these tests assert what a deploy does, so the resource duplication
+# the refusal guards against cannot bite them.
+Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = "1"
+Env.DATABRICKS_BUNDLE_DMS_ALLOW_EXISTING_RESOURCES = "1"
+
+# The DMS run asserts the same golden files as the engine runs.
+EnvRepl.DATABRICKS_BUNDLE_DMS = false
+
+Ignore = ["databricks.yml"]
+
 # The lowest Python version we support. Alternative to "uv run --python 3.10"
 Env.UV_PYTHON = "3.10"
 
-Ignore = ["databricks.yml"]
+# The link a recorded deploy prints, dropped so a test asserts the same output whether or
+# not recording is on. The URL itself is covered by workspaceurls.TestDeploymentURL, and
+# the calls behind it by bundle/dms/record.
+[[Repls]]
+Old = '(?m)^Deployment history: .*\n'
+New = ''
 
 # User-agent:
 [[Repls]]

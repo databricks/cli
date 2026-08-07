@@ -1,6 +1,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle deploy
-trace print_requests.py //jobs
+trace print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id,new_settings.deployment.deployment_id,new_settings.deployment.version_id
 
 trace $CLI bundle plan
 rm out.requests.txt

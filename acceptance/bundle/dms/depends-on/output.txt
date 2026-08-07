@@ -1,0 +1,52 @@
+
+=== Deploy a job that references another: depends_on is recorded alongside the config, since the reference is resolved to a literal in the config itself
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-depends-on/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //versions/1/operations --sort
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
+  "q": {
+    "resource_key": "jobs.child"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "resource_id": "[NUMID]",
+    "resource_key": "jobs.child",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-depends-on/default/state/metadata.json\",\"version_id\":\"1\"},\"description\":\"depends on [NUMID]\",\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"child\",\"queue\":{\"enabled\":true}},\"depends_on\":[{\"node\":\"resources.jobs.parent\",\"label\":\"${resources.jobs.parent.id}\"}]}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
+  "q": {
+    "resource_key": "jobs.parent"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "resource_id": "[NUMID]",
+    "resource_key": "jobs.parent",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-depends-on/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"parent\",\"queue\":{\"enabled\":true}}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+
+=== Wipe the local state, then destroy: depends_on comes back from DMS, so the child is still deleted before the parent it references
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.child
+  delete resources.jobs.parent
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-depends-on/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py //jobs --oneline
+{"method": "POST", "path": "/api/2.2/jobs/delete", "body": {"job_id": [NUMID]}}
+{"method": "POST", "path": "/api/2.2/jobs/delete", "body": {"job_id": [NUMID]}}

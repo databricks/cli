@@ -9,9 +9,9 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body | del(.deployment.deployment_id, .deployment.version_id) out.requests.txt
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body | del(.deployment.deployment_id, .deployment.version_id) out.requests.txt
 
 >>> [CLI] bundle plan
 update jobs.git_job
@@ -24,6 +24,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="git_job") | .body out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="git_job") | .body | del(.new_settings.deployment.deployment_id, .new_settings.deployment.version_id) out.requests.txt
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="workspace_job") | .body out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="workspace_job") | .body | del(.new_settings.deployment.deployment_id, .new_settings.deployment.version_id) out.requests.txt

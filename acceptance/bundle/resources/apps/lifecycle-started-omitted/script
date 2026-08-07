@@ -79,6 +79,6 @@ trace $CLI bundle deploy
 trace print_app_requests
 
 title "(started omitted, app running) -> bundle plan shows no drift"
-$CLI bundle plan -o json > LOG.planjson
+$CLI bundle plan -o json | jq 'del(.. | objects | .deployment_id?, .version_id?)' > LOG.planjson
 verify_no_drift.py LOG.planjson
 echo "Plan: no drift detected"

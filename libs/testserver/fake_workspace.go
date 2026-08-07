@@ -242,6 +242,16 @@ type FakeWorkspace struct {
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
+
+	// dmsDeployments holds Deployment Metadata Service (DMS) records, keyed by
+	// deployment ID. Each record carries its versions and latest resource state.
+	dmsDeployments map[string]*dmsDeployment
+
+	// dmsDeploymentNodes maps deployment ID to the workspace node CreateDeployment
+	// registered for it. A deployment appears here before it has a record in
+	// dmsDeployments: the record is created by its first version, so the node is
+	// what makes an ID valid in between.
+	dmsDeploymentNodes map[string]string
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -410,6 +420,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},
 		clusterVenvs:              map[string]*clusterEnv{},
+		dmsDeployments:            map[string]*dmsDeployment{},
+		dmsDeploymentNodes:        map[string]string{},
 		Alerts:                    map[string]sql.AlertV2{},
 		Experiments:               map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:       map[string]ml.Model{},

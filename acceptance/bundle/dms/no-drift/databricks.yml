@@ -1,0 +1,16 @@
+bundle:
+  name: dms-no-drift
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    foo:
+      name: foo
+  pipelines:
+    bar:
+      name: bar
+      catalog: main
+      schema: default
+      serverless: true

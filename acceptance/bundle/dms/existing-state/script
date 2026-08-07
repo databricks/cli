@@ -1,0 +1,22 @@
+title "Deploy without recording: the bundle gets ordinary direct-engine state, unknown to DMS"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --oneline
+
+title "Turning recording on afterwards is an error: those resources were never recorded, so treating DMS as authoritative would deploy them a second time"
+trace update_file.py databricks.yml "record_deployment_history: false" "record_deployment_history: true"
+trace musterr $CLI bundle deploy
+
+title "No deployment was created in DMS"
+trace print_requests.py //api/2.0/bundle --oneline
+
+title "Still an error after wiping the local cache: deploy pulls the state file back from the workspace, so the resources are still tracked"
+rm -rf .databricks
+trace musterr $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --oneline
+
+title "Destroy clears the tracked resources, so recording can be enabled afterwards"
+trace update_file.py databricks.yml "record_deployment_history: true" "record_deployment_history: false"
+trace $CLI bundle destroy --auto-approve
+trace update_file.py databricks.yml "record_deployment_history: false" "record_deployment_history: true"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --oneline

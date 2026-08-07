@@ -1,0 +1,20 @@
+title "Deploy: the server assigns the deployment ID, and a version + create operation are recorded"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle
+
+title "The deployment ID is the ID of the workspace node the service registered under initial_parent_path; the CLI stores nothing locally"
+# MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the leading-'/' path
+# into C:/Program Files/Git/Workspace/... before the CLI sees it. Set per command
+# rather than in test.toml: trace exports it in a subshell, so it cannot reach the
+# python helpers, whose PATH does need converting.
+trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record/default/state/resources.deployment.json" | jq '{object_type,path}'
+trace jq 'has("deployment_id")' .databricks/bundle/default/resources.json
+
+title "Redeploy after deleting the local cache: the deployment ID is resolved from that node, the same deployment is reused, and the version increments (no new CreateDeployment)"
+rm -rf .databricks
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle
+
+title "Destroy: a destroy version and delete operation are recorded, then the deployment is deleted"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //api/2.0/bundle

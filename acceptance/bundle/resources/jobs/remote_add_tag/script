@@ -8,4 +8,4 @@ r["tags"]["new_tag"] = "new_value"
 EOF
 
 $CLI bundle plan
-$CLI bundle plan -o json > out.plan_post_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan_post_update.$DATABRICKS_BUNDLE_ENGINE.json

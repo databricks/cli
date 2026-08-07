@@ -1,0 +1,15 @@
+title "Deploying from a git repo records where the source came from: the version carries git_info, workspace_info and the target's deployment_mode"
+git-repo-init
+git remote add origin https://github.com/databricks/bundle-examples.git
+trace $CLI bundle deploy
+# The commit SHA changes every run, so assert it is a 40-char hex string and drop it.
+add_repl.py "$(git rev-parse HEAD)" COMMIT
+trace print_requests.py //versions --sort
+
+title "The service denormalizes them onto the deployment, so a reader gets the provenance of the latest version"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-provenance/dev/state/resources.deployment.json" -o json | python3 -c 'import sys,json; print(json.load(sys.stdin)["object_id"])')
+trace $CLI api get "/api/2.0/bundle/deployments/${deployment_id}" | jq '{target_name, deployment_mode, git_info, workspace_info}'
+
+# The deploy uploads files in a nondeterministic order; only the requests above are
+# asserted.
+rm -f out.requests.txt

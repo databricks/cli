@@ -10,11 +10,12 @@
 # fix in the initialize phase would drop them, and this golden would show that.
 $CLI bundle validate -o json -t direct | jq .resources > out.validate.json
 
-# Exclude non-create traffic: workspace file ops and telemetry (nondeterministic).
+# Exclude non-create traffic: workspace file ops, telemetry (nondeterministic), and the
+# deployment history calls the DMS run adds.
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy -t tf
-print_requests.py ^//api/2.0/workspace ^//telemetry --sort > out.requests.terraform.json
+print_requests.py ^//api/2.0/workspace ^//telemetry ^//api/2.0/bundle --sort > out.requests.terraform.json
 
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy -t direct
-print_requests.py ^//api/2.0/workspace ^//telemetry --sort > out.requests.direct.json
+print_requests.py ^//api/2.0/workspace ^//telemetry ^//api/2.0/bundle --sort > out.requests.direct.json
 
 $TESTDIR/empty_sent.py

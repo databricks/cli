@@ -10,7 +10,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py //jobs
+>>> print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id,new_settings.deployment.deployment_id,new_settings.deployment.version_id
 
 === Update trigger.periodic.unit and re-deploy
 >>> update_file.py databricks.yml DAYS HOURS
@@ -26,7 +26,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py //jobs
+>>> print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id,new_settings.deployment.deployment_id,new_settings.deployment.version_id
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
@@ -89,7 +89,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests.py //jobs
+>>> print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id,new_settings.deployment.deployment_id,new_settings.deployment.version_id
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",

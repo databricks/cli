@@ -1,0 +1,165 @@
+
+=== Deploy: the state write records the resource
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "body": {
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/state",
+    "target_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "target_name": "default",
+    "display_name": "dms-partial-update",
+    "workspace_info": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
+  "q": {
+    "resource_key": "schemas.foo"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "resource_id": "main.dms_partial_update_schema",
+    "resource_key": "schemas.foo",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_partial_update_schema\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== Recreate writes state twice - the entry is dropped, then the new resource is saved
+>>> update_file.py databricks.yml catalog_name: main catalog_name: other
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate resources.schemas.foo
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "2"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "target_name": "default",
+    "display_name": "dms-partial-update",
+    "previous_version_id": "1",
+    "workspace_info": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations",
+  "q": {
+    "resource_key": "schemas.foo"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "resource_id": "other.dms_partial_update_schema",
+    "resource_key": "schemas.foo",
+    "state": "{\"state\":{\"catalog_name\":\"other\",\"comment\":\"v1\",\"name\":\"dms_partial_update_schema\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== Destroy: the delete is recorded with the id and no state
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.foo
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "3"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DESTROY",
+    "target_name": "default",
+    "display_name": "dms-partial-update",
+    "previous_version_id": "2",
+    "workspace_info": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/operations",
+  "q": {
+    "resource_key": "schemas.foo"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_DELETE",
+    "resource_id": "other.dms_partial_update_schema",
+    "resource_key": "schemas.foo",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
+}

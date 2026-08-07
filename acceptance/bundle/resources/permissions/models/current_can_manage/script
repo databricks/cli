@@ -1,7 +1,7 @@
 trace $CLI bundle validate -o json | jq .resources.$RESOURCE.foo.permissions
 rm out.requests.txt
 
-$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
 trace errcode $CLI bundle deploy &> out.deploy.txt

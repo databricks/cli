@@ -185,6 +185,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 
+		// Reads (typed): b.Config.Experimental.RecordDeploymentHistory
+		// Reads (env): DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY (non-empty value force allows it)
+		// Rejects experimental.record_deployment_history: the feature is not usable yet.
+		validate.ValidateRecordDeploymentHistory(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
 		// points to a Terraform-only field with no DABs equivalent.

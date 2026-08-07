@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -80,7 +81,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, recorder *dms.Recorder) {
 	if engine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 	} else {
@@ -101,6 +102,15 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	}
 
 	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// Complete the version before deleting the remote files. The deployment is a
+	// node under the state directory, so files.Delete removes it and any later call
+	// fails with 404. CompleteVersion is idempotent, so the deferred call in Destroy
+	// is a no-op after this.
+	if err := recorder.CompleteVersion(ctx, true); err != nil {
+		logdiag.LogError(ctx, err)
 		return
 	}
 
@@ -131,7 +141,19 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
+	// Set up DMS recording of this destroy as a version. The version is not
+	// created until the destroy is approved (below), so a cancelled destroy
+	// records nothing; the deferred CompleteVersion is a no-op until then. It is
+	// deferred before lock.Release so it runs while the lock is still held.
+	recorder, err := newDeploymentRecorder(ctx, b, engine, dms.VersionTypeDestroy)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	defer func() {
+		if err := recorder.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
@@ -188,7 +210,14 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				return
 			}
 		}
-		destroyCore(ctx, b, plan, engine)
+		// Record the DMS version now that the destroy is approved and the state WAL
+		// has been opened, then record each delete operation under it.
+		if err := recorder.CreateVersion(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		setOperationRecorder(ctx, b, recorder)
+		destroyCore(ctx, b, plan, engine, recorder)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}

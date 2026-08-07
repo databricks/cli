@@ -1,0 +1,4 @@
+
+=== An operation upload failure fails the deploy instead of reporting only at the end
+>>> grep -c ^Error: LOG.deploy
+deploy reported errors

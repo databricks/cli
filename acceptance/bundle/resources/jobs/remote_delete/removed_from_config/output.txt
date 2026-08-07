@@ -21,4 +21,4 @@ Updating deployment state...
 Deployment complete!
 
 === No delete API calls for resources that are already gone remotely
->>> print_requests.py //jobs/delete //pipelines/
+>>> print_requests.py //jobs/delete //pipelines/ --del-body deployment.deployment_id,deployment.version_id,new_settings.deployment.deployment_id,new_settings.deployment.version_id

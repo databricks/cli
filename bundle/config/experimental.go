@@ -53,6 +53,10 @@ type Experimental struct {
 	// RecordDeploymentHistory opts the bundle into the deployment metadata
 	// service (DMS), which records deployment history and tracks what changed
 	// across deployments.
+	//
+	// Only supported for a bundle with no deployed resources yet: DMS becomes the
+	// source of truth for resource state, and resources tracked in an existing
+	// state file cannot be handed over to it yet. See dstate.DeploymentState.Open.
 	RecordDeploymentHistory bool `json:"record_deployment_history,omitempty"`
 }
 

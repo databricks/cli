@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/google/uuid"
 )
 
@@ -70,6 +71,18 @@ type DeploymentState struct {
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
+
+	// sink records each state write with DMS. Nil unless the bundle records
+	// deployment history, in which case SetOperationSink installs it.
+	sink OperationSink
+}
+
+// SetOperationSink makes every subsequent state write also record an operation with
+// DMS. It is set after the version is created, which is why it is not an Open option.
+func (db *DeploymentState) SetOperationSink(sink OperationSink) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.sink = sink
 }
 
 type Header struct {
@@ -118,7 +131,10 @@ func NewDatabase(lineage string, serial int) Database {
 	}
 }
 
-func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+// SaveState records the resource's state after action was applied to it. action is
+// what the deployment metadata service reports for the write; it is ignored when the
+// bundle does not record deployment history.
+func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry, action deployplan.ActionType) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -139,13 +155,27 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 	}
 
 	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
-	if err == nil {
-		db.stateIDs[key] = newID
+	if err != nil {
+		return err
 	}
-	return err
+	db.stateIDs[key] = newID
+
+	// Recorded after the WAL write, so DMS never reports a state the deploy failed to
+	// persist locally.
+	if db.sink != nil {
+		recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+		if err != nil {
+			return err
+		}
+		db.sink.RecordOperation(ctx, key, action, newID, recorded)
+	}
+
+	return nil
 }
 
-func (db *DeploymentState) DeleteState(key string) error {
+// DeleteState drops the resource's state entry. action distinguishes a real delete
+// from the intermediate drop a recreate performs, both of which are recorded.
+func (db *DeploymentState) DeleteState(ctx context.Context, key string, action deployplan.ActionType) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -154,11 +184,28 @@ func (db *DeploymentState) DeleteState(key string) error {
 		return nil
 	}
 
+	// Read before the delete: DMS needs the id to say which resource went away.
+	deletedID := db.stateIDs[key]
+
 	err := appendJSONLine(db.walFile, WALEntry{Key: key})
-	if err == nil {
-		delete(db.stateIDs, key)
+	if err != nil {
+		return err
 	}
-	return err
+	delete(db.stateIDs, key)
+
+	// State is nil: the resource no longer exists.
+	//
+	// A recreate is the exception. It drops the entry and then saves the new
+	// resource, but the service keeps one operation per resource per version whose
+	// action_type is fixed at creation, and it rejects a succeeded recreate that
+	// carries no state ("it leaves a resource that exists"). So the intermediate drop
+	// cannot be recorded as its own event; the save that follows reports the recreate,
+	// and if that save never happens the failure path reports it instead.
+	if db.sink != nil && action != deployplan.Recreate {
+		db.sink.RecordOperation(ctx, key, action, deletedID, nil)
+	}
+
+	return nil
 }
 
 func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
@@ -213,7 +260,33 @@ type (
 	WithWrite bool
 )
 
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite) error {
+// DMSSource tells Open to read resource state from the deployment metadata
+// service instead of the state file. Callers pass it only when the bundle set
+// experimental.record_deployment_history; a nil *DMSSource keeps Open file-only.
+type DMSSource struct {
+	Client bundledeployments.BundleDeploymentsInterface
+
+	// DeploymentID is resolved from the deployment's workspace node (see
+	// dms.ResolveDeploymentID), and empty before the first recorded deploy.
+	DeploymentID string
+
+	// AllowExistingResources records a bundle whose state file already tracks
+	// resources, instead of refusing it. Those resources are not handed over to DMS:
+	// the first recorded deploy reports only what it touches, so the ones it does not
+	// touch are absent from DMS and a later deploy plans them as creates.
+	//
+	// It exists for the CLI's own acceptance tests, which run the whole bundle suite
+	// with recording on. Most of those tests seed a state fixture, and they assert the
+	// output of a single deploy rather than reading state back, so the duplication the
+	// refusal prevents cannot bite them.
+	AllowExistingResources bool
+}
+
+// Open reads the deployment state from disk (and recovers the WAL when
+// withRecovery is set). With a non-nil dmsSource, resources come from DMS rather
+// than the file. Lineage and serial always come from the file, since that is
+// what the write path increments.
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsSource *DMSSource) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -259,6 +332,35 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 
 	if err := migrateState(&db.Data); err != nil {
 		return fmt.Errorf("migrating state %s: %w", path, err)
+	}
+
+	if dmsSource != nil {
+		// Only bundles that start out empty can be recorded. Once DMS owns a
+		// deployment it is authoritative for the whole resource set (see
+		// readDMSState), so pre-existing resources it never saw would look absent and
+		// get created a second time.
+		//
+		// TODO(DMS): allow this by upgrading the state in place, writing it at
+		// featureStateVersion with a feature flag plus a tombstone per resource so an
+		// older CLI refuses the state instead of deploying against resources it
+		// cannot see.
+		if dmsSource.DeploymentID == "" && len(db.Data.State) > 0 && !dmsSource.AllowExistingResources {
+			// The remedy is ordered deliberately: this error also blocks destroy, so the
+			// setting has to come out first or there is no way to tear the bundle down.
+			return fmt.Errorf(`cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again
+
+To keep the existing resources instead, leave experimental.record_deployment_history out`, path)
+		}
+		if dmsSource.DeploymentID != "" {
+			if err := db.readDMSState(ctx, dmsSource); err != nil {
+				return err
+			}
+		}
 	}
 
 	if withWrite {

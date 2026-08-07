@@ -1,0 +1,66 @@
+
+=== Deploy without recording: the bundle gets ordinary direct-engine state, unknown to DMS
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle --oneline
+
+=== Turning recording on afterwards is an error: those resources were never recorded, so treating DMS as authoritative would deploy them a second time
+>>> update_file.py databricks.yml record_deployment_history: false record_deployment_history: true
+
+>>> musterr [CLI] bundle deploy
+Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again
+
+To keep the existing resources instead, leave experimental.record_deployment_history out
+
+
+=== No deployment was created in DMS
+>>> print_requests.py //api/2.0/bundle --oneline
+
+=== Still an error after wiping the local cache: deploy pulls the state file back from the workspace, so the resources are still tracked
+>>> musterr [CLI] bundle deploy
+Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again
+
+To keep the existing resources instead, leave experimental.record_deployment_history out
+
+
+>>> print_requests.py //api/2.0/bundle --oneline
+
+=== Destroy clears the tracked resources, so recording can be enabled afterwards
+>>> update_file.py databricks.yml record_deployment_history: true record_deployment_history: false
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.one
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default
+
+Deleting files...
+Destroy complete!
+
+>>> update_file.py databricks.yml record_deployment_history: false record_deployment_history: true
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default/state", "target_name": "default"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "target_name": "default", "display_name": "dms-existing-state", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default"}}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations", "q": {"resource_key": "jobs.one"}, "body": {"action_type": "OPERATION_ACTION_TYPE_CREATE", "resource_id": "[NUMID]", "resource_key": "jobs.one", "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"one\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}

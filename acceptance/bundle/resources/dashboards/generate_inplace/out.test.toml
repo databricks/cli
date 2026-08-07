@@ -1,4 +1,5 @@
 Cloud = true
 RequiresWarehouse = true
 RunsOnDbr = true
+EnvMatrix.DATABRICKS_BUNDLE_DMS = ["", "true"]
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

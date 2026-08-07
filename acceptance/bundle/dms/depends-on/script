@@ -1,0 +1,8 @@
+title "Deploy a job that references another: depends_on is recorded alongside the config, since the reference is resolved to a literal in the config itself"
+trace $CLI bundle deploy
+trace print_requests.py //versions/1/operations --sort
+
+title "Wipe the local state, then destroy: depends_on comes back from DMS, so the child is still deleted before the parent it references"
+rm -rf .databricks
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //jobs --oneline

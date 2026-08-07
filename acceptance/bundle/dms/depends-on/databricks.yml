@@ -1,0 +1,13 @@
+bundle:
+  name: dms-depends-on
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    parent:
+      name: parent
+    child:
+      name: child
+      description: depends on ${resources.jobs.parent.id}
