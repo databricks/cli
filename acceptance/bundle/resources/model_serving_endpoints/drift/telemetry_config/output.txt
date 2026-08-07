@@ -6,11 +6,11 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Plan converges: the profile and inference table the backend named are not drift
+=== Plan converges
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== Editing sampling_fraction is a real change: it round trips through GET
+=== Editing sampling_fraction plans an update
 >>> [CLI] bundle plan --output json
 {
   "telemetry_config.inference_table_config.name": {
@@ -43,7 +43,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   }
 }
 
-=== Deploy applies it via the telemetry-config API
+=== Deploy applies the edit
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -54,7 +54,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== Editing table_names is a real change even though GET never echoes it
+=== Editing table_names plans an update
 >>> [CLI] bundle plan --output json
 {
   "telemetry_config.inference_table_config.name": {
@@ -91,11 +91,11 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Plan converges after the tables changed
+=== Plan converges after table_names edit
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== Removing telemetry_config from the bundle removes it remotely
+=== Removing telemetry_config removes it remotely
 >>> [CLI] bundle plan --output json
 {
   "telemetry_config": {

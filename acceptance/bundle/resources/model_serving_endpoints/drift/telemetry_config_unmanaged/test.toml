@@ -1,5 +1,4 @@
 RecordRequests = true
 
-# Direct engine only, where the classification lives. Guards the backend_defaults rule on the
-# telemetry_config subtree: without it DoUpdate patches away a config the bundle never declared.
+# Direct engine only, where the classification lives.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

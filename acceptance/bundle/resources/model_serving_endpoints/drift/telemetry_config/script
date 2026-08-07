@@ -3,28 +3,28 @@ echo "*" > .gitignore
 title "Initial deployment"
 trace $CLI bundle deploy
 
-title "Plan converges: the profile and inference table the backend named are not drift"
+title "Plan converges"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
-title "Editing sampling_fraction is a real change: it round trips through GET"
+title "Editing sampling_fraction plans an update"
 update_file.py databricks.yml "sampling_fraction: 0.5" "sampling_fraction: 0.9"
 trace $CLI bundle plan --output json | jq '.plan[].changes | with_entries(select(.key | startswith("telemetry_config")))'
 
-title "Deploy applies it via the telemetry-config API"
+title "Deploy applies the edit"
 trace $CLI bundle deploy
 
 title "Plan converges again"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
-title "Editing table_names is a real change even though GET never echoes it"
+title "Editing table_names plans an update"
 update_file.py databricks.yml "main.default.test_logs" "main.default.test_logs_v2"
 trace $CLI bundle plan --output json | jq '.plan[].changes | with_entries(select(.key | startswith("telemetry_config")))'
 trace $CLI bundle deploy
 
-title "Plan converges after the tables changed"
+title "Plan converges after table_names edit"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
-title "Removing telemetry_config from the bundle removes it remotely"
+title "Removing telemetry_config removes it remotely"
 grep -v TO_REMOVE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 trace $CLI bundle plan --output json | jq '.plan[].changes | with_entries(select(.key | startswith("telemetry_config")))'
 trace $CLI bundle deploy

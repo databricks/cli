@@ -285,8 +285,7 @@ resources:
       # Accepted on write but not returned by GET.
       - field: config.served_entities[*].burst_scaling_enabled
         reason: input_only
-      # Consumed to create a telemetry profile and never echoed back; GET returns only the
-      # resulting telemetry_profile_id. inference_table_config is not listed: it round trips.
+      # Consumed to build a profile and never returned; inference_table_config round-trips so it is not listed.
       - field: telemetry_config.table_names
         reason: input_only
       # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
@@ -320,9 +319,7 @@ resources:
       - field: rate_limits
         reason: not_implemented
     backend_defaults:
-      # telemetry_profile_id is assigned by the backend when it creates the profile.
-      # Declared on the subtree rather than that one field: a telemetry_config the bundle
-      # never set arrives as a single change on the parent path, which a child rule misses.
+      # Subtree, not only telemetry_profile_id: a remote-only config is one change on the parent path.
       - field: telemetry_config
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383

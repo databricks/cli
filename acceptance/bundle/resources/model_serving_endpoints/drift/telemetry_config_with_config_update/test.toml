@@ -1,5 +1,4 @@
 RecordRequests = true
 
-# Direct engine only, as with the sibling drift tests. Guards the wait in DoUpdate: without
-# it this deploy fails on the telemetry patch with a 409.
+# Direct engine only, where the DoUpdate wait lives.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

@@ -35,9 +35,8 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 	return entities
 }
 
-// applyTelemetryConfig mirrors the backend: table_names is consumed to create a profile and
-// never echoed back, so GET returns the profile ID and the caller's inference_table_config.
-// A config naming neither table_names nor telemetry_profile_id is discarded, reporting success.
+// applyTelemetryConfig mirrors the backend: table_names is consumed and not echoed;
+// naming neither table_names nor telemetry_profile_id discards the config.
 func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.TelemetryConfig {
 	if config == nil {
 		return nil
@@ -48,8 +47,7 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 
 	applied := serving.TelemetryConfig{TelemetryProfileId: config.TelemetryProfileId}
 	if applied.TelemetryProfileId == "" {
-		// table_names in the request provisions a profile; assign a fresh ID when the
-		// caller did not supply one (bundle configs never do).
+		// Do not reuse previous: table_names provisions a new profile.
 		applied.TelemetryProfileId = nextUUID()
 	}
 	if config.InferenceTableConfig != nil {
@@ -64,8 +62,8 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 	return &applied
 }
 
-// telemetrySupported mirrors the backend, which supports telemetry only on custom served
-// models, and returns the endpoint type the backend names when it rejects one.
+// telemetrySupported is true only for custom served models; otherwise it returns the
+// endpoint type the backend names when rejecting (NO_CONFIG / EXTERNAL_MODELS).
 func telemetrySupported(endpoint serving.ServingEndpointDetailed) (string, bool) {
 	if endpoint.Config == nil || len(endpoint.Config.ServedEntities) == 0 {
 		return "NO_CONFIG", false
@@ -290,8 +288,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	}
 }
 
-// ServingEndpointGet reports an in-progress config update once and then settles the
-// endpoint, so a caller that polls converges and one that does not sees it in flight.
+// ServingEndpointGet reports an in-progress update once, then settles so a poller converges.
 func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 	defer s.LockUnlock()()
 
@@ -304,7 +301,7 @@ func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 	}
 
 	if endpointUpdating(endpoint) {
-		// Settle the stored copy for the next read; this response still reports IN_PROGRESS.
+		// This response stays IN_PROGRESS; settle the stored copy for the next read.
 		settled := endpoint
 		settled.State = &serving.EndpointState{
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
@@ -367,8 +364,7 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 
 	endpoint.Config = config
 	endpoint.LastUpdatedTimestamp = nowMilli()
-	// A config update is asynchronous: until it settles the endpoint reports
-	// IN_PROGRESS, which is what makes a telemetry patch in the same pass fail.
+	// Leave IN_PROGRESS until the next GET settles it; a same-pass telemetry PATCH must see that.
 	endpoint.State = &serving.EndpointState{
 		ConfigUpdate: serving.EndpointStateConfigUpdateInProgress,
 		Ready:        serving.EndpointStateReadyNotReady,

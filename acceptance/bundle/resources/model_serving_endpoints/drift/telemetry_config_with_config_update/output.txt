@@ -6,7 +6,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Change config and telemetry_config; deploy waits for the config update to settle before patching telemetry
+=== Deploy changing config and telemetry_config waits before the telemetry patch
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -17,7 +17,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== The config update is followed by a poll for NOT_UPDATING, then the telemetry patch
+=== Request order: config PUT, poll, telemetry PATCH
 >>> print_requests.py --get --oneline //serving-endpoints
 1 {"method": "POST", "path": "/api/2.0/serving-endpoints", "body": {"config": {"served_entities": [{"entity_name": "main.default.test_model", "entity_version": "1", "name": "prod", "scale_to_zero_enabled": true, "workload_size": "Small"}]}, "name": "test-endpoint", "telemetry_config": {"inference_table_config": {"sampling_fraction": 0.5}, "table_names": {"logs_table": "main.default.test_logs"}}}}
 2 {"method": "GET", "path": "/api/2.0/serving-endpoints/test-endpoint"}
