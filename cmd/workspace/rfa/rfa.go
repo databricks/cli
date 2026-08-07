@@ -129,6 +129,10 @@ Create Access Requests.
 		fn(cmd, &batchCreateAccessRequestsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &batchCreateAccessRequestsReq)
+
 	return cmd
 }
 
@@ -313,6 +317,10 @@ Update Access Request Destinations.
 	for _, fn := range updateAccessRequestDestinationsOverrides {
 		fn(cmd, &updateAccessRequestDestinationsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateAccessRequestDestinationsReq.AccessRequestDestinations)
 
 	return cmd
 }

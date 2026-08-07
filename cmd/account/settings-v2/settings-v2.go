@@ -430,6 +430,10 @@ Update an account setting.
 		fn(cmd, &patchPublicAccountSettingReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &patchPublicAccountSettingReq.Setting)
+
 	return cmd
 }
 
@@ -520,6 +524,10 @@ Update a user preference.
 	for _, fn := range patchPublicAccountUserPreferenceOverrides {
 		fn(cmd, &patchPublicAccountUserPreferenceReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &patchPublicAccountUserPreferenceReq.Setting)
 
 	return cmd
 }

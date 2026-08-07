@@ -179,6 +179,10 @@ func newCreateExperiment() *cobra.Command {
 		fn(cmd, &createExperimentReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createExperimentReq)
+
 	return cmd
 }
 
@@ -266,6 +270,10 @@ func newCreateLoggedModel() *cobra.Command {
 		fn(cmd, &createLoggedModelReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createLoggedModelReq)
+
 	return cmd
 }
 
@@ -344,6 +352,10 @@ func newCreateRun() *cobra.Command {
 	for _, fn := range createRunOverrides {
 		fn(cmd, &createRunReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createRunReq)
 
 	return cmd
 }
@@ -428,6 +440,10 @@ func newDeleteExperiment() *cobra.Command {
 	for _, fn := range deleteExperimentOverrides {
 		fn(cmd, &deleteExperimentReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &deleteExperimentReq)
 
 	return cmd
 }
@@ -625,6 +641,10 @@ func newDeleteRun() *cobra.Command {
 		fn(cmd, &deleteRunReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &deleteRunReq)
+
 	return cmd
 }
 
@@ -722,6 +742,10 @@ func newDeleteRuns() *cobra.Command {
 		fn(cmd, &deleteRunsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &deleteRunsReq)
+
 	return cmd
 }
 
@@ -808,6 +832,10 @@ func newDeleteTag() *cobra.Command {
 	for _, fn := range deleteTagOverrides {
 		fn(cmd, &deleteTagReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &deleteTagReq)
 
 	return cmd
 }
@@ -898,6 +926,10 @@ func newFinalizeLoggedModel() *cobra.Command {
 	for _, fn := range finalizeLoggedModelOverrides {
 		fn(cmd, &finalizeLoggedModelReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &finalizeLoggedModelReq)
 
 	return cmd
 }
@@ -1608,6 +1640,10 @@ func newLogBatch() *cobra.Command {
 		fn(cmd, &logBatchReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &logBatchReq)
+
 	return cmd
 }
 
@@ -1693,6 +1729,10 @@ func newLogInputs() *cobra.Command {
 		fn(cmd, &logInputsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &logInputsReq)
+
 	return cmd
 }
 
@@ -1770,6 +1810,10 @@ func newLogLoggedModelParams() *cobra.Command {
 	for _, fn := range logLoggedModelParamsOverrides {
 		fn(cmd, &logLoggedModelParamsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &logLoggedModelParamsReq)
 
 	return cmd
 }
@@ -1878,6 +1922,10 @@ func newLogMetric() *cobra.Command {
 		fn(cmd, &logMetricReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &logMetricReq)
+
 	return cmd
 }
 
@@ -1953,6 +2001,10 @@ func newLogModel() *cobra.Command {
 	for _, fn := range logModelOverrides {
 		fn(cmd, &logModelReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &logModelReq)
 
 	return cmd
 }
@@ -2037,6 +2089,10 @@ func newLogOutputs() *cobra.Command {
 	for _, fn := range logOutputsOverrides {
 		fn(cmd, &logOutputsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &logOutputsReq)
 
 	return cmd
 }
@@ -2130,6 +2186,10 @@ func newLogParam() *cobra.Command {
 		fn(cmd, &logParamReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &logParamReq)
+
 	return cmd
 }
 
@@ -2217,6 +2277,10 @@ func newRestoreExperiment() *cobra.Command {
 		fn(cmd, &restoreExperimentReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &restoreExperimentReq)
+
 	return cmd
 }
 
@@ -2302,6 +2366,10 @@ func newRestoreRun() *cobra.Command {
 	for _, fn := range restoreRunOverrides {
 		fn(cmd, &restoreRunReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &restoreRunReq)
 
 	return cmd
 }
@@ -2400,6 +2468,10 @@ func newRestoreRuns() *cobra.Command {
 		fn(cmd, &restoreRunsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &restoreRunsReq)
+
 	return cmd
 }
 
@@ -2489,6 +2561,10 @@ func newSearchExperiments() *cobra.Command {
 		fn(cmd, &searchExperimentsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &searchExperimentsReq)
+
 	return cmd
 }
 
@@ -2565,6 +2641,10 @@ func newSearchLoggedModels() *cobra.Command {
 	for _, fn := range searchLoggedModelsOverrides {
 		fn(cmd, &searchLoggedModelsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &searchLoggedModelsReq)
 
 	return cmd
 }
@@ -2658,6 +2738,10 @@ func newSearchRuns() *cobra.Command {
 		fn(cmd, &searchRunsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &searchRunsReq)
+
 	return cmd
 }
 
@@ -2749,6 +2833,10 @@ func newSetExperimentTag() *cobra.Command {
 		fn(cmd, &setExperimentTagReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setExperimentTagReq)
+
 	return cmd
 }
 
@@ -2821,6 +2909,10 @@ func newSetLoggedModelTags() *cobra.Command {
 	for _, fn := range setLoggedModelTagsOverrides {
 		fn(cmd, &setLoggedModelTagsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setLoggedModelTagsReq)
 
 	return cmd
 }
@@ -2899,6 +2991,10 @@ func newSetPermissions() *cobra.Command {
 	for _, fn := range setPermissionsOverrides {
 		fn(cmd, &setPermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setPermissionsReq)
 
 	return cmd
 }
@@ -2991,6 +3087,10 @@ func newSetTag() *cobra.Command {
 		fn(cmd, &setTagReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setTagReq)
+
 	return cmd
 }
 
@@ -3075,6 +3175,10 @@ func newUpdateExperiment() *cobra.Command {
 		fn(cmd, &updateExperimentReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateExperimentReq)
+
 	return cmd
 }
 
@@ -3152,6 +3256,10 @@ func newUpdatePermissions() *cobra.Command {
 		fn(cmd, &updatePermissionsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updatePermissionsReq)
+
 	return cmd
 }
 
@@ -3227,6 +3335,10 @@ func newUpdateRun() *cobra.Command {
 	for _, fn := range updateRunOverrides {
 		fn(cmd, &updateRunReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateRunReq)
 
 	return cmd
 }

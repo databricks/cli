@@ -181,6 +181,10 @@ func newCreateMessage() *cobra.Command {
 		fn(cmd, &createMessageReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createMessageReq)
+
 	return cmd
 }
 
@@ -271,6 +275,10 @@ Create message comment.
 	for _, fn := range createMessageCommentOverrides {
 		fn(cmd, &createMessageCommentReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createMessageCommentReq)
 
 	return cmd
 }
@@ -366,6 +374,10 @@ func newCreateSpace() *cobra.Command {
 	for _, fn := range createSpaceOverrides {
 		fn(cmd, &createSpaceReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createSpaceReq)
 
 	return cmd
 }
@@ -853,6 +865,10 @@ Create eval run for benchmarks.
 	for _, fn := range genieCreateEvalRunOverrides {
 		fn(cmd, &genieCreateEvalRunReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &genieCreateEvalRunReq)
 
 	return cmd
 }
@@ -1951,6 +1967,10 @@ func newSendMessageFeedback() *cobra.Command {
 		fn(cmd, &sendMessageFeedbackReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &sendMessageFeedbackReq)
+
 	return cmd
 }
 
@@ -2056,6 +2076,10 @@ func newStartConversation() *cobra.Command {
 	for _, fn := range startConversationOverrides {
 		fn(cmd, &startConversationReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &startConversationReq)
 
 	return cmd
 }
@@ -2195,6 +2219,10 @@ func newUpdateSpace() *cobra.Command {
 	for _, fn := range updateSpaceOverrides {
 		fn(cmd, &updateSpaceReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateSpaceReq)
 
 	return cmd
 }

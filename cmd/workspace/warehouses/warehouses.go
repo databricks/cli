@@ -169,6 +169,10 @@ func newCreate() *cobra.Command {
 		fn(cmd, &createReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createReq)
+
 	return cmd
 }
 
@@ -267,6 +271,10 @@ Create default warehouse override.
 	for _, fn := range createDefaultWarehouseOverrideOverrides {
 		fn(cmd, &createDefaultWarehouseOverrideReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createDefaultWarehouseOverrideReq.DefaultWarehouseOverride)
 
 	return cmd
 }
@@ -538,6 +546,10 @@ func newEdit() *cobra.Command {
 	for _, fn := range editOverrides {
 		fn(cmd, &editReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &editReq)
 
 	return cmd
 }
@@ -1111,6 +1123,10 @@ func newSetPermissions() *cobra.Command {
 		fn(cmd, &setPermissionsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setPermissionsReq)
+
 	return cmd
 }
 
@@ -1191,6 +1207,10 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 	for _, fn := range setWorkspaceWarehouseConfigOverrides {
 		fn(cmd, &setWorkspaceWarehouseConfigReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setWorkspaceWarehouseConfigReq)
 
 	return cmd
 }
@@ -1488,6 +1508,10 @@ Update default warehouse override.
 		fn(cmd, &updateDefaultWarehouseOverrideReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride)
+
 	return cmd
 }
 
@@ -1576,6 +1600,10 @@ func newUpdatePermissions() *cobra.Command {
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updatePermissionsReq)
 
 	return cmd
 }

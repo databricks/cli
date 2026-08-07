@@ -144,6 +144,10 @@ Create a new user.
 		fn(cmd, &createReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createReq)
+
 	return cmd
 }
 
@@ -534,6 +538,10 @@ Update user details.
 		fn(cmd, &patchReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &patchReq)
+
 	return cmd
 }
 
@@ -609,6 +617,10 @@ Set password permissions.
 	for _, fn := range setPermissionsOverrides {
 		fn(cmd, &setPermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setPermissionsReq)
 
 	return cmd
 }
@@ -696,6 +708,10 @@ Replace a user.
 		fn(cmd, &updateReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateReq)
+
 	return cmd
 }
 
@@ -770,6 +786,10 @@ Update password permissions.
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updatePermissionsReq)
 
 	return cmd
 }

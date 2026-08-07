@@ -6,15 +6,17 @@ Usage:
   databricks database update-database-instance NAME UPDATE_MASK [flags]
 
 Flags:
-      --capacity string                The sku of the instance.
-      --enable-pg-native-login         Whether to enable PG native password login on the instance.
-      --enable-readable-secondaries    Whether to enable secondaries to serve read-only traffic.
-  -h, --help                           help for update-database-instance
-      --json JSON                      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
-      --node-count int                 The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.
-      --retention-window-in-days int   The retention window for the instance.
-      --stopped                        Whether to stop the instance.
-      --usage-policy-id string         The desired usage policy to associate with the instance.
+      --capacity string                   The sku of the instance.
+      --enable-pg-native-login            Whether to enable PG native password login on the instance.
+      --enable-readable-secondaries       Whether to enable secondaries to serve read-only traffic.
+      --generate-skeleton-full            Print a fillable JSON skeleton of the full --json request body and exit.
+      --generate-skeleton-required-only   Print a fillable JSON skeleton of only the required --json fields and exit.
+  -h, --help                              help for update-database-instance
+      --json JSON                         either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --node-count int                    The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.
+      --retention-window-in-days int      The retention window for the instance.
+      --stopped                           Whether to stop the instance.
+      --usage-policy-id string            The desired usage policy to associate with the instance.
 
 Global Flags:
       --debug            enable debug logging

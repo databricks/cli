@@ -160,6 +160,10 @@ func newCreateFailoverGroup() *cobra.Command {
 		fn(cmd, &createFailoverGroupReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createFailoverGroupReq.FailoverGroup)
+
 	return cmd
 }
 
@@ -253,6 +257,10 @@ func newCreateStableUrl() *cobra.Command {
 	for _, fn := range createStableUrlOverrides {
 		fn(cmd, &createStableUrlReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createStableUrlReq.StableUrl)
 
 	return cmd
 }
@@ -472,6 +480,10 @@ func newFailoverFailoverGroup() *cobra.Command {
 	for _, fn := range failoverFailoverGroupOverrides {
 		fn(cmd, &failoverFailoverGroupReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &failoverFailoverGroupReq)
 
 	return cmd
 }
@@ -858,6 +870,10 @@ func newUpdateFailoverGroup() *cobra.Command {
 	for _, fn := range updateFailoverGroupOverrides {
 		fn(cmd, &updateFailoverGroupReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateFailoverGroupReq.FailoverGroup)
 
 	return cmd
 }

@@ -182,6 +182,10 @@ Create an external metadata object.
 		fn(cmd, &createExternalMetadataReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createExternalMetadataReq.ExternalMetadata)
+
 	return cmd
 }
 
@@ -519,6 +523,10 @@ Update an external metadata object.
 	for _, fn := range updateExternalMetadataOverrides {
 		fn(cmd, &updateExternalMetadataReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateExternalMetadataReq.ExternalMetadata)
 
 	return cmd
 }

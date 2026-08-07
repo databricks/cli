@@ -156,6 +156,10 @@ func newCreateCustomTemplate() *cobra.Command {
 		fn(cmd, &createCustomTemplateReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createCustomTemplateReq.Template)
+
 	return cmd
 }
 
@@ -451,6 +455,10 @@ func newUpdateCustomTemplate() *cobra.Command {
 	for _, fn := range updateCustomTemplateOverrides {
 		fn(cmd, &updateCustomTemplateReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateCustomTemplateReq.Template)
 
 	return cmd
 }

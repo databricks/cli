@@ -156,6 +156,10 @@ func newCompleteVersion() *cobra.Command {
 		fn(cmd, &completeVersionReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &completeVersionReq)
+
 	return cmd
 }
 
@@ -230,6 +234,10 @@ func newCreateDeployment() *cobra.Command {
 	for _, fn := range createDeploymentOverrides {
 		fn(cmd, &createDeploymentReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createDeploymentReq.Deployment)
 
 	return cmd
 }
@@ -323,6 +331,10 @@ func newCreateOperation() *cobra.Command {
 	for _, fn := range createOperationOverrides {
 		fn(cmd, &createOperationReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createOperationReq.Operation)
 
 	return cmd
 }
@@ -441,6 +453,10 @@ func newCreateVersion() *cobra.Command {
 	for _, fn := range createVersionOverrides {
 		fn(cmd, &createVersionReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createVersionReq.Version)
 
 	return cmd
 }
